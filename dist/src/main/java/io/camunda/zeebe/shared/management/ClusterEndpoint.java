@@ -22,12 +22,15 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerializer;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
@@ -40,6 +43,7 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.PartitionJoinRequest;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
@@ -54,10 +58,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -132,6 +139,51 @@ public class ClusterEndpoint {
   public ResponseEntity<?> listConfigurationChanges() {
     try {
       return withCurrentConfiguration(ClusterApiUtils::mapConfigurationChangesResponse);
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  /**
+   * Dumps the configuration the cluster gossips and persists, bypassing the mapping to the
+   * published API types that every other endpoint here applies. Meant for debugging: when a
+   * response from those endpoints looks wrong, this shows whether the configuration or the mapping
+   * is at fault.
+   *
+   * <p>The shape is the configuration model's own, so it changes whenever the model does.
+   * Deliberately absent from {@code api/cluster/cluster-api.yaml} for that reason: a debugging aid
+   * rather than a contract.
+   */
+  @GetMapping(path = "/dump", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<?> dumpConfigurationAsJson() {
+    try {
+      return withCurrentConfiguration(
+          configuration ->
+              ResponseEntity.ok()
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .body(ClusterConfigurationJsonSerializer.toJson(configuration)));
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  /**
+   * The same configuration as {@link #dumpConfigurationAsJson()}, in the binary protobuf encoding
+   * the cluster actually gossips and persists. Decodable with {@code protoc --decode
+   * topology_protocol.CurrentClusterConfiguration}.
+   */
+  @GetMapping(path = "/dump", produces = MediaType.APPLICATION_PROTOBUF_VALUE)
+  public ResponseEntity<?> dumpConfigurationAsProtobuf() {
+    try {
+      return withCurrentConfiguration(
+          configuration ->
+              ResponseEntity.ok()
+                  .contentType(MediaType.APPLICATION_PROTOBUF)
+                  // Keeps a bare `curl` from spraying binary into the terminal, and makes
+                  // `curl -OJ` write a file instead.
+                  .header(
+                      HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"cluster-config.pb\"")
+                  .body(new ProtoBufSerializer().encodeCurrentClusterConfiguration(configuration)));
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }
@@ -402,6 +454,12 @@ public class ClusterEndpoint {
         });
   }
 
+  /**
+   * Adds a broker to a partition's replication group, or changes the priority it replicates that
+   * partition with. Partition ids restart at 1 in every physical tenant, so without a {@code
+   * physicalTenant} query parameter the partition is resolved in the default physical tenant; with
+   * it, in that tenant's partition group.
+   */
   @PostMapping(
       path = "/{resource}/{resourceId}/{subResource}/{subResourceId}",
       consumes = "application/json")
@@ -410,9 +468,13 @@ public class ClusterEndpoint {
       @PathVariable final String resourceId,
       @PathVariable("subResource") final Resource subResource,
       @PathVariable final String subResourceId,
-      @RequestBody final PartitionAddRequest request,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
-    final int priority = request.priority();
+      @RequestBody final PartitionJoinRequest request,
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
+    // The generated body type makes priority nullable even though the schema requires it;
+    // an omitted priority has always meant the lowest one, so keep answering that way.
+    final int priority = Optional.ofNullable(request.getPriority()).orElse(0);
+    final Optional<String> tenant = nonBlank(physicalTenant);
     return switch (resource) {
       case brokers ->
           switch (subResource) {
@@ -425,7 +487,11 @@ public class ClusterEndpoint {
                             requestSender
                                 .joinPartition(
                                     new JoinPartitionRequest(
-                                        member, Integer.parseInt(subResourceId), priority, dryRun))
+                                        member,
+                                        Integer.parseInt(subResourceId),
+                                        priority,
+                                        tenant,
+                                        dryRun))
                                 .join()));
             case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
@@ -440,7 +506,11 @@ public class ClusterEndpoint {
                             requestSender
                                 .joinPartition(
                                     new JoinPartitionRequest(
-                                        member, Integer.parseInt(resourceId), priority, dryRun))
+                                        member,
+                                        Integer.parseInt(resourceId),
+                                        priority,
+                                        tenant,
+                                        dryRun))
                                 .join()));
             case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
@@ -448,6 +518,11 @@ public class ClusterEndpoint {
     };
   }
 
+  /**
+   * Removes a broker from a partition's replication group. Partition ids restart at 1 in every
+   * physical tenant, so without a {@code physicalTenant} query parameter the partition is resolved
+   * in the default physical tenant; with it, in that tenant's partition group.
+   */
   @DeleteMapping(
       path = "/{resource}/{resourceId}/{subResource}/{subResourceId}",
       consumes = "application/json")
@@ -456,7 +531,9 @@ public class ClusterEndpoint {
       @PathVariable final String resourceId,
       @PathVariable("subResource") final Resource subResource,
       @PathVariable final String subResourceId,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
+    final Optional<String> tenant = nonBlank(physicalTenant);
     return switch (resource) {
       case brokers ->
           switch (subResource) {
@@ -468,7 +545,7 @@ public class ClusterEndpoint {
                             requestSender
                                 .leavePartition(
                                     new LeavePartitionRequest(
-                                        member, Integer.parseInt(subResourceId), dryRun))
+                                        member, Integer.parseInt(subResourceId), tenant, dryRun))
                                 .join()));
             case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
@@ -482,7 +559,7 @@ public class ClusterEndpoint {
                             requestSender
                                 .leavePartition(
                                     new LeavePartitionRequest(
-                                        member, Integer.parseInt(resourceId), dryRun))
+                                        member, Integer.parseInt(resourceId), tenant, dryRun))
                                 .join()));
             case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
@@ -602,29 +679,80 @@ public class ClusterEndpoint {
     }
   }
 
+  /**
+   * Discards a disabled physical tenant, allowing a broker still holding its partitions to leave
+   * the cluster. Does not delete the tenant's data; it stays on the brokers' disks until reclaimed
+   * out of band.
+   */
+  @DeleteMapping(path = "/physical-tenants/{physicalTenantId}")
+  public ResponseEntity<?> removePhysicalTenant(
+      @PathVariable final String physicalTenantId,
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(defaultValue = "false") final boolean force) {
+    try {
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender
+              .removePhysicalTenant(
+                  new RemovePhysicalTenantRequest(physicalTenantId, dryRun, force))
+              .join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
+    }
+  }
+
   @PostMapping(path = "/zones/{zoneId}", consumes = "application/json")
   public ResponseEntity<?> addZone(
       @PathVariable final String zoneId,
       @RequestBody final io.camunda.zeebe.management.cluster.AddZoneRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
-      final var brokerIds = request.getBrokers().stream().map(BrokerId::toString).toList();
-      return withValidMembers(
-          brokerIds,
-          members -> {
-            final var addZoneRequest =
-                new AddZoneRequest(
-                    zoneId,
-                    request.getNumberOfReplicas(),
-                    request.getPriority(),
-                    Set.copyOf(members),
-                    dryRun);
-            return ClusterApiUtils.mapOperationResponse(
-                requestSender.addZone(addZoneRequest).join());
-          });
+      final var brokers = Optional.ofNullable(request.getBrokers()).orElse(List.of());
+      final var numberOfBrokers = Optional.ofNullable(request.getNumberOfBrokers());
+      if (brokers.isEmpty() == numberOfBrokers.isEmpty()) {
+        return invalidRequest("Exactly one of brokers and numberOfBrokers must be set.");
+      }
+      if (numberOfBrokers.isPresent()) {
+        if (numberOfBrokers.get() < 1) {
+          return invalidRequest("numberOfBrokers must be at least 1.");
+        }
+        final List<MemberId> members;
+        try {
+          members = zonedBrokers(zoneId, numberOfBrokers.get());
+        } catch (final IllegalArgumentException invalidZoneId) {
+          return invalidRequest(invalidZoneId.getMessage());
+        }
+        return sendAddZone(zoneId, request, members, dryRun);
+      }
+      final var brokerIds = brokers.stream().map(BrokerId::toString).toList();
+      return withValidMembers(brokerIds, members -> sendAddZone(zoneId, request, members, dryRun));
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }
+  }
+
+  private ResponseEntity<?> sendAddZone(
+      final String zoneId,
+      final io.camunda.zeebe.management.cluster.AddZoneRequest request,
+      final Collection<MemberId> members,
+      final boolean dryRun) {
+    final var addZoneRequest =
+        new AddZoneRequest(
+            zoneId,
+            request.getNumberOfReplicas(),
+            request.getPriority(),
+            Set.copyOf(members),
+            dryRun);
+    return ClusterApiUtils.mapOperationResponse(requestSender.addZone(addZoneRequest).join());
+  }
+
+  /**
+   * Derives the member ids of a zone's brokers from their count, mirroring how a broker of a
+   * zone-aware cluster derives its own id: node indices are 0-based within the zone.
+   */
+  private static List<MemberId> zonedBrokers(final String zoneId, final int numberOfBrokers) {
+    return IntStream.range(0, numberOfBrokers)
+        .mapToObj(nodeIdx -> MemberId.from(zoneId, nodeIdx))
+        .toList();
   }
 
   /**
@@ -677,8 +805,6 @@ public class ClusterEndpoint {
   private static Optional<String> nonBlank(final @Nullable String value) {
     return Optional.ofNullable(value).filter(v -> !v.isBlank());
   }
-
-  public record PartitionAddRequest(int priority) {}
 
   private static final class UnknownRequestParameterException extends RuntimeException {
     private UnknownRequestParameterException(final String message) {

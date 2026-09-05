@@ -140,18 +140,19 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
         .publish();
 
     // and the handshake completes: the PI is started on P_B and P_K processes the STARTED reply
+    final int pK = partitionFor(CORRELATION_KEY);
+    final int pB = partitionFor(BUSINESS_ID);
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
         .withElementType(BpmnElementType.PROCESS)
         .withBpmnProcessId(PROCESS_ID)
         .getFirst();
     RecordingExporter.messageStartProcessInstanceRequestRecords(
             MessageStartProcessInstanceRequestIntent.STARTED)
+        .withPartitionId(pK)
         .getFirst();
 
     // then the ask is counted on P_K (M3), the REQUEST is counted as started on P_B (M1), and the
     // STARTED reply is counted on P_K (M2)
-    final int pK = partitionFor(CORRELATION_KEY);
-    final int pB = partitionFor(BUSINESS_ID);
     assertThat(counter(pK, ASKS_METRIC, null, null))
         .as("M3: the cross-partition ask is dispatched from P_K")
         .isEqualTo(1.0);

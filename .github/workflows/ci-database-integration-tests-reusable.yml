@@ -119,7 +119,7 @@ jobs:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     # Temporary increase (PT tests create schemas for multiple tenants sequentially); revert after #60105 lands.
-    timeout-minutes: 25
+    timeout-minutes: 20
     runs-on: ${{ inputs.runs-on }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test

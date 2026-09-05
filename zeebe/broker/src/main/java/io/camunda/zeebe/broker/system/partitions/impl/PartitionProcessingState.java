@@ -14,14 +14,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 public class PartitionProcessingState {
 
   public static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
   private boolean isProcessingPaused;
-  private ExporterPhase exporterPhase;
   private final RaftPartition raftPartition;
   private boolean diskSpaceAvailable;
   // Transient, not persisted like other pause states - a crash must never leave the partition
@@ -31,7 +29,6 @@ public class PartitionProcessingState {
   public PartitionProcessingState(final RaftPartition raftPartition) {
     this.raftPartition = raftPartition;
     initProcessingStatus();
-    initExportingState();
   }
 
   public boolean isDiskSpaceAvailable() {
@@ -83,65 +80,6 @@ public class PartitionProcessingState {
     return isDiskSpaceAvailable() && !isProcessingPaused() && !pausedForTransfer;
   }
 
-  public boolean isExportingPaused() {
-    return exporterPhase.equals(ExporterPhase.PAUSED);
-  }
-
-  public ExporterPhase getExporterPhase() {
-    return exporterPhase;
-  }
-
-  @SuppressWarnings({"squid:S899"})
-  /** Returns true if exporting is paused. This method overrides the effects of soft pause. */
-  public boolean pauseExporting() {
-    try {
-      setPersistedExporterPhase(ExporterPhase.PAUSED);
-    } catch (final IOException e) {
-      return false;
-    }
-    return true;
-  }
-
-  /** Returns true if soft exporting is paused. This method overrides the effects of hard pause. */
-  public boolean softPauseExporting() {
-    try {
-      setPersistedExporterPhase(ExporterPhase.SOFT_PAUSED);
-    } catch (final IOException e) {
-      return false;
-    }
-    return true;
-  }
-
-  /** Returns true if exporting is resumed. This method resumes both soft and "hard" exporting. */
-  public boolean resumeExporting() {
-    try {
-      setPersistedExporterPhase(ExporterPhase.EXPORTING);
-    } catch (final IOException e) {
-      return false;
-    }
-    return true;
-  }
-
-  void setPersistedExporterPhase(final ExporterPhase state) throws IOException {
-    exporterPhase = state;
-    if (state.equals(ExporterPhase.EXPORTING)) {
-      // since exporting is the default state, we can delete the file
-      Files.deleteIfExists(
-          getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
-      return;
-    }
-
-    final File persistedExporterPauseState =
-        getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
-    Files.writeString(
-        persistedExporterPauseState.toPath(),
-        state.name(),
-        StandardCharsets.UTF_8,
-        StandardOpenOption.DSYNC,
-        StandardOpenOption.CREATE,
-        StandardOpenOption.TRUNCATE_EXISTING);
-  }
-
   /**
    * Reads the exporter phase persisted for a partition, without instantiating the surrounding
    * state. Callers that only have the partition directory - for example the startup code migrating
@@ -165,9 +103,5 @@ public class PartitionProcessingState {
       // exporting is the default state
       return ExporterPhase.EXPORTING;
     }
-  }
-
-  private void initExportingState() {
-    exporterPhase = readPersistedExporterPhase(raftPartition.dataDirectory().toPath());
   }
 }

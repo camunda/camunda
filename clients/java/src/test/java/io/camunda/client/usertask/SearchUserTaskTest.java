@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.UserTaskFilterBase;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
@@ -33,10 +34,15 @@ import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.client.protocol.rest.UserTaskStateFilterProperty;
 import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.client.util.ClientRestTest;
+import java.lang.reflect.Modifier;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.DisplayName;
@@ -740,5 +746,59 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
     assertThat(request.getFilter().getFollowUpDate().get$Gte()).isNotNull();
     assertThat(request.getFilter().getFollowUpDate().get$Lte()).isNotNull();
+  }
+
+  @Test
+  void shouldSearchUserTaskWithOrOperatorFilters() {
+    // when
+    client
+        .newUserTaskSearchRequest()
+        .filter(
+            f ->
+                f.assignee("user1")
+                    .orFilters(
+                        Arrays.asList(
+                            f1 -> f1.candidateGroup("groupA"), f2 -> f2.candidateUser("user2"))))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    final UserTaskFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getAssignee().get$Eq()).isEqualTo("user1");
+    assertThat(filter.get$Or()).isNotNull();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getCandidateGroup().get$Eq()).isEqualTo("groupA");
+    assertThat(filter.get$Or().get(1).getCandidateUser().get$Eq()).isEqualTo("user2");
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods = publicMethodSignatures(UserTaskFilterBase.class);
+    final Set<String> fullMethods =
+        publicMethodSignatures(io.camunda.client.api.search.filter.UserTaskFilter.class);
+
+    // Full interface must contain all base interface methods
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
+
+    // Full interface may only include orFilters in addition to base methods
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
+
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
+  }
+
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }

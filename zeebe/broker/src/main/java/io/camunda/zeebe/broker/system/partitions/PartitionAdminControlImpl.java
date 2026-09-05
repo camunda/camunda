@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -20,25 +18,25 @@ import java.util.function.Supplier;
 public class PartitionAdminControlImpl implements PartitionAdminControl {
 
   private final Supplier<StreamProcessor> streamProcessorSupplier;
-  private final Supplier<ExporterDirector> exporterDirectorSupplier;
   private final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier;
   private final Supplier<PartitionProcessingState> partitionProcessingStateSupplier;
   private final Supplier<ZeebeDb> zeebeDbSupplier;
   private final Supplier<LogStream> logStreamSupplier;
+  private final Supplier<Boolean> migrationSnapshotTakenSupplier;
 
   public PartitionAdminControlImpl(
       final Supplier<StreamProcessor> streamProcessorSupplier,
-      final Supplier<ExporterDirector> exporterDirectorSupplier,
       final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier,
       final Supplier<PartitionProcessingState> partitionProcessingStateSupplier,
       final Supplier<ZeebeDb> zeebeDbSupplier,
-      final Supplier<LogStream> logStreamSupplier) {
+      final Supplier<LogStream> logStreamSupplier,
+      final Supplier<Boolean> migrationSnapshotTakenSupplier) {
     this.streamProcessorSupplier = streamProcessorSupplier;
-    this.exporterDirectorSupplier = exporterDirectorSupplier;
     this.snapshotDirectorSupplier = snapshotDirectorSupplier;
     this.partitionProcessingStateSupplier = partitionProcessingStateSupplier;
     this.zeebeDbSupplier = zeebeDbSupplier;
     this.logStreamSupplier = logStreamSupplier;
+    this.migrationSnapshotTakenSupplier = migrationSnapshotTakenSupplier;
   }
 
   @Override
@@ -57,11 +55,6 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   }
 
   @Override
-  public ExporterDirector getExporterDirector() {
-    return exporterDirectorSupplier.get();
-  }
-
-  @Override
   public void triggerSnapshot() {
     snapshotDirectorSupplier.get().forceSnapshot();
   }
@@ -69,11 +62,6 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   @Override
   public boolean shouldProcess() {
     return partitionProcessingStateSupplier.get().shouldProcess();
-  }
-
-  @Override
-  public boolean shouldExport() {
-    return !partitionProcessingStateSupplier.get().isExportingPaused();
   }
 
   @Override
@@ -87,22 +75,7 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   }
 
   @Override
-  public boolean pauseExporting() throws IOException {
-    return partitionProcessingStateSupplier.get().pauseExporting();
-  }
-
-  @Override
-  public boolean softPauseExporting() {
-    return partitionProcessingStateSupplier.get().softPauseExporting();
-  }
-
-  @Override
-  public boolean resumeExporting() throws IOException {
-    return partitionProcessingStateSupplier.get().resumeExporting();
-  }
-
-  @Override
-  public ExporterPhase getExporterPhase() {
-    return partitionProcessingStateSupplier.get().getExporterPhase();
+  public boolean isMigrationSnapshotTaken() {
+    return migrationSnapshotTakenSupplier.get();
   }
 }

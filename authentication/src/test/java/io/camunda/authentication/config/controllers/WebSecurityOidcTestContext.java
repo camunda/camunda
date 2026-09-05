@@ -27,9 +27,15 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 public class WebSecurityOidcTestContext {
 
   /**
-   * No-op {@link JwtDecoder} mock. These tests configure a non-functional JWK URI (e.g. {@code
-   * jwks.example.com}) and do not exercise JWT validation — they test filter-chain behaviour only.
-   * CSL's {@code @ConditionalOnMissingBean} default backs off when this bean is present.
+   * No-op {@link JwtDecoder} mock. These tests configure an unreachable JWK URI (e.g. {@code
+   * https://jwks.example.com}) and do not exercise JWT validation — they test filter-chain
+   * behaviour only. CSL's {@code @ConditionalOnMissingBean} default backs off when this bean is
+   * present.
+   *
+   * <p>The URI must still be a well-formed absolute URL: the per-scope chains built from {@link
+   * io.camunda.authentication.pt.PhysicalTenantScopeProvider}'s descriptors construct their own
+   * issuer-aware decoder rather than consuming this bean, and that construction validates the URI
+   * format at startup. Resolution stays lazy, so no request is ever made to it.
    */
   @Bean
   public JwtDecoder testJwtDecoder() {

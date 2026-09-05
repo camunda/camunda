@@ -11,7 +11,7 @@ import {styles} from '@carbon/elements';
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';
 
-const Grid = styled.div`
+const Grid = styled.main`
   display: grid;
   align-content: center;
   padding: var(--cds-spacing-11);

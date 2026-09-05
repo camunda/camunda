@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.health.contributor.CompositeHealthContributor;
 import org.springframework.boot.health.contributor.HealthContributor;
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
@@ -194,11 +195,14 @@ public class RdbmsConfiguration {
 
   @Bean
   HealthContributor rdbmsStatusHealthIndicator(final RdbmsDataSources rdbmsDataSources) {
-    // Equivalent to what Boot would normally wire for "db"
-    // TODO: make this a CompositeHealthContributor over all physical tenants (one
-    // DataSourceHealthIndicator per pool) instead of default-tenant only.
-    return new DataSourceHealthIndicator(
-        rdbmsDataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID));
+    // Equivalent to what Boot would normally wire for "db". A single physical tenant keeps the
+    // original flat shape for backward compatibility; more than one is reported as a composite,
+    // keyed by physical tenant id, with one DataSourceHealthIndicator per pool.
+    final var dataSources = rdbmsDataSources.dataSources();
+    if (dataSources.size() == 1) {
+      return new DataSourceHealthIndicator(dataSources.values().iterator().next());
+    }
+    return CompositeHealthContributor.fromMap(dataSources, DataSourceHealthIndicator::new);
   }
 
   private static RdbmsTenantReaders defaultReaders(

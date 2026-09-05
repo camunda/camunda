@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo} from 'react';
+import {useCallback, useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
@@ -39,6 +39,7 @@ import {isRequestError} from 'modules/request';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
+import {isMultiInstance as isMultiInstanceElement} from 'modules/bpmn-js/utils/isMultiInstance';
 
 const TopPanel: React.FC = observer(() => {
   const {
@@ -140,21 +141,20 @@ const TopPanel: React.FC = observer(() => {
   const customElementClasses = useMemo<
     [elementId: string, className: string][]
   >(() => {
-    if (
-      isModificationModeEnabled ||
-      !businessObjects ||
-      !totalRunningInstancesByElement
-    ) {
+    if (isModificationModeEnabled || !businessObjects) {
       return [];
     }
 
+    // customElementClasses isn't just styling: BpmnJS only invokes
+    // onElementDoubleClick for elements listed here (see
+    // #handleElementDoubleClick), so this array gates drill-down, not just
+    // its cosmetic affordance. Every call activity/business rule task is
+    // included regardless of instance state - a completed one still has a
+    // called instance worth navigating to, and one that never ran resolves
+    // to nothing and silently no-ops in useDrillDownNavigation.
     const DRILLDOWN_TYPES = ['bpmn:CallActivity', 'bpmn:BusinessRuleTask'];
     const drilldownClasses: [string, string][] = Object.entries(businessObjects)
-      .filter(
-        ([elementId, bo]) =>
-          DRILLDOWN_TYPES.includes(bo.$type) &&
-          (totalRunningInstancesByElement[elementId] ?? 0) > 0,
-      )
+      .filter(([, bo]) => DRILLDOWN_TYPES.includes(bo.$type))
       .map(([elementId]) => [elementId, 'op-drilldown'] as const);
 
     if (pendingDrillDownElementId !== null) {
@@ -165,12 +165,7 @@ const TopPanel: React.FC = observer(() => {
     }
 
     return drilldownClasses;
-  }, [
-    businessObjects,
-    totalRunningInstancesByElement,
-    isModificationModeEnabled,
-    pendingDrillDownElementId,
-  ]);
+  }, [businessObjects, isModificationModeEnabled, pendingDrillDownElementId]);
 
   useEffect(() => {
     if (!isModificationModeEnabled) {
@@ -197,6 +192,83 @@ const TopPanel: React.FC = observer(() => {
     }
     return 'content';
   };
+
+  const handleElementSelection = useCallback(
+    (
+      elementId?: string,
+      isMultiInstance?: boolean,
+      clickedElementId?: string,
+    ) => {
+      if (
+        modificationsStore.state.status === 'moving-token' &&
+        businessObjects
+      ) {
+        const ancestorScopeType = getAncestorScopeType(
+          businessObjects,
+          sourceElementIdForMoveOperation ?? '',
+          elementId ?? '',
+          totalRunningInstancesByElement,
+        );
+
+        clearSelection();
+        finishMovingToken(
+          affectedTokenCount,
+          visibleAffectedTokenCount,
+          businessObjects,
+          processInstance?.processDefinitionId,
+          elementId,
+          ancestorScopeType,
+        );
+        return;
+      }
+
+      if (modificationsStore.state.status === 'adding-token') {
+        return;
+      }
+
+      if (elementId !== undefined) {
+        selectElement({
+          elementId,
+          isMultiInstanceBody: isMultiInstance,
+        });
+        return;
+      }
+
+      if (
+        selectedElementId !== null &&
+        clickedElementId !== undefined &&
+        selectedElementIds?.includes(clickedElementId)
+      ) {
+        if (isModificationModeEnabled) {
+          clearSelection();
+          return;
+        }
+
+        selectElement({
+          elementId: clickedElementId,
+          isMultiInstanceBody: isMultiInstanceElement(
+            businessObjects?.[clickedElementId],
+          ),
+        });
+        return;
+      }
+
+      clearSelection();
+    },
+    [
+      affectedTokenCount,
+      businessObjects,
+      clearSelection,
+      isModificationModeEnabled,
+      processInstance?.processDefinitionId,
+      selectedElementId,
+      selectedElementIds,
+      selectElement,
+      sourceElementIdForMoveOperation,
+      totalRunningInstancesByElement,
+      visibleAffectedTokenCount,
+    ],
+  );
 
   return (
     <Container>
@@ -239,37 +311,7 @@ const TopPanel: React.FC = observer(() => {
                     clearSelection();
                   }
                 }}
-                onElementSelection={(elementId, isMultiInstance) => {
-                  if (modificationsStore.state.status === 'moving-token') {
-                    const ancestorScopeType = getAncestorScopeType(
-                      businessObjects,
-                      sourceElementIdForMoveOperation ?? '',
-                      elementId ?? '',
-                      totalRunningInstancesByElement,
-                    );
-
-                    clearSelection();
-                    finishMovingToken(
-                      affectedTokenCount,
-                      visibleAffectedTokenCount,
-                      businessObjects,
-                      processInstance?.processDefinitionId,
-                      elementId,
-                      ancestorScopeType,
-                    );
-                  } else {
-                    if (modificationsStore.state.status !== 'adding-token') {
-                      if (elementId !== undefined) {
-                        selectElement({
-                          elementId,
-                          isMultiInstanceBody: isMultiInstance,
-                        });
-                      } else {
-                        clearSelection();
-                      }
-                    }
-                  }
-                }}
+                onElementSelection={handleElementSelection}
                 overlaysData={overlaysData}
                 selectedElementOverlay={
                   isModificationModeEnabled && <ModificationDropdown />

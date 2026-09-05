@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
@@ -18,7 +18,7 @@
     <dependency>
       <groupId>io.github.netmikey.logunit</groupId>
       <artifactId>logunit-log4j2</artifactId>
-      <version>2.0.0</version>
+      <version>${logunit.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -45,6 +45,20 @@
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!-- Not used by any Java code: this module has no formal dependency on optimize-client's
+         jar, only a raw filesystem reference to its ../client/dist build output (see the
+         resources section below). Under a parallel (-T1C) reactor build, that leaves no
+         guarantee optimize-client's frontend build finishes before this module reads that
+         directory, so an unlucky race can package a jar with no index.html. Declaring this
+         dependency (provided, so it never reaches the runtime classpath/fat jar) gives Maven a
+         real reactor edge forcing optimize-client to build first. -->
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-client</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Camunda dependencies -->
@@ -308,7 +322,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>2.1.12</version>
+      <version>2.1.13</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -483,6 +497,13 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- Runtime requirement of CSL's WebSessionConfiguration, which OptimizeCamundaSecurityConfig
+           imports whenever optimize.security.csl.enabled is set; chain integration tests also mint
+           sessions through the Spring Session-backed filter instead of a raw servlet HttpSession -->
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-core</artifactId>
     </dependency>
     <dependency>
       <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -835,6 +856,33 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-test-scoped-spring-session</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <exclude>org.springframework.session:spring-session-core:*:*:test</exclude>
+                  </excludes>
+                  <message>spring-session-core must stay non-test scoped: CSL's WebSessionConfiguration
+                    needs it at runtime, and no test can catch its absence because the test classpath
+                    always has it. Test scope silently packages it out of the distribution, which then
+                    fails to start with optimize.security.csl.enabled=true (see #60518).</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUnusedDeclaredDependencies>
@@ -842,7 +890,17 @@
             <ignoredUnusedDeclaredDependency>org.junit.platform:junit-platform-suite</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-jackson2</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
+            <!-- Never referenced by Java code on purpose: exists only to give the reactor a real
+                 build-order edge, see the dependency's own comment above. -->
+            <ignoredUnusedDeclaredDependency>io.camunda.optimize:optimize-client:jar</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <!-- No production class references it: CSL's WebSessionConfiguration is what needs it
+                 at runtime, and only the chain integration tests reference it from Optimize's own
+                 sources. It must stay non-test scoped so the distribution can start with
+                 optimize.security.csl.enabled=true. -->
+            <ignoredNonTestScopedDependency>org.springframework.session:spring-session-core</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
         <executions>
           <execution>

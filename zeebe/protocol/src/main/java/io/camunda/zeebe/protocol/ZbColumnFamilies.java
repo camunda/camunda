@@ -344,7 +344,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // RESUMING) — the marker is only removed once resuming has fully completed
   SUSPENDED_PROCESS_INSTANCES(156, PARTITION_LOCAL),
   // commands diverted while their target process instance is suspended, keyed by a
-  // KeyGenerator-issued bufferedCommandKey -> ProcessInstanceBufferedCommandRecord
+  // KeyGenerator-issued bufferedCommandKey -> BufferedCommandRecord
   BUFFERED_PROCESS_INSTANCE_COMMANDS(157, PARTITION_LOCAL),
   // secondary index: (processInstanceKey, bufferedCommandKey) → ∅; supports FIFO prefix iteration
   // of buffered commands for a process instance (bufferedCommandKey is KeyGenerator-issued and
@@ -366,7 +366,40 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // (processDefinitionKey, elementId) -> agentDefinitionKey. Minted once per AI agent element at
   // deploy time and replicated identically to every partition (like process/decision/form
   // definitions), so this is GLOBAL rather than PARTITION_LOCAL.
-  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL);
+  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL),
+
+  // agentDefinitionKey -> DbAgentDefinition (the full AgentDefinitionRecord). Populated alongside
+  // AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID at deploy time, so the record can
+  // be fully retrieved, without re-deriving it from the parsed BPMN model. GLOBAL for the same
+  // reason as the sibling CF above.
+  AGENT_DEFINITION_BY_KEY(162, GLOBAL),
+
+  /**
+   * Indexes every job of a process instance, keyed [processInstanceKey | jobKey], so resume can
+   * find a suspended instance's jobs by an ordered prefix scan from its resume cursor. Only resume
+   * reads it; suspend still walks the element instance tree.
+   *
+   * <p>Filled at job creation (8.10+); backfilled on suspension for older jobs, so it is complete
+   * for every currently {@code SUSPENDED} job but not an authoritative "all jobs of this instance"
+   * list.
+   */
+  JOBS_BY_PROCESS_INSTANCE(163, PARTITION_LOCAL),
+
+  // (agentInstanceKey, historyItemId) -> agentHistoryKey. Records every history item ever
+  // committed for an agent instance, so a later job resending an id that an earlier, already-
+  // completed job committed can still be recognized as a duplicate — pending state alone can't do
+  // this, since a committed item is deleted from it. Retained for the agent instance's whole
+  // lifetime and deleted in one pass when the instance completes (see
+  // AgentInstanceCompletedApplier).
+  AGENT_HISTORY_COMMITTED_IDS(164, PARTITION_LOCAL),
+
+  // (agentInstanceKey, historyItemId) -> ∅. Records every history item whose metrics were ever
+  // accumulated for an agent instance, independent of AGENT_HISTORY_COMMITTED_IDS: a discarded
+  // item leaves no trace in that store, so a later job resending the same id would otherwise
+  // re-accumulate its metrics. Written when an item is first created (see
+  // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
+  // instance completes (see AgentInstanceCompletedApplier).
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

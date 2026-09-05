@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {twMerge} from 'tailwind-merge';
+
 type ClassValue = string | undefined | null | false | Record<string, unknown>;
 
 function cn(...args: ClassValue[]): string {
@@ -23,7 +25,7 @@ function cn(...args: ClassValue[]): string {
 		}
 	}
 
-	return classes.join(' ');
+	return twMerge(classes.join(' '));
 }
 
 export {cn};

@@ -14,6 +14,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION_END
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION_START;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.EXPORT_WINDOW;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.SEQUENCE_NUMBER;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Tenant.PHYSICAL_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -97,7 +98,8 @@ class OtelSdkManagerTest {
         new OtelSdkManager()
             .initialize(
                 new AnalyticsExporterConfig().setEndpoint("http://localhost:1"),
-                AnalyticsExporterContext.create("test-license", "test-cluster", 1, ""),
+                AnalyticsExporterContext.create(
+                    "test-license", "test-cluster", 1, "test-physical-tenant", ""),
                 new AnalyticsExporterMetadata());
 
     // when — @Timeout is the assertion: if logEvent blocks, we die
@@ -258,7 +260,8 @@ class OtelSdkManagerTest {
           }
         }.initialize(
             new AnalyticsExporterConfig().setPushInterval("PT0.1S"),
-            AnalyticsExporterContext.create("test-license", "test-cluster", 1, ""),
+            AnalyticsExporterContext.create(
+                "test-license", "test-cluster", 1, "test-physical-tenant", ""),
             new AnalyticsExporterMetadata(5L, 0));
 
     // when
@@ -304,7 +307,8 @@ class OtelSdkManagerTest {
             .setMaxQueueSize(maxQueueSize)
             .setMaxBatchSize(maxBatchSize)
             .setPushInterval("PT0.1S"),
-        AnalyticsExporterContext.create("test-license", "test-cluster", 1, ""),
+        AnalyticsExporterContext.create(
+            "test-license", "test-cluster", 1, "test-physical-tenant", ""),
         new AnalyticsExporterMetadata());
   }
 
@@ -339,7 +343,7 @@ class OtelSdkManagerTest {
     try {
       // when — otel.sdk.log.created increments synchronously on emit(), no flush needed
       manager.logEvent(
-          io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED,
+          io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_ACTIVATED,
           1L,
           b -> {});
 
@@ -548,6 +552,20 @@ class OtelSdkManagerTest {
     }
 
     @Test
+    void shouldAttachPhysicalTenantIdToMetricResource() {
+      // when — physicalTenantId is a Resource attribute, set once at initialize() time, not
+      // passed by the caller and not a per-point dimension
+      manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
+
+      // then
+      assertThat(findMetric(metricReader.collectAllMetrics(), "test.counter"))
+          .hasValueSatisfying(
+              metric ->
+                  assertThat(metric.getResource().getAttribute(PHYSICAL_ID))
+                      .isEqualTo("test-physical-tenant"));
+    }
+
+    @Test
     void shouldEmitExportWindowGaugeWithMetadata() {
       // given
       manager.incrementMetric("test.counter", 100L, 5000L, Attributes.empty());
@@ -560,19 +578,22 @@ class OtelSdkManagerTest {
       assertThat(findMetric(metrics, EXPORT_WINDOW))
           .isPresent()
           .hasValueSatisfying(
-              metric ->
-                  assertThat(metric.getLongGaugeData().getPoints())
-                      .first()
-                      .satisfies(
-                          point -> {
-                            assertThat(point.getValue()).isEqualTo(2);
-                            final var pointAttrs = point.getAttributes();
-                            assertThat(pointAttrs.get(SEQUENCE_NUMBER)).isEqualTo(1L);
-                            assertThat(pointAttrs.get(POSITION_START)).isEqualTo(100L);
-                            assertThat(pointAttrs.get(POSITION_END)).isEqualTo(200L);
-                            assertThat(pointAttrs.get(TIME_MIN)).isEqualTo(5000L);
-                            assertThat(pointAttrs.get(TIME_MAX)).isEqualTo(6000L);
-                          }));
+              metric -> {
+                assertThat(metric.getResource().getAttribute(PHYSICAL_ID))
+                    .isEqualTo("test-physical-tenant");
+                assertThat(metric.getLongGaugeData().getPoints())
+                    .first()
+                    .satisfies(
+                        point -> {
+                          assertThat(point.getValue()).isEqualTo(2);
+                          final var pointAttrs = point.getAttributes();
+                          assertThat(pointAttrs.get(SEQUENCE_NUMBER)).isEqualTo(1L);
+                          assertThat(pointAttrs.get(POSITION_START)).isEqualTo(100L);
+                          assertThat(pointAttrs.get(POSITION_END)).isEqualTo(200L);
+                          assertThat(pointAttrs.get(TIME_MIN)).isEqualTo(5000L);
+                          assertThat(pointAttrs.get(TIME_MAX)).isEqualTo(6000L);
+                        });
+              });
     }
 
     @Test

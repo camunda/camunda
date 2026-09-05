@@ -21,6 +21,13 @@ import java.util.function.UnaryOperator;
  * PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation}. Mirrors the
  * legacy {@code PartitionPreRestoreApplier} in {@code changes/}, which this does not replace or
  * modify.
+ *
+ * <p>Writes nothing to the {@link PartitionGroupConfiguration}: wiping a partition's data touches
+ * only that broker's local disk, so both {@link #init} and {@link #apply()} return {@link
+ * UnaryOperator#identity()}. {@code RestoreRequestTransformer} relies on this to leave every
+ * pre-restore free of dependencies, so all of them run at once across brokers and partitions. A
+ * configuration write added here would need dependency edges there to order it against the other
+ * operations writing the same field.
  */
 public final class PartitionPreRestoreApplier implements PartitionGroupConfigurationChangeApplier {
 

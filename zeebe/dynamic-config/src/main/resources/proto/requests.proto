@@ -20,6 +20,9 @@ message JoinPartitionRequest {
   int32 partitionId = 2;
   int32 priority = 3;
   bool dryRun = 4;
+  // The physical tenant the partition belongs to; the default tenant if not set. Partition ids
+  // restart at 1 in every tenant, so partitionId identifies a partition only together with this.
+  optional string physicalTenantId = 5;
 }
 
 message PurgeRequest {
@@ -29,10 +32,21 @@ message PurgeRequest {
   optional string physicalTenantId = 2;
 }
 
+// Discards a disabled physical tenant, so a broker still holding its partitions may leave the
+// cluster.
+message RemovePhysicalTenantRequest {
+  bool dryRun = 1;
+  string physicalTenantId = 2;
+  bool force = 3;
+}
+
 message LeavePartitionRequest {
   string memberId = 1;
   int32 partitionId = 2;
   bool dryRun = 3;
+  // The physical tenant the partition belongs to; the default tenant if not set. Partition ids
+  // restart at 1 in every tenant, so partitionId identifies a partition only together with this.
+  optional string physicalTenantId = 4;
 }
 
 message BrokerScaleRequest {
@@ -106,12 +120,6 @@ message UpdateZonePrioritiesRequest {
   bool dryRun = 2;
 }
 
-message ReassignAllPartitionsRequest {
-  // The ids of the brokers to which all partitions should be re-distributed
-  repeated string memberIds = 1;
-  bool dryRun = 2;
-}
-
 message ExporterDisableRequest {
   string exporterId = 1;
   bool dryRun = 2;
@@ -146,6 +154,7 @@ enum Mode {
 message ExportingStateChangeRequest {
   topology_protocol.ExportingStateEnum state = 1;
   bool dryRun = 2;
+  optional string physicalTenantId = 3;
 }
 
 message ModeChangeRequest {

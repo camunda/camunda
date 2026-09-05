@@ -77,8 +77,8 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -682,7 +682,8 @@ final class JsonSerializableToJsonTest {
                   .setScopeKey(1)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .addReferencedSecret("default", "token");
               return record;
             },
         """
@@ -694,7 +695,13 @@ final class JsonSerializableToJsonTest {
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"
-                  }
+                  },
+                  "referencedSecrets":[
+                    {
+                      "storeId":"default",
+                      "secretReference":"token"
+                    }
+                  ]
                 }
                 """
       },
@@ -1468,6 +1475,7 @@ final class JsonSerializableToJsonTest {
               final String correlationKey = "key";
               final long messageKey = 3L;
               final int storageOrdinalKey = 8;
+              final long subscriptionKey = 42L;
 
               return new MessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1482,7 +1490,8 @@ final class JsonSerializableToJsonTest {
                   .setElementId("catch-1")
                   .setRootProcessInstanceKey(99L)
                   .setStorageOrdinalKey(storageOrdinalKey)
-                  .setElementType(BpmnElementType.RECEIVE_TASK);
+                  .setElementType(BpmnElementType.RECEIVE_TASK)
+                  .setSubscriptionKey(subscriptionKey);
             },
         """
                 {
@@ -1502,7 +1511,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "catch-1",
                   "rootProcessInstanceKey": 99,
                   "storageOrdinalKey": 8,
-                  "elementType": "RECEIVE_TASK"
+                  "elementType": "RECEIVE_TASK",
+                  "subscriptionKey": 42
                 }
                 """
       },
@@ -1537,7 +1547,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "",
                   "rootProcessInstanceKey": -1,
                   "storageOrdinalKey": 0,
-                  "elementType": "UNSPECIFIED"
+                  "elementType": "UNSPECIFIED",
+                  "subscriptionKey": -1
                 }
                 """
       },
@@ -1561,6 +1572,7 @@ final class JsonSerializableToJsonTest {
               final String correlationKey = "key";
               final long rootProcessInstanceKey = 5678L;
               final int storageOrdinalKey = 8;
+              final long subscriptionKey = 42L;
 
               return new ProcessMessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1576,7 +1588,9 @@ final class JsonSerializableToJsonTest {
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setBusinessId("biz-42")
                   .setStorageOrdinalKey(storageOrdinalKey)
-                  .setElementType(BpmnElementType.RECEIVE_TASK);
+                  .setElementType(BpmnElementType.RECEIVE_TASK)
+                  .setSubscriptionKey(subscriptionKey)
+                  .setClosedForSuspend(true);
             },
         """
                 {
@@ -1596,7 +1610,9 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 5678,
                   "businessId": "biz-42",
                   "storageOrdinalKey": 8,
-                  "elementType": "RECEIVE_TASK"
+                  "elementType": "RECEIVE_TASK",
+                  "subscriptionKey": 42,
+                  "closedForSuspend": true
                 }
                 """
       },
@@ -1633,7 +1649,9 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "businessId": "",
                   "storageOrdinalKey": 0,
-                  "elementType": "UNSPECIFIED"
+                  "elementType": "UNSPECIFIED",
+                  "subscriptionKey": -1,
+                  "closedForSuspend": false
                 }
                 """
       },
@@ -2096,6 +2114,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 9999,
                   "storageOrdinalKey": 6,
                   "businessId": "business-id-123",
+                  "resumeFromJobKey": -1,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2129,6 +2148,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "storageOrdinalKey": 0,
                   "businessId": "",
+                  "resumeFromJobKey": -1,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2913,12 +2933,12 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////// ProcessInstanceBufferedCommandRecord
+      //////////////////////////////// BufferedCommandRecord
       /////////////////////////////////////////////////////////////////////////////////////////////
       // ////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "ProcessInstanceBufferedCommandRecord",
+        "BufferedCommandRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
               final var commandValue =
@@ -2927,7 +2947,7 @@ final class JsonSerializableToJsonTest {
                       .setElementId("activity")
                       .setBpmnElementType(BpmnElementType.SERVICE_TASK);
 
-              return new ProcessInstanceBufferedCommandRecord()
+              return new BufferedCommandRecord()
                   .setProcessInstanceKey(1234)
                   .setProcessDefinitionKey(13)
                   .setTenantId("tenant-1")
@@ -2964,6 +2984,7 @@ final class JsonSerializableToJsonTest {
                     "rootProcessInstanceKey": -1,
                     "storageOrdinalKey": 0,
                     "businessId": "",
+                    "resumeFromJobKey": -1,
                     "elementInstanceKey": -1
                   }
                 }
@@ -2971,14 +2992,14 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////// Empty ProcessInstanceBufferedCommandRecord
+      //////////////////////////////// Empty BufferedCommandRecord
       /////////////////////////////////////////////////////////////////////////////////////////////
       // ////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Empty ProcessInstanceBufferedCommandRecord",
+        "Empty BufferedCommandRecord",
         (Supplier<UnifiedRecordValue>)
-            () -> new ProcessInstanceBufferedCommandRecord().setProcessInstanceKey(1234),
+            () -> new BufferedCommandRecord().setProcessInstanceKey(1234),
         """
                 {
                   "processInstanceKey": 1234,
@@ -5224,7 +5245,7 @@ final class JsonSerializableToJsonTest {
                       .setProcessDefinitionKey(2251799813685100L)
                       .setProcessDefinitionVersion(3)
                       .setAgentDefinitionKey(2251799813685077L)
-                      .setVersionTag("v1.2")
+                      .setProcessDefinitionVersionTag("v1.2")
                       .setTenantId("<default>")
                       .setStatus(AgentInstanceStatus.TOOL_CALLING)
                       .setTools(
@@ -5242,7 +5263,11 @@ final class JsonSerializableToJsonTest {
                   .setModel("gpt-4o")
                   .setProvider("openai")
                   .setSystemPrompt(
-                      "Extract vendor, amount, date, and line items from the invoice.");
+                      List.of(
+                          new AgentHistoryMessageContent()
+                              .setContentType(AgentHistoryContentType.TEXT)
+                              .setText(
+                                  "Extract vendor, amount, date, and line items from the invoice.")));
               record.getLimits().setMaxTokens(8000L).setMaxModelCalls(10).setMaxToolCalls(20);
               record
                   .getMetrics()
@@ -5264,13 +5289,20 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": 2251799813685100,
           "processDefinitionVersion": 3,
           "agentDefinitionKey": 2251799813685077,
-          "versionTag": "v1.2",
+          "processDefinitionVersionTag": "v1.2",
           "tenantId": "<default>",
           "status": "TOOL_CALLING",
           "definition": {
             "model": "gpt-4o",
             "provider": "openai",
-            "systemPrompt": "Extract vendor, amount, date, and line items from the invoice."
+            "systemPrompt": [
+              {
+                "contentType": "TEXT",
+                "text": "Extract vendor, amount, date, and line items from the invoice.",
+                "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+                "object": null
+              }
+            ]
           },
           "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
           "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 1, "toolCalls": 1 },
@@ -5301,10 +5333,10 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,
           "agentDefinitionKey": -1,
-          "versionTag": "",
+          "processDefinitionVersionTag": "",
           "tenantId": "<default>",
           "status": "UNSPECIFIED",
-          "definition": { "model": "", "provider": "", "systemPrompt": "" },
+          "definition": { "model": "", "provider": "", "systemPrompt": [] },
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
@@ -5361,10 +5393,10 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,
           "agentDefinitionKey": -1,
-          "versionTag": "",
+          "processDefinitionVersionTag": "",
           "tenantId": "<default>",
           "status": "UNSPECIFIED",
-          "definition": { "model": "", "provider": "", "systemPrompt": "" },
+          "definition": { "model": "", "provider": "", "systemPrompt": [] },
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
@@ -5465,7 +5497,7 @@ final class JsonSerializableToJsonTest {
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(Map.of("page", 1)))));
+                      .setObject(Map.of("page", 1)));
               record.addSystemPrompt(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.TEXT)
@@ -5475,9 +5507,7 @@ final class JsonSerializableToJsonTest {
                       .setToolCallId("call_abc123")
                       .setToolName("extract_line_items")
                       .setElementId("extract-line-items-task")
-                      .setArguments(
-                          wrapArray(
-                              MsgPackConverter.convertToMsgPack(Map.of("documentId", "inv-001")))));
+                      .setArguments(Map.of("documentId", "inv-001")));
               record.getMetrics().setInputTokens(512L).setOutputTokens(148L).setDurationMs(1200L);
               return record;
             },
@@ -5558,27 +5588,23 @@ final class JsonSerializableToJsonTest {
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(
-                          wrapArray(
-                              MsgPackConverter.convertToMsgPack(
-                                  List.of(Map.of("id", 1), Map.of("id", 2))))));
+                      .setObject(List.of(Map.of("id", 1), Map.of("id", 2))));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(
-                          wrapArray(MsgPackConverter.convertToMsgPack(List.of(10, 20, 30)))));
+                      .setObject(List.of(10, 20, 30)));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(42))));
+                      .setObject(42));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(true))));
+                      .setObject(true));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack((Object) "hello"))));
+                      .setObject("hello"));
               return record;
             },
         """

@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
 import io.camunda.db.rdbms.sql.AgentHistoryMapper;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
@@ -88,6 +89,7 @@ class RdbmsWriterFactoryTest {
     return new RdbmsMapperBundle(
         mock(SqlSessionFactory.class),
         mock(VendorDatabaseProperties.class),
+        mock(AgentDefinitionMapper.class),
         mock(AgentHistoryMapper.class),
         mock(AgentInstanceMapper.class),
         mock(AuditLogMapper.class),

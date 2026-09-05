@@ -149,7 +149,11 @@ public class UserTaskProcessor
               final var changedAttributes =
                   intermediateUserTaskRecord.determineChangedAttributes(currentUserTask);
               jobBehavior.createNewTaskListenerJob(
-                  context, intermediateUserTaskRecord, listener, changedAttributes);
+                  context,
+                  intermediateUserTaskRecord,
+                  userTaskElement,
+                  listener,
+                  changedAttributes);
             },
             () -> finalizeCommand(command, lifecycleState, intermediateUserTaskRecord));
   }
@@ -226,7 +230,11 @@ public class UserTaskProcessor
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
       final var context = buildContext(userTaskElementInstance);
       jobBehavior.createNewTaskListenerJob(
-          context, persistedRecord, listener, persistedRecord.getChangedAttributes());
+          context,
+          persistedRecord,
+          userTaskElement,
+          listener,
+          persistedRecord.getChangedAttributes());
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }

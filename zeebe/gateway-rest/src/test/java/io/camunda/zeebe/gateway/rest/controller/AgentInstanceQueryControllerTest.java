@@ -18,6 +18,8 @@ import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceLimits;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceMetrics;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceTool;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.Operation;
@@ -67,8 +69,12 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
           AGENT_DEFINITION_KEY,
           List.of(ELEMENT_INSTANCE_KEY),
           AgentInstanceStatus.COMPLETED,
-          new AgentInstanceDefinition("gpt-4o", "openai", "You are a helpful assistant."),
-          new AgentInstanceMetrics(100L, 200L, 3, 5),
+          new AgentInstanceDefinition(
+              "gpt-4o",
+              "openai",
+              List.of(
+                  new ContentItem(ContentType.TEXT, "You are a helpful assistant.", null, null))),
+          new AgentInstanceMetrics(100L, 200L, 30L, 40L, 50L, 3, 5),
           new AgentInstanceLimits(10000L, 10, 50),
           List.of(new AgentInstanceTool("search", "Search the web", "searchElement")),
           "AgentTask",
@@ -94,11 +100,14 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
             "definition": {
               "model": "gpt-4o",
               "provider": "openai",
-              "systemPrompt": "You are a helpful assistant."
+              "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
             },
             "metrics": {
               "inputTokens": 100,
               "outputTokens": 200,
+              "reasoningTokenCount": 30,
+              "cacheCreationTokenCount": 40,
+              "cacheReadTokenCount": 50,
               "modelCalls": 3,
               "toolCalls": 5
             },
@@ -181,11 +190,14 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
               "definition": {
                 "model": "gpt-4o",
                 "provider": "openai",
-                "systemPrompt": "You are a helpful assistant."
+                "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
               },
               "metrics": {
                 "inputTokens": 100,
                 "outputTokens": 200,
+                "reasoningTokenCount": 30,
+                "cacheCreationTokenCount": 40,
+                "cacheReadTokenCount": 50,
                 "modelCalls": 3,
                 "toolCalls": 5
               },
@@ -426,7 +438,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
                         new AgentInstanceFilter.Builder()
                             .processDefinitionIdOperations(List.of(Operation.eq("myProcessId")))
                             .processDefinitionVersionOperations(List.of(Operation.eq(1)))
-                            .versionTagOperations(List.of(Operation.eq("v1")))
+                            .processDefinitionVersionTagOperations(List.of(Operation.eq("v1")))
                             .build())
                     .build()),
             any());

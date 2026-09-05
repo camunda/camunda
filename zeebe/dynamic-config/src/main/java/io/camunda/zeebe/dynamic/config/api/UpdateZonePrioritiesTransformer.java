@@ -9,15 +9,17 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.CollectionUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -37,10 +39,29 @@ public final class UpdateZonePrioritiesTransformer implements ConfigurationChang
     this.sortedZoneNames = List.copyOf(sortedZoneNames);
   }
 
+  /**
+   * Re-prioritizes every physical tenant's partitions, by handing the re-prioritized layout to
+   * {@link UpdatePartitionDistributionTransformer#phases(CurrentClusterConfiguration)}. Which zone
+   * is preferred for leadership is global, so the layout is computed once and applied to every
+   * group.
+   */
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration) {
-    final var partitionDistributorConfig = currentConfiguration.partitionDistributorConfig();
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return reprioritized(configuration.globalConfiguration().partitionDistributorConfig())
+        .flatMap(
+            newConfig ->
+                new UpdatePartitionDistributionTransformer(newConfig).phases(configuration));
+  }
+
+  /**
+   * Validates the requested order and answers with the layout it implies: the existing priorities
+   * re-assigned to zones by that order.
+   *
+   * <p>Takes the persisted layout rather than a configuration because that is all the answer
+   * depends on — zone priorities are global, with no per-tenant dimension.
+   */
+  private Either<Exception, ZoneAwareConfig> reprioritized(
+      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     final ZoneAwareConfig zoneAwareConfig;
     if (partitionDistributorConfig.isPresent()
         && partitionDistributorConfig.get() instanceof final ZoneAwareConfig cfg) {
@@ -89,7 +110,6 @@ public final class UpdateZonePrioritiesTransformer implements ConfigurationChang
             .map(t -> t.getRight().withPriority(t.getLeft()))
             .toList();
 
-    final var newConfig = new ZoneAwareConfig(reprioritized);
-    return new UpdatePartitionDistributionTransformer(newConfig).operations(currentConfiguration);
+    return Either.right(new ZoneAwareConfig(reprioritized));
   }
 }

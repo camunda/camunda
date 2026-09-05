@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
@@ -18,14 +19,15 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -43,14 +45,17 @@ public final class ClusterConfigurationManagementRequestSender {
   private final ClusterCommunicationService communicationService;
   private final ClusterConfigurationCoordinatorSupplier coordinatorSupplier;
   private final ClusterConfigurationRequestsSerializer serializer;
+  private final MemberId localMemberId;
 
   public ClusterConfigurationManagementRequestSender(
       final ClusterCommunicationService communicationService,
       final ClusterConfigurationCoordinatorSupplier coordinatorSupplier,
-      final ClusterConfigurationRequestsSerializer serializer) {
+      final ClusterConfigurationRequestsSerializer serializer,
+      final MemberId localMemberId) {
     this.communicationService = communicationService;
     this.coordinatorSupplier = coordinatorSupplier;
     this.serializer = serializer;
+    this.localMemberId = localMemberId;
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> addMembers(
@@ -103,17 +108,6 @@ public final class ClusterConfigurationManagementRequestSender {
         ClusterConfigurationRequestTopics.LEAVE_PARTITION.topic(),
         leavePartitionRequest,
         serializer::encodeLeavePartitionRequest,
-        serializer::decodeTopologyChangeResponse,
-        coordinatorSupplier.getDefaultCoordinator(),
-        TIMEOUT);
-  }
-
-  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
-      reassignPartitions(final ReassignPartitionsRequest reassignPartitionsRequest) {
-    return communicationService.send(
-        ClusterConfigurationRequestTopics.REASSIGN_PARTITIONS.topic(),
-        reassignPartitionsRequest,
-        serializer::encodeReassignPartitionsRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
@@ -172,6 +166,26 @@ public final class ClusterConfigurationManagementRequestSender {
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getNextCoordinatorExcluding(
             forceRemoveBrokersRequest.membersToRemove()),
+        TIMEOUT);
+  }
+
+  /**
+   * Sent to the default coordinator like any other change, unless the request is {@code force}d. A
+   * forced request is the operator's bail-out for a disaster where the elected coordinator is
+   * unreachable: it must be handled by whichever broker actually received this HTTP call — i.e.
+   * this local member — rather than by the (possibly dead) default coordinator, since sending it
+   * there would simply reproduce the failure the operator is trying to route around.
+   */
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      removePhysicalTenant(final RemovePhysicalTenantRequest removePhysicalTenantRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.REMOVE_PHYSICAL_TENANT.topic(),
+        removePhysicalTenantRequest,
+        serializer::encodeRemovePhysicalTenantRequest,
+        serializer::decodeTopologyChangeResponse,
+        removePhysicalTenantRequest.force()
+            ? localMemberId
+            : coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
@@ -312,6 +326,17 @@ public final class ClusterConfigurationManagementRequestSender {
         ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
         request,
         serializer::encodeModeChangeRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      changeExportingState(final ExportingStateChangeRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.EXPORTING_STATE_CHANGE.topic(),
+        request,
+        serializer::encodeExportingStateChangeRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);

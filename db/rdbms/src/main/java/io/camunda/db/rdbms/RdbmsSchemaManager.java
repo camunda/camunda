@@ -10,20 +10,19 @@ package io.camunda.db.rdbms;
 /**
  * Manages the RDBMS schema of a single physical tenant.
  *
+ * <p>A single-attempt operation and nothing more: whether the attempt is repeated, how long it
+ * waits between tries and whether the tenant counts as ready are the caller's, so that there is one
+ * answer to "is this tenant ready" rather than one here and another wherever the retrying happens.
+ * {@code RdbmsSchemaInitializer} in the distribution is that caller.
+ *
  * @see LiquibaseSchemaManager runs Liquibase migrations ({@code auto-ddl=true})
  * @see NoopSchemaManager skips migration for externally managed schemas ({@code auto-ddl=false})
  */
 public interface RdbmsSchemaManager {
 
   /**
-   * Initializes the schema (e.g. runs Liquibase migrations). Called once at startup. Throwing
-   * aborts startup.
+   * Applies the schema in one attempt — for example by running the Liquibase migration — and throws
+   * to report failure. Safe to call again after a failure.
    */
   void initialize() throws Exception;
-
-  /**
-   * Returns {@code true} once the schema has been fully initialized so that the RDBMS exporter may
-   * open against it.
-   */
-  boolean isInitialized();
 }

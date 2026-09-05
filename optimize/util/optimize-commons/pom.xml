@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-util</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optimize-commons</artifactId>
@@ -206,21 +206,21 @@
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-netty</artifactId>
-      <version>7.5.0</version>
+      <version>7.6.0</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-core</artifactId>
-      <version>7.5.0</version>
+      <version>7.6.0</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-client-java</artifactId>
-      <version>7.5.0</version>
+      <version>7.6.0</version>
       <scope>test</scope>
     </dependency>
 

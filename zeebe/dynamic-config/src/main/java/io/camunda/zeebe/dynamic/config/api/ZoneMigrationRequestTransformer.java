@@ -11,10 +11,11 @@ import io.atomix.cluster.MemberId;
 import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -42,20 +43,51 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
     this.zoneName = zoneName;
   }
 
+  /**
+   * Plans the stage across every physical tenant's partition group, by handing the stage's target
+   * members to {@link ScaleRequestTransformer#phases(CurrentClusterConfiguration)}.
+   *
+   * <p>A stage replaces every broker of one zone, so a tenant left out does not merely miss out on
+   * capacity: its partitions stay on member ids the stage removes, and the member leave is then
+   * refused because the broker still holds partitions. Planning the default group alone, as this
+   * transformer once did, therefore made a zone migration impossible on a cluster with more than
+   * one tenant rather than only incomplete.
+   */
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration) {
-    final var partitionDistribution = currentConfiguration.partitionDistributorConfig();
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return stageTargetMembers(
+            configuration.getMembers(),
+            configuration.globalConfiguration().partitionDistributorConfig())
+        .flatMap(targetMembers -> scaleRequest(targetMembers).phases(configuration));
+  }
+
+  private ScaleRequestTransformer scaleRequest(final Set<MemberId> stageTargetMembers) {
+    return new ScaleRequestTransformer(
+        stageTargetMembers, Optional.empty(), Optional.empty(), Optional.of(zoneName));
+  }
+
+  /**
+   * Validates the request and returns the member set the cluster has to reach at the end of this
+   * stage: the current members with the bare ids belonging to this stage's zone replaced by their
+   * zoned ids.
+   *
+   * <p>Reads nothing but the two pieces of global state it takes, so the same validation and the
+   * same target member set serve both {@code phases} and {@code operations} — which bare id becomes
+   * which zoned id, and in which order the zones migrate, has no per-tenant dimension.
+   */
+  private Either<Exception, Set<MemberId>> stageTargetMembers(
+      final Set<MemberId> currentMembers,
+      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     final ZoneAwareConfig zoneAwareConfig;
-    if (partitionDistribution.isPresent()
-        && partitionDistribution.get() instanceof final ZoneAwareConfig cfg) {
+    if (partitionDistributorConfig.isPresent()
+        && partitionDistributorConfig.get() instanceof final ZoneAwareConfig cfg) {
       zoneAwareConfig = cfg;
     } else {
       return Either.left(
           new InvalidRequest(
               "Zone migration requires a persisted zone-aware partition distribution config, but was %s. Update the partition distribution before migrating brokers."
                   .formatted(
-                      partitionDistribution
+                      partitionDistributorConfig
                           .map(c -> c.getClass().getSimpleName())
                           .orElse("not set"))));
     }
@@ -69,18 +101,13 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
                   + "'. Configure it first via the persisted partition distribution."));
     }
 
-    final var stageReplacements = stageReplacements(currentConfiguration, zones);
-    final var validation = validate(currentConfiguration, zones, stageReplacements);
+    final var stageReplacements = stageReplacements(currentMembers, zones);
+    final var validation = validate(currentMembers, zones, stageReplacements);
     if (validation.isLeft()) {
       return Either.left(validation.getLeft());
     }
 
-    return new ScaleRequestTransformer(
-            stageTargetMembers(currentConfiguration, stageReplacements),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of(zoneName))
-        .operations(currentConfiguration);
+    return Either.right(stageTargetMembers(currentMembers, stageReplacements));
   }
 
   /**
@@ -92,7 +119,7 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
    * zone-b_1}}.
    */
   private Map<MemberId, MemberId> stageReplacements(
-      final ClusterConfiguration currentConfiguration, final List<ZoneSpec> zones) {
+      final Set<MemberId> currentMembers, final List<ZoneSpec> zones) {
     final int zoneIndex = zoneIndex(zones);
 
     // Preserve the sorted bare-member order so replacements and the resulting operations are
@@ -100,7 +127,7 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
     final var stageReplacements = new LinkedHashMap<MemberId, MemberId>();
     int localNodeIndex = 0;
     for (final var memberId :
-        currentConfiguration.members().keySet().stream()
+        currentMembers.stream()
             .filter(candidate -> candidate.zone() == null)
             .filter(
                 candidate ->
@@ -114,22 +141,20 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
   }
 
   private Set<MemberId> stageTargetMembers(
-      final ClusterConfiguration currentConfiguration,
-      final Map<MemberId, MemberId> stageReplacements) {
+      final Set<MemberId> currentMembers, final Map<MemberId, MemberId> stageReplacements) {
     // Keep member iteration deterministic, e.g. for stable coordinator selection and test output.
-    final var stageTargetMembers = new LinkedHashSet<>(currentConfiguration.members().keySet());
+    final var stageTargetMembers = new LinkedHashSet<>(currentMembers);
     stageTargetMembers.removeAll(stageReplacements.keySet());
     stageTargetMembers.addAll(stageReplacements.values());
     return stageTargetMembers;
   }
 
   private Either<Exception, Void> validate(
-      final ClusterConfiguration currentConfiguration,
+      final Set<MemberId> currentMembers,
       final List<ZoneSpec> zones,
       final Map<MemberId, MemberId> stageReplacements) {
     final int zoneIndex = zoneIndex(zones);
-    if (currentConfiguration.members().keySet().stream()
-        .anyMatch(member -> zoneName.equals(member.zone()))) {
+    if (currentMembers.stream().anyMatch(member -> zoneName.equals(member.zone()))) {
       return Either.left(
           new InvalidRequest(
               "Zone migration request targets zone '"
@@ -137,7 +162,7 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
                   + "' which has already been migrated."));
     }
 
-    final int expectedNextZoneIndex = expectedNextZoneIndex(currentConfiguration, zones);
+    final int expectedNextZoneIndex = expectedNextZoneIndex(currentMembers, zones);
     if (zoneIndex != expectedNextZoneIndex) {
       return Either.left(
           new InvalidRequest(
@@ -159,13 +184,13 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
   }
 
   private int expectedNextZoneIndex(
-      final ClusterConfiguration currentConfiguration, final List<ZoneSpec> zones) {
+      final Set<MemberId> currentMembers, final List<ZoneSpec> zones) {
     // Bare members have no zone identity, so derive the next stage from the highest configured
     // zone that does not yet have a zoned member.
     return IntStream.range(0, zones.size())
         .filter(
             zoneIndex ->
-                currentConfiguration.members().keySet().stream()
+                currentMembers.stream()
                     .noneMatch(member -> zones.get(zoneIndex).name().equals(member.zone())))
         .max()
         .orElseThrow();

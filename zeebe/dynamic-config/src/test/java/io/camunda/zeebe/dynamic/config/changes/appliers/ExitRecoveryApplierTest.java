@@ -21,9 +21,11 @@ import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -107,5 +109,62 @@ final class ExitRecoveryApplierTest {
     // then
     verify(modeChangeExecutor, times(1)).exitRecovery();
     Assertions.assertThat(resultingGroup.getMember(memberId).mode()).isEqualTo(Mode.PROCESSING);
+  }
+
+  @Test
+  void shouldSucceedAsNoOpOnInitWhenLocalMemberIsAlreadyProcessing() {
+    // given — member is already in the target mode
+    final var group =
+        groupWithMembers(
+            Map.of(
+                memberId, new BrokerPartitionState(1, Instant.EPOCH, Map.of(), Mode.PROCESSING)));
+
+    // when
+    final var result =
+        new ExitRecoveryApplier(memberId, modeChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, group);
+
+    // then — this can happen if the node restarted while applying the operation; it must not be
+    // treated as an error so the configuration change can make progress
+    assertThat(result).isRight();
+    final var resultingGroup = result.get().apply(group);
+    Assertions.assertThat(resultingGroup.getMember(memberId).mode()).isEqualTo(Mode.PROCESSING);
+  }
+
+  @Test
+  void shouldLeaveGroupUnchangedOnInitWhenMemberIsRecovering() {
+    // given
+    final var group =
+        groupWithMembers(
+            Map.of(
+                memberId, new BrokerPartitionState(1, Instant.EPOCH, Map.of(), Mode.RECOVERING)));
+
+    // when
+    final var result =
+        new ExitRecoveryApplier(memberId, modeChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, group);
+
+    // then — init does not transition the mode; the flip to PROCESSING happens on apply
+    assertThat(result).isRight();
+    final var resultingGroup = result.get().apply(group);
+    Assertions.assertThat(resultingGroup.getMember(memberId).mode()).isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
+  void shouldFailApplyWhenExecutorFails() {
+    // given
+    final var applier = new ExitRecoveryApplier(memberId, modeChangeExecutor);
+    when(modeChangeExecutor.exitRecovery())
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("Force failure")));
+
+    // when
+    final var result = applier.apply();
+
+    // then
+    Assertions.assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Force failure");
   }
 }

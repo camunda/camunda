@@ -87,9 +87,15 @@ runs:
       # which answers 502 often enough to be the most frequent way an image build fails on healthy
       # code. It's a `uses:` step, so nick-fields/retry (our usual retry action, shell-command only)
       # can't wrap it.
-      uses: Wandalen/wretry.action@e68c23e6309f2871ca8ae4763e7629b9c258e1ea # v3.8.0
+      #
+      # Pinned to `_js_action`, not the documented `v3.8.0` composite, so github_context/env_context/
+      # job_context/matrix_context below can be overridden -- see
+      # https://github.com/Wandalen/wretry.action/issues/182. Blanked out because
+      # docker/setup-buildx-action's action.yml has no `${{ }}` expressions of its own; re-check this
+      # if that's still true when its pin next bumps.
+      uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
       with:
-        action: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        action: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
         # wretry cannot inspect the wrapped action's error -- `retry_condition` only sees contexts
         # captured before the step ran -- so this retries any failure, not just a 5xx. A genuine
         # error therefore costs up to 3 attempts before reporting red.
@@ -97,6 +103,10 @@ runs:
         attempt_delay: 10000
         # wretry clones the wrapped action at runtime; without a token that clone gets HTTP 403
         github_token: ${{ github.token }}
+        github_context: '{}'
+        env_context: '{}'
+        job_context: '{}'
+        matrix_context: '{}'
         with: |
           # to be able to push to local registry, which we use in our tests, we need to use host network
           driver-opts: network=host
@@ -188,7 +198,11 @@ runs:
       # Wrapped for the same reason as the buildx setup above: BuildKit resolves the Dockerfile
       # frontend and the base images through Docker Hub, whose token endpoint answers 5xx or drops
       # the connection often enough to fail the build before a single layer is built.
-      uses: Wandalen/wretry.action@e68c23e6309f2871ca8ae4763e7629b9c258e1ea # v3.8.0
+      #
+      # Pinned to `_js_action` for the same reason as the buildx step above. build-push-action's only
+      # `${{ }}` expression is its `github-token` default, set explicitly below instead since the
+      # context that would resolve it is blanked out; re-check on future version bumps.
+      uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
       env:
         DOCKER_BUILD_SUMMARY: false
         DOCKER_BUILD_RECORD_UPLOAD: false
@@ -202,6 +216,10 @@ runs:
         attempt_delay: 10000
         # wretry clones the wrapped action at runtime; without a token that clone gets HTTP 403
         github_token: ${{ github.token }}
+        github_context: '{}'
+        env_context: '{}'
+        job_context: '{}'
+        matrix_context: '{}'
         # wretry re-parses this block as YAML, so the indentation below is significant: it has to
         # stay valid after the expressions expand. Keep every interpolated value single-line -- a
         # multi-line one would have its later lines land at column 0 and break the nested scalar.
@@ -214,6 +232,7 @@ runs:
           platforms: ${{ inputs.platforms }}
           provenance: false
           outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false,push=true' || '' }}
+          github-token: ${{ github.token }}
           build-args: |
             DISTBALL=${{ steps.get-distball.outputs.result }}
             DATE=${{ steps.get-date.outputs.result }}

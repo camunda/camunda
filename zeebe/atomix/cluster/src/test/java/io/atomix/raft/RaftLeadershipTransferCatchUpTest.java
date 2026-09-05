@@ -23,7 +23,6 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import java.time.Duration;
-import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -49,7 +48,7 @@ public class RaftLeadershipTransferCatchUpTest {
           });
 
   @Test
-  public void shouldRecordTransferDurationWhenTheTransferSucceeds() throws Exception {
+  public void shouldReportTransferredWhenTheDesiredLeaderCatchesUpAndTakesOver() throws Exception {
     // given
     raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
@@ -61,12 +60,10 @@ public class RaftLeadershipTransferCatchUpTest {
 
     // then
     assertThat(ack.accepted()).isTrue();
-    Awaitility.await("the attempt is measured once the transfer succeeds")
-        .atMost(Duration.ofSeconds(15))
-        .untilAsserted(
-            () ->
-                assertThat(transferDurationCount(LeadershipTransferResult.TRANSFERRED))
-                    .isEqualTo(1));
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
   }
 
   @Test
@@ -131,15 +128,5 @@ public class RaftLeadershipTransferCatchUpTest {
 
     // then
     assertThatNoException().isThrownBy(raftRule::appendEntry);
-  }
-
-  private long transferDurationCount(final LeadershipTransferResult result) {
-    final var timer =
-        raftRule
-            .getMeterRegistry()
-            .find("zeebe.cluster.rebalance.partition.duration")
-            .tag("result", result.name())
-            .timer();
-    return timer == null ? 0 : timer.count();
   }
 }

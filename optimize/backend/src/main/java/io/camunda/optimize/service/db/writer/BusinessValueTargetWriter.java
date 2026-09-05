@@ -10,7 +10,9 @@ package io.camunda.optimize.service.db.writer;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
-import java.util.EnumSet;
+import java.time.Duration;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -18,16 +20,23 @@ import org.springframework.stereotype.Component;
 @Component
 public class BusinessValueTargetWriter {
 
+  /**
+   * Cycle-time units supported by business-value targets, mapped to their fixed {@link Duration}.
+   * The map keys are the single source of truth for allowed units — validation callers derive the
+   * set from {@link #keySet()}, and conversion callers use the durations directly. Kept in the
+   * writer because the writer is the domain owner for target persistence and its invariants.
+   */
+  public static final Map<TargetValueUnit, Duration> SUPPORTED_CYCLE_TIME_UNIT_DURATIONS =
+      new EnumMap<>(
+          Map.of(
+              TargetValueUnit.MILLIS, Duration.ofMillis(1L),
+              TargetValueUnit.SECONDS, Duration.ofSeconds(1L),
+              TargetValueUnit.MINUTES, Duration.ofMinutes(1L),
+              TargetValueUnit.HOURS, Duration.ofHours(1L),
+              TargetValueUnit.DAYS, Duration.ofDays(1L)));
+
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(BusinessValueTargetWriter.class);
-
-  private static final Set<TargetValueUnit> SUPPORTED_CYCLE_TIME_UNITS =
-      EnumSet.of(
-          TargetValueUnit.MILLIS,
-          TargetValueUnit.SECONDS,
-          TargetValueUnit.MINUTES,
-          TargetValueUnit.HOURS,
-          TargetValueUnit.DAYS);
 
   private final BusinessValueTargetRepository repository;
 
@@ -70,12 +79,13 @@ public class BusinessValueTargetWriter {
       throw new IllegalArgumentException(
           "cycleTimeTargetMillis must be non-negative but was " + cycleTimeMillis);
     }
-    if (unit != null && !SUPPORTED_CYCLE_TIME_UNITS.contains(unit)) {
+    final Set<TargetValueUnit> supported = SUPPORTED_CYCLE_TIME_UNIT_DURATIONS.keySet();
+    if (unit != null && !supported.contains(unit)) {
       throw new IllegalArgumentException(
           "cycleTimeTargetUnit ["
               + unit
               + "] is not supported by business-value targets; allowed: "
-              + SUPPORTED_CYCLE_TIME_UNITS);
+              + supported);
     }
     final Integer pct = target.getAutomationRateTargetPct();
     if (pct != null && (pct < 0 || pct > 100)) {

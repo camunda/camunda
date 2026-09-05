@@ -40,12 +40,8 @@ record MockProcessingResult(
   }
 
   @Override
-  public boolean executePostCommitTasks() {
-    var result = true;
-    for (final var task : postCommitTasks) {
-      result = result && task.flush();
-    }
-    return result;
+  public List<PostCommitTask> getPostCommitTasks() {
+    return postCommitTasks;
   }
 
   @Override

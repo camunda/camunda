@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: "0 2 * * *"
   workflow_dispatch:
+    inputs:
+      branches:
+        description: 'JSON array of branches to run against, e.g. ["main"] or ["my-feature-branch"]'
+        required: false
+        default: '["main", "stable/8.8", "stable/8.9"]'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -33,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [main, stable/8.8, stable/8.9]
+        branch: ${{ fromJSON(inputs.branches || '["main", "stable/8.8", "stable/8.9"]') }}
     permissions:
       contents: read
       id-token: write # for authenticating with GCP
@@ -63,7 +68,6 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          harbor: true
           maven-cache-key-modifier: optimize-e2e-nightly
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -85,6 +89,8 @@ jobs:
           compose_file: optimize/client/docker-compose.yml
           project_name: e2e
           additional_flags: "--profile self-managed"
+        env:
+          CAMUNDA_VERSION: ${{ steps.pom_info.outputs.x_camunda_docker_version }}
 
       - name: Build backend
         run: ./mvnw -T1C clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
@@ -99,7 +105,7 @@ jobs:
 
       - name: Wait for import to complete
         run: |
-          expected=${{ matrix.branch == 'stable/8.8' && '49' || '17' }}
+          expected=${{ matrix.branch == 'stable/8.8' && '49' || '60' }}
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
             if [[ $count -eq $expected ]]; then

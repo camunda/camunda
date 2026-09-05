@@ -111,6 +111,11 @@ const ReadOnlyEditorWrapper = styled.div<{
       background-color: var(--cds-field);
       padding-left: ${EDITOR_DECORATION_WIDTH}px;
       border-block-end: 1px solid var(--cds-border-strong);
+
+      .operate-nav-v2 & {
+        border: 1px solid var(--cds-border-subtle-01);
+        border-radius: var(--cds-spacing-03);
+      }
     `};
 `;
 
@@ -167,6 +172,12 @@ const WriteModeEditor = styled.div<{
     --vscode-editor-background: var(--cds-field) !important;
     --vscode-editorGutter-background: var(--cds-field) !important;
     background-color: var(--cds-field) !important;
+
+    .operate-nav-v2 & {
+      border: 1px solid var(--cds-border-subtle-01);
+      border-radius: var(--cds-spacing-03);
+      overflow: hidden;
+    }
 
     &:focus-within::after {
       ${ring('var(--cds-focus)')}

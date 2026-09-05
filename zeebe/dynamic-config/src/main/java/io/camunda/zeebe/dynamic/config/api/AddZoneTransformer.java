@@ -10,14 +10,19 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Restores a previously failed-over zone: re-adds the operator-supplied brokers to the member set,
@@ -42,10 +47,51 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
     this.brokers = brokers;
   }
 
+  /**
+   * Places the returning zone's brokers into every physical tenant's partition group, by handing
+   * the re-included zone layout to {@link
+   * UpdatePartitionDistributionTransformer#phases(CurrentClusterConfiguration)}.
+   *
+   * <p>The brokers have to join before any partition can land on them, and the layout has to be
+   * persisted before a partition placed by the new distributor is applied, so both are folded into
+   * the leading global phase of that plan rather than emitted as a phase of their own.
+   */
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration) {
-    final var partitionDistributorConfig = currentConfiguration.partitionDistributorConfig();
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return zoneAddedConfig(configuration.globalConfiguration().partitionDistributorConfig())
+        .flatMap(
+            newConfig ->
+                new AddMembersTransformer(brokers)
+                    .joins(configuration.getMembers(), configuration.isFullyZoneAware())
+                    .flatMap(
+                        joins ->
+                            new UpdatePartitionDistributionTransformer(newConfig, brokers)
+                                .phases(configuration)
+                                .map(phases -> withJoinsFirst(joins, phases))));
+  }
+
+  private static List<Phase> withJoinsFirst(
+      final List<GlobalChangeOperation> joins, final List<Phase> phases) {
+    if (joins.isEmpty()) {
+      return phases;
+    }
+    if (!phases.isEmpty() && phases.getFirst() instanceof final GlobalPhase leading) {
+      final var merged = new ArrayList<>(joins);
+      merged.addAll(leading.operations());
+      return Stream.concat(Stream.of(new GlobalPhase(merged)), phases.stream().skip(1)).toList();
+    }
+    return Stream.concat(Stream.of(new GlobalPhase(joins)), phases.stream()).toList();
+  }
+
+  /**
+   * Validates the request and answers with the zone layout it implies: the persisted one with the
+   * returning zone added back.
+   *
+   * <p>Takes the persisted layout rather than a configuration because that is all the answer
+   * depends on — the zone layout and the member set are global, with no per-tenant dimension.
+   */
+  private Either<Exception, ZoneAwareConfig> zoneAddedConfig(
+      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     final List<ZoneSpec> currentZones;
     if (partitionDistributorConfig.isPresent()
         && partitionDistributorConfig.get() instanceof final ZoneAwareConfig cfg) {
@@ -99,24 +145,6 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
       return Either.left(new InvalidRequest(e));
     }
     newZones.add(newZone);
-    final var newConfig = new ZoneAwareConfig(newZones);
-
-    // Join the returning brokers, then reuse the shared distribution transformer to persist the new
-    // config and reassign partitions over the current members plus the returning brokers.
-    return new AddMembersTransformer(brokers)
-        .operations(currentConfiguration)
-        .flatMap(
-            addMembersOps ->
-                new UpdatePartitionDistributionTransformer(newConfig, brokers)
-                    .operations(currentConfiguration)
-                    .map(
-                        distributionOps -> {
-                          final var allOps =
-                              new ArrayList<ClusterConfigurationChangeOperation>(
-                                  addMembersOps.size() + distributionOps.size());
-                          allOps.addAll(addMembersOps);
-                          allOps.addAll(distributionOps);
-                          return allOps;
-                        }));
+    return Either.right(new ZoneAwareConfig(newZones));
   }
 }

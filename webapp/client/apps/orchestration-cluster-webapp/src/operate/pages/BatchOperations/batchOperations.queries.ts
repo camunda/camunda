@@ -11,8 +11,8 @@ import type {
 	QueryBatchOperationsRequestBody,
 	QueryBatchOperationsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {ForbiddenError} from '#/shared/errors';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
 type SortField = NonNullable<QueryBatchOperationsRequestBody['sort']>[number]['field'];
@@ -42,10 +42,7 @@ function batchOperationsOptions(search: BatchOperationsSearch) {
 		queryFn: async (): Promise<QueryBatchOperationsResponseBody> => {
 			const {response, error} = await request(endpoints.queryBatchOperations(body));
 			if (error !== null) {
-				if (error.variant === 'failed-response' && error.response.status === 403) {
-					throw new ForbiddenError();
-				}
-				throw error;
+				throw mapQueryError(error);
 			}
 			return response.json();
 		},

@@ -16,19 +16,29 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateAgentInstanceResponse;
+import java.util.List;
 
 /**
  * Represents a request to create a new agent instance.
  *
- * <p>Usage example:
+ * <p>Usage example, establishing model/provider/systemPrompt through a CONFIGURATION history item:
  *
  * <pre>
  *   CreateAgentInstanceResponse response = camundaClient
  *       .newCreateAgentInstanceCommand()
  *       .elementInstanceKey(2251799813685248L)
- *       .model("gpt-4o")
- *       .provider("openai")
- *       .systemPrompt("You are a helpful assistant.")
+ *       .jobKey(jobKey)
+ *       .jobLease(jobLease)
+ *       .history(List.of(
+ *           new AgentInstanceHistoryItem()
+ *               .historyItemId("item-0")
+ *               .loopIteration(1)
+ *               .role(AgentInstanceHistoryRole.CONFIGURATION)
+ *               .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+ *               .producedAt(OffsetDateTime.now())
+ *               .model("gpt-4o")
+ *               .provider("openai")
+ *               .systemPrompt(List.of(AgentInstanceHistoryContent.text("You are a helpful assistant.")))))
  *       .send()
  *       .join();
  * </pre>
@@ -39,73 +49,50 @@ public interface CreateAgentInstanceCommandStep1 {
    * Sets the element instance key of the AHSP or AI Agent Task element instance.
    *
    * @param elementInstanceKey the key of the element instance. Must be greater than 0.
-   * @return this builder for method chaining
+   * @return the next step of the builder
    */
   CreateAgentInstanceCommandStep2 elementInstanceKey(long elementInstanceKey);
 
   interface CreateAgentInstanceCommandStep2 {
 
     /**
-     * Sets the LLM model identifier for the agent instance.
+     * Sets the job key of the currently active job during which this creation was produced. Always
+     * required — a creation must always be attributed to the active job that produced it.
      *
-     * @param model the model identifier (for example, gpt-4o). Must not be null or empty.
-     * @return this builder for method chaining
+     * @param jobKey the key of the active job. Must be greater than 0.
+     * @return the next step of the builder
      */
-    CreateAgentInstanceCommandStep3 model(String model);
+    CreateAgentInstanceCommandStep3 jobKey(long jobKey);
   }
 
   interface CreateAgentInstanceCommandStep3 {
 
     /**
-     * Sets the LLM provider for the agent instance.
+     * Sets the opaque job lease token received from the job activation response. Always required —
+     * agent-instance creation requires the job to have been activated with leasing enabled (see the
+     * job worker's {@code withLease} option). The lease disambiguates this activation from any
+     * other activation of the same job: if the job is later retried, history items submitted under
+     * a superseded lease are discarded rather than committed.
      *
-     * @param provider the provider name (for example, openai). Must not be null or empty.
-     * @return this builder for method chaining
+     * @param jobLease the lease token. Must not be null or blank.
+     * @return the next step of the builder
      */
-    CreateAgentInstanceCommandStep4 provider(String provider);
+    CreateAgentInstanceCommandStep4 jobLease(String jobLease);
   }
 
   interface CreateAgentInstanceCommandStep4 {
 
     /**
-     * Sets the system prompt for the agent instance.
+     * Sets the batch of conversation history items to append to the agent instance at creation.
+     * Always required — a CONFIGURATION item within the batch establishing model, provider, and
+     * systemPrompt is the only way to create an agent instance.
      *
-     * @param systemPrompt the system prompt text. Must not be null or empty.
-     * @return this builder for method chaining
+     * @param history the history items to append, in order. Must not be null or empty; elements
+     *     must not be null.
+     * @return the next step of the builder
      */
-    CreateAgentInstanceCommandStep5 systemPrompt(String systemPrompt);
+    CreateAgentInstanceCommandStep5 history(List<AgentInstanceHistoryItem> history);
   }
 
-  interface CreateAgentInstanceCommandStep5
-      extends CreateAgentInstanceCommandStep1,
-          CreateAgentInstanceCommandStep2,
-          CreateAgentInstanceCommandStep3,
-          CreateAgentInstanceCommandStep4,
-          FinalCommandStep<CreateAgentInstanceResponse> {
-
-    /**
-     * Sets the maximum number of tokens the agent instance may use. Defaults to -1 (no limit).
-     *
-     * @param maxTokens the token limit. Use -1 for no limit.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep5 maxTokens(long maxTokens);
-
-    /**
-     * Sets the maximum number of LLM model calls the agent instance may make. Defaults to -1 (no
-     * limit).
-     *
-     * @param maxModelCalls the model-call limit. Use -1 for no limit.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep5 maxModelCalls(int maxModelCalls);
-
-    /**
-     * Sets the maximum number of tool calls the agent instance may make. Defaults to -1 (no limit).
-     *
-     * @param maxToolCalls the tool-call limit. Use -1 for no limit.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep5 maxToolCalls(int maxToolCalls);
-  }
+  interface CreateAgentInstanceCommandStep5 extends FinalCommandStep<CreateAgentInstanceResponse> {}
 }

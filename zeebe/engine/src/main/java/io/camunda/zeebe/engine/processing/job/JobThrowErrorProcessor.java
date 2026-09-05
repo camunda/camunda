@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -91,6 +92,7 @@ public class JobThrowErrorProcessor
   private final TypedCommandWriter commandWriter;
   private final IncidentMetrics incidentMetrics;
   private final VariableBehavior variableBehavior;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
 
   public JobThrowErrorProcessor(
       final ProcessingState state,
@@ -101,12 +103,14 @@ public class JobThrowErrorProcessor
       final CslTenantCheck tenantCheck,
       final Writers writers,
       final IncidentMetrics incidentMetrics,
+      final AgentDefinitionBehavior agentDefinitionBehavior,
       final VariableBehavior variableBehavior) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
+    this.agentDefinitionBehavior = agentDefinitionBehavior;
     this.cslCheck = cslCheck;
 
     preconditionChecker =
@@ -207,14 +211,12 @@ public class JobThrowErrorProcessor
     } else {
       writeThrowErrorEvent(jobKey, job, command);
       eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
-      if (job.isAgentic()) {
+      if (agentDefinitionBehavior.belongsToAgent(job)) {
         // The error was caught, so the job is deleted without completing — discard all its pending
         // history items. The lease is left empty on purpose: the whole job is gone, so every
         // activation's items must be discarded regardless of the lease they were created with.
-        commandWriter.appendFollowUpCommand(
-            jobKey,
-            AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+        commandWriter.appendNewCommand(
+            AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
       }
     }
   }

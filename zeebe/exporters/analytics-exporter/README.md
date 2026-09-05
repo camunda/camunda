@@ -66,6 +66,9 @@ camunda:
           max-queue-size: 2048
           max-batch-size: 512
           sampling-rate: 1.0
+          categories:
+            - contractual
+            - optional
 ```
 
 **Legacy configuration (Camunda 8.8 and earlier):**
@@ -83,6 +86,9 @@ zeebe:
           maxQueueSize: 2048
           maxBatchSize: 512
           samplingRate: 1.0
+          categories:
+            - contractual
+            - optional
 ```
 
 ### Environment variables
@@ -97,6 +103,8 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.i
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ```
 
 **Legacy (8.8 and earlier):** `ZEEBE_BROKER_EXPORTERS_ANALYTICS_*`
@@ -107,6 +115,8 @@ ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.i
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ```
 
 ### Verify the exporter is running
@@ -123,14 +133,15 @@ Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clus
 All options live under `args`. Defaults are tuned for typical Self-Managed deployments and
 rarely need to be changed.
 
-|        Option        |   Type   |                                                                           Description                                                                           |               Default                |
-|----------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                   | `https://analytics.cloud.camunda.io` |
-| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                 | `PT5M`                               |
-| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                    | `PT10M`                              |
-| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                | `2048`                               |
-| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                        | `512`                                |
-| `sampling-rate`      | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two. | `1.0`                                |
+|        Option        |   Type   |                                                                                                  Description                                                                                                  |               Default                |
+|----------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                                 | `https://analytics.cloud.camunda.io` |
+| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                               | `PT5M`                               |
+| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                                  | `PT10M`                              |
+| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                              | `2048`                               |
+| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                                      | `512`                                |
+| `sampling-rate`      | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                               | `1.0`                                |
+| `categories`         | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted or empty, all categories are enabled. | `[contractual, optional]`            |
 
 ## What data is exported
 
@@ -142,13 +153,28 @@ variables, or any other end-user data.
 
 ### Event types
 
-|        Source record        |       Intent        |          Event name          |                                       Notes                                       |
-|-----------------------------|---------------------|------------------------------|-----------------------------------------------------------------------------------|
-| `PROCESS_INSTANCE_CREATION` | `CREATED`           | `process_instance_created`   | Emitted for every new process instance.                                           |
-| `PROCESS_INSTANCE`          | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated` | Emitted only when the activated element is an ad-hoc sub-process.                 |
-| `USAGE_METRIC`              | `EXPORTED`          | `usage_metric_exported`      | Emitted once per usage metric export interval. Internal reset events are skipped. |
-| `USER_TASK`                 | `CREATED`           | `user_task_created`          | Emitted for every new user task.                                                  |
-| —                           | —                   | `heartbeat`                  | Emitted periodically by the partition leader (see `heartbeat-interval`).          |
+|   Source record    |       Intent        |              Event name               |                                               Notes                                                |
+|--------------------|---------------------|---------------------------------------|----------------------------------------------------------------------------------------------------|
+| `PROCESS_INSTANCE` | `ELEMENT_ACTIVATED` | `camunda.process.instance.activated`  | Emitted when a root process element is activated, so it covers every start type.                   |
+| `USER_TASK`        | `CREATED`           | `camunda.user_task.created`           | Emitted for every new user task.                                                                   |
+| `USER_TASK`        | `ASSIGNED`          | `camunda.user_task.assigned`          | Emitted for every user task assignment with a non-empty assignee.                                  |
+| `TENANT`           | `CREATED`           | `camunda.tenant.created`              | Emitted for every new tenant.                                                                      |
+| `TENANT`           | `DELETED`           | `camunda.tenant.deleted`              | Emitted for every deleted tenant.                                                                  |
+| `INCIDENT`         | `CREATED`           | `camunda.process.incident.created`    | Emitted for every raised incident.                                                                 |
+| `INCIDENT`         | `RESOLVED`          | `camunda.process.incident.resolved`   | Emitted for every resolved incident.                                                               |
+| `PROCESS`          | `CREATED`           | `camunda.process.definition.created`  | Emitted once per process definition, so a deployment of several processes produces one event each. |
+| `PROCESS`          | `DELETED`           | `camunda.process.definition.deleted`  | Emitted once per deleted process definition.                                                       |
+| `DECISION`         | `CREATED`           | `camunda.decision.definition.created` | Emitted once per decision in a deployed decision requirements graph.                               |
+| `DECISION`         | `DELETED`           | `camunda.decision.definition.deleted` | Emitted once per deleted decision definition.                                                      |
+| `FORM`             | `CREATED`           | `camunda.form.definition.created`     | Emitted once per deployed form.                                                                    |
+| `FORM`             | `DELETED`           | `camunda.form.definition.deleted`     | Emitted once per deleted form definition.                                                          |
+| `AGENT_INSTANCE`   | `CREATED`           | `camunda.agent.instance.created`      | Emitted for every created agent instance.                                                          |
+| `AGENT_INSTANCE`   | `COMPLETED`         | `camunda.agent.instance.completed`    | Emitted for every completed agent instance.                                                        |
+| —                  | —                   | `camunda.telemetry.heartbeat`         | Emitted periodically by the partition leader (see `heartbeat-interval`).                           |
+
+Every signal uses the canonical `camunda.<namespace>.<action>` contract name. `user_task_created`
+and `heartbeat` carried flat pre-contract names until 8.10 and were renamed to
+`camunda.user_task.created` and `camunda.telemetry.heartbeat`.
 
 ### Common log record attributes
 
@@ -164,7 +190,7 @@ These attributes are set on every log record:
 
 Beyond the common attributes above, each event type carries its own additional fields:
 
-**`process_instance_created`**
+**`camunda.process.instance.activated`**
 
 |              Attribute              |  Type  |                  Description                   |
 |-------------------------------------|--------|------------------------------------------------|
@@ -175,7 +201,12 @@ Beyond the common attributes above, each event type carries its own additional f
 | `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes). |
 | `camunda.tenant.id`                 | string | Tenant ID.                                     |
 
-**`user_task_created`**
+The event is taken from the activation of the root process element, which is the single point every
+process instance passes through however it was started: the client API, or a message, timer, signal
+or conditional start event. Process instances started by a call activity are excluded, so the event
+counts root instances only.
+
+**`camunda.user_task.created`**
 
 |            Attribute             |  Type  |            Description            |
 |----------------------------------|--------|-----------------------------------|
@@ -185,50 +216,143 @@ Beyond the common attributes above, each event type carries its own additional f
 | `camunda.element.id`             | string | BPMN element ID of the user task. |
 | `camunda.tenant.id`              | string | Tenant ID.                        |
 
-Note: unlike `process_instance_created`, this event does not carry `camunda.process.version`.
+Note: unlike `camunda.process.instance.activated`, this event does not carry
+`camunda.process.version`.
 
-**`adhoc_subprocess_activated`**
+**`camunda.user_task.assigned`**
 
-|            Attribute             |  Type  |                Description                 |
-|----------------------------------|--------|--------------------------------------------|
-| `camunda.process.id`             | string | BPMN process ID.                           |
-| `camunda.process.definition_key` | long   | Process definition key.                    |
-| `camunda.process.instance_key`   | long   | Process instance key.                      |
-| `camunda.element.id`             | string | BPMN element ID of the ad-hoc sub-process. |
-| `camunda.tenant.id`              | string | Tenant ID.                                 |
+|           Attribute            |  Type  |      Description      |
+|--------------------------------|--------|-----------------------|
+| `camunda.user_task.key`        | long   | User task key.        |
+| `camunda.process.instance_key` | long   | Process instance key. |
+| `camunda.tenant.id`            | string | Tenant ID.            |
 
-**`usage_metric_exported`**
+No assignee-derived data (raw or hashed) is exported; the event only signals that an assignment
+happened, giving a count of assignment events per cluster/process definition. Assignments with an
+empty assignee produce no event, matching the engine's assignment guard.
 
-|               Attribute               |  Type  |                                                Description                                                 |
-|---------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
-| `camunda.usage_metric.event_type`     | string | Metric type: `RPI` (running process instances), `EDI` (executed decision instances), or `TU` (task users). |
-| `camunda.usage_metric.count`          | long   | Count for this metric type in this export interval.                                                        |
-| `camunda.usage_metric.interval_start` | long   | Epoch-ms start of the export window.                                                                       |
-| `camunda.usage_metric.interval_end`   | long   | Epoch-ms end of the export window.                                                                         |
+**`camunda.tenant.created`**
+
+|      Attribute      |  Type  | Description |
+|---------------------|--------|-------------|
+| `camunda.tenant.id` | string | Tenant ID.  |
+
+The tenant name, description, and associated entity are deliberately not exported.
+
+**`camunda.tenant.deleted`**
+
+|      Attribute      |  Type  | Description |
+|---------------------|--------|-------------|
+| `camunda.tenant.id` | string | Tenant ID.  |
+
+**`camunda.process.incident.created`** and **`camunda.process.incident.resolved`**
+
+|            Attribute             |  Type  |               Description                |
+|----------------------------------|--------|------------------------------------------|
+| `camunda.incident.key`           | long   | Incident key, taken from the record key. |
+| `camunda.process.id`             | string | BPMN process ID.                         |
+| `camunda.process.definition_key` | long   | Process definition key.                  |
+| `camunda.process.instance_key`   | long   | Process instance key.                    |
+| `camunda.tenant.id`              | string | Tenant ID.                               |
+
+Both events carry the same attributes, so time-to-resolution is a join on
+`camunda.incident.key`. The incident error message is deliberately not exported: it can
+quote expressions and variable values.
+
+**`camunda.process.definition.created`** and **`camunda.process.definition.deleted`**
+
+|            Attribute             |  Type  |       Description       |
+|----------------------------------|--------|-------------------------|
+| `camunda.process.id`             | string | BPMN process ID.        |
+| `camunda.process.version`        | long   | Process version.        |
+| `camunda.process.definition_key` | long   | Process definition key. |
+| `camunda.tenant.id`              | string | Tenant ID.              |
+
+The BPMN resource, resource name, and version tag are deliberately not exported.
+
+**`camunda.decision.definition.created`** and **`camunda.decision.definition.deleted`**
+
+|         Attribute          |  Type  |        Description        |
+|----------------------------|--------|---------------------------|
+| `camunda.decision.id`      | string | Decision ID from the DMN. |
+| `camunda.decision.key`     | long   | Decision key.             |
+| `camunda.decision.version` | long   | Decision version.         |
+| `camunda.tenant.id`        | string | Tenant ID.                |
+
+The decision name and version tag are deliberately not exported.
+
+**`camunda.form.definition.created`** and **`camunda.form.definition.deleted`**
+
+|       Attribute        |  Type  |  Description  |
+|------------------------|--------|---------------|
+| `camunda.form.id`      | string | Form ID.      |
+| `camunda.form.key`     | long   | Form key.     |
+| `camunda.form.version` | long   | Form version. |
+| `camunda.tenant.id`    | string | Tenant ID.    |
+
+The form resource, resource name, and version tag are deliberately not exported.
+
+**`camunda.agent.instance.created`** and **`camunda.agent.instance.completed`**
+
+|              Attribute              |  Type  |                       Description                        |
+|-------------------------------------|--------|----------------------------------------------------------|
+| `camunda.agent.instance_key`        | long   | Agent instance key.                                      |
+| `camunda.agent.definition_key`      | long   | Agent definition key.                                    |
+| `camunda.agent.status`              | string | Agent instance status, e.g. `INITIALIZING`, `COMPLETED`. |
+| `camunda.process.id`                | string | BPMN process ID.                                         |
+| `camunda.process.definition_key`    | long   | Process definition key.                                  |
+| `camunda.process.instance_key`      | long   | Process instance key.                                    |
+| `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes).           |
+| `camunda.tenant.id`                 | string | Tenant ID.                                               |
+
+Both events carry the same attributes, so agent run duration is a join on
+`camunda.agent.instance_key`. The agent definition (model, provider, system prompt), its
+tools, its collected metrics such as token counts, its configured limits, the changed
+attribute names, and the version tag are all deliberately not exported.
+
+### Pre-aggregated counters
+
+Alongside the events above, the exporter ships delta counters over OTLP metrics. Each counter
+is incremented once per source record and carries the dimensions listed below.
+
+|                Counter                |            Source record            |     Dimensions      |
+|---------------------------------------|-------------------------------------|---------------------|
+| `camunda.decision.instance.evaluated` | `DECISION_EVALUATION` / `EVALUATED` | `camunda.tenant.id` |
+
+`camunda.decision.instance.evaluated` counts evaluation records, not the decisions inside them:
+a decision that requires sub-decisions still counts once, and failed evaluations are not counted,
+which is the same counting rule as the `EDI` usage metric. It is the authoritative per-tenant EDI
+source the exporter ships; the engine's aggregated usage metric is no longer forwarded. The counter
+also takes every `EVALUATED` record, whereas only version 2 of that record feeds `EDI` (version 1 is
+applied as a no-op), so records written by a broker older than 8.8
+would count here but not there — that is outside the supported upgrade sources for 8.10, where the
+two agree.
 
 ### Heartbeat attributes
 
-The `heartbeat` event carries static cluster metadata instead of the common log/sequence
+The `camunda.telemetry.heartbeat` event carries static cluster metadata instead of the common log/sequence
 attributes (heartbeats are not tied to the log stream):
 
-|              Attribute               |  Type  |                               Description                                |
-|--------------------------------------|--------|--------------------------------------------------------------------------|
-| `event.name`                         | string | Always `heartbeat`.                                                      |
-| `camunda.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
-| `camunda.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
+|                   Attribute                    |  Type  |                               Description                                |
+|------------------------------------------------|--------|--------------------------------------------------------------------------|
+| `event.name`                                   | string | Always `camunda.telemetry.heartbeat`.                                    |
+| `camunda.telemetry.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
+| `camunda.telemetry.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
 
 The analytics schema URL (`https://camunda.io/schemas/analytics/v1`) is delivered automatically via
 the OTel instrumentation scope on every record, not as a per-record attribute.
 
 ### Resource attributes
 
-Cluster-wide attributes attached to every log record:
+Attached once per exporter instance to every log record, metric point, and heartbeat — not
+per-record fields:
 
-|       Attribute        |  Type  |       Description       |
-|------------------------|--------|-------------------------|
-| `camunda.cluster.id`   | string | Cluster identifier.     |
-| `camunda.partition.id` | long   | Partition ID.           |
-| `service.name`         | string | Always `camunda-zeebe`. |
+|          Attribute           |  Type  |                                                                                                                                                         Description                                                                                                                                                         |
+|------------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `camunda.cluster.id`         | string | Cluster identifier.                                                                                                                                                                                                                                                                                                         |
+| `camunda.partition.id`       | long   | Partition ID.                                                                                                                                                                                                                                                                                                               |
+| `service.name`               | string | Always `camunda-zeebe`.                                                                                                                                                                                                                                                                                                     |
+| `camunda.tenant.physical_id` | string | Physical-tenant id of the broker/exporter instance that produced the signal. Static for the lifetime of the exporter instance (one instance runs per physical-tenant per partition) — unlike `camunda.tenant.id` (see per-event attributes below), which is the logical tenant of the specific record and varies per event. |
 
 ## Failure behavior
 
@@ -254,8 +378,9 @@ of these attributes as a composite key.
   or any workflow that requires complete data.
 - **No PII.** Only process metadata is exported. Process variables, message payloads, and
   other potentially sensitive fields are never sent.
-- **Fixed event set.** The exporter emits a small, hardcoded set of event types. There is
-  no runtime configuration to add, remove, or filter event types.
+- **Fixed event set per category.** The exporter emits a small, hardcoded set of event
+  types. The `categories` option controls which categories of events are exported, but
+  individual event types within a category cannot be toggled independently.
 
 ## How it works
 

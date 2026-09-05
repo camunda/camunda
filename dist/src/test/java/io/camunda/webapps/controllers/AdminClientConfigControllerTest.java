@@ -25,6 +25,7 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.SaasConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -125,7 +126,7 @@ public class AdminClientConfigControllerTest {
             multiTenancyEnabled,
             expectedOrganizationId,
             expectedClusterId);
-    final var controller = new AdminClientConfigController(cslProperties);
+    final var controller = new AdminClientConfigController(cslProperties, null);
 
     // Setup MockMvc with the controller for this specific test
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
@@ -150,6 +151,30 @@ public class AdminClientConfigControllerTest {
         .containsEntry("isTenantsApiEnabled", expectedTenantsApi)
         .containsEntry("organizationId", expectedOrganizationId)
         .containsEntry("clusterId", expectedClusterId);
+  }
+
+  @Test
+  void shouldResolveNewDesignSystemFromDeploymentAndExplicitConfiguration() throws Exception {
+    // given
+    final var selfManagedProperties =
+        createCamundaSecurityLibraryProperties(AuthenticationMethod.BASIC, null, false, null, null);
+    final var saasProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    final var enabledConfiguration = new WebappConfiguration();
+    enabledConfiguration.setNewDesignSystemEnabled(true);
+    final var disabledConfiguration = new WebappConfiguration();
+    disabledConfiguration.setNewDesignSystemEnabled(false);
+
+    // when / then
+    assertThat(extractConfig(selfManagedProperties, null))
+        .containsEntry("isNewDesignSystemEnabled", "true");
+    assertThat(extractConfig(saasProperties, null))
+        .containsEntry("isNewDesignSystemEnabled", "false");
+    assertThat(extractConfig(saasProperties, enabledConfiguration))
+        .containsEntry("isNewDesignSystemEnabled", "true");
+    assertThat(extractConfig(selfManagedProperties, disabledConfiguration))
+        .containsEntry("isNewDesignSystemEnabled", "false");
   }
 
   private CamundaSecurityLibraryProperties createCamundaSecurityLibraryProperties(
@@ -193,7 +218,8 @@ public class AdminClientConfigControllerTest {
     final var controller =
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
-                AuthenticationMethod.BASIC, null, false, null, null));
+                AuthenticationMethod.BASIC, null, false, null, null),
+            null);
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -213,7 +239,8 @@ public class AdminClientConfigControllerTest {
     final var controller =
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
-                AuthenticationMethod.BASIC, null, false, null, null));
+                AuthenticationMethod.BASIC, null, false, null, null),
+            null);
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -232,7 +259,8 @@ public class AdminClientConfigControllerTest {
     final var controller =
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
-                AuthenticationMethod.BASIC, null, false, null, null));
+                AuthenticationMethod.BASIC, null, false, null, null),
+            null);
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -255,7 +283,8 @@ public class AdminClientConfigControllerTest {
     final var controller =
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
-                AuthenticationMethod.BASIC, null, false, null, null));
+                AuthenticationMethod.BASIC, null, false, null, null),
+            null);
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -281,7 +310,8 @@ public class AdminClientConfigControllerTest {
     final var controller =
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
-                AuthenticationMethod.BASIC, null, false, null, null));
+                AuthenticationMethod.BASIC, null, false, null, null),
+            null);
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -308,6 +338,17 @@ public class AdminClientConfigControllerTest {
 
     return objectMapper.readValue(
         response.substring(jsonConfigBodyStartIdx, jsonConfigBodyEndIdx + 1), Map.class);
+  }
+
+  private Map<String, Object> extractConfig(
+      final CamundaSecurityLibraryProperties cslProperties,
+      final WebappConfiguration webappConfiguration)
+      throws Exception {
+    final var controller = new AdminClientConfigController(cslProperties, webappConfiguration);
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    final String response =
+        mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
+    return extractConfigFromResponse(response);
   }
 
   @SuppressWarnings("unchecked")

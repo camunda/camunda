@@ -52,6 +52,7 @@ spec:
         key: nodepool
         operator: Equal
         value: n2-standard-4
+
 ---
 # Source: load-test-setup/templates/metrics-exporter.yaml
 apiVersion: monitoring.coreos.com/v1

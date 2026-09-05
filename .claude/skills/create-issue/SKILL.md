@@ -14,6 +14,13 @@ missing parent links, wrong component labels, and skipped required fields.
 gh auth status  # must succeed
 ```
 
+If this fails, do not abort. Check whether `mcp__github__*` tools are available in this session; if
+so, use them for the rest of this skill's flow instead of the `gh` examples shown below.MCP tools use separate credentials, so they often keep working through a `gh`
+auth failure (stale token, sandbox restrictions, a transient rate limit), though they are not
+immune to failures of their own (their own rate limits, service-side restrictions). If MCP tools
+are not available either, retry `gh auth status` once before asking the user to check their
+authentication.
+
 ## Procedure
 
 ### Step 1 — Read available templates
@@ -38,6 +45,21 @@ its `labels:` field to infer the `kind/` label.
 | Tech debt, cleanup             | `6. tech debt.yml`         | `kind/tech-debt`       |
 
 If the issue type is ambiguous, ask the user to pick one before proceeding.
+
+### Step 1.5 — Check for existing issues
+
+Before drafting anything, search for likely duplicates using the issue's likely title keywords:
+
+```bash
+gh search issues '<title keywords>' --repo camunda/camunda --state open --limit 10
+gh search issues '<title keywords>' --repo camunda/camunda --state closed --limit 10
+```
+
+`--state` only accepts one value at a time (`open` or `closed`), not `all` — run both.
+
+If a close match turns up, surface it to the user before proceeding - show the issue number,
+state, and title, and ask whether to link the new work to it, comment on the existing issue
+instead, or proceed with a new issue anyway. Do not silently create a near-duplicate.
 
 ### Step 2 — Read the template and collect field values
 
@@ -88,6 +110,7 @@ Map path prefixes to component labels:
 | `document/`              | `component/document-handling`    |
 | `testing/`               | `component/camunda-process-test` |
 | `qa/`                    | `component/qa`                   |
+| `load-tests/`            | `component/load-tests`           |
 | `.github/` or `.claude/` | `component/build-pipeline`       |
 
 **Zeebe label split — use the conceptual layer, not the path:**

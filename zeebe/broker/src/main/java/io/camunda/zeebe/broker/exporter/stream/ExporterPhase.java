@@ -25,4 +25,18 @@ public enum ExporterPhase {
       case EXPORTING, CLOSED -> ExportingState.EXPORTING;
     };
   }
+
+  /**
+   * The phase an exporter director should (re)open with for a given dynamic-config exporting state.
+   * {@code UNKNOWN} maps to {@code EXPORTING}, its default: a partition whose config has not been
+   * initialized yet, or one still on a wire format that predates this field, is exporting unless
+   * something explicitly paused it.
+   */
+  public static ExporterPhase from(final ExportingState state) {
+    return switch (state) {
+      case PAUSED -> PAUSED;
+      case SOFT_PAUSED -> SOFT_PAUSED;
+      case EXPORTING, UNKNOWN -> EXPORTING;
+    };
+  }
 }

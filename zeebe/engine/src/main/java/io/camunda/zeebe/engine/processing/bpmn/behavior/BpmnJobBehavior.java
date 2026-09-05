@@ -19,7 +19,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.element.LinkedResource;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
+import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -130,6 +133,8 @@ public final class BpmnJobBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final ResourceState resourceState;
   private final FormState formState;
+  private final AgentDefinitionState agentDefinitionState;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
@@ -145,6 +150,8 @@ public final class BpmnJobBehavior {
       final BpmnStateBehavior stateBehavior,
       final ResourceState resourceState,
       final FormState formState,
+      final AgentDefinitionState agentDefinitionState,
+      final AgentDefinitionBehavior agentDefinitionBehavior,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
@@ -159,6 +166,8 @@ public final class BpmnJobBehavior {
     this.stateBehavior = stateBehavior;
     this.resourceState = resourceState;
     this.formState = formState;
+    this.agentDefinitionState = agentDefinitionState;
+    this.agentDefinitionBehavior = agentDefinitionBehavior;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
@@ -407,13 +416,15 @@ public final class BpmnJobBehavior {
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders(),
-        mergedSecretReferences(context, element));
+        mergedSecretReferences(context, element),
+        element);
   }
 
   public void createNewExecutionListenerJob(
       final BpmnElementContext context,
       final JobProperties jobProperties,
-      final ExecutionListener executionListener) {
+      final ExecutionListener executionListener,
+      final ExecutableFlowElement element) {
 
     final var jobListenerEventType =
         fromExecutionListenerEventType(executionListener.getEventType());
@@ -423,12 +434,14 @@ public final class BpmnJobBehavior {
         JobKind.EXECUTION_LISTENER,
         jobListenerEventType,
         executionListener.getJobWorkerProperties().getTaskHeaders(),
-        Map.of());
+        Map.of(),
+        element);
   }
 
   public void createNewTaskListenerJob(
       final BpmnElementContext context,
       final UserTaskRecord taskRecordValue,
+      final ExecutableFlowElement element,
       final TaskListener listener,
       final List<String> changedAttributes) {
     evaluateTaskListenerJobExpressions(listener.getJobWorkerProperties(), context, taskRecordValue)
@@ -441,7 +454,8 @@ public final class BpmnJobBehavior {
                     fromTaskListenerEventType(listener.getEventType()),
                     extractUserTaskHeaders(
                         taskRecordValue, changedAttributes, listener.getJobWorkerProperties()),
-                    Map.of()))
+                    Map.of(),
+                    element))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -455,7 +469,8 @@ public final class BpmnJobBehavior {
         JobKind.AD_HOC_SUB_PROCESS,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders(),
-        mergedSecretReferences(context, element));
+        mergedSecretReferences(context, element),
+        element);
   }
 
   /**
@@ -632,9 +647,10 @@ public final class BpmnJobBehavior {
       final JobKind jobKind,
       final JobListenerEventType jobListenerEventType,
       final Map<String, String> taskHeaders,
-      final Map<String, Set<SecretReference>> secretReferences) {
+      final Map<String, Set<SecretReference>> secretReferences,
+      final ExecutableFlowElement element) {
 
-    final var encodedHeaders = encodeHeaders(taskHeaders, props);
+    final var encodedHeaders = encodeHeaders(context, taskHeaders, props, element);
 
     jobRecord
         .setType(props.getType())
@@ -696,7 +712,10 @@ public final class BpmnJobBehavior {
   }
 
   private DirectBuffer encodeHeaders(
-      final Map<String, String> taskHeaders, final JobProperties props) {
+      final BpmnElementContext context,
+      final Map<String, String> taskHeaders,
+      final JobProperties props,
+      final ExecutableFlowElement element) {
     final var headers = new HashMap<>(taskHeaders);
     final String assignee = props.getAssignee();
     final String candidateGroups = props.getCandidateGroups();
@@ -731,6 +750,24 @@ public final class BpmnJobBehavior {
       } catch (final JsonProcessingException e) {
         throw new IllegalArgumentException(
             "Failed to convert linked resource headers to json object", e);
+      }
+    }
+
+    // A multi-instance body is never itself agent-marked -- only the inner activity it
+    // wraps can be. Resolve to the inner activity here, or a `beforeAll` listener job on
+    // a multi-instance element would silently miss the agentDefinitionKey header.
+    final ExecutableFlowElement agentDefinitionElement =
+        element instanceof final ExecutableMultiInstanceBody multiInstanceBody
+            ? multiInstanceBody.getInnerActivity()
+            : element;
+
+    if (agentDefinitionElement instanceof final ExecutableJobWorkerElement jobWorkerElement
+        && jobWorkerElement.isAgentDefinition()) {
+      final var agentDefinitionKey =
+          agentDefinitionState.getAgentDefinitionKey(
+              context.getProcessDefinitionKey(), context.getElementId());
+      if (agentDefinitionKey != null) {
+        headers.put(Protocol.AGENT_DEFINITION_KEY_HEADER_NAME, String.valueOf(agentDefinitionKey));
       }
     }
     return headerEncoder.encode(headers);
@@ -788,14 +825,12 @@ public final class BpmnJobBehavior {
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
       jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
-      if (job.isAgentic()) {
+      if (agentDefinitionBehavior.belongsToAgent(job)) {
         // The job is destroyed without completing — discard all its pending history items. The
         // lease is left empty on purpose: the whole job is gone, so every activation's items must
         // be discarded regardless of the lease they were created with.
-        commandWriter.appendFollowUpCommand(
-            jobKey,
-            AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+        commandWriter.appendNewCommand(
+            AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
       }
     }
   }

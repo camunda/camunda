@@ -40,7 +40,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -248,12 +247,6 @@ final class PhysicalTenantExporterConfigIT {
    * (the exporter runs on both groups). To be re-enabled once the cluster-configuration layer
    * derives per-partition exporter enable state per tenant.
    */
-  @Disabled(
-      "Narrowing a root-declared exporter out of a physical tenant requires per-physical-tenant"
-          + " exporter support in the cluster-configuration layer (initial DynamicPartitionConfig"
-          + " is generated from the root BrokerCfg only), and the assignment step is not yet wired"
-          + " into PhysicalTenantResolver; tracked in"
-          + " https://github.com/camunda/camunda/issues/56652")
   @Test
   void shouldNarrowAwayUnassignedRootExporterForTenant() {
     // given — records flow through both tenants' partition groups under distinct process ids

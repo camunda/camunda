@@ -46,7 +46,7 @@ public final class AsyncSnapshotDirector extends Actor
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
   private static final String LOG_MSG_WAIT_UNTIL_COMMITTED =
-      "Finished taking temporary snapshot, need to wait until last written event position {} is committed, current commit position is {}. After that snapshot will be committed.";
+      "Finished taking temporary snapshot, need to wait until position {} is committed, which is the highest of the last processed and last written event position, current commit position is {}. After that snapshot will be committed.";
   private static final String ERROR_MSG_ON_RESOLVE_PROCESSED_POS =
       "Unexpected error in resolving last processed position.";
   private static final String ERROR_MSG_ON_RESOLVE_WRITTEN_POS =
@@ -241,7 +241,8 @@ public final class AsyncSnapshotDirector extends Actor
       final InProgressSnapshot inProgressSnapshot, final boolean forceSnapshot) {
     return takeTransientSnapshot(inProgressSnapshot, forceSnapshot)
         .andThen(() -> getPositionsAfterSnapshot(inProgressSnapshot), actor)
-        .andThen(() -> waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot), actor)
+        .andThen(
+            () -> waitUntilLastProcessedAndWrittenPositionIsCommitted(inProgressSnapshot), actor)
         .andThen(this::flushJournal, actor)
         .andThen(() -> persistSnapshot(inProgressSnapshot), actor);
   }
@@ -304,25 +305,46 @@ public final class AsyncSnapshotDirector extends Actor
             (position, error) -> {
               if (error != null) {
                 LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
-                return CompletableActorFuture.completedExceptionally(error);
-              } else {
-                inProgressSnapshot.lastWrittenPosition = position;
-                return CompletableActorFuture.completed(null);
+                return CompletableActorFuture.<Void>completedExceptionally(error);
               }
+              inProgressSnapshot.lastWrittenPosition = position;
+              return getLastProcessedPositionAfterSnapshot(inProgressSnapshot);
             },
             actor);
   }
 
-  private ActorFuture<Void> waitUntilLastWrittenPositionIsCommitted(
+  /**
+   * Reads the processed position again, after the transient snapshot was taken, because that is the
+   * position the snapshot's contents actually reflect. The one read before the snapshot only bounds
+   * the snapshot from below, so waiting for it to commit would not cover a record the processor
+   * processed while the snapshot was being taken.
+   */
+  private ActorFuture<Void> getLastProcessedPositionAfterSnapshot(
       final InProgressSnapshot inProgressSnapshot) {
+    return streamProcessor
+        .getLastProcessedPositionAsync()
+        .andThen(
+            (position, error) -> {
+              if (error != null) {
+                LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
+                return CompletableActorFuture.<Void>completedExceptionally(error);
+              }
+              inProgressSnapshot.lastProcessedPosition = position;
+              return CompletableActorFuture.completed(null);
+            },
+            actor);
+  }
+
+  private ActorFuture<Void> waitUntilLastProcessedAndWrittenPositionIsCommitted(
+      final InProgressSnapshot inProgressSnapshot) {
+    final var requiredCommitPosition = inProgressSnapshot.requiredCommitPosition();
     if (streamProcessorMode == StreamProcessorMode.REPLAY
-        || commitPosition >= inProgressSnapshot.lastWrittenPosition) {
+        || commitPosition >= requiredCommitPosition) {
       return CompletableActorFuture.completed(null);
     } else {
-      LOG.info(
-          LOG_MSG_WAIT_UNTIL_COMMITTED, inProgressSnapshot.lastWrittenPosition, commitPosition);
+      LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, requiredCommitPosition, commitPosition);
       return commitAwaiters.computeIfAbsent(
-          inProgressSnapshot.lastWrittenPosition, k -> new CompletableActorFuture<>());
+          requiredCommitPosition, k -> new CompletableActorFuture<>());
     }
   }
 
@@ -404,8 +426,23 @@ public final class AsyncSnapshotDirector extends Actor
 
   private static final class InProgressSnapshot {
     private long lastWrittenPosition;
+    private long lastProcessedPosition;
     private TransientSnapshot pendingSnapshot;
     private long lowerBoundSnapshotPosition;
     private long maxExportedPosition;
+
+    /**
+     * The position that has to be committed before this snapshot may be persisted: the highest of
+     * what the processor has written and what it has processed.
+     *
+     * <p>The written position alone is not enough. The processor reads uncommitted records, so it
+     * can have processed a record above the commit index, and a result without follow-up records
+     * leaves the written position behind that record. Persisting then would record a processed
+     * position that a later truncation can remove from the log, and recovery would resume past
+     * records that never committed.
+     */
+    private long requiredCommitPosition() {
+      return Math.max(lastProcessedPosition, lastWrittenPosition);
+    }
   }
 }

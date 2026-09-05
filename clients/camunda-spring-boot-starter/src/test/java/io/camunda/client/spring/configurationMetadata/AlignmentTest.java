@@ -30,6 +30,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,6 +55,13 @@ public class AlignmentTest {
       p -> DataSize.parse(p.asText());
   private static final Function<JsonNode, Object> URI_MAPPER = p -> URI.create(p.asText());
   private static final Function<JsonNode, Object> DOUBLE_MAPPER = JsonNode::doubleValue;
+
+  // Deprecations whose rewrite is a bespoke map-flattening in
+  // CamundaClientPropertiesPostProcessor#mapLegacyClusterVariables, not a 1:1/indexed rename the
+  // CamundaClientLegacyPropertiesMappingsLoader format can express. Covered instead by
+  // CamundaClientPropertiesPostProcessorTest's ClusterVariablesMapping* tests.
+  private static final Set<String> MAP_FLATTENING_DEPRECATIONS =
+      Set.of("camunda.client.cluster-variables.global", "camunda.client.cluster-variables.tenant");
   private static final Map<String, Getter> NEW_GETTERS =
       Map.<String, Getter>ofEntries(
           entry(
@@ -308,6 +316,7 @@ public class AlignmentTest {
     return properties
         .valueStream()
         .filter(p -> p.has("deprecation") && p.get("deprecation").has("replacement"))
+        .filter(p -> !MAP_FLATTENING_DEPRECATIONS.contains(p.get("name").asText()))
         .map(
             p ->
                 new DeprecatedProperty(

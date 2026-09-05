@@ -11,9 +11,11 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -51,18 +53,23 @@ public final class ProcessInstanceCompleteResumingProcessor
           + "by the ending lifecycle.";
 
   private final StateWriter stateWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
+  private final DueDateTimerCheckScheduler timerChecker;
 
   public ProcessInstanceCompleteResumingProcessor(
       final ElementInstanceState elementInstanceState,
       final SuspensionState suspensionState,
-      final Writers writers) {
+      final Writers writers,
+      final DueDateTimerCheckScheduler timerChecker) {
     stateWriter = writers.state();
+    sideEffectWriter = writers.sideEffect();
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.suspensionState = suspensionState;
+    this.timerChecker = timerChecker;
   }
 
   @Override
@@ -88,6 +95,13 @@ public final class ProcessInstanceCompleteResumingProcessor
 
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceIntent.RESUMED, elementInstance.getValue());
+    // the instance is fully resumed now (the RESUMED applier clears the suspension marker), so
+    // any timer that came due and was rejected while suspended can finally fire; nudge the
+    // due-date checker rather than waiting for an unrelated future timer to wake it
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          timerChecker.scheduleTimer(-1);
+        });
   }
 
   @Override

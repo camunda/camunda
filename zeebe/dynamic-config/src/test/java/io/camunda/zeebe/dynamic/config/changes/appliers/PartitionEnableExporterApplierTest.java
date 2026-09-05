@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -189,5 +190,82 @@ final class PartitionEnableExporterApplierTest {
     final var exporters =
         resultingGroup.getMember(memberId).getPartition(1).config().exporting().exporters();
     Assertions.assertThat(exporters.get("exporterA").metadataVersion()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRejectIfInitializeFromExporterDoesNotExist() {
+    // given
+    final var config = DynamicPartitionConfig.init();
+    final var group =
+        groupWithMembers(Map.of(memberId, brokerWith(Map.of(1, PartitionState.active(1, config)))));
+
+    // when
+    final var result =
+        new PartitionEnableExporterApplier(
+                memberId, 1, "exporterA", Optional.of("other"), partitionChangeExecutor)
+            .init(globalConfigurationWithMember, group);
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("does not have exporter 'other'");
+  }
+
+  @Test
+  void shouldEnableExporterInitializedFromAnotherExporter() {
+    // given
+    final var config =
+        DynamicPartitionConfig.init().updateExporting(c -> c.addExporters(Set.of("other")));
+    final var group =
+        groupWithMembers(Map.of(memberId, brokerWith(Map.of(1, PartitionState.active(1, config)))));
+    final var applier =
+        new PartitionEnableExporterApplier(
+            memberId, 1, "exporterA", Optional.of("other"), partitionChangeExecutor);
+    when(partitionChangeExecutor.enableExporter(1, "exporterA", 1, "other"))
+        .thenReturn(CompletableActorFuture.completed(null));
+
+    // when
+    final var initResult = applier.init(globalConfigurationWithMember, group);
+    assertThat(initResult).isRight();
+    final var resultingGroup = applier.apply().join().apply(group);
+
+    // then
+    final var exporterState =
+        resultingGroup
+            .getMember(memberId)
+            .getPartition(1)
+            .config()
+            .exporting()
+            .exporters()
+            .get("exporterA");
+    Assertions.assertThat(exporterState.state()).isEqualTo(State.ENABLED);
+    Assertions.assertThat(exporterState.metadataVersion()).isEqualTo(1);
+    Assertions.assertThat(exporterState.initializedFrom()).contains("other");
+  }
+
+  @Test
+  void shouldFailFutureIfApplyFailed() {
+    // given
+    final var config = DynamicPartitionConfig.init();
+    final var group =
+        groupWithMembers(Map.of(memberId, brokerWith(Map.of(1, PartitionState.active(1, config)))));
+    final var applier =
+        new PartitionEnableExporterApplier(
+            memberId, 1, "exporterA", Optional.empty(), partitionChangeExecutor);
+    when(partitionChangeExecutor.enableExporter(anyInt(), any(), anyLong(), any()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("force fail")));
+
+    // when
+    final var initResult = applier.init(globalConfigurationWithMember, group);
+    assertThat(initResult).isRight();
+    final var result = applier.apply();
+
+    // then
+    Assertions.assertThat(result)
+        .failsWithin(java.time.Duration.ofMillis(100))
+        .withThrowableOfType(java.util.concurrent.ExecutionException.class)
+        .withMessageContaining("force fail");
   }
 }

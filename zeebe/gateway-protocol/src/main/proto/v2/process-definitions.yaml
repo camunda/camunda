@@ -37,6 +37,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}:
     get:
@@ -84,6 +85,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}/xml:
     get:
@@ -136,6 +138,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}/form:
     get:
@@ -183,6 +186,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}/statistics/element-instances:
     post:
@@ -227,6 +231,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}/variable-names/search:
     post:
@@ -271,6 +276,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-definitions/statistics/message-subscriptions:
     post:
@@ -309,6 +315,7 @@ paths:
         "500":
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-definitions/statistics/process-instances:
     post:
@@ -347,6 +354,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-definitions/statistics/process-instances-by-version:
     post:
@@ -386,6 +394,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
 ## Schema definitions
 

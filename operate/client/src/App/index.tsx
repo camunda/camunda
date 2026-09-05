@@ -23,6 +23,7 @@ import {Paths} from 'modules/Routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 import {AuthenticationCheck} from '../modules/auth/AuthenticationCheck';
 import {AuthorizationCheck} from '../modules/auth/AuthorizationCheck';
+import {SessionHeartbeat} from '../modules/auth/SessionHeartbeat';
 import {SessionWatcher} from '../modules/auth/SessionWatcher';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
@@ -94,6 +95,7 @@ const routes = createRoutesFromElements(
         return {
           Component: () => (
             <AuthenticationCheck redirectPath={Paths.login()}>
+              <SessionHeartbeat />
               <AuthorizationCheck>
                 <Layout />
               </AuthorizationCheck>

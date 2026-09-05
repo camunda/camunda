@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Tag("rdbms")
+@Tag("async-repl")
 public class ReplicationStatusLogIT {
 
   @RegisterExtension
@@ -32,7 +32,7 @@ public class ReplicationStatusLogIT {
   @TestTemplate
   public void shouldQueryReplicationStatus(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var replicationStatusProvider = rdbmsService.getReplicationLogStatusProvider();
+    final var replicationStatusProvider = rdbmsService.getReplicationLsnProvider();
 
     Awaitility.await()
         .timeout(Duration.ofMinutes(2))

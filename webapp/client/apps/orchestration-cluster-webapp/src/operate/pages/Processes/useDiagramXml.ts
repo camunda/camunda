@@ -8,6 +8,7 @@
 
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {parseDiagramXML} from '#/operate/shared/utils/bpmn';
 import {getBusinessObjects, getFlowNodes} from '#/operate/shared/utils/elements';
@@ -21,7 +22,7 @@ function useDiagramXml(processDefinitionKey?: string) {
 				: async () => {
 						const {response, error} = await request(endpoints.getProcessDefinitionXml({processDefinitionKey}));
 						if (error !== null) {
-							throw error;
+							throw mapQueryError(error);
 						}
 
 						const xml = await response.text();

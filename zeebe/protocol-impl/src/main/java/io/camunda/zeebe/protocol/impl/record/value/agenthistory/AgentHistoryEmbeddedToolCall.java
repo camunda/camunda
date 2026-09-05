@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -16,7 +15,6 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
-import org.agrona.DirectBuffer;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
 public final class AgentHistoryEmbeddedToolCall extends ObjectValue
@@ -70,20 +68,15 @@ public final class AgentHistoryEmbeddedToolCall extends ObjectValue
     return MsgPackConverter.convertToMap(argumentsProp.getValue());
   }
 
-  public AgentHistoryEmbeddedToolCall setArguments(final DirectBuffer arguments) {
-    argumentsProp.setValue(arguments);
+  public AgentHistoryEmbeddedToolCall setArguments(final Map<String, Object> arguments) {
+    argumentsProp.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(arguments)));
     return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getArgumentsBuffer() {
-    return argumentsProp.getValue();
   }
 
   public void copy(final AgentHistoryEmbeddedToolCallValue other) {
     setToolCallId(other.getToolCallId());
     setToolName(other.getToolName());
     setElementId(other.getElementId());
-    setArguments(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(other.getArguments())));
+    setArguments(other.getArguments());
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
 import java.time.Duration;
+import java.util.Locale;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
@@ -20,7 +21,10 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   /** If true, the database schema is automatically created and updated on application startup. */
   private boolean autoDdl = DEFAULT_AUTO_DDL;
 
-  /** The prefix to use for all database artifacts like tables, indexes etc. */
+  /**
+   * The prefix to use for all database artifacts like tables, indexes etc. Normalized to upper
+   * case, because the generated table names it is prepended to are upper case.
+   */
   private String prefix;
 
   /** The interval at which the exporters execution queue is flushed. */
@@ -115,7 +119,7 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   }
 
   public void setPrefix(final String prefix) {
-    this.prefix = prefix;
+    this.prefix = prefix == null ? null : prefix.toUpperCase(Locale.ROOT);
   }
 
   public Duration getFlushInterval() {

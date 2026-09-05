@@ -20,14 +20,10 @@ import io.camunda.configuration.Document.InMemoryStore;
 import io.camunda.configuration.Document.LocalStore;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -678,11 +674,12 @@ class DocumentStoreIsolationValidationTest {
               "tenantb", azureEndpointCamunda("https://acct.blob.core.windows.net", "docs", "b/"));
 
       // when
-      try (final LogCapturer logs = new LogCapturer(DocumentStoreLocation.class.getName())) {
+      try (final LogCapturer logs =
+          LogCapturer.capturing(DocumentStoreLocation.class, Level.WARN)) {
         assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
 
         // then the store is named, the credential is not
-        assertThat(logs.warnings())
+        assertThat(logs.messagesAt(Level.WARN))
             .anySatisfy(warning -> assertThat(warning).contains("docs").doesNotContain(accountKey));
       }
     }
@@ -789,40 +786,6 @@ class DocumentStoreIsolationValidationTest {
               "tenants [tenanta, tenantb, tenantc] share the same document store");
       assertThat(thrown.getMessage().split("share the same document store location", -1))
           .hasSize(2);
-    }
-  }
-
-  /** Captures WARN events of a logger; without a log4j2 config the root level would drop them. */
-  private static final class LogCapturer implements AutoCloseable {
-    private final ListAppender appender = new ListAppender("TestAppender");
-    private final String loggerName;
-
-    private LogCapturer(final String loggerName) {
-      this.loggerName = loggerName;
-      appender.start();
-      Configurator.setLevel(loggerName, Level.WARN);
-      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-      context
-          .getConfiguration()
-          .getLoggerConfig(loggerName)
-          .addAppender(appender, Level.WARN, null);
-      context.updateLoggers();
-    }
-
-    private List<String> warnings() {
-      // the appender has no layout, so formatted strings live in getEvents(), not getMessages()
-      return appender.getEvents().stream()
-          .map(event -> event.getMessage().getFormattedMessage())
-          .toList();
-    }
-
-    @Override
-    public void close() {
-      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-      context.getConfiguration().getLoggerConfig(loggerName).removeAppender("TestAppender");
-      context.updateLoggers();
-      appender.stop();
-      appender.clear();
     }
   }
 }

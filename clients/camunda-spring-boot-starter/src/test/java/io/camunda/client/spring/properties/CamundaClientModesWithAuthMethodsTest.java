@@ -151,7 +151,7 @@ public class CamundaClientModesWithAuthMethodsTest {
       assertThat(properties.getGrpcAddress().toString())
           .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
       assertThat(properties.getRestAddress().toString())
-          .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+          .isEqualTo("https://bru-2.api.camunda.io:443/my-cluster-id");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(properties.getAuth().getTokenUrl())
           .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
@@ -175,7 +175,7 @@ public class CamundaClientModesWithAuthMethodsTest {
       assertThat(properties.getGrpcAddress().toString())
           .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
       assertThat(properties.getRestAddress().toString())
-          .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+          .isEqualTo("https://bru-2.api.camunda.io:443/my-cluster-id");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(properties.getAuth().getTokenUrl())
           .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
@@ -200,7 +200,7 @@ public class CamundaClientModesWithAuthMethodsTest {
       assertThat(properties.getGrpcAddress().toString())
           .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
       assertThat(properties.getRestAddress().toString())
-          .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+          .isEqualTo("https://bru-2.api.camunda.io:443/my-cluster-id");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(properties.getAuth().getTokenUrl())
           .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
@@ -225,7 +225,7 @@ public class CamundaClientModesWithAuthMethodsTest {
       assertThat(properties.getGrpcAddress().toString())
           .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
       assertThat(properties.getRestAddress().toString())
-          .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+          .isEqualTo("https://bru-2.api.camunda.io:443/my-cluster-id");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(properties.getAuth().getTokenUrl())
           .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));

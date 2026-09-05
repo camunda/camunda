@@ -1,0 +1,190 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.protocol.impl.record.value.processinstance;
+
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import org.agrona.concurrent.UnsafeBuffer;
+
+public final class BufferedCommandRecord extends UnifiedRecordValue
+    implements BufferedCommandRecordValue {
+
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue COMMAND_KEY_KEY = new StringValue("commandKey");
+  private static final StringValue VALUE_TYPE_KEY = new StringValue("valueType");
+  private static final StringValue INTENT_KEY = new StringValue("intent");
+  private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+
+  private final LongProperty processInstanceKeyProperty =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1);
+  private final StringProperty tenantIdProperty =
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty commandKeyProperty = new LongProperty(COMMAND_KEY_KEY, -1);
+  private final EnumProperty<ValueType> valueTypeProperty =
+      new EnumProperty<>(VALUE_TYPE_KEY, ValueType.class, ValueType.NULL_VAL);
+  private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
+  private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
+      new ObjectProperty<>(COMMAND_VALUE_KEY, new UnifiedRecordValue(10));
+  private final IntegerProperty storageOrdinalKeyProperty =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+
+  private final MsgPackWriter commandValueWriter = new MsgPackWriter();
+  private final MsgPackReader commandValueReader = new MsgPackReader();
+
+  public BufferedCommandRecord() {
+    super(8);
+    declareProperty(processInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty)
+        .declareProperty(tenantIdProperty)
+        .declareProperty(commandKeyProperty)
+        .declareProperty(valueTypeProperty)
+        .declareProperty(intentProperty)
+        .declareProperty(commandValueProperty)
+        .declareProperty(storageOrdinalKeyProperty);
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProperty.getValue();
+  }
+
+  public BufferedCommandRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProperty.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProperty.getValue();
+  }
+
+  public BufferedCommandRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return bufferAsString(tenantIdProperty.getValue());
+  }
+
+  public BufferedCommandRecord setTenantId(final String tenantId) {
+    tenantIdProperty.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public long getCommandKey() {
+    return commandKeyProperty.getValue();
+  }
+
+  public BufferedCommandRecord setCommandKey(final long commandKey) {
+    commandKeyProperty.setValue(commandKey);
+    return this;
+  }
+
+  @Override
+  public ValueType getValueType() {
+    return valueTypeProperty.getValue();
+  }
+
+  public BufferedCommandRecord setValueType(final ValueType valueType) {
+    valueTypeProperty.setValue(valueType);
+    return this;
+  }
+
+  @Override
+  public Intent getIntent() {
+    final int intentValue = intentProperty.getValue();
+    if (intentValue < 0 || intentValue > Short.MAX_VALUE) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to read the intent, but its persisted value '%d' is not a short integer",
+              intentValue));
+    }
+    return Intent.fromProtocolValue(getValueType(), (short) intentValue);
+  }
+
+  public BufferedCommandRecord setIntent(final Intent intent) {
+    intentProperty.setValue(intent.value());
+    return this;
+  }
+
+  @Override
+  public UnifiedRecordValue getCommandValue() {
+    final var valueType = getValueType();
+    if (valueType == ValueType.NULL_VAL) {
+      return null;
+    }
+
+    final var storedCommandValue = commandValueProperty.getValue();
+    if (storedCommandValue.isEmpty()) {
+      return storedCommandValue;
+    }
+
+    final var concreteCommandValue = UnifiedRecordValue.fromValueType(valueType);
+    if (concreteCommandValue == null) {
+      throw new IllegalStateException(
+          "Expected to read the command value, but its value type `"
+              + valueType.name()
+              + "` has no known record value class");
+    }
+
+    final var commandValueBuffer = new UnsafeBuffer(0, 0);
+    final int encodedLength = storedCommandValue.getEncodedLength();
+    commandValueBuffer.wrap(new byte[encodedLength]);
+    storedCommandValue.write(commandValueWriter.wrap(commandValueBuffer, 0));
+
+    concreteCommandValue.wrap(commandValueBuffer);
+    return concreteCommandValue;
+  }
+
+  public BufferedCommandRecord setCommandValue(final UnifiedRecordValue commandValue) {
+    if (commandValue == null) {
+      commandValueProperty.reset();
+      return this;
+    }
+
+    final var valueBuffer = new UnsafeBuffer(0, 0);
+    final int encodedLength = commandValue.getLength();
+    valueBuffer.wrap(new byte[encodedLength]);
+
+    commandValue.write(valueBuffer, 0);
+    commandValueProperty.getValue().read(commandValueReader.wrap(valueBuffer, 0, encodedLength));
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProperty.getValue();
+  }
+
+  public BufferedCommandRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+    return this;
+  }
+}

@@ -32,7 +32,7 @@
       "processDefinitionVersion": {
         "type": "integer"
       },
-      "versionTag": {
+      "processDefinitionVersionTag": {
         "type": "keyword"
       },
       "tenantId": {
@@ -51,8 +51,81 @@
         "type": "keyword"
       },
       "systemPrompt": {
-        "type": "text",
-        "index": false
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
+          },
+          "text": {
+            "type": "text",
+            "index": false
+          },
+          "documentReference": {
+            "type": "object",
+            "properties": {
+              "documentId": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "storeId": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "contentHash": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "metadata": {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "fileName": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "expiresAt": {
+                    "type": "date",
+                    "format": "date_time || epoch_millis",
+                    "index": false
+                  },
+                  "size": {
+                    "type": "long",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "processDefinitionId": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "processInstanceKey": {
+                    "type": "long",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "customProperties": {
+                    "type": "object",
+                    "enabled": false
+                  }
+                }
+              }
+            }
+          },
+          "object": {
+            "type": "object",
+            "enabled": false
+          }
+        }
       },
       "maxTokens": {
         "type": "long"
@@ -67,6 +140,15 @@
         "type": "long"
       },
       "outputTokens": {
+        "type": "long"
+      },
+      "reasoningTokenCount": {
+        "type": "long"
+      },
+      "cacheCreationTokenCount": {
+        "type": "long"
+      },
+      "cacheReadTokenCount": {
         "type": "long"
       },
       "modelCalls": {

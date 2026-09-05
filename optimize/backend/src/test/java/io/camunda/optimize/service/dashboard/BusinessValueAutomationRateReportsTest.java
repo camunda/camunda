@@ -63,8 +63,8 @@ public class BusinessValueAutomationRateReportsTest {
     final ProcessReportDataDto data =
         captureReportData(
             BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
-            BusinessValueDashboardService.KPI_AUTOMATION_RATE_AGGREGATE_NAME,
-            BusinessValueDashboardService.KPI_AUTOMATION_RATE_AGGREGATE_DESCRIPTION);
+            BusinessValueDashboardService.KPI_AGGREGATED_AUTOMATION_RATE_NAME,
+            BusinessValueDashboardService.KPI_AUTOMATION_RATE_DESCRIPTION);
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.AUTOMATION_RATE);

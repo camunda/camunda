@@ -25,24 +25,27 @@
 #   Set to `install-storage` for versions that deploy their own secondary
 #   storage database/cluster. Leave empty when the target does not apply.
 #
-# - physical_tenants_rdbms_values_file
-#   Set only for versions that support the two-physical-tenants RDBMS values
-#   file. Leave empty otherwise so physical_tenants=true fails fast.
+# - physical_tenants_supported
+#   Set to `false` for versions without product-side physical-tenant config
+#   support, so physical_tenant_count > 0 fails fast instead of silently
+#   rendering an incomplete overlay.
 
 rdbms_storages ?= postgresql mysql mariadb mssql oracle
 optimize_self_sufficient_storages ?= elasticsearch opensearch
 scenario_max_override_key ?= orchestration.extraConfiguration[1].content=
 install_storage_target ?= install-storage
-physical_tenants_rdbms_values_file ?= camunda-platform-two-physical-tenants-shared-rdbms.yaml
+physical_tenants_supported ?= true
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
 # Use named targets (make install-chaos) or pass directly: make install chaos=true
 chaos ?= false
-# Deploy a second physical tenant (testfoo) alongside the default one, sharing the
-# same RDBMS but isolated by table prefix. Requires an rdbms secondary_storage.
-# Pass directly: make install physical_tenants=true secondary_storage=postgresql
-physical_tenants ?= false
+# Deploy pt1..ptN physical tenants alongside the default one, sharing the same
+# secondary storage (rdbms/elasticsearch/opensearch/none) as the default tenant,
+# isolated by RDBMS table prefix / ES-OS index prefix (or, for secondary_storage=none,
+# by REST-routing/authorization only).
+# Pass directly: make install physical_tenant_count=3 secondary_storage=postgresql
+physical_tenant_count ?= 0
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -99,31 +102,30 @@ _load_test_setup_flags =
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag = latest
 
-# Physical tenants are isolated by RDBMS table prefix, so they only make sense with
-# an rdbms secondary storage. Fail fast on any other combination.
+# physical_tenant_count > 0 requires product-side physical-tenant config support.
+# Fail fast on versions that don't have it instead of silently rendering an incomplete overlay.
 # (Nested conditionals are left-aligned: a leading tab would make `$(error ...)` look like a recipe.)
-ifeq ($(physical_tenants),true)
-ifeq ($(physical_tenants_rdbms_values_file),)
-$(error physical_tenants=true is not supported for this Camunda version (no physical_tenants_rdbms_values_file declared))
-endif
-ifeq ($(filter $(secondary_storage),$(rdbms_storages)),)
-$(error physical_tenants=true requires an rdbms secondary_storage ($(rdbms_storages)), got '$(secondary_storage)')
+ifneq ($(physical_tenant_count),0)
+ifneq ($(physical_tenants_supported),true)
+$(error physical_tenant_count > 0 is not supported for this Camunda version)
 endif
 endif
 
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),$(rdbms_storages)),)
-	ifeq ($(physical_tenants),true)
-		# Same as camunda-platform-values-rdbms.yaml, plus a second physical tenant (testfoo).
-		platform_values += -f $(physical_tenants_rdbms_values_file)
-	else
-		platform_values += -f camunda-platform-values-rdbms.yaml
-	endif
+	platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),none)
 	_load_test_setup_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
+# Layer the pt1..ptN physical-tenant overlay on top, generated at install/template time
+# (not scaffold time) so re-running `make install` with a different physical_tenant_count
+# on an existing namespace doesn't require re-scaffolding via newLoadTest.sh. See the
+# generate-physical-tenant-values target below and generate-physical-tenant-values.sh.
+ifneq ($(physical_tenant_count),0)
+platform_values += -f camunda-platform-physical-tenants.yaml
+endif
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
@@ -179,13 +181,18 @@ install: check-deadline install-load-test-setup $(install_storage_target) instal
 .PHONY: install-stable
 install-stable: check-deadline install-load-test-setup $(install_storage_target) install-platform-stable
 
-# When physical_tenants=true, also deploy the second (testfoo) load tester. Appended as the
-# last prerequisite so it runs after the platform is up and the load-test-credentials secret exists.
-# Only main defines install-load-test-physical-tenant; harmless no-op declaration everywhere
-# else since physical_tenants can never be true there (physical_tenants_rdbms_values_file is empty).
-ifeq ($(physical_tenants),true)
-install: install-load-test-physical-tenant
-install-stable: install-load-test-physical-tenant
+# When physical_tenant_count > 0, also deploy pt1..ptN's own load testers. Appended as the
+# last prerequisite so it runs after the platform is up and the load-test-credentials secret
+# exists. Only versions with physical_tenants_supported=true define
+# install-load-test-physical-tenants; harmless no-op declaration everywhere else since the
+# fail-fast gate above already rejects physical_tenant_count > 0 there.
+ifneq ($(physical_tenant_count),0)
+install: install-load-test-physical-tenants
+install-stable: install-load-test-physical-tenants
+install-platform: generate-physical-tenant-values
+install-platform-stable: generate-physical-tenant-values
+template: generate-physical-tenant-values
+template-stable: generate-physical-tenant-values
 endif
 
 # Fail fast if the namespace TTL deadline (read from load-test-setup-values.yaml,
@@ -247,31 +254,39 @@ else ifeq ($(secondary_storage),oracle)
 endif
 endif
 
-ifneq ($(physical_tenants_rdbms_values_file),)
-# Deploy a second load tester that drives the `testfoo` physical tenant.
+ifeq ($(physical_tenants_supported),true)
+# Generates camunda-platform-physical-tenants.yaml (see generate-physical-tenant-values.sh)
+# when physical_tenant_count > 0. A no-op (the script removes any stale file) otherwise, so
+# this can be an unconditional prerequisite of install-platform(-stable)/template(-stable).
+.PHONY: generate-physical-tenant-values
+generate-physical-tenant-values:
+	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)"
+
+# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage.
 # The camunda-load-tests subchart hardcodes the starter/worker resource names, so a second
-# Helm release would collide. Instead we render only those two templates from the same chart,
-# values, scenario and image as the default tester, rename them to *-testfoo, and apply.
-# REST is required because gRPC only routes to the default physical tenant.
-.PHONY: install-load-test-physical-tenant
-install-load-test-physical-tenant:
-	@echo "Deploying the testfoo physical-tenant load tester for namespace $(namespace)..."
-	@# Clone the generated load-test-credentials secret, overriding only the REST address to the
-	@# testfoo tenant path. Inherits every real credential value (clientId/secret, authServer, audience).
-	kubectl get secret load-test-credentials -n $(namespace) -o json \
-	  | jq '.data.zeebeRestAddress = ("http://camunda:8080/physical-tenants/testfoo" | @base64) | .metadata.name = "load-test-credentials-testfoo" | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.managedFields)' \
-	  | kubectl apply -n $(namespace) -f -
-	@# Render only the subchart starter+worker, rename to *-testfoo, and apply.
-	helm template load-test-setup $(helm_chart_load_test_setup) \
-	    --namespace $(namespace) \
-	    -s charts/load-tester/templates/starter.yaml \
-	    -s charts/load-tester/templates/workers.yaml \
-	    $(load_test_setup_flags) \
-	    --set load-tester.enabled=true \
-	    --set global.preferRest.enabled=true \
-	    --set load-tester.saas.credentials.existingSecret=load-test-credentials-testfoo \
-	  | sed -E 's/: starter$$/: starter-testfoo/; s/: worker$$/: worker-testfoo/' \
-	  | kubectl apply -n $(namespace) -f -
+# Helm release per tenant would collide. Instead we render only those two templates from the
+# same chart, values, scenario and image as the default tester, rename them to *-pt<i>, and
+# apply — looped over pt1..ptN. REST is required because gRPC only routes to the default
+# physical tenant.
+.PHONY: install-load-test-physical-tenants
+install-load-test-physical-tenants:
+	@for i in $$(seq 1 $(physical_tenant_count)); do \
+	  tenant="pt$$i"; \
+	  echo "Deploying the $$tenant physical-tenant load tester for namespace $(namespace)..."; \
+	  kubectl get secret load-test-credentials -n $(namespace) -o json \
+	    | jq --arg tenant "$$tenant" '.data.zeebeRestAddress = ("http://camunda:8080/physical-tenants/" + $$tenant | @base64) | .metadata.name = ("load-test-credentials-" + $$tenant) | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.managedFields)' \
+	    | kubectl apply -n $(namespace) -f - ; \
+	  helm template load-test-setup $(helm_chart_load_test_setup) \
+	      --namespace $(namespace) \
+	      -s charts/load-tester/templates/starter.yaml \
+	      -s charts/load-tester/templates/workers.yaml \
+	      $(load_test_setup_flags) \
+	      --set load-tester.enabled=true \
+	      --set global.preferRest.enabled=true \
+	      --set load-tester.saas.credentials.existingSecret=load-test-credentials-$$tenant \
+	    | sed -E "s/: starter$$/: starter-$$tenant/; s/: worker$$/: worker-$$tenant/" \
+	    | kubectl apply -n $(namespace) -f - ; \
+	done
 endif
 
 # Install/upgrade Camunda Platform helm chart

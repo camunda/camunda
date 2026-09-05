@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -1048,6 +1049,8 @@ public class LongPollingActivateJobsRestTest {
             .setTenantIds(activateJobsRequest.tenantIds())
             .setVariables(activateJobsRequest.fetchVariable())
             .setWorker(activateJobsRequest.worker());
+    // requests must always carry a partition group before they are sent to the broker
+    brokerRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     final var request =
         new InflightActivateJobsRequest<>(
             getNextRequestId(),
@@ -1088,6 +1091,9 @@ public class LongPollingActivateJobsRestTest {
     assertThat(brokerRequestValue.getRetries()).isEqualTo(activatedJob.getRetries());
     assertThat(brokerRequestValue.getRetryBackoff()).isEqualTo(0);
     assertThat(brokerRequestValue.getErrorMessageBuffer()).isNotNull();
+    assertThat(failRequest.getPartitionGroup())
+        .describedAs("fail request should inherit the activate request's partition group")
+        .isEqualTo(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private List<InflightActivateJobsRequest<JobActivationResult>> activateJobsAndWaitUntilBlocked(
@@ -1134,6 +1140,8 @@ public class LongPollingActivateJobsRestTest {
             .setTenantIds(activateJobsRequest.tenantIds())
             .setVariables(activateJobsRequest.fetchVariable())
             .setWorker(activateJobsRequest.worker());
+    // requests must always carry a partition group before they are sent to the broker
+    brokerRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     return new InflightActivateJobsRequest<>(
         getNextRequestId(),
         brokerRequest,

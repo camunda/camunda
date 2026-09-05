@@ -1,1 +1,3 @@
-helm 4.2.3
+# GitHub runners "ubuntu-latest"/"ubuntu-24.04" ship with Helm v3, which is not
+# supported by Camunda Platform Helm Chart starting from 8.10.
+helm 4.2.4

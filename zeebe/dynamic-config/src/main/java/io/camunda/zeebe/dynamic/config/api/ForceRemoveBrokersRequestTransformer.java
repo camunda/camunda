@@ -9,13 +9,18 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Names the brokers to force-remove rather than the ones to keep, and answers the request by
+ * retaining every other broker. See {@link ForceScaleDownRequestTransformer} for what the removal
+ * itself does.
+ */
 public final class ForceRemoveBrokersRequestTransformer implements ConfigurationChangeRequest {
 
   private final Set<MemberId> membersToRemove;
@@ -27,14 +32,14 @@ public final class ForceRemoveBrokersRequestTransformer implements Configuration
     this.coordinator = coordinator;
   }
 
+  /** Force-removes the named brokers from every physical tenant's partition group. */
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    final var membersToRetain = new HashSet<>(clusterConfiguration.members().keySet());
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    final var membersToRetain =
+        new HashSet<>(configuration.globalConfiguration().members().keySet());
     membersToRetain.removeAll(membersToRemove);
 
-    return new ForceScaleDownRequestTransformer(membersToRetain, coordinator)
-        .operations(clusterConfiguration);
+    return new ForceScaleDownRequestTransformer(membersToRetain, coordinator).phases(configuration);
   }
 
   @Override

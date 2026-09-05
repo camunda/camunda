@@ -16,10 +16,8 @@ import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -36,7 +34,14 @@ import java.util.stream.Stream;
  * @param version - represents the current version of the configuration. It is incremented only by
  *     the coordinator when a new configuration change is triggered.
  * @param members - represents the state of each member
- * @param pendingChanges - keeps track of the ongoing configuration changes
+ * @param pendingChanges - keeps track of the ongoing configuration changes. A projection of a live
+ *     sub-configuration carries the {@link DependencyChangePlan} that sub-configuration is running,
+ *     so a consumer reading it in-process sees the real change — including that several of its
+ *     operations may be running at once. It is flattened to a {@link ClusterChangePlan} only where
+ *     the wire demands one, when {@code ProtoBufSerializer} encodes the legacy {@code
+ *     ClusterTopology} message a broker without the graph model reads (see {@link
+ *     ClusterChangePlan#flatten(ChangePlan)}), which is therefore also the only shape a
+ *     configuration decoded from that message can hold.
  * @param incarnationNumber - represents the incarnation number of the cluster configuration
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
@@ -45,7 +50,7 @@ public record ClusterConfiguration(
     long version,
     SortedMap<MemberId, MemberState> members,
     Optional<CompletedChange> lastChange,
-    Optional<ClusterChangePlan> pendingChanges,
+    Optional<ChangePlan> pendingChanges,
     Optional<RoutingState> routingState,
     Optional<String> clusterId,
     long incarnationNumber,
@@ -61,7 +66,7 @@ public record ClusterConfiguration(
       final long version,
       final Map<MemberId, MemberState> members,
       final Optional<CompletedChange> lastChange,
-      final Optional<ClusterChangePlan> pendingChanges,
+      final Optional<ChangePlan> pendingChanges,
       final Optional<RoutingState> routingState,
       final Optional<String> clusterId,
       final long incarnationNumber,
@@ -227,29 +232,6 @@ public record ClusterConfiguration(
         partitionDistributorConfig);
   }
 
-  public ClusterConfiguration startConfigurationChange(
-      final List<ClusterConfigurationChangeOperation> operations) {
-    if (hasPendingChanges()) {
-      throw new IllegalArgumentException(
-          "Expected to start new configuration change, but there is a configuration change in progress "
-              + pendingChanges);
-    } else if (operations.isEmpty()) {
-      throw new IllegalArgumentException(
-          "Expected to start new configuration change, but there is no operation");
-    } else {
-      final long newVersion = version + 1;
-      return new ClusterConfiguration(
-          newVersion,
-          members,
-          lastChange,
-          Optional.of(ClusterChangePlan.init(newVersion, operations)),
-          routingState,
-          clusterId,
-          incarnationNumber,
-          partitionDistributorConfig);
-    }
-  }
-
   /**
    * Returns a new ClusterConfiguration after merging this and other. This doesn't overwrite this or
    * other. If this.version == other.version then the new ClusterConfiguration contains merged
@@ -269,10 +251,10 @@ public record ClusterConfiguration(
           Stream.concat(members.entrySet().stream(), other.members().entrySet().stream())
               .collect(Collectors.toMap(Entry::getKey, Entry::getValue, MemberState::merge));
 
-      final Optional<ClusterChangePlan> mergedChanges =
+      final Optional<ChangePlan> mergedChanges =
           Stream.of(pendingChanges, other.pendingChanges)
               .flatMap(Optional::stream)
-              .reduce(ClusterChangePlan::merge);
+              .reduce(ClusterConfiguration::mergePlans);
 
       final var mergedRoutingState =
           Stream.of(routingState, other.routingState)
@@ -296,6 +278,32 @@ public record ClusterConfiguration(
     }
   }
 
+  /**
+   * Merges two copies of the same change, each in its own model: two queues by version, two graphs
+   * by unioning their completions.
+   *
+   * <p>The two models never meet here. Every side of this merge is either a configuration decoded
+   * from the legacy {@code ClusterTopology} message — whose plan is a queue by construction, since
+   * that is the only shape the message can carry — or a projection of one sub-configuration, and a
+   * projection is never merged with anything: {@code CurrentClusterConfiguration} merges the
+   * sub-configurations themselves and projects afterwards. A mixed pair would therefore mean two
+   * unrelated changes were being merged as one, which is rejected rather than resolved by taking a
+   * side.
+   */
+  private static ChangePlan mergePlans(final ChangePlan plan, final ChangePlan other) {
+    if (plan instanceof final ClusterChangePlan queue
+        && other instanceof final ClusterChangePlan otherQueue) {
+      return queue.merge(otherQueue);
+    }
+    if (plan instanceof final DependencyChangePlan graph
+        && other instanceof final DependencyChangePlan otherGraph) {
+      return graph.merge(otherGraph);
+    }
+    throw new IllegalStateException(
+        "Cannot merge a queue change with a dependency-graph change: %s vs %s"
+            .formatted(plan, other));
+  }
+
   public boolean hasPendingChanges() {
     return pendingChanges.isPresent() && pendingChanges.orElseThrow().hasPendingChanges();
   }
@@ -304,35 +312,22 @@ public record ClusterConfiguration(
    * Returns true if this configuration was produced by a restore: {@code pendingChanges} is
    * present, marked as a restore plan, and contains exactly one pending operation which is an
    * {@link UpdateRoutingState}.
+   *
+   * <p>Only a queue can answer this. The restore sentinel id lives on {@link ClusterChangePlan},
+   * which is the shape {@code RestoreManager} writes into the configuration file it leaves for the
+   * restored broker. A partition group running a restore as a graph gives its plan an ordinary
+   * version-derived id and marks the restore on the enclosing {@link PhasedChangePlan} instead,
+   * which a single-group projection cannot see — ask {@link
+   * CurrentClusterConfiguration#isAfterRestore()} on that path.
    */
   public boolean isAfterRestore() {
     return pendingChanges
+        .filter(ClusterChangePlan.class::isInstance)
+        .map(ClusterChangePlan.class::cast)
         .filter(ClusterChangePlan::isRestore)
         .map(ClusterChangePlan::pendingOperations)
         .filter(ops -> ops.size() == 1 && ops.get(0) instanceof UpdateRoutingState)
         .isPresent();
-  }
-
-  /**
-   * @return true if the next operation in pending changes is applicable for the given memberId,
-   *     otherwise returns false.
-   */
-  private boolean hasPendingChangesFor(final MemberId memberId) {
-    return pendingChanges.isPresent() && pendingChanges.get().hasPendingChangesFor(memberId);
-  }
-
-  /**
-   * Returns the next pending operation for the given memberId. If there is no pending operation for
-   * this member, then returns an empty optional.
-   *
-   * @param memberId id of the member
-   * @return the next pending operation for the given memberId.
-   */
-  public Optional<ClusterConfigurationChangeOperation> pendingChangesFor(final MemberId memberId) {
-    if (!hasPendingChangesFor(memberId)) {
-      return Optional.empty();
-    }
-    return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
   }
 
   /**
@@ -366,65 +361,6 @@ public record ClusterConfiguration(
   public boolean isFullyZoneAware() {
     return members().keySet().stream().allMatch(m -> m.zone() != null)
         && partitionDistributorConfig.map(ZoneAwareConfig.class::isInstance).orElse(false);
-  }
-
-  /**
-   * When the operation returned by {@link #pendingChangesFor(MemberId)} is completed, the changes
-   * should be reflected in ClusterConfiguration by invoking this method. This removes the completed
-   * operation from the pending changes and update the member state using the given updater.
-   *
-   * @param configurationUpdater the method to update the configuration
-   * @return the updated ClusterConfiguration
-   */
-  public ClusterConfiguration advanceConfigurationChange(
-      final UnaryOperator<ClusterConfiguration> configurationUpdater) {
-    return configurationUpdater.apply(this).advance();
-  }
-
-  private ClusterConfiguration advance() {
-    if (!hasPendingChanges()) {
-      throw new IllegalStateException(
-          "Expected to advance the configuration change, but there is no pending change");
-    }
-    final ClusterConfiguration result =
-        new ClusterConfiguration(
-            version,
-            members,
-            lastChange,
-            Optional.of(pendingChanges.orElseThrow().advance()),
-            routingState,
-            clusterId,
-            incarnationNumber,
-            partitionDistributorConfig);
-
-    if (!result.hasPendingChanges()) {
-      // The last change has been applied. Clean up the members that are marked as LEFT in the
-      // configuration. This operation will be executed in the member that executes the last
-      // operation.
-      // This is ok because it is guaranteed that no other concurrent modification will be applied
-      // to the configuration. This is because all the operations are applied sequentially, and no
-      // configuration update will be done without adding a ClusterChangePlan.
-      final var currentMembers =
-          result.members().entrySet().stream()
-              // remove the members that are marked as LEFT
-              .filter(entry -> entry.getValue().state() != State.LEFT)
-              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-      // Increment the version so that other members can merge by overwriting their local
-      // configuration.
-      final var completedChange = pendingChanges.orElseThrow().completed();
-      return new ClusterConfiguration(
-          result.version() + 1,
-          currentMembers,
-          Optional.of(completedChange),
-          Optional.empty(),
-          routingState,
-          clusterId,
-          incarnationNumber,
-          partitionDistributorConfig);
-    }
-
-    return result;
   }
 
   public boolean hasMember(final MemberId memberId) {
@@ -482,11 +418,15 @@ public record ClusterConfiguration(
   }
 
   /**
-   * Returns the member with the highest priority for a given partition.
+   * Returns the highest-priority member currently eligible to lead a given partition: one whose
+   * member lifecycle is neither {@link State#LEFT} nor {@link State#UNINITIALIZED}, and whose
+   * partition state durably participates in the Raft quorum right now (see {@link
+   * PartitionState.State#isActiveReplica()}) - a learner catching up, or a member on its way out,
+   * cannot become leader and must not be returned as the primary.
    *
    * @param partitionId the partition ID
-   * @return Optional containing the MemberId of the member with highest priority, or empty if
-   *     partition not found
+   * @return Optional containing the MemberId of the member with highest priority, or empty if no
+   *     eligible member replicates the partition
    */
   public Optional<MemberId> getPrimaryMemberForPartition(final int partitionId) {
     return members.entrySet().stream()
@@ -494,19 +434,13 @@ public record ClusterConfiguration(
         .filter(entry -> entry.getValue().state() != State.LEFT)
         .filter(entry -> entry.getValue().state() != State.UNINITIALIZED)
         .filter(entry -> entry.getValue().getPartition(partitionId) != null)
+        .filter(entry -> entry.getValue().getPartition(partitionId).state().isActiveReplica())
         .max(
             (e1, e2) ->
                 Integer.compare(
                     e1.getValue().getPartition(partitionId).priority(),
                     e2.getValue().getPartition(partitionId).priority()))
         .map(Entry::getKey);
-  }
-
-  public ClusterConfigurationChangeOperation nextPendingOperation() {
-    if (!hasPendingChanges()) {
-      throw new NoSuchElementException();
-    }
-    return pendingChanges.orElseThrow().nextPendingOperation();
   }
 
   /**
@@ -547,7 +481,7 @@ public record ClusterConfiguration(
     private long version = INITIAL_VERSION;
     private Map<MemberId, MemberState> members = Map.of();
     private Optional<CompletedChange> lastChange = Optional.empty();
-    private Optional<ClusterChangePlan> pendingChanges = Optional.empty();
+    private Optional<ChangePlan> pendingChanges = Optional.empty();
     private Optional<RoutingState> routingState = Optional.empty();
     private Optional<String> clusterId = Optional.empty();
     private long incarnationNumber = INITIAL_INCARNATION_NUMBER;
@@ -610,7 +544,7 @@ public record ClusterConfiguration(
      * @param pendingChanges the pending changes
      * @return this builder
      */
-    public Builder pendingChanges(final Optional<ClusterChangePlan> pendingChanges) {
+    public Builder pendingChanges(final Optional<ChangePlan> pendingChanges) {
       this.pendingChanges = pendingChanges;
       return this;
     }

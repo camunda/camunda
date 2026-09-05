@@ -20,27 +20,45 @@ import java.util.Map;
 
 public interface CommandWithVariables<T> {
   /**
-   * @param variables the variables (JSON) as String
+   * Sets the variables from a JSON document, replacing any variables previously set on the command.
+   * An empty document or JSON {@code null} is treated as empty variables. Any other document must
+   * represent a JSON object.
+   *
+   * @param variables the variables JSON document as String
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
+   * @throws IllegalArgumentException if the JSON document represents a non-null value other than an
+   *     object
    */
   T variables(String variables);
 
   /**
+   * Sets the variables from an object, replacing any variables previously set on the command. The
+   * object must serialize to a JSON object.
+   *
    * @param variables the variables as object
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
+   * @throws IllegalArgumentException if the serialized value is not a JSON object
    */
   T variables(Object variables);
 
   /**
-   * @param variables the variables (JSON) as stream
+   * Sets the variables from a JSON document, replacing any variables previously set on the command.
+   * JSON {@code null} is treated as empty variables. Any other document must represent a JSON
+   * object.
+   *
+   * @param variables the variables JSON document as stream
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
+   * @throws IllegalArgumentException if the JSON document represents a non-null value other than an
+   *     object
    */
   T variables(InputStream variables);
 
   /**
+   * Sets the variables from a map, replacing any variables previously set on the command.
+   *
    * @param variables the variables as map
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
@@ -48,10 +66,34 @@ public interface CommandWithVariables<T> {
   T variables(Map<String, Object> variables);
 
   /**
+   * Sets a single variable, replacing any variables previously set on the command.
+   *
    * @param key the key of the variable as string
    * @param value the value of the variable as object
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
   T variable(String key, Object value);
+
+  /**
+   * Adds a single variable to the command. Unlike {@link #variable(String, Object)}, this method
+   * accumulates variables across multiple invocations, allowing you to build the variable map entry
+   * by entry.
+   *
+   * @param key the key of the variable as string
+   * @param value the value of the variable as object
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  T addVariable(String key, Object value);
+
+  /**
+   * Adds multiple variables to the command. Unlike {@link #variables(Map)}, this method accumulates
+   * variables across multiple invocations, allowing you to build the variable map incrementally.
+   *
+   * @param variables the variables to add as map
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  T addVariables(Map<String, Object> variables);
 }

@@ -20,6 +20,12 @@ import java.util.function.UnaryOperator;
  * on a single named {@link PartitionGroupConfiguration} as a whole. Mirrors the legacy {@code
  * UpdateIncarnationNumberApplier} in {@code changes/}, which this does not replace or modify.
  * Increments the group's incarnation number by 1.
+ *
+ * <p>That increment is the group record's own field rather than any one member's, so this is the
+ * only whole-group write in a restore. {@code RestoreRequestTransformer} therefore orders it after
+ * every await, leaving it concurrent with nothing: every other restore step writes either nothing
+ * at all or a single member's own mode and partition states. {@link #init} adds no write of its
+ * own.
  */
 public final class UpdateIncarnationNumberApplier
     implements PartitionGroupConfigurationChangeApplier {

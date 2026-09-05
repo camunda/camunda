@@ -14,6 +14,7 @@ import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -23,6 +24,10 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {
+	createProcessInstance,
+	createQueryProcessInstancesResponse,
+} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.beforeEach(({network}) => {
@@ -49,12 +54,28 @@ test.beforeEach(({network}) => {
 				}),
 			),
 		}),
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessInstancesResponse({
+					items: [
+						createProcessInstance({processInstanceKey: '2251799813685280', processDefinitionName: 'Order Process'}),
+						createProcessInstance({
+							processInstanceKey: '2251799813685281',
+							processDefinitionName: 'Order Process',
+							state: 'ACTIVE',
+							hasIncident: true,
+						}),
+					],
+				}),
+			),
+		}),
 	);
 });
 
 test('should match the processes page filters panel snapshot', async ({operateProcessesPage, page}) => {
 	await operateProcessesPage.goto();
 	await expect(operateProcessesPage.filtersPanel).toBeVisible();
+	await expect(operateProcessesPage.instancesTable).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

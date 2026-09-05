@@ -10,7 +10,7 @@ package io.camunda.zeebe.dynamic.config.util;
 import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.accumulateLoad;
 import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.rebalanceLeaders;
 import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.selectNewPartitionMembers;
-import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.validateNoRemoval;
+import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.validateExistingPartitionsAreNotRemoved;
 import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.validateTargetMembers;
 
 import io.atomix.cluster.MemberId;
@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  *
  * <p>Removing a partition or an entire group is not supported: {@code targetPartitionIds} must
  * include every existing partition id of every existing group, not just the ones being changed —
- * see {@link PartitionReassignmentSupport#validateNoRemoval}.
+ * see {@link PartitionReassignmentSupport#validateExistingPartitionsAreNotRemoved}.
  */
 public final class AdditivePartitionReassigner implements PartitionReassigner {
 
@@ -74,7 +74,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
 
     final Map<String, Set<PartitionMetadata>> distributionByGroup =
         ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(currentConfiguration);
-    validateNoRemoval(distributionByGroup, targetPartitionIds, replicationFactor);
+    validateExistingPartitionsAreNotRemoved(distributionByGroup, targetPartitionIds);
 
     // generate assignment for new partitions
     final Map<PartitionId, PartitionMetadata> currentById =

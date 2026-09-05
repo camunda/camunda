@@ -13,8 +13,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -44,6 +51,10 @@ class SchemaManagerStartupIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManagerStartupIT.class);
   private static final String ELASTICSEARCH_URL = "http://test-elasticsearch:9200";
+
+  /** No container answers to this alias, so every schema-initialization attempt fails. */
+  private static final String UNREACHABLE_ELASTICSEARCH_URL = "http://absent-elasticsearch:9200";
+
   private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
 
   private static final String CAMUNDA_TEST_IMAGE_NAME =
@@ -82,8 +93,9 @@ class SchemaManagerStartupIT {
   //   false is to test the case when the shutdown is before the schema startup is started
   //   true is to test the case when the shutdown is when the schema startup is retrying
   // gatewayEnabled:
-  //   false is to test with embedded gateway disabled (async schema startup)
-  //   true is to test with embedded gateway enabled (sync schema startup)
+  //   false = async schema startup, true = sync schema startup. Only a node with an HTTP gateway
+  //   holds startup until a physical tenant is serviceable, so with the gateway enabled the
+  //   shutdown signal arrives while the context refresh is still blocked at the gate.
   void shouldGracefullyShutdownWhenSchemaStartupStillRunning(
       final boolean waitForSchemaStartupBeforeShutdown, final boolean gatewayEnabled)
       throws InterruptedException, IOException {
@@ -138,7 +150,7 @@ class SchemaManagerStartupIT {
 
     final var logToWaitFor =
         waitForSchemaStartupBeforeShutdown
-            ? "Retrying operation for 'init schema'"
+            ? "Schema initialization for physical tenant 'default' failed on attempt"
             : "io.camunda.zeebe.broker.system - Starting broker";
 
     // just wait until the container is running (but not ready)
@@ -168,32 +180,154 @@ class SchemaManagerStartupIT {
         .doesNotContain("Start operation executor");
   }
 
+  /**
+   * A node without an HTTP gateway does not wait for its schema at all, so an unreachable
+   * Elasticsearch delays nothing: it starts, keeps retrying in the background, and reports the
+   * tenant as degraded through the gauge. Its counterpart — the same node <em>with</em> a gateway,
+   * which is expected to stay at the gate while a tenant can still make progress — is covered by
+   * {@link #shouldGracefullyShutdownWhenSchemaStartupStillRunning} above.
+   */
   @Test
-  void shouldNotBlockStartupWhenCannotConnectToElasticAndEmbeddedGatewayIsDeactivated() {
-    // given
+  void shouldNotBlockStartupWhenCannotConnectToElasticAndNoHttpGatewayIsEnabled() throws Exception {
+    // given - an Elasticsearch that is not there, so no physical tenant can apply its schema
     camunda
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("CAMUNDA_DATABASE_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", UNREACHABLE_ELASTICSEARCH_URL)
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false")
         .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
         .withExposedPorts(MONITORING_PORT)
-        .waitingFor(newDefaultWaitStrategy());
+        .waitingFor(managementEndpointsAnswering());
 
-    // when, should start with success, even if not able to connect to ES
+    // when
     camunda.start();
 
-    // then
-    assertThat(camunda.getLogs()).contains("Started Camunda");
+    // then - the node is up rather than crash-looping, and stays diagnosable
+    assertThat(camunda.getLogs())
+        .doesNotContain("Failed to start application")
+        .doesNotContain("BeanCreationException");
+    assertThatDefaultTenantGaugeReportsDegraded();
   }
 
-  private WaitAllStrategy newDefaultWaitStrategy() {
+  /**
+   * The anti-hang regression test, and the one case where the gate refuses to open. When every
+   * tenant has failed in a way retrying cannot repair, nothing is left that could ever produce a
+   * serviceable tenant: a gate that only counted serviceable tenants would block in the context
+   * refresh forever with no management endpoint to say why, and releasing would admit a node that
+   * can serve nobody. It aborts instead, which is what it does today.
+   *
+   * <p>The failure is made terminal by recording a schema version in the tenant's metadata index
+   * that the running version refuses to migrate from, which is an {@code
+   * IncompatibleVersionException} — the one failure both the schema manager and this distribution
+   * agree no retry can repair.
+   */
+  @Test
+  void shouldAbortStartupWhenEveryTenantFailsTerminally() throws Exception {
+    // given
+    storeIncompatibleSchemaVersion();
+    camunda
+        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+        .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
+        .waitingFor(runningContainer());
+
+    // when
+    camunda.start();
+
+    // then - the classification reaches the gate, and the gate takes the node down rather than
+    // hanging at it or admitting a node that can serve nobody
+    Awaitility.await("startup aborts")
+        .atMost(Duration.ofMinutes(2))
+        .untilAsserted(
+            () ->
+                assertThat(camunda.getLogs())
+                    .contains("failed with a cause that retrying cannot repair")
+                    .contains("EveryTenantTerminallyFailedException"));
+
+    // and - it exits non-zero, so an orchestrator restarts it and a rollout stops here rather
+    // than replacing healthy nodes with ones that will never serve
+    Awaitility.await("the node exits")
+        .atMost(Duration.ofMinutes(1))
+        .until(() -> !camunda.isRunning());
+    assertThat(camunda.getCurrentContainerInfo().getState().getExitCodeLong()).isNotZero();
+  }
+
+  /**
+   * Returns as soon as the container is running, without waiting for readiness — the only way to
+   * observe a node that is expected to take itself down.
+   */
+  private static WaitStrategy runningContainer() {
+    return new WaitStrategy() {
+      @Override
+      public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {}
+
+      @Override
+      public WaitStrategy withStartupTimeout(final Duration startupTimeout) {
+        return this;
+      }
+    };
+  }
+
+  /**
+   * The management endpoints answering is the startup signal for a node that never becomes ready.
+   * The "Started Camunda using ..." banner is printed long before the context finishes refreshing,
+   * so it would pass while the gate still held.
+   */
+  private static WaitStrategy managementEndpointsAnswering() {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
         .withStrategy(new HostPortWaitStrategy())
         .withStrategy(
             new HttpWaitStrategy()
-                .forPath("/ready")
+                .forPath("/actuator/prometheus")
                 .forPort(MONITORING_PORT)
-                .forStatusCodeMatching(status -> status >= 200 && status < 300)
+                .forStatusCode(200)
                 .withReadTimeout(Duration.ofSeconds(10)))
-        .withStartupTimeout(Duration.ofMinutes(1));
+        .withStartupTimeout(Duration.ofMinutes(2));
+  }
+
+  private void assertThatDefaultTenantGaugeReportsDegraded() throws Exception {
+    assertThat(bodyOf("/actuator/prometheus").body())
+        .as("the per-tenant readiness gauge reports the tenant as degraded")
+        .containsPattern(
+            "camunda_physical_tenant_secondary_storage_ready\\{[^}]*physicalTenant=\"default\"[^}]*}"
+                + "\\s+0");
+  }
+
+  /**
+   * Writes a schema version far enough behind the running one that {@code
+   * VersionCompatibilityCheck} refuses it, whichever version this image was built from. Creating
+   * the document also creates the metadata index, which is what makes the schema manager read it.
+   */
+  private void storeIncompatibleSchemaVersion() throws IOException, InterruptedException {
+    final var metadataIndex = new MetadataIndex("", true).getFullQualifiedName();
+    final var response =
+        HttpClient.newHttpClient()
+            .send(
+                HttpRequest.newBuilder(
+                        URI.create(
+                            "http://"
+                                + es.getHttpHostAddress()
+                                + "/"
+                                + metadataIndex
+                                + "/_doc/schema-version?refresh=true"))
+                    .header("Content-Type", "application/json")
+                    .PUT(BodyPublishers.ofString("{\"id\":\"schema-version\",\"value\":\"1.0.0\"}"))
+                    .build(),
+                BodyHandlers.ofString());
+    assertThat(response.statusCode()).as("%s", response.body()).isEqualTo(201);
+  }
+
+  private HttpResponse<String> bodyOf(final String actuatorPath)
+      throws IOException, InterruptedException {
+    final var uri =
+        URI.create(
+            "http://"
+                + camunda.getHost()
+                + ":"
+                + camunda.getMappedPort(MONITORING_PORT)
+                + actuatorPath);
+    return HttpClient.newHttpClient()
+        .send(HttpRequest.newBuilder(uri).GET().build(), BodyHandlers.ofString());
   }
 
   private void shutDownContainerGracefully(final Duration timeout) {

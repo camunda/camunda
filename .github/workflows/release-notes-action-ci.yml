@@ -1,0 +1,83 @@
+# CI for the release-notes TypeScript action package.
+# Guards the committed ncc bundle against drift and runs the parser/policy tests.
+#
+# Part of Unified CI: called by ci.yml, which owns the trigger and the path
+# filtering (the `release-notes-action` filter on its detect-changes job). Do not
+# add `pull_request`/`push` triggers back here — see
+# https://camunda.github.io/camunda/ci/#unified-ci
+name: Release-notes action CI
+
+on:
+  workflow_call: {}
+
+permissions: {}
+
+defaults:
+  run:
+    working-directory: .github/actions/release-notes
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: '@camunda/engineering-operations'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # checkout
+    env:
+      TEST_PRODUCT: Orchestration Cluster
+      TEST_TYPE: CI Helper
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: .github/actions/release-notes
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test (parser + policy)
+        run: npm test
+      - name: Rebuild bundle
+        run: npm run build
+      - name: Fail if committed dist is stale
+        run: |
+          if ! git diff --exit-code -- lint/dist; then
+            echo "::error::lint/dist is out of date. Run 'npm run build' in .github/actions/release-notes and commit the result."
+            exit 1
+          fi
+      - name: Repo-constant grep — PR template matches the parser opt-out phrase
+        run: |
+          # The parser is the single source of truth for the opt-out text; the PR
+          # template must carry the same phrase or the checkbox silently stops working.
+          phrase=$(sed -nE "s/.*OPT_OUT_PHRASE = '([^']+)'.*/\1/p" src/parser/index.ts)
+          test -n "$phrase" || { echo "::error::OPT_OUT_PHRASE not found in src/parser/index.ts"; exit 1; }
+          grep -iqF "$phrase" ../../pull_request_template.md \
+            || { echo "::error::PR template is missing the opt-out phrase: '$phrase'"; exit 1; }
+      - name: Drift guard — title-lint constants match commitlint.config.cjs
+        run: |
+          # The regex title lint reimplements the ACTIVE commitlint rules to keep
+          # the action dependency-free: type-enum, header-max-length, plus the
+          # type-case (lower-case) and scope-empty (always) rules hardcoded into
+          # the HEADER regex/logic rather than exported as constants. This fails
+          # CI if any of the four drift without src/title being updated to match.
+          cfg=$(node -e 'const c=require("../../../commitlint.config.cjs");console.log(JSON.stringify({types:[...c.rules["type-enum"][2]].sort(),max:c.rules["header-max-length"][2],typeCase:c.rules["type-case"],scopeEmpty:c.rules["scope-empty"]}))')
+          ours=$(node --import tsx -e 'import("./src/title/index.ts").then(m=>console.log(JSON.stringify({types:[...m.TITLE_TYPES].sort(),max:m.HEADER_MAX,typeCase:[2,"always","lower-case"],scopeEmpty:[2,"always"]})))')
+          echo "commitlint.config.cjs: $cfg"
+          echo "src/title/index.ts:    $ours"
+          [ "$cfg" = "$ours" ] || { echo "::error::title-lint constants drifted from commitlint.config.cjs — update src/title/index.ts (TITLE_TYPES/HEADER_MAX and/or the type-case/scope-empty logic)"; exit 1; }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

@@ -22,6 +22,7 @@ on:
       - ".github/workflows/optimize-e2e-tests-cloud-nightly.yml"
       - "optimize/client/e2e/cloud-tests/**"
       - "optimize/client/e2e/config.js"
+      - "optimize/client/scripts/start-backend.js"
 
 # One bucket for the whole workflow: every run authenticates the same user against the same Auth0
 # tenant, and concurrent logins are what trip its per-IP throttling. In-flight runs are left to
@@ -126,6 +127,12 @@ jobs:
         with:
           work-dir: ./optimize
 
+      - name: "Read Node version"
+        id: "node-info"
+        uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
+        with:
+          work-dir: ./parent
+
       - name: Read DB versions
         id: db-versions
         uses: ./.github/actions/read-db-versions
@@ -144,7 +151,7 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./optimize/client
-          node-version: ${{ steps.pom-info.outputs.x_version_node }}
+          node-version: ${{ steps.node-info.outputs.x_version_node }}
 
       - uses: ./.github/actions/build-zeebe
         id: build-camunda

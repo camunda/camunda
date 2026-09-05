@@ -38,6 +38,10 @@ env:
   # Run-scoped CI artifact bucket (camunda-ci, europe-west1 = same region as the
   # gcp-perf runners, so traffic is non-billable). See camunda/team-infrastructure#1079.
   GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  # A shallow clone of this repo normally lands in well under a minute, but GitHub-side slowness
+  # occasionally needs more headroom.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
   detect-changes:
@@ -45,6 +49,7 @@ jobs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       commitlint: ${{ steps.filter.outputs.commitlint }}
       codeowners-check: ${{ steps.filter.outputs.codeowners-check }}
+      release-notes-action: ${{ steps.filter.outputs.release-notes-action }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       validate-pom-metadata: ${{ steps.filter.outputs.validate-pom-metadata }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
@@ -59,10 +64,12 @@ jobs:
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       optimize-dockerfile-changes: ${{ steps.filter.outputs.optimize-dockerfile-changes }}
+      process-test-coverage-frontend-changes: ${{ steps.filter.outputs.process-test-coverage-frontend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
+      async-replication-tests: ${{ steps.filter.outputs.async-replication-tests }}
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
       webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
@@ -76,7 +83,7 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check GitHub API rate limit
@@ -105,10 +112,10 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint: v1.0.2
+      - uses: camunda/infra-global-github-actions/actionlint@475528365f4010480dccff71ccac554cc3352e7c # actionlint-1.0.5
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |-
@@ -160,7 +167,7 @@ jobs:
         run: |
           echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.depth.outputs.depth }}
@@ -192,7 +199,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -222,7 +229,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check for missing junit-vintage-engine
@@ -250,7 +257,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Set up Go
@@ -296,7 +303,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Set up Helm
@@ -329,7 +336,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -353,6 +360,15 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  release-notes-action:
+    if: needs.detect-changes.outputs.release-notes-action == 'true'
+    name: "Lint / Release-notes action"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/release-notes-action-ci.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
   codeowners-check:
     if: needs.detect-changes.outputs.codeowners-check == 'true'
     name: "Lint / Codeowners"
@@ -363,7 +379,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/codeowners-setup-cli
@@ -397,7 +413,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -447,7 +463,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -523,7 +539,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/build-frontend
@@ -571,6 +587,35 @@ jobs:
           path: optimize/client/dist
           retention-days: 2
           if-no-files-found: error
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Java jobs skip this npm build via `-Dquickly`, so without this job it only
+  # ran on main, in `deploy-snapshots` -- too late to keep a break off main.
+  process-test-coverage-frontend:
+    if: needs.detect-changes.outputs.process-test-coverage-frontend-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/build-frontend
+        id: build-process-test-coverage-fe
+        with:
+          directory: ./testing/camunda-process-test-coverage
+          package-manager: "npm"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -894,7 +939,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -999,7 +1044,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Print metadata
@@ -1083,7 +1128,7 @@ jobs:
       opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
       - uses: actions/checkout@v7
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Read DB versions
@@ -1311,10 +1356,14 @@ jobs:
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
+    env:
+      # Route base-branch failure alerts to the code owner of /db/ and the RDBMS ITs
+      # (.codeowners), instead of the workflow-level default @camunda/engineering-operations.
+      TEST_OWNER: '@camunda/data-layer'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check for fork
@@ -1391,6 +1440,102 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  async-replication-integration-tests:
+    if: needs.detect-changes.outputs.async-replication-tests == 'true'
+    needs: [ detect-changes, build-distball ]
+    name: "General / Integration / Async Replication ITs"
+    timeout-minutes: 20
+    runs-on: gcp-perf-core-8-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
+    env:
+      # Route base-branch failure alerts to the code owner of /db/ and the RDBMS ITs
+      # (.codeowners), instead of the workflow-level default @camunda/engineering-operations.
+      TEST_OWNER: '@camunda/data-layer'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Check for fork
+        id: is-fork
+        uses: ./.github/actions/is-fork
+      # Consume the shared distball's io.camunda SNAPSHOTs instead of a ~15 min reactor build.
+      # This job runs on a self-hosted gcp-perf runner where the artifact API is throughput-capped,
+      # so restore-shared-m2 pulls from GCS (same-region, non-billable). Async-replication ITs run
+      # in-process (no Docker image build), so only the m2 SNAPSHOTs are needed, not the distball
+      # tarball. The GCS build-cache auth step below authenticates gcloud for that download.
+      # See build-distball.
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          maven-cache-key-modifier: it-async-repl
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
+      # of silently eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        if: steps.is-fork.outputs.is-fork != 'true'
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/restore-shared-m2
+        if: steps.is-fork.outputs.is-fork != 'true'
+      # Fork PRs can't authenticate to GCS (no Vault access), so build the SNAPSHOTs locally
+      # instead of restoring them -- same fallback the database/webapp-UT reusable workflows
+      # use for their standalone (non-ci.yml) callers.
+      - uses: ./.github/actions/build-zeebe
+        if: steps.is-fork.outputs.is-fork == 'true'
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run the async-replication integration tests (tag "async-repl"), split out of the
+      # general RDBMS ITs job so it only runs when replication-related code actually changes.
+      - name: Maven Test Build Async Replication
+        shell: bash
+        run: >
+          ./mvnw -B -T1C --no-snapshot-updates
+          -D forkCount=1
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -P async-repl,extract-flaky-tests
+          -pl qa/acceptance-tests
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] Async Replication"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: async-replication-integration-tests
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          detailed_junit_tests: true
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
@@ -1442,7 +1587,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check for fork
@@ -1595,7 +1740,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Print metadata
@@ -1674,10 +1819,10 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - uses: hadolint/hadolint-action@2a66e89f53d0771bb131a7fa31f3136336094aa6 # v3.4.0
+      - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           config: ./.hadolint.yaml
           dockerfile: ./camunda.Dockerfile
@@ -1688,7 +1833,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -1809,6 +1954,7 @@ jobs:
     needs:
       - detect-changes
       - archunit-tests
+      - async-replication-integration-tests
       - database-integration-tests
       - docker-checks
       - general-unit-tests
@@ -1896,6 +2042,8 @@ jobs:
           identity-matrix-output-result: ${{ steps.matrix-read.outputs.identity }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
           rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
+          async-repl-tests-result: ${{ needs.async-replication-integration-tests.result }}
+          async-repl-tests-flaky: ${{ needs.async-replication-integration-tests.outputs.flakyTests }}
           docker-checks-result: ${{ needs.docker-checks.result }}
           docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
           zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
@@ -1934,6 +2082,7 @@ jobs:
           IDENTITY: ${{ needs.identity-tests.result }}
           INTEGRATION: ${{ needs.integration-tests.result }}
           RDBMS: ${{ needs.rdbms-integration-tests.result }}
+          ASYNC_REPL: ${{ needs.async-replication-integration-tests.result }}
           ZEEBE: ${{ needs.zeebe-unit-tests.result }}
           ARCHUNIT: ${{ needs.archunit-tests.result }}
         run: |
@@ -1946,6 +2095,7 @@ jobs:
             ["identity-tests"]="$IDENTITY"
             ["integration-tests"]="$INTEGRATION"
             ["rdbms-integration-tests"]="$RDBMS"
+            ["async-replication-integration-tests"]="$ASYNC_REPL"
             ["zeebe-unit-tests"]="$ZEEBE"
             ["archunit-tests"]="$ARCHUNIT"
           )
@@ -2054,7 +2204,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -2249,6 +2399,7 @@ jobs:
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+      runE2eTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' || needs.detect-changes.outputs.optimize-backend-changes == 'true' }}
       runDockerfileChecks: ${{ needs.detect-changes.outputs.optimize-dockerfile-changes == 'true' }}
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
@@ -2286,7 +2437,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -2325,7 +2476,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - id: pr-body
@@ -2373,7 +2524,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Setup Node.js for Spectral
@@ -2441,7 +2592,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - name: Checkout PR
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Setup Node.js
@@ -2497,28 +2648,30 @@ jobs:
     name: "Lint / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 22
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
       # Retry to absorb transient npm-registry resolution failures when npx resolves
-      # renovate@latest and its transitive deps on a fresh run (see INC-6869).
+      # renovate@latest and its transitive deps on a fresh run (see INC-6869, INC-7810).
       - name: Validate Renovate config
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
           retry_wait_seconds: 15
-          # 2 min/attempt keeps all 3 attempts (~6.5 min worst case) within the
-          # 10-min job timeout; validation normally completes in well under a minute.
-          timeout_minutes: 2
+          # 6 min/attempt keeps all 3 attempts (~18.5 min worst case) within
+          # the 22-min job timeout; validation normally completes in well
+          # under a minute. Widened from 2min (10min job timeout) because a
+          # registry-wide slowdown (INC-7810) left no margin at that budget.
+          timeout_minutes: 6
           command: npx --yes --package "renovate@latest" -- renovate-config-validator --no-global .github/renovate.json* .github/renovate/*
       - name: Observe build status
         if: always()
@@ -2539,17 +2692,22 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - uses: ./.github/actions/apt-fast-mirror-failover
+      # `timeout` runs inside the sudo'd root process tree so it can self-terminate a hung
+      # apt-get without nick-fields/retry having to kill across the privilege boundary --
+      # doing that externally throws `kill EPERM` and crashes instead of retrying, see
+      # https://github.com/nick-fields/retry/issues/124.
       - name: Install bats and xmllint
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_wait_seconds: 10
-          timeout_seconds: 60
+          timeout_minutes: 2
           shell: bash
-          command: sudo apt-get install -y --no-install-recommends bats libxml2-utils
+          command: sudo timeout 115 bash -c "apt-get install -y --no-install-recommends bats libxml2-utils"
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
       - name: Run flattened-pom validation tests
@@ -2576,7 +2734,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Install test dependencies
@@ -2608,6 +2766,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - archunit-tests
+      - async-replication-integration-tests
       - build-distball
       - build-platform-frontend
       - c8-e2e-test-suite
@@ -2639,8 +2798,10 @@ jobs:
       - pin-check
       - pr-maven-snapshot
       - pr-vuln-check
+      - process-test-coverage-frontend
       - protobuf-checks
       - rdbms-integration-tests
+      - release-notes-action
       - renovatelint
       - scripts-tests
       - setup-tests
@@ -2656,7 +2817,7 @@ jobs:
       SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && github.event.pull_request.head.repo.fork != true }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check for aborted jobs
@@ -2723,7 +2884,9 @@ jobs:
     name: Deploy snapshot artifacts
     needs: [ check-results, build-platform-frontend, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 25
+    # 30 min (the policy ceiling) covers the one-time checkout/setup/build overhead plus up to 2
+    # attempts of the deploy step below; the retry only re-runs that step, not this whole job.
+    timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2733,7 +2896,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -2769,7 +2932,17 @@ jobs:
       # matching the central-sonatype-publish release path. Without it, snapshots ship the raw reactor
       # POM whose parent chain (zeebe-parent) must be resolved by external consumers to build the
       # effective model; the flattened POM is self-contained, exactly as published releases are.
-      - run: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true compile generate-sources source:jar javadoc:jar deploy
+      # Artifactory intermittently returns a transient 500 on artifact/metadata upload (INC-6737,
+      # INC-7541); a bare re-run of this exact command succeeded both times with no other change, so
+      # retrying automates that recovery. Deploying the same SNAPSHOT version twice is safe/idempotent.
+      - name: Compile and deploy snapshot artifacts
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 2
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 13
+          command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2814,7 +2987,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -2889,7 +3062,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build

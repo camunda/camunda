@@ -12,4 +12,8 @@ public class CamundaAuthenticationException extends RuntimeException {
   public CamundaAuthenticationException(final String message) {
     super(message);
   }
+
+  public CamundaAuthenticationException(final String message, final Throwable cause) {
+    super(message, cause);
+  }
 }

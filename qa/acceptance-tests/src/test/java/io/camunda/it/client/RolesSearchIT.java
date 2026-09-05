@@ -15,6 +15,7 @@ import io.camunda.client.api.search.response.Role;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -98,6 +99,21 @@ public class RolesSearchIT {
         // IdentitySetupInitializer
         .filteredOn(r -> r.equals(ROLE_NAME_1) || r.equals(ROLE_NAME_2))
         .containsExactly(ROLE_NAME_2, ROLE_NAME_1);
+  }
+
+  @Test
+  void searchShouldReturnRolesMatchingOrFilters() {
+    final var roleSearchResponse =
+        camundaClient
+            .newRolesSearchRequest()
+            .filter(
+                fn -> fn.orFilters(List.of(f1 -> f1.roleId(ROLE_ID_1), f2 -> f2.roleId(ROLE_ID_2))))
+            .send()
+            .join();
+
+    assertThat(roleSearchResponse.items())
+        .extracting(Role::getRoleId)
+        .containsExactlyInAnyOrder(ROLE_ID_1, ROLE_ID_2);
   }
 
   private static void assertRoleCreated(

@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.rebalance.ClusterConfigurationCoordinatorCheck;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
@@ -122,13 +123,10 @@ public final class ZeebePartition extends Actor
             transitionContext.getPartitionId());
     coordinatorCheck =
         new ClusterConfigurationCoordinatorCheck(
-            () -> {
-              final var current =
-                  transitionContext
-                      .getClusterConfigurationService()
-                      .getCurrentClusterConfiguration();
-              return current == null ? null : current.toLegacyDefault();
-            });
+            () ->
+                transitionContext
+                    .getClusterConfigurationService()
+                    .getCurrentClusterConfiguration());
   }
 
   public static String componentName(final PartitionId partitionId) {
@@ -748,6 +746,13 @@ public final class ZeebePartition extends Actor
             partitionConfigurationManager
                 .enableExporter(exporterId, metadataVersion, initializeFrom)
                 .onComplete(future));
+    return future;
+  }
+
+  public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
+    final var future = new CompletableActorFuture<Void>();
+    actor.run(
+        () -> partitionConfigurationManager.setExportingState(exportingState).onComplete(future));
     return future;
   }
 }

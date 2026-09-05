@@ -20,6 +20,13 @@ final class RestoreAppliers {
 
   private RestoreAppliers() {}
 
+  /**
+   * Rejects the operation unless the member is an active broker of the cluster, part of the group,
+   * in recovery for it, and a replica of the partition. Validation only: on success it returns
+   * {@link UnaryOperator#identity()}, since no restore step writes the {@link
+   * PartitionGroupConfiguration} — see {@link PartitionPreRestoreApplier} and {@link
+   * PartitionRestoreApplier} for why the restore graph depends on that.
+   */
   static Either<Exception, UnaryOperator<PartitionGroupConfiguration>> requireRecoveringMember(
       final GlobalConfiguration currentGlobalConfiguration,
       final PartitionGroupConfiguration currentPartitionGroupConfiguration,

@@ -55,6 +55,7 @@ final class JobStreamerImpl implements JobStreamer {
   private final TenantFilter tenantFilter;
   private final Duration streamTimeout;
   private final Duration streamInactivityTimeout;
+  private final boolean withLease;
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService executor;
   private final LongSupplier nanoClock;
@@ -97,7 +98,8 @@ final class JobStreamerImpl implements JobStreamer {
       final BackoffSupplier backoffSupplier,
       final ScheduledExecutorService executor,
       final LongSupplier nanoClock,
-      final JobWorkerMetrics metrics) {
+      final JobWorkerMetrics metrics,
+      final boolean withLease) {
     this.jobClient = jobClient;
     this.jobType = jobType;
     this.workerName = workerName;
@@ -107,6 +109,7 @@ final class JobStreamerImpl implements JobStreamer {
     this.tenantFilter = tenantFilter;
     this.streamTimeout = streamTimeout;
     this.streamInactivityTimeout = streamInactivityTimeout;
+    this.withLease = withLease;
     this.backoffSupplier = backoffSupplier;
     this.executor = executor;
     this.nanoClock = nanoClock;
@@ -198,6 +201,11 @@ final class JobStreamerImpl implements JobStreamer {
 
     if (fetchVariables != null) {
       command = command.fetchVariables(fetchVariables);
+    }
+    // only set when true: an explicit false is still sent over the wire, which would break
+    // rolling upgrades against a gateway that doesn't yet know this field
+    if (withLease) {
+      command.withLease(true);
     }
 
     return command;

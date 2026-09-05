@@ -106,7 +106,15 @@ public class RestoreApp implements ApplicationRunner {
       // set up already especially when using dynamic node ids.
       final DataDirectoryProvider dataDirectoryProvider,
       final PostRestoreAction postRestoreAction,
-      final PreRestoreAction preRestoreAction) {
+      final PreRestoreAction preRestoreAction,
+      final PhysicalTenantIds physicalTenantIds) {
+    if (physicalTenantIds.known().size() > 1) {
+      throw new IllegalStateException(
+          "Restoring a cluster with multiple physical tenants configured is not supported by "
+              + "RestoreApp. Please use the v2 REST APIs "
+              + "(/physical-tenants/<physical-tenant-id>/v2/restore/ or /cluster/v2/restore) "
+              + "to restore such a cluster instead.");
+    }
     this.camunda = camunda;
     this.configuration = configuration;
     this.backupStore = backupStore;

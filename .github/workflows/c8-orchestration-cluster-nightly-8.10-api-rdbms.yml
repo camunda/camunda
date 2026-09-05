@@ -1,0 +1,66 @@
+# description: Nightly RDBMS API tests for stable/8.10 — builds the Camunda distribution
+#              and runs the full database matrix (Postgres, MySQL, MariaDB, MSSQL, Oracle).
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly 8.10 - API Tests (RDBMS)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-api-tests-rdbms:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
+    with:
+      branch: stable/8.10
+    secrets: inherit
+
+  nightly-api-tests-rdbms-all-in-one:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
+    with:
+      branch: stable/8.10
+      camunda_mode: all-in-one
+    secrets: inherit
+
+  # Auto-retry when a matrix leg failed because its self-hosted runner was
+  # terminated mid-job (spot preemption / autoscaler scale-down / node eviction)
+  # rather than a real test failure. The reusable action only re-runs the failed
+  # jobs when one of the runner-shutdown messages is present in the run logs, so
+  # genuine test failures are never masked. Capped at two retries via run_attempt.
+  rerun-failed-jobs:
+    needs:
+      - nightly-api-tests-rdbms
+      - nightly-api-tests-rdbms-all-in-one
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rerun failed jobs on runner shutdown
+        uses: camunda/infra-global-github-actions/rerun-failed-run@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # rerun-failed-run-1.1.0
+        with:
+          error-messages: |
+            The runner has received a shutdown signal
+            lost communication with the server
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

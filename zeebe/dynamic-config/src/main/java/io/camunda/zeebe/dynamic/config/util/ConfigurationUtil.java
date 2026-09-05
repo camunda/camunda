@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
@@ -75,6 +76,9 @@ public final class ConfigurationUtil {
    * per distinct {@link PartitionId#group()} found in it, each with its own {@link RoutingState}
    * initialized from that group's own partition count; only members that replicate at least one
    * partition of a group appear in that group.
+   *
+   * <p>{@code clusterId} may be {@code null}, in which case a random one is generated: the returned
+   * configuration always carries a cluster id.
    */
   public static CurrentClusterConfiguration getCurrentClusterConfigurationFrom(
       final Set<MemberId> clusterMembers,
@@ -85,10 +89,16 @@ public final class ConfigurationUtil {
     for (final var member : clusterMembers) {
       brokerStates.put(member, BrokerState.initializeAsActive());
     }
+    // A cluster id is required from the first bootstrap on, so generate one when none is
+    // configured. Only the coordinator reaches this method — the other members wait for gossip —
+    // so exactly one id is generated per cluster and every later start reads it back from the
+    // persisted configuration.
+    final var effectiveClusterId =
+        Optional.ofNullable(clusterId).orElseGet(() -> UUID.randomUUID().toString());
     final var globalConfiguration =
         new GlobalConfiguration(
             GlobalConfiguration.INITIAL_VERSION,
-            Optional.ofNullable(clusterId),
+            Optional.of(effectiveClusterId),
             brokerStates,
             Optional.empty(),
             Optional.empty(),
@@ -139,7 +149,7 @@ public final class ConfigurationUtil {
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(
-      final ClusterConfiguration clusterConfiguration, final String groupName) {
+      final CurrentClusterConfiguration clusterConfiguration, final String groupName) {
     if (clusterConfiguration.isUninitialized()) {
       throw new IllegalStateException(
           "Cannot generated partition distribution from uninitialized configuration");
@@ -147,6 +157,7 @@ public final class ConfigurationUtil {
 
     final var memberPriorityByPartition = new HashMap<Integer, Map<MemberId, Integer>>();
     clusterConfiguration
+        .partitionGroup(groupName)
         .members()
         .forEach(
             (memberId, member) -> {
@@ -155,9 +166,11 @@ public final class ConfigurationUtil {
                 final PartitionState partitionState = entry.getValue();
                 if (partitionState.state().equals(State.ACTIVE)
                     || partitionState.state().equals(State.LEAVING)
-                    || partitionState.state().equals(State.RECOVERING)) {
-                  // only add active, leaving, and recovering partitions because only those has to
-                  // be started
+                    || partitionState.state().equals(State.RECOVERING)
+                    || partitionState.state().equals(State.LEARNER)) {
+                  // only add active, leaving, recovering and learner partitions because only those
+                  // have to be started. A learner already replicates the partition and must recover
+                  // its raft state on boot, otherwise a pending promotion could never complete.
                   memberPriorityByPartition
                       .computeIfAbsent(partitionId, k -> new HashMap<>())
                       .put(memberId, partitionState.priority());
@@ -210,9 +223,11 @@ public final class ConfigurationUtil {
                 final PartitionState partitionState = entry.getValue();
                 if (partitionState.state().equals(State.ACTIVE)
                     || partitionState.state().equals(State.LEAVING)
-                    || partitionState.state().equals(State.RECOVERING)) {
-                  // only add active, leaving, and recovering partitions because only those has to
-                  // be started
+                    || partitionState.state().equals(State.RECOVERING)
+                    || partitionState.state().equals(State.LEARNER)) {
+                  // only add active, leaving, recovering and learner partitions because only those
+                  // have to be started. A learner already replicates the partition and must recover
+                  // its raft state on boot, otherwise a pending promotion could never complete.
                   memberPriorityByPartition
                       .computeIfAbsent(partitionId, k -> new HashMap<>())
                       .put(memberId, partitionState.priority());

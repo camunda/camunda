@@ -98,8 +98,6 @@ paths:
     $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}'
   /agent-instances/search:
     $ref: 'agent-instances.yaml#/paths/~1agent-instances~1search'
-  /agent-instances/{agentInstanceKey}/history:
-    $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}~1history'
   /agent-instances/{agentInstanceKey}/history/search:
     $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}~1history~1search'
 
@@ -504,8 +502,28 @@ paths:
     $ref: 'cluster.yaml#/paths/~1restore'
 
   # Cluster-wide endpoints. Path keys must stay absolute — see `cluster-admin.yaml` for why.
+  /cluster/v2/exporting:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting'
+  /cluster/v2/exporting/pause:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting~1pause'
+  /cluster/v2/exporting/resume:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting~1resume'
+  /cluster/v2/backups/runtime:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime'
+  /cluster/v2/backups/runtime/state:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1state'
+  /cluster/v2/backups/runtime/state/sync:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1state~1sync'
+  /cluster/v2/backups/runtime/{backupId}:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1{backupId}'
+  /cluster/v2/backups/history:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1history'
+  /cluster/v2/backups/history/{backupId}:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1history~1{backupId}'
   /cluster/v2/mode:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1mode'
+  /cluster/v2/rebalance:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1rebalance'
   /cluster/v2/restore:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1restore'
   /cluster/v2/status:

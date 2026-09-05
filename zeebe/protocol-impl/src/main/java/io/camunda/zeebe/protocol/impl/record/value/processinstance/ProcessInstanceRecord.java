@@ -60,6 +60,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   public static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -103,8 +104,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
+  private final LongProperty resumeFromJobKeyProp = new LongProperty(RESUME_FROM_JOB_KEY_KEY, -1L);
+
   public ProcessInstanceRecord() {
-    super(18);
+    super(19);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -122,7 +125,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(tagsProp)
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalKeyProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(businessIdProp)
+        .declareProperty(resumeFromJobKeyProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -140,6 +144,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
     storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     businessIdProp.setValue(record.getBusinessId());
+    resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
   }
 
   @JsonIgnore
@@ -305,6 +310,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public long getResumeFromJobKey() {
+    return resumeFromJobKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setResumeFromJobKey(final long resumeFromJobKey) {
+    resumeFromJobKeyProp.setValue(resumeFromJobKey);
     return this;
   }
 

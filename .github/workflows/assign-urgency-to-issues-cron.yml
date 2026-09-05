@@ -32,7 +32,7 @@ jobs:
 
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets-1.1.0
         with:
           github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -47,16 +47,22 @@ jobs:
           repositories: '!all'
 
       - name: Run urgency batch for Quality Board
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
-        run: |
-          bash .github/workflows/assign-urgency-to-issues.sh \
-            --project 187 \
-            --direct \
-            --updated-since 2h \
-            --skip-assigned \
-            --limit 100 \
-            --delay 1
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 10
+          timeout_minutes: 15
+          command: |
+            bash .github/workflows/assign-urgency-to-issues.sh \
+              --project 187 \
+              --direct \
+              --updated-since 2h \
+              --skip-assigned \
+              --limit 100 \
+              --delay 1
       - name: Observe build status
         if: always()
         continue-on-error: true

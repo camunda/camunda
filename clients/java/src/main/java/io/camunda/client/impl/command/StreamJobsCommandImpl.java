@@ -154,6 +154,12 @@ public final class StreamJobsCommandImpl
   }
 
   @Override
+  public StreamJobsCommandStep3 withLease(final boolean withLease) {
+    builder.setWithLease(withLease);
+    return this;
+  }
+
+  @Override
   public StreamJobsCommandStep3 tenantId(final String tenantId) {
     customTenantIds.add(tenantId);
     return this;

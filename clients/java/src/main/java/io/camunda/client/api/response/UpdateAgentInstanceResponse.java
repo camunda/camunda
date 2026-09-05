@@ -22,24 +22,5 @@ public interface UpdateAgentInstanceResponse {
   /**
    * @return one entry per history item submitted on the update request, in request order
    */
-  List<CreatedHistoryItem> getCreatedHistory();
-
-  /** A single entry describing the outcome of appending one submitted history item. */
-  interface CreatedHistoryItem {
-
-    /**
-     * @return the id of the corresponding request item, echoed back for correlation by id
-     */
-    String getHistoryItemId();
-
-    /**
-     * @return the system-generated key for the created agent history item
-     */
-    long getHistoryItemKey();
-
-    /**
-     * @return true if this item was already present and no new history entry was created for it
-     */
-    boolean isDuplicate();
-  }
+  List<AgentInstanceCreatedHistoryItem> getCreatedHistory();
 }

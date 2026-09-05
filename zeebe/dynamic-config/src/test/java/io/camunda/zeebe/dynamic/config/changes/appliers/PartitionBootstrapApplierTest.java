@@ -21,6 +21,9 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -28,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -187,5 +191,103 @@ final class PartitionBootstrapApplierTest {
     verify(partitionChangeExecutor, times(1)).bootstrap(1, 1, partitionConfig, false);
     Assertions.assertThat(resultingGroup.getMember(memberId).getPartition(1).state())
         .isEqualTo(State.ACTIVE);
+  }
+
+  @Test
+  void shouldExecuteBootstrapCallbackWhenAlreadyBootstrapping() {
+    // given — restart-safe retry: the partition is already bootstrapping in the local member,
+    // so init() must be a no-op, but apply() must still invoke the callback and reach ACTIVE
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(
+                memberId, brokerWith(Map.of(1, PartitionState.bootstrapping(1, partitionConfig)))));
+    final var applier = applierFor(1);
+    when(partitionChangeExecutor.bootstrap(anyInt(), anyInt(), any(), anyBoolean()))
+        .thenReturn(CompletableActorFuture.completed(null));
+
+    // when
+    final var updater = applier.init(globalConfigurationWithLocalMemberActive, initialGroup).get();
+    final var groupAfterInit = updater.apply(initialGroup);
+
+    // then — init leaves the group unchanged
+    Assertions.assertThat(groupAfterInit).isEqualTo(initialGroup);
+
+    // when
+    final var resultingGroup = applier.apply().join().apply(groupAfterInit);
+
+    // then
+    verify(partitionChangeExecutor, times(1)).bootstrap(1, 1, partitionConfig, false);
+    Assertions.assertThat(resultingGroup.getMember(memberId).getPartition(1).state())
+        .isEqualTo(State.ACTIVE);
+  }
+
+  @Test
+  void shouldBootstrapWithGivenPartitionConfig() {
+    // given — an explicit config is provided on the operation, so it must be used instead of
+    // falling back to partition 1's config or the default
+    final var initialGroup = groupWithMembers(Map.of());
+    final var explicitConfig =
+        DynamicPartitionConfig.init()
+            .updateExporting(
+                new ExportingConfig(
+                    ExportingState.EXPORTING,
+                    Map.of(
+                        "exporter",
+                        new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config")))));
+    final var applier =
+        new PartitionBootstrapApplier(
+            new PartitionBootstrapOperation(memberId, 1, 1, Optional.of(explicitConfig), false),
+            partitionChangeExecutor);
+
+    // when
+    final var updater = applier.init(globalConfigurationWithLocalMemberActive, initialGroup).get();
+    final var resultingGroup = updater.apply(initialGroup);
+
+    // then
+    final var localPartition = resultingGroup.getMember(memberId).getPartition(1);
+    Assertions.assertThat(localPartition.config()).isEqualTo(explicitConfig);
+  }
+
+  @Test
+  void shouldBootstrapWithConfigFromPartition1WhenNoConfigGiven() {
+    // given — no explicit config on the operation, but the group already has partition 1 with a
+    // non-default config, which must be used instead of falling back to the default config
+    final var nonDefaultConfig =
+        DynamicPartitionConfig.init()
+            .updateExporting(
+                new ExportingConfig(
+                    ExportingState.EXPORTING,
+                    Map.of(
+                        "exporter",
+                        new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config")))));
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(memberId, brokerWith(Map.of(1, PartitionState.active(1, nonDefaultConfig)))));
+
+    // when
+    final var updater =
+        applierFor(2).init(globalConfigurationWithLocalMemberActive, initialGroup).get();
+    final var resultingGroup = updater.apply(initialGroup);
+
+    // then
+    final var localPartition = resultingGroup.getMember(memberId).getPartition(2);
+    Assertions.assertThat(localPartition.config()).isEqualTo(nonDefaultConfig);
+  }
+
+  @Test
+  void shouldFailApplyWhenBootstrapCallbackFails() {
+    // given
+    final var initialGroup = groupWithMembers(Map.of());
+    final var applier = applierFor(1);
+    final var initResult = applier.init(globalConfigurationWithLocalMemberActive, initialGroup);
+    assertThat(initResult).isRight();
+    when(partitionChangeExecutor.bootstrap(anyInt(), anyInt(), any(), anyBoolean()))
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("FAIL")));
+
+    // when
+    final var result = applier.apply();
+
+    // then
+    Assertions.assertThat(result).failsWithin(Duration.ofMillis(100));
   }
 }

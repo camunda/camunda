@@ -9,6 +9,26 @@ package io.camunda.zeebe.dynamic.config.api;
 
 public record ErrorResponse(ErrorCode code, String message) {
 
+  /**
+   * Maps this error response to the corresponding typed {@link
+   * ClusterConfigurationRequestFailedException} subtype so callers can distinguish, for example, a
+   * {@link ClusterConfigurationRequestFailedException.NotFound} (missing or disabled tenant) from
+   * an {@link ClusterConfigurationRequestFailedException.InternalError}.
+   */
+  public RuntimeException toException() {
+    return switch (code) {
+      case INVALID_REQUEST ->
+          new ClusterConfigurationRequestFailedException.InvalidRequest(message);
+      case OPERATION_NOT_ALLOWED ->
+          new ClusterConfigurationRequestFailedException.OperationNotAllowed(message);
+      case CONCURRENT_MODIFICATION ->
+          new ClusterConfigurationRequestFailedException.ConcurrentModificationException(message);
+      case INTERNAL_ERROR -> new ClusterConfigurationRequestFailedException.InternalError(message);
+      case INVALID_STATE -> new ClusterConfigurationRequestFailedException.InvalidState(message);
+      case NOT_FOUND -> new ClusterConfigurationRequestFailedException.NotFound(message);
+    };
+  }
+
   public enum ErrorCode {
     INVALID_REQUEST,
     OPERATION_NOT_ALLOWED,

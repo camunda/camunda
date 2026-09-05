@@ -2547,6 +2547,38 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldResolveProcessInstanceIncidentsWithoutContentType() {
+    // given
+    final long processInstanceKey = 123L;
+    final var record =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(456L)
+            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    when(processInstanceServices.resolveProcessInstanceIncidents(eq(processInstanceKey), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/{processInstanceKey}/incident-resolution", processInstanceKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+                {"batchOperationKey":"456","batchOperationType":"RESOLVE_INCIDENT"}
+              """,
+            JsonCompareMode.STRICT);
+
+    verify(processInstanceServices).resolveProcessInstanceIncidents(eq(processInstanceKey), any());
+  }
+
+  @Test
   void shouldCancelProcessInstanceBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();

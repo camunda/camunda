@@ -720,7 +720,7 @@ class BackupServiceImplTest {
             new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
-    final var firstMeta = mock(CheckpointMetadataValue.class);
+    final var firstMeta = mockCheckpointMeta(100L, 1000L, CheckpointType.MANUAL_BACKUP, 0L);
     when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(firstMeta);
     when(checkpointMetadataState.getCheckpoint(5L)).thenReturn(null);
 

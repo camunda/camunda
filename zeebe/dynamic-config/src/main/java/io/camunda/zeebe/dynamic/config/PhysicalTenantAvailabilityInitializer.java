@@ -14,6 +14,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Disables a physical tenant on the coordinator once it is no longer present in the local static
@@ -39,6 +41,9 @@ import java.util.stream.Collectors;
 public class PhysicalTenantAvailabilityInitializer
     extends ClusterConfigurationModifier.CoordinatorOnly<CurrentClusterConfiguration> {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(PhysicalTenantAvailabilityInitializer.class);
+
   private final Set<String> staticTenantIds;
 
   public PhysicalTenantAvailabilityInitializer(final StaticConfiguration staticConfiguration) {
@@ -55,6 +60,14 @@ public class PhysicalTenantAvailabilityInitializer
     var result = configuration;
     for (final var groupId : configuration.partitionGroups().keySet()) {
       final boolean isKnownLocally = staticTenantIds.contains(groupId);
+      if (isKnownLocally && configuration.partitionGroup(groupId).isRemoved()) {
+        LOG.warn(
+            "Physical tenant '{}' is listed in the local static configuration, but it was "
+                + "explicitly removed; removal is permanent, so re-adding '{}' to the static "
+                + "configuration has no effect. Delete it from the static configuration.",
+            groupId,
+            groupId);
+      }
       result =
           result.updatePartitionGroupConfig(
               groupId,

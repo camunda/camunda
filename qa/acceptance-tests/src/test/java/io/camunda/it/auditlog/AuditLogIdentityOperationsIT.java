@@ -22,11 +22,11 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
-import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -737,7 +737,7 @@ public class AuditLogIdentityOperationsIT {
       final String entityKey) {
     return Awaitility.await("Audit log entry is created")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () -> {
               final var logs = findAuditLogs(client, entityType, operationType);
@@ -766,7 +766,7 @@ public class AuditLogIdentityOperationsIT {
     final var authorizationKey = String.valueOf(authorization.getAuthorizationKey());
     Awaitility.await("Audit log entry is created for the authorization")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var logs =

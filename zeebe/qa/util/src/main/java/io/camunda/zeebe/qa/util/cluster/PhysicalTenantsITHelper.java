@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 
 /**
@@ -62,9 +63,9 @@ public final class PhysicalTenantsITHelper {
 
   private static final Duration ADMIN_READY_TIMEOUT = Duration.ofSeconds(30);
 
-  private final Map<String, Storage> tenants;
+  private final Map<String, TenantSpec> tenants;
 
-  private PhysicalTenantsITHelper(final Map<String, Storage> tenants) {
+  private PhysicalTenantsITHelper(final Map<String, TenantSpec> tenants) {
     this.tenants = Collections.unmodifiableMap(new LinkedHashMap<>(tenants));
   }
 
@@ -73,28 +74,53 @@ public final class PhysicalTenantsITHelper {
   }
 
   /**
-   * Fully configures the broker for the physical tenants: assigns the per-PT admin role and applies
-   * the secondary storage. Suitable for instance-scoped brokers configured once per test instance.
-   * Static brokers reused across runs should instead call {@link #configureAdminRoles} once at
-   * setup and {@link #refreshSecondaryStorage} per {@code @BeforeAll}, so storage is applied
-   * exactly once per start with a fresh database identity.
+   * Fully configures the broker for the physical tenants: applies every tenant's static
+   * configuration ({@link #configureStatic}) and its secondary storage. Suitable for
+   * instance-scoped brokers configured once per test instance. Static brokers reused across runs
+   * should instead call {@link #configureStatic} once at setup and {@link #refreshSecondaryStorage}
+   * per {@code @BeforeAll}, so storage is applied exactly once per start with a fresh database
+   * identity.
    */
   public TestStandaloneBroker configure(final TestStandaloneBroker broker) {
-    configureAdminRoles(broker);
+    configureStatic(broker);
     return refreshSecondaryStorage(broker);
   }
 
   /**
-   * Assigns the {@code admin} default role to each non-default physical tenant's {@code
-   * <tenant>-admin} user. Does not touch secondary storage, so it is safe to call once at static
-   * setup while storage is (re-)applied per run via {@link #refreshSecondaryStorage}.
+   * Applies every tenant's static configuration: the per-tenant partition count when one was
+   * declared via {@link Builder#withTenant(String, Storage, int)}, the {@code admin} default role
+   * for each non-default physical tenant's {@code <tenant>-admin} user, and each non-default
+   * tenant's exporters-assigned manifest. Does not touch secondary storage, so it is safe to call
+   * once at static setup while storage is (re-)applied per run via {@link
+   * #refreshSecondaryStorage}.
    */
-  public TestStandaloneBroker configureAdminRoles(final TestStandaloneBroker broker) {
-    tenants
-        .keySet()
+  public TestStandaloneBroker configureStatic(final TestStandaloneBroker broker) {
+    applyPartitionCounts(broker);
+    applyAdminRoles(broker);
+    applyAssignedExporters(broker);
+    return broker;
+  }
+
+  private void applyPartitionCounts(final TestStandaloneBroker broker) {
+    tenants.forEach(
+        (tenant, spec) -> {
+          if (spec.partitionCount() == null) {
+            return;
+          }
+          if (DEFAULT_TENANT_ID.equals(tenant)) {
+            // the default tenant's partitions are the broker's root cluster configuration
+            broker.withClusterConfig(cluster -> cluster.setPartitionCount(spec.partitionCount()));
+          } else {
+            broker.withPtConfig(
+                tenant, camunda -> camunda.getCluster().setPartitionCount(spec.partitionCount()));
+          }
+        });
+  }
+
+  private void applyAdminRoles(final TestStandaloneBroker broker) {
+    nonDefaultTenants()
         .forEach(
-            tenant -> {
-              if (!DEFAULT_TENANT_ID.equals(tenant)) {
+            tenant ->
                 broker.withPtConfig(
                     tenant,
                     camunda ->
@@ -102,7 +128,81 @@ public final class PhysicalTenantsITHelper {
                             .getSecurity()
                             .getInitialization()
                             .setDefaultRoles(
-                                Map.of("admin", Map.of("users", List.of(adminUsername(tenant))))));
+                                Map.of("admin", Map.of("users", List.of(adminUsername(tenant)))))));
+  }
+
+  /**
+   * A non-default physical tenant must explicitly declare which generic exporters run for it
+   * ({@code PhysicalTenantExporterAssignedValidation}, ADR-0008 D1/D2/D5) once any generic exporter
+   * exists in the root catalog — but leaving the manifest unbound is valid too as long as the
+   * tenant's resolved catalog stays empty. {@code TestClusterBuilder} registers recordingExporter
+   * by default (and physical-tenant ITs built on it assert on records exported from the tenant's
+   * own partitions), so it is assigned here when present; callers that configure their own generic
+   * exporters and exporters-assigned afterwards (e.g. {@code PhysicalTenantExporterConfigIT}) are
+   * left untouched, since setting an empty manifest here would collide with their later indexed
+   * {@code exporters-assigned[n]} properties. A caller that later toggles {@link
+   * TestStandaloneBroker#withRecordingExporter} off (e.g. before a restart) must call {@link
+   * #refreshExportersAssigned} to keep this from going stale.
+   */
+  private void applyAssignedExporters(final TestStandaloneBroker broker) {
+    if (!broker
+        .unifiedConfig()
+        .getData()
+        .getExporters()
+        .containsKey(TestStandaloneBroker.RECORDING_EXPORTER_ID)) {
+      return;
+    }
+    nonDefaultTenants()
+        .forEach(
+            tenant ->
+                broker.withProperty(
+                    "camunda.physical-tenants." + tenant + ".data.exporters-assigned[0]",
+                    TestStandaloneBroker.RECORDING_EXPORTER_ID));
+  }
+
+  private Stream<String> nonDefaultTenants() {
+    return tenants.keySet().stream().filter(tenant -> !DEFAULT_TENANT_ID.equals(tenant));
+  }
+
+  /**
+   * Re-syncs each non-default physical tenant's {@code exporters-assigned} manifest with whether
+   * {@code recordingExporter} is currently present in the broker's root catalog — including
+   * clearing a manifest {@link #configureStatic} previously assigned it into. Call this after
+   * toggling {@link TestStandaloneBroker#withRecordingExporter} on an already-{@link #configure}d
+   * broker (e.g. before a restart that removes the exporter from the root configuration): the
+   * manifest {@link #configureStatic} set at initial setup only reflects the catalog as it stood
+   * then, and would otherwise keep assigning an id no longer in the root catalog, tripping {@code
+   * PhysicalTenantExporterAssignedValidation}'s unknown-id check on the next restart.
+   *
+   * <p>Unlike {@link #configureStatic}, this always writes something — an empty manifest when
+   * {@code recordingExporter} is absent, to actively mask a previously-assigned entry (a bare-key
+   * entry takes precedence over indexed entries under Spring's relaxed {@code List<String>}
+   * binding). Only call this on a broker that {@link #configureStatic} already set up; calling it
+   * standalone on a broker managing its own exporters-assigned (e.g. {@code
+   * PhysicalTenantExporterConfigIT}) would collide with its indexed {@code exporters-assigned[n]}
+   * properties the same way an unconditional write in {@link #configureStatic} would.
+   */
+  public TestStandaloneBroker refreshExportersAssigned(final TestStandaloneBroker broker) {
+    final boolean recordingExporterPresent =
+        broker
+            .unifiedConfig()
+            .getData()
+            .getExporters()
+            .containsKey(TestStandaloneBroker.RECORDING_EXPORTER_ID);
+    tenants
+        .keySet()
+        .forEach(
+            tenant -> {
+              if (DEFAULT_TENANT_ID.equals(tenant)) {
+                return;
+              }
+              final String assignedExportersKey =
+                  "camunda.physical-tenants." + tenant + ".data.exporters-assigned";
+              if (recordingExporterPresent) {
+                broker.withProperty(
+                    assignedExportersKey + "[0]", TestStandaloneBroker.RECORDING_EXPORTER_ID);
+              } else {
+                broker.withProperty(assignedExportersKey, "");
               }
             });
     return broker;
@@ -116,18 +216,17 @@ public final class PhysicalTenantsITHelper {
    * left untouched.
    */
   public TestStandaloneBroker refreshSecondaryStorage(final TestStandaloneBroker broker) {
-    tenants.forEach((tenant, storage) -> storage.applyTo(broker, tenant));
+    tenants.forEach((tenant, spec) -> spec.storage().applyTo(broker, tenant));
     return broker;
   }
 
   /**
    * Seeds a basic-auth per-PT admin {@code <tenantId>-admin} user for a non-{@code default}
-   * physical tenant (matching the {@code defaultRoles.admin} assignment {@link
-   * #configureAdminRoles} sets) into that tenant's {@code security.initialization}, so the user can
-   * authenticate via the tenant-prefixed REST path once authorizations and basic auth are enabled.
-   * Basic-auth specific (an OIDC variant would seed a mapping rule instead). Appends the per-PT
-   * admin user to the tenant's existing initialization users list; call in addition to {@link
-   * #configureAdminRoles}.
+   * physical tenant (matching the {@code defaultRoles.admin} assignment {@link #configureStatic}
+   * sets) into that tenant's {@code security.initialization}, so the user can authenticate via the
+   * tenant-prefixed REST path once authorizations and basic auth are enabled. Basic-auth specific
+   * (an OIDC variant would seed a mapping rule instead). Appends the per-PT admin user to the
+   * tenant's existing initialization users list; call in addition to {@link #configureStatic}.
    */
   public TestStandaloneBroker seedBasicAuthAdminUser(
       final TestStandaloneBroker broker, final String tenantId, final String password) {
@@ -195,18 +294,40 @@ public final class PhysicalTenantsITHelper {
     return new LinkedHashSet<>(tenants.keySet());
   }
 
+  private record TenantSpec(Storage storage, Integer partitionCount) {}
+
   public static final class Builder {
 
-    private final Map<String, Storage> tenants = new LinkedHashMap<>();
+    private final Map<String, TenantSpec> tenants = new LinkedHashMap<>();
 
     private Builder() {}
 
     public Builder withTenant(final String tenantId, final Storage storage) {
+      return withTenant(tenantId, storage, null);
+    }
+
+    /**
+     * Declares a physical tenant with an explicit partition count. Giving tenants different
+     * partition counts is the configuration that exposes misrouted requests: on a symmetric
+     * cluster, a request that reaches the wrong tenant's engine often still finds an
+     * identical-looking partition and passes.
+     */
+    public Builder withTenant(
+        final String tenantId, final Storage storage, final int partitionCount) {
+      if (partitionCount < 1) {
+        throw new IllegalArgumentException(
+            "partitionCount of tenant '" + tenantId + "' must be at least 1");
+      }
+      return withTenant(tenantId, storage, Integer.valueOf(partitionCount));
+    }
+
+    private Builder withTenant(
+        final String tenantId, final Storage storage, final Integer partitionCount) {
       if (tenantId == null || tenantId.isBlank()) {
         throw new IllegalArgumentException("tenantId must not be null or blank");
       }
       Objects.requireNonNull(storage, "storage must not be null for tenant '" + tenantId + "'");
-      if (tenants.putIfAbsent(tenantId, storage) != null) {
+      if (tenants.putIfAbsent(tenantId, new TenantSpec(storage, partitionCount)) != null) {
         throw new IllegalArgumentException(
             "physical tenant '" + tenantId + "' is already declared");
       }

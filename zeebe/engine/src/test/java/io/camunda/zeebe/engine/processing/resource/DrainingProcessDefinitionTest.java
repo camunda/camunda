@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -95,8 +97,8 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
-  public void shouldRejectCreateInstanceByProcessIdWhenDraining() {
-    // given - a definition kept draining by a still-running instance
+  public void shouldRejectCreateInstanceByProcessIdWhenNoActiveVersionRemains() {
+    // given - the only version is kept draining by a still-running instance
     final var processId = helper.getBpmnProcessId();
     final var metadata = deployWithJob(processId);
     awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
@@ -105,14 +107,37 @@ public class DrainingProcessDefinitionTest {
     // when
     engine.processInstance().ofBpmnProcessId(processId).expectRejection().create();
 
-    // then
+    // then - create-by-id skips draining versions; with none left this is not-found, not draining
     final var rejection =
         RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
     assertThat(rejection)
-        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
-                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            "Expected to find process definition with process ID '%s', but none found"
+                .formatted(processId));
+  }
+
+  @Test
+  public void shouldCreateInstanceByProcessIdOnLatestActiveVersionWhenLatestIsDraining() {
+    // given - v1 stays ACTIVE while v2 is kept draining by a still-running instance
+    final var processId = helper.getBpmnProcessId();
+    final var v1 = deployWithJob(processId);
+    final var v2 = deployWithJob(processId, "end-v2");
+    awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
+    drainViaDeletion(v2.getProcessDefinitionKey());
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var started =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    assertThat(started.getValue().getProcessDefinitionKey())
+        .isEqualTo(v1.getProcessDefinitionKey());
+    assertThat(started.getValue().getVersion()).isEqualTo(v1.getVersion());
   }
 
   @Test
@@ -154,10 +179,10 @@ public class DrainingProcessDefinitionTest {
             .onlyCommandRejections()
             .getFirst();
     assertThat(rejection)
-        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
-                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            "Expected to find process definition with process ID '%s', but none found"
+                .formatted(processId));
   }
 
   @Test
@@ -168,10 +193,12 @@ public class DrainingProcessDefinitionTest {
     awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
     drainViaDeletion(metadata.getProcessDefinitionKey());
 
-    // when - bogus element id: proves the draining guard runs before start-instruction validation
+    // when - explicit version plus a bogus element id: proves the draining guard runs before
+    // start-instruction validation
     engine
         .processInstance()
         .ofBpmnProcessId(processId)
+        .withVersion(1)
         .withStartInstruction("nonExistentElement")
         .expectRejection()
         .create();
@@ -606,8 +633,9 @@ public class DrainingProcessDefinitionTest {
     // when - only the first instance completes
     engine.job().ofInstance(firstInstanceKey).withType(JOB_TYPE).complete();
 
-    // then - still draining: a new instance is still rejected, proving it is not yet drained
-    engine.processInstance().ofBpmnProcessId(processId).expectRejection().create();
+    // then - still draining: an explicit-version create is still rejected, proving it is not yet
+    // drained
+    engine.processInstance().ofBpmnProcessId(processId).withVersion(1).expectRejection().create();
     final var rejection =
         RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
     assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
@@ -698,6 +726,32 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
+  public void shouldDeleteAgentDefinitionWhenDrainingCompletes() {
+    // given - a draining definition whose only task is agent-marked, with a running instance
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithAgentDefinitionAndJob(processId);
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(processInstanceKey);
+    drainViaDeletion(processDefinitionKey);
+
+    // when - the last active instance completes, finalizing the draining definition locally via
+    // BpmnProcessDeletionBehavior#finalizeDeletionIfDraining
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - the owning process' agent definition is deleted as part of this deferred
+    // finalization too, not just for an immediate (non-draining) deletion
+    assertThat(
+            RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .exists())
+        .describedAs(
+            "Should emit AgentDefinition:DELETED once the draining definition is finalized,"
+                + " mirroring the immediate-deletion cascade")
+        .isTrue();
+  }
+
+  @Test
   public void shouldMintNewVersionWhenRedeployingIdenticalResourceWhileDraining() {
     // given - a definition kept draining by a still-running instance.
     final var processId = helper.getBpmnProcessId();
@@ -762,6 +816,113 @@ public class DrainingProcessDefinitionTest {
 
     // then - the definition is finalized even though a banned instance still references it
     assertDeletedLocally(metadata.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldFinalizeDrainingWhenLastInstanceMigratedAway() {
+    // given - a draining source definition whose only active instance is about to migrate away, and
+    // a separate target definition to receive it
+    final var sourceId = helper.getBpmnProcessId() + "-source";
+    final var targetId = helper.getBpmnProcessId() + "-target";
+    final var source = deployWithJob(sourceId);
+    final var target = deployWithJob(targetId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(sourceId).create();
+    awaitJobCreated(processInstanceKey);
+    drainViaDeletion(source.getProcessDefinitionKey());
+
+    // when - the instance migrates to the target, emptying the draining source without ever
+    // emitting
+    // a completion or termination event against it
+    migrateToTarget(processInstanceKey, target.getProcessDefinitionKey(), "task");
+
+    // then - the source is finalized (physically deleted locally and reported drained) rather than
+    // stranded in DRAINING forever
+    assertDeletedLocally(source.getProcessDefinitionKey());
+    assertReportedDrained(source.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldNotFinalizeDrainingWhenOtherInstancesRemainAfterMigration() {
+    // given - a draining source definition with two active instances, and a target definition
+    final var sourceId = helper.getBpmnProcessId() + "-source";
+    final var targetId = helper.getBpmnProcessId() + "-target";
+    final var source = deployWithJob(sourceId);
+    final var target = deployWithJob(targetId);
+    final long migratingInstanceKey = engine.processInstance().ofBpmnProcessId(sourceId).create();
+    awaitJobCreated(engine.processInstance().ofBpmnProcessId(sourceId).create());
+    awaitJobCreated(migratingInstanceKey);
+    drainViaDeletion(source.getProcessDefinitionKey());
+
+    // when - only one of the two instances migrates away
+    migrateToTarget(migratingInstanceKey, target.getProcessDefinitionKey(), "task");
+
+    // then - the source is not finalized while the other instance still references it: it stays
+    // DRAINING, so an explicit-version create is still rejected for that reason (not "not found")
+    engine.processInstance().ofBpmnProcessId(sourceId).withVersion(1).expectRejection().create();
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
+                sourceId, source.getVersion(), source.getProcessDefinitionKey()));
+  }
+
+  @Test
+  public void shouldReportDrainedAcrossPartitionsAfterMigration() {
+    // given - a draining source (seeded across three partitions) with one active instance, and a
+    // target definition to migrate into
+    final var sourceId = helper.getBpmnProcessId() + "-source";
+    final var targetId = helper.getBpmnProcessId() + "-target";
+    final var source = deployWithJob(sourceId);
+    final var target = deployWithJob(targetId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(sourceId).create();
+    awaitJobCreated(processInstanceKey);
+    drainViaDeletion(source.getProcessDefinitionKey());
+    injectDraining(source, false, 2, 3);
+
+    // when - the last active instance migrates away, finalizing partition 1 locally, and each
+    // partition then reports it has finished draining
+    migrateToTarget(processInstanceKey, target.getProcessDefinitionKey(), "task");
+    engine.writeRecords(
+        drainReport(source.getProcessDefinitionKey(), source, 1),
+        drainReport(source.getProcessDefinitionKey(), source, 2),
+        drainReport(source.getProcessDefinitionKey(), source, 3));
+
+    // then - the definition is reported fully deleted cluster-wide exactly once
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.FULLY_DELETED)
+                .withProcessDefinitionKey(source.getProcessDefinitionKey())
+                .limit(1)
+                .count())
+        .describedAs("the source is reported fully deleted exactly once")
+        .isEqualTo(1);
+  }
+
+  @Test
+  public void shouldDeleteAgentDefinitionWhenDrainingFinalizedByMigration() {
+    // given - a draining source whose only task is agent-marked, with a running instance, plus a
+    // matching target to migrate the agent element into
+    final var sourceId = helper.getBpmnProcessId() + "-source";
+    final var targetId = helper.getBpmnProcessId() + "-target";
+    final var source = deployWithAgentDefinitionAndJob(sourceId);
+    final var target = deployWithAgentDefinitionAndJob(targetId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(sourceId).create();
+    awaitJobCreated(processInstanceKey);
+    drainViaDeletion(source.getProcessDefinitionKey());
+
+    // when - the instance migrates away, finalizing the source
+    migrateToTarget(processInstanceKey, target.getProcessDefinitionKey(), "agent-task");
+
+    // then - the source's agent definition is deleted as part of the migration-triggered finalize,
+    // mirroring the completion-triggered cascade
+    assertThat(
+            RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+                .withProcessDefinitionKey(source.getProcessDefinitionKey())
+                .exists())
+        .describedAs("migration-triggered finalize must cascade AgentDefinition:DELETED too")
+        .isTrue();
   }
 
   @Test
@@ -1104,6 +1265,23 @@ public class DrainingProcessDefinitionTest {
         .isTrue();
   }
 
+  private void migrateToTarget(
+      final long processInstanceKey,
+      final long targetProcessDefinitionKey,
+      final String elementId) {
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction(elementId, elementId)
+        .migrate();
+    // await MIGRATED so the source definition's active-instance state has settled before asserting
+    RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+  }
+
   private void awaitJobCreated(final long processInstanceKey) {
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -1112,12 +1290,32 @@ public class DrainingProcessDefinitionTest {
   }
 
   private ProcessMetadataValue deployWithJob(final String processId) {
+    return deployWithJob(processId, "end");
+  }
+
+  private ProcessMetadataValue deployWithJob(final String processId, final String endEventId) {
     return engine
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent(endEventId)
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .getFirst();
+  }
+
+  private ProcessMetadataValue deployWithAgentDefinitionAndJob(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "agent-task", t -> t.zeebeJobType(JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy()

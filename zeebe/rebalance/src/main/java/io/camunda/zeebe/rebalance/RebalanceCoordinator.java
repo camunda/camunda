@@ -19,6 +19,11 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Nulls;
 import java.time.Clock;
+import java.time.Duration;
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.LongSupplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -39,11 +44,20 @@ public final class RebalanceCoordinator
 
   private static final Logger LOG = LoggerFactory.getLogger(RebalanceCoordinator.class);
 
+  private static final Set<PartitionRebalanceOutcome> SUCCESSFUL_PARTITION_OUTCOMES =
+      EnumSet.of(
+          PartitionRebalanceOutcome.TRANSFERRED,
+          PartitionRebalanceOutcome.ALREADY_LEADER,
+          PartitionRebalanceOutcome.CANCELLED,
+          PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+
   private final MemberId localMemberId;
   private final ConcurrencyControl executor;
   private final RebalanceRunner runner;
+  private final PartitionBalancePlanner balancePlanner;
   private final LongSupplier rebalanceIdGenerator;
   private final Clock clock;
+  private final ClusterRebalanceMetrics metrics;
 
   /**
    * The configuration this member coordinates under, or {@code null} while it does not coordinate.
@@ -58,13 +72,17 @@ public final class RebalanceCoordinator
       final MemberId localMemberId,
       final ConcurrencyControl executor,
       final RebalanceRunner runner,
+      final PartitionBalancePlanner balancePlanner,
       final LongSupplier rebalanceIdGenerator,
-      final Clock clock) {
+      final Clock clock,
+      final ClusterRebalanceMetrics metrics) {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.runner = runner;
+    this.balancePlanner = balancePlanner;
     this.rebalanceIdGenerator = rebalanceIdGenerator;
     this.clock = clock;
+    this.metrics = metrics;
   }
 
   @Override
@@ -127,11 +145,22 @@ public final class RebalanceCoordinator
           LOG.info("Starting {}rebalance {}", rebalance.dryRun() ? "dry-run " : "", rebalance.id());
           if (rebalance.dryRun()) {
             // A dry run only reads the plan, so it is over within the request and answers with the
-            // plan itself.
-            start(rebalance, () -> result.complete(status()));
+            // plan itself as a completed snapshot under `running`; it is never retained as
+            // `lastCompleted`.
+            start(
+                rebalance,
+                (completed, error) -> {
+                  if (error != null) {
+                    result.completeExceptionally(error);
+                  } else {
+                    result.complete(
+                        new RebalanceStatus(
+                            runningSnapshot(rebalance), lastCompleted, leadershipStatus(running)));
+                  }
+                });
           } else {
             result.complete(status());
-            start(rebalance, () -> {});
+            start(rebalance, (completed, error) -> {});
           }
         });
     return result;
@@ -172,49 +201,66 @@ public final class RebalanceCoordinator
     return result;
   }
 
-  private void start(final RebalanceRun rebalance, final Runnable whenFinished) {
+  private void start(
+      final RebalanceRun rebalance,
+      final BiConsumer<RebalanceStatus.Completed, @Nullable Throwable> whenFinished) {
     final ActorFuture<Void> run;
     try {
       run = runner.run(rebalance);
     } catch (final Exception e) {
-      finish(rebalance, e);
-      whenFinished.run();
+      final var completed = finish(rebalance, e);
+      if (completed != null) {
+        whenFinished.accept(completed, e);
+      }
       return;
     }
     executor.runOnCompletion(
         run,
         (ignored, error) -> {
-          finish(rebalance, error);
-          whenFinished.run();
+          final var completed = finish(rebalance, error);
+          if (completed != null) {
+            whenFinished.accept(completed, error);
+          }
         });
   }
 
-  private void finish(final RebalanceRun rebalance, final @Nullable Throwable error) {
+  private RebalanceStatus.@Nullable Completed finish(
+      final RebalanceRun rebalance, final @Nullable Throwable error) {
     if (running != rebalance) {
       // We stopped coordinating while the rebalance was in flight, so its state is already gone
-      return;
+      return null;
     }
     running = null;
     final RebalanceOutcome outcome;
     if (error != null) {
       LOG.warn("Rebalance {} failed", rebalance.id(), error);
       outcome = RebalanceOutcome.FAILED;
-    } else if (rebalance.isCancelRequested()) {
-      outcome = RebalanceOutcome.CANCELLED;
     } else {
-      outcome = RebalanceOutcome.COMPLETED;
+      outcome = aggregateOutcome(rebalance);
     }
     final var finishedAt = clock.instant();
     rebalance.finish(finishedAt);
-    lastCompleted =
+    final var completed =
         new RebalanceStatus.Completed(
-            rebalance.id(),
-            outcome,
-            rebalance.dryRun(),
-            rebalance.partitions(),
-            rebalance.startedAt(),
-            finishedAt);
+            rebalance.id(), outcome, rebalance.partitions(), rebalance.startedAt(), finishedAt);
+    if (!rebalance.dryRun()) {
+      lastCompleted = completed;
+      metrics.observeElapsed(outcome, Duration.between(rebalance.startedAt(), finishedAt));
+    }
     LOG.info("Rebalance {} finished as {}", rebalance.id(), outcome);
+    return completed;
+  }
+
+  private static RebalanceOutcome aggregateOutcome(final RebalanceRun rebalance) {
+    final var anyUnsuccessful =
+        rebalance.partitions().stream()
+            .filter(partition -> partition.progress() == PartitionRebalanceProgress.COMPLETED)
+            .map(PartitionRebalance::outcome)
+            .anyMatch(outcome -> !SUCCESSFUL_PARTITION_OUTCOMES.contains(outcome));
+    if (anyUnsuccessful) {
+      return RebalanceOutcome.FAILED;
+    }
+    return rebalance.isCancelRequested() ? RebalanceOutcome.CANCELLED : RebalanceOutcome.COMPLETED;
   }
 
   private void updateCoordinatorRole(final CurrentClusterConfiguration clusterConfiguration) {
@@ -228,12 +274,17 @@ public final class RebalanceCoordinator
     if (nowCoordinating != (configuration != null)) {
       if (nowCoordinating) {
         LOG.info("Coordinating rebalances as the lowest-id member of the cluster configuration");
+        metrics.startCoordinating();
       } else {
         LOG.info("No longer coordinating rebalances, {} is now the lowest-id member", coordinator);
         discardState();
       }
     }
     configuration = nowCoordinating ? clusterConfiguration : null;
+    final var inFlight = running;
+    if (inFlight != null) {
+      inFlight.observeConfiguration(clusterConfiguration);
+    }
   }
 
   private void discardState() {
@@ -244,6 +295,7 @@ public final class RebalanceCoordinator
     }
     running = null;
     lastCompleted = null;
+    metrics.stopCoordinating();
   }
 
   /**
@@ -262,16 +314,34 @@ public final class RebalanceCoordinator
   }
 
   private RebalanceStatus status() {
+    return status(lastCompleted);
+  }
+
+  private RebalanceStatus status(final RebalanceStatus.@Nullable Completed completed) {
     final var inFlight = running;
-    final var runningStatus =
+    final var runningStatus = inFlight == null ? null : runningSnapshot(inFlight);
+    return new RebalanceStatus(runningStatus, completed, leadershipStatus(inFlight));
+  }
+
+  private static RebalanceStatus.Running runningSnapshot(final RebalanceRun rebalance) {
+    return new RebalanceStatus.Running(
+        rebalance.id(),
+        rebalance.overrides(),
+        rebalance.dryRun(),
+        rebalance.isCancelRequested(),
+        rebalance.partitions(),
+        rebalance.startedAt());
+  }
+
+  private ClusterLeadershipStatus leadershipStatus(final @Nullable RebalanceRun inFlight) {
+    final var transferring =
         inFlight == null
             ? null
-            : new RebalanceStatus.Running(
-                inFlight.id(),
-                inFlight.overrides(),
-                inFlight.dryRun(),
-                inFlight.isCancelRequested(),
-                inFlight.partitions());
-    return new RebalanceStatus(runningStatus, lastCompleted);
+            : inFlight.partitions().stream()
+                .filter(
+                    partition -> partition.progress() == PartitionRebalanceProgress.TRANSFERRING)
+                .findFirst()
+                .orElse(null);
+    return balancePlanner.leadershipStatus(Objects.requireNonNull(configuration), transferring);
   }
 }

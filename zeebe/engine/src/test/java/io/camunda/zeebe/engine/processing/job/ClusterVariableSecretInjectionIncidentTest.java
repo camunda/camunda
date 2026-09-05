@@ -165,7 +165,9 @@ public final class ClusterVariableSecretInjectionIncidentTest {
             .getFirst();
     assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
     assertThat(incident.getValue().getErrorMessage())
-        .contains("Correct the mismatched variable and resolve the incident");
+        .contains(
+            "the secret reference 'camunda.secrets.tokenB' could not be resolved at '/authToken'")
+        .contains("Fix the variable's value or the input mapping that sets it");
 
     // and - the job is excluded from activation: a later poll does not hand it out either
     final Record<JobBatchRecordValue> secondAttempt =
@@ -317,5 +319,276 @@ public final class ClusterVariableSecretInjectionIncidentTest {
             () ->
                 assertThat(secretActivation.getActivationResponse().getJobs().get(0).getVariables())
                     .containsEntry("authToken", "resolved-B"));
+  }
+
+  @Test
+  public void
+      shouldInjectTakenBranchWhenConditionalSelectsBetweenTwoClusterVariableSecretReferences() {
+    // given - two tenant-scoped SECRET_REFERENCE cluster variables and a conditional input
+    // mapping selecting between them (#58614). Detection folds both branches onto the same target
+    // pointer regardless of which one FEEL actually took, so both secrets are registered as needing
+    // resolution, but only the taken branch's placeholder is ever baked into the job's variables -
+    // this is the end-to-end proof of the tolerance rule for composed (cluster-variable) pointers,
+    // not just direct camunda.secrets.* references
+    engine
+        .clusterVariables()
+        .withName("prodCreds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.prodToken"))
+        .create();
+    engine
+        .clusterVariables()
+        .withName("devCreds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.devToken"))
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeInputExpression(
+                            "if useProd then camunda.vars.tenant.prodCreds.token else camunda.vars.tenant.devCreds.token",
+                            "authToken"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    // both branches' secrets must be cached, or checkSecrets parks the job on the untaken branch's
+    // reference before injection ever runs
+    secretActivation.putSecret("prodToken", "resolved-prod");
+    secretActivation.putSecret("devToken", "resolved-dev");
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(BPMN_PROCESS_ID)
+            .withVariable("useProd", true)
+            .create();
+    engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+
+    // then - the taken (prod) branch is injected; the untaken (dev) branch's reference finds no
+    // placeholder to replace and is ignored rather than failing the job closed
+    assertThat(secretActivation.awaitActivationResponse().getJobs().get(0).getVariables())
+        .containsEntry("authToken", "resolved-prod")
+        .doesNotContainValue("resolved-dev");
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+  }
+
+  // ---- characterisation of a known gap (https://github.com/camunda/camunda/issues/60108): if the
+  // cluster-variable update inside the window removes the secret reference entirely - rather than
+  // pointing it at a different secret, as the mismatch tests above do - there is no reference left
+  // to compare the stale baked-in placeholder against. With nothing registered, checkSecrets and
+  // JobSecretInjector never even look at the job, so it activates with its ELEMENT_ACTIVATING-time
+  // placeholder untouched: the worker receives it unresolved, and no incident is raised. These
+  // three tests pin *today's* behavior deliberately - fixing them needs the baked text and the
+  // reference set to come from one read of ClusterVariableState instead of two independent ones
+  // (input-mapping evaluation and job creation), which is tracked separately. A future fix is
+  // expected to flip these tests; that flip is the signal the gap closed, not a regression.
+
+  @Test
+  public void
+      shouldLeaveStalePlaceholderUnresolvedWhenClusterVariableIsRetargetedToALiteralInsideTheWindow() {
+    // given - same deterministic window as the incident tests above, but the update replaces
+    // the SECRET_REFERENCE value with a plain literal (no camunda.secrets.* leaves) instead of
+    // pointing at a different secret
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.tokenA"))
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeStartExecutionListener(START_EL_TYPE)
+                        .zeebeInputExpression("camunda.vars.tenant.creds.token", "authToken"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(BPMN_PROCESS_ID).create();
+    final long listenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(START_EL_TYPE)
+            .getFirst()
+            .getKey();
+
+    // and - while the listener job is pending, the variable is retargeted to a plain literal: the
+    // scanner then detects zero references, so the resolver folds nothing for this variable
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withValue(Map.of("token", "not-a-secret"))
+        .update();
+
+    engine.job().withKey(listenerJobKey).complete();
+
+    // when - activating with request metadata present, so a response is written at all
+    engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+
+    // then - the worker receives the stale placeholder unresolved, and no incident is raised
+    assertThat(secretActivation.awaitActivationResponse().getJobs().get(0).getVariables())
+        .containsEntry("authToken", "camunda.secrets.tokenA");
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+  }
+
+  @Test
+  public void shouldLeaveStalePlaceholderUnresolvedWhenClusterVariableIsDeletedInsideTheWindow() {
+    // given - same window, but the variable is deleted entirely instead of retargeted
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.tokenA"))
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeStartExecutionListener(START_EL_TYPE)
+                        .zeebeInputExpression("camunda.vars.tenant.creds.token", "authToken"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(BPMN_PROCESS_ID).create();
+    final long listenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(START_EL_TYPE)
+            .getFirst()
+            .getKey();
+
+    // and - while the listener job is pending, the variable is deleted: resolveInstance then finds
+    // nothing to fold at all
+    engine.clusterVariables().withName("creds").setTenantScope().withTenantId(TENANT).delete();
+
+    engine.job().withKey(listenerJobKey).complete();
+
+    // when
+    engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+
+    // then - same characterisation as above: unresolved placeholder reaches the worker, no incident
+    assertThat(secretActivation.awaitActivationResponse().getJobs().get(0).getVariables())
+        .containsEntry("authToken", "camunda.secrets.tokenA");
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+  }
+
+  @Test
+  public void
+      shouldLeaveStalePlaceholderUnresolvedWhenClusterVariableSecretMovesOutsideTheAccessedPathInsideTheWindow() {
+    // given - same window, but the update restructures the value so the secret moves outside
+    // the field path the input mapping accesses ({"token": X} -> {"nested": {"token": X}}); the
+    // resolver's rebase of the stored pointer against the accessed field path then fails to match
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.tokenA"))
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeStartExecutionListener(START_EL_TYPE)
+                        .zeebeInputExpression("camunda.vars.tenant.creds.token", "authToken"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(BPMN_PROCESS_ID).create();
+    final long listenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(START_EL_TYPE)
+            .getFirst()
+            .getKey();
+
+    // and - while the listener job is pending, the secret is nested one level deeper than the
+    // accessed field path ("token"), so the rebase against that path no longer matches
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withValue(Map.of("nested", Map.of("token", "camunda.secrets.tokenB")))
+        .update();
+
+    engine.job().withKey(listenerJobKey).complete();
+
+    // when
+    engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+
+    // then - same characterisation: the stale placeholder from the original path reaches the
+    // worker unresolved, and no incident is raised
+    assertThat(secretActivation.awaitActivationResponse().getJobs().get(0).getVariables())
+        .containsEntry("authToken", "camunda.secrets.tokenA");
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
   }
 }

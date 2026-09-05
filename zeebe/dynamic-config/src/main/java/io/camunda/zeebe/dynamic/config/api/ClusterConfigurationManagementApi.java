@@ -17,14 +17,15 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -45,9 +46,6 @@ public interface ClusterConfigurationManagementApi {
 
   ActorFuture<ClusterConfigurationChangeResponse> leavePartition(
       LeavePartitionRequest leavePartitionRequest);
-
-  ActorFuture<ClusterConfigurationChangeResponse> reassignPartitions(
-      ReassignPartitionsRequest reassignPartitionsRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> scaleMembers(BrokerScaleRequest scaleRequest);
 
@@ -78,6 +76,9 @@ public interface ClusterConfigurationManagementApi {
 
   ActorFuture<ClusterConfigurationChangeResponse> purge(PurgeRequest purgeRequest);
 
+  ActorFuture<ClusterConfigurationChangeResponse> removePhysicalTenant(
+      RemovePhysicalTenantRequest removePhysicalTenantRequest);
+
   ActorFuture<ClusterConfigurationChangeResponse> forceRemoveBrokers(
       ForceRemoveBrokersRequest forceRemoveBrokersRequest);
 
@@ -99,6 +100,9 @@ public interface ClusterConfigurationManagementApi {
       ExporterEnableRequest enableRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> modeChange(ModeChangeRequest modeChangeRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> changeExportingState(
+      ExportingStateChangeRequest exportingStateChangeRequest);
 
   ActorFuture<CurrentClusterConfiguration> cancelTopologyChange(
       ClusterConfigurationManagementRequest.CancelChangeRequest cancelChangeRequest);

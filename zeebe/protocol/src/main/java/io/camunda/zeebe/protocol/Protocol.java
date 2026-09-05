@@ -110,6 +110,10 @@ public final class Protocol {
   public static final String USER_TASK_PRIORITY_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "priority";
 
+  /** Task header key used for the key of the Agent Definition. */
+  public static final String AGENT_DEFINITION_KEY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "agentDefinitionKey";
+
   /** Linked resources header used in service task */
   public static final String LINKED_RESOURCES_HEADER_NAME = "linkedResources";
 

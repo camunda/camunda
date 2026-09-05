@@ -34,6 +34,19 @@ public interface AgentHistoryState {
    */
   void visitByJobLease(long jobKey, String jobLease, AgentHistoryVisitor visitor);
 
+  /**
+   * @return the {@code agentHistoryKey} of the history item that was committed under this {@code
+   *     historyItemId} for this agent instance, or {@code null} if none was committed
+   */
+  Long getCommittedHistoryItemKey(long agentInstanceKey, String historyItemId);
+
+  /**
+   * @return whether metrics were already accumulated for {@code historyItemId} on {@code
+   *     agentInstanceKey}, whether or not that item's copy is still pending, committed, or was
+   *     discarded
+   */
+  boolean hasAccumulatedMetrics(long agentInstanceKey, String historyItemId);
+
   @FunctionalInterface
   interface AgentHistoryVisitor {
     void visit(AgentHistoryRecord record);

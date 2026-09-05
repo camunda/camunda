@@ -16,6 +16,7 @@ import {
 	type GetProcessDefinitionStatisticsRequestBody,
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	type QueryProcessInstancesRequestBody,
 	type QueryBatchOperationsRequestBody,
 	type QueryDecisionDefinitionsRequestBody,
 	type QueryDecisionInstancesRequestBody,
@@ -27,6 +28,7 @@ import {
 	type QueryAuditLogsRequestBody,
 	type UserTask,
 	type ProcessDefinition,
+	type DecisionDefinition,
 	type AuditLog,
 	type DecisionInstance,
 	type Variable,
@@ -212,6 +214,14 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
 	queryBatchOperations: (body: QueryBatchOperationsRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperations.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
@@ -241,6 +251,13 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getDecisionDefinitionXml: ({decisionDefinitionKey}: Pick<DecisionDefinition, 'decisionDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDecisionDefinitionXml.getUrl({decisionDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDecisionDefinitionXml.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 

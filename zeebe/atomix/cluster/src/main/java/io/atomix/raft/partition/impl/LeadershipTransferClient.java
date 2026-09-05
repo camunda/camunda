@@ -19,11 +19,13 @@ import static io.atomix.raft.partition.RaftPartition.PARTITION_NAME_FORMAT;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.raft.LeadershipTransferProtocol;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.cluster.PartitionId;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -36,7 +38,7 @@ import org.jspecify.annotations.NullMarked;
  * outside the Raft group of the partition.
  */
 @NullMarked
-public final class LeadershipTransferClient implements AutoCloseable {
+public final class LeadershipTransferClient implements LeadershipTransferProtocol, AutoCloseable {
 
   private final ClusterCommunicationService communicationService;
   private final Duration requestTimeout;
@@ -49,18 +51,13 @@ public final class LeadershipTransferClient implements AutoCloseable {
     this.requestTimeout = requestTimeout;
   }
 
-  /**
-   * Asks the current leader of the given partition to transfer its leadership. The response only
-   * says whether the transfer was accepted or skipped (accepted transfers report their outcome
-   * through {@link #onResult}.
-   */
+  @Override
   public CompletableFuture<LeadershipTransferInitiateResponse> initiate(
       final MemberId leader,
-      final String partitionGroup,
-      final int partitionId,
+      final PartitionId partitionId,
       final LeadershipTransferInitiateRequest request) {
     return communicationService.send(
-        subjects(partitionGroup, partitionId).getLeadershipTransferInitiateSubject(),
+        subjects(partitionId).getLeadershipTransferInitiateSubject(),
         request,
         serializer::encode,
         serializer::decode,
@@ -68,17 +65,13 @@ public final class LeadershipTransferClient implements AutoCloseable {
         requestTimeout);
   }
 
-  /**
-   * Handles the terminal outcome the given partition's leader reports back. The result is
-   * correlated to the initiate request by {@link LeadershipTransferResultRequest#correlationId()}.
-   */
+  @Override
   public void onResult(
-      final String partitionGroup,
-      final int partitionId,
+      final PartitionId partitionId,
       final Function<
               LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
           handler) {
-    final var subject = subjects(partitionGroup, partitionId).getLeadershipTransferResultSubject();
+    final var subject = subjects(partitionId).getLeadershipTransferResultSubject();
     subscriptions.add(subject);
     communicationService.replyTo(subject, serializer::decode, handler, serializer::encode);
   }
@@ -89,7 +82,8 @@ public final class LeadershipTransferClient implements AutoCloseable {
     subscriptions.clear();
   }
 
-  private RaftMessageContext subjects(final String partitionGroup, final int partitionId) {
-    return new RaftMessageContext(PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId));
+  private RaftMessageContext subjects(final PartitionId partitionId) {
+    return new RaftMessageContext(
+        PARTITION_NAME_FORMAT.formatted(partitionId.group(), partitionId.number()));
   }
 }

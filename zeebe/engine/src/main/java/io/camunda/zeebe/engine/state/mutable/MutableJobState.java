@@ -71,9 +71,10 @@ public interface MutableJobState extends JobState {
   /**
    * Makes a job activatable after its pending secret references have been resolved. Does nothing
    * unless the job is in {@link State#WAITING_FOR_SECRET_RESOLUTION}, because a job can be
-   * reactivated by more than one resolved reference of the same activation and may be gone by then.
-   * A job that carries a secret resolution incident is still waiting, so keeping it parked until
-   * the incident is resolved is up to the caller.
+   * reactivated by more than one resolved reference of the same activation, or may have left that
+   * state for another reason (for example suspension) by then. A job that carries a secret
+   * resolution incident is still waiting, so keeping it parked until the incident is resolved is up
+   * to the caller.
    */
   void makeActivatableAfterSecretResolution(long key);
 

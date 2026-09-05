@@ -78,6 +78,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClusterStatusResponse'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/topology:
     servers:
@@ -126,6 +127,160 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/exporting:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Exporting
+      operationId: getClusterExportingStatus
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get exporting status of the whole cluster
+      description: >-
+        Returns the exporting status of the whole cluster, folded over the exporting status of
+        every physical tenant. Only `PAUSED` and `SOFT_PAUSED` confirm that exporting is paused
+        cluster-wide; every other value means at least one physical tenant is not paused, so
+        callers should keep polling. A physical tenant that itself reports `MIXED` makes the
+        whole cluster `MIXED`.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials
+        are valid here.
+      responses:
+        "200":
+          description: The aggregated exporting status of the whole cluster.
+          content:
+            application/json:
+              schema:
+                $ref: 'exporting.yaml#/components/schemas/ExportingStatusResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/exporting/pause:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Exporting
+      operationId: pauseClusterExporting
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Pause exporting across the whole cluster
+      description: >-
+        Pauses exporting on every physical tenant of the cluster in one call. With `soft=true`,
+        every physical tenant is soft-paused instead.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials
+        are valid here.
+      parameters:
+        - name: soft
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: If true, soft-pauses exporting instead of a hard pause.
+      responses:
+        "204":
+          description: Exporting was successfully paused on every physical tenant.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/exporting/resume:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Exporting
+      operationId: resumeClusterExporting
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Resume exporting across the whole cluster
+      description: >-
+        Resumes exporting on every physical tenant of the cluster in one call, after a pause or
+        soft pause.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials
+        are valid here.
+      responses:
+        "204":
+          description: Exporting was successfully resumed on every physical tenant.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/mode:
     servers:
@@ -192,6 +347,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/restore:
     servers:
@@ -273,18 +429,1105 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/backups/runtime:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: takeRuntimeBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Take a runtime backup on one or every physical tenant
+      description: >-
+        Triggers a runtime backup on every physical tenant of the cluster, or on the one named by
+        `physicalTenantId`. A cluster-wide backup is a set of independent per-tenant backups, not an
+        atomic snapshot of the cluster: they are neither coordinated nor rolled back together, and
+        each tenant stores its own, so the same `backupId` can be used for all of them.
+
+
+        Every targeted physical tenant must be in the same backup-id mode. `backupId` must be
+        omitted when every targeted tenant generates its own ids (because continuous backups and/or
+        a backup or checkpoint schedule is enabled for it), and is required when none of them does.
+        A cluster whose targeted tenants mix the two modes is rejected with 400 and has to be driven
+        one tenant at a time through `POST /v2/backups/runtime`. In generated-id mode each tenant
+        generates its own id, so the response reports an id per physical tenant rather than one for
+        the cluster.
+
+
+        The trigger is all-or-error, and never silent about a partial trigger: if any targeted tenant
+        cannot be triggered the response carries an error status, but its body still lists every
+        targeted tenant — which ones were triggered, under which `backupId` to monitor or delete
+        them, and why the others failed. Nothing is rolled back, so the backups that were triggered
+        keep running and have to be deleted explicitly. A request rejected before any tenant was
+        triggered answers with a problem detail instead, and nothing is running.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Use `POST /v2/backups/runtime` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: 'backups.yaml#/components/schemas/TakeRuntimeBackupRequest'
+      responses:
+        "202":
+          description: The backup was triggered on every targeted physical tenant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
+        "400":
+          description: >-
+            The request names a `backupId` while at least one targeted physical tenant generates its
+            own ids, or omits it while at least one does not, or the id is not a positive number. No
+            tenant was triggered. A targeted tenant that rejects the request as invalid during the
+            fan-out answers with the same status but the cluster body, listing the tenants that were
+            triggered.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: >-
+            The requested `physicalTenantId` does not exist in this cluster, so no tenant was
+            triggered.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >-
+            At least one targeted physical tenant already holds a backup with this id or a higher
+            one. Backups are triggered without a preceding check, so the tenants that accepted the
+            id are listed in the body and keep running; delete them before retrying.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
+        "500":
+          description: >-
+            At least one targeted physical tenant could not be triggered, and the failures do not
+            agree on a single status. The body lists the tenants that were triggered and keep
+            running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "502":
+          description: >-
+            The connection to the broker was cut mid-flight on at least one targeted physical tenant,
+            which may or may not have accepted the request. Those tenants are reported as `UNKNOWN`
+            with the id to check them under, and the tenants that were triggered keep running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
+        "503":
+          description: >-
+            At least one targeted physical tenant could not be reached. The body lists the tenants
+            that were triggered and keep running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
+        "504":
+          description: >-
+            The request from gateway to broker timed out on at least one targeted physical tenant,
+            which may or may not have accepted it. Those tenants are reported as `UNKNOWN` with the id
+            to check them under, and the tenants that were triggered keep running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: listRuntimeBackupsAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: List runtime backups across physical tenants
+      description: >-
+        Lists the runtime backups of every physical tenant of the cluster, or of the one named by
+        `physicalTenantId`, grouped by backup id. Every group reports every targeted tenant,
+        including the ones holding nothing for that id, so a backup only some tenants hold aggregates
+        to `INCOMPLETE` here exactly as it does when looked up directly — the state of a listed group
+        can be trusted to say whether the cluster can be restored from it. A backup id that only some
+        physical tenants hold is a supported outcome rather than a degraded one; tenants that
+        generate their own backup ids never share one, so in that mode each backup forms its own
+        group and the other tenants report `DOES_NOT_EXIST` under it.
+
+
+        The request is all-or-nothing: a physical tenant whose backups cannot be read fails the whole
+        request rather than silently dropping out of the listing. Narrow the request with
+        `physicalTenantId` to list the backups of the tenants that can still be read.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Use `GET /v2/backups/runtime` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+        - name: prefix
+          in: query
+          required: false
+          description: |
+            A prefix that backup ids must match, ending in a single '*'. If omitted, all
+            backups are returned.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupIdPrefix'
+      responses:
+        "200":
+          description: >-
+            The runtime backups of every targeted physical tenant, grouped by backup id and sorted in
+            descending order of backup id, as the per-physical-tenant listing is. Empty when every
+            targeted tenant was read and none of them holds a matching backup.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClusterRuntimeBackupInfo'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/backups/runtime/state:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: getRuntimeBackupStateAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get runtime backup state across physical tenants
+      description: >-
+        Reports the checkpoint and backup state of every partition of every physical tenant of the
+        cluster, or of the one named by `physicalTenantId`, grouped by physical tenant. Checkpoint
+        ids and log positions only mean anything within one physical tenant's partitions, so nothing
+        is aggregated across tenants.
+
+
+        The request is all-or-nothing: a physical tenant whose state cannot be read fails the whole
+        request rather than contributing an empty section, which an operator making a delete or
+        restore decision could not tell apart from "nothing to report yet". Narrow the request with
+        `physicalTenantId` to read the tenants that can still be reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Use `GET /v2/backups/runtime/state` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "200":
+          description: >-
+            The runtime backup state of every targeted physical tenant, ordered by physical tenant
+            id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterRuntimeBackupState'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: deleteRuntimeBackupStateAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Delete runtime backup state across physical tenants
+      description: >-
+        Resets the runtime backup state of every partition of every physical tenant of the cluster,
+        or of the one named by `physicalTenantId`, clearing all checkpoint info, backup info,
+        checkpoint metadata, and backup ranges. Used when switching backup stores.
+
+
+        The request is all-or-nothing: a physical tenant whose state cannot be reset fails the whole
+        request, and the resets that already succeeded on other tenants are not undone. Narrow the
+        request with `physicalTenantId` to reset the tenants that can still be reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Use `DELETE /v2/backups/runtime/state` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "204":
+          description: The runtime backup state was reset on every targeted physical tenant.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          description: >-
+            The state could not be reset on every targeted physical tenant, so it may still be set
+            on some of them. The resets that already succeeded are not undone, so a retry has only
+            the remaining tenants left to reach.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/backups/runtime/state/sync:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: syncRuntimeBackupStateAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Force-write runtime backup state across physical tenants
+      description: >-
+        Force-writes the checkpoint and backup metadata of every partition of every physical tenant
+        of the cluster, or of the one named by `physicalTenantId`, to that tenant's backup store,
+        independent of any backup being taken or confirmed, and returns the updated state per
+        physical tenant.
+
+
+        The request is all-or-nothing: a physical tenant whose metadata cannot be written fails the
+        whole request, and the writes that already succeeded on other tenants are not undone. The
+        operation is idempotent, so retrying the same call is the correct remedy. Narrow the request
+        with `physicalTenantId` to write the tenants that can still be reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Use `POST /v2/backups/runtime/state/sync` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "200":
+          description: >-
+            The updated runtime backup state of every targeted physical tenant, ordered by physical
+            tenant id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterRuntimeBackupState'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          description: >-
+            The request from gateway to broker timed out on at least one targeted physical tenant.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/backups/runtime/{backupId}:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: getRuntimeBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get a runtime backup across physical tenants
+      description: >-
+        Reports what every physical tenant of the cluster, or the one named by `physicalTenantId`,
+        holds for the given backup id, plus the state aggregated over all of them. A tenant that was
+        reached and does not hold this backup reports `DOES_NOT_EXIST`, which is a successful
+        observation rather than a failure — so a backup only some tenants hold aggregates to
+        `INCOMPLETE`, the same way a backup only some partitions hold does within one tenant.
+
+
+        The request is all-or-nothing: a physical tenant whose state cannot be read fails the whole
+        request. Narrow the request with `physicalTenantId` to read the tenants that can still be
+        reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Use `GET /v2/backups/runtime/{backupId}` to act as a single physical tenant.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: The id of the backup.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupId'
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "200":
+          description: >-
+            Every targeted physical tenant was read, and at least one holds the backup. Each tenant
+            reports either the backup or `DOES_NOT_EXIST`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterRuntimeBackupInfo'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: >-
+            The requested `physicalTenantId` does not exist in this cluster, or every targeted
+            physical tenant was read and none of them holds a backup with the given id.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: deleteRuntimeBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Delete a runtime backup across physical tenants
+      description: >-
+        Deletes the runtime backup with the given id from every physical tenant of the cluster, or
+        from the one named by `physicalTenantId`. A tenant that does not hold the backup has already
+        reached the requested end state, so it counts as deleted rather than as a failure — the same
+        as deleting an unknown backup id through the per-physical-tenant endpoint.
+
+
+        The request is all-or-nothing: a physical tenant the backup cannot be deleted from fails the
+        whole request, and the deletions that already succeeded on other tenants are not undone.
+        Narrow the request with `physicalTenantId` to delete from the tenants that can still be
+        reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Use `DELETE /v2/backups/runtime/{backupId}` to act as a single physical tenant.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: The id of the backup.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupId'
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "204":
+          description: No targeted physical tenant holds the backup any more.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          description: >-
+            The backup could not be deleted from every targeted physical tenant, so it may still
+            exist on some of them. The deletions that already succeeded are not undone, so a retry
+            has only the remaining tenants left to reach.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/backups/history:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: takeHistoryBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Take a history backup on one or every physical tenant
+      description: >-
+        Triggers a history backup on every physical tenant of the cluster, or on the one named by
+        `physicalTenantId`. Every targeted tenant uses the same caller-supplied `backupId`, but the
+        backups are independent: they are neither coordinated nor rolled back together.
+
+
+        The request is all-or-nothing: the `backupId` is checked on every targeted tenant before any
+        snapshot is scheduled, so a tenant that already holds this id, or that cannot be reached,
+        fails the whole request and no backup is started anywhere. There is no aggregated
+        cluster-level state in the response.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Only available on clusters whose secondary storage is Elasticsearch or
+        OpenSearch. Use `POST /v2/backups/history` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'backups.yaml#/components/schemas/TakeHistoryBackupRequest'
+      responses:
+        "202":
+          description: The backup has been scheduled on every targeted physical tenant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeHistoryBackupResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/ClusterHistoryBackupForbidden'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >-
+            At least one targeted physical tenant already holds a backup with this id, or already
+            has another backup running. The check that precedes the fan-out normally rejects the
+            request before anything is scheduled; a tenant that takes the id in between rejects it
+            during the fan-out instead, which can leave snapshots behind on the tenants already
+            reached, so delete this backup id before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          description: >-
+            The backup could not be scheduled on every targeted physical tenant, because one of
+            them hit an internal error. The check that precedes the fan-out rejects the request
+            before anything is scheduled, but a failure during the fan-out itself can leave
+            snapshots behind on the tenants already reached, so delete this backup id before
+            retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: listHistoryBackupsAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: List history backups across physical tenants
+      description: >-
+        Lists the history backups of every physical tenant of the cluster, or of the one named by
+        `physicalTenantId`, grouped by backup id. A backup id that only some physical tenants hold
+        is a supported outcome rather than a degraded one, so only the tenants that hold it are
+        listed under it.
+
+
+        The request is all-or-nothing: a physical tenant whose backups cannot be read fails the
+        whole request rather than silently dropping out of the listing. Narrow the request with
+        `physicalTenantId` to list the backups of the tenants that can still be read.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Only available on clusters whose secondary storage is Elasticsearch or
+        OpenSearch. Use `GET /v2/backups/history` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+        - name: prefix
+          in: query
+          required: false
+          description: |
+            A prefix that backup ids must match, ending in a single '*'. If omitted, all
+            backups are returned.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupIdPrefix'
+        - name: verbose
+          in: query
+          required: false
+          description: |
+            Whether to ask the secondary storage for snapshot-level detail. Setting this to
+            `false` makes the query cheaper, but the store then reports neither snapshot state
+            nor start time, so both the per-snapshot `details` and the per-tenant `state` are
+            incomplete and the listing order is unspecified.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: >-
+            The history backups of every targeted physical tenant, grouped by backup id and ordered
+            by backup id, descending. Deliberately not the per-physical-tenant endpoint's order,
+            which is by snapshot start time: start times are per tenant, so a group spanning
+            several tenants has no single one to sort on. Descending id is only recency for ids
+            that ascend with time. Empty when every targeted tenant was read and none of them holds
+            a matching backup.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClusterHistoryBackupInfo'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/ClusterHistoryBackupForbidden'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/backups/history/{backupId}:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: getHistoryBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get a history backup across physical tenants
+      description: >-
+        Reports what every physical tenant of the cluster, or the one named by `physicalTenantId`,
+        holds for the given backup id. There is no aggregated cluster-level state: a tenant that was
+        reached and does not hold this backup reports `NOT_FOUND`, which is a successful
+        observation rather than a failure.
+
+
+        The request is all-or-nothing: a physical tenant whose state cannot be read fails the whole
+        request. Narrow the request with `physicalTenantId` to read the tenants that can still be
+        reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Only available on clusters whose secondary storage is Elasticsearch or
+        OpenSearch. Use `GET /v2/backups/history/{backupId}` to act as a single physical tenant.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: The id of the backup.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupId'
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "200":
+          description: >-
+            Every targeted physical tenant was read. Each one reports either the backup or
+            `NOT_FOUND`; at least one holds the backup.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterHistoryBackupInfo'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/ClusterHistoryBackupForbidden'
+        "404":
+          description: >-
+            The requested `physicalTenantId` does not exist in this cluster, or every targeted
+            physical tenant was read and none of them holds a backup with the given id.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: deleteHistoryBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Delete a history backup across physical tenants
+      description: >-
+        Deletes the history backup with the given id from every physical tenant of the cluster, or
+        from the one named by `physicalTenantId`. A tenant that does not hold the backup has already
+        reached the requested end state, so it counts as deleted rather than as a failure.
+
+
+        The request is all-or-nothing: a physical tenant the backup cannot be deleted from fails the
+        whole request, and the deletions that already succeeded on other tenants are not undone.
+        Narrow the request with `physicalTenantId` to delete from the tenants that can still be
+        reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Only available on clusters whose secondary storage is Elasticsearch or
+        OpenSearch. Use `DELETE /v2/backups/history/{backupId}` to act as a single physical tenant.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: The id of the backup.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupId'
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "204":
+          description: >-
+            No targeted physical tenant holds the backup any more, because it was deleted from every
+            tenant that held it. At least one tenant held it.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          description: >-
+            The cluster's secondary storage cannot serve history backups, or a targeted physical
+            tenant's snapshot repository is absent from the store. Unlike the per-physical-tenant
+            backup endpoints, the cluster-admin surface performs no fine-grained authorization, so
+            a missing `BACKUP` permission is never the reason. Deletion fans out with no preceding
+            check, so an absent repository is found only once that tenant is reached, by which time
+            the backup may already be deleted from the others; those deletions are not undone.
+            Narrow the request with `physicalTenantId` to work with the tenants whose repository is
+            usable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "404":
+          description: >-
+            The requested `physicalTenantId` does not exist in this cluster, or every targeted
+            physical tenant was reached and none of them holds a backup with the given id.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          description: >-
+            The backup could not be deleted from every targeted physical tenant, because one of
+            them hit an internal error, so it may still exist on some of them. The deletions that
+            already succeeded are not undone, so a retry has only the remaining tenants left to
+            reach.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/rebalance:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: triggerClusterRebalance
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Trigger a cluster-wide leadership rebalance
+      description: >-
+        Transfers leadership of every partition that is not led by its highest-priority replica
+        towards that replica, one partition at a time. Returns as soon as the rebalance has been
+        accepted (poll `GET /cluster/v2/rebalance` to monitor progress).
+
+
+        Each rebalance can specify overrides for the configured rebalance settings (e.g. maximum
+        replication lag to allow). An absent request body means "use the configured settings".
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
+      parameters:
+        - name: dryRun
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: >-
+            If true, report the plan the rebalance would carry out without pausing any partition
+            or transferring any leadership.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterRebalanceRequest'
+      responses:
+        "202":
+          description: The rebalance was accepted, and its status is reported as it starts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterBalanceResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "409":
+          description: >-
+            A rebalance or cluster configuration change is already in progress, so there is no
+            settled configuration to plan a rebalance against.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "502":
+          description: The coordinator was reached, but its response was absent or unusable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          description: No coordinator is currently available or reachable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "504":
+          description: The coordinator did not answer before the request timeout.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: getClusterRebalance
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Report the cluster's current leadership balance
+      description: >-
+        Reports whether the cluster is currently balanced, the current leadership state of every
+        partition, and what became of the last rebalance to finish. The last completed rebalance is
+        held in memory by the coordinating broker, so none will be reported if the coordinator has
+        moved or restarted since the last rebalance.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
+      responses:
+        "200":
+          description: The cluster's current leadership balance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterBalanceResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "502":
+          description: The coordinator was reached, but its response was absent or unusable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          description: No coordinator is currently available or reachable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "504":
+          description: The coordinator did not answer before the request timeout.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: cancelClusterRebalance
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Stop the running rebalance
+      description: >-
+        Asks the running rebalance to stop once the transfer in flight has finished. Partitions
+        already transferred keep their new leaders, and those the rebalance had not yet reached keep
+        their current ones.
+
+
+        Cancellation requests are idempotent and always accepted. The `wasRunning` response field
+        can be used to distinguish a cancellation that found a running rebalance from one that did
+        not.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
+      responses:
+        "200":
+          description: The cancellation was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RebalanceCancellationResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "502":
+          description: The coordinator was reached, but its response was absent or unusable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          description: No coordinator is currently available or reachable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "504":
+          description: The coordinator did not answer before the request timeout.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
 ## Schema definitions
 
 components:
+  responses:
+    ClusterHistoryBackupForbidden:
+      description: >-
+        The cluster's secondary storage is neither Elasticsearch nor OpenSearch and therefore
+        cannot serve history backups, or a targeted physical tenant's snapshot repository is absent
+        from the store — configured under a name the store does not have, or not configured at all.
+        Both are deployment faults the caller cannot correct by changing its request; narrow the
+        request with `physicalTenantId` to work with the tenants whose repository is usable. Unlike
+        the per-physical-tenant backup endpoints, the cluster-admin surface performs no fine-grained
+        authorization, so a missing `BACKUP` permission is never the reason.
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+
   parameters:
     PhysicalTenantIdParameter:
       name: physicalTenantId
       in: query
       required: false
       description: >-
-        The physical tenant to apply the change to. When omitted, the change is applied to every
-        physical tenant of the cluster.
+        The physical tenant to apply the change to. When omitted, or when passed with an empty
+        value, the change is applied to every physical tenant of the cluster.
       schema:
         type: string
         example: default
@@ -444,3 +1687,538 @@ components:
           type: array
           items:
             $ref: 'cluster.yaml#/components/schemas/Partition'
+
+    ClusterTakeRuntimeBackupResponse:
+      description: >-
+        The outcome of triggering a runtime backup on every targeted physical tenant. Returned both
+        when every tenant was triggered and when only some were, so a partial trigger is never
+        silent: the status code says whether the request succeeded, the body says what is running.
+      type: object
+      required:
+        - physicalTenants
+      properties:
+        physicalTenants:
+          description: >-
+            The outcome for each targeted physical tenant, ordered by physical tenant id. Carries no
+            cluster-level backup id: in generated-id mode each tenant generates its own.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRuntimeBackupTakeResult'
+
+    ClusterRuntimeBackupTakeResult:
+      description: >-
+        Whether one physical tenant's runtime backup was triggered, and under which id it can be
+        monitored and deleted.
+      type: object
+      required:
+        - physicalTenantId
+        - backupId
+        - outcome
+        - reason
+      properties:
+        physicalTenantId:
+          description: The id of the physical tenant.
+          type: string
+          example: default
+        backupId:
+          description: >-
+            The id to monitor or delete this physical tenant's backup by: the id it is running under
+            when `TRIGGERED` — the requested one, or the one the tenant generated when ids are
+            generated — and the requested id to check when `UNKNOWN`. Null when the tenant is known to
+            be running no backup, and also when an `UNKNOWN` tenant generates its own ids, because
+            the id it may be running under was never reported; list that tenant's backups to find it.
+          nullable: true
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/BackupId'
+        outcome:
+          description: What this physical tenant did with the trigger.
+          allOf:
+            - $ref: '#/components/schemas/ClusterRuntimeBackupTakeOutcome'
+        reason:
+          description: >-
+            Why this physical tenant reported no triggered backup. Null when it was triggered.
+          type: string
+          nullable: true
+          example: ""
+
+    ClusterRuntimeBackupTakeOutcome:
+      title: Cluster Runtime Backup Take Outcome
+      description: >-
+        What a physical tenant did with the trigger. `TRIGGERED` says the backup is running, not that
+        it completed — poll `GET /cluster/v2/backups/runtime/{backupId}` for that. A `FAILED` tenant
+        is running no backup for this request and needs no cleanup. `UNKNOWN` means the broker may or
+        may not have accepted the request — the connection was cut mid-flight, or the gateway timed
+        out waiting — so that tenant's backups have to be checked before retrying; it is reported
+        separately from `FAILED` precisely because calling it failed would claim nothing is running
+        there. Tenants that were triggered are never rolled back.
+      type: string
+      enum:
+        - TRIGGERED
+        - FAILED
+        - UNKNOWN
+      example: TRIGGERED
+
+    ClusterRuntimeBackupInfo:
+      description: >-
+        A runtime backup id, what each physical tenant reports for it, and the state aggregated over
+        every targeted tenant — folded from the per-tenant states by the same rules a per-tenant state
+        is folded from its partitions.
+      type: object
+      required:
+        - backupId
+        - state
+        - failureReason
+        - physicalTenants
+      properties:
+        backupId:
+          description: The id of the backup.
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/BackupId'
+        state:
+          description: >-
+            The state aggregated over every targeted physical tenant, whether the backup id was
+            looked up directly or listed. A tenant holding nothing for this id counts as
+            `DOES_NOT_EXIST`, so the aggregate is `INCOMPLETE` unless every targeted tenant holds
+            the backup.
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/StateCode'
+        failureReason:
+          description: Reason for failure if the aggregated state is 'FAILED'.
+          type: string
+          nullable: true
+          example: ""
+        physicalTenants:
+          description: >-
+            What each physical tenant reports for this backup id, ordered by physical tenant id.
+            Every targeted tenant is listed, including the ones reporting `DOES_NOT_EXIST`.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRuntimeBackupTenantInfo'
+
+    ClusterRuntimeBackupTenantInfo:
+      description: What a single physical tenant reports for a runtime backup id.
+      type: object
+      required:
+        - physicalTenantId
+        - state
+        - failureReason
+        - details
+      properties:
+        physicalTenantId:
+          description: The id of the physical tenant.
+          type: string
+          example: default
+        state:
+          description: The state of the backup on this physical tenant, aggregated over its partitions.
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/StateCode'
+        failureReason:
+          description: Reason for failure if the state is 'FAILED'.
+          type: string
+          nullable: true
+          example: ""
+        details:
+          description: >-
+            Detailed status of the backup per partition of this physical tenant. Contains every
+            partition of the tenant when the backup id was looked up directly, including for a tenant
+            that holds no such backup. Empty for a tenant that holds nothing for a listed id: a
+            listing asks each tenant for the backups it has, so there is nothing to report per
+            partition for one it does not.
+          type: array
+          items:
+            $ref: 'backups.yaml#/components/schemas/PartitionBackupInfo'
+
+    ClusterRuntimeBackupState:
+      description: >-
+        The checkpoint and backup state of each physical tenant. Nothing is aggregated across
+        tenants: checkpoint ids and log positions only mean anything within one tenant's partitions.
+      type: object
+      required:
+        - physicalTenants
+      properties:
+        physicalTenants:
+          description: >-
+            The runtime backup state of each targeted physical tenant, ordered by physical tenant id.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRuntimeBackupTenantState'
+
+    ClusterRuntimeBackupTenantState:
+      description: The checkpoint and backup state of one physical tenant.
+      type: object
+      required:
+        - physicalTenantId
+        - state
+      properties:
+        physicalTenantId:
+          description: The id of the physical tenant.
+          type: string
+          example: default
+        state:
+          description: The checkpoint and backup state of this physical tenant's partitions.
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/RuntimeBackupState'
+
+    ClusterTakeHistoryBackupResponse:
+      description: >-
+        The snapshots scheduled on every targeted physical tenant. No cluster-level state is
+        aggregated from the per-tenant outcomes.
+      type: object
+      required:
+        - backupId
+        - physicalTenants
+      properties:
+        backupId:
+          description: The id requested for the backup on every targeted physical tenant.
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/BackupId'
+        physicalTenants:
+          description: The outcome for each targeted physical tenant, ordered by physical tenant id.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterHistoryBackupTakeResult'
+
+    ClusterHistoryBackupTakeResult:
+      description: >-
+        The snapshots scheduled on a single physical tenant. Only successfully scheduled tenants are
+        reported: the request fails as a whole if any targeted tenant could not schedule the backup.
+      type: object
+      required:
+        - physicalTenantId
+        - scheduledSnapshots
+      properties:
+        physicalTenantId:
+          description: The id of the physical tenant.
+          type: string
+          example: default
+        scheduledSnapshots:
+          description: The names of the snapshots scheduled on this physical tenant.
+          type: array
+          items:
+            type: string
+            description: The name of a scheduled snapshot.
+            example: camunda_webapps_1_8.10.0_part_1_of_6
+
+    ClusterHistoryBackupInfo:
+      description: >-
+        A history backup id and what each physical tenant reports for it. No cluster-level state is
+        aggregated from the per-tenant states.
+      type: object
+      required:
+        - backupId
+        - physicalTenants
+      properties:
+        backupId:
+          description: The id of the backup.
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/BackupId'
+        physicalTenants:
+          description: >-
+            What each physical tenant reports for this backup id, ordered by physical tenant id.
+            When looking a backup id up directly, every targeted tenant is listed, including the
+            ones reporting `NOT_FOUND`. Within a listing, only the tenants that hold the id are
+            listed.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterHistoryBackupTenantInfo'
+
+    ClusterHistoryBackupTenantInfo:
+      description: What a single physical tenant reports for a history backup id.
+      type: object
+      required:
+        - physicalTenantId
+        - state
+        - failureReason
+        - details
+      properties:
+        physicalTenantId:
+          description: The id of the physical tenant.
+          type: string
+          example: default
+        state:
+          description: The state of the backup on this physical tenant.
+          allOf:
+            - $ref: '#/components/schemas/ClusterHistoryBackupTenantState'
+        failureReason:
+          description: Reason for failure if the state is 'FAILED'.
+          type: string
+          nullable: true
+          example: ""
+        details:
+          description: >-
+            Detailed status of the backup per snapshot on this physical tenant. Empty when the
+            tenant does not hold the backup.
+          type: array
+          items:
+            $ref: 'backups.yaml#/components/schemas/HistoryBackupSnapshotInfo'
+
+    ClusterHistoryBackupTenantState:
+      title: Cluster History Backup Tenant State
+      description: >-
+        What a physical tenant reports for a history backup id: the per-tenant
+        `HistoryBackupStateCode` extended with `NOT_FOUND` for a tenant that was read and does not
+        hold the backup. `NOT_FOUND` is a successful observation, not a failure — a backup that only
+        some physical tenants hold is a supported outcome. There is no state for a tenant that could
+        not be read at all, because such a tenant fails the whole request.
+      type: string
+      enum:
+        - IN_PROGRESS
+        - COMPLETED
+        - FAILED
+        - INCOMPLETE
+        - INCOMPATIBLE
+        - NOT_FOUND
+      example: COMPLETED
+
+    ClusterRebalanceRequest:
+      description: >-
+        The settings to run a given rebalance with. Every setting is optional; an absent request
+        body is equivalent to a body with every field absent, and means "use the configured
+        settings".
+      type: object
+      properties:
+        replicationLagThreshold:
+          description: >-
+            The highest replication lag (in bytes) that a desired leader may have for its transfer
+            to be accepted.
+          type: integer
+          format: int64
+          minimum: 0
+          example: 8388608
+        replicationTimeout:
+          description: >-
+            How long a partition may stay frozen waiting for its desired leader to catch up (as a
+            positive ISO-8601 duration).
+          type: string
+          example: "PT10S"
+        maxTransferAttempts:
+          description: >-
+            How many times a current leader may prompt the desired leader to take over leadership
+            before giving up.
+          type: integer
+          format: int32
+          minimum: 1
+          example: 3
+        leaderWaitTimeout:
+          description: >-
+            How long the coordinator waits for a partition without a leader to acquire one before
+            reporting `NO_LEADER` and moving on (as a positive ISO-8601 duration).
+          type: string
+          example: "PT1M"
+
+    ClusterBalanceResponse:
+      description: >-
+        The cluster's current per-partition balance state, the running rebalance, and the last
+        completed rebalance.
+      type: object
+      required:
+        - state
+        - partitions
+        - runningRebalance
+        - lastCompletedRebalance
+      properties:
+        state:
+          description: The cluster's aggregate balance state as of the time of the request.
+          type: string
+          enum:
+            - BALANCED
+            - BALANCING
+            - UNBALANCED
+          example: "UNBALANCED"
+        partitions:
+          description: >-
+            The balance state of each partition as of the time of the request.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRebalancePartition'
+        runningRebalance:
+          description: >-
+            Normally the rebalance currently running, or absent if no rebalance is running. For a
+            dry-run response, this is instead the unexecuted plan of that dry run.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ClusterRunningRebalance'
+        lastCompletedRebalance:
+          description: The last completed non-dry-run rebalance this coordinator finished.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ClusterCompletedRebalance'
+
+    ClusterRebalancePartition:
+      description: >-
+        One partition's leadership/balance status - its current leader, its desired leader, and
+        whether a rebalance is currently moving it.
+      type: object
+      required:
+        - partitionId
+        - physicalTenantId
+        - currentLeader
+        - desiredLeader
+        - state
+      properties:
+        partitionId:
+          description: The unique ID of this partition, within its physical tenant.
+          type: integer
+          format: int32
+          example: 1
+        physicalTenantId:
+          description: >-
+            The partition group this partition belongs to. Partition IDs are unique only within a
+            group, so this is needed to identify the partition.
+          type: string
+          example: default
+        currentLeader:
+          description: >-
+            The broker ID currently leading this partition, or absent if it has no leader.
+          type: string
+          nullable: true
+          example: "0"
+        desiredLeader:
+          description: The broker ID the current configuration wants to lead this partition.
+          type: string
+          example: "0"
+        state:
+          description: >-
+            Whether this partition is being actively transferred, unbalanced, or balanced.
+          type: string
+          enum:
+            - TRANSFERRING
+            - UNBALANCED
+            - BALANCED
+          example: "UNBALANCED"
+
+
+    ClusterRebalance:
+      description: >-
+        The fields common to a running and a completed rebalance.
+      type: object
+      required:
+        - rebalanceId
+        - partitions
+        - startedAt
+      properties:
+        rebalanceId:
+          description: The ID of this rebalance.
+          type: integer
+          format: int64
+        partitions:
+          description: Every partition in the rebalance plan and its progress within this rebalance.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRebalanceOperationPartition'
+        startedAt:
+          description: When this rebalance was created.
+          type: string
+          format: date-time
+
+    ClusterRunningRebalance:
+      description: The rebalance currently running.
+      allOf:
+        - $ref: '#/components/schemas/ClusterRebalance'
+        - type: object
+          required:
+            - dryRun
+            - cancelRequested
+          properties:
+            dryRun:
+              description: Whether this rebalance is a dry run.
+              type: boolean
+            cancelRequested:
+              description: >-
+                Whether cancellation has been requested.
+              type: boolean
+
+    ClusterRebalanceOperationPartition:
+      description: One partition's plan, progress, and outcome within a rebalance.
+      type: object
+      required:
+        - partitionId
+        - physicalTenantId
+        - currentLeader
+        - desiredLeader
+        - progress
+        - result
+      properties:
+        partitionId:
+          description: The unique ID of this partition, within its physical tenant.
+          type: integer
+          format: int32
+          example: 1
+        physicalTenantId:
+          description: The partition group this partition belongs to.
+          type: string
+          example: default
+        currentLeader:
+          description: The leader last observed by this rebalance, or absent if there was no leader.
+          type: string
+          nullable: true
+          example: "0"
+        desiredLeader:
+          description: The leader selected when this rebalance was planned.
+          type: string
+          example: "1"
+        progress:
+          description: Where this rebalance has reached for the partition.
+          type: string
+          enum:
+            - PENDING
+            - TRANSFERRING
+            - COMPLETED
+        result:
+          description: The terminal outcome, present only when progress is COMPLETED.
+          type: string
+          nullable: true
+          enum:
+            - TRANSFERRED
+            - ALREADY_LEADER
+            - NOT_MEMBER
+            - NOT_REPLICATING
+            - UNREACHABLE
+            - NOT_COORDINATOR
+            - STALE_CONFIGURATION
+            - TRANSFER_IN_PROGRESS
+            - LAG_TOO_HIGH
+            - LEADER_INITIALIZING
+            - CONFIGURATION_CHANGE_IN_PROGRESS
+            - PAUSE_FAILED
+            - REPLICATION_TIMED_OUT
+            - TIMEOUT_NOW_EXHAUSTED
+            - LEADER_CHANGED
+            - NO_LEADER
+            - NO_RESPONSE
+            - CANCELLED
+            - PHYSICAL_TENANT_DISABLED
+
+    ClusterCompletedRebalance:
+      description: >-
+        The last completed rebalance.
+      allOf:
+        - $ref: '#/components/schemas/ClusterRebalance'
+        - type: object
+          required:
+            - finishedAt
+            - result
+          properties:
+            finishedAt:
+              description: When this rebalance finished.
+              type: string
+              format: date-time
+            result:
+              description: How the rebalance ended.
+              type: string
+              enum:
+                - COMPLETED
+                - CANCELLED
+                - FAILED
+              example: "COMPLETED"
+
+    RebalanceCancellationResponse:
+      description: Response to a rebalance cancellation request.
+      type: object
+      required:
+        - wasRunning
+      properties:
+        wasRunning:
+          description: Whether there was a rebalance to stop.
+          type: boolean
+          example: true

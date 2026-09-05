@@ -74,8 +74,10 @@ public final class JobWorkerElementTransformerV2<T extends FlowElement>
       linkedResourcesTransformer.transform(jobWorkerElement, linkedResources);
 
       final var agentDefinition = element.getSingleExtensionElement(ZeebeAgentDefinition.class);
-      final var modelerTemplate = ((ServiceTask) element).getModelerTemplate();
-      agentElementTypeTransformer.transform(jobWorkerElement, agentDefinition, modelerTemplate);
+      agentElementTypeTransformer.transform(jobWorkerElement, agentDefinition);
+      if (jobWorkerElement.isAgentDefinition()) {
+        process.markAgentic();
+      }
     }
   }
 }

@@ -29,12 +29,12 @@ import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.dynamic.config.changes.AwaitModeChangeApplier;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitModeChangeApplier;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
@@ -158,7 +158,8 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
             new SimpleMeterRegistry(),
             transport,
             (ignored) -> 0L,
-            topologyManager);
+            topologyManager,
+            "Broker-0");
 
     // exit manager: a lightweight fake standing in for a real Raft-based PartitionManagerImpl -
     // it just marks both local partitions LEADER on start, matching what PartitionModeHandlerTest
@@ -195,11 +196,11 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
   void shouldConvergeToProcessingAfterRecoveryWithPartialFailure() {
     // given - both partitions start out ACTIVE in cluster configuration
     final var partitionConfig = DynamicPartitionConfig.init();
-    var clusterConfiguration =
-        ClusterConfiguration.init()
+    var partitionGroup =
+        PartitionGroupConfiguration.empty(1)
             .addMember(
                 localMemberId,
-                MemberState.initializeAsActive(
+                BrokerPartitionState.initialize(
                     Map.of(
                         PARTITION_ID, PartitionState.active(1, partitionConfig),
                         PARTITION_ID_2, PartitionState.active(1, partitionConfig))));
@@ -237,11 +238,11 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
         new AwaitModeChangeApplier(localMemberId, Mode.RECOVERING, handler);
     final var recoveringApplyResult = recoveringApplier.apply();
     assertThat(recoveringApplyResult).succeedsWithin(AWAIT_TIMEOUT);
-    clusterConfiguration = recoveringApplyResult.join().apply(clusterConfiguration);
+    partitionGroup = recoveringApplyResult.join().apply(partitionGroup);
 
-    assertThat(clusterConfiguration.getMember(localMemberId).getPartition(PARTITION_ID).state())
+    assertThat(partitionGroup.getMember(localMemberId).getPartition(PARTITION_ID).state())
         .isEqualTo(PartitionState.State.RECOVERING);
-    assertThat(clusterConfiguration.getMember(localMemberId).getPartition(PARTITION_ID_2).state())
+    assertThat(partitionGroup.getMember(localMemberId).getPartition(PARTITION_ID_2).state())
         .isEqualTo(PartitionState.State.ACTIVE);
 
     // and - exiting recovery replaces the recovery manager (including its partial failure) with a
@@ -272,13 +273,13 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
         new AwaitModeChangeApplier(localMemberId, Mode.PROCESSING, handler);
     final var processingApplyResult = processingApplier.apply();
     assertThat(processingApplyResult).succeedsWithin(AWAIT_TIMEOUT);
-    clusterConfiguration = processingApplyResult.join().apply(clusterConfiguration);
+    partitionGroup = processingApplyResult.join().apply(partitionGroup);
 
     // then - the whole group converges cleanly back to ACTIVE, unaffected by the earlier partial
     // recovery failure
-    assertThat(clusterConfiguration.getMember(localMemberId).getPartition(PARTITION_ID).state())
+    assertThat(partitionGroup.getMember(localMemberId).getPartition(PARTITION_ID).state())
         .isEqualTo(PartitionState.State.ACTIVE);
-    assertThat(clusterConfiguration.getMember(localMemberId).getPartition(PARTITION_ID_2).state())
+    assertThat(partitionGroup.getMember(localMemberId).getPartition(PARTITION_ID_2).state())
         .isEqualTo(PartitionState.State.ACTIVE);
   }
 

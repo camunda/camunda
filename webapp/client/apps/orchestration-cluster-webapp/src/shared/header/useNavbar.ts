@@ -11,16 +11,13 @@ import {useTranslation} from 'react-i18next';
 import type {C3NavigationAppProps, C3NavigationNavBarElement} from '@camunda/camunda-composite-components';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
+import {hasComponentAccess} from '#/shared/componentAccess';
 import {useCallback} from 'react';
 
 type NavbarConfig = {
 	app: C3NavigationAppProps;
 	elements: C3NavigationNavBarElement[];
 };
-
-function isAuthorized(componentName: string, authorizedComponents: string[]): boolean {
-	return authorizedComponents.includes(componentName) || authorizedComponents.includes('*');
-}
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
@@ -46,7 +43,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 	);
 
 	if (hasComponentRouteMatch('tasklist')) {
-		const hasTasklistAccess = isAuthorized('tasklist', authorizedComponents);
+		const hasTasklistAccess = hasComponentAccess('tasklist', authorizedComponents);
 
 		return {
 			app: {
@@ -90,7 +87,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 	}
 
 	if (hasComponentRouteMatch('admin')) {
-		const hasAdminAccess = isAuthorized('admin', authorizedComponents);
+		const hasAdminAccess = hasComponentAccess('admin', authorizedComponents);
 
 		return {
 			app: {
@@ -105,7 +102,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 	}
 
 	if (hasComponentRouteMatch('operate')) {
-		const hasOperateAccess = isAuthorized('operate', authorizedComponents);
+		const hasOperateAccess = hasComponentAccess('operate', authorizedComponents);
 
 		return {
 			app: {

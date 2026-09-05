@@ -158,7 +158,6 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     sideEffectWriter.appendSideEffect(
         () -> {
           membershipStateAdapter.invalidateAll();
-          return true;
         });
   }
 

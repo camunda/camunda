@@ -112,6 +112,25 @@ final class PhysicalTenantAvailabilityInitializerTest {
   }
 
   @Test
+  void shouldLeaveARemovedTenantRemovedWhenStaticConfigurationListsItAgain() {
+    // given — tenantA was explicitly removed, but its id is (still or again) listed in the local
+    // static configuration
+    final var existing = Set.of(partition("tenantA", 1, Set.of(member(0))));
+    final var removedConfiguration =
+        configurationWith(existing)
+            .updatePartitionGroupConfig("tenantA", PartitionGroupConfiguration::remove);
+    final var staticConfiguration = staticConfigWith(List.of(tenantPartitionIds("tenantA", 1)));
+    final var initializer = new PhysicalTenantAvailabilityInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(removedConfiguration).join();
+
+    // then — removal is terminal: the tenant stays removed, it is not re-enabled
+    assertThat(result.partitionGroup("tenantA").isRemoved()).isTrue();
+    assertThat(result.partitionGroup("tenantA").isDisabled()).isTrue();
+  }
+
+  @Test
   void shouldLeaveANotYetProvisionedTenantAlone() {
     // given — the local static configuration lists tenantB, but it has no group yet (provisioning's
     // job, not this initializer's)

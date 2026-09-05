@@ -30,7 +30,7 @@ message GlobalConfiguration {
   string clusterId = 2;
   map<string, BrokerState> members = 3;
   PartitionDistributorConfig partitionDistributor = 4;
-  ClusterChangePlan pendingChanges = 5;
+  DependencyChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
 }
 
@@ -41,17 +41,54 @@ message PartitionGroupConfiguration {
   int64 incarnationNumber = 2;
   map<string, BrokerPartitionState> members = 3;
   RoutingState routingState = 4;
-  ClusterChangePlan pendingChanges = 5;
+  DependencyChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
   TenantAvailability availability = 7;
 }
 
-// Whether a physical tenant is currently disabled (removed from local static configuration, but
-// retaining its partition assignment and data). Carries its own version, independent of the
-// enclosing PartitionGroupConfiguration.version.
+// A change whose operations carry their own dependencies. An operation runs once
+// everything it depends on has completed, so concurrency is the absence of an edge.
+message DependencyChangePlan {
+  int64 id = 1;
+  ChangeStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  OperationGraph graph = 4;
+  repeated OperationCompletion completed = 5;
+}
+
+// The immutable operations of a change and the order constraints between them.
+message OperationGraph {
+  repeated PlannedOperation operations = 1;
+}
+
+message PlannedOperation {
+  int32 id = 1;
+  repeated int32 dependsOn = 3;
+  oneof operation {
+    PartitionGroupChangeOperation partitionGroupOperation = 2;
+    GlobalChangeOperation globalOperation = 4;
+  }
+  // The partition group this operation targets. Empty means the sub-configuration
+  // holding the graph, which is every operation today: a graph currently lives
+  // inside the sub-configuration it acts on. It is named per node so that a graph
+  // spanning sub-configurations -- what collapsing PhasedChangePlan's phase
+  // boundaries into the graph requires -- is expressible. Empty is therefore also
+  // what a graph written before this field carried, and means the same thing.
+  string groupId = 5;
+}
+
+message OperationCompletion {
+  int32 operationId = 1;
+  google.protobuf.Timestamp completedAt = 2;
+}
+
+// Whether a physical tenant is running, and if not why. Carries its own version, independent of the
+// enclosing PartitionGroupConfiguration.version — that independent version is what makes a removal
+// converge, since the group itself cannot be deleted: the partitionGroups map is merged by union of
+// its keys, so a peer that has not seen the removal would put a deleted group straight back.
 message TenantAvailability {
   int64 version = 1;
-  bool disabled = 2;
+  TenantAvailabilityState state = 2;
 }
 
 // Broker lifecycle state. Holds State and timestamps; no partition assignment.
@@ -103,7 +140,13 @@ message PhasedChangePlanPhase {
   oneof phase {
     GlobalPhase globalPhase = 1;
     PartitionGroupParallelPhase partitionGroupParallelPhase = 2;
+    PartitionGroupGraphPhase partitionGroupGraphPhase = 3;
   }
+}
+
+// Graphs written to the named groups' pendingChanges when this phase is activated.
+message PartitionGroupGraphPhase {
+  map<string, OperationGraph> groupGraphs = 1;
 }
 
 // Operations written to GlobalConfiguration.pendingChanges when this phase
@@ -112,8 +155,10 @@ message GlobalPhase {
   repeated GlobalChangeOperation operations = 1;
 }
 
-// Operations written atomically to named groups' pendingChanges when this
-// phase is activated.
+// Decode-only. Superseded by PartitionGroupGraphPhase, which represents the
+// same thing as a graph whose operations are chained one behind the other.
+// Retained so a configuration persisted or gossiped before the two phase kinds
+// became one still decodes.
 message PartitionGroupParallelPhase {
   map<string, PartitionGroupOperationList> groupOperations = 1;
 }
@@ -159,6 +204,9 @@ message PartitionGroupChangeOperation {
     ExportingStateChangeOperation exporterStateChange = 18;
     PartitionPreRestoreOperation partitionPreRestore = 19;
     PartitionRestoreOperation partitionRestore = 20;
+    RemovePhysicalTenantOperation removePhysicalTenant = 21;
+    PartitionPromoteOperation partitionPromote = 22;
+    PartitionDemoteOperation partitionDemote = 23;
   }
 }
 
@@ -271,12 +319,21 @@ message TopologyChangeOperation {
     ExportingStateChangeOperation exporterStateChange = 26;
     PartitionPreRestoreOperation partitionPreRestore = 27;
     PartitionRestoreOperation partitionRestore = 28;
+    RemovePhysicalTenantOperation removePhysicalTenant = 29;
+    PartitionPromoteOperation partitionPromote = 30;
+    PartitionDemoteOperation partitionDemote = 31;
   }
 }
 
 message UpdatePartitionDistributorConfigOperation {
   PartitionDistributorConfig config = 1;
 }
+
+// Records that an operator explicitly discarded a disabled physical tenant, so that a broker still
+// holding its partitions may leave the cluster. No fields: the target group's id comes from the
+// PartitionGroupParallelPhase map key that carries this operation, same as every other
+// PartitionGroupChangeOperation.
+message RemovePhysicalTenantOperation {}
 
 message CompletedTopologyChangeOperation {
   TopologyChangeOperation operation = 1;
@@ -286,11 +343,22 @@ message CompletedTopologyChangeOperation {
 message PartitionJoinOperation {
   int32 partitionId = 1;
   int32 priority = 2;
+  // Absent (false) in operations serialized before two-phase joins existed: such an operation
+  // keeps its original meaning of a complete, single-step join as a voting member.
+  bool asLearner = 3;
 }
 
 message PartitionLeaveOperation {
   int32 partitionId = 1;
   int32 minimumAllowedReplicas = 2;
+}
+
+message PartitionPromoteOperation {
+  int32 partitionId = 1;
+}
+
+message PartitionDemoteOperation {
+  int32 partitionId = 1;
 }
 
 message PartitionReconfigurePriorityOperation {
@@ -407,6 +475,9 @@ enum State {
   LEFT = 4;
   BOOTSTRAPPING = 5;
   RECOVERING = 6;
+  // Partitions only: joined as a non-voting learner replica, catching up on the log until
+  // promoted to ACTIVE in a second configuration change.
+  LEARNER = 7;
 }
 
 enum ChangeStatus {
@@ -444,4 +515,13 @@ enum Mode {
   MODE_UNKNOWN = 0;
   MODE_PROCESSING = 1;
   MODE_RECOVERING = 2;
+}
+
+// TENANT_ENABLED is 0 so that a tenant with no availability recorded reads as running, which is what
+// the field's absence has always meant. TENANT_REMOVED is terminal: a removed tenant is never
+// re-enabled, and its partition group is retained as a tombstone rather than deleted.
+enum TenantAvailabilityState {
+  TENANT_ENABLED = 0;
+  TENANT_DISABLED = 1;
+  TENANT_REMOVED = 2;
 }

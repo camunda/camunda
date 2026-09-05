@@ -31,6 +31,7 @@ import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -111,7 +112,7 @@ final class LeadershipTransferClientTest {
     // when
     final var response =
         client
-            .initiate(LEADER_ID, PARTITION_GROUP, PARTITION_ID, request)
+            .initiate(LEADER_ID, new PartitionId(PARTITION_GROUP, PARTITION_ID), request)
             .get(10, TimeUnit.SECONDS);
 
     // then
@@ -124,8 +125,7 @@ final class LeadershipTransferClientTest {
     // given
     final var received = new CompletableFuture<LeadershipTransferResultRequest>();
     client.onResult(
-        PARTITION_GROUP,
-        PARTITION_ID,
+        new PartitionId(PARTITION_GROUP, PARTITION_ID),
         request -> {
           received.complete(request);
           return CompletableFuture.completedFuture(

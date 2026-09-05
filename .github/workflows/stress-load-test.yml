@@ -1,0 +1,245 @@
+# description: Runs the full lifecycle for a stress test: deploy (setup), 15-min
+#              warmup, async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics
+#              snapshot, then namespace cleanup. Used on daily schedule in different
+#              variants, see camunda-daily-load-tests.yml.
+#              Uploads its own metrics as a `stress-test-result-<name>` artifact containing
+#              {namespace, soakEndEpoch, results} for the caller to aggregate (matrix job outputs
+#              are not reliable to fan out per-leg via `needs.<job>.outputs`).
+# calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
+#        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
+# called-by: camunda-daily-load-tests.yml
+# note: this chain is 3 of GitHub's 4 allowed reusable-workflow nesting levels deep (calls 4 more
+#       reusable workflows); none of them may add another nested "uses:" job without breaking it.
+# type: CI
+# owner: @camunda/reliability-testing
+name: Stress test
+run-name: "Stress test variant: ${{ inputs.name }}"
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: 'Bare name for this stress test (e.g. medic-daily-2026-08-18-abc1234-test-grpc), without c8- prefix'
+        type: string
+        required: true
+      secondary-storage-type:
+        description: 'Secondary database backend for Camunda Platform, passed through to camunda-load-test.yml'
+        type: string
+        default: elasticsearch
+        required: false
+      load-test-load:
+        description: 'Helm args for workload components, passed through to camunda-load-test.yml (e.g. --set global.preferRest.enabled=true)'
+        type: string
+        default: ""
+        required: false
+      load-test-setup-helm-values:
+        description: 'Additional Helm values for the load-test-setup chart, passed through to camunda-load-test.yml'
+        type: string
+        default: ""
+        required: false
+      build-frontend:
+        description: 'Build frontend assets as part of the load test image build'
+        type: boolean
+        default: true
+        required: false
+    outputs:
+      results-json:
+        description: 'JSON object {name: number, ...} from this variant''s metrics snapshot. Non-matrix callers only — see workflow description.'
+        value: ${{ jobs.collect-metrics.outputs.results-json }}
+      soak-end-epoch:
+        description: 'Unix epoch seconds when this variant''s soak period ended. Non-matrix callers only.'
+        value: ${{ jobs.soak.outputs.soak_end_epoch }}
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Bare name for this stress test, without c8- prefix'
+        required: true
+      secondary-storage-type:
+        description: 'Secondary database backend for Camunda Platform'
+        type: choice
+        options:
+          - elasticsearch
+          - opensearch
+          - postgresql
+          - mysql
+          - mariadb
+          - mssql
+          - oracle
+          - none
+        default: elasticsearch
+      load-test-load:
+        description: 'Helm args for workload components (e.g. --set global.preferRest.enabled=true)'
+        default: ""
+        required: false
+      load-test-setup-helm-values:
+        description: 'Additional Helm values for the load-test-setup chart'
+        default: ""
+        required: false
+      build-frontend:
+        description: 'Build frontend assets as part of the load test image build'
+        type: boolean
+        default: true
+        required: false
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+  NAMESPACE: c8-${{ inputs.name }}
+  # Fixed timing constants: no current or planned variant needs different values, and GitHub
+  # Actions can't compute `timeout-minutes` from an input expression, so these stay hardcoded
+  # rather than caller-configurable (see profile-load-test.yml's similar INVARIANT comment).
+  WARMUP_SECONDS: 900
+  SOAK_SECONDS: 10800
+
+jobs:
+  setup:
+    name: Setup
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ inputs.name }}
+      scenario: max
+      build-frontend: ${{ inputs.build-frontend }}
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
+      load-test-load: ${{ inputs.load-test-load }}
+      load-test-setup-helm-values: ${{ inputs.load-test-setup-helm-values }}
+
+  # Wait 15 minutes after setup succeeds before profiling starts, mirroring the warmup convention
+  # the rest of the load-test flow already uses (see WARMUP_SECONDS in resolve-daily.py and
+  # await-benchmark's `sleep 900` in camunda-pr-load-test.yaml): profiling from t=0 would capture
+  # pod startup and ramp-up noise instead of steady-state behavior.
+  warmup:
+    name: Warmup before profiling
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.result == 'success'
+    timeout-minutes: 20
+    permissions: { }
+    steps:
+      - name: Wait for warmup period
+        run: sleep "${WARMUP_SECONDS}"
+
+  # Profile the first 10 minutes post-warmup via async-profiler. Runs concurrently with soak (not
+  # on its critical path).
+  profile:
+    name: Profile pods
+    needs: [ setup, warmup ]
+    if: needs.warmup.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/profile-load-test.yml
+    secrets: inherit
+    with:
+      name: c8-${{ inputs.name }}
+      duration-seconds: '600'
+
+  # Wait 3 hours, anchored to this variant's own setup completion, before taking its metrics
+  # snapshot. Variants build+deploy independently and don't reliably finish at the same time, so
+  # a single shared soak job (anchored to whichever setup finished last) would shift the metrics
+  # window for the earlier-finishing variant later than its actual start, cutting off the
+  # beginning of its run.
+  #
+  # This job is always named "Soak" — the calling job's own `name:` (set per-matrix-entry by the
+  # caller, e.g. "gRPC", "REST") disambiguates it in the Actions UI and Jobs API, which render a
+  # matrixed reusable-workflow call's inner jobs as "<outer job name> / <inner job name>" (e.g.
+  # "gRPC / Soak").
+  # Some consumers depend on this job name, do not rename this job without updating the other related constants too.
+  soak:
+    name: Soak
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.result == 'success'
+    timeout-minutes: 195
+    permissions: { }
+    outputs:
+      soak_end_epoch: ${{ steps.timing.outputs.soak_end_epoch }}
+    steps:
+      - name: Wait for soak period
+        run: sleep "${SOAK_SECONDS}"
+      - name: Record soak end time
+        id: timing
+        run: echo "soak_end_epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+  # Gated on its own setup: if setup failed, the namespace was never created, so skip metrics
+  # collection rather than query a missing namespace.
+  collect-metrics:
+    name: Collect metrics
+    needs: [ setup, soak ]
+    if: needs.soak.result == 'success' && needs.setup.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    secrets: inherit
+    with:
+      namespace: c8-${{ inputs.name }}
+      duration-seconds: '10800'
+      at: ${{ needs.soak.outputs.soak_end_epoch }}
+
+  # Upload this variant's metrics as its own artifact for the caller's aggregate-metrics job to
+  # re-read. Matrix job outputs are not reliably fanned out per-leg via `needs.<job>.outputs` (the
+  # value returned is undefined/arbitrary across legs), so the artifact is the source of truth —
+  # not the workflow_call `results-json`/`soak-end-epoch` outputs above. The artifact name is
+  # built from name, which the caller uses to map each downloaded artifact to a variant.
+  upload-variant-metrics:
+    name: Upload variant metrics artifact
+    runs-on: ubuntu-latest
+    needs: [ collect-metrics, soak ]
+    if: always() && needs.collect-metrics.result == 'success'
+    timeout-minutes: 5
+    permissions: { }
+    steps:
+      - name: Write variant metrics manifest
+        env:
+          RESULTS_JSON: ${{ needs.collect-metrics.outputs.results-json }}
+          SOAK_END_EPOCH: ${{ needs.soak.outputs.soak_end_epoch }}
+        run: |
+          jq -n \
+            --arg namespace "${NAMESPACE}" \
+            --argjson soakEndEpoch "${SOAK_END_EPOCH:-0}" \
+            --argjson results "${RESULTS_JSON:-null}" \
+            '{namespace: $namespace, soakEndEpoch: $soakEndEpoch, results: ($results // {})}' \
+            > stress-result.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: stress-test-result-${{ inputs.name }}
+          path: stress-result.json
+          retention-days: 90
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Delete the namespace immediately after metrics are collected to reduce cluster cost. Runs
+  # regardless of whether metrics collection succeeded (idempotent + guardrailed inside
+  # camunda-delete-load-test.yml), as long as the namespace name is known — which it always is,
+  # since it's derived from required inputs.
+  cleanup:
+    name: Cleanup namespace
+    needs: [ collect-metrics ]
+    if: always()
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-delete-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-${{ inputs.name }}

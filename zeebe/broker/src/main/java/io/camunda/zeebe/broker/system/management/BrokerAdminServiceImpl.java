@@ -58,17 +58,23 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   @Override
   public void pauseExporting() {
-    actor.call(this::pauseExportingOnAllPartitions);
+    throw exportingControlRemoved();
   }
 
   @Override
   public void softPauseExporting() {
-    actor.call(this::softPauseExportingOnAllPartitions);
+    throw exportingControlRemoved();
   }
 
   @Override
   public void resumeExporting() {
-    actor.call(this::resumeExportingOnAllPartitions);
+    throw exportingControlRemoved();
+  }
+
+  private static UnsupportedOperationException exportingControlRemoved() {
+    return new UnsupportedOperationException(
+        "This operation is no longer supported. Use the /actuator/exporting endpoint, or the"
+            + " /v2/exporting and /cluster/v2/exporting REST endpoints instead");
   }
 
   @Override
@@ -238,30 +244,6 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     return partitionManager.getZeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::takeSnapshot)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> softPauseExportingOnAllPartitions() {
-    LOG.info("Soft Pausing exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::softPauseExporting)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> pauseExportingOnAllPartitions() {
-    LOG.info("Pausing exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::pauseExporting)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> resumeExportingOnAllPartitions() {
-    LOG.info("Resuming exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::resumeExporting)
         .collect(new ActorFutureCollector<>(actor));
   }
 }

@@ -58,7 +58,7 @@ zeebe/qa/pom.xml            @camunda/orchestration-cluster
 buf.yaml                    @camunda/orchestration-cluster
 
 # Camunda Client & SB Starter
-/clients/                   @camunda/core-features
+/clients/                   @camunda/c8-api-team
 
 # Spring utilities
 /spring-utils/              @camunda/core-features
@@ -426,7 +426,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/core-features
 /.github/workflows/ci-database-integration-tests-reusable.yml @camunda/data-layer
-/.github/workflows/frontend-sbom-snyk-nightly.yml @camunda/hub-frontend
+/.github/workflows/frontend-sbom-snyk-nightly.yml @camunda/orchestration-cluster-webapps
 /.github/workflows/zeebe-release-stable-dry-run.yml @camunda/engineering-operations
 /.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml    @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.7-api-es.yml                 @camunda/test-automation-team

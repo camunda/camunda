@@ -19,7 +19,7 @@ import io.camunda.service.ExportingServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
-import io.camunda.zeebe.gateway.admin.ExportingStatus;
+import io.camunda.zeebe.dynamic.config.api.ExportingStatus;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;

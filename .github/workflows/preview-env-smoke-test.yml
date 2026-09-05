@@ -15,6 +15,7 @@ on:
         type: choice
         options:
         - all
+        - '8.11'
         - '8.10'
         - '8.9'
         - '8.8'
@@ -27,8 +28,8 @@ on:
         default: false
       existing-host:
         description: |
-          Iteration shortcut (8.10 only): reuse an already-deployed preview env
-          (host FQDN, e.g. smoke810-123.camunda.camunda.cloud) instead of
+          Iteration shortcut (8.11 only): reuse an already-deployed preview env
+          (host FQDN, e.g. smoke811-123.camunda.camunda.cloud) instead of
           building images and deploying. Chart changes reach the existing env
           via ArgoCD branch tracking, so a push + this input skips ~20min of
           build/deploy per iteration.
@@ -60,13 +61,22 @@ on:
         required: false
         type: string
         default: 'stable/8.9'
+      ref-8-10:
+        description: |
+          Git ref to build and deploy the 8.10 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.10 (static
+          `uses:` ref).
+        required: false
+        type: string
+        default: 'stable/8.10'
 
 env:
   TEST_OWNER: '@camunda/engineering-operations'
   E2E_DIR: e2e-tests
 
 jobs:
-  # Gate for the free-form ref-8-8/ref-8-9 dispatch inputs: they are forwarded
+  # Gate for the free-form ref-8-8/ref-8-9/ref-8-10 dispatch inputs: they are forwarded
   # as `ref` into the reusable deploy/teardown workflows, where they end up in
   # shell-built ArgoCD arguments (--revision, --helm-set), so restrict them to
   # git-ref characters before anything consumes them. Always runs (trivially
@@ -83,8 +93,9 @@ jobs:
         env:
           REF_8_8: ${{ inputs.ref-8-8 }}
           REF_8_9: ${{ inputs.ref-8-9 }}
+          REF_8_10: ${{ inputs.ref-8-10 }}
         run: |
-          for ref in "$REF_8_8" "$REF_8_9"; do
+          for ref in "$REF_8_8" "$REF_8_9" "$REF_8_10"; do
             if [[ -n "$ref" && ! "$ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
               echo "::error::Invalid ref override (allowed: A-Z a-z 0-9 . _ / -): ${ref}"
               exit 1
@@ -145,15 +156,31 @@ jobs:
 
   deploy-8-10:
     name: Deploy 8.10 Preview Environment
-    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version) && inputs.existing-host == ''
-    uses: ./.github/workflows/preview-env-build-and-deploy.yml
+    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version)
+    needs: validate-ref-inputs
+    uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.10
     secrets: inherit
     with:
       app-name: smoke810-${{ github.run_number }}
+      ref: ${{ inputs.ref-8-10 || 'stable/8.10' }}
       labels: |
         preview=smoke-test
         repo=camunda_camunda
         version=8.10
+      helm-extra-args: |
+        --helm-set global.preview.ingress.internalAuthBypass.enabled=true
+
+  deploy-8-11:
+    name: Deploy 8.11 Preview Environment
+    if: contains(fromJSON('["all", "8.11", ""]'), inputs.version) && inputs.existing-host == ''
+    uses: ./.github/workflows/preview-env-build-and-deploy.yml
+    secrets: inherit
+    with:
+      app-name: smoke811-${{ github.run_number }}
+      labels: |
+        preview=smoke-test
+        repo=camunda_camunda
+        version=8.11
       helm-extra-args: |
         --helm-set global.preview.ingress.internalAuthBypass.enabled=true
 
@@ -163,9 +190,10 @@ jobs:
     - deploy-8-8
     - deploy-8-9
     - deploy-8-10
-    # Run if at least one deploy succeeded (or an existing 8.10 preview is
-    # reused; existing-host only applies when the version selection includes 8.10)
-    if: always() && (needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.10", ""]'), inputs.version)))
+    - deploy-8-11
+    # Run if at least one deploy succeeded (or an existing 8.11 preview is
+    # reused; existing-host only applies when the version selection includes 8.11)
+    if: always() && (needs.deploy-8-11.result == 'success' || needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.11", ""]'), inputs.version)))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -183,8 +211,11 @@ jobs:
           host: ${{ needs.deploy-8-9.outputs.host-name }}
           run: ${{ needs.deploy-8-9.result == 'success' }}
         - version: '8.10'
-          host: ${{ inputs.existing-host || needs.deploy-8-10.outputs.host-name }}
-          run: ${{ needs.deploy-8-10.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.10", ""]'), inputs.version)) }}
+          host: ${{ needs.deploy-8-10.outputs.host-name }}
+          run: ${{ needs.deploy-8-10.result == 'success' }}
+        - version: '8.11'
+          host: ${{ inputs.existing-host || needs.deploy-8-11.outputs.host-name }}
+          run: ${{ needs.deploy-8-11.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.11", ""]'), inputs.version)) }}
         exclude:
         - deployment:
             run: false
@@ -265,7 +296,7 @@ jobs:
 
       - name: Generate GitHub Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets-1.1.0
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
@@ -388,10 +419,26 @@ jobs:
     needs:
     - deploy-8-10
     - test
-    uses: ./.github/workflows/preview-env-teardown.yml
+    uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.10
     secrets: inherit
     with:
       app-name: smoke810-${{ github.run_number }}
+      ref: ${{ inputs.ref-8-10 || 'stable/8.10' }}
+
+  teardown-8-11:
+    name: Teardown 8.11 Preview Environment
+    if: >
+      always() &&
+      needs.deploy-8-11.result == 'success' &&
+      needs.test.result == 'success' &&
+      !inputs.skip-teardown
+    needs:
+    - deploy-8-11
+    - test
+    uses: ./.github/workflows/preview-env-teardown.yml
+    secrets: inherit
+    with:
+      app-name: smoke811-${{ github.run_number }}
 
   notify-failure:
     name: Notify on Failure
@@ -403,12 +450,14 @@ jobs:
         contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-8.result) ||
         contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-9.result) ||
         contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-10.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-11.result) ||
         contains(fromJSON('["failure", "cancelled"]'), needs.test.result)
       )
     needs:
     - deploy-8-8
     - deploy-8-9
     - deploy-8-10
+    - deploy-8-11
     - test
     runs-on: ubuntu-latest
     timeout-minutes: 5

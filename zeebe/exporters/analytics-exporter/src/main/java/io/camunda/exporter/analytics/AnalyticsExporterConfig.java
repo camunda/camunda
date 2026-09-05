@@ -10,6 +10,11 @@ package io.camunda.exporter.analytics;
 import io.camunda.exporter.analytics.sampling.HashSampler;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +31,10 @@ public class AnalyticsExporterConfig {
   private boolean signing = true;
   private boolean allowInsecure = false;
   private double samplingRate = HashSampler.MAX_SAMPLE_RATE;
+  private List<String> categories =
+      Arrays.stream(AnalyticsCategory.values())
+          .map(c -> c.name().toLowerCase(java.util.Locale.ROOT))
+          .collect(Collectors.toList());
 
   public String getEndpoint() {
     return endpoint;
@@ -99,6 +108,25 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  public List<String> getCategories() {
+    return categories;
+  }
+
+  public AnalyticsExporterConfig setCategories(final List<String> categories) {
+    this.categories = categories;
+    return this;
+  }
+
+  /** Parses the configured category strings into a set of {@link AnalyticsCategory} values. */
+  public Set<AnalyticsCategory> getActiveCategories() {
+    if (categories == null || categories.isEmpty()) {
+      return EnumSet.noneOf(AnalyticsCategory.class);
+    }
+    return categories.stream()
+        .map(AnalyticsCategory::parse)
+        .collect(Collectors.toCollection(() -> EnumSet.noneOf(AnalyticsCategory.class)));
+  }
+
   /** Validates configuration, logging warnings where appropriate. */
   public AnalyticsExporterConfig validate() {
     validateEndpoint();
@@ -138,7 +166,26 @@ public class AnalyticsExporterConfig {
               + ", got: "
               + samplingRate);
     }
+    validateCategories();
     return this;
+  }
+
+  private void validateCategories() {
+    if (categories == null) {
+      return;
+    }
+    for (final String category : categories) {
+      try {
+        AnalyticsCategory.parse(category);
+      } catch (final IllegalArgumentException e) {
+        throw new IllegalArgumentException(
+            "Invalid analytics category: '"
+                + category
+                + "'. Valid values: "
+                + Arrays.toString(AnalyticsCategory.values()),
+            e);
+      }
+    }
   }
 
   private void validatePushInterval() {
@@ -191,7 +238,7 @@ public class AnalyticsExporterConfig {
    * what rate. Used as input to the exporter digest.
    *
    * <p><b>Included</b> (behavioral — affect which events are emitted or what they contain): {@code
-   * samplingRate}.
+   * samplingRate}, {@code categories}.
    *
    * <p><b>Excluded</b> (transport-only — affect delivery, not event semantics): {@code endpoint},
    * {@code maxQueueSize}, {@code maxBatchSize}, {@code pushInterval}, {@code heartbeatInterval},
@@ -202,6 +249,8 @@ public class AnalyticsExporterConfig {
    * excluded list above.
    */
   String toExporterDigestString() {
-    return "samplingRate=" + samplingRate;
+    final var sortedCategories =
+        getActiveCategories().stream().map(Enum::name).sorted().collect(Collectors.joining(","));
+    return "samplingRate=" + samplingRate + ";categories=" + sortedCategories;
   }
 }

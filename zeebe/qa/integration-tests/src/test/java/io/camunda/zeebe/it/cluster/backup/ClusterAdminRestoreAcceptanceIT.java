@@ -10,8 +10,11 @@ package io.camunda.zeebe.it.cluster.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.protocol.rest.ClusterRestoreRequest;
+import io.camunda.client.protocol.rest.RestoreRequest;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.PrimaryStorageBackup;
@@ -21,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -34,11 +38,14 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
-import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,11 +55,15 @@ import org.junit.jupiter.api.io.TempDir;
  * cluster/v2/restore}), as opposed to {@link InProcessRestoreAcceptance} which restores over the
  * per-physical-tenant API ({@code POST v2/restore}).
  *
- * <p>One broker serves three physical tenants — {@code default}, {@code tenantb} and {@code
- * tenantc} — each its own partition group with its own primary storage backup store. No secondary
- * storage is needed: backup/restore acts on primary storage only, independently of it (see {@code
- * ClusterRecoveryServicesTest} in the {@code service} module for coverage of the per-tenant
- * secondary-storage environment that {@code overrides} coexists with).
+ * <p>Runs on a three-broker cluster serving three physical tenants — {@code default}, {@code
+ * tenantb} and {@code tenantc} — each its own partition group of three partitions replicated across
+ * every broker, and each with its own primary storage backup store. That shape is deliberate: it is
+ * the smallest cluster in which all three parallel axes of a restore are non-trivial at once, so a
+ * cluster-wide restore plans 3 tenants × 3 brokers × 3 partitions of partition work rather than
+ * collapsing one of them to a single element. No secondary storage is needed: backup/restore acts
+ * on primary storage only, independently of it (see {@code ClusterRecoveryServicesTest} in the
+ * {@code service} module for coverage of the per-tenant secondary-storage environment that {@code
+ * overrides} coexists with).
  *
  * <p>Covers the three shapes {@link
  * io.camunda.zeebe.dynamic.config.api.ClusterRestoreRequestTransformer} supports: a request naming
@@ -62,14 +73,31 @@ import org.junit.jupiter.api.io.TempDir;
  * all from the same backup in one change; and that same cluster-wide shape with one tenant's backup
  * selection overridden to a different, additional backup, proving the override reaches exactly the
  * tenant it names and nowhere else.
+ *
+ * <h4>What the parallelism assertions here do and do not establish</h4>
+ *
+ * <p>Each scenario asserts that the accepted plan covers every broker and every partition of every
+ * tenant it targets, in a single configuration change — see {@link #assertPlanCovers(HttpResponse,
+ * Set)}. That is what proves the restore is planned across all three axes rather than, say, per
+ * broker in sequence.
+ *
+ * <p>It does not prove the operations then <em>overlap</em> in time. The cluster-admin API carries
+ * no per-operation timestamps, so overlap cannot be asserted through it. Overlap is covered where
+ * it is observable: {@code RestoreRequestTransformerTest} pins the dependency edges that permit it,
+ * and {@code ClusterConfigurationManagerImplTest} pins that a broker starts every runnable
+ * operation rather than one per round.
  */
-@Timeout(240)
+@Timeout(600)
 @ZeebeIntegration
 final class ClusterAdminRestoreAcceptanceIT {
 
   private static final String DEFAULT_TENANT = PhysicalTenantsITHelper.DEFAULT_TENANT_ID;
   private static final String TENANT_B = "tenantb";
   private static final String TENANT_C = "tenantc";
+  private static final Set<String> ALL_TENANTS = Set.of(DEFAULT_TENANT, TENANT_B, TENANT_C);
+
+  private static final int BROKERS_COUNT = 3;
+  private static final int PARTITIONS_COUNT = 3;
 
   private static final HttpClient HTTP = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -86,25 +114,33 @@ final class ClusterAdminRestoreAcceptanceIT {
           .build();
 
   @TestZeebe
-  private final TestStandaloneBroker broker =
-      configureBackupStores(
-          TENANTS.configure(new TestStandaloneBroker().withUnauthenticatedAccess()));
+  private final TestCluster cluster =
+      TestCluster.builder()
+          .withBrokersCount(BROKERS_COUNT)
+          .withPartitionsCount(PARTITIONS_COUNT)
+          .withReplicationFactor(BROKERS_COUNT)
+          .withEmbeddedGateway(true)
+          .withBrokerConfig(
+              broker ->
+                  configureBackupStores(TENANTS.configure(broker.withUnauthenticatedAccess())))
+          .build();
 
   @Test
   void shouldRestoreOnlyTheForcedPhysicalTenant() {
-    try (final var defaultClient = TENANTS.newClientBuilder(broker, DEFAULT_TENANT).build();
-        final var tenantBClient = TENANTS.newClientBuilder(broker, TENANT_B).build()) {
+    try (final var defaultClient = newClient(DEFAULT_TENANT);
+        final var tenantBClient = newClient(TENANT_B)) {
       final var processId = "forced-restore-process";
       final var jobType = "forced-restore-job";
       final var probeProcessId = "forced-restore-probe";
+      final long backupId = 41;
 
       // given — the default tenant keeps processing throughout; only tenant-b gets a backup
       deployProbeProcess(defaultClient, probeProcessId);
       deployProbeProcess(tenantBClient, probeProcessId);
-      deployAndCreateInstance(defaultClient, processId, jobType);
-      deployAndCreateInstance(tenantBClient, processId, jobType);
+      createInstancesOnEveryPartition(defaultClient, processId, jobType);
+      createInstancesOnEveryPartition(tenantBClient, processId, jobType);
       takeSnapshot(TENANT_B);
-      takeBackup(TENANT_B, 41);
+      takeBackup(TENANT_B, backupId);
 
       // when — only tenant-b is put into RECOVERING, scoped by physicalTenantId
       InProcessRestoreTestUtil.changeClusterMode(defaultClient, TENANT_B, "RECOVERING", false);
@@ -113,17 +149,22 @@ final class ClusterAdminRestoreAcceptanceIT {
       // and — the default tenant is left untouched by the scoped mode change
       assertThat(createInstance(defaultClient, probeProcessId)).isPositive();
 
-      // and — the restore is forced onto tenant-b alone. The mode change above may not have fully
-      // settled yet even though tenant-b's commands are already rejected (rejection can start
-      // before the configuration change that caused it is marked complete), so a transient 409
-      // while it clears is retried rather than failing outright.
-      awaitRestoreTriggered(
-          () -> InProcessRestoreTestUtil.triggerClusterRestore(defaultClient, TENANT_B, 41));
+      // and — the restore is forced onto tenant-b alone
+      final var response =
+          awaitRestoreAccepted(
+              () ->
+                  InProcessRestoreTestUtil.sendClusterRestoreRequest(
+                      defaultClient, TENANT_B, restoreBody(backupId)));
 
-      // then — tenant-b processes commands again once its restore completes, and its baseline job
-      // is still there to complete, proving partition data (not just topology/mode) was restored
+      // then — the plan targets tenant-b alone, but within it every broker and every partition, so
+      // the scoping narrows the tenant axis without serialising the other two
+      assertPlanCovers(response, Set.of(TENANT_B));
+
+      // and — tenant-b processes commands again once its restore completes, and the baseline jobs
+      // of
+      // every partition are still there, proving partition data (not just topology/mode) came back
       awaitCommandsAccepted(tenantBClient, probeProcessId);
-      activateAndComplete(tenantBClient, jobType);
+      completeJobsFromEveryPartition(tenantBClient, jobType);
 
       // and — the default tenant was never affected by the other tenant's restore
       assertThat(createInstance(defaultClient, probeProcessId)).isPositive();
@@ -132,27 +173,22 @@ final class ClusterAdminRestoreAcceptanceIT {
 
   @Test
   void shouldRestoreEveryPhysicalTenantOfTheClusterWhenNoneIsNamed() {
-    try (final var defaultClient = TENANTS.newClientBuilder(broker, DEFAULT_TENANT).build();
-        final var tenantBClient = TENANTS.newClientBuilder(broker, TENANT_B).build();
-        final var tenantCClient = TENANTS.newClientBuilder(broker, TENANT_C).build()) {
+    try (final var defaultClient = newClient(DEFAULT_TENANT);
+        final var tenantBClient = newClient(TENANT_B);
+        final var tenantCClient = newClient(TENANT_C)) {
       final var processId = "cluster-wide-restore-process";
       final var jobType = "cluster-wide-restore-job";
       final var probeProcessId = "cluster-wide-restore-probe";
-      final var backupId = 42;
+      final long backupId = 42;
 
-      // given — every physical tenant has a pending job, backed up from the same selection
-      deployProbeProcess(defaultClient, probeProcessId);
-      deployProbeProcess(tenantBClient, probeProcessId);
-      deployProbeProcess(tenantCClient, probeProcessId);
-      deployAndCreateInstance(defaultClient, processId, jobType);
-      deployAndCreateInstance(tenantBClient, processId, jobType);
-      deployAndCreateInstance(tenantCClient, processId, jobType);
-      takeSnapshot(DEFAULT_TENANT);
-      takeSnapshot(TENANT_B);
-      takeSnapshot(TENANT_C);
-      takeBackup(DEFAULT_TENANT, backupId);
-      takeBackup(TENANT_B, backupId);
-      takeBackup(TENANT_C, backupId);
+      // given — every physical tenant has a pending job on every partition, backed up from the same
+      // selection
+      for (final var client : List.of(defaultClient, tenantBClient, tenantCClient)) {
+        deployProbeProcess(client, probeProcessId);
+        createInstancesOnEveryPartition(client, processId, jobType);
+      }
+      ALL_TENANTS.forEach(this::takeSnapshot);
+      ALL_TENANTS.forEach(tenant -> takeBackup(tenant, backupId));
 
       // when — the whole cluster is put into RECOVERING, no physicalTenantId naming every tenant
       InProcessRestoreTestUtil.changeClusterMode(defaultClient, null, "RECOVERING", false);
@@ -161,27 +197,36 @@ final class ClusterAdminRestoreAcceptanceIT {
       awaitCommandsRejected(tenantCClient, probeProcessId);
 
       // and — a cluster-wide restore is triggered, no overrides: every tenant shares the selection
-      awaitRestoreTriggered(
-          () -> InProcessRestoreTestUtil.triggerClusterRestore(defaultClient, backupId, Map.of()));
+      final var response =
+          awaitRestoreAccepted(
+              () ->
+                  InProcessRestoreTestUtil.sendClusterRestoreRequest(
+                      defaultClient, null, restoreBody(backupId)));
 
-      // then — every tenant processes commands again once its restore completes
+      // then — one change plans the restore of all three tenants, each across every broker and
+      // every
+      // partition: 3 × 3 × 3 of partition work in a single change
+      assertPlanCovers(response, ALL_TENANTS);
+
+      // and — every tenant processes commands again once its restore completes
       awaitCommandsAccepted(defaultClient, probeProcessId);
       awaitCommandsAccepted(tenantBClient, probeProcessId);
       awaitCommandsAccepted(tenantCClient, probeProcessId);
 
-      // and — every tenant's baseline job is still there to complete, proving partition data (not
-      // just topology/mode) was restored on all three
-      activateAndComplete(defaultClient, jobType);
-      activateAndComplete(tenantBClient, jobType);
-      activateAndComplete(tenantCClient, jobType);
+      // and — every partition of every tenant has its baseline job back, proving partition data
+      // (not
+      // just topology/mode) was restored on all nine partitions
+      completeJobsFromEveryPartition(defaultClient, jobType);
+      completeJobsFromEveryPartition(tenantBClient, jobType);
+      completeJobsFromEveryPartition(tenantCClient, jobType);
     }
   }
 
   @Test
   void shouldRestoreTheOverriddenTenantFromItsOwnBackupWhileOthersShareTheDefault() {
-    try (final var defaultClient = TENANTS.newClientBuilder(broker, DEFAULT_TENANT).build();
-        final var tenantBClient = TENANTS.newClientBuilder(broker, TENANT_B).build();
-        final var tenantCClient = TENANTS.newClientBuilder(broker, TENANT_C).build()) {
+    try (final var defaultClient = newClient(DEFAULT_TENANT);
+        final var tenantBClient = newClient(TENANT_B);
+        final var tenantCClient = newClient(TENANT_C)) {
       final var baselineProcessId = "override-it-baseline-process";
       final var baselineJobType = "override-it-baseline-job";
       final var overrideProcessId = "override-it-override-process";
@@ -190,26 +235,22 @@ final class ClusterAdminRestoreAcceptanceIT {
       final long baselineBackupId = 100;
       final long overrideBackupId = 200;
 
-      // given — every physical tenant has a pending job from the baseline process
-      deployProbeProcess(defaultClient, probeProcessId);
-      deployProbeProcess(tenantBClient, probeProcessId);
-      deployProbeProcess(tenantCClient, probeProcessId);
-      deployAndCreateInstance(defaultClient, baselineProcessId, baselineJobType);
-      deployAndCreateInstance(tenantBClient, baselineProcessId, baselineJobType);
-      deployAndCreateInstance(tenantCClient, baselineProcessId, baselineJobType);
+      // given — every physical tenant has a pending baseline job on every partition
+      for (final var client : List.of(defaultClient, tenantBClient, tenantCClient)) {
+        deployProbeProcess(client, probeProcessId);
+        createInstancesOnEveryPartition(client, baselineProcessId, baselineJobType);
+      }
 
       // and — a completed baseline backup on all three tenants
-      takeSnapshot(DEFAULT_TENANT);
-      takeSnapshot(TENANT_B);
-      takeSnapshot(TENANT_C);
-      takeBackup(DEFAULT_TENANT, baselineBackupId);
-      takeBackup(TENANT_B, baselineBackupId);
-      takeBackup(TENANT_C, baselineBackupId);
+      ALL_TENANTS.forEach(this::takeSnapshot);
+      ALL_TENANTS.forEach(tenant -> takeBackup(tenant, baselineBackupId));
 
-      // and — tenant-c alone completes its baseline job and moves on to different work, then takes
-      // an additional backup capturing that later state
-      activateAndComplete(tenantCClient, baselineJobType);
-      deployAndCreateInstance(tenantCClient, overrideProcessId, overrideJobType);
+      // and — tenant-c alone completes its baseline jobs and moves on to different work, then takes
+      // an additional backup capturing that later state. Every baseline job has to be drained, not
+      // just one per partition: any left pending would be captured by the override backup below and
+      // come back with it, breaking the "the baseline jobs never reappear" assertion at the end.
+      completeEveryJob(tenantCClient, baselineJobType);
+      createInstancesOnEveryPartition(tenantCClient, overrideProcessId, overrideJobType);
       takeSnapshot(TENANT_C);
       takeBackup(TENANT_C, overrideBackupId);
 
@@ -221,27 +262,125 @@ final class ClusterAdminRestoreAcceptanceIT {
 
       // ... and a cluster-wide restore is triggered: tenant-c overridden to its own, additional
       // backup, default and tenant-b left on the top-level (baseline) selection
-      awaitRestoreTriggered(
-          () ->
-              InProcessRestoreTestUtil.triggerClusterRestore(
-                  defaultClient, baselineBackupId, Map.of(TENANT_C, overrideBackupId)));
+      final var response =
+          awaitRestoreAccepted(
+              () ->
+                  InProcessRestoreTestUtil.sendClusterRestoreRequest(
+                      defaultClient,
+                      null,
+                      restoreBody(baselineBackupId, Map.of(TENANT_C, overrideBackupId))));
 
-      // then — every tenant processes commands again once its restore completes
+      // then — the override changes which backup a tenant reads, not the shape of the plan: all
+      // three tenants are still planned across every broker and every partition
+      assertPlanCovers(response, ALL_TENANTS);
+
+      // and — every tenant processes commands again once its restore completes
       awaitCommandsAccepted(defaultClient, probeProcessId);
       awaitCommandsAccepted(tenantBClient, probeProcessId);
       awaitCommandsAccepted(tenantCClient, probeProcessId);
 
-      // and — default and tenant-b restored from the baseline backup: the baseline job is still
-      // there to complete
-      activateAndComplete(defaultClient, baselineJobType);
-      activateAndComplete(tenantBClient, baselineJobType);
+      // and — default and tenant-b restored from the baseline backup: their baseline jobs are still
+      // there to complete, on every partition
+      completeJobsFromEveryPartition(defaultClient, baselineJobType);
+      completeJobsFromEveryPartition(tenantBClient, baselineJobType);
 
-      // and — tenant-c restored from its own overridden backup, not the baseline: the baseline job
-      // it had already completed before that backup was taken never reappears, but the job the
-      // override backup captured does
+      // and — tenant-c restored from its own overridden backup, not the baseline: the baseline jobs
+      // it had already completed before that backup was taken never reappear, but the jobs the
+      // override backup captured do
       assertThat(activatedJobTypes(tenantCClient, baselineJobType)).isEmpty();
-      activateAndComplete(tenantCClient, overrideJobType);
+      completeJobsFromEveryPartition(tenantCClient, overrideJobType);
     }
+  }
+
+  /**
+   * Asserts the accepted plan covers every parallel axis the restore has: one planned group per
+   * expected physical tenant, and within each group the pre-restore and restore of every partition
+   * on every broker, plus a mode change and an await per broker.
+   *
+   * <p>This is coverage, not overlap — see the class javadoc. A plan that covered only one broker,
+   * or only one partition per broker, or only one tenant of a cluster-wide request, would still
+   * complete successfully and pass every other assertion in this test; only this one rejects it.
+   */
+  private static void assertPlanCovers(
+      final HttpResponse<String> response, final Set<String> expectedTenants) {
+    final JsonNode plannedChanges = readJson(response.body()).path("plannedChanges");
+    final var plannedTenants = new ArrayList<String>();
+    plannedChanges.forEach(group -> plannedTenants.add(group.path("physicalTenantId").asText()));
+    assertThat(plannedTenants)
+        .describedAs("physical tenants planned by the restore: %s", response.body())
+        .containsExactlyInAnyOrderElementsOf(expectedTenants);
+
+    final var expectedPartitionWork =
+        IntStream.rangeClosed(1, BROKERS_COUNT)
+            .boxed()
+            .flatMap(
+                broker ->
+                    IntStream.rangeClosed(1, PARTITIONS_COUNT)
+                        .mapToObj(partition -> brokerId(broker) + "/p" + partition))
+            .toList();
+    final var expectedBrokers =
+        IntStream.rangeClosed(1, BROKERS_COUNT)
+            .mapToObj(ClusterAdminRestoreAcceptanceIT::brokerId)
+            .toList();
+
+    plannedChanges.forEach(
+        group -> {
+          final var tenant = group.path("physicalTenantId").asText();
+          assertThat(partitionWork(group, "PartitionPreRestoreOperation"))
+              .describedAs("pre-restored partitions per broker for tenant '%s'", tenant)
+              .containsExactlyInAnyOrderElementsOf(expectedPartitionWork);
+          assertThat(partitionWork(group, "PartitionRestoreOperation"))
+              .describedAs("restored partitions per broker for tenant '%s'", tenant)
+              .containsExactlyInAnyOrderElementsOf(expectedPartitionWork);
+          assertThat(brokerWork(group, "ModeChangeOperation"))
+              .describedAs("mode changes per broker for tenant '%s'", tenant)
+              .containsExactlyInAnyOrderElementsOf(expectedBrokers);
+          assertThat(brokerWork(group, "AwaitModeChangeOperation"))
+              .describedAs("awaited mode changes per broker for tenant '%s'", tenant)
+              .containsExactlyInAnyOrderElementsOf(expectedBrokers);
+        });
+  }
+
+  /** The {@code <broker>/p<partition>} pairs a group plans for the given operation type. */
+  private static List<String> partitionWork(final JsonNode group, final String operationType) {
+    final var work = new ArrayList<String>();
+    group
+        .path("operations")
+        .forEach(
+            operation -> {
+              if (operationType.equals(operation.path("operation").asText())) {
+                work.add(
+                    operation.path("brokerId").asText()
+                        + "/p"
+                        + operation.path("partitionId").asInt());
+              }
+            });
+    return work;
+  }
+
+  /** The brokers a group plans the given broker-scoped operation type for. */
+  private static List<String> brokerWork(final JsonNode group, final String operationType) {
+    final var work = new ArrayList<String>();
+    group
+        .path("operations")
+        .forEach(
+            operation -> {
+              if (operationType.equals(operation.path("operation").asText())) {
+                work.add(operation.path("brokerId").asText());
+              }
+            });
+    return work;
+  }
+
+  /**
+   * Broker ids are zero-based; the loops above are one-based for readability alongside partitions.
+   */
+  private static String brokerId(final int oneBasedIndex) {
+    return String.valueOf(oneBasedIndex - 1);
+  }
+
+  private CamundaClient newClient(final String tenantId) {
+    return TENANTS.newClientBuilder(cluster.availableGateway(), tenantId).build();
   }
 
   /**
@@ -259,23 +398,26 @@ final class ClusterAdminRestoreAcceptanceIT {
   }
 
   /**
-   * Deploys a single-service-task process and creates one instance, leaving one job of the given
-   * type pending.
+   * Leaves one pending job of the given type on every partition of the client's tenant, so the
+   * post-restore assertions can tell a restore that brought back one partition from one that
+   * brought back all of them.
    */
-  private static void deployAndCreateInstance(
+  private static void createInstancesOnEveryPartition(
       final CamundaClient client, final String processId, final String jobType) {
-    deploy(
-        client,
-        processId,
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(jobType))
-            .endEvent()
-            .done());
-    Awaitility.await("instance of " + processId + " is created")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(() -> assertThat(createInstance(client, processId)).isPositive());
+    InProcessRestoreTestUtil.deployAndCreateInstancesOnEveryPartition(
+        client, processId, jobType, PARTITIONS_COUNT);
+  }
+
+  /** Completes the pending jobs, asserting one came from every partition. */
+  private static void completeJobsFromEveryPartition(
+      final CamundaClient client, final String jobType) {
+    InProcessRestoreTestUtil.activateAndCompleteJobsFromEveryPartition(
+        client, jobType, PARTITIONS_COUNT);
+  }
+
+  /** Completes every pending job of the type, leaving none behind for a later backup to capture. */
+  private static void completeEveryJob(final CamundaClient client, final String jobType) {
+    InProcessRestoreTestUtil.completeEveryJob(client, jobType, PARTITIONS_COUNT);
   }
 
   /** Deploys a process, idempotent under retry so a transient rejection is simply retried. */
@@ -296,31 +438,15 @@ final class ClusterAdminRestoreAcceptanceIT {
                     .isNotEmpty());
   }
 
-  /** Activates at least one job of the given type and completes every job it finds. */
-  private static void activateAndComplete(final CamundaClient client, final String jobType) {
-    Awaitility.await("a job of type " + jobType + " is activated and completed")
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> {
-              final var jobs =
-                  client
-                      .newActivateJobsCommand()
-                      .jobType(jobType)
-                      .maxJobsToActivate(1)
-                      .send()
-                      .join()
-                      .getJobs();
-              assertThat(jobs).isNotEmpty();
-              jobs.forEach(job -> client.newCompleteCommand(job.getKey()).send().join());
-            });
-  }
-
-  /** Activates up to one job of the given type, for a negative "it isn't there" assertion. */
+  /**
+   * Activates up to a partition's worth of jobs of the given type, for a negative "it isn't there"
+   * assertion. Sized above the partition count so a single poll can see any partition's job.
+   */
   private static List<String> activatedJobTypes(final CamundaClient client, final String jobType) {
     return client
         .newActivateJobsCommand()
         .jobType(jobType)
-        .maxJobsToActivate(1)
+        .maxJobsToActivate(2 * PARTITIONS_COUNT)
         .send()
         .join()
         .getJobs()
@@ -350,48 +476,84 @@ final class ClusterAdminRestoreAcceptanceIT {
 
   private static void awaitCommandsAccepted(final CamundaClient client, final String processId) {
     Awaitility.await("restored tenant accepts commands again")
-        .atMost(Duration.ofMinutes(2))
+        .atMost(Duration.ofMinutes(3))
         .ignoreExceptions()
         .untilAsserted(() -> assertThat(createInstance(client, processId)).isPositive());
   }
 
   /**
-   * Retries the given restore trigger until it is accepted. The mode change preceding it may not
-   * have fully settled yet even though the affected tenant's commands are already rejected —
-   * rejection can start before the configuration change that caused it is marked complete — so a
-   * transient 409 (another configuration change still in progress) is retried rather than failing
-   * outright. Safe to retry: nothing has started until the trigger is actually accepted.
+   * Retries the given restore trigger until it is accepted, and returns the accepting response so
+   * the plan it carries can be asserted. The mode change preceding it may not have fully settled
+   * yet even though the affected tenant's commands are already rejected — rejection can start
+   * before the configuration change that caused it is marked complete — so a transient 409 (another
+   * configuration change still in progress) is retried rather than failing outright. Safe to retry:
+   * nothing has started until the trigger is actually accepted.
    */
-  private static void awaitRestoreTriggered(final ThrowingRunnable trigger) {
+  private static HttpResponse<String> awaitRestoreAccepted(
+      final Supplier<HttpResponse<String>> trigger) {
+    final var accepted = new ArrayList<HttpResponse<String>>();
     Awaitility.await("cluster-admin restore is accepted once the prior change clears")
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(trigger);
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> {
+              final var response = trigger.get();
+              assertThat(response.statusCode())
+                  .describedAs("cluster restore REST response: %s", response.body())
+                  .isEqualTo(202);
+              accepted.add(response);
+            });
+    return accepted.getLast();
+  }
+
+  private static ClusterRestoreRequest restoreBody(final long backupId) {
+    return restoreBody(backupId, Map.of());
+  }
+
+  private static ClusterRestoreRequest restoreBody(
+      final long backupId, final Map<String, Long> overrideBackupIdByTenant) {
+    final var body = new ClusterRestoreRequest().backupIds(List.of(backupId));
+    overrideBackupIdByTenant.forEach(
+        (tenantId, overrideBackupId) ->
+            body.putOverridesItem(
+                tenantId, new RestoreRequest().backupIds(List.of(overrideBackupId))));
+    return body;
   }
 
   /**
-   * Takes a snapshot on every partition of the tenant and waits for it to be persisted.
-   * Snapshotting is asynchronous, and a tenant may already carry a snapshot from an earlier call
+   * Takes a snapshot on every partition of the tenant, on every broker, and waits for it to be
+   * persisted. A restore reads each broker's own backup of its own replica, so a snapshot taken on
+   * one broker alone would leave the others' backups behind the work being captured.
+   *
+   * <p>Snapshotting is asynchronous, and a tenant may already carry a snapshot from an earlier call
    * here, so the wait is for each partition's snapshot ID to <em>change</em>: merely waiting for a
    * non-null ID would return immediately on the second call and let the backup be taken before the
    * work it is meant to capture is snapshotted.
    */
   private void takeSnapshot(final String tenantId) {
-    final var partitions = PartitionsActuator.of(broker);
-    final var previousSnapshotIds = new HashMap<Integer, String>();
-    partitions
-        .query(tenantId)
-        .forEach((id, status) -> previousSnapshotIds.put(id, status.snapshotId()));
-    partitions.takeSnapshot(tenantId);
-    Awaitility.await("a new snapshot is taken for tenant " + tenantId)
-        .atMost(Duration.ofSeconds(60))
-        .untilAsserted(
-            () ->
-                assertThat(partitions.query(tenantId))
-                    .allSatisfy(
-                        (partitionId, status) ->
-                            assertThat(status.snapshotId())
-                                .isNotNull()
-                                .isNotEqualTo(previousSnapshotIds.get(partitionId))));
+    cluster
+        .brokers()
+        .values()
+        .forEach(
+            broker -> {
+              final var partitions = PartitionsActuator.of(broker);
+              final var previousSnapshotIds = new HashMap<Integer, String>();
+              partitions
+                  .query(tenantId)
+                  .forEach((id, status) -> previousSnapshotIds.put(id, status.snapshotId()));
+              partitions.takeSnapshot(tenantId);
+              Awaitility.await(
+                      "a new snapshot is taken for tenant %s on broker %s"
+                          .formatted(tenantId, broker.nodeId()))
+                  .atMost(Duration.ofSeconds(60))
+                  .untilAsserted(
+                      () ->
+                          assertThat(partitions.query(tenantId))
+                              .allSatisfy(
+                                  (partitionId, status) ->
+                                      assertThat(status.snapshotId())
+                                          .isNotNull()
+                                          .isNotEqualTo(previousSnapshotIds.get(partitionId))));
+            });
   }
 
   private void takeBackup(final String tenantId, final long backupId) {
@@ -407,24 +569,31 @@ final class ClusterAdminRestoreAcceptanceIT {
         .isEqualTo(202);
 
     Awaitility.await("backup %d for tenant %s completes".formatted(backupId, tenantId))
-        .atMost(Duration.ofSeconds(60))
+        .atMost(Duration.ofSeconds(120))
         .ignoreExceptions() // 404 NOT_FOUND until the backup is registered
         .untilAsserted(
             () -> {
               final var status =
                   send(HttpRequest.newBuilder(URI.create(uri + "/" + backupId)).GET().build());
               assertThat(status.statusCode()).isEqualTo(200);
-              assertThat(OBJECT_MAPPER.readTree(status.body()).path("state").asText())
-                  .isEqualTo("COMPLETED");
+              assertThat(readJson(status.body()).path("state").asText()).isEqualTo("COMPLETED");
             });
   }
 
   private URI backupsUri(final String tenantId) {
-    final var base = broker.restAddress().toString().replaceAll("/+$", "");
+    final var base = cluster.availableGateway().restAddress().toString().replaceAll("/+$", "");
     return URI.create(
         DEFAULT_TENANT.equals(tenantId)
             ? base + "/v2/backups/runtime"
             : base + "/physical-tenants/" + tenantId + "/v2/backups/runtime");
+  }
+
+  private static JsonNode readJson(final String body) {
+    try {
+      return OBJECT_MAPPER.readTree(body);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to parse REST response: " + body, e);
+    }
   }
 
   private static HttpResponse<String> send(final HttpRequest request) {

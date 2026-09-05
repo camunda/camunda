@@ -59,7 +59,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
-// Backs off when CSL is active (optimize.security.csl.enabled=true) to avoid colliding chains. See
+// Active only when an operator explicitly opts back into the legacy stack
+// (optimize.security.csl.enabled=false); CSL is the default since 8.10 (camunda/camunda#58483).
+// The flag and this legacy stack are removed together at 8.11 (camunda/camunda#58484).
 // https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md
 @Configuration
 @EnableWebSecurity
@@ -67,7 +69,7 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 @ConditionalOnProperty(
     name = "optimize.security.csl.enabled",
     havingValue = "false",
-    matchIfMissing = true)
+    matchIfMissing = false)
 public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSMSecurityConfigurerAdapter.class);

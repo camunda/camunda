@@ -115,5 +115,11 @@ final class PublishMessageDispatchStrategyTest {
     public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void onClusterConfigurationUpdated(
+        final CurrentClusterConfiguration clusterConfiguration) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

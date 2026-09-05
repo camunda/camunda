@@ -157,7 +157,6 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     sideEffectWriter.appendSideEffect(
         () -> {
           membershipStateAdapter.invalidateAll();
-          return true;
         });
   }
 

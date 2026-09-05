@@ -19,7 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +103,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
           this.zoneSpecs.getFirst().name());
     }
 
-    validateZoneSpecs(zoneSpecs);
+    ZoneSpecValidation.validateZoneSpecs(zoneSpecs);
   }
 
   @Override
@@ -113,7 +112,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
       final List<PartitionId> sortedPartitionIds,
       final int replicationFactor) {
 
-    validateReplicaSum(replicationFactor);
+    ZoneSpecValidation.validateReplicaSum(zoneSpecs, replicationFactor);
 
     // As long as any bare (not-yet-migrated) member is present the cluster is either fully bare
     // (config persisted but migration not started) or mid-migration. In both cases the zone-aware
@@ -121,12 +120,12 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
     // preserves the original slot layout. On a fully bare cluster this is identical to plain
     // round-robin, so recomputing the distribution before migration is a no-op.
     if (hasBareMembers(clusterMembers)) {
-      validateKnownZonedMembers(clusterMembers);
+      ZoneSpecValidation.validateKnownZonedMembers(zoneSpecs, clusterMembers);
       return new RoundRobinPartitionDistributor(zoneSpecs.stream().map(ZoneSpec::name).toList())
           .distributePartitions(clusterMembers, sortedPartitionIds, replicationFactor);
     }
 
-    validateZoneHasSufficientBrokers(clusterMembers);
+    ZoneSpecValidation.validateZoneHasSufficientBrokers(zoneSpecs, clusterMembers);
 
     // all zones have the same priority
     if (zoneSpecsByPriority.stream().map(ZoneSpec::priority).distinct().count() == 1) {
@@ -183,48 +182,5 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
 
   private boolean hasBareMembers(final Set<MemberId> clusterMembers) {
     return clusterMembers.stream().anyMatch(member -> member.zone() == null);
-  }
-
-  private void validateKnownZonedMembers(final Set<MemberId> clusterMembers) {
-    final var zoneNames = zoneSpecs.stream().map(ZoneSpec::name).collect(Collectors.toSet());
-    for (final var member : clusterMembers) {
-      if (member.zone() != null && !zoneNames.contains(member.zone())) {
-        throw new IllegalStateException(
-            "ZoneAwarePartitionDistributor: member '%s' has zone '%s' which is not part of the configured zones"
-                .formatted(member, member.zone()));
-      }
-    }
-  }
-
-  private void validateReplicaSum(final int replicationFactor) {
-    final var totalReplicas = zoneSpecs.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
-    if (totalReplicas != replicationFactor) {
-      throw new IllegalStateException(
-          "ZoneAwarePartitionDistributor: sum of numberOfReplicas across all zones (%d) does not match replicationFactor (%d)"
-              .formatted(totalReplicas, replicationFactor));
-    }
-  }
-
-  private void validateZoneHasSufficientBrokers(final Set<MemberId> clusterMembers) {
-    for (final var spec : zoneSpecs) {
-      final long zoneCount = clusterMembers.stream().filter(m -> m.isInZone(spec.name())).count();
-      if (zoneCount < spec.numberOfReplicas()) {
-        throw new IllegalStateException(
-            "ZoneAwarePartitionDistributor: zone '%s' needs %d replicas but only has %d broker(s) in clusterMembers"
-                .formatted(spec.name(), spec.numberOfReplicas(), zoneCount));
-      }
-    }
-  }
-
-  private void validateZoneSpecs(final List<ZoneSpec> zoneSpecs) {
-    zoneSpecs.stream()
-        .collect(Collectors.groupingBy(ZoneSpec::name))
-        .forEach(
-            (name, zones) -> {
-              if (zones.size() > 1) {
-                throw new IllegalArgumentException(
-                    "Expected zone names to be unique, but got " + zones);
-              }
-            });
   }
 }

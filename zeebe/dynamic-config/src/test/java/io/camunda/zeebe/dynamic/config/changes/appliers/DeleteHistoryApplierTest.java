@@ -81,4 +81,26 @@ final class DeleteHistoryApplierTest {
     // then
     verify(partitionChangeExecutor, times(1)).deleteHistory();
   }
+
+  @Test
+  void shouldPreserveGroupConfigurationAfterApply() {
+    // given
+    final var group =
+        groupWithMembers(
+            Map.of(
+                MemberId.from("1"), brokerWith(Map.of()),
+                MemberId.from("2"), brokerWith(Map.of())));
+    final var applier = new DeleteHistoryApplier(partitionChangeExecutor);
+    when(partitionChangeExecutor.deleteHistory())
+        .thenReturn(CompletableActorFuture.completed(null));
+
+    // when
+    final var initResult = applier.init(globalConfiguration, group);
+    assertThat(initResult).isRight();
+    final var initializedGroup = initResult.get().apply(group);
+    final var updatedGroup = applier.apply().join().apply(initializedGroup);
+
+    // then
+    Assertions.assertThat(updatedGroup).isEqualTo(group);
+  }
 }

@@ -29,9 +29,11 @@ import org.springframework.stereotype.Component;
  * to that host's search clients.
  *
  * <p>Database-agnostic: it talks only to {@link PersistentWebSessionRepository}, whose
- * Elasticsearch and OpenSearch implementations are selected by the configured database. Active when
- * {@code optimize.security.csl.enabled=true}. CSL routes sessions here only while {@code
- * camunda.security.session.persistent.enabled=true}, which {@link
+ * Elasticsearch and OpenSearch implementations are selected by the configured database. Active by
+ * default since {@code optimize.security.csl.enabled} defaults to {@code true}
+ * (camunda/camunda#58483); an operator can still opt back into the legacy stack with {@code
+ * optimize.security.csl.enabled=false} through 8.10 (camunda/camunda#58484). CSL routes sessions
+ * here only while {@code camunda.security.session.persistent.enabled=true}, which {@link
  * OptimizeSecurityConfigCompatibilityPostProcessor} sets for both editions.
  *
  * <p>A failed {@link #upsert(PersistentSession)} is logged and swallowed. Spring Session saves the
@@ -40,7 +42,10 @@ import org.springframework.stereotype.Component;
  * not be mistaken for one that does not exist.
  */
 @Component
-@ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class OptimizeSessionStoreAdapter implements SessionStorePort {
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeSessionStoreAdapter.class);

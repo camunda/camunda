@@ -42,6 +42,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
 components:
   schemas:
@@ -84,6 +85,7 @@ components:
         - expression
         - result
         - warnings
+        - referencedSecrets
       properties:
         expression:
           type: string
@@ -100,6 +102,35 @@ components:
           items:
             $ref: '#/components/schemas/ExpressionEvaluationWarningItem'
           example: [ ]
+        referencedSecrets:
+          type: array
+          description: |
+            The secret references resolved from trusted sources while evaluating the expression: a
+            `camunda.secrets.<name>` reference used directly in the expression, or a reference
+            carried by a `SECRET_REFERENCE`-kind cluster variable the expression read. References
+            appearing only in request-body variables or plain cluster variables are excluded.
+            Callers use this to know which `camunda.secrets.<name>` occurrences in the result they
+            may safely resolve.
+          items:
+            $ref: '#/components/schemas/ExpressionSecretReferenceItem'
+          example: [ ]
+      x-properties-added-in-version:
+        - propertyName: referencedSecrets
+          addedInVersion: "8.10"
+    ExpressionSecretReferenceItem:
+      type: object
+      required:
+        - storeId
+        - secretName
+      properties:
+        storeId:
+          type: string
+          description: The identifier of the secret store that holds the referenced secret
+          example: "default"
+        secretName:
+          type: string
+          description: The secret name, e.g. "token" for "camunda.secrets.token"
+          example: "token"
     ExpressionEvaluationWarningItem:
       type: object
       required:

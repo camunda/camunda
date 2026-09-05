@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -148,6 +149,52 @@ public class JobSuspendedApplierTest {
     // then
     assertThat(jobState.getState(jobKey)).isEqualTo(State.SUSPENDED);
     assertThat(isServedAsActivatable(jobKey)).isFalse();
+  }
+
+  @Test
+  void shouldIndexJobByProcessInstance() {
+    // given
+    final long jobKey = 8L;
+    final long processInstanceKey = 100L;
+    final var record = jobRecord().setProcessInstanceKey(processInstanceKey);
+    createActivatableJob(jobKey, record);
+
+    // when
+    applier.applyState(jobKey, record);
+
+    // then
+    assertThat(visitedJobsOfProcessInstance(processInstanceKey)).containsExactly(jobKey);
+  }
+
+  @Test
+  void shouldIndexUsingStoredJobsProcessInstanceKeyWhenEventRecordDiffers() {
+    // given - a job created via the deprecated path, so it is unindexed and the only index entry
+    // can come from the suspension backfill; the backfill must key off the stored job, so a
+    // mismatched event value cannot desync the index from what is actually persisted
+    final long jobKey = 9L;
+    final long storedProcessInstanceKey = 100L;
+    final var stored = jobRecord().setProcessInstanceKey(storedProcessInstanceKey);
+    jobState.create(jobKey, stored);
+    final var mismatchedEvent = jobRecord().setProcessInstanceKey(200L);
+
+    // when
+    applier.applyState(jobKey, mismatchedEvent);
+
+    // then
+    assertThat(visitedJobsOfProcessInstance(storedProcessInstanceKey)).containsExactly(jobKey);
+    assertThat(visitedJobsOfProcessInstance(200L)).isEmpty();
+  }
+
+  private List<Long> visitedJobsOfProcessInstance(final long processInstanceKey) {
+    final List<Long> visited = new ArrayList<>();
+    jobState.forEachJobsByProcessInstance(
+        processInstanceKey,
+        -1L,
+        jobKey -> {
+          visited.add(jobKey);
+          return true;
+        });
+    return visited;
   }
 
   private void createActivatableJob(final long jobKey, final JobRecord record) {

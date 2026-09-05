@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -25,7 +27,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
@@ -73,11 +74,11 @@ public final class ZeebeRocksDbFactory<
       final AccessMetricsConfiguration metricsConfiguration,
       final Supplier<MeterRegistry> meterRegistryFactory,
       final RocksDbResources rocksDbResources) {
-    this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
-    this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
+    this.rocksDbConfiguration = requireNonNull(rocksDbConfiguration);
+    this.consistencyChecksSettings = requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
-    this.meterRegistryFactory = Objects.requireNonNull(meterRegistryFactory);
-    this.rocksDbResources = Objects.requireNonNull(rocksDbResources);
+    this.meterRegistryFactory = requireNonNull(meterRegistryFactory);
+    this.rocksDbResources = requireNonNull(rocksDbResources);
   }
 
   @Override
@@ -263,7 +264,7 @@ public final class ZeebeRocksDbFactory<
 
     // compaction
     props.setProperty("level_compaction_dynamic_level_bytes", RocksDbOptionsFormatter.format(true));
-    props.setProperty("compaction_pri", "kOldestSmallestSeqFirst");
+    props.setProperty("compaction_pri", "kOldestLargestSeqFirst");
     props.setProperty("compaction_style", "kCompactionStyleLevel");
 
     // L-0 means immediately flushed memtables

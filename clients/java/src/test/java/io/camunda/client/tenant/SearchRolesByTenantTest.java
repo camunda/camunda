@@ -51,8 +51,8 @@ public class SearchRolesByTenantTest extends ClientRestTest {
     final LoggedRequest lastRequest = RestGatewayService.getLastRequest();
     final String requestBody = lastRequest.getBodyAsString();
 
-    assertThat(requestBody).contains("\"roleId\":\"roleId\"");
-    assertThat(requestBody).contains("\"name\":\"roleName\"");
+    assertThat(requestBody).contains("\"roleId\":{\"$eq\":\"roleId\",\"$in\":[],\"$notIn\":[]}");
+    assertThat(requestBody).contains("\"name\":{\"$eq\":\"roleName\",\"$in\":[],\"$notIn\":[]}");
   }
 
   @Test

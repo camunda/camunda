@@ -40,9 +40,10 @@ import org.springframework.core.env.Environment;
  *
  * <p>Enforcement is <em>key inspection</em> over the declared {@code physical-tenants.<id>.*} keys
  * — the same walk {@link PhysicalTenantResolver#discover(Environment)} does. The one value it binds
- * is the tenant's effective {@code security.authorization.enabled} (per-tenant override, else root,
- * else the default), which determines whether the tenant is exempt. A tenant with authorization
- * enabled that declares no key at or under {@code security.initialization} fails resolution.
+ * is the tenant's effective {@code security.authorizations.enabled} (per-tenant override, else
+ * root, else the default), which determines whether the tenant is exempt. A non-default tenant with
+ * authorization enabled that declares no key at or under {@code security.initialization} fails
+ * resolution.
  */
 @NullMarked
 final class PhysicalTenantRequiredOverrideValidation {
@@ -54,6 +55,12 @@ final class PhysicalTenantRequiredOverrideValidation {
    */
   private static final ConfigurationPropertyName REQUIRED_INITIALIZATION =
       ConfigurationPropertyName.of("security.initialization");
+
+  /**
+   * Relative name of the authorization toggle the runtime enforces. The root and per-tenant keys
+   * are both built from it, so the two cannot drift apart.
+   */
+  private static final String AUTHORIZATIONS_ENABLED = "security.authorizations.enabled";
 
   private PhysicalTenantRequiredOverrideValidation() {}
 
@@ -89,8 +96,11 @@ final class PhysicalTenantRequiredOverrideValidation {
               + "for that tenant; it may not be "
               + "inherited from the root (the '"
               + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID
-              + "' tenant keeps the top-level 'camunda.security.initialization'). Physical tenants "
-              + "missing a required initialization block: "
+              + "' tenant keeps the top-level 'camunda.security.initialization'). To exempt a "
+              + "tenant instead, disable authorization for it with "
+              + "'camunda.physical-tenants.<id>."
+              + AUTHORIZATIONS_ENABLED
+              + "'. Physical tenants missing a required initialization block: "
               + missing);
     }
   }
@@ -101,20 +111,23 @@ final class PhysicalTenantRequiredOverrideValidation {
   }
 
   /**
-   * Resolves the effective {@code authorization.enabled} for a tenant: the per-tenant override if
+   * Resolves the effective {@code authorizations.enabled} for a tenant: the per-tenant override if
    * declared, otherwise the root value, otherwise the default ({@code true}). This is the only
    * value read by this validation; the rest is pure key inspection.
+   *
+   * <p>Unbound and blank values resolve to {@code true} so that an unreadable toggle requires an
+   * initialization block rather than silently exempting the tenant.
    */
   private static boolean authorizationEnabledFor(final Binder binder, final String tenantId) {
     final var perTenant =
         binder.bind(
-            Camunda.PREFIX + ".physical-tenants." + tenantId + ".security.authorization.enabled",
+            Camunda.PREFIX + ".physical-tenants." + tenantId + "." + AUTHORIZATIONS_ENABLED,
             Bindable.of(Boolean.class));
     if (perTenant.isBound()) {
       return perTenant.get();
     }
     return binder
-        .bind(Camunda.PREFIX + ".security.authorization.enabled", Bindable.of(Boolean.class))
+        .bind(Camunda.PREFIX + "." + AUTHORIZATIONS_ENABLED, Bindable.of(Boolean.class))
         .orElse(true);
   }
 }

@@ -28,6 +28,8 @@ class LiquibaseMultiTenantIT {
   private static final String TENANT_A = "tenanta";
   private static final String TENANT_B = "tenantb";
 
+  private static final String URL_DEFAULT =
+      "jdbc:h2:mem:lb-mt-default;DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
   private static final String URL_A = "jdbc:h2:mem:lb-mt-a;DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
   private static final String URL_B = "jdbc:h2:mem:lb-mt-b;DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
   private static final String PREFIX_A = "TA_";
@@ -48,6 +50,8 @@ class LiquibaseMultiTenantIT {
     app =
         new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
             .withH2()
+            .withUnifiedConfig(
+                c -> c.getData().getSecondaryStorage().getRdbms().setUrl(URL_DEFAULT))
             .withProperty(
                 "camunda.physical-tenants." + TENANT_A + ".data.secondary-storage.rdbms.url", URL_A)
             .withProperty(

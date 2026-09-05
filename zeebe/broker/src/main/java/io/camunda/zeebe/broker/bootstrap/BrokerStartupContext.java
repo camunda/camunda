@@ -29,7 +29,6 @@ import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -172,10 +171,6 @@ public interface BrokerStartupContext {
   Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory();
 
   Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory();
-
-  SnapshotApiRequestHandler getSnapshotApiRequestHandler();
-
-  void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);
 
   CheckpointSchedulingService getCheckpointSchedulingService();
 

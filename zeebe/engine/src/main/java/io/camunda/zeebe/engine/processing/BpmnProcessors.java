@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstruc
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.conditional.ConditionalSubscriptionTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -21,9 +22,9 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorr
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.processinstance.BufferedCommandDrainProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBufferedCommandDrainProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCompleteResumingProcessor;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeJobsProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -52,9 +54,9 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -92,8 +94,17 @@ public final class BpmnProcessors {
     final var keyGenerator = processingState.getKeyGenerator();
 
     addProcessInstanceCommandProcessor(
-        writers, typedRecordProcessors, processingState, asyncRequestBehavior, cslCheck);
-    addProcessInstanceBufferedCommandProcessor(writers, typedRecordProcessors, processingState);
+        writers,
+        typedRecordProcessors,
+        processingState,
+        asyncRequestBehavior,
+        cslCheck,
+        timerChecker,
+        bpmnBehaviors.jobActivationBehavior(),
+        subscriptionCommandSender,
+        transientProcessMessageSubscriptionState,
+        clock);
+    addBufferedCommandProcessor(writers, typedRecordProcessors, processingState);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
@@ -167,7 +178,12 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final DueDateTimerCheckScheduler timerChecker,
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final InstantSource clock) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
@@ -179,25 +195,36 @@ public final class BpmnProcessors {
         new ProcessInstanceResumeProcessor(processingState, writers, cslCheck));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.RESUME_JOBS,
+        new ProcessInstanceResumeJobsProcessor(processingState, writers, jobActivationBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.COMPLETE_RESUMING,
         new ProcessInstanceCompleteResumingProcessor(
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
-            writers));
+            writers,
+            timerChecker));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.SUSPEND,
-        new ProcessInstanceSuspendProcessor(processingState, writers, cslCheck));
+        new ProcessInstanceSuspendProcessor(
+            processingState,
+            writers,
+            cslCheck,
+            subscriptionCommandSender,
+            transientProcessMessageSubscriptionState,
+            clock));
   }
 
-  private static void addProcessInstanceBufferedCommandProcessor(
+  private static void addBufferedCommandProcessor(
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState) {
     typedRecordProcessors.onCommand(
-        ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND,
-        ProcessInstanceBufferedCommandIntent.DRAIN,
-        new ProcessInstanceBufferedCommandDrainProcessor(processingState, writers));
+        ValueType.BUFFERED_COMMAND,
+        BufferedCommandIntent.DRAIN,
+        new BufferedCommandDrainProcessor(processingState, writers));
   }
 
   private static void addBpmnStepProcessor(
@@ -222,14 +249,25 @@ public final class BpmnProcessors {
       final Writers writers,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+    // One CreateProcessor instance handles both CREATE (the create acknowledgement) and REOPEN (a
+    // manifest re-subscribe drained from the suspend/resume buffer); it branches on the intent.
+    final var createProcessor =
+        new ProcessMessageSubscriptionCreateProcessor(
+            processingState.getProcessMessageSubscriptionState(),
+            processingState.getSuspensionState(),
+            subscriptionCommandSender,
+            writers,
+            transientProcessMessageSubscriptionState,
+            clock);
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CREATE,
-            new ProcessMessageSubscriptionCreateProcessor(
-                processingState.getProcessMessageSubscriptionState(),
-                writers,
-                transientProcessMessageSubscriptionState))
+            createProcessor)
+        .onCommand(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            ProcessMessageSubscriptionIntent.REOPEN,
+            createProcessor)
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CORRELATE,
@@ -244,7 +282,11 @@ public final class BpmnProcessors {
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
             new ProcessMessageSubscriptionDeleteProcessor(
-                subscriptionState, writers, transientProcessMessageSubscriptionState))
+                subscriptionState,
+                processingState.getSuspensionState(),
+                writers,
+                transientProcessMessageSubscriptionState,
+                processingState.getKeyGenerator()))
         .withListener(
             new PendingProcessMessageSubscriptionCheckScheduler(
                 subscriptionCommandSender,

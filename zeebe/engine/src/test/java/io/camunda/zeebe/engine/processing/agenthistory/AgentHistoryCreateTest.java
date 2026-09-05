@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -34,7 +33,7 @@ public class AgentHistoryCreateTest {
 
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_ID = "agent-task";
-  private static final String JOB_TYPE = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+  private static final String JOB_TYPE = "agentic-task";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -230,7 +229,8 @@ public class AgentHistoryCreateTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected to create agent history entry for job with key '%d', but the supplied lease does not match. The job may have been re-activated."
+            ("Expected to update agent instance related to job with key '%d', but job did "
+                    + "not hold the supplied lease. The job may have been re-activated.")
                 .formatted(job.key()));
   }
 
@@ -260,7 +260,8 @@ public class AgentHistoryCreateTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected to create agent history entry for job with key '%d', but the supplied lease does not match. The job may have been re-activated."
+            ("Expected to update agent instance related to job with key '%d', but job did "
+                    + "not hold the supplied lease. The job may have been re-activated.")
                 .formatted(job.key()));
   }
 

@@ -32,7 +32,7 @@ public final class AgentInstanceProcessors {
     typedRecordProcessors.onCommand(
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.UPDATE,
-        new AgentInstanceUpdateProcessor(writers, processingState, cslCheck));
+        new AgentInstanceUpdateProcessor(writers, processingState, cslCheck, keyGenerator));
     typedRecordProcessors.onCommand(
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.COMPLETE,

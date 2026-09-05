@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -32,8 +33,8 @@ public interface AgentInstance {
   AgentInstanceStatus getStatus();
 
   /**
-   * Returns the static definition of the agent, containing model, provider, and system prompt set
-   * at creation time.
+   * Returns the current definition of the agent, containing model, provider, and system prompt. The
+   * initial values come from creation, but can be changed later via a CONFIGURATION history item.
    */
   Definition getDefinition();
 
@@ -85,7 +86,10 @@ public interface AgentInstance {
   /** Returns the keys of all element instances associated with this agent instance. */
   List<Long> getElementInstanceKeys();
 
-  /** Static definition of the agent, set once at creation time. */
+  /**
+   * Definition of the agent. Set at creation, but can change later via a CONFIGURATION history
+   * item.
+   */
   interface Definition {
 
     /** Returns the LLM model identifier (e.g. {@code gpt-4o}). */
@@ -94,8 +98,8 @@ public interface AgentInstance {
     /** Returns the LLM provider (e.g. {@code openai} or {@code anthropic}). */
     String getProvider();
 
-    /** Returns the system prompt configured for this agent instance. */
-    String getSystemPrompt();
+    /** Returns the system prompt configured for this agent instance, as content blocks. */
+    List<AgentInstanceHistoryContent> getSystemPrompt();
   }
 
   /** Aggregated runtime metrics for this agent instance. */
@@ -106,6 +110,18 @@ public interface AgentInstance {
 
     /** Returns the total number of output tokens produced across all model calls. */
     long getOutputTokens();
+
+    /** Returns the total number of reasoning tokens consumed across all model calls. */
+    long getReasoningTokenCount();
+
+    /**
+     * Returns the total number of tokens used to create prompt cache entries across all model
+     * calls.
+     */
+    long getCacheCreationTokenCount();
+
+    /** Returns the total number of tokens read from prompt cache across all model calls. */
+    long getCacheReadTokenCount();
 
     /** Returns the total number of LLM calls made. */
     int getModelCalls();

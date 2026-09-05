@@ -582,6 +582,16 @@ public class CamundaMultiDBExtension
           }
         });
 
+    // A non-default physical tenant must explicitly declare which generic exporters run for it
+    // (PhysicalTenantExporterAssignedValidation, ADR-0008 D1/D2/D5) once any generic exporter
+    // exists in the root catalog. This harness registers recordingExporter (setupTestApplication)
+    // for every acceptance test, and physical-tenant tests assert on records exported from the
+    // tenant's own partitions (e.g. AuditLogUserTaskOperationsIT via RecordingExporter), so it is
+    // assigned here rather than narrowed away.
+    springApplication.withProperty(
+        "camunda.physical-tenants." + tenantId + ".data.exporters-assigned[0]",
+        "recordingExporter");
+
     // A non-default physical tenant must declare its assigned authentication provider when
     // running with OIDC; it does not inherit from root (PhysicalTenantAssignedProvidersValidation).
     final var authenticationMethod =

@@ -81,7 +81,7 @@ public interface ExportersActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("POST /{exporterId}/disable")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse disableExporter(@Param final String exporterId);
 
   /**
@@ -91,7 +91,7 @@ public interface ExportersActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("POST /{exporterId}/disable?physicalTenant={physicalTenant}")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse disableExporter(
       @Param final String exporterId, @Param final String physicalTenant);
 
@@ -111,7 +111,7 @@ public interface ExportersActuator {
   }
 
   @RequestLine("POST /{exporterId}/enable")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse enableExporter(@Param final String exporterId);
 
   /**
@@ -121,7 +121,7 @@ public interface ExportersActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("POST /{exporterId}/enable?physicalTenant={physicalTenant}")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse enableExporterForTenant(
       @Param final String exporterId, @Param final String physicalTenant);
 
@@ -131,7 +131,7 @@ public interface ExportersActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("DELETE /{exporterId}")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse deleteExporter(@Param final String exporterId);
 
   /**
@@ -141,7 +141,7 @@ public interface ExportersActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("DELETE /{exporterId}?physicalTenant={physicalTenant}")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse deleteExporter(
       @Param final String exporterId, @Param final String physicalTenant);
 
@@ -152,7 +152,7 @@ public interface ExportersActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("GET")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   List<ExporterStatus> getExporters();
 
   /**
@@ -162,7 +162,7 @@ public interface ExportersActuator {
    *     the physical tenant is unknown
    */
   @RequestLine("GET ?physicalTenant={physicalTenant}")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   List<ExporterStatus> getExporters(@Param final String physicalTenant);
 
   @JsonIgnoreProperties(ignoreUnknown = true)

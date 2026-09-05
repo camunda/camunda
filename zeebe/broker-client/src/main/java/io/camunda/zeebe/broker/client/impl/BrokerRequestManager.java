@@ -33,11 +33,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 final class BrokerRequestManager extends Actor {
 
   private static final TransportRequestSender SENDER_WITH_RETRY =
-      (c, s, r, t) -> c.sendRequestWithRetry(s, BrokerRequestManager::responseValidation, r, t);
+      // annotations required: `@Nullable` is not inferred implicitly from lambda
+      (ClientTransport transport,
+          Supplier<@Nullable String> nodeAddressSupplier,
+          ClientRequest request,
+          Duration timeout) ->
+          transport.sendRequestWithRetry(
+              nodeAddressSupplier, BrokerRequestManager::responseValidation, request, timeout);
   private static final TransportRequestSender SENDER_WITHOUT_RETRY = ClientTransport::sendRequest;
   private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
@@ -101,6 +108,9 @@ final class BrokerRequestManager extends Actor {
       final BrokerRequest<T> request,
       final TransportRequestSender sender,
       final Duration requestTimeout) {
+    if (!request.hasPartitionGroup()) {
+      throw missingPartitionGroupException(request);
+    }
     final CompletableFuture<BrokerResponse<T>> responseFuture = new CompletableFuture<>();
     request.serializeValue();
     actor.run(() -> sendRequestInternal(request, responseFuture, sender, requestTimeout));
@@ -113,9 +123,15 @@ final class BrokerRequestManager extends Actor {
       final TransportRequestSender sender,
       final Duration requestTimeout) {
 
+    final var partitionGroup = request.getPartitionGroup();
+    if (partitionGroup == null) {
+      returnFuture.completeExceptionally(missingPartitionGroupException(request));
+      return;
+    }
+
     final BrokerAddressProvider nodeIdProvider;
     try {
-      nodeIdProvider = determineBrokerNodeIdProvider(request);
+      nodeIdProvider = determineBrokerNodeIdProvider(request, partitionGroup);
     } catch (final PartitionNotFoundException e) {
       returnFuture.completeExceptionally(e);
       metrics.registerFailedRequest(
@@ -139,7 +155,7 @@ final class BrokerRequestManager extends Actor {
 
     actor.runOnCompletion(
         responseFuture,
-        (clientResponse, error) -> {
+        (final DirectBuffer clientResponse, final @Nullable Throwable error) -> {
           RequestResult result = null;
           try {
             if (error == null) {
@@ -164,7 +180,9 @@ final class BrokerRequestManager extends Actor {
   }
 
   private <T> void registerFailure(
-      final BrokerRequest<T> request, final RequestResult result, final Throwable error) {
+      final BrokerRequest<T> request,
+      final @Nullable RequestResult result,
+      final @Nullable Throwable error) {
     if (result != null && result.getErrorCode() == ErrorCode.RESOURCE_EXHAUSTED) {
       return;
     }
@@ -198,7 +216,8 @@ final class BrokerRequestManager extends Actor {
         return RequestResult.processed();
       } else if (response.isError()) {
         responseFuture.complete(response);
-        return RequestResult.failed(response.getError().getCode());
+        final var error = response.getError();
+        return RequestResult.failed(error == null ? ErrorCode.NULL_VAL : error.getCode());
       } else {
         responseFuture.completeExceptionally(response.toException());
       }
@@ -209,8 +228,8 @@ final class BrokerRequestManager extends Actor {
     return RequestResult.failed(ErrorCode.NULL_VAL);
   }
 
-  private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
-    final var partitionGroup = request.getPartitionGroup();
+  private BrokerAddressProvider determineBrokerNodeIdProvider(
+      final BrokerRequest<?> request, final String partitionGroup) {
     if (request.getBrokerId().isPresent()) {
       return BrokerAddressProvider.fixed(
           topologyManager, partitionGroup, clusterState -> request.getBrokerId().orElseThrow());
@@ -249,6 +268,13 @@ final class BrokerRequestManager extends Actor {
     }
   }
 
+  private static IllegalStateException missingPartitionGroupException(
+      final BrokerRequest<?> request) {
+    return new IllegalStateException(
+        "Cannot send request '%s': no partition group (physical tenant) was set. Requests are not implicitly routed to the default tenant; call setPartitionGroup explicitly, even when targeting the default tenant."
+            .formatted(request.getType()));
+  }
+
   private void throwIfPartitionInactive(final String partitionGroup, final int partitionId) {
     final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
     if (topology == null) {
@@ -283,9 +309,9 @@ final class BrokerRequestManager extends Actor {
 
   private static class RequestResult {
     private final boolean processed;
-    private final ErrorCode errorCode;
+    private final @Nullable ErrorCode errorCode;
 
-    RequestResult(final boolean processed, final ErrorCode errorCode) {
+    RequestResult(final boolean processed, final @Nullable ErrorCode errorCode) {
       this.processed = processed;
       this.errorCode = errorCode;
     }
@@ -294,7 +320,7 @@ final class BrokerRequestManager extends Actor {
       return processed;
     }
 
-    public ErrorCode getErrorCode() {
+    public @Nullable ErrorCode getErrorCode() {
       return errorCode;
     }
 
@@ -311,7 +337,7 @@ final class BrokerRequestManager extends Actor {
 
     ActorFuture<DirectBuffer> send(
         ClientTransport transport,
-        Supplier<String> nodeAddressSupplier,
+        Supplier<@Nullable String> nodeAddressSupplier,
         ClientRequest clientRequest,
         Duration timeout);
   }

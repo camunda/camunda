@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, { FC, useCallback, useMemo, useState } from "react";
+import React, { FC, useCallback, useEffect, useMemo, useState } from "react";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
@@ -47,7 +47,6 @@ import {
   auditLogSearchParamsSync,
 } from "src/pages/operations-log/filters";
 import { useSearchParamsFilters } from "src/utility/filters/useSearchParamsFilters";
-import { useUpdateEffect } from "src/utility/hooks/useUpdateEffect";
 import { Select } from "src/components/form/Select";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
@@ -65,14 +64,19 @@ const List: FC = () => {
   const { searchParamsFilters, setSearchParamsFilters } =
     useSearchParamsFilters(auditLogSearchParamsSync);
 
-  const { watch, setValue, reset } = useForm<AuditLogFilters>({
+  const { watch, setValue, reset, subscribe } = useForm<AuditLogFilters>({
     values: searchParamsFilters,
   });
   const filters = watch();
 
-  useUpdateEffect(() => {
-    setSearchParamsFilters(filters);
-  }, [filters]);
+  useEffect(
+    () =>
+      subscribe({
+        formState: { values: true },
+        callback: ({ values }) => setSearchParamsFilters(values),
+      }),
+    [subscribe, setSearchParamsFilters],
+  );
 
   const debounce = useDebounce(500);
   const [debouncedActor, setDebouncedActor] = useState<string>(filters.actor);

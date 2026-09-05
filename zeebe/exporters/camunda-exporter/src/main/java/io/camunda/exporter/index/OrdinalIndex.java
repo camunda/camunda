@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 
 record OrdinalIndex(IndexFamily indexFamily, int ordinal, String name) implements TargetIndex {
   static final int DEFAULT_ORDINAL = 0;
-  static final String ORDINAL_SUFFIX_START = "ord";
   static final Pattern ORDINAL_INDEX_PATTERN =
       Pattern.compile("^(.*)" + Pattern.quote(ORDINAL_SUFFIX_START) + "(\\d{5,})$");
 

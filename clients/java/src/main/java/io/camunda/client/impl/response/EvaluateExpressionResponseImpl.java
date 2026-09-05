@@ -17,7 +17,9 @@ package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.response.EvaluationWarning;
+import io.camunda.client.api.response.SecretReference;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,6 +28,7 @@ public class EvaluateExpressionResponseImpl implements EvaluateExpressionRespons
   private final String expression;
   private final Object result;
   private final List<EvaluationWarning> warnings;
+  private final List<SecretReference> referencedSecrets;
 
   public EvaluateExpressionResponseImpl(final ExpressionEvaluationResult response) {
     expression = response.getExpression();
@@ -34,6 +37,13 @@ public class EvaluateExpressionResponseImpl implements EvaluateExpressionRespons
         response.getWarnings().stream()
             .map(EvaluationWarningImpl::new)
             .collect(Collectors.toList());
+    // referencedSecrets is added in 8.10; an older gateway may omit it, leaving the field null
+    referencedSecrets =
+        response.getReferencedSecrets() == null
+            ? Collections.emptyList()
+            : response.getReferencedSecrets().stream()
+                .map(SecretReferenceImpl::new)
+                .collect(Collectors.toList());
   }
 
   @Override
@@ -49,5 +59,10 @@ public class EvaluateExpressionResponseImpl implements EvaluateExpressionRespons
   @Override
   public List<EvaluationWarning> getWarnings() {
     return warnings;
+  }
+
+  @Override
+  public List<SecretReference> getReferencedSecrets() {
+    return referencedSecrets;
   }
 }

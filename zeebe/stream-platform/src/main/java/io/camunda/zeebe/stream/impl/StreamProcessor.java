@@ -35,6 +35,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -86,6 +87,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
 
+  /**
+   * How long processing may sit at the pending-side-effects limit before it counts as a stall
+   * rather than a normal, brief wait for the next commit. Well above a commit round trip under
+   * healthy operation (milliseconds), so ordinary operation never crosses it.
+   */
+  public static final Duration PENDING_SIDE_EFFECTS_STALL_THRESHOLD = Duration.ofSeconds(30);
+
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -95,6 +103,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final StreamProcessorMetrics metrics;
   private final StageableScheduledCommandCache scheduledCommandCache;
+  // Reused across ticks so the warning repeats at most once per
+  // PENDING_SIDE_EFFECTS_STALL_THRESHOLD
+  // for as long as the stall lasts, instead of once per health-check tick.
+  private final Logger pendingSideEffectsStallLogger =
+      new ThrottledLogger(LOG, PENDING_SIDE_EFFECTS_STALL_THRESHOLD);
 
   // log stream
   private final LogStream logStream;
@@ -104,6 +117,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   // processing
   private final StreamProcessorContext streamProcessorContext;
   private @Nullable LogStreamReader logStreamReader;
+  private @Nullable LogStreamReader processingLogStreamReader;
   private @Nullable ProcessingStateMachine processingStateMachine;
   private @Nullable ReplayStateMachine replayStateMachine;
 
@@ -145,6 +159,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     final var reader = logStream.newLogStreamReader();
     logStreamReader = reader;
     streamProcessorContext.logStreamReader(reader);
+    if (!isInReplayOnlyMode()) {
+      // Only the processing state machine reads uncommitted records, and it is never created in
+      // replay-only mode. Since an open reader defers deletion of the segment it sits on, opening
+      // one here would hold on to a segment that nothing ever reads.
+      final var processingReader = logStream.newUncommittedLogStreamReader();
+      processingLogStreamReader = processingReader;
+      streamProcessorContext.processingLogStreamReader(processingReader);
+    }
   }
 
   @Override
@@ -271,9 +293,24 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return isOpened() && shouldProcess;
   }
 
+  /**
+   * Closes the reader that replay reads committed records from, at most once. In REPLAY mode replay
+   * never finishes, so this only runs on shutdown; in PROCESSING mode it runs as soon as replay is
+   * done.
+   */
+  private void closeReplayReader() {
+    final var reader = logStreamReader;
+    if (reader != null) {
+      logStreamReader = null;
+      reader.close();
+    }
+  }
+
   private void tearDown() {
-    streamProcessorContext.getLogStreamReader().close();
-    logStream.removeRecordAvailableListener(this);
+    closeReplayReader();
+    CloseHelper.close(processingLogStreamReader);
+    logStream.removeAppendedRecordAvailableListener(this);
+    CloseHelper.close(processingStateMachine);
     CloseHelper.close(replayStateMachine);
     scheduledCommandCache.clear();
   }
@@ -281,6 +318,23 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void healthCheckTick() {
     lastTickTime = ActorClock.currentTimeMillis();
     actor.schedule(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
+    warnIfStalledOnPendingSideEffects();
+  }
+
+  private void warnIfStalledOnPendingSideEffects() {
+    if (processingStateMachine == null) {
+      return;
+    }
+
+    final var stalledFor = processingStateMachine.getPendingSideEffectsBlockedDuration();
+    if (stalledFor.compareTo(PENDING_SIDE_EFFECTS_STALL_THRESHOLD) >= 0) {
+      pendingSideEffectsStallLogger.warn(
+          "Processing on partition {} has been stalled for {} waiting for pending side effects to "
+              + "commit. This can mean replication is lagging, or that maxPendingSideEffects is too "
+              + "low for this partition's commit latency.",
+          partitionId,
+          stalledFor);
+    }
   }
 
   private void startProcessing(final LastProcessingPositions lastProcessingPositions) {
@@ -291,7 +345,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             recordProcessors,
             scheduledCommandCache);
 
-    logStream.registerRecordAvailableListener(this);
+    // Processing reads uncommitted records, so it must be woken as soon as records are appended;
+    // the later commit of those same records would tell it nothing new.
+    logStream.registerAppendedRecordAvailableListener(this);
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
@@ -359,6 +415,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
+    // Replay is the only consumer of the committed reader, and it is done: it is reached only in
+    // PROCESSING mode, where the replay state machine never registers as a record-available
+    // listener and so is never woken again. Leaving the reader open would pin the oldest log
+    // position that any reader still needs, keeping segments (and, in the test log storage, every
+    // appended entry) alive for the lifetime of the partition.
+    closeReplayReader();
+
     final var writer = logStream.newLogStreamWriter();
     streamProcessorContext.logStreamWriter(writer);
     streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
@@ -469,6 +532,20 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
       return HealthReport.unhealthy(this)
           .withMessage("Processing not making progress. It is in an error handling loop.", instant);
+    }
+
+    // A processor stalled here keeps ticking normally: it is not blocked in a runUntilDone loop,
+    // it is simply choosing not to read further records, so the check below would not catch it.
+    if (processingStateMachine != null) {
+      final var stalledFor = processingStateMachine.getPendingSideEffectsBlockedDuration();
+      if (stalledFor.compareTo(PENDING_SIDE_EFFECTS_STALL_THRESHOLD) >= 0) {
+        return HealthReport.unhealthy(this)
+            .withMessage(
+                "Processing has been stalled for "
+                    + stalledFor
+                    + " waiting for pending side effects to commit",
+                instant);
+      }
     }
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.

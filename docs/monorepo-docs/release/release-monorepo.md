@@ -298,79 +298,107 @@ import PersistentTaskListEnabler from '@site/src/components/PersistentTaskListEn
 
 ## Minor Release Considerations
 
-Use the following checklist as the operational source of truth for every minor release.
+Use the following checklist as the operational source of truth for every minor release. Sections are ordered by execution — work top to bottom.
 
 Ownership model:
 
 - The checklist is owned collectively by the MRMs and evolves through updates from each shift.
 - The acting subject for each checklist item is the MRM on shift when that item becomes relevant, not necessarily the MRM who started preparing the minor.
+- The MRM who cuts `stable/<minor>` is the one driving the release of the first version that ships from it (the upcoming minor — its last alpha, RC, then final). The cut and the release it feeds belong to the same owner; if a rotation falls between, hand both over together so one person carries them.
 - Open checklist items and context should be explicitly handed over at monthly MRM rotation.
 
 ### Minor Release Readiness Checklist
 
 <PersistentTaskListEnabler
   storageKey="minor-release-readiness-checklist"
-  version="3"
+  version="4"
   startHeadingId="minor-release-readiness-checklist"
   endHeadingId="minor-release-references"
 />
 
-#### 0. Dates, ownership, and high-level alignment
+#### 0. Prerequisites — dates and ownership
 
-- [ ] Confirm official minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train). See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases) for definitions and timing.
-- [ ] Confirm the Monorepo Release Manager (MRM) is available for feature freeze week, code freeze / branch creation, and the final RC window.
-- [ ] Check for major holidays during RC and final release weeks. If holidays are involved, do not just note it — explicitly align with release stakeholders on adjusted ETAs, coverage gaps, and any scope or timing changes, and document the agreed expectations.
+- [ ] Confirm the minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) handbook — **not just `timeline.json`**. They can legitimately disagree: the Monorepo Release and the full-platform Release are different milestones, ~1 week apart. See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases).
+- [ ] Confirm the MRM is available for feature freeze week, the cut / code freeze, and the final RC window. Check for holidays in those weeks — if any, align stakeholders on adjusted ETAs and document it.
+- [ ] Confirm the acting MRM (whoever pushes the branch) is in the `monorepo-release-manager` GitHub team — the bypass actor for creating `stable/**/*` under the `no-persistent-branch-creations-deletions` ruleset. Without it the `git push` is rejected.
 
-> **Tip:** When communicating release ETAs to stakeholders, default to **12:00 Central European time** as the reference time unless a different time has been explicitly agreed.
+> **Tip:** Default release ETAs to **12:00 Central European time** unless another time is agreed.
 
-#### 1. Around feature freeze / last alpha (branch strategy)
+#### 1. Feature freeze / last alpha
 
-- [ ] Send feature freeze communication before the last alpha using the [feature-freeze template](#feature-freeze-vs-code-freeze-minor-releases) and explicitly state that only bug fixes and stabilization are expected after freeze.
-- [ ] Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy (i.e. create the `stable/<minor>` branch before the last alpha and branch all subsequent alpha/RC/final release branches from `stable/<minor>` instead of `main`).
-- [ ] [DEPRECATED for +8.10] Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
-- [ ] Create `backport stable/<minor>` label in monorepo.
-- [ ] [DEPRECATED for +8.10] Create `backport stable/<minor>` label in ZPT.
-- [ ] Announce stable branch creation and backport procedure (label + `/backport`) in the relevant engineering channels.
+- [ ] Before the last alpha, send the feature-freeze comms ([template](#feature-freeze-vs-code-freeze-minor-releases)); state that only bug fixes and stabilization follow.
+- [ ] [DEPRECATED for +8.10] Mirror the early-stable strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test).
 
-#### 2. Versioning and branch plumbing (after last alpha branch exists)
+#### 2. Version-bump probe (ahead of the cut)
 
-- [ ] On monorepo `main`, bump all `pom.xml` versions to `8.(x+1).0-SNAPSHOT` using:
-  - `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
-- [ ] [DEPRECATED for +8.10] On ZPT `main`, bump versions to the next minor snapshot line.
-- [ ] Update upgrade and migration test configuration so the previous minor upgrades to the new minor line.
-- [ ] Confirm artifact expectations:
-  - `stable/<minor>` produces `<minor>.0-SNAPSHOT`
-  - `main` produces `<next-minor>.0-SNAPSHOT` (or generic `SNAPSHOT` where expected)
+- [ ] In the weeks before the deadline, run the bump command `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT` against `main` and let Unified CI run on the result as a short-lived check (not a long-lived PR). Catches version-skip regressions early, with no time pressure.
 
-#### 3. CI, protections, and release workflow wiring
+#### 3. Merge the ruleset-protection PR (before the cut)
 
-- [ ] Add `stable/<minor>` to `unified-ci-merges-stable-branches` protection/ruleset configuration in infra-core.
-- [ ] Verify release BPMN configuration uses `stable/<minor>` as source branch for minor SHAs and merge-back behavior before running the minor.
-- [ ] Verify code freeze date and monorepo release start date are filled correctly when starting a minor release BPMN instance.
-- [ ] Verify CI / SLO dashboards include `stable/<minor>` and surface regressions for that branch.
-- [ ] Ensure a scheduled release dry-run exists for `stable/<minor>` and is green before starting the minor.
+- [ ] Add `stable/<minor>` to the `unified-ci-merges-stable-branches` ruleset `include` list (one-line Terraform PR in `camunda/infra-core`). Rulesets match ref *patterns*, so merge it **before** the branch exists to close the unprotected-branch window.
+- [ ] Add whoever pushes the branch to that ruleset's `bypass_actors` list, and **remove them after the cut** — a temporary grant, separate from the section 0 team membership. Missing it caused a `GH013` rejection on the 8.10 cut.
 
-#### 4. Optimize, Docker images, and artifacts
+#### 4. Announce the cut
 
-- [ ] Verify Optimize is included for the current minor in monorepo release (`includeOptimize=true`, 8.9+ strategy).
-- [ ] Verify stable branches build and publish Optimize Docker images for `<minor>-SNAPSHOT` and release tags.
+- [ ] Post to engineering channels: the cut is imminent, merge to `main` first and backport via label, and future branches source from `stable/<minor>` not `main`.
 
-#### 5. Backports, RCs, and merge-backs
+#### 5. Cut the branch + label
 
-- [ ] Enforce bug-fix backport rule after last alpha branch cut: fixes merged to `main` must be backported to `stable/<minor>` to ship in that minor.
-- [ ] For critical fixes after branch cut, backport to both `stable/<minor>` and active alpha/minor release branch; trigger a new RC if needed.
-- [ ] Track minor backports via labels/board to avoid missing required fixes.
-- [ ] Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts.
-- [ ] The [Release Merge-back Conflict Check](#merge-back-divergence-handling) runs this automatically in the release window; confirm it is green and free of conflicts before the final merge-back.
+- [ ] The MRM cutting the branch must be the one who will drive the last alpha release before the minor. If a rotation falls before then, hand the cut and that release over together.
+- [ ] Confirm the merge queue is empty (or acceptable) and record the exact `main` HEAD SHA — auditable, avoids cutting mid-drain.
+- [ ] Cut `stable/<minor>` from `main` before the last alpha (early-stable strategy: branch all later alpha/RC/final branches from `stable/<minor>`, not `main`). Cut **before** the version bump merges, or the branch inherits the wrong `-SNAPSHOT`.
+- [ ] Create the `backport stable/<minor>` label immediately, and announce the branch + backport procedure (label / `/backport`) in the engineering channels.
+- [ ] [DEPRECATED for +8.10] Create `stable/<minor>` and the backport label in ZPT.
 
-#### 6. Documentation and communication hygiene
+#### 6. Merge the version-bump PR (promptly)
 
-- [ ] Keep this file current for minor branch strategy, bug-fix backport rules, and feature freeze vs code freeze definitions.
+- [ ] Open the real version-bump PR (`./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`) and merge it promptly — until it lands, `main` and `stable/<minor>` publish colliding SNAPSHOTs. Clear the likely blockers ahead: human review (a bot comment does not count) and the vulnerability gate's `502`-outage override label.
+- [ ] [DEPRECATED for +8.10] Bump ZPT `main` to the next minor snapshot line.
+- [ ] Confirm artifacts: `stable/<minor>` → `<minor>.0-SNAPSHOT`, `main` → `<next-minor>.0-SNAPSHOT` (or generic `SNAPSHOT`).
+- [ ] Update upgrade/migration test config so the previous minor upgrades to the new line.
 
-#### 7. Watch-outs and sanity checks
+#### 7. Triage probe CI failures
 
-- [ ] Verify no outdated temporary branch overrides or conditions remain from previous minors before starting a new minor BPMN instance.
+- [ ] Resolve the failures surfaced by the probe (step 2) by the **2-day rule**: more than ~2 days before the cut, fix it; within ~2 days, `@Disabled` + a tracked follow-up/incident.
+
+#### 8. Wire release workflows (branch must exist)
+
+- [ ] Merge the dry-run and preview/smoke-test PRs (drafted earlier). Every job resolves `uses: ...@stable/<minor>` and checks out the branch, so they only pass once it exists. **Quote every version literal** — unquoted, `8.10` parses as `8.1`.
+- [ ] Verify the release BPMN uses `stable/<minor>` as the source branch, and that the code freeze date and start date are correct when starting the minor instance.
+- [ ] Confirm the scheduled `stable/<minor>` release dry-run is green before starting the minor.
+
+#### 9. Optimize and Docker images
+
+- [ ] Verify Optimize is included (`includeOptimize=true`, 8.9+ strategy) and that stable branches build/publish Optimize Docker images for `<minor>-SNAPSHOT` and release tags.
+
+#### 10. Docs and SNAPSHOT artifacts
+
+- [ ] Update the "Available SNAPSHOT Artifacts" section: bump `main`'s version reference and add the `stable/<minor>` bullet (no ordering dependency).
+- [ ] Keep this file current for branch strategy, backport rules, and freeze definitions.
+
+#### 11. SLO dashboard (manual GUI edit)
+
+- [ ] Add `stable/<minor>` to the `var-branch` template variable's preselected list on the [SLO dashboard](https://dashboard.int.camunda.com/d/5cd87b35-/ci-health-c8-monorepo) and save. The branch is queryable automatically, but preselection is GUI-only — not managed as code, required every minor.
+
+#### 12. Notify downstream teams
+
+- [ ] Tell `@camunda/test-automation-team` the branch exists — they own the per-branch nightly QA workflows that need a new-minor equivalent.
+- [ ] Kick off the Helm-chart-split / `SM-<next-minor>` chain early with the Helm team and `@camunda/test-automation-team`: `main` is now `<next-minor>.0-SNAPSHOT` and needs a chart split (unblocks the next `SM-<next-minor>` folder). This chain has taken ~3 weeks — the value is the lead time.
+- [ ] Grep the repo for the previous minor's branch/version string and route hardcoded-branch workflow hits to their owners.
+
+#### 13. Backports, RCs, and merge-backs (ongoing)
+
+- [ ] After the cut, enforce the backport rule: fixes merged to `main` must be backported to `stable/<minor>` to ship in the minor. For critical fixes, backport to both `stable/<minor>` and the active release branch and trigger a new RC if needed. Track via labels/board.
+- [ ] Simulate the merge-back to `stable/<minor>` early; the [Release Merge-back Conflict Check](#merge-back-divergence-handling) automates this in the release window — confirm it is green before the final merge-back.
+
+#### 14. Watch-outs and sanity checks
+
+- [ ] Verify no outdated temporary branch overrides remain from previous minors before starting the new minor instance.
 - [ ] Verify preview/smoke-test workflows target `stable/<minor>` with existing `<minor>-SNAPSHOT` images.
+
+#### 15. Post learnings and handover
+
+- [ ] Write up process learnings and open follow-ups; hand over open checklist items and context at the monthly MRM rotation.
 
 ### Minor Release References
 
@@ -439,6 +467,12 @@ Scripts live in [`.github/scripts/mergeback/`](https://github.com/camunda/camund
 - Symptom: `Can't get Docker image: RemoteDockerImage(imageName=camunda/camunda:8.9-SNAPSHOT)`
 - Context: this happened due to wrong test naming during the stable-branch transition. See Remco's note: `@monorepo-ci-medic Backports to stable/8.9...`
 - Known workaround: there is no generic workaround beyond fixing the incorrect test name or image reference.
+
+#### Stable branch push rejected with `GH013`
+
+- Symptom: `git push -u origin stable/<minor>` fails with a `GH013` / ruleset-violation error.
+- Context: the pusher is not in the `bypass_actors` list of the `unified-ci-merges-stable-branches` ruleset. This is **separate** from `monorepo-release-manager` team membership (which covers the `no-persistent-branch-creations-deletions` branch-creation ruleset). This exact rejection hit the 8.10 cut.
+- Fix: add the pusher to that ruleset's bypass list before cutting, and remove them again afterward (see section 3).
 
 ### Feature Freeze vs Code Freeze (Minor Releases)
 
@@ -556,8 +590,9 @@ Consider opening an incident for serious issues (see below).
 # Incident Process
 
 If you discover serious issues during the Monorepo Release process (while working on any of its subtasks), you can start the incident (per usual process with `/inc` command in Slack).
+The incident type is shared among the C8 Release Train (not just Monorepo) and can be used for any blocker encountered during it.
 
-Please select incident type: `C8 Monorepo Release incident`.
+Please select incident type: `C8 Release incident`.
 
 Who can start the incident:
 - Anyone participating in the current release process (Release Manager, QA Engineers, etc.)

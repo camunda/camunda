@@ -57,10 +57,8 @@ class RdbmsDbModelCoverageArchTest {
           // UsageMetricIT
           "UsageMetricTUTenantStatisticsDbModel", // TU tenant statistics variant; covered by
           // UsageMetricIT
-          "ClusterVariableMetadataDbModel", // metadata sub-entity of ClusterVariable; covered by
-          // ClusterVariableIT
-          "AgentDefinitionDbModel"); // no read/search API yet (issue #59072 is write-only);
-  // add AgentDefinitionIT once #59079 implements AgentDefinitionDbReader#search()
+          "ClusterVariableMetadataDbModel"); // metadata sub-entity of ClusterVariable; covered by
+  // ClusterVariableIT
 
   // IT class simple names scanned from test-jars once at class-load time.
   static final Set<String> IT_SIMPLE_NAMES =

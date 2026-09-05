@@ -82,15 +82,21 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
   RESUMING((short) 21),
 
   /**
-   * Represents the internal command that finalizes the resume lifecycle once the buffered-command
-   * drain is complete. The drain processor writes this command when the buffer is empty; a
-   * dedicated processor reacts by writing {@link #RESUMED} and triggering any post-resume actions
-   * (e.g. resuming suspended jobs).
+   * Represents the internal command that finalizes the resume lifecycle once every parked job has
+   * been un-parked. {@link #RESUME_JOBS} writes this command once none are left; a dedicated
+   * processor reacts by writing {@link #RESUMED}.
    */
-  COMPLETE_RESUMING((short) 22, false);
+  COMPLETE_RESUMING((short) 22, false),
+
+  /**
+   * Represents the internal command that un-parks suspended jobs of the instance, appending itself
+   * again until none are left, then handing off to {@link #COMPLETE_RESUMING}. The drain processor
+   * writes the first cycle when the buffered-command drain is complete.
+   */
+  RESUME_JOBS((short) 23, false);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
-      EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING);
+      EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING, RESUME_JOBS);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
           ACTIVATE_ELEMENT,
@@ -163,6 +169,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return RESUMING;
       case 22:
         return COMPLETE_RESUMING;
+      case 23:
+        return RESUME_JOBS;
       default:
         return Intent.UNKNOWN;
     }

@@ -51,30 +51,34 @@ public class ProcessInstanceWriter {
   private final ObjectMapper objectMapper;
   private final ImportRequestDtoFactory importRequestDtoFactory;
   private final ProcessInstanceRepository processInstanceRepository;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
 
   public ProcessInstanceWriter(
       final IndexRepository indexRepository,
       final ObjectMapper objectMapper,
       final ImportRequestDtoFactory importRequestDtoFactory,
-      final ProcessInstanceRepository processInstanceRepository) {
+      final ProcessInstanceRepository processInstanceRepository,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
     this.indexRepository = indexRepository;
     this.objectMapper = objectMapper;
     this.importRequestDtoFactory = importRequestDtoFactory;
     this.processInstanceRepository = processInstanceRepository;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
+  }
+
+  public void deleteInstancesByDefinitionId(final String bpmnProcessId, final String definitionId) {
+    processInstanceRepository.deleteByDefinitionId(bpmnProcessId, definitionId);
   }
 
   public List<ImportRequestDto> generateProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances, final String sourceExportIndex) {
+    final List<ProcessInstanceDto> filteredInstances =
+        filterOutInstancesOfDeletedDefinitions(processInstances);
+    ensureProcessInstanceIndicesExist(filteredInstances);
     final String importItemName = "zeebe process instances";
-    LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
-    indexRepository.createMissingIndices(
-        PROCESS_INSTANCE_INDEX,
-        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
-        processInstances.stream()
-            .map(ProcessInstanceDto::getProcessDefinitionKey)
-            .collect(Collectors.toSet()));
+    LOG.debug("Creating imports for {} [{}].", filteredInstances.size(), importItemName);
 
-    return processInstances.stream()
+    return filteredInstances.stream()
         .map(
             procInst -> {
               final Map<String, Object> params = new HashMap<>();
@@ -106,16 +110,13 @@ public class ProcessInstanceWriter {
 
   public List<ImportRequestDto> generateRunningProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances) {
+    final List<ProcessInstanceDto> filteredInstances =
+        filterOutInstancesOfDeletedDefinitions(processInstances);
+    ensureProcessInstanceIndicesExist(filteredInstances);
     final String importItemName = "running process instances";
-    LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
-    indexRepository.createMissingIndices(
-        PROCESS_INSTANCE_INDEX,
-        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
-        processInstances.stream()
-            .map(ProcessInstanceDto::getProcessDefinitionKey)
-            .collect(Collectors.toSet()));
+    LOG.debug("Creating imports for {} [{}].", filteredInstances.size(), importItemName);
 
-    return processInstances.stream()
+    return filteredInstances.stream()
         .map(
             instance ->
                 importRequestDtoFactory.createImportRequestForProcessInstance(
@@ -135,15 +136,12 @@ public class ProcessInstanceWriter {
 
   public List<ImportRequestDto> generateCompletedProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances) {
+    final List<ProcessInstanceDto> filteredInstances =
+        filterOutInstancesOfDeletedDefinitions(processInstances);
+    ensureProcessInstanceIndicesExist(filteredInstances);
     final String importItemName = "completed process instances";
-    LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
-    indexRepository.createMissingIndices(
-        PROCESS_INSTANCE_INDEX,
-        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
-        processInstances.stream()
-            .map(ProcessInstanceDto::getProcessDefinitionKey)
-            .collect(Collectors.toSet()));
-    return processInstances.stream()
+    LOG.debug("Creating imports for {} [{}].", filteredInstances.size(), importItemName);
+    return filteredInstances.stream()
         .map(
             processInstanceDto ->
                 importRequestDtoFactory.createImportRequestForProcessInstance(
@@ -161,5 +159,20 @@ public class ProcessInstanceWriter {
                         TENANT_ID),
                     importItemName))
         .toList();
+  }
+
+  private List<ProcessInstanceDto> filterOutInstancesOfDeletedDefinitions(
+      final List<ProcessInstanceDto> processInstances) {
+    return deletedProcessDefinitionFilter.filterOutSuppressed(
+        processInstances, ProcessInstanceDto::getProcessDefinitionId);
+  }
+
+  private void ensureProcessInstanceIndicesExist(final List<ProcessInstanceDto> processInstances) {
+    indexRepository.createMissingIndices(
+        PROCESS_INSTANCE_INDEX,
+        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
+        processInstances.stream()
+            .map(ProcessInstanceDto::getProcessDefinitionKey)
+            .collect(Collectors.toSet()));
   }
 }

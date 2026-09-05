@@ -45,6 +45,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -53,13 +55,16 @@ import org.springframework.stereotype.Component;
  * <p>Mirrors {@link AgenticControlDashboardService}: deterministic UUIDs, idempotent reconcile,
  * upsert-on-startup. Ships the L0/L1 tile reports the Hub-side BVD reads from.
  *
- * <p>A tile is rendered at a level only if it carries that level's section key, so the same report
- * can appear at both levels under different headings.
+ * <p>A tile renders at a level only if it carries that level's section key. No report carries both:
+ * Hub renders the report name verbatim, so a metric both views show under different headings needs
+ * one report per view.
  */
 @Component
 public class BusinessValueDashboardService {
 
   public static final String BUSINESS_VALUE_DASHBOARD_ID = "business-value-dashboard";
+
+  public static final int GRID_WIDTH = 18;
 
   // Top-N limit hint for per-process breakdown tiles. Backend sorts DESC and returns the full
   // result set; Hub reads TILE_CONFIG_TOP_N from the tile configuration and slices client-side,
@@ -67,40 +72,59 @@ public class BusinessValueDashboardService {
   public static final int PER_PROCESS_TOP_N = 5;
   public static final String TILE_CONFIG_TOP_N = "topN";
 
-  // Names and descriptions ship as plain English. Hub (the sole FE consumer)
-  // owns translation via its own i18next namespace and keys labels off the
-  // stable report UUID, not this field. Human-readable text keeps the endpoint
-  // sensible for curl / docs / debugging.
   public static final String BUSINESS_VALUE_DASHBOARD_NAME = "Business Value Dashboard";
 
-  public static final String KPI_WORK_HANDLED_NAME = "Work handled";
-  public static final String KPI_WORK_HANDLED_DESCRIPTION =
-      "Completed process instances in the selected period.";
-  public static final String KPI_MOMENTUM_NAME = "Momentum";
+  // Both automation-rate tiles: the metric is defined the same way, only the heading differs.
+  public static final String KPI_AUTOMATION_RATE_DESCRIPTION =
+      "Automated tasks ÷ all tasks (automated + human) on completed instances, for the selected "
+          + "period. Includes subprocess tasks where available.";
+
+  // L0 — portfolio view.
+  public static final String KPI_COMPLETED_INSTANCES_NAME = "Completed instances";
+  public static final String KPI_COMPLETED_INSTANCES_DESCRIPTION =
+      "Total instances completed across all processes in the selected period.";
+  public static final String KPI_TOP_BY_VOLUME_NAME = "Top " + PER_PROCESS_TOP_N + " by volume";
+  public static final String KPI_TOP_BY_VOLUME_DESCRIPTION =
+      "Processes ranked by completed-instance volume.";
+  public static final String KPI_COMPLETED_INSTANCES_OVER_TIME_NAME =
+      "Completed instances over time";
+  public static final String KPI_COMPLETED_INSTANCES_OVER_TIME_DESCRIPTION =
+      "Completed-instance volume across all processes over the selected period.";
+  public static final String KPI_TOP_BY_CYCLE_TIME_NAME =
+      "Top " + PER_PROCESS_TOP_N + " by cycle time (slowest first)";
+  public static final String KPI_TOP_BY_CYCLE_TIME_DESCRIPTION =
+      "Processes ranked by average cycle time, slowest first.";
+  public static final String KPI_AGENTIC_PROCESSES_NAME = "Agentic processes";
+  public static final String KPI_AGENTIC_PROCESSES_DESCRIPTION =
+      "Processes that ran at least one agent.";
+  public static final String KPI_AGGREGATED_AUTOMATION_RATE_NAME = "Aggregated automation rate";
+  public static final String KPI_AUTOMATION_RATE_BY_PROCESS_NAME =
+      "Automation rate — top " + PER_PROCESS_TOP_N + " processes by volume";
+  public static final String KPI_AUTOMATION_RATE_BY_PROCESS_DESCRIPTION =
+      "Percentage of automated tasks for the highest-volume processes.";
+
+  // L1 — single-process view.
+  public static final String KPI_VOLUME_NAME = "Volume";
+  public static final String KPI_VOLUME_DESCRIPTION =
+      "Real cases this process completed in the selected period.";
+  public static final String KPI_CYCLE_TIME_NAME = "Cycle time";
+  public static final String KPI_CYCLE_TIME_DESCRIPTION =
+      "Average cycle time of completed instances in the range. The target is your SLA for this "
+          + "process.";
+  public static final String KPI_AUTOMATION_RATE_NAME = "Automation rate";
+  public static final String KPI_MOMENTUM_NAME = "Momentum — completed instances";
   public static final String KPI_MOMENTUM_DESCRIPTION =
-      "Completed-instance volume trend over the selected period.";
-  public static final String KPI_CYCLE_TIME_BY_PROCESS_NAME = "Cycle time by process";
-  public static final String KPI_CYCLE_TIME_BY_PROCESS_DESCRIPTION =
-      "Average cycle time per process definition.";
-  public static final String KPI_CYCLE_TIME_AVG_NAME = "Cycle time";
-  public static final String KPI_CYCLE_TIME_AVG_DESCRIPTION =
-      "Average cycle time of completed instances.";
+      "Completed-instance volume for this process over the selected period.";
   public static final String KPI_CYCLE_TIME_DISTRIBUTION_NAME = "Cycle time distribution";
   public static final String KPI_CYCLE_TIME_DISTRIBUTION_DESCRIPTION =
-      "Average, P50 and P95 cycle time of completed instances.";
+      "Where the median (P50) and worst-case (P95) durations sit relative to the average. "
+          + "P50: half of instances finish faster. P95: only 5% take longer.";
   public static final String KPI_CYCLE_TIME_HISTORY_NAME = "Cycle time history";
   public static final String KPI_CYCLE_TIME_HISTORY_DESCRIPTION =
-      "Average cycle time over the selected period.";
-  public static final String KPI_AGENTIC_PRESENCE_NAME = "Agentic presence";
-  public static final String KPI_AGENTIC_PRESENCE_DESCRIPTION =
-      "Processes that ran at least one agent.";
-  public static final String KPI_AUTOMATION_RATE_BY_PROCESS_NAME = "Automation rate by process";
-  public static final String KPI_AUTOMATION_RATE_BY_PROCESS_DESCRIPTION =
-      "Percentage of automated tasks per process definition.";
-  public static final String KPI_AUTOMATION_RATE_AGGREGATE_NAME = "Aggregated automation rate";
-  public static final String KPI_AUTOMATION_RATE_AGGREGATE_DESCRIPTION =
-      "Percentage of automated tasks across all completed process instances.";
+      "Average cycle time for this process over the selected period.";
 
+  // Ids are UUIDv3 over these seed strings, so a seed is part of the persisted contract: changing
+  // one orphans its report on every existing installation. Hence seeds outliving display names.
   public static final String WORK_HANDLED_TOTAL_REPORT_ID =
       UUID.nameUUIDFromBytes("bv-work-handled-total".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String DURATION_AVG_TOTAL_REPORT_ID =
@@ -123,6 +147,15 @@ public class BusinessValueDashboardService {
           .toString();
   public static final String AUTOMATION_RATE_AGGREGATE_REPORT_ID =
       UUID.nameUUIDFromBytes("bv-automation-rate-aggregate".getBytes(StandardCharsets.UTF_8))
+          .toString();
+
+  // L1 copies of three metrics the portfolio also shows: same shape, own name.
+  public static final String VOLUME_TOTAL_L1_REPORT_ID =
+      UUID.nameUUIDFromBytes("bv-volume-total-l1".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String COUNT_BY_DATE_L1_REPORT_ID =
+      UUID.nameUUIDFromBytes("bv-count-by-date-l1".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String AUTOMATION_RATE_AGGREGATE_L1_REPORT_ID =
+      UUID.nameUUIDFromBytes("bv-automation-rate-aggregate-l1".getBytes(StandardCharsets.UTF_8))
           .toString();
 
   // Tile configuration keys consumed by the Business Value Dashboard frontend. A tile renders at a
@@ -159,6 +192,7 @@ public class BusinessValueDashboardService {
   }
 
   @EventListener(ApplicationReadyEvent.class)
+  @Order(Ordered.HIGHEST_PRECEDENCE)
   public void init() {
     if (configurationService.getEntityConfiguration().getCreateOnStartup()) {
       LOG.info("Reconciling Business Value dashboard");
@@ -170,15 +204,18 @@ public class BusinessValueDashboardService {
   public void reconcile() {
     final List<DashboardReportTileDto> tiles = new ArrayList<>();
 
-    tiles.add(buildWorkHandledTotalTile());
+    tiles.add(buildCompletedInstancesTotalTile());
+    tiles.add(buildVolumeTotalL1Tile());
     tiles.add(buildDurationAvgTotalTile());
     tiles.add(buildCountByProcessTile());
     tiles.add(buildDurationByProcessTile());
     tiles.add(buildCountByDateTile());
+    tiles.add(buildCountByDateL1Tile());
     tiles.add(buildAgentPresenceByProcessTile());
     tiles.add(buildDurationPercentilesTile());
     tiles.add(buildDurationByDateTile());
     tiles.add(buildAutomationRateAggregateTile());
+    tiles.add(buildAutomationRateAggregateL1Tile());
     tiles.add(buildAutomationRateByProcessTile());
 
     final DashboardDefinitionRestDto dashboard = buildDashboard(tiles);
@@ -191,30 +228,48 @@ public class BusinessValueDashboardService {
 
   // Total completed instances. Separate from the per-process tile because groupBy=NONE plus
   // distributedBy=PROCESS returns HYPER_MAP rather than NUMBER.
-  private DashboardReportTileDto buildWorkHandledTotalTile() {
-    final ProcessReportDataDto reportData =
-        ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
-            .groupBy(new NoneGroupByDto())
-            .distributedBy(new NoneDistributedByDto())
-            .visualization(ProcessVisualization.NUMBER)
-            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
-            .businessValueReport(true)
-            .build();
+  private DashboardReportTileDto buildCompletedInstancesTotalTile() {
     reportWriter.createOrUpdateSingleProcessReport(
         WORK_HANDLED_TOTAL_REPORT_ID,
         null,
-        reportData,
-        KPI_WORK_HANDLED_NAME,
-        KPI_WORK_HANDLED_DESCRIPTION,
+        completedInstanceCountData(),
+        KPI_COMPLETED_INSTANCES_NAME,
+        KPI_COMPLETED_INSTANCES_DESCRIPTION,
         null);
     return buildTile(
         WORK_HANDLED_TOTAL_REPORT_ID,
         new PositionDto(0, 0),
-        new DimensionDto(9, 2),
+        new DimensionDto(9, 4),
         L0_SECTION_ACTIVITY,
+        null);
+  }
+
+  private DashboardReportTileDto buildVolumeTotalL1Tile() {
+    reportWriter.createOrUpdateSingleProcessReport(
+        VOLUME_TOTAL_L1_REPORT_ID,
+        null,
+        completedInstanceCountData(),
+        KPI_VOLUME_NAME,
+        KPI_VOLUME_DESCRIPTION,
+        null);
+    return buildTile(
+        VOLUME_TOTAL_L1_REPORT_ID,
+        new PositionDto(12, 20),
+        new DimensionDto(6, 2),
+        null,
         L1_SECTION_OVERVIEW);
+  }
+
+  private ProcessReportDataDto completedInstanceCountData() {
+    return ProcessReportDataDto.builder()
+        .definitions(Collections.emptyList())
+        .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+        .groupBy(new NoneGroupByDto())
+        .distributedBy(new NoneDistributedByDto())
+        .visualization(ProcessVisualization.NUMBER)
+        .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+        .businessValueReport(true)
+        .build();
   }
 
   // Average cycle time as a single NUMBER, shown next to volume in the L1 overview.
@@ -239,13 +294,13 @@ public class BusinessValueDashboardService {
         DURATION_AVG_TOTAL_REPORT_ID,
         null,
         reportData,
-        KPI_CYCLE_TIME_AVG_NAME,
-        KPI_CYCLE_TIME_AVG_DESCRIPTION,
+        KPI_CYCLE_TIME_NAME,
+        KPI_CYCLE_TIME_DESCRIPTION,
         null);
     return buildTile(
         DURATION_AVG_TOTAL_REPORT_ID,
-        new PositionDto(9, 0),
-        new DimensionDto(9, 2),
+        new PositionDto(0, 20),
+        new DimensionDto(6, 2),
         null,
         L1_SECTION_OVERVIEW);
   }
@@ -272,12 +327,12 @@ public class BusinessValueDashboardService {
         COUNT_BY_PROCESS_REPORT_ID,
         null,
         reportData,
-        KPI_WORK_HANDLED_NAME,
-        KPI_WORK_HANDLED_DESCRIPTION,
+        KPI_TOP_BY_VOLUME_NAME,
+        KPI_TOP_BY_VOLUME_DESCRIPTION,
         null);
     return buildTile(
         COUNT_BY_PROCESS_REPORT_ID,
-        new PositionDto(0, 2),
+        new PositionDto(9, 0),
         new DimensionDto(9, 4),
         L0_SECTION_ACTIVITY,
         null,
@@ -285,34 +340,51 @@ public class BusinessValueDashboardService {
   }
 
   // Completed-instance trend over the selected period. AUTOMATIC bucket unit — Optimize picks
-  // hour/day/week/month so the x-axis stays readable across every filter preset. L0 activity,
-  // L1 ungrouped.
+  // hour/day/week/month so the x-axis stays readable across every filter preset.
   private DashboardReportTileDto buildCountByDateTile() {
-    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
-    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.AUTOMATIC));
-    final ProcessReportDataDto reportData =
-        ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
-            .groupBy(groupBy)
-            .distributedBy(new NoneDistributedByDto())
-            .visualization(ProcessVisualization.LINE)
-            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
-            .businessValueReport(true)
-            .build();
     reportWriter.createOrUpdateSingleProcessReport(
         COUNT_BY_DATE_REPORT_ID,
         null,
-        reportData,
+        completedInstanceCountByDateData(),
+        KPI_COMPLETED_INSTANCES_OVER_TIME_NAME,
+        KPI_COMPLETED_INSTANCES_OVER_TIME_DESCRIPTION,
+        null);
+    return buildTile(
+        COUNT_BY_DATE_REPORT_ID,
+        new PositionDto(0, 4),
+        new DimensionDto(GRID_WIDTH, 4),
+        L0_SECTION_ACTIVITY,
+        null);
+  }
+
+  private DashboardReportTileDto buildCountByDateL1Tile() {
+    reportWriter.createOrUpdateSingleProcessReport(
+        COUNT_BY_DATE_L1_REPORT_ID,
+        null,
+        completedInstanceCountByDateData(),
         KPI_MOMENTUM_NAME,
         KPI_MOMENTUM_DESCRIPTION,
         null);
     return buildTile(
-        COUNT_BY_DATE_REPORT_ID,
-        new PositionDto(0, 6),
-        new DimensionDto(9, 4),
-        L0_SECTION_ACTIVITY,
+        COUNT_BY_DATE_L1_REPORT_ID,
+        new PositionDto(0, 22),
+        new DimensionDto(GRID_WIDTH, 4),
+        null,
         L1_SECTION_UNGROUPED);
+  }
+
+  private ProcessReportDataDto completedInstanceCountByDateData() {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.AUTOMATIC));
+    return ProcessReportDataDto.builder()
+        .definitions(Collections.emptyList())
+        .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+        .groupBy(groupBy)
+        .distributedBy(new NoneDistributedByDto())
+        .visualization(ProcessVisualization.LINE)
+        .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+        .businessValueReport(true)
+        .build();
   }
 
   // Top-N processes by average cycle time, sorted DESC. Horizontal BAR.
@@ -339,12 +411,12 @@ public class BusinessValueDashboardService {
         DURATION_BY_PROCESS_REPORT_ID,
         null,
         reportData,
-        KPI_CYCLE_TIME_BY_PROCESS_NAME,
-        KPI_CYCLE_TIME_BY_PROCESS_DESCRIPTION,
+        KPI_TOP_BY_CYCLE_TIME_NAME,
+        KPI_TOP_BY_CYCLE_TIME_DESCRIPTION,
         null);
     return buildTile(
         DURATION_BY_PROCESS_REPORT_ID,
-        new PositionDto(9, 2),
+        new PositionDto(0, 8),
         new DimensionDto(9, 4),
         L0_SECTION_CYCLE_TIME,
         null,
@@ -381,8 +453,8 @@ public class BusinessValueDashboardService {
         null);
     return buildTile(
         DURATION_PERCENTILES_REPORT_ID,
-        new PositionDto(0, 10),
-        new DimensionDto(9, 4),
+        new PositionDto(0, 26),
+        new DimensionDto(GRID_WIDTH, 4),
         null,
         L1_SECTION_UNGROUPED);
   }
@@ -416,8 +488,8 @@ public class BusinessValueDashboardService {
         null);
     return buildTile(
         DURATION_BY_DATE_REPORT_ID,
-        new PositionDto(9, 10),
-        new DimensionDto(9, 4),
+        new PositionDto(0, 30),
+        new DimensionDto(GRID_WIDTH, 4),
         null,
         L1_SECTION_UNGROUPED);
   }
@@ -451,13 +523,13 @@ public class BusinessValueDashboardService {
         AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
         null,
         reportData,
-        KPI_AGENTIC_PRESENCE_NAME,
-        KPI_AGENTIC_PRESENCE_DESCRIPTION,
+        KPI_AGENTIC_PROCESSES_NAME,
+        KPI_AGENTIC_PROCESSES_DESCRIPTION,
         null);
     return buildTile(
         AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
-        new PositionDto(9, 6),
-        new DimensionDto(9, 4),
+        new PositionDto(0, 12),
+        new DimensionDto(6, 4),
         L0_SECTION_AGENTIC_ADOPTION,
         null);
   }
@@ -465,31 +537,47 @@ public class BusinessValueDashboardService {
   // Aggregate automation rate across all processes. Maps to
   // PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_NONE (NUMBER). Rendered as a single value.
   private DashboardReportTileDto buildAutomationRateAggregateTile() {
-    final ProcessReportDataDto reportData =
-        ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(
-                new ProcessViewDto(
-                    ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.AUTOMATION_RATE))
-            .groupBy(new NoneGroupByDto())
-            .distributedBy(new NoneDistributedByDto())
-            .visualization(ProcessVisualization.NUMBER)
-            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
-            .businessValueReport(true)
-            .build();
     reportWriter.createOrUpdateSingleProcessReport(
         AUTOMATION_RATE_AGGREGATE_REPORT_ID,
         null,
-        reportData,
-        KPI_AUTOMATION_RATE_AGGREGATE_NAME,
-        KPI_AUTOMATION_RATE_AGGREGATE_DESCRIPTION,
+        automationRateAggregateData(),
+        KPI_AGGREGATED_AUTOMATION_RATE_NAME,
+        KPI_AUTOMATION_RATE_DESCRIPTION,
         null);
     return buildTile(
         AUTOMATION_RATE_AGGREGATE_REPORT_ID,
-        new PositionDto(0, 14),
-        new DimensionDto(9, 2),
+        new PositionDto(0, 16),
+        new DimensionDto(9, 4),
         L0_SECTION_AUTOMATION,
+        null);
+  }
+
+  private DashboardReportTileDto buildAutomationRateAggregateL1Tile() {
+    reportWriter.createOrUpdateSingleProcessReport(
+        AUTOMATION_RATE_AGGREGATE_L1_REPORT_ID,
+        null,
+        automationRateAggregateData(),
+        KPI_AUTOMATION_RATE_NAME,
+        KPI_AUTOMATION_RATE_DESCRIPTION,
+        null);
+    return buildTile(
+        AUTOMATION_RATE_AGGREGATE_L1_REPORT_ID,
+        new PositionDto(6, 20),
+        new DimensionDto(6, 2),
+        null,
         L1_SECTION_OVERVIEW);
+  }
+
+  private ProcessReportDataDto automationRateAggregateData() {
+    return ProcessReportDataDto.builder()
+        .definitions(Collections.emptyList())
+        .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.AUTOMATION_RATE))
+        .groupBy(new NoneGroupByDto())
+        .distributedBy(new NoneDistributedByDto())
+        .visualization(ProcessVisualization.NUMBER)
+        .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+        .businessValueReport(true)
+        .build();
   }
 
   // Top-N processes by automation rate, sorted descending. Maps to
@@ -521,7 +609,7 @@ public class BusinessValueDashboardService {
         null);
     return buildTile(
         AUTOMATION_RATE_BY_PROCESS_REPORT_ID,
-        new PositionDto(0, 16),
+        new PositionDto(9, 16),
         new DimensionDto(9, 4),
         L0_SECTION_AUTOMATION,
         null,

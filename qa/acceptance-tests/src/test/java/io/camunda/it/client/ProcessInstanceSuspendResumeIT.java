@@ -9,11 +9,13 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
@@ -29,6 +31,7 @@ import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
@@ -84,27 +87,35 @@ public class ProcessInstanceSuspendResumeIT {
                       assertThat(instance.getSuspendedDate()).isNull();
                     }));
 
-    // TODO(#59812): re-instate once resume hands parked jobs out again. Suspend already parks
-    // every ACTIVATABLE job out of the hand-out index, but nothing writes Job.RESUMED yet, so the
-    // resumed instance never gets its job back and only the never-suspended instance can be
-    // activated below.
     // when - both instances driven through the same three sequential tasks
-    // for (final String jobType : process.jobTypes()) {
-    //   activateAndCompleteJobs(jobType, 2);
-    // }
+    for (final String jobType : process.jobTypes()) {
+      activateAndCompleteJobs(jobType, 2);
+    }
 
     // then - both complete, with the same elements in the same end state
-    // waitForProcessInstancesToBeCompleted(
-    //     camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, notSuspendedKey)), 2);
-    // assertThat(elementIdsAndStates(suspendedKey))
-    //     .containsExactlyInAnyOrderElementsOf(elementIdsAndStates(notSuspendedKey));
-
-    // with the job flow disabled above, both instances are left waiting at taskA; cancel them so
-    // they don't linger on the shared broker for the rest of the suite
-    camundaClient.newCancelInstanceCommand(suspendedKey).send().join();
-    camundaClient.newCancelInstanceCommand(notSuspendedKey).send().join();
-    waitForProcessInstanceToBeTerminated(camundaClient, suspendedKey);
-    waitForProcessInstanceToBeTerminated(camundaClient, notSuspendedKey);
+    waitForProcessInstancesToBeCompleted(
+        camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, notSuspendedKey)), 2);
+    // Process-instance COMPLETED can be searchable before every element-instance update is
+    // exported. Wait until both trees are fully exported and agree rather than comparing once.
+    // Require the known service-task ids so equal-but-incomplete lag cannot pass early.
+    await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var suspendedElements = elementIdsAndStates(suspendedKey);
+              final var notSuspendedElements = elementIdsAndStates(notSuspendedKey);
+              // start + taskA/B/C + end
+              assertThat(suspendedElements).hasSize(ELEMENT_IDS.length + 2);
+              assertThat(suspendedElements)
+                  .extracting(t -> t.toList().get(0))
+                  .contains((Object[]) ELEMENT_IDS);
+              assertThat(suspendedElements)
+                  .extracting(t -> t.toList().get(1))
+                  .containsOnly(ElementInstanceState.COMPLETED);
+              assertThat(suspendedElements)
+                  .containsExactlyInAnyOrderElementsOf(notSuspendedElements);
+            });
   }
 
   @Test
@@ -161,7 +172,158 @@ public class ProcessInstanceSuspendResumeIT {
 
     // leaves an instance active at taskB; cancel it so it doesn't linger on the shared broker
     camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
-    waitForProcessInstanceToBeTerminated(camundaClient, processInstanceKey);
+  }
+
+  @Test
+  void shouldUpdateVariablesWhileSuspended() {
+    // given
+    final var process = deployProcess();
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, process.processId(), Map.of("recoverable", "before"))
+            .getProcessInstanceKey();
+    waitForProcessInstancesToStart(camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+
+    camundaClient.newSuspendProcessInstanceCommand(processInstanceKey).send().join();
+    waitForProcessInstancesToBeSuspended(
+        camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+
+    // when - set-variables is accepted on a suspended instance
+    assertThatCode(
+            () ->
+                camundaClient
+                    .newSetVariablesCommand(processInstanceKey)
+                    .variables(Map.of("recoverable", "after", "added", 1))
+                    .send()
+                    .join())
+        .doesNotThrowAnyException();
+
+    // then - values are exported and the instance stays suspended
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var variables =
+                  camundaClient
+                      .newVariableSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(variables)
+                  .anySatisfy(
+                      v -> {
+                        assertThat(v.getName()).isEqualTo("recoverable");
+                        assertThat(v.getValue()).isEqualTo("\"after\"");
+                      });
+              assertThat(variables)
+                  .anySatisfy(
+                      v -> {
+                        assertThat(v.getName()).isEqualTo("added");
+                        assertThat(v.getValue()).isEqualTo("1");
+                      });
+            });
+
+    final ProcessInstance stillSuspended =
+        camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+    assertThat(stillSuspended.getState()).isEqualTo(ProcessInstanceState.SUSPENDED);
+
+    camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+  }
+
+  @Test
+  void shouldBufferConditionalActivationTriggeredByVariableUpdateUntilResume() {
+    // given - waiting on a conditional intermediate catch event that is not yet satisfied
+    final var processId = Strings.newRandomValidBpmnId();
+    final var catchEventId = "conditional-catch";
+    final var afterConditionTaskId = "afterCondition";
+    final var jobType = Strings.newRandomValidBpmnId();
+    final var model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .intermediateCatchEvent(catchEventId)
+            .condition(c -> c.condition("=x > 10").zeebeVariableEvents("create, update"))
+            .serviceTask(afterConditionTaskId, t -> t.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+    waitForProcessesToBeDeployed(camundaClient, f -> f.processDefinitionId(processId), 1);
+
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, processId, Map.of("x", 1)).getProcessInstanceKey();
+    waitForProcessInstancesToStart(camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processInstanceKey(processInstanceKey)
+                                        .elementId(catchEventId)
+                                        .state(ElementInstanceState.ACTIVE))
+                            .send()
+                            .join()
+                            .items())
+                    .isNotEmpty());
+
+    camundaClient.newSuspendProcessInstanceCommand(processInstanceKey).send().join();
+    waitForProcessInstancesToBeSuspended(
+        camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+
+    // when - variable update satisfies the condition while suspended
+    camundaClient
+        .newSetVariablesCommand(processInstanceKey)
+        .variables(Map.of("x", 42))
+        .send()
+        .join();
+
+    // then - variable is updated while the instance stays suspended
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newVariableSearchRequest()
+                            .filter(f -> f.processInstanceKey(processInstanceKey).name("x"))
+                            .send()
+                            .join()
+                            .items())
+                    .anySatisfy(v -> assertThat(v.getValue()).isEqualTo("42")));
+
+    assertThat(
+            camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join().getState())
+        .isEqualTo(ProcessInstanceState.SUSPENDED);
+
+    // when - resume drains the buffered conditional trigger
+    camundaClient.newResumeProcessInstanceCommand(processInstanceKey).send().join();
+
+    // then - token moves past the catch event
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processInstanceKey(processInstanceKey)
+                                        .elementId(afterConditionTaskId)
+                                        .state(ElementInstanceState.ACTIVE))
+                            .send()
+                            .join()
+                            .items())
+                    .isNotEmpty());
+    camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
   private static void activateAndCompleteJobs(final String jobType, final int count) {

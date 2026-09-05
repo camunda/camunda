@@ -87,6 +87,16 @@ public record PartitionRebalance(
     return Objects.equals(desiredLeader, currentLeader);
   }
 
+  /** The ID of the current leader, or {@code null} if the partition has none. */
+  public @Nullable String currentLeaderId() {
+    return currentLeader == null ? null : currentLeader.id();
+  }
+
+  /** The ID of the desired leader. */
+  public String desiredLeaderId() {
+    return desiredLeader.id();
+  }
+
   /** Completes the partition with a given outcome. */
   public PartitionRebalance completed(final PartitionRebalanceOutcome completedOutcome) {
     return new PartitionRebalance(
@@ -107,5 +117,16 @@ public record PartitionRebalance(
         desiredLeader,
         PartitionRebalanceProgress.COMPLETED,
         PartitionRebalanceOutcome.TRANSFERRED);
+  }
+
+  /** Records that leadership moved to a member other than the current or desired leader. */
+  public PartitionRebalance leaderChanged(final MemberId newLeader) {
+    return new PartitionRebalance(
+        physicalTenantId,
+        partitionId,
+        newLeader,
+        desiredLeader,
+        PartitionRebalanceProgress.COMPLETED,
+        PartitionRebalanceOutcome.LEADER_CHANGED);
   }
 }

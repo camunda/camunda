@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryObserverBaseResult } from "@tanstack/react-query";
 import type {
   User,
   QueryUsersResponseBody,
@@ -19,11 +19,15 @@ import { usePagination } from "src/utility/api";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import { mergeParams } from "src/utility/api/hooks/utils";
 
+type UserWithId = User & { id: string };
+
 type UseEnrichedUsersResult = {
-  users: User[];
+  users: UserWithId[];
   loading: boolean;
   success: boolean;
-  reload: () => void;
+  reload: QueryObserverBaseResult<
+    QueryUsersResponseBody | QueryUsersByGroupResponseBody
+  >["refetch"];
   paginationProps: {
     page: { pageNumber: number; pageSize: number; totalItems?: number };
     setPageNumber: (page: number) => void;
@@ -68,11 +72,12 @@ export function useEnrichedUsers<P>(
     enabled: !isOIDC && usernames.length > 0,
   });
 
-  const users = useMemo<User[]>(() => {
+  const users = useMemo<UserWithId[]>(() => {
     const items = membersQuery.data?.items ?? [];
     if (items.length === 0) return [];
     if (isOIDC) {
       return items.map(({ username }) => ({
+        id: username,
         username,
         name: "",
         email: "",
@@ -82,6 +87,7 @@ export function useEnrichedUsers<P>(
     return items.map((member) => {
       const user = fullUsers.find((u) => u.username === member.username);
       return {
+        id: member.username,
         username: member.username,
         name: user?.name || "",
         email: user?.email || "",
@@ -101,9 +107,7 @@ export function useEnrichedUsers<P>(
     users,
     loading,
     success,
-    reload: () => {
-      void membersQuery.refetch();
-    },
+    reload: membersQuery.refetch,
     paginationProps: {
       page: { ...page, ...membersQuery.data?.page },
       setPageNumber,

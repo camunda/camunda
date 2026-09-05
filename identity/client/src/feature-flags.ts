@@ -6,6 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import { isNewDesignSystemEnabled } from "./configuration";
+
 export const featureFlags = [];
 
-export const IS_NAV_V2_ENABLED = false;
+export const IS_NEW_DESIGN_SYSTEM_ENABLED = isNewDesignSystemEnabled;
+export const IS_NAV_V2_ENABLED = IS_NEW_DESIGN_SYSTEM_ENABLED;

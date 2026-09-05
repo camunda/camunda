@@ -96,11 +96,11 @@ Open http://localhost:3333 → **Explore**
 
 ### Metrics (Prometheus datasource)
 
-|                                 Query                                  |                      What it shows                       |
-|------------------------------------------------------------------------|----------------------------------------------------------|
-| `camunda_process_instance_created_total`                               | Pre-aggregated counter                                   |
-| `sum by (camunda_process_id) (camunda_process_instance_created_total)` | Breakdown by process                                     |
-| `camunda_metric_export_window`                                         | Companion gauge (flush sequence, positions, event times) |
+|                                  Query                                   |                      What it shows                       |
+|--------------------------------------------------------------------------|----------------------------------------------------------|
+| `camunda_decision_instance_evaluated_total`                              | Pre-aggregated counter                                   |
+| `sum by (camunda_tenant_id) (camunda_decision_instance_evaluated_total)` | Breakdown by tenant                                      |
+| `camunda_metric_export_window`                                           | Companion gauge (flush sequence, positions, event times) |
 
 ### Logs (Loki datasource)
 
@@ -108,11 +108,11 @@ Attributes like `event.name` arrive as Loki structured metadata (queried as `eve
 dots become underscores), not as log line text — use `|` (structured-metadata filter), not
 `|=` (line-content filter), or the queries below return zero results.
 
-|                                   Query                                   |        What it shows         |
-|---------------------------------------------------------------------------|------------------------------|
-| `{service_name="camunda-zeebe"}`                                          | All raw analytics events     |
-| `{service_name="camunda-zeebe"} \| event_name="process_instance_created"` | Process instance events only |
-| `{service_name="camunda-zeebe"} \| event_name="user_task_created"`        | User task events only        |
+|                                        Query                                        |        What it shows         |
+|-------------------------------------------------------------------------------------|------------------------------|
+| `{service_name="camunda-zeebe"}`                                                    | All raw analytics events     |
+| `{service_name="camunda-zeebe"} \| event_name="camunda.process.instance.activated"` | Process instance events only |
+| `{service_name="camunda-zeebe"} \| event_name="camunda.user_task.created"`          | User task events only        |
 
 ## 5. Tear down
 

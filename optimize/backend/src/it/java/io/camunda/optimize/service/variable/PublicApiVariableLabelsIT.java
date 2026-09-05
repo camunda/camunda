@@ -9,6 +9,7 @@ package io.camunda.optimize.service.variable;
 
 import static io.camunda.optimize.rest.providers.GenericExceptionMapper.BAD_REQUEST_ERROR_CODE;
 import static io.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUND_ERROR_CODE;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractCCSMIT;
@@ -20,6 +21,7 @@ import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -28,8 +30,26 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
 
   private static final String TEST_ACCESS_TOKEN = "test-access-token";
 
+  // This class is inherently about the legacy static api.accessToken mechanism, which CSL's bearer
+  // chain does not support (no unprotected-API escape hatch on /api/public/**). Without pinning
+  // cslEnabled=false, the token would be rejected before any of the endpoint logic these tests
+  // target ever runs, turning every assertion here into an unrelated 401. Pin explicitly rather
+  // than rely on the ambient CI matrix value. api.accessToken having no CSL equivalent is a
+  // product gap, tracked separately at camunda/camunda#60639.
+  @Override
+  protected void startAndUseNewOptimizeInstance() {
+    startAndUseNewOptimizeInstance(Map.of("optimize.security.csl.enabled", "false"), CCSM_PROFILE);
+  }
+
+  // A single @BeforeEach makes the restart-then-configure dependency explicit in code, rather
+  // than relying on JUnit Jupiter's execution order for multiple @BeforeEach methods in one
+  // class, which is deterministic but intentionally unspecified (@Order has no effect on
+  // @BeforeEach/@AfterEach — it only orders @Test methods, extension fields, and test classes).
+  // Splitting this into two methods previously relied on that unspecified order to configure the
+  // access token on the instance this restart just created, rather than one about to be replaced.
   @BeforeEach
-  public void configurePublicApiToken() {
+  public void bootWithCslDisabledAndConfigurePublicApiToken() {
+    startAndUseNewOptimizeInstance();
     embeddedOptimizeExtension
         .getConfigurationService()
         .getOptimizeApiConfiguration()

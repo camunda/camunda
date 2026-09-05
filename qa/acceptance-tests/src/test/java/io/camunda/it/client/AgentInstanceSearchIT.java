@@ -16,14 +16,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +38,7 @@ import org.junit.jupiter.api.Test;
 public class AgentInstanceSearchIT {
 
   private static final String AGENT_ELEMENT_ID = "agentAhsp";
+  private static final String AGENT_JOB_TYPE = "agent-task";
 
   private static CamundaClient camundaClient;
 
@@ -57,7 +64,7 @@ public class AgentInstanceSearchIT {
         Bpmn.createExecutableProcess("AgentInstanceSearchProcess1")
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent("end")
             .done();
@@ -72,7 +79,7 @@ public class AgentInstanceSearchIT {
         Bpmn.createExecutableProcess("AgentInstanceSearchProcess2")
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent("end")
             .done();
@@ -98,21 +105,16 @@ public class AgentInstanceSearchIT {
             .getFirst()
             .getElementInstanceKey();
 
-    agentInstanceKey1 =
-        camundaClient
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(ei1)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a search assistant.")
-            .send()
-            .join()
-            .getAgentInstanceKey();
+    final var created1 =
+        createAgentInstance(ei1, "gpt-4o", "openai", "You are a search assistant.");
+    agentInstanceKey1 = created1.agentInstanceKey();
 
     camundaClient
         .newUpdateAgentInstanceCommand(agentInstanceKey1)
         .elementInstanceKey(ei1)
         .status(AgentInstanceUpdateStatus.THINKING)
+        .jobKey(created1.jobKey())
+        .jobLease(created1.jobLease())
         .send()
         .join();
 
@@ -133,15 +135,8 @@ public class AgentInstanceSearchIT {
             .getElementInstanceKey();
 
     agentInstanceKey2 =
-        camundaClient
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(ei2)
-            .model("claude-3-5-sonnet")
-            .provider("anthropic")
-            .systemPrompt("You are a code reviewer.")
-            .send()
-            .join()
-            .getAgentInstanceKey();
+        createAgentInstance(ei2, "claude-3-5-sonnet", "anthropic", "You are a code reviewer.")
+            .agentInstanceKey();
 
     // — pi3 → ei3 → ai3: CREATE only (INITIALIZING), from processDefinition2 —
     final var pi3 = startProcessInstance(camundaClient, processDefinitionId2);
@@ -160,15 +155,8 @@ public class AgentInstanceSearchIT {
             .getElementInstanceKey();
 
     agentInstanceKey3 =
-        camundaClient
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(ei3)
-            .model("gpt-4o-mini")
-            .provider("openai")
-            .systemPrompt("You are a summarizer.")
-            .send()
-            .join()
-            .getAgentInstanceKey();
+        createAgentInstance(ei3, "gpt-4o-mini", "openai", "You are a summarizer.")
+            .agentInstanceKey();
 
     // Wait until all are indexed
     waitForAgentInstanceWithStatusToBeIndexed(
@@ -179,6 +167,49 @@ public class AgentInstanceSearchIT {
     // Capture the engine-assigned agent definition keys for filter/sort assertions.
     agentDefinitionKey1 = fetchAgentDefinitionKey(agentInstanceKey1);
     agentDefinitionKey3 = fetchAgentDefinitionKey(agentInstanceKey3);
+  }
+
+  private static CreatedAgentInstance createAgentInstance(
+      final long elementInstanceKey,
+      final String model,
+      final String provider,
+      final String systemPrompt) {
+    // CREATE now requires a jobKey backed by an actual activation of the agentic job.
+    final var activatedJob =
+        camundaClient
+            .newActivateJobsCommand()
+            .jobType(AGENT_JOB_TYPE)
+            .maxJobsToActivate(1)
+            .withLease(true)
+            .timeout(Duration.ofMinutes(5))
+            .send()
+            .join()
+            .getJobs()
+            .getFirst();
+
+    final long agentInstanceKey =
+        camundaClient
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(elementInstanceKey)
+            .jobKey(activatedJob.getKey())
+            .jobLease(activatedJob.getLeaseToken())
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.now())
+                        .model(model)
+                        .provider(provider)
+                        .systemPrompt(List.of(AgentInstanceHistoryContent.text(systemPrompt)))))
+            .send()
+            .join()
+            .getAgentInstanceKey();
+
+    return new CreatedAgentInstance(
+        agentInstanceKey, activatedJob.getKey(), activatedJob.getLeaseToken());
   }
 
   private static long fetchAgentDefinitionKey(final long agentInstanceKey) {
@@ -498,4 +529,6 @@ public class AgentInstanceSearchIT {
     final var page2Keys = page2.items().stream().map(AgentInstance::getAgentInstanceKey).toList();
     assertThat(page1Keys).doesNotContainAnyElementsOf(page2Keys);
   }
+
+  private record CreatedAgentInstance(long agentInstanceKey, long jobKey, String jobLease) {}
 }

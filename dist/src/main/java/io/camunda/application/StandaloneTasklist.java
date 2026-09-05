@@ -74,6 +74,6 @@ public class StandaloneTasklist {
 
         // add custom check to standard readiness check
         "management.endpoint.health.group.readiness.include",
-        "readinessState, searchEngineCheck");
+        "readinessState,schemaReadinessCheck");
   }
 }

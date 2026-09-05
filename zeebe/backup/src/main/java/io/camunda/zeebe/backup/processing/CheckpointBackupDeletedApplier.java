@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
@@ -69,10 +71,11 @@ public final class CheckpointBackupDeletedApplier {
       // backup.
       return;
     }
-    final var firstLogPosition =
-        checkpointMetadataState
-            .getCheckpoint(firstRange.orElseThrow().start())
-            .getFirstLogPosition();
+    final var firstCheckpoint =
+        requireNonNull(
+            checkpointMetadataState.getCheckpoint(firstRange.orElseThrow().start()),
+            "checkpoint metadata must exist for the first range");
+    final var firstLogPosition = firstCheckpoint.getFirstLogPosition();
     checkpointMetadataState.removeCheckpointsUntil(firstLogPosition);
   }
 
@@ -89,7 +92,7 @@ public final class CheckpointBackupDeletedApplier {
             predecessor.get(),
             predecessorMetadata.getCheckpointPosition(),
             predecessorMetadata.getCheckpointTimestamp(),
-            predecessorMetadata.getCheckpointType(),
+            requireNonNull(predecessorMetadata.getCheckpointType(), "checkpointType is null"),
             predecessorMetadata.getFirstLogPosition());
         LOG.debug(
             "Rolled back latest backup from {} to predecessor {}", checkpointId, predecessor.get());

@@ -22,7 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import java.time.Instant;
 import java.util.List;
@@ -457,7 +457,7 @@ final class PartitionGroupExporterStateInitializerTest {
     final var plan =
         PhasedChangePlan.initForRestore(
             List.of(
-                new PartitionGroupParallelPhase(
+                PartitionGroupPhase.sequential(
                     Map.of(
                         CurrentClusterConfiguration.DEFAULT_GROUP,
                         List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty()))))),

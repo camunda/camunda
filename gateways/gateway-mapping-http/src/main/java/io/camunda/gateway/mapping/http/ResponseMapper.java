@@ -54,6 +54,7 @@ import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionResult;
 import io.camunda.gateway.protocol.model.ExpressionEvaluationResult;
 import io.camunda.gateway.protocol.model.ExpressionEvaluationWarningItem;
+import io.camunda.gateway.protocol.model.ExpressionSecretReferenceItem;
 import io.camunda.gateway.protocol.model.GroupCreateResult;
 import io.camunda.gateway.protocol.model.GroupUpdateResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
@@ -276,7 +277,7 @@ public final class ResponseMapper {
             mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)))
         .changedAttributes(
             mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)))
-        .action(requireNonNull(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), "action"))
+        .action(Objects.requireNonNullElse(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), ""))
         .assignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME))
         .dueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME))
         .followUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME))
@@ -469,7 +470,7 @@ public final class ResponseMapper {
   public static MessagePublicationResult toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
     return MessagePublicationResult.Builder.create()
-        .tenantId(brokerResponse.getResponse().getTenantId())
+        .tenantId(brokerResponse.getResponseOrThrow().getTenantId())
         .messageKey(keyToString(brokerResponse.getKey()))
         .build();
   }
@@ -651,14 +652,14 @@ public final class ResponseMapper {
   public static SignalBroadcastResult toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
     return SignalBroadcastResult.Builder.create()
-        .tenantId(brokerResponse.getResponse().getTenantId())
+        .tenantId(brokerResponse.getResponseOrThrow().getTenantId())
         .signalKey(keyToString(brokerResponse.getKey()))
         .build();
   }
 
   public static EvaluateConditionalResult toConditionalEvaluationResponse(
       final BrokerResponse<ConditionalEvaluationRecord> brokerResponse) {
-    final var response = brokerResponse.getResponse();
+    final var response = brokerResponse.getResponseOrThrow();
     final var processInstances =
         response.getStartedProcessInstances().stream()
             .map(
@@ -806,7 +807,7 @@ public final class ResponseMapper {
 
   public static EvaluateDecisionResult toEvaluateDecisionResponse(
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
-    final var decisionEvaluationRecord = brokerResponse.getResponse();
+    final var decisionEvaluationRecord = brokerResponse.getResponseOrThrow();
     final var evaluatedDecisions = buildEvaluatedDecisions(decisionEvaluationRecord);
     return EvaluateDecisionResult.Builder.create()
         .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
@@ -928,6 +929,15 @@ public final class ResponseMapper {
                 .map(
                     warning ->
                         ExpressionEvaluationWarningItem.Builder.create().message(warning).build())
+                .toList())
+        .referencedSecrets(
+            expressionRecord.getReferencedSecrets().stream()
+                .map(
+                    reference ->
+                        ExpressionSecretReferenceItem.Builder.create()
+                            .storeId(reference.getStoreId())
+                            .secretName(reference.getSecretReference())
+                            .build())
                 .toList())
         .build();
   }

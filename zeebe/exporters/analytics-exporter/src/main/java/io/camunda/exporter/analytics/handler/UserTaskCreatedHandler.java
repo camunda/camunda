@@ -13,6 +13,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.DEFINITI
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.INSTANCE_KEY;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,7 +22,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Emits a {@code user_task_created} OTel event for each user task creation. Emits only safe
+ * Emits a {@code camunda.user_task.created} OTel event for each user task creation. Emits only safe
  * process-metadata attributes — never assignee, candidate users, candidate groups, or variables.
  */
 public final class UserTaskCreatedHandler implements AnalyticsHandler<UserTaskRecordValue> {
@@ -30,6 +31,11 @@ public final class UserTaskCreatedHandler implements AnalyticsHandler<UserTaskRe
 
   public UserTaskCreatedHandler(final OtelSdkManager otelSdkManager) {
     this.otelSdkManager = Objects.requireNonNull(otelSdkManager);
+  }
+
+  @Override
+  public AnalyticsCategory category() {
+    return AnalyticsCategory.OPTIONAL;
   }
 
   @Override

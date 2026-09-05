@@ -95,7 +95,6 @@ public interface PartitionManager {
         brokerStartupContext.getDiskSpaceUsageMonitor(),
         partitionListeners,
         brokerStartupContext.getPartitionRaftListeners(),
-        brokerStartupContext.getSnapshotApiRequestHandler(),
         physicalTenantContext.exporterRepository(),
         brokerStartupContext.getGatewayBrokerTransport(),
         jobStreamService.jobStreamer(),
@@ -127,6 +126,7 @@ public interface PartitionManager {
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getGatewayBrokerTransport(),
         brokerStartupContext.getExportedPositionSupplier(physicalTenantId),
-        topologyManager);
+        topologyManager,
+        brokerStartupContext.getHealthCheckService().componentName());
   }
 }

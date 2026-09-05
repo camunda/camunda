@@ -80,8 +80,8 @@ Extensibility
 - Multi‑protocol authentication
   Support for Basic and OIDC, with OIDC as the recommended method for production; optional no‑auth for simple setups.
 
-- Shared RBAC framework
-  Authorization checks use the shared framework and behaviors owned by the Identity team but extensible by feature teams.
+- External security library dependency
+  Authorization and authentication checks are implemented on top of the [Camunda Security Library](https://github.com/camunda/camunda-security-library) (CSL), an external repository versioned independently and pinned via the `version.camunda-security-library` property in `parent/pom.xml`. The Identity team owns the local port implementations (state adapters, search-client scope repository, Spring wiring) that plug into CSL; the core authorization/authentication logic itself is out-of-repo.
 
 - No Management Identity dependency for runtime
   Engine and runtime UIs should not depend on Management Identity. That component is reserved for Web Modeler, Console, and Optimize in Self‑Managed.
@@ -180,8 +180,8 @@ Resource‑based authorization
 Cluster‑local tenant model
 :   Tenants are managed directly in Identity per cluster. Management Identity tenants remain only for Optimize in Self‑Managed.
 
-Extensible RBAC library
-:   Shared helpers and engine behaviors so feature teams can introduce new resource and permission types without re‑implementing authorization logic.
+Adopt the Camunda Security Library
+:   Delegate the authorization and authentication decisions themselves to CSL, along with the boundary types they are expressed in (`SecurityContext`, `CamundaAuthentication`, `RequiredAuthorization`, `TenantAccess`), so feature teams introduce new resource and permission types by implementing CSL's ports rather than re‑implementing authorization logic locally.
 
 Reuse of Zeebe storage
 :   Identity entities are stored using Zeebe’s existing primary (RocksDB) and secondary (ES/OS/RDBMS) storage instead of a separate identity database.
@@ -207,6 +207,7 @@ flowchart TB
     CAMUNDA_SEARCH_CLIENT["Camunda Search Client (search-client)"]
     AUTHENTICATION["Authentication (authentication)"]
     SECURITY["Security (security)"]
+    CSL["Camunda Security Library (CSL)"]
 
     subgraph ZEEBE["Zeebe"]
         ENGINE["Engine (engine)"] -.->|"check authorizations"| ENGINE_IDENTITY["Engine Identity"]
@@ -223,6 +224,8 @@ flowchart TB
   ENGINE --> PRIMARY_DB
   ENGINE_IDENTITY -.-> PRIMARY_DB
   SPRING_SECURITY --> IDP
+  SECURITY -.->|"delegates to"| CSL
+  ENGINE_IDENTITY -.->|"delegates to"| CSL
 ```
 
 Main building blocks:
@@ -231,22 +234,114 @@ Main building blocks:
 - Camunda Services: Enhances the commands and queries with the given authentication and the necessary authorizations.
 - Camunda Search Client: Used for querying the secondary database against ES, OS, or RDBMS, depending on the configuration.
 - Authentication: Contains authentication-related converters, helpers, utils, and services among others for spring security.
-- Security: Performs authorization checks for queries against the secondary database via the shared RBAC framework and provides shared security helpers used by authentication components.
+- Security: Builds the CSL security context for a request and provides shared security helpers used by authentication components; authorization decisions themselves are delegated to CSL.
 - Zeebe: Is responsible for processing commands and storing state.
 - Engine: Processes commands and applies state changes. Uses (engine) identity to check permissions for user- or client-initiated operations.
-- Engine Identity: Shared RBAC engine used for authorization checks in the engine, there is no own module for it, it lives directly in the engine in "identity".
+- Engine Identity: Engine-side adapters that bridge Zeebe's RocksDB state to CSL's authorization/tenant ports; the actual authorization/tenant logic lives in CSL, there is no own module for it, the adapters live directly in the engine in "identity".
 - Primary Database: RocksDB used for Zeebe Engine state and OC Identity IAM records.
 - Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.
+- Camunda Security Library (CSL): Library that performs the authorization and authentication decisions and assembles the Spring Security filter chain, and that supplies the boundary types OC passes across it (`SecurityContext`, `CamundaAuthentication`, `RequiredAuthorization`, `TenantAccess`). Developed in a separate repository ([camunda/camunda-security-library](https://github.com/camunda/camunda-security-library)) but compiled into the Orchestration Cluster artifact, not a remote service. Consumed as `camunda-security-library-api`, `-core`, `-spring-boot-starter`, and `-validation`, version pinned by the `version.camunda-security-library` property in `parent/pom.xml`.
+
+#### CSL extension points and OC's adapters
+
+CSL follows a ports-and-adapters design: it owns the authorization and authentication logic and
+declares extension points for everything it needs from the host. The two tables below are the
+contract surface between the two repositories — CSL's internal behaviour is documented in the
+[CSL architecture documentation](https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md),
+sections 5.4 (hexagonal architecture) and 5.5 (engine authorization integration), and is not
+repeated here.
+
+Two kinds of type cross the boundary, and they point in opposite directions:
+
+- **Callback extension points** — interfaces CSL declares and *calls into*. OC implements them, so
+  CSL can reach host data (RocksDB, the search index, the session store) and host decisions without
+  depending on OC. Not all are named `*Port`.
+- **Data contracts** — shapes OC's *own* domain types implement so CSL can *read* them. No adapter
+  is involved; the coupling is that OC's entities carry the members CSL expects.
+
+Both couple at compile time, which is why both are named here (see the naming convention below), but
+only the first is a ports-and-adapters seam.
+
+**Naming convention used in this document and the linked authorization docs.** A CSL class name may
+appear here only if it falls into one of two categories, both defined by whether a rename on CSL's
+side would break our build:
+
+1. **Types OC implements or extends** — everything in the two tables below. This half is mechanical:
+   the tables *are* the list, and the sweep described under [10. Risks](#10-risks-and-technical-debt)
+   regenerates it.
+2. **Types OC builds the value of and passes across the boundary** — `RequiredAuthorization`,
+   `SecurityContext`, `TenantAccess`, `AuthorizationCondition`, `ResourceAccessChecks`. OC code
+   populates these field by field on the way in or reads them on the way out.
+
+Everything else on CSL's side is referred to by role ("Basic Auth Converter (CSL)"), never by class
+name, so a refactor behind the boundary does not oblige a change here.
+
+Note that "does the name appear in an OC `.java` file" is *not* the test, and would give the wrong
+answer. The test for category 2 is narrower than "OC holds a reference to it": does OC's own code
+populate the value's fields, or does OC only receive an already-built instance and pass it on
+unread? Only the former qualifies.
+
+`AuthorizationChecker` is the case to check a proposed name against: it is referenced by 14
+non-test OC files, yet it is used nowhere in these docs to describe the engine or REST check paths —
+those say "the CSL check" instead. OC obtains one from `AuthorizationCheckerFactory.forPhysicalTenant`
+and hands it straight to `DefaultResourceAccessProvider` without ever reading it, so it is an opaque
+handle rather than a value OC builds; category 2 turns on constructing the value, not on holding the
+reference. Package location does not decide it either — `AuthorizationChecker` sits in `core.authz`,
+the same package as `ResourceAccessProvider` and `TenantAccess`, which are both named here.
+
+##### Callback extension points
+
+|    CSL package     |                  Type                   |                                                                                                       OC implementation                                                                                                        |
+|--------------------|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `core.port.in`     | `AuthorizationCheckPort`                | Primarily consumed. `TenantAwareAuthorizationCheckPort` (`dist`) routes each request to the per-physical-tenant port CSL assembles                                                                                             |
+| `core.port.in`     | `CamundaUserPort`                       | `BasicCamundaUserService` (`authentication`)                                                                                                                                                                                   |
+| `core.port.out`    | `AuthorizationScopeRepositoryPort`      | `SearchAuthorizationScopeRepository` (`security-services`, secondary storage) · `AuthorizationScopeStateAdapter` (`zeebe/engine`, RocksDB)                                                                                     |
+| `core.port.out`    | `MembershipPort`                        | `DefaultMembershipService` / `NoDBMembershipService` (`authentication`) · `MembershipStateAdapter` (`zeebe/engine`)                                                                                                            |
+| `core.port.out`    | `BasicAuthUserDetailsPort`              | `BasicAuthUserDetailsAdapter` (`authentication`)                                                                                                                                                                               |
+| `core.port.out`    | `SessionStorePort`                      | `SessionStoreAdapter` (`authentication`)                                                                                                                                                                                       |
+| `core.port.out`    | `ScopedSessionStorePortProvider`        | `PhysicalTenantScopedSessionStorePortProvider` (`authentication`) — hands out one `SessionStorePort` per physical tenant                                                                                                       |
+| `core.port.out`    | `SecurityPathPort`                      | `SecurityPathAdapter` (`authentication`)                                                                                                                                                                                       |
+| `core.port.out`    | `AdminUserPresencePort`                 | `AdminUserPresenceAdapter` (`authentication`) — answers whether an admin user is provisioned, which gates CSL's setup-redirect filter                                                                                          |
+| `core.port.out`    | `AuthorizedComponentsPort`              | `AuthorizedComponentsAdapter` (`authentication`) — resolves which webapp components the principal may open, for `/v2/authentication/me`                                                                                        |
+| `core.authz`       | `ResourceAccessProvider`                | `DefaultResourceAccessProvider` (`search-client-query-transformer`)                                                                                                                                                            |
+| `core.authz`       | `ResourceAccessController`              | `AbstractResourceAccessController` (`search-client`) and its subclasses `DocumentBasedResourceAccessController` / `RdbmsResourceAccessController` · `AnonymousResourceAccessController` · `ResourceAccessDelegatingController` |
+| `api.context`      | `CamundaAuthenticationConverter`        | `ClusterAdminAuthenticationConverter` (`authentication`) — membership-free principal for cluster admins, registered ahead of CSL's DB-backed converter                                                                         |
+| `api.context`      | `CamundaSecurityScopeProvider`          | `PhysicalTenantScopeProvider` (`authentication`) — one security descriptor per configured physical tenant, from which CSL builds the per-tenant filter chains                                                                  |
+| `api.context`      | `MembershipResolutionContextPropagator` | `PhysicalTenantMembershipContextPropagator` (`authentication`) — rebinds the physical tenant around lazy membership lookups that resolve outside request scope                                                                 |
+| `spring.converter` | `OidcUserAuthenticationConverter`       | `ProviderAwareOidcUserAuthenticationConverter` (`authentication`) extends it to pick the right converter per configured IdP (see [5.2.1](#521-authentication---level-2))                                                       |
+| `spring.oidc`      | `OidcTokenEndpointCustomizer`           | `OidcTokenEndpointCustomizer` (`authentication`) — builds the `private_key_jwt` client assertion converter (see [6.3.2](#632-oidc-with-private_key_jwt-client-authentication))                                                 |
+| `spring.security`  | `OidcResourceServerCustomizer`          | `ProtectedResourceMetadataCustomizer` (`authentication`)                                                                                                                                                                       |
+| `spring.session`   | `WebSessionAttributeConverter`          | `MigratingWebSessionAttributeConverter` (`dist`)                                                                                                                                                                               |
+| `spring.spi`       | `WebAppProviderPort`                    | `WebAppProviderAdapter` (`authentication`) — derives the web app id from the request path prefix                                                                                                                               |
+
+The pattern to note: the authorization *read* ports each have two implementations, one per storage
+layer — search-index-backed for the REST layer, RocksDB-backed for the engine.
+
+Optimize is out of scope for this table. It wires CSL separately and supplies its own adapters, some
+of them stubs; one CSL extension point (`spring.spi.OidcAuthenticationEntryPoint`) is implemented
+only there and so appears in neither table.
+
+##### Data contracts
+
+These are not adapters. CSL declares the shape, and OC's own domain types carry it so CSL can read
+them directly.
+
+|            CSL package            |                                        Type                                        |                                                                          OC types implementing it                                                                           |
+|-----------------------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `core.authz`                      | `TenantOwnedEntity`                                                                | 21 `search-domain` entities (`ProcessDefinitionEntity`, `UserTaskEntity`, `IncidentEntity`, `VariableEntity`, …) — the marker by which CSL recognises a tenant-owned record |
+| `core.auth`                       | `MappingRuleMatcher` (and its nested `MappingRule`)                                | `MappingRuleEntity` (`search-domain`) · `PersistedMappingRule` (`zeebe/engine`) · `ClusterAdminJwtAuthenticationConverter` (`authentication`)                               |
+| `api.model.config.initialization` | `ConfiguredAuthorization`, `ConfiguredGroup`, `ConfiguredRole`, `ConfiguredTenant` | the four configurers in `zeebe/engine/.../processing/identity/initialize/`                                                                                                  |
+| `spring`                          | `CamundaSecurityLibraryProperties`                                                 | `Security` (`configuration`)                                                                                                                                                |
 
 ### 5.2 Building Blocks
 
 #### 5.2.1 Authentication - Level 2
 
 The Authentication building block provides configuration classes, converters, and helpers that extend Spring Security.
-Spring Security itself manages the filter chains, token exchange, and IdP communication.
+CSL's Spring Boot auto-configuration assembles the Spring Security filter chain stack by default (Spring Security itself still performs the actual token exchange and IdP communication); local `BasicAuthBeansConfiguration` and `OidcOverrideBeansConfiguration` supply OC-specific override beans that CSL backs off from via `@ConditionalOnMissingBean`.
 Authentication classes enrich the resulting principal with Camunda-specific claims (groups, roles, tenants) and persist sessions.
 
-To keep it simple, we describe the Basic Auth and OIDC flows separately, but they share several components such as `DefaultCamundaAuthenticationProvider` and `WebSessionRepository`.
+To keep it simple, we describe the Basic Auth and OIDC flows separately, but they share several components, notably the Authentication Provider and the Session Repository, both supplied by CSL.
 
 ##### Basic Auth flow
 
@@ -263,12 +358,14 @@ flowchart TB
   end
 
   subgraph AUTHENTICATION_BASIC["Authentication (Basic Auth)"]
-    WEB_SEC_CFG["Spring Security Configuration</br>(WebSecurityConfig.BasicConfiguration)"]
-    BASIC_CONV["Basic Auth Converter</br>(UsernamePasswordAuthenticationTokenConverter)"]
-    SESSION_MGR["Session Repository</br>(WebSessionRepository)"]
-    AUTH_PROVIDER["Authentication Provider</br>(DefaultCamundaAuthenticationProvider)"]
+    WEB_SEC_CFG["Spring Security Configuration</br>(BasicAuthBeansConfiguration)"]
+    BASIC_CONV["Basic Auth Converter</br>(CSL)"]
+    USER_DETAILS["User Details Adapter</br>(BasicAuthUserDetailsAdapter)"]
+    SESSION_MGR["Session Repository</br>(CSL)"]
+    AUTH_PROVIDER["Authentication Provider</br>(CSL)"]
 
     WEB_SEC_CFG --> BASIC_CONV
+    BASIC_CONV --> USER_DETAILS
   end
 
   CAMUNDA_SEARCH_CLIENT["Camunda Search Client"]
@@ -277,23 +374,24 @@ flowchart TB
   SPRING_FILTER -->|"configured by"| WEB_SEC_CFG
   SPRING_SESSION -->|"accesses"| SESSION_MGR
 
-  BASIC_CONV -->|"load user, roles, tenants"| CAMUNDA_SERVICES
+  USER_DETAILS -->|"load user, roles, tenants"| CAMUNDA_SERVICES
   CAMUNDA_SERVICES["Camunda Services</br>(e.g. UserServices, RoleServices, ...)"] --> CAMUNDA_SEARCH_CLIENT --> SECONDARY_DB
   SESSION_MGR -->|"store session"| CAMUNDA_SEARCH_CLIENT
 ```
 
 Key responsibilities:
 
-- Spring Security Configuration (`WebSecurityConfig.BasicConfiguration`): Spring `@Configuration` subclass of `WebSecurityConfig`, activated by `camunda.security.authentication.method=basic`. It is responsible for configuring the Spring Security filter chains for Basic auth and registering the `UsernamePasswordAuthenticationTokenConverter` bean. The `@ConditionalOnProtectedApi` annotation on individual filter chain beans controls whether API endpoints require authentication (based on the `camunda.security.api.unprotected` property).
-- Basic Auth Converter (`UsernamePasswordAuthenticationTokenConverter`): converts Basic auth credentials (username/password or clientId/secret) into a `CamundaAuthentication` by loading the user entity and its roles and tenants via Camunda Services.
-- Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`. It reads the current Spring `Authentication` from `SecurityContextHolder`, checks the `CamundaAuthenticationHolder` cache for an existing `CamundaAuthentication`, and only on a cache miss delegates conversion to the `UsernamePasswordAuthenticationTokenConverter`.
-- Session Repository (`WebSessionRepository`): implements Spring's `SessionRepository<WebSession>` interface and manages server‑side sessions backed by secondary storage via `PersistentWebSessionClient`.
+- Spring Security Configuration (`BasicAuthBeansConfiguration`): local `@Configuration` class, imported by `WebSecurityConfig`, activated by `camunda.security.authentication.method=basic`. CSL's auto-configuration assembles the Basic auth filter chain by default; this class and `WebSecurityConfig` itself supply OC's override beans on top of it, including the `usernamePasswordAuthenticationConverter` and `basicAuthUserDetailsPort` beans.
+- User Details Adapter (`BasicAuthUserDetailsAdapter`): local implementation of CSL's `BasicAuthUserDetailsPort` (registered in `WebSecurityConfig`), looking up the user's credentials, roles, and tenants via Camunda Services.
+- Basic Auth Converter (CSL): converts Basic auth credentials (username/password or clientId/secret) into a `CamundaAuthentication`, using OC's `BasicAuthUserDetailsAdapter` for credential verification and OC's `MembershipPort` implementation for role/tenant membership.
+- Authentication Provider (CSL): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
+- Session Repository (CSL): implements Spring Session's `SessionRepository` interface and manages server‑side sessions backed by secondary storage via the local `PersistentWebSessionClient` (`search/search-client`). Wired locally by `WebSessionRepositoryConfiguration` (`dist`) — so the repository is CSL's, but the storage behind it is OC's.
 
 External responsibilities:
 
 - Spring Security (`UsernamePasswordAuthenticationFilter`): performs the actual credential extraction and delegates to the configured converter.
 - Camunda Services: provide access to user, role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include `UserServices`, `RoleServices`, `GroupServices`, `TenantServices`, and `MappingRuleServices`.
-- Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the WebSessionRepository to store the session.
+- Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the Session Repository to store the session.
 
 ##### OIDC flow
 
@@ -303,24 +401,24 @@ title: Authentication - OIDC
 ---
 flowchart TB
   subgraph AUTHENTICATION_OIDC["Authentication (OIDC)"]
-    WEB_SEC_CFG["Spring Security Configuration</br>(WebSecurityConfig.OidcConfiguration)"]
+    WEB_SEC_CFG["Spring Security Configuration</br>(OidcOverrideBeansConfiguration)"]
 
     subgraph OIDC_CONV["OIDC Converters"]
-      OIDC_USER_CONV["OIDC User Converter</br>(OidcUserAuthenticationConverter)"]
-      OIDC_TOKEN_CONV["OIDC Token Converter</br>(OidcTokenAuthenticationConverter)"]
+      OIDC_USER_CONV["OIDC User Converter</br>(CSL;</br>OC override: ProviderAwareOidcUserAuthenticationConverter)"]
+      OIDC_TOKEN_CONV["OIDC Token Converter</br>(CSL)"]
     end
 
     subgraph REPOSITORIES["Repositories"]
-      CLIENT_REG_REPO["Client Registration Repository</br>(InMemoryClientRegistrationRepository)"]
-      OIDC_PROVIDER_REPO["OIDC Provider Repository</br>(OidcAuthenticationConfigurationRepository)"]
+      CLIENT_REG_REPO["Client Registration Repository</br>(InMemoryClientRegistrationRepository,</br>Spring Security, registered by CSL)"]
+      OIDC_PROVIDER_REPO["OIDC Provider Repository</br>(CSL)"]
     end
 
-    TOKEN_VALIDATOR["Token Validator Factory</br>(TokenValidatorFactory)"]
+    TOKEN_VALIDATOR["Token Validator Factory</br>(CSL)"]
 
-    CLAIMS_CONV["Claims Converter</br>(TokenClaimsConverter)"]
-    MAPPING_RULES_PROC["Mapping Rules Processor</br>(MappingRuleMatcher)"]
-    SESSION_MGR["Session Repository</br>(WebSessionRepository)"]
-    AUTH_PROVIDER["Authentication Provider</br>(DefaultCamundaAuthenticationProvider)"]
+    CLAIMS_CONV["Claims Converter</br>(CSL)"]
+    MAPPING_RULES_PROC["Mapping Rules Processor</br>(CSL)"]
+    SESSION_MGR["Session Repository</br>(CSL)"]
+    AUTH_PROVIDER["Authentication Provider</br>(CSL)"]
 
     WEB_SEC_CFG -.->|"configures"| OIDC_CONV
     WEB_SEC_CFG -.->|"configures"| REPOSITORIES
@@ -348,30 +446,28 @@ flowchart TB
 
 Key responsibilities:
 
-- Spring Security Configuration (`WebSecurityConfig.OidcConfiguration`): Activated by `camunda.security.authentication.method=oidc`. It is responsible for configuring all OIDC-related Spring Security filter chains and registering the following beans:
-  - Client Registration Repository (`InMemoryClientRegistrationRepository`): holds the OAuth2 client registrations (one per configured OIDC provider), built from `OidcAuthenticationConfigurationRepository`.
-  - OIDC Provider Repository (`OidcAuthenticationConfigurationRepository`): reads the OIDC provider configuration (issuer URIs, client credentials, additional JWKS URIs) from `SecurityConfiguration`.
-  - OAuth2AuthorizedClientRepository (`HttpSessionOAuth2AuthorizedClientRepository`): stores authorized client state in the HTTP session.
-  - OIDC Token Converter (`OidcTokenAuthenticationConverter`): converts Bearer JWTs (M2M) into a `CamundaAuthentication` (OIDC M2M only).
-- Claims Converter (`TokenClaimsConverter`): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via `MembershipService`.
-- Mapping Rules Processor (`MappingRuleMatcher`): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations.
-- Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
-- Session Repository (`WebSessionRepository`): implements Spring's `SessionRepository<WebSession>` interface and manages server‑side sessions backed by secondary storage via `PersistentWebSessionClient`.
+- Spring Security Configuration (`OidcOverrideBeansConfiguration`): local `@Configuration` class, imported by `WebSecurityConfig`, activated by `camunda.security.authentication.method=oidc`. CSL's auto-configuration assembles the OIDC filter chain stack by default; this class overrides the beans OC needs bespoke behavior for (multi-IdP support, issuer-aware JWT decoding, `private_key_jwt`, observability instrumentation), and CSL backs off from them via `@ConditionalOnMissingBean`:
+  - Client Registration Repository (`InMemoryClientRegistrationRepository` -- a Spring Security class, registered by CSL by default): holds the OAuth2 client registrations (one per configured OIDC provider).
+  - OIDC Provider Repository (CSL): reads the OIDC provider configuration (issuer URIs, client credentials, additional JWKS URIs) from `SecurityConfiguration`.
+  - OAuth2AuthorizedClientRepository (`HttpSessionOAuth2AuthorizedClientRepository` -- a Spring Security class, registered by CSL by default): stores authorized client state in the HTTP session.
+  - OIDC Token Converter (CSL): converts Bearer JWTs (M2M) into a `CamundaAuthentication` (OIDC M2M only).
+  - OIDC User Converter (CSL): post-processes the OIDC user for the browser login flow. OC overrides it with `ProviderAwareOidcUserAuthenticationConverter` (`authentication/`) to pick the right converter per configured IdP — the OIDC counterpart to `BasicAuthUserDetailsAdapter` on the Basic auth path. Unlike the other beans in this list it extends a CSL class rather than replacing it, so it is listed among the [callback extension points](#callback-extension-points).
+- Claims Converter (CSL): converts token claims into a `CamundaAuthentication`; group, role, and tenant memberships come from OC's `MembershipPort` implementation.
+- Mapping Rules Processor (CSL): applies mapping rules to IdP claims, yielding roles, groups, tenants, and authorizations. The rules themselves are OC data, loaded via `MappingRuleServices`.
+- Authentication Provider (CSL): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
+- Session Repository (CSL): implements Spring Session's `SessionRepository` interface and manages server‑side sessions backed by secondary storage via the local `PersistentWebSessionClient` (`search/search-client`). Wired locally by `WebSessionRepositoryConfiguration` (`dist`) — so the repository is CSL's, but the storage behind it is OC's.
 
-Extern responsibilities:
+External responsibilities:
 
-- Spring Security (`OAuth2LoginAuthenticationFilter`, `BearerTokenAuthenticationFilter`): manages the OIDC authorization code flow and Bearer token validation. Important components there (not shown in the diagram):
-  - Jwt Decoder (`SupplierJwtDecoder`): decodes and validates Bearer JWT tokens; uses a single-provider decoder or an issuer-aware multi-provider decoder depending on the number of registered providers.
-  - Authorized Client Manager (`DefaultOAuth2AuthorizedClientManager`): manages OAuth2 authorized client state; supports the authorization code, refresh token, and client credentials flows (including `private_key_jwt` client authentication; see section 6.3.2 for customer-side client usage and section 6.3.3 for OC server-side OAuth client usage).
-  - OIDC User Service (`OidcUserService`): loads OIDC user details from the IdP's userinfo endpoint during browser login.
+- Spring Security (`OAuth2LoginAuthenticationFilter`, `BearerTokenAuthenticationFilter`): manages the OIDC authorization code flow and Bearer token validation, using stock Spring Security components not shown in the diagram — `SupplierJwtDecoder` (Bearer JWT decoding, single- or issuer-aware multi-provider), `DefaultOAuth2AuthorizedClientManager` (authorized client state for the authorization code, refresh token, and client credentials flows, including `private_key_jwt` — see [6.3.2](#632-oidc-with-private_key_jwt-client-authentication)), and `OidcUserService` (userinfo lookup during browser login).
 - OIDC IdP: issues ID tokens, access tokens, and JWKS for signature verification.
 - Camunda Services: provide access to role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include `RoleServices`, `GroupServices`, `TenantServices`, and `MappingRuleServices` (via `DefaultMembershipService`).
-- Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the WebSessionRepository to store the session.
+- Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the Session Repository to store the session.
 
 #### 5.2.2 Security - Level 2
 
 The Security building block provides authorization checks for REST queries executed via the Camunda Search Client.
-It implements the shared RBAC framework for data access control, ensuring that search results are filtered according to the caller's permissions.
+It builds the CSL security context for a query and adapts CSL's authorization decision into a search-engine filter, ensuring that search results are filtered according to the caller's permissions. The permission evaluation itself is owned by CSL, not by this module.
 
 ```mermaid
 ---
@@ -380,38 +476,38 @@ title: Security - Building Block
 flowchart TB
   subgraph SECURITY["Security"]
     SC_PROVIDER["Security Context Provider</br>(SecurityContextProvider)"]
-    AUTHZ_CHECKER["Authorization Checker</br>(DefaultResourceAccessProvider)"]
+    AUTHZ_CHECKER["Resource Access Provider</br>(DefaultResourceAccessProvider)"]
     RESOURCE_FILTER["Resource Filter Builder</br>(construct search filter)"]
-    PERMISSION_EVALUATOR["Permission Evaluator</br>(role and authorization lookup)"]
-
-    SC_PROVIDER --> AUTHZ_CHECKER
-    AUTHZ_CHECKER --> PERMISSION_EVALUATOR
-    PERMISSION_EVALUATOR --> RESOURCE_FILTER
   end
 
+  CSL_CHECKER["Authorization Check</br>(CSL)"]
   CAMUNDA_SERVICES["Camunda Services"]
   CAMUNDA_SEARCH_CLIENT["Camunda Search Client"]
   SECONDARY_DB[("Secondary Database</br>(ES / OS / RDBMS)")]
 
   CAMUNDA_SERVICES -->|"SecurityContext (CamundaAuthentication)"| SC_PROVIDER
+  SC_PROVIDER -->|"SecurityContext"| AUTHZ_CHECKER
   CAMUNDA_SEARCH_CLIENT -->|"query with auth context"| AUTHZ_CHECKER
+  AUTHZ_CHECKER -->|"delegates to"| CSL_CHECKER
+  CSL_CHECKER -->|"read authorizations, roles"| CAMUNDA_SEARCH_CLIENT
+  CSL_CHECKER --> RESOURCE_FILTER
   RESOURCE_FILTER -->|"enriched query with resource filter"| CAMUNDA_SEARCH_CLIENT
   CAMUNDA_SEARCH_CLIENT -->|"filtered query"| SECONDARY_DB
-  PERMISSION_EVALUATOR -->|"read authorizations, roles"| CAMUNDA_SEARCH_CLIENT
 ```
 
 Key responsibilities:
 
-- Security Context Provider (`SecurityContextProvider`): builds a `SecurityContext` combining the `CamundaAuthentication` with authorization requirements before a query is executed.
-- Authorization Checker (`DefaultResourceAccessProvider`): the concrete implementation of the `ResourceAccessProvider` interface; entry point for checking whether the caller is allowed to perform a given action on a resource type. It uses `AuthorizationChecker` and the `ResourcePropertyMatcherRegistry` to resolve access.
-- Permission Evaluator (`AuthorizationChecker`): resolves the effective permissions of a principal by combining direct authorizations and role‑based authorizations. It reads authorization and role data exclusively via the Camunda Search Client — it does not access the secondary database directly.
-- Resource Filter Builder: translates the effective permissions into a search‑engine filter that restricts query results to authorized resources only.
+- Security Context Provider (`SecurityContextProvider`): builds CSL's `SecurityContext` combining CSL's `CamundaAuthentication` with a `RequiredAuthorization`/`AuthorizationCondition` before a query is executed.
+- Resource Access Provider (`DefaultResourceAccessProvider`): OC's implementation of CSL's `ResourceAccessProvider`; entry point for checking whether the caller may perform a given action on a resource type. It hands the decision to CSL's authorization check and uses the local `ResourcePropertyMatcherRegistry` to resolve resource-property constraints.
+- Authorization Check (CSL): evaluates the caller's permissions. It reads authorization and role data exclusively through OC's `AuthorizationScopeRepositoryPort` implementation, which queries the Camunda Search Client — CSL never touches the secondary database directly.
+- Resource Filter Builder: translates the resulting permissions into a search‑engine filter that restricts query results to authorized resources only.
+- Physical-tenant scoping: CSL assembles one `AuthorizationCheckPort` per physical-tenant scope, wired locally by `WebAppAuthorizationCheckPortConfiguration` (`dist`); the local `TenantAwareAuthorizationCheckPort` selects the port matching the current request's scope. The `ResourceAccessProvider` side fans out the same way but through a type of OC's own: `ResourceAccessControllerConfiguration` (`dist`) builds one `DefaultResourceAccessProvider` per tenant, each over its own `SearchAuthorizationScopeRepository`, and the local `PhysicalTenantResourceAccessProvider` record selects between them — it is a registry keyed by physical tenant, not itself an implementation of CSL's `ResourceAccessProvider`. Services that hold the check directly rather than going through the data plane (`DocumentServices`, `SecretServices`) get a per-physical-tenant instance from OC's `AuthorizationCheckerFactory` (`security-services`), collected by `AuthorizationCheckerProvider` (`dist`). The engine path has no such fan-out (see [5.2.3](#523-engine-identity---level-2)).
 
 #### 5.2.3 Engine Identity - Level 2
 
-Engine Identity is the RBAC authorization engine embedded directly inside the Zeebe Engine.
+Engine Identity is the set of engine-side adapters that bridge Zeebe's RocksDB state to CSL's authorization and tenant ports.
 It intercepts engine commands (such as creating process instances or completing user tasks) and enforces authorization before the command is applied.
-It does not communicate with the external IdP directly.
+The authorization/tenant decision logic itself lives in CSL; this building block does not communicate with the external IdP directly.
 
 ```mermaid
 ---
@@ -419,37 +515,47 @@ title: Engine Identity - Building Block
 ---
 flowchart TB
   subgraph ENGINE_IDENTITY["Engine Identity"]
-    AUTHZ_BEHAVIOR["RBAC Authorization Engine</br>(AuthorizationCheckBehavior)"]
-    AUTHZ_REQUEST["Permission Check</br>(AuthorizationRequest)"]
-    TENANT_RESOLVER["Tenant Resolver</br>(TenantResolver)"]
-    CLAIMS_EXTRACTOR["Claims Extractor</br>(ClaimsExtractor)"]
+    AUTHZ_CHECK["Authorization Check</br>(CslAuthorizationCheck)"]
+    TENANT_CHECK["Tenant Check</br>(CslTenantCheck)"]
+    MEMBERSHIP_ADAPTER["Membership State Adapter</br>(MembershipStateAdapter)"]
+    SCOPE_ADAPTER["Authorization Scope State Adapter</br>(AuthorizationScopeStateAdapter)"]
+    REJECTION_MAPPER["Rejection Mapper</br>(AuthorizationRejectionMapper)"]
     STATE_CLASSES["State Classes</br>(ProcessingState, AuthorizationState,</br>MembershipState, MappingRuleState)"]
 
-    AUTHZ_BEHAVIOR --> AUTHZ_REQUEST
-    AUTHZ_BEHAVIOR --> TENANT_RESOLVER
-    AUTHZ_BEHAVIOR --> CLAIMS_EXTRACTOR
-    AUTHZ_BEHAVIOR --> STATE_CLASSES
-    CLAIMS_EXTRACTOR --> AUTHZ_REQUEST
-    TENANT_RESOLVER --> AUTHZ_REQUEST
+    AUTHZ_CHECK --> TENANT_CHECK
+    AUTHZ_CHECK --> MEMBERSHIP_ADAPTER
+    AUTHZ_CHECK --> SCOPE_ADAPTER
+    AUTHZ_CHECK --> REJECTION_MAPPER
+    MEMBERSHIP_ADAPTER --> STATE_CLASSES
+    SCOPE_ADAPTER --> STATE_CLASSES
   end
 
+  CSL_PORTS["Authorization / Tenant Check</br>(RequiredAuthorization, TenantAccess, CSL)"]
   ENGINE["Engine</br>(Zeebe command processing)"]
   PRIMARY_DB[("Primary Database (RocksDB)</br>(authorizations, roles, users)")]
 
-  ENGINE -->|"check authorization before applying command"| AUTHZ_BEHAVIOR
-  AUTHZ_REQUEST -->|"authorized / denied"| ENGINE
+  ENGINE -->|"check authorization before applying command"| AUTHZ_CHECK
+  AUTHZ_CHECK -->|"delegates to"| CSL_PORTS
+  TENANT_CHECK -->|"resolves TenantAccess via CSL claims resolver"| CSL_PORTS
+  REJECTION_MAPPER -->|"authorized / rejected"| ENGINE
   STATE_CLASSES -->|"read identity state"| PRIMARY_DB
 ```
 
 Key responsibilities:
 
-- RBAC Authorization Engine (`AuthorizationCheckBehavior`): main entry point; receives the command authentication context (derived from upstream `CamundaAuthentication`) and the requested resource + action, and decides whether to allow or deny the command. It does not read directly from RocksDB but instead delegates to the engine's State classes (`ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`), which abstract the underlying RocksDB storage.
-- Claims Extractor (`ClaimsExtractor`): extracts username, clientId, and groups from claims attached to the command authentication context in the authorization request.
-- Tenant Resolver (`TenantResolver`): resolves the set of tenants the principal is authorized for, using membership state and mapping rules read from primary storage via the State classes.
-- Permission Check (`AuthorizationRequest`): record holding the resource type, required permission, tenant ID, and property constraints for a single authorization check.
-- State classes (`ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`): abstract the RocksDB state access; `AuthorizationCheckBehavior` reads all identity state (authorizations, roles, memberships, mapping rules) through these classes.
+- Authorization Check (`CslAuthorizationCheck`): main entry point; receives the command authentication context (derived from upstream `CamundaAuthentication`) and a CSL `RequiredAuthorization` describing the requested resource and action, and decides whether to allow or deny the command by delegating to CSL's `AuthorizationCheckPort`. It does not read directly from RocksDB.
+- Tenant Check (`CslTenantCheck`): resolves the set of tenants the principal is authorized for as a CSL `TenantAccess`, using membership state and mapping rules read from primary storage via the adapters below. Replaces the previous local, identity-sense `TenantResolver` (unrelated to the physical-tenancy `PhysicalTenantResolver`, which still exists).
+- Membership State Adapter (`MembershipStateAdapter`): implements CSL's membership-lookup port, resolving username, clientId, and group/role/tenant memberships for the command's principal from the engine's State classes. Replaces the previous local `ClaimsExtractor`.
+- Authorization Scope State Adapter (`AuthorizationScopeStateAdapter`): implements CSL's `AuthorizationScopeRepositoryPort`, resolving the authorization scopes (permissions) granted to a principal from the engine's State classes.
+- Rejection Mapper (`AuthorizationRejectionMapper`): maps CSL's authorization/tenant rejections back to Zeebe's `Rejection` types.
+- State classes (`ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`): abstract the RocksDB state access; the adapters above read all identity state (authorizations, roles, memberships, mapping rules) through these classes.
+- `PermissionsBehavior` (top-level `processing/identity/`, not shown above): a separate, OC-owned behavior for command *processing* (e.g. applying permission-changing events), distinct from the authorization *check* gate described above.
 
 ## 6. Runtime view
+
+The sequence diagrams below are wide. On the Camunda Platform docs site (Docusaurus) they are easier to read [on GitHub](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md), which supports zooming.
+
+Component responsibilities are described once in [5.2 Building Blocks](#52-building-blocks). The flows below only list participants that section does not already cover.
 
 ### 6.1 User login
 
@@ -459,10 +565,10 @@ Scenario: human user logs into Operate or Tasklist using username and password (
 
 1. Browser navigates to a cluster UI (for example Operate).
 2. Spring Security redirects the browser to the built-in login form.
-3. User submits credentials; Spring Security delegates to Token Converter (`UsernamePasswordAuthenticationTokenConverter`).
-4. The converter loads the user entity, roles, and tenants via Camunda Services (which queries the Secondary Database through the Camunda Search Client) — no external IdP is involved.
-5. `DefaultCamundaAuthenticationProvider` creates a `CamundaAuthentication` object
-6. `WebSessionRepository` stores the session in secondary storage
+3. User submits credentials; Spring Security delegates to the Basic Auth Converter (CSL).
+4. The converter verifies the credentials via `BasicAuthUserDetailsAdapter` and resolves roles and tenants via CSL's `MembershipPort`, both backed by Camunda Services (which queries the Secondary Database through the Camunda Search Client) — no external IdP is involved.
+5. CSL's Authentication Provider creates a `CamundaAuthentication` object
+6. The Session Repository stores the session in secondary storage
 7. Subsequent requests are authenticated via the session.
 
 ```mermaid
@@ -475,7 +581,7 @@ sequenceDiagram
     participant SPRING_SECURITY as Spring Security
     participant AUTH_CONVERTERS as Auth Converters
     participant AUTHN_PROVIDER as Authentication Provider
-    participant SESSION as WebSessionRepository
+    participant SESSION as Session Repository
     participant CAMUNDA_SERVICES as Camunda Services
   end
   box External
@@ -501,13 +607,6 @@ sequenceDiagram
   UI-->>USER: Dashboard rendered
 ```
 
-Participants:
-
-* Spring Security: Manages the authentication process and redirects to the login form. (`UsernamePasswordAuthenticationFilter`)
-* Auth Converter: Converts credentials and resolves claims to build a `CamundaAuthentication`. (`UsernamePasswordAuthenticationTokenConverter`)
-* Authentication Provider: Bridges Spring Security to the Camunda authentication context. (`DefaultCamundaAuthenticationProvider`)
-* Camunda Services: Service that provides access to Camunda Search Client (secondary database). (via UserServices, RoleServices, GroupServices, TenantServices )
-
 #### 6.1.2 OIDC
 
 Scenario: human user logs into Operate or Tasklist via OIDC.
@@ -517,8 +616,6 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 3. IdP authenticates the user and returns ID/access tokens.
 4. Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.
 5. Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](references/rp-initiated-logout.md).
-
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
 
 ```mermaid
 sequenceDiagram
@@ -568,45 +665,13 @@ sequenceDiagram
   UI-->>USER: Dashboard rendered
 ```
 
-Participants:
-
-* Spring Security: Manages the OIDC authorization code flow and redirects to the IdP. (`OAuth2LoginAuthenticationFilter`)
-* User & Claims Converter: Post-processes OIDC tokens, extracts claims, and resolves membership data via Camunda Services. (`OidcUserAuthenticationConverter` -> `TokenClaimsConverter`)
-* Mapping Rules Processor: Evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations. (`MappingRuleMatcher`)
-* Authentication Provider: Bridges Spring Security to the Camunda authentication context. (`DefaultCamundaAuthenticationProvider`)
-* Session Repository: Creates and invalidates server-side sessions backed by secondary storage. (`WebSessionRepository`)
-* Camunda Services: Provides access to role, group, tenant, and mapping rule data via the Camunda Search Client. (`RoleServices`, `GroupServices`, `TenantServices`, `MappingRuleServices`)
-
 ### 6.2 User logout
 
 #### 6.2.1 Basic Auth
 
-Scenario: human user logs out of a cluster UI when authenticated with Basic Auth.
-Since no external IdP session was established, logout only invalidates the local server‑side session.
-No RP‑initiated logout or IdP interaction is performed.
-
-1. User clicks Logout in the UI.
-2. The UI sends a logout request to Spring Security (`LogoutFilter`).
-3. Spring Security invokes `WebSessionRepository` to invalidate the current session.
-4. Spring Security redirects the browser back to the login form.
-
-```mermaid
-sequenceDiagram
-  actor USER as User (Browser)
-  box UI
-    participant UI as Camunda Web UI<br/>(Operate / Tasklist)
-  end
-  box Orchestration Cluster
-    participant SPRING_SECURITY as Spring Security<br/>(LogoutFilter)
-    participant SESSION as WebSessionRepository
-  end
-
-  USER->>UI: Click Logout
-  UI->>SPRING_SECURITY: Logout<br>request
-  SPRING_SECURITY->>SESSION: Invalidate local<br>session
-  SESSION-->>SPRING_SECURITY: Session removed
-  SPRING_SECURITY-->>USER: Redirect to login form
-```
+Since no external IdP session was established, logout only invalidates the local server-side session:
+Spring Security's `LogoutFilter` invokes the Session Repository to drop the session, then redirects
+the browser back to the login form. No RP-initiated logout or IdP interaction is involved.
 
 #### 6.2.2 OIDC
 
@@ -615,8 +680,8 @@ Logout involves both local session invalidation and RP‑initiated logout to pro
 
 1. User clicks Logout in the UI.
 2. The UI sends a logout request to Spring Security (`LogoutFilter`).
-3. Spring Security invokes `WebSessionRepository` to invalidate the local session.
-4. `CamundaOidcLogoutSuccessHandler` redirects the browser to the IdP's end-session endpoint (RP-initiated logout), including a `logout_hint`.
+3. Spring Security invokes the Session Repository to invalidate the local session.
+4. CSL's logout success handler redirects the browser to the IdP's end-session endpoint (RP-initiated logout), including a `logout_hint`.
 5. The IdP invalidates the SSO session and redirects the browser to the configured post-logout URL.
 6. The `PostLogoutController` validates and resolves the post-logout redirect URI, then redirects the browser to the application login page.
 
@@ -653,9 +718,9 @@ sequenceDiagram
 Participants:
 
 * Spring Security: Intercepts the logout request and triggers session invalidation. (`LogoutFilter`)
-* Session Repository: Invalidates the local server-side session. (`WebSessionRepository`)
-* Logout Handler: Triggers RP-initiated logout and redirects to the IdP end-session endpoint. (`CamundaOidcLogoutSuccessHandler`)
-* Post-Logout Controller: Validates and resolves the post-logout redirect URI. (`PostLogoutController`)
+* Session Repository: Invalidates the local server-side session. (CSL)
+* Logout Handler: Triggers RP-initiated logout and redirects to the IdP end-session endpoint. (CSL)
+* Post-Logout Controller: Validates and resolves the post-logout redirect URI. (`PostLogoutController`, local — `authentication/`)
 
 ### 6.3. Machine‑to‑machine access
 
@@ -665,9 +730,7 @@ Scenario: worker or backend service calls REST APIs using an OIDC JWT Bearer Tok
 1. Service acquires a JWT from the external IdP via the client credentials grant.
 2. It sends the token as a `Bearer` header on each REST request.
 3. Spring Security (`BearerTokenAuthenticationFilter`) validates the token signature via the IdP's JWKS endpoint — no local credential storage needed.
-4. `OidcTokenAuthenticationConverter` and `TokenClaimsConverter` extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.
-
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
+4. CSL's OIDC Token Converter and Claims Converter extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.
 
 ```mermaid
 sequenceDiagram
@@ -705,31 +768,29 @@ sequenceDiagram
   SPRING_SECURITY-->>REST: Authorized request<br>continues
 ```
 
-Participants:
-
-* Spring Security: Validates the Bearer JWT token signature via the IdP's JWKS endpoint. (`BearerTokenAuthenticationFilter`)
-* Auth Converters: Converts JWT to a `CamundaAuthentication` and extracts client claims. (`OidcTokenAuthenticationConverter`, `TokenClaimsConverter`)
-* Mapping Rules Processor: Evaluates JSONPath mapping rules against IdP claims. (`MappingRuleMatcher`)
-* Camunda Services: Provides access to mapping rule data. (`RoleServices`, `GroupServices`, `TenantServices`, `MappingRuleServices`)
-
-#### 6.3.2 OIDC with private_key_jwt client authentication (customer-side Camunda client)
+#### 6.3.2 OIDC with private_key_jwt client authentication
 
 > **Available since**: Camunda 8.8 clients (issue [#36971](https://github.com/camunda/camunda/issues/36971)).
 
-Scenario: a customer-side Camunda client (for example a Java worker) requests an access token from the IdP using OAuth2 client credentials and authenticates with `private_key_jwt` (`client_assertion`) instead of `client_secret`. The resulting access token is then used as a Bearer token when calling OC APIs.
+`private_key_jwt` replaces the shared `client_secret` with a JWT **client assertion** signed by the
+client's private key. The private key is never transmitted.
 
-**OC Configuration**: OC must run in OIDC mode (`camunda.security.authentication.method=oidc`) so that incoming Bearer tokens are validated via OIDC/JWKS as described in [6.3.1](#631-bearer-token--oidc). No additional OC setting is required specifically for the customer client's `private_key_jwt` choice.
+Two separate OAuth clients can use it independently, and conflating them is the usual source of
+confusion:
 
-Important distinction: the JWT sent to the IdP token endpoint here is the OAuth **client assertion** (`client_assertion`), signed by the client's private key. The private key itself is never transmitted. This client assertion is separate from the access token that is later sent to OC as `Authorization: Bearer ...`.
+|                 Which client                 |                                                                                                                    Configured by                                                                                                                     |
+|----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Customer-side Camunda client (e.g. a worker) | The client itself, via its `OAuthCredentialsProvider`. OC needs no setting for this beyond running in OIDC mode                                                                                                                                      |
+| OC as an OAuth client towards the IdP        | `camunda.security.authentication.oidc.clientAuthenticationMethod=private_key_jwt` plus `oidc.assertion.keystore.*` (path, password, keyAlias, keyPassword) and the optional `assertion.kidSource` / `kidDigestAlgorithm` / `kidEncoding` / `kidCase` |
 
-Flow:
+In many enterprise environments both are set to `private_key_jwt`, but they are technically separate
+OAuth clients and can be configured differently.
 
-1. A worker/service in the customer system uses the Camunda client OAuth credentials provider to request a token from the IdP token endpoint.
-2. The client builds a signed JWT client assertion and includes it in the token request as `client_assertion=<signed JWT>` + `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer` (plus `client_id` and `grant_type=client_credentials`).
-3. The IdP validates the assertion signature using the registered public key / certificate for that OAuth client.
-4. The IdP returns an access token to the client.
-5. The worker sends API requests to OC with `Authorization: Bearer <access_token>`.
-6. OC (`Gateway Rest` + Spring Security) validates the Bearer token and continues with the normal OIDC conversion and mapping flow from [6.3.1](#631-bearer-token--oidc).
+**Important distinction:** the JWT sent to the IdP token endpoint is the client assertion
+(`client_assertion`). It is *not* the access token that is later sent to OC as
+`Authorization: Bearer ...`.
+
+The customer-side flow — the one that gets configured most often:
 
 ```mermaid
 sequenceDiagram
@@ -758,105 +819,31 @@ sequenceDiagram
   REST-->>WORKER: Request proceeds
 ```
 
-Participants:
+From the Bearer token onwards this is the normal OIDC path from [6.3.1](#631-bearer-token--oidc).
 
-* `Worker / Service`: initiates API calls and gets access tokens via the client credentials provider in the customer system.
-* `Camunda Client` (`OAuthCredentialsProvider`): requests tokens from the IdP and, for `private_key_jwt`, sends `client_assertion` and `client_assertion_type` instead of `client_secret`.
-* OIDC IdP: validates the client assertion signature against the registered public key/certificate and issues access tokens.
-* `Gateway Rest`: receives the API request with Bearer token and delegates authentication/authorization to Spring Security.
-* Spring Security: validates incoming Bearer tokens and continues with standard OIDC-to-`CamundaAuthentication` conversion and mapping.
+On the OC side, when OC itself authenticates to the IdP token endpoint (authorization code exchange,
+refresh, or an OC-initiated client credentials flow), three parties are involved and it is worth
+keeping them apart:
 
-#### 6.3.3 OIDC with private_key_jwt client authentication (OC server-side OAuth client)
+- **CSL** loads OC's private key and certificate from the configured keystore and builds the JSON Web
+  Key, including `kid` and `x5t#S256`.
+- **OC** wires that key into the token endpoint. `OidcTokenEndpointCustomizer` (`authentication/`)
+  implements CSL's SPI of the same name — it is one of the [callback extension
+  points](#callback-extension-points) — constructs the converter below, and caches the resolved JWK
+  per client registration.
+- **Spring Security's** `NimbusJwtClientAuthenticationParametersConverter` signs the assertion and
+  attaches it to the token request.
 
-Scenario: OC itself acts as an OAuth client in OIDC mode for token-endpoint interactions (for example, authorization code exchange, refresh token flow, or OC-initiated client credentials flow). For this OC-side client authentication to the IdP, OC can use either `client_secret_basic` or `private_key_jwt`.
+#### 6.3.3 Basic Auth
 
-This is independent of the customer-side Camunda client setting in [6.3.2](#632-oidc-with-private_key_jwt-client-authentication-customer-side-camunda-client). In many enterprise environments both are configured to `private_key_jwt`, but technically they are separate OAuth clients and can be configured differently.
-
-Configured via (OC-side):
-
-- `camunda.security.authentication.oidc.clientAuthenticationMethod=private_key_jwt`
-- `camunda.security.authentication.oidc.assertion.keystore.*` (path, password, keyAlias, keyPassword)
-- Optional `assertion.kidSource`, `assertion.kidDigestAlgorithm`, `assertion.kidEncoding`, `assertion.kidCase`
-
-Flow:
-
-1. OC (Spring Security OAuth client stack) needs to call the IdP token endpoint.
-2. `AssertionJwkProvider` loads the OC private key and certificate and builds a JSON Web Key (JWK) (including `kid` and `x5t#S256`).
-3. `NimbusJwtClientAuthenticationParametersConverter` creates a signed `client_assertion` JWT.
-4. OC sends token request with `client_assertion` and `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`.
-5. IdP validates the assertion and returns tokens.
-
-```mermaid
-sequenceDiagram
-  box Orchestration Cluster
-    participant SPRING_SECURITY as Spring Security
-    participant ASSERTION as AssertionJwkProvider
-    participant CONV as NimbusJwtClientAuthenticationParametersConverter
-  end
-  box External
-    participant IDP as OIDC IdP
-  end
-
-  SPRING_SECURITY->>ASSERTION: Load private key/cert from keystore
-  ASSERTION-->>SPRING_SECURITY: JSON Web Key (JWK)
-  SPRING_SECURITY->>CONV: Build signed client_assertion JWT
-  CONV-->>SPRING_SECURITY: client_assertion
-  SPRING_SECURITY->>IDP: Token request + client_assertion
-  IDP->>IDP: Validate client assertion
-  IDP-->>SPRING_SECURITY: Token response
-```
-
-Participants:
-
-* Spring Security: orchestrates OC-side OAuth client calls to the IdP token endpoint.
-* `AssertionJwkProvider`: loads key material and builds a JSON Web Key (JWK) for signing assertions.
-* `NimbusJwtClientAuthenticationParametersConverter`: builds and injects the signed `client_assertion`.
-* OIDC IdP: validates OC's client assertion and issues tokens.
-
-#### 6.3.4 Basic Auth
-
-Scenario: worker or backend service calls REST APIs using a username and password via HTTP Basic authentication.
+Scenario: worker or backend service calls REST APIs using a clientId and secret via HTTP Basic authentication.
 No external IdP is involved; credentials are verified directly against Identity entities stored in the Secondary Database.
 
-1. Service sends a `Basic <base64(username:password)>` header on each REST request.
-2. Spring Security (`UsernamePasswordAuthenticationFilter`) delegates to `UsernamePasswordAuthenticationTokenConverter`.
-3. The converter loads the client entity and its roles and tenants from the Secondary Database via Camunda Services.
-4. `TokenClaimsConverter` and `DefaultCamundaAuthenticationProvider` build a `CamundaAuthentication` and the request is authorized.
-
-```mermaid
-sequenceDiagram
-  box Customer System
-    participant WORKER as Worker / Service
-  end
-  box Orchestration Cluster
-    participant REST as Gateway Rest
-    participant SPRING_SECURITY as Spring Security
-    participant AUTH_CONVERTERS as Auth Converters
-    participant AUTHN_PROVIDER as Authentication Provider
-    participant CAMUNDA_SERVICES as Camunda Services
-  end
-  box External
-    participant SECONDARY_DB as Secondary Database
-  end
-
-  WORKER->>REST: API request + Basic auth<br>(clientId:secret)
-  REST->>SPRING_SECURITY: Authenticate Basic<br>credentials
-  SPRING_SECURITY->>AUTH_CONVERTERS: Convert credentials to<br>CamundaAuthentication
-  AUTH_CONVERTERS->>CAMUNDA_SERVICES: Load client entity by<br>clientId (roles, tenants)
-  CAMUNDA_SERVICES->>SECONDARY_DB: Query client entity,<br>roles, tenants
-  SECONDARY_DB-->>CAMUNDA_SERVICES: Client entity,<br>roles, tenants
-  CAMUNDA_SERVICES-->>AUTH_CONVERTERS: Client entity,<br>roles, tenants
-  AUTH_CONVERTERS->>AUTHN_PROVIDER: Build<br>CamundaAuthentication
-  AUTHN_PROVIDER-->>SPRING_SECURITY: Client principal<br>authenticated
-  SPRING_SECURITY-->>REST: Authorized request<br>continues
-```
-
-Participants:
-
-* Spring Security: Extracts Basic auth credentials from the request. (`UsernamePasswordAuthenticationFilter`)
-* Auth Converters: Converts clientId/secret credentials and builds claims for `CamundaAuthentication`. (`UsernamePasswordAuthenticationTokenConverter`, `TokenClaimsConverter`)
-* Authentication Provider: Bridges Spring Security to the Camunda authentication context. (`DefaultCamundaAuthenticationProvider`)
-* Camunda Services: Loads the client entity, roles, and tenants. (`UserServices`, `RoleServices`, `GroupServices`, `TenantServices`)
+The mechanism is the same as the Basic Auth browser login in [6.1.1](#611-basic-auth), minus the login
+form and the session: the service sends a `Basic` header on every request, and CSL's Basic Auth
+Converter verifies the credentials through OC's `BasicAuthUserDetailsAdapter` and resolves roles and
+tenants through OC's `MembershipPort` implementation, both backed by Camunda Services. Because each
+request carries its own credentials, no server-side session is created.
 
 ### 6.4 Sending a command via REST
 
@@ -865,12 +852,10 @@ Scenario: a client starts a process instance via the REST API; the Zeebe Engine 
 1. Client sends a `POST /v2/process-instances` request with a valid credential (session cookie, Basic auth header, or JWT bearer token).
 2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
 3. The REST API delegates to Camunda Services, which issues a `CreateProcessInstance` command to the Zeebe Engine together with the resolved authentication context (claims and principal data from `CamundaAuthentication`).
-4. Before applying the command, the Engine calls `AuthorizationCheckBehavior` with an `AuthorizationRequest` for the `PROCESS_DEFINITION:CREATE_PROCESS_INSTANCE` permission. Engine Identity performs this check against local engine state and does not call the external IdP.
-5. `AuthorizationCheckBehavior` reads the principal's authorizations and role memberships from the Primary Database (RocksDB) via the State classes (`ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`).
+4. Before applying the command, the Engine calls `CslAuthorizationCheck` with a CSL `RequiredAuthorization` for the `PROCESS_DEFINITION:CREATE_PROCESS_INSTANCE` permission. Engine Identity performs this check against local engine state and does not call the external IdP.
+5. `CslAuthorizationCheck` delegates to CSL's `AuthorizationCheckPort`. The data CSL needs is supplied by the engine's two port implementations, `AuthorizationScopeStateAdapter` and `MembershipStateAdapter`, which read from RocksDB via the engine's State classes.
 6. If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.
 7. Camunda Services returns a `CreateProcessInstanceResponse` and the REST API responds with `200 OK` containing the process instance key.
-
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
 
 ```mermaid
 sequenceDiagram
@@ -893,7 +878,7 @@ sequenceDiagram
   SPRING_SECURITY-->>REST: CamundaAuthentication principal
   REST->>CAMUNDA_SERVICES: CreateProcessInstance command +<br>CamundaAuthentication context
   CAMUNDA_SERVICES->>ENGINE: Issue command + authentication<br>claims/context
-  ENGINE->>ENGINE_AUTHZ: Check PROCESS_DEFINITION:<br>CREATE_PROCESS_INSTANCE (AuthorizationRequest)
+  ENGINE->>ENGINE_AUTHZ: Check PROCESS_DEFINITION:<br>CREATE_PROCESS_INSTANCE (RequiredAuthorization)
   ENGINE_AUTHZ->>PRIMARY_DB: Read identity state<br>(authorizations, memberships)
   PRIMARY_DB-->>ENGINE_AUTHZ: Authorization entries
   ENGINE_AUTHZ-->>ENGINE: Permission granted
@@ -904,10 +889,6 @@ sequenceDiagram
   REST-->>CLIENT: 200 OK with<br>process instance key
 ```
 
-Participants:
-
-* Engine Authorization: Enforces RBAC and accesses authorization state before commands are applied. (`AuthorizationCheckBehavior`, `ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`)
-
 ### 6.5 Reading resources via REST
 
 Scenario: a client queries process instances via the REST API; the Camunda Search Client uses Security (`DefaultResourceAccessProvider`) to filter results to authorized resources only.
@@ -916,13 +897,11 @@ Scenario: a client queries process instances via the REST API; the Camunda Searc
 2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
 3. The REST API delegates to Camunda Services, which builds a `SecurityContext` (via `SecurityContextProvider`) combining the principal with the required authorization context.
 4. Camunda Services invokes the Camunda Search Client with the `SecurityContext`.
-5. Before executing the search query, the Camunda Search Client calls `DefaultResourceAccessProvider` to determine the caller's effective permissions.
-6. `DefaultResourceAccessProvider` reads the principal's authorizations and roles from the Secondary Database via the Camunda Search Client itself (no direct DB access).
+5. Before executing the search query, the Camunda Search Client calls `DefaultResourceAccessProvider` (implementing CSL's `ResourceAccessProvider` port) to determine the caller's effective permissions.
+6. `DefaultResourceAccessProvider` hands the decision to CSL's authorization check, which reads what it needs through the `AuthorizationScopeRepositoryPort` implementation backed by the Camunda Search Client — CSL never queries the database directly.
 7. The resolved permissions are translated into a resource filter (e.g. restricting results to specific process definition keys or tenants) and applied to the search query.
 8. The Camunda Search Client executes the filtered query against the Secondary Database and returns the results.
-9. Camunda Services returns a `SearchProcessInstancesResponse` and the REST API responds with `200 OK` containing the filtered process instances.
-
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
+9. Camunda Services returns a `SearchQueryResult<ProcessInstanceEntity>` and the REST API responds with `200 OK` containing the filtered process instances.
 
 ```mermaid
 sequenceDiagram
@@ -961,24 +940,27 @@ sequenceDiagram
   REST-->>CLIENT: 200 OK with<br>process instances
 ```
 
-Participants:
+### 6.6 Creating an identity entity
 
-* Security Context Provider: Combines the `CamundaAuthentication` with authorization requirements before a query is executed. (`SecurityContextProvider`)
-* Resource Access Provider: Determines the caller's effective permissions and constructs a resource filter for the search query. (`DefaultResourceAccessProvider`)
+Scenario: an administrator creates a new identity entity via the REST API. The Engine authorizes and
+applies the command, writes it to the Primary Database, and the Exporter propagates it asynchronously
+to the Secondary Database so it becomes searchable.
 
-### 6.6 Creating a new user
+Creating a user and creating an authorization follow the same path, differing only in the command,
+the required permission, and the state class that persists the record:
 
-Scenario: an administrator creates a new user via the REST API; the command is applied by the Engine, written to the Primary Database via State classes, and then asynchronously propagated to the Secondary Database by the Exporter.
+|    Entity     |          Request          |        Command        |  Required permission   |        Persisted by         |
+|---------------|---------------------------|-----------------------|------------------------|-----------------------------|
+| User          | `POST /v2/users`          | `CreateUser`          | `USER:CREATE`          | `MutableMembershipState`    |
+| Authorization | `POST /v2/authorizations` | `CreateAuthorization` | `AUTHORIZATION:CREATE` | `MutableAuthorizationState` |
 
-1. Client sends a `POST /v2/users` request with a valid credential and the new user's details (username, password, name, email).
+1. Client sends the request with a valid credential and the entity's details.
 2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
-3. The REST API delegates to `UserServices` (part of Camunda Services), which issues a `CreateUser` command to the Zeebe Engine.
-4. Before applying the command, the Engine enforces RBAC via `AuthorizationCheckBehavior`, verifying the principal holds the `USER:CREATE` permission by reading from `AuthorizationState` / `MembershipState` via the Primary Database.
-5. The Engine applies the command: `MutableMembershipState` (and related State classes) persist the new user record to the Primary Database (RocksDB).
-6. The Engine returns a command acknowledgement and `UserServices` returns the created user to the REST API, which responds with `201 Created` and the new user key.
-7. Asynchronously, the Camunda or Rdbms Exporter picks up the `UserCreated` event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.
-
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
+3. The REST API delegates to Camunda Services (`UserServices` / `AuthorizationServices`), which issues the command to the Zeebe Engine.
+4. Before applying the command, the Engine checks the required permission via `CslAuthorizationCheck`, which reads authorization and membership state from the Primary Database.
+5. Once the check passes, the Engine applies the command and the corresponding mutable state class persists the record to RocksDB. Note that the authorization check is a gate only — it neither applies commands nor writes state (see [5.2.3](#523-engine-identity---level-2)).
+6. The Engine acknowledges the command and the REST API responds with `201 Created` and the new entity key.
+7. Asynchronously, the Camunda or RDBMS Exporter picks up the resulting event and writes the record to the Secondary Database.
 
 ```mermaid
 sequenceDiagram
@@ -998,90 +980,28 @@ sequenceDiagram
     participant SECONDARY_DB as Secondary Database
   end
 
-  CLIENT->>REST: POST /v2/users<br>(create user)
+  CLIENT->>REST: POST /v2/users or<br>/v2/authorizations
   REST->>SPRING_SECURITY: Authenticate and<br>authorize request
   SPRING_SECURITY-->>REST: CamundaAuthentication principal
-  REST->>CAMUNDA_SERVICES: CreateUser<br>command
-  CAMUNDA_SERVICES->>ENGINE: Issue CreateUser<br>command
-  ENGINE->>ENGINE_AUTHZ: Check USER:CREATE<br>(AuthorizationRequest)
+  REST->>CAMUNDA_SERVICES: Create command
+  CAMUNDA_SERVICES->>ENGINE: Issue command
+  ENGINE->>ENGINE_AUTHZ: Check USER:CREATE /<br>AUTHORIZATION:CREATE
   ENGINE_AUTHZ->>PRIMARY_DB: Read authorization/<br>membership state
   PRIMARY_DB-->>ENGINE_AUTHZ: Authorization entries
   ENGINE_AUTHZ-->>ENGINE: Permission granted
-  ENGINE->>ENGINE_AUTHZ: Apply CreateUser<br>command
-  ENGINE_AUTHZ->>PRIMARY_DB: Write new user to<br>membership state
-  PRIMARY_DB-->>ENGINE_AUTHZ: State written
-  ENGINE_AUTHZ-->>ENGINE: Command applied
-  ENGINE-->>CAMUNDA_SERVICES: UserCreated<br>event / key
-  CAMUNDA_SERVICES-->>REST: CreateUser<br>Response
-  REST-->>CLIENT: 201 Created with<br>user key
-  ENGINE-->>EXPORTER: UserCreated event<br>(async)
-  EXPORTER->>SECONDARY_DB: Persist user
-  SECONDARY_DB-->>EXPORTER: Persisted user
+  ENGINE->>PRIMARY_DB: Apply command, write<br>new entity to state
+  PRIMARY_DB-->>ENGINE: State written
+  ENGINE-->>CAMUNDA_SERVICES: Created event / key
+  CAMUNDA_SERVICES-->>REST: Create response
+  REST-->>CLIENT: 201 Created with<br>entity key
+  ENGINE-->>EXPORTER: Created event<br>(async)
+  EXPORTER->>SECONDARY_DB: Persist entity
+  SECONDARY_DB-->>EXPORTER: Persisted entity
 ```
 
 Participants:
 
-* Engine Authorization: Enforces RBAC and accesses authorization/membership state before commands are applied. (`AuthorizationCheckBehavior`, `AuthorizationState`, `MembershipState`, `MappingRuleState`)
-* Camunda Services: Issues the `CreateUser` command and returns the result. (`UserServices`)
-* Exporter: Asynchronously propagates applied events to the secondary database. (`CamundaExporter` / `RdbmsExporter`)
-
-### 6.7 Creating a new authorization
-
-Scenario: an administrator creates a new authorization (permission grant) via the REST API; the Engine applies and persists it to the Primary Database, and the Exporter propagates it asynchronously to the Secondary Database.
-
-1. Client sends a `POST /v2/authorizations` request with a valid credential and the authorization details (owner, resource type, resource id, permissions).
-2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
-3. The REST API delegates to `AuthorizationServices` (part of Camunda Services), which issues a `CreateAuthorization` command to the Zeebe Engine.
-4. Before applying the command, the Engine enforces RBAC via `AuthorizationCheckBehavior`, verifying the principal holds the `AUTHORIZATION:CREATE` permission by reading from `AuthorizationState` / `MembershipState` via the Primary Database.
-5. The Engine applies the command: `MutableAuthorizationState` persists the new authorization record to the Primary Database (RocksDB).
-6. The Engine returns a command acknowledgement and `AuthorizationServices` returns the created authorization to the REST API, which responds with `201 Created` and the new authorization key.
-7. Asynchronously, the Camunda or RDBMS Exporter picks up the `AuthorizationCreated` event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.
-
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
-
-```mermaid
-sequenceDiagram
-  box Customer System
-    participant CLIENT as Client
-  end
-  box Orchestration Cluster
-    participant REST as Gateway Rest
-    participant SPRING_SECURITY as Spring Security
-    participant CAMUNDA_SERVICES as Camunda Services
-    participant ENGINE as Engine
-    participant ENGINE_AUTHZ as Engine Authorization
-    participant EXPORTER as Exporter
-  end
-  box External
-    participant PRIMARY_DB as Primary Database
-    participant SECONDARY_DB as Secondary Database
-  end
-
-  CLIENT->>REST: POST /v2/authorizations<br>(create authorization)
-  REST->>SPRING_SECURITY: Authenticate and<br>authorize request
-  SPRING_SECURITY-->>REST: CamundaAuthentication principal
-  REST->>CAMUNDA_SERVICES: CreateAuthorization<br>command
-  CAMUNDA_SERVICES->>ENGINE: Issue CreateAuthorization<br>command
-  ENGINE->>ENGINE_AUTHZ: Check AUTHORIZATION:CREATE<br>(AuthorizationRequest)
-  ENGINE_AUTHZ->>PRIMARY_DB: Read authorization/<br>membership state
-  PRIMARY_DB-->>ENGINE_AUTHZ: Authorization entries
-  ENGINE_AUTHZ-->>ENGINE: Permission granted
-  ENGINE->>ENGINE_AUTHZ: Apply CreateAuthorization<br>command
-  ENGINE_AUTHZ->>PRIMARY_DB: Write new authorization<br>to state
-  PRIMARY_DB-->>ENGINE_AUTHZ: State written
-  ENGINE_AUTHZ-->>ENGINE: Command applied
-  ENGINE-->>CAMUNDA_SERVICES: AuthorizationCreated<br>event / key
-  CAMUNDA_SERVICES-->>REST: CreateAuthorization<br>Response
-  REST-->>CLIENT: 201 Created with<br>authorization key
-  ENGINE-->>EXPORTER: AuthorizationCreated event<br>(async)
-  EXPORTER->>SECONDARY_DB: Persist authorization
-  SECONDARY_DB-->>EXPORTER: Persisted authorization
-```
-
-Participants:
-
-* Engine Authorization: Enforces RBAC and accesses authorization/membership state before commands are applied. (`AuthorizationCheckBehavior`, `AuthorizationState`, `MembershipState`, `MappingRuleState`)
-* Camunda Services: Issues the `CreateAuthorization` command and returns the result. (`AuthorizationServices`)
+* Engine Authorization: Gates the command on the required permission before it is applied. (`CslAuthorizationCheck`, CSL `AuthorizationCheckPort`, `AuthorizationState`, `MembershipState`)
 * Exporter: Asynchronously propagates applied events to the secondary database. (`CamundaExporter` / `RdbmsExporter`)
 
 ## 7. Deployment view
@@ -1174,6 +1094,16 @@ The architectural decisions for Identity are documented as individual ADR files:
 - [ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding](./adr/0005-support-forward-slashes-in-entity-ids.md)
 - [ADR-0006: UserInfo Claim Augmentation for Bearer Tokens](./adr/0006-userinfo-claim-augmentation-for-bearer-tokens.md)
 
+Cross-cutting decisions on the CSL migration (affecting Identity along with other modules) are
+documented at the repo-root level rather than here:
+
+- [ADR: Endpoint Required-Permission Mapping](https://github.com/camunda/camunda/blob/main/docs/adr/security/001-endpoint-required-permission-mapping.md)
+- [ADR: Tenant Access Provider Ownership and Seam](https://github.com/camunda/camunda/blob/main/docs/adr/security/002-tenant-access-provider-ownership-and-seam.md)
+- [ADR: Physical-Tenant Routing of Authorization Reads](https://github.com/camunda/camunda/blob/main/docs/adr/orchestration-cluster/0005-physical-tenant-routing-of-authorization-reads.md) -- the background for the per-physical-tenant `AuthorizationCheckPort` scoping described in [5.2.2](#522-security---level-2).
+
+No dedicated ADR records the decision to adopt CSL itself; that predates these two and is not
+tracked in `identity/docs/adr/` or `docs/adr/`.
+
 ## 10. Risks and technical debt
 
 Migration complexity and failure modes
@@ -1182,19 +1112,26 @@ Migration complexity and failure modes
 Dual identity model during transition
 :   Management Identity remains for Web Modeler, Console, and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime. Risk of confusion about the source of truth and duplicated configuration until long‑term consolidation is complete.
 
+Cross-repo coupling to the Camunda Security Library
+:   The authorization and authentication decisions themselves, the boundary types they are expressed in (`CamundaAuthentication`, `SecurityContext`, `RequiredAuthorization`, `TenantAccess`), and the Spring Security filter chain assembly now live in the separately-versioned [camunda-security-library](https://github.com/camunda/camunda-security-library) repo rather than in this codebase. Changes to authorization/authentication behavior can originate from a CSL release bump (`version.camunda-security-library` in `parent/pom.xml`) rather than from a change in this repo. The two risks that follow from that are different, and only one of them is now controlled:
+
+- *The inventory* in [5.1](#csl-extension-points-and-ocs-adapters) is verifiable. Every entry is a type OC implements or extends, so it can be regenerated from the tree: sweep the non-test sources that import `io.camunda.security.*` and resolve each type declaration's `implements`/`extends` clause against that file's imports, then diff against the tables. Run it after a version bump. Discount four things or it will report false positives — generic type *parameters* (`implements PhysicalTenantScoped<ResourceAccessProvider>` is not a row for `ResourceAccessProvider`), generic *arguments* on an unrelated supertype (`ScopeCacheLoader extends CacheLoader<…, Set<AuthorizationScope>>` is not a row for `AuthorizationScope`), Optimize's separate CSL wiring, and fully-qualified `implements` clauses with no matching import, which any import-driven sweep misses.
+- *Behavior* is not verifiable this way. A CSL release can change how a decision is reached without changing a single signature OC declares, and nothing in this repo will show it. The prose describing CSL's role — as opposed to the names in the tables — can therefore go stale silently, which is why this document deliberately describes CSL's internals by role and links [CSL's own docs](https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md) instead of restating them.
+
 ## 11. Glossary
 
-|              Term              |                                                    Definition                                                     |
-|--------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| Orchestration Cluster          | Unified Camunda 8 runtime: Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.                                    |
-| Orchestration Cluster Identity | Cluster‑embedded identity service for authentication, authorization and identity entities.                        |
-| Orchestration Cluster Admin    | UI surface for cluster Identity (new name in 8.9); hosts identity features.                                       |
-| Management Identity            | Standalone identity app (Self‑Managed) for Web Modeler, Console and Optimize.                                     |
-| Tenant                         | Logical partition of data and access within a cluster (runtime multi‑tenancy).                                    |
-| Authorization                  | Permission linking a principal to a resource type and action (for example READ, UPDATE, DELETE).                  |
-| Mapping rule                   | Rule mapping IdP claims (groups, attributes) to identity entities such as groups, roles, tenants, authorizations. |
-| User                           | Human user performing modeling, operations or task work.                                                          |
-| Service accounts / workers     | Non‑interactive clients calling REST/gRPC APIs using client credentials.                                          |
-| OIDC IdP                       | External identity provider; source of identity, attributes and group claims.                                      |
-| Cluster components             | Runtime components enforcing Identity decisions for user and client operations.                                   |
+|              Term              |                                                                                                               Definition                                                                                                                |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Orchestration Cluster          | Unified Camunda 8 runtime: Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.                                                                                                                                                          |
+| Orchestration Cluster Identity | Cluster‑embedded identity service for authentication, authorization and identity entities.                                                                                                                                              |
+| Orchestration Cluster Admin    | UI surface for cluster Identity (new name in 8.9); hosts identity features.                                                                                                                                                             |
+| Management Identity            | Standalone identity app (Self‑Managed) for Web Modeler, Console and Optimize.                                                                                                                                                           |
+| Tenant                         | Logical partition of data and access within a cluster (runtime multi‑tenancy).                                                                                                                                                          |
+| Authorization                  | Permission linking a principal to a resource type and action (for example READ, UPDATE, DELETE).                                                                                                                                        |
+| Mapping rule                   | Rule mapping IdP claims (groups, attributes) to identity entities such as groups, roles, tenants, authorizations.                                                                                                                       |
+| User                           | Human user performing modeling, operations or task work.                                                                                                                                                                                |
+| Service accounts / workers     | Non‑interactive clients calling REST/gRPC APIs using client credentials.                                                                                                                                                                |
+| CSL (Camunda Security Library) | External library ([camunda/camunda-security-library](https://github.com/camunda/camunda-security-library)) providing the shared authorization/authentication primitives and Spring Security filter chain assembly consumed by Identity. |
+| OIDC IdP                       | External identity provider; source of identity, attributes and group claims.                                                                                                                                                            |
+| Cluster components             | Runtime components enforcing Identity decisions for user and client operations.                                                                                                                                                         |
 

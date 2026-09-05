@@ -118,6 +118,7 @@ jobs:
             "8.7|c8-orchestration-cluster-nightly-8.7-api-es.yml" \
             "8.8|c8-orchestration-cluster-nightly-8.8-api-es.yml" \
             "8.9|c8-orchestration-cluster-nightly-8.9-api-es.yml" \
+            "8.10|c8-orchestration-cluster-nightly-8.10-api-es.yml" \
             "main|c8-orchestration-cluster-nightly-main-api-es.yml"; do
             build_line "${entry%%|*}" "${entry#*|}"
             api_es_lines+="${BUILD_LINE_RESULT}"$'\n'
@@ -129,6 +130,7 @@ jobs:
           api_rdbms_success=0; api_rdbms_total=0; api_rdbms_lines=""
           for entry in \
             "8.9|c8-orchestration-cluster-nightly-8.9-api-rdbms.yml" \
+            "8.10|c8-orchestration-cluster-nightly-8.10-api-rdbms.yml" \
             "main|c8-orchestration-cluster-nightly-main-api-rdbms.yml"; do
             build_line "${entry%%|*}" "${entry#*|}"
             api_rdbms_lines+="${BUILD_LINE_RESULT}"$'\n'
@@ -142,6 +144,7 @@ jobs:
             "8.7|c8-orchestration-cluster-nightly-8.7-e2e.yml" \
             "8.8|c8-orchestration-cluster-nightly-8.8-e2e.yml" \
             "8.9|c8-orchestration-cluster-nightly-8.9-e2e.yml" \
+            "8.10|c8-orchestration-cluster-nightly-8.10-e2e.yml" \
             "main|c8-orchestration-cluster-nightly-main-e2e.yml"; do
             build_line "${entry%%|*}" "${entry#*|}"
             e2e_es_lines+="${BUILD_LINE_RESULT}"$'\n'

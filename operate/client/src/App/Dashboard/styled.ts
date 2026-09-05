@@ -53,6 +53,11 @@ const Tile = styled(BaseTitle)`
   display: flex;
   flex-direction: column;
   border: 1px solid var(--cds-border-subtle-01);
+  border-radius: 0;
+
+  .operate-nav-v2 & {
+    border-radius: calc(var(--cds-spacing-03) + var(--spacing, 0.25rem));
+  }
 `;
 
 const TileTitle = styled.h2`

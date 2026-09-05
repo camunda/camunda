@@ -39,7 +39,9 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
   public static final String ATTR_MODEL = "model";
   public static final String ATTR_PROVIDER = "provider";
-  public static final String ATTR_LIMITS = "limits";
+  public static final String ATTR_MAX_TOKENS = "maxTokens";
+  public static final String ATTR_MAX_MODEL_CALLS = "maxModelCalls";
+  public static final String ATTR_MAX_TOOL_CALLS = "maxToolCalls";
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);
@@ -56,7 +58,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1L);
   private final IntegerProperty processDefinitionVersionProp =
       new IntegerProperty("processDefinitionVersion", -1);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private final StringProperty processDefinitionVersionTagProp =
+      new StringProperty("processDefinitionVersionTag", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final EnumProperty<AgentInstanceStatus> statusProp =
@@ -89,7 +92,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processDefinitionVersionProp)
-        .declareProperty(versionTagProp)
+        .declareProperty(processDefinitionVersionTagProp)
         .declareProperty(tenantIdProp)
         .declareProperty(statusProp)
         .declareProperty(definitionProp)
@@ -201,12 +204,13 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getVersionTag() {
-    return BufferUtil.bufferAsString(versionTagProp.getValue());
+  public String getProcessDefinitionVersionTag() {
+    return BufferUtil.bufferAsString(processDefinitionVersionTagProp.getValue());
   }
 
-  public AgentInstanceRecord setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
+  public AgentInstanceRecord setProcessDefinitionVersionTag(
+      final String processDefinitionVersionTag) {
+    processDefinitionVersionTagProp.setValue(processDefinitionVersionTag);
     return this;
   }
 

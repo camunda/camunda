@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   postgres:
     container_name: postgres
-    image: postgres:18.4-alpine
+    image: postgres:18.6-alpine
     ports:
       - "5432:5432"
     environment:
@@ -58,7 +58,7 @@ services:
       keycloak:
         condition: service_healthy
     container_name: identity
-    image: camunda/identity:8.9.8
+    image: camunda/identity:8.9.9
     ports:
       - "8084:8080"
     volumes:
@@ -101,7 +101,7 @@ services:
       start_period: 30s
   camunda:
     container_name: camunda
-    image: camunda/camunda:8.9.15
+    image: camunda/camunda:8.9.18
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,dev-data
       - JAVA_TOOL_OPTIONS=-Xms512m -Xmx2g

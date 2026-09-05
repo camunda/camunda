@@ -19,10 +19,10 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -85,8 +85,15 @@ public final class ProcessInstanceResumeRestartTest {
   @Test
   public void shouldDrainExactlyOnceWithTwoOverlappingResumeChains() {
     // given
-    final long processInstanceKey = deployAndStart();
+    final String processId = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = deployAndStart(processId);
     final var children = activatedChildren(processInstanceKey);
+    // a real job only reaches SUSPENDED from ACTIVATABLE, and completing its element normally
+    // requires the job to have been activated first, which exempts it from suspension - without
+    // this, the raw COMPLETE_ELEMENT commands buffered below would leave each job dangling
+    // SUSPENDED with its owning element already gone, a state the index-seeking resume can reach
+    // and would race the drain chain ahead of COMPLETE_RESUMING
+    ENGINE.jobs().withType(processId).withMaxJobsToActivate(BUFFERED_COMMAND_COUNT).activate();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
     bufferCompleteCommands(children);
 
@@ -121,8 +128,8 @@ public final class ProcessInstanceResumeRestartTest {
     final var drained =
         RecordingExporter.records()
             .limit(r -> r.getPosition() >= resumed.getPosition())
-            .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-            .withIntent(ProcessInstanceBufferedCommandIntent.DRAINED)
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.DRAINED)
             .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
             .asList();
     assertThat(commandKeys(drained)).doesNotHaveDuplicates().hasSize(BUFFERED_COMMAND_COUNT);
@@ -153,8 +160,8 @@ public final class ProcessInstanceResumeRestartTest {
       final long processInstanceKey, final int occurrence) {
     return RecordingExporter.records()
         .onlyCommandRejections()
-        .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-        .withIntent(ProcessInstanceBufferedCommandIntent.DRAIN)
+        .withValueType(ValueType.BUFFERED_COMMAND)
+        .withIntent(BufferedCommandIntent.DRAIN)
         .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
         .limit(occurrence)
         .asList()
@@ -162,7 +169,10 @@ public final class ProcessInstanceResumeRestartTest {
   }
 
   private static long deployAndStart() {
-    final String processId = Strings.newRandomValidBpmnId();
+    return deployAndStart(Strings.newRandomValidBpmnId());
+  }
+
+  private static long deployAndStart(final String processId) {
     ENGINE.deployment().withXmlResource(parallelMultiInstanceProcess(processId)).deploy();
     return ENGINE
         .processInstance()
@@ -172,12 +182,15 @@ public final class ProcessInstanceResumeRestartTest {
   }
 
   private static BpmnModelInstance parallelMultiInstanceProcess(final String processId) {
+    // job type reuses the already-unique processId instead of a literal shared across every test
+    // method on the same class-scoped ENGINE, so activating jobs by type in one test can't pick up
+    // another test's leftover jobs
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
         .serviceTask(
             "task",
             t ->
-                t.zeebeJobType("type")
+                t.zeebeJobType(processId)
                     .multiInstance(
                         m -> m.zeebeInputCollectionExpression("items").zeebeInputElement("item")))
         .endEvent()
@@ -217,12 +230,12 @@ public final class ProcessInstanceResumeRestartTest {
   }
 
   private static long processInstanceKeyOf(final Record<RecordValue> record) {
-    return ((ProcessInstanceBufferedCommandRecordValue) record.getValue()).getProcessInstanceKey();
+    return ((BufferedCommandRecordValue) record.getValue()).getProcessInstanceKey();
   }
 
   private static List<Long> commandKeys(final List<Record<RecordValue>> records) {
     return records.stream()
-        .map(r -> ((ProcessInstanceBufferedCommandRecordValue) r.getValue()).getCommandKey())
+        .map(r -> ((BufferedCommandRecordValue) r.getValue()).getCommandKey())
         .toList();
   }
 }

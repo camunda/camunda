@@ -9,7 +9,7 @@
 import {Button, InlineNotification} from '@carbon/react';
 import type {ErrorComponentProps} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import {requestErrorSchema} from '#/shared/http/request';
+import {ForbiddenError} from '#/shared/errors';
 import styles from './TaskDetailsProcessError.module.scss';
 
 type Props = {
@@ -42,9 +42,7 @@ const TaskDetailsProcessError: React.FC<Props> = ({variant, onRetry}) => {
 };
 
 const TaskDetailsProcessRouteError: React.FC<ErrorComponentProps> = ({error, reset}) => {
-	const result = requestErrorSchema.safeParse(error);
-
-	if (result.success && result.data.response?.status === 403) {
+	if (error instanceof ForbiddenError) {
 		return <TaskDetailsProcessError variant="forbidden" />;
 	}
 

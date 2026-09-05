@@ -4,6 +4,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: prom-els-exporter
+  namespace: c8-golden-stable-87-chaos-killer
   labels:
 
     app.kubernetes.io/name: prometheus-elasticsearch-exporter

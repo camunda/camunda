@@ -17,6 +17,8 @@ paths:
         Creates and starts an instance of the specified process.
         The process definition to use to create the instance can be specified either using its unique key
         (as returned by Deploy resources), or using the BPMN process id and a version.
+        If only the process definition id is given, the latest ACTIVE version is used.
+        If no ACTIVE version exists, the request is rejected as not found.
 
         Waits for the completion of the process instance before returning a result
         when awaitCompletion is enabled.
@@ -72,6 +74,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}:
     get:
@@ -115,6 +118,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/sequence-flows:
     get:
@@ -152,6 +156,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/statistics/element-instances:
     get:
@@ -190,6 +195,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/statistics/wait-states:
     get:
@@ -228,6 +234,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/search:
     post:
@@ -265,6 +272,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/incidents/search:
     post:
@@ -320,6 +328,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/incident-resolution:
     post:
@@ -363,6 +372,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/cancellation:
     post:
@@ -413,6 +423,7 @@ paths:
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/cancellation:
     post:
@@ -461,6 +472,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/incident-resolution:
     post:
@@ -509,6 +521,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/migration:
     post:
@@ -557,6 +570,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/modification:
     post:
@@ -607,6 +621,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/suspension:
     post:
@@ -624,8 +639,10 @@ paths:
       summary: Suspend process instances (batch)
       description: |
         Suspends multiple running process instances.
-        Since only ACTIVE root instances can be suspended, any given
-        filters for state and parentProcessInstanceKey are ignored and overridden during this batch operation.
+        Any given filter for state or parentProcessInstanceKey is ignored and overridden, as only
+        ACTIVE process instances can be suspended and suspension does not cascade between parent
+        and child instances, so child instances are suspended independently of their parent or
+        root instance.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -655,6 +672,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/resumption:
     post:
@@ -672,8 +690,10 @@ paths:
       summary: Resume process instances (batch)
       description: |
         Resumes multiple suspended process instances.
-        Since only SUSPENDED root instances can be resumed, any given
-        filters for state and parentProcessInstanceKey are ignored and overridden during this batch operation.
+        Any given filter for state or parentProcessInstanceKey is ignored and overridden, as only
+        SUSPENDED process instances can be resumed and resumption does not cascade between parent
+        and child instances, so child instances are resumed independently of their parent or root
+        instance.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -703,6 +723,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/deletion:
     post:
@@ -754,6 +775,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-instances/deletion:
     post:
@@ -801,6 +823,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/migration:
     post:
@@ -859,6 +882,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/business-id-assignment:
     post:
@@ -920,6 +944,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/modification:
     post:
@@ -969,6 +994,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/suspension:
     post:
@@ -985,6 +1011,8 @@ paths:
       description: |
         Suspends a running process instance, pausing further processing until it is resumed.
         Only process instances in the ACTIVE state can be suspended.
+        A child process instance can be suspended independently of its parent or root process
+        instance; suspension does not cascade to or from related instances.
       parameters:
         - name: processInstanceKey
           in: path
@@ -1022,6 +1050,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/resumption:
     post:
@@ -1038,6 +1067,8 @@ paths:
       description: |
         Resumes a suspended process instance, returning it to the ACTIVE state and continuing processing.
         Only process instances in the SUSPENDED state can be resumed.
+        A child process instance can be resumed independently of its parent or root process
+        instance; resumption does not cascade to or from related instances.
       parameters:
         - name: processInstanceKey
           in: path
@@ -1075,6 +1106,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/call-hierarchy:
     get:
@@ -1120,6 +1152,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -1148,7 +1181,7 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
         processDefinitionVersion:
           description: |
-            The version of the process. By default, the latest version of the process is used.
+            The version of the process. If omitted, the latest active version is used.
           type: integer
           format: int32
           default: -1

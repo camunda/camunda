@@ -68,7 +68,11 @@ public final class MessageSubscriptionCreateProcessor
     subscriptionRecord = record.getValue();
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-      sendAcknowledgeCommand();
+      final var existing =
+          subscriptionState.get(
+              subscriptionRecord.getElementInstanceKey(),
+              subscriptionRecord.getMessageNameBuffer());
+      sendAcknowledgeCommand(existing != null ? existing.getKey() : -1L);
 
       rejectionWriter.appendRejection(
           record,
@@ -86,6 +90,9 @@ public final class MessageSubscriptionCreateProcessor
   private void handleNewSubscription(final SideEffectWriter sideEffectWriter) {
 
     final var subscriptionKey = keyGenerator.nextKey();
+    // Stamp the key on the record so it is stored in state and echoed back in the open-ack,
+    // allowing the PI side to quote it in future delete commands for staleness detection.
+    subscriptionRecord.setSubscriptionKey(subscriptionKey);
     stateWriter.appendFollowUpEvent(
         subscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);
 
@@ -93,11 +100,11 @@ public final class MessageSubscriptionCreateProcessor
         messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord);
 
     if (!isMessageCorrelated) {
-      sendAcknowledgeCommand();
+      sendAcknowledgeCommand(subscriptionKey);
     }
   }
 
-  private boolean sendAcknowledgeCommand() {
+  private boolean sendAcknowledgeCommand(final long subscriptionKey) {
     return commandSender.openProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
@@ -105,6 +112,7 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.isInterrupting(),
         subscriptionRecord.getTenantId(),
-        subscriptionRecord.getBusinessIdBuffer());
+        subscriptionRecord.getBusinessIdBuffer(),
+        subscriptionKey);
   }
 }

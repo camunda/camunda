@@ -19,6 +19,7 @@ type QueryOptions<T> = {
   enabled?: boolean;
   select?: (result: QueryProcessDefinitionsResponseBody['items']) => T;
   staleTime?: number;
+  refetchInterval?: number;
 };
 
 function useProcessDefinitionsSearch<
@@ -29,6 +30,7 @@ function useProcessDefinitionsSearch<
     enabled: options?.enabled,
     select: options?.select,
     staleTime: options?.staleTime,
+    refetchInterval: options?.refetchInterval,
     queryFn: async () => {
       const {error, response} = await searchProcessDefinitions(
         options?.payload,

@@ -9,10 +9,12 @@ package io.camunda.zeebe.dynamic.config.metrics;
 
 import static io.camunda.zeebe.dynamic.config.metrics.TopologyMetricsDoc.*;
 
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.util.micrometer.EnumMeter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -52,27 +54,52 @@ public final class TopologyMetrics {
     return value;
   }
 
-  public void updateFromTopology(final ClusterConfiguration topology) {
-    topologyVersion.set(topology.version());
+  /**
+   * Reports the same values the legacy single-group projection carried: the topology version and
+   * the state of the change plan currently active in the global configuration or, failing that, the
+   * default partition group — a cluster applies at most one plan that touches either at a time, so
+   * that one plan is the cluster's change.
+   */
+  public void updateFromTopology(final CurrentClusterConfiguration topology) {
+    final var globalConfiguration = topology.globalConfiguration();
+    final var defaultGroup =
+        topology
+            .partitionGroups()
+            .getOrDefault(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                PartitionGroupConfiguration.empty(topology.version()));
+    topologyVersion.set(Math.max(globalConfiguration.version(), defaultGroup.version()));
+
+    final var pendingChanges =
+        globalConfiguration
+            .pendingChanges()
+            .<ChangePlan>map(plan -> plan)
+            .filter(ChangePlan::hasPendingChanges)
+            .or(
+                () ->
+                    defaultGroup
+                        .pendingChanges()
+                        .<ChangePlan>map(plan -> plan)
+                        .filter(ChangePlan::hasPendingChanges));
     changeStatus.state(
-        topology
-            .pendingChanges()
-            .map(ClusterChangePlan::status)
-            .or(() -> topology.lastChange().map(CompletedChange::status))
+        pendingChanges
+            .map(ChangePlan::status)
+            .or(() -> topology.phasedChangeState().lastChange().map(TopologyMetrics::legacyStatus))
             .orElse(Status.COMPLETED));
-    changeId.set(topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L));
-    changeVersion.set(topology.pendingChanges().map(ClusterChangePlan::version).orElse(0));
+    changeId.set(pendingChanges.map(ChangePlan::id).orElse(0L));
+    changeVersion.set(pendingChanges.map(ChangePlan::version).orElse(0));
     pendingOperations.set(
-        topology
-            .pendingChanges()
-            .map(ClusterChangePlan::pendingOperations)
-            .map(List::size)
-            .orElse(0));
+        pendingChanges.map(ChangePlan::pendingOperations).map(List::size).orElse(0));
     completedOperations.set(
-        topology
-            .pendingChanges()
-            .map(ClusterChangePlan::completedOperations)
-            .map(List::size)
-            .orElse(0));
+        pendingChanges.map(ChangePlan::completedOperations).map(List::size).orElse(0));
+  }
+
+  /** The terminal status as the gauge's {@link ClusterChangePlan.Status} labels it. */
+  private static Status legacyStatus(final CompletedPhasedChange change) {
+    return switch (change.status()) {
+      case COMPLETED -> Status.COMPLETED;
+      case FAILED -> Status.FAILED;
+      case CANCELLED -> Status.CANCELLED;
+    };
   }
 }

@@ -49,7 +49,7 @@
             "processDefinitionVersion": {
               "type": "integer"
             },
-            "versionTag": {
+            "processDefinitionVersionTag": {
               "type": "keyword"
             },
             "tenantId": {
@@ -67,7 +67,7 @@
                   "type": "keyword"
                 },
                 "systemPrompt": {
-                  "type": "text"
+                  "enabled": false
                 }
               }
             },

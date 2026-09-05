@@ -19,14 +19,15 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -36,14 +37,10 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.util.Either;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -89,13 +86,11 @@ public final class ClusterConfigurationManagementRequestsHandler
       final JoinPartitionRequest joinPartitionRequest) {
     return handleRequest(
         joinPartitionRequest.dryRun(),
-        ignore ->
-            Either.right(
-                List.of(
-                    new PartitionJoinOperation(
-                        joinPartitionRequest.memberId(),
-                        joinPartitionRequest.partitionId(),
-                        joinPartitionRequest.priority()))));
+        new JoinPartitionRequestTransformer(
+            joinPartitionRequest.memberId(),
+            joinPartitionRequest.partitionId(),
+            joinPartitionRequest.priority(),
+            joinPartitionRequest.physicalTenantId()));
   }
 
   @Override
@@ -103,21 +98,10 @@ public final class ClusterConfigurationManagementRequestsHandler
       final LeavePartitionRequest leavePartitionRequest) {
     return handleRequest(
         leavePartitionRequest.dryRun(),
-        ignore ->
-            Either.right(
-                List.of(
-                    new PartitionLeaveOperation(
-                        leavePartitionRequest.memberId(),
-                        leavePartitionRequest.partitionId(),
-                        1))));
-  }
-
-  @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> reassignPartitions(
-      final ReassignPartitionsRequest reassignPartitionsRequest) {
-    return handleRequest(
-        reassignPartitionsRequest.dryRun(),
-        new PartitionReassignRequestTransformer(reassignPartitionsRequest.members()));
+        new LeavePartitionRequestTransformer(
+            leavePartitionRequest.memberId(),
+            leavePartitionRequest.partitionId(),
+            leavePartitionRequest.physicalTenantId()));
   }
 
   @Override
@@ -213,6 +197,17 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> removePhysicalTenant(
+      final RemovePhysicalTenantRequest removePhysicalTenantRequest) {
+    return handleRequest(
+        removePhysicalTenantRequest.dryRun(),
+        new RemovePhysicalTenantRequestTransformer(
+            removePhysicalTenantRequest.physicalTenantId(),
+            localMemberId,
+            removePhysicalTenantRequest.force()));
+  }
+
+  @Override
   public ActorFuture<ClusterConfigurationChangeResponse> forceRemoveZone(
       final ForceZoneRemoveRequest forceZoneRemoveRequest) {
     return handleRequest(
@@ -274,6 +269,15 @@ public final class ClusterConfigurationManagementRequestsHandler
       final ModeChangeRequest modeChangeRequest) {
     return handleRequest(
         modeChangeRequest.dryRun(), new ModeChangeRequestTransformer(modeChangeRequest));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> changeExportingState(
+      final ExportingStateChangeRequest exportingStateChangeRequest) {
+    return handleRequest(
+        exportingStateChangeRequest.dryRun(),
+        new ExportingStateChangeRequestTransformer(
+            exportingStateChangeRequest.state(), exportingStateChangeRequest.physicalTenantId()));
   }
 
   @Override

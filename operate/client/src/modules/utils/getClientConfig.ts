@@ -23,6 +23,7 @@ const ClientConfigSchema = z.object({
   multiTenancyEnabled: z.boolean().optional().default(false),
   databaseType: z.string().optional().default('document-store'),
   waitStatesEnabled: z.boolean().optional().default(true),
+  isNavV2Enabled: z.boolean().optional().default(true),
 });
 
 const DEFAULT_CLIENT_CONFIG = ClientConfigSchema.safeParse({}).data!;

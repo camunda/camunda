@@ -1,132 +1,54 @@
 # Engine Authorization Checks
 
 This document describes how authorization is enforced in the Zeebe engine, before any command is applied and before it mutates the primary storage (which is backed by RocksDB).
-**Location:** `zeebe/engine/.../processing/identity/authorization/AuthorizationCheckBehavior.java`
+**Location:** `zeebe/engine/.../processing/identity/authorization/CslAuthorizationCheck.java` and `CslTenantCheck.java`, backed by `zeebe/engine/.../processing/identity/adapter/AuthorizationScopeStateAdapter.java` and `MembershipStateAdapter.java`.
 
 ## Overview
 
-The `AuthorizationCheckBehavior` is the engine-side authorization gate. Every command that the stream processor handles passes through this behavior to determine whether the caller has permission to perform the requested action. If the check fails, the command is rejected before any state mutation or command application is performed, even though the behavior may read from RocksDB-backed state to make its decision.
-This is a **pre-execution check**: it may read existing state but always runs before any state mutation or command application occurs.
+`CslAuthorizationCheck` and `CslTenantCheck` are thin engine-side gates: every command the stream processor handles passes through one of them, but the authorization decision itself is made by the Camunda Security Library (CSL) through its `AuthorizationCheckPort`. What the engine owns is:
+
+1. the pre-check skip logic -- internal command, anonymous principal, authorizations disabled;
+2. supplying CSL with RocksDB-backed data through two port implementations, `AuthorizationScopeStateAdapter` (`AuthorizationScopeRepositoryPort`) and `MembershipStateAdapter` (`MembershipPort`);
+3. mapping CSL's rejection back to a Zeebe `Rejection` via `AuthorizationRejectionMapper`.
+
+This is a **pre-execution check**: it may read existing state, but always runs before any state mutation or command application.
+
+How CSL reaches its decision is deliberately not described here -- see the [CSL architecture documentation](https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md), sections 5.4 (hexagonal architecture) and 5.5 (engine authorization integration). Note that the order in which CSL evaluates a principal's grants is CSL-internal and is not documented in either repository.
+
+For the same reason, the CSL classes behind those ports are not named on this page. Only the ports the engine implements and the types it constructs are -- see the [naming convention](../architecture.md#csl-extension-points-and-ocs-adapters) for which CSL types these docs name and why.
+
+`CslTenantCheck#checkTenant` checks tenant assignment on its own, independently of the RBAC step. Engine command processors use it when a command needs a tenant-membership gate at a different granularity than its resource-permission check.
 
 ## Configuration
 
-The behavior is controlled by two flags:
+The check is controlled by two flags:
 
 |                     Flag                      |           Effect when disabled           |
 |-----------------------------------------------|------------------------------------------|
 | `camunda.security.authorizations.enabled`     | All permission checks are skipped        |
 | `camunda.security.multiTenancy.checksEnabled` | All tenant assignment checks are skipped |
 
-When **both** are disabled, `shouldSkipAllChecks()` returns `true` and no authorization work is performed at all. Callers can use this method to avoid constructing `AuthorizationRequest` objects when the result would always be authorized.
-
-## Authorization Flow
-
-When `isAuthorized(request)` is called, the check proceeds through a three-step cascade. Each step can grant full access, short-circuiting the remaining steps.
-
-```
-┌──────────────────────────────────────────┐
-│            isAuthorized(request)          │
-├──────────────────────────────────────────┤
-│ Skip all checks?  ──yes──►  AUTHORIZED   │
-│       │ no                               │
-│       ▼                                  │
-│ Step 1: Check primary entity             │
-│   (user or client)                       │
-│   ├─ resource access (permission check)  │
-│   └─ tenant access (tenant assignment)   │
-│       │                                  │
-│  Both pass? ──yes──►  AUTHORIZED         │
-│       │ no                               │
-│       ▼                                  │
-│ Step 2: Check mapping rules              │
-│   (supplements primary entity)           │
-│   ├─ tenant access (if still missing)    │
-│   └─ resource access (if tenant passes)  │
-│       │                                  │
-│  Both pass? ──yes──►  AUTHORIZED         │
-│       │ no                               │
-│       ▼                                  │
-│ Step 3: Property-based authorization     │
-│   (only if tenant access granted and     │
-│    request has resource properties)      │
-│   ├─ match properties via evaluator      │
-│   └─ check authorized scopes match       │
-│       │                                  │
-│  Match? ──yes──►  AUTHORIZED             │
-│       │ no                               │
-│       ▼                                  │
-│     REJECTED (aggregated reasons)        │
-└──────────────────────────────────────────┘
-```
-
-### Step 1: Primary Entity Check
-
-The system extracts the authenticated identity from the request claims:
-- If a **client ID** is present, it checks authorization for entity type `CLIENT`.
-- Otherwise, if a **username** is present, it checks authorization for entity type `USER`.
-
-For the identified entity, two checks run:
-1. **Resource access** -- does this entity have the required permission on the requested resource? This is resolved through `AuthorizationScopeResolver`, which looks up granted scopes (wildcard, specific IDs, or properties) for the entity, including scopes inherited via roles and groups.
-2. **Tenant access** -- is this entity assigned to the tenant that owns the resource? Only checked when multi-tenancy is enabled and the resource is tenant-owned.
-
-If both pass, the request is authorized immediately.
-
-### Step 2: Mapping Rule Check
-
-If the primary entity check didn't grant full access, the system looks up **mapping rules** that match the request's token claims. Mapping rules allow authorization to be granted based on external identity attributes (e.g. from an IdP).
-
-This step supplements the primary result:
-- If tenant access is still missing, it checks tenant assignment via matching mapping rules.
-- If tenant access is now granted but resource access is still missing, it checks resource permissions via the mapping rules.
-
-### Step 3: Property-Based Authorization
-
-As a final fallback, if the request carries resource properties (e.g. user task properties like assignee and candidate information) and the caller already has tenant access, the system checks whether the authenticated user matches any of the resource's properties.
-
-This is handled by `UserTaskAuthorizationCheck`, which checks:
-- Is the user the **assignee** of the task?
-- Is the user in the **candidate users** list?
-- Does the user belong to a **candidate group**?
-
-The matched properties are then cross-checked against the entity's authorized scopes with `AuthorizationResourceMatcher.PROPERTY` to confirm that a property-based authorization grant exists.
-
-## Scope Resolution
-
-The `AuthorizationScopeResolver` is responsible for looking up what scopes an entity has been granted for a given resource type and permission type. A scope can be:
-
-- **Wildcard** -- access to all resources of the type
-- **ID-based** -- access to a specific resource by ID
-- **Property-based** -- access via resource property matching (e.g. task assignee)
-
-When checking ID-based authorization, the logic is:
-1. If any granted scope is `WILDCARD`, access is granted.
-2. If the request has no specific resource IDs (meaning it requires wildcard), access is denied (wildcard was already checked).
-3. Otherwise, check if any granted ID scope matches any requested resource ID.
-
 ## Caching
 
-Authorization results are cached using a Guava `LoadingCache` keyed by `AuthorizationRequest`. The cache has configurable TTL and capacity via `EngineConfiguration`:
-- `authorizationsCacheTtl` -- how long results are cached
-- `authorizationsCacheCapacity` -- maximum number of cached entries
-
-The cache can be invalidated via `clearAuthorizationsCache()`.
+`authorizationsCacheTtl` and `authorizationsCacheCapacity` (`EngineConfiguration`) configure cache TTL and capacity, but this is no longer a single decision cache keyed by a check request. The cache now lives in the port implementations: `AuthorizationScopeStateAdapter` and `MembershipStateAdapter` each hold a Caffeine `LoadingCache` over the RocksDB-backed state they expose to CSL. There is no `clearAuthorizationsCache()` method; entries expire via TTL, but both adapters also call `invalidateAll()` from the corresponding create/update/delete processor (`AuthorizationCreateProcessor`, `AuthorizationUpdateProcessor`, `AuthorizationDeleteProcessor`, `RoleAddEntityProcessor`/`RoleRemoveEntityProcessor`, `GroupAddEntityProcessor`/`GroupRemoveEntityProcessor`, `TenantAddEntityProcessor`/`TenantRemoveEntityProcessor`), plus `TenantDeleteProcessor`, which invalidates both adapters, so an authorization, membership, or tenant change takes effect immediately rather than waiting out the TTL.
 
 ## Internal Commands
 
-Some commands are triggered internally by the engine (e.g. follow-up commands from a process instance). These bypass authorization entirely via `isAuthorizedOrInternalCommand()` / `isAnyAuthorizedOrInternalCommand()`, which check `request.isTriggeredByInternalCommand()` before evaluating permissions.
-
-## Disjunctive (OR) Authorization
-
-The `isAnyAuthorized(requests...)` method supports checking multiple authorization requests where **any one** passing is sufficient. This is used when an action can be authorized through different resource type / permission type combinations. If all requests fail, the rejections are aggregated into a composite rejection message.
-
-## Rejection Types
-
-When authorization fails, the rejection type depends on what failed:
-- **`FORBIDDEN`** -- the user lacks the required permission
-- **`NOT_FOUND`** -- the user is not assigned to the required tenant (for existing resources). This prevents information leakage by not revealing whether a resource exists in a tenant the user doesn't have access to.
-
-For new resources, tenant check failures use `FORBIDDEN` instead of `NOT_FOUND` since there is no pre-existing resource to hide.
+Some commands are triggered internally by the engine, for example follow-up commands from a process instance. `CslAuthorizationCheck`'s single-check entry points (`check`, `checkAuth`, `checkForDistributedCommand`) skip authorization for these automatically as part of their resolution logic; there is no separate `isAuthorizedOrInternalCommand()`-style method to call.
 
 ## Anonymous Users
 
-If the request claims indicate an anonymous user (`AUTHORIZED_ANONYMOUS_USER`), all authorization checks are skipped. This is used for operations that don't require authentication.
+If the request claims indicate an anonymous user (`AUTHORIZED_ANONYMOUS_USER`), authorization checks are skipped (see `CslTenantCheck#isAnonymousCommand`). This is used for operations that don't require authentication.
+
+## Disjunctive (OR) Authorization
+
+CSL's `RequiredAuthorization` expresses a single `(resourceType, permissionType)` pair per call, so "any of these checks passes" is composed locally where it is needed. The only place that happens is user task authorization: `UserTaskAuthorizationCheck` (`zeebe/engine/.../processing/usertask/processors/`) evaluates alternatives such as `PROCESS_DEFINITION.<permission>` or `USER_TASK.<permission>` -- by resource ID or by task property (assignee, candidate users, candidate groups) -- in order, and returns on the first match. Each alternative is still evaluated by CSL via `CslAuthorizationCheck#checkAuth`; `UserTaskAuthorizationCheck` only combines the outcomes. If all fail, it builds a single `FORBIDDEN` rejection itself, joining every failed alternative's reason with `"; and "`.
+
+## Rejection Types
+
+`AuthorizationRejectionMapper.toRejection` maps the CSL-originated rejections -- permission, tenant, and property -- to `RejectionType.FORBIDDEN` throughout. The `FORBIDDEN`/`NOT_FOUND` distinction for tenant mismatches has **not** been dropped; it moved to the **caller**, which passes the finished `Rejection` (including its `RejectionType`) into `CslTenantCheck#checkTenant` or `CslAuthorizationCheck#checkAuthorizationAndTenant`. The convention:
+
+- **`FORBIDDEN`** -- the principal lacks the permission, or is not assigned to the tenant of a resource it is creating.
+- **`NOT_FOUND`** -- masks the existence of an already-existing resource, looked up by key, that lives in a tenant the caller cannot access. This is what keeps cross-tenant existence from leaking; `ProcessInstanceCancelProcessor` is a representative caller, and `AuthorizationRequest#getTenantErrorMessage` selects the message by the same rule.
+
+When both a permission and a tenant check would fail on the same command, `checkAuthorizationAndTenant` lets the permission rejection win, so a principal with no permission at all never sees a tenant-shaped rejection that would hint at the resource's existence.

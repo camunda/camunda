@@ -143,24 +143,12 @@ class PhysicalTenantRequiredOverrideValidationTest {
   }
 
   @Test
-  void shouldNotRequireInitializationWhenTenantAuthorizationDisabled() {
-    // given a non-default tenant with authorization disabled and no initialization block
-    final MockEnvironment environment =
-        environmentWith(
-            Map.of("camunda.physical-tenants.tenanta.security.authorization.enabled", false));
-
-    // when / then the initialization block is not required for an authz-disabled tenant
-    assertThatCode(() -> PhysicalTenantRequiredOverrideValidation.validate(environment))
-        .doesNotThrowAnyException();
-  }
-
-  @Test
   void shouldNotRequireInitializationWhenRootAuthorizationDisabled() {
     // given root authorization disabled and a tenant that does not override it or declare init
     final MockEnvironment environment =
         environmentWith(
             Map.of(
-                "camunda.security.authorization.enabled",
+                "camunda.security.authorizations.enabled",
                 false,
                 "camunda.physical-tenants.tenanta.cluster.partition-count",
                 3));
@@ -171,27 +159,13 @@ class PhysicalTenantRequiredOverrideValidationTest {
   }
 
   @Test
-  void shouldRequireInitializationWhenTenantAuthorizationEnabledExplicitly() {
-    // given a tenant that explicitly enables authorization but declares no initialization block
-    final MockEnvironment environment =
-        environmentWith(
-            Map.of("camunda.physical-tenants.tenanta.security.authorization.enabled", true));
-
-    // when / then initialization is still required, and the offending tenant is named
-    assertThatExceptionOfType(UnifiedConfigurationException.class)
-        .isThrownBy(() -> PhysicalTenantRequiredOverrideValidation.validate(environment))
-        .withMessageContaining("camunda.physical-tenants.<id>.security.initialization")
-        .withMessageContaining("tenanta");
-  }
-
-  @Test
   void shouldOnlyExemptTenantsWithAuthorizationDisabled() {
     // given one authz-disabled tenant and one authz-enabled tenant, neither with init
     final MockEnvironment environment =
         environmentWith(
             Map.of(
-                "camunda.physical-tenants.tenanta.security.authorization.enabled", false,
-                "camunda.physical-tenants.tenantb.security.authorization.enabled", true));
+                "camunda.physical-tenants.tenanta.security.authorizations.enabled", false,
+                "camunda.physical-tenants.tenantb.security.authorizations.enabled", true));
 
     // when / then only the authz-enabled tenant is reported as missing initialization
     assertThatExceptionOfType(UnifiedConfigurationException.class)
@@ -202,11 +176,11 @@ class PhysicalTenantRequiredOverrideValidationTest {
 
   @Test
   void shouldRequireInitializationWhenAuthorizationValueIsBlank() {
-    // given a non-default tenant whose authorization.enabled is present but blank (YAML
+    // given a non-default tenant whose authorizations.enabled is present but blank (YAML
     // 'enabled:'), with no initialization block and no root override
     final MockEnvironment environment =
         environmentWith(
-            Map.of("camunda.physical-tenants.tenanta.security.authorization.enabled", ""));
+            Map.of("camunda.physical-tenants.tenanta.security.authorizations.enabled", ""));
 
     // when / then Spring binds a blank value to "unbound", so authorization resolves to the
     // default (enabled) and initialization is still required — a clear configuration error,
@@ -215,5 +189,36 @@ class PhysicalTenantRequiredOverrideValidationTest {
         .isThrownBy(() -> PhysicalTenantRequiredOverrideValidation.validate(environment))
         .withMessageContaining("camunda.physical-tenants.<id>.security.initialization")
         .withMessageContaining("tenanta");
+  }
+
+  @Test
+  void shouldPreferTenantAuthorizationsOverrideOverDisabledRoot() {
+    // given authorization disabled at root but re-enabled by the tenant, with no initialization
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authorizations.enabled", false,
+                "camunda.physical-tenants.tenanta.security.authorizations.enabled", true));
+
+    // when / then the per-tenant override wins, so the tenant must declare its own block
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantRequiredOverrideValidation.validate(environment))
+        .withMessageContaining("camunda.physical-tenants.<id>.security.initialization")
+        .withMessageContaining("tenanta");
+  }
+
+  @Test
+  void shouldPreferTenantAuthorizationsOverrideOverEnabledRoot() {
+    // given authorization enabled at root but disabled by the tenant, with no initialization
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authorizations.enabled", true,
+                "camunda.physical-tenants.tenanta.security.authorizations.enabled", false));
+
+    // when / then the per-tenant opt-out wins: an authz-disabled tenant seeds no identity, so
+    // there is nothing for it to inherit from the root and no block is required
+    assertThatCode(() -> PhysicalTenantRequiredOverrideValidation.validate(environment))
+        .doesNotThrowAnyException();
   }
 }

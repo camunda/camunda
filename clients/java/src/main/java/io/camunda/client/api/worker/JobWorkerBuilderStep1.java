@@ -185,11 +185,17 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 fetchVariables(String... fetchVariables);
 
     /**
-     * Activate the jobs polled by this worker with a lease. When enabled, each activated job is
-     * assigned a distinct lease token, fencing the complete, fail, and throw-error commands against
-     * a superseded activation of the same job.
+     * Activate the jobs handled by this worker with a lease, whether it polls or streams. When
+     * enabled, each activated job is assigned a distinct lease token, fencing the complete, fail,
+     * and throw-error commands against a superseded activation of the same job: a command carrying
+     * a stale or missing token is rejected. An update-job command honors a supplied lease token the
+     * same way, but an update without one always applies, so operator and bulk updates of leased
+     * jobs remain possible.
      *
-     * <p>Only applies to the polling path. If not set, jobs are activated without a lease.
+     * <p>Once a job has been activated with a lease, it is served only to leasing workers of that
+     * job type; a homogeneous fleet per job type is recommended.
+     *
+     * <p>If not set, jobs are activated without a lease.
      *
      * @param withLease whether to activate the jobs with a lease
      * @return the builder for this worker

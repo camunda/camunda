@@ -13,10 +13,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,7 +53,7 @@ public record GlobalConfiguration(
     Optional<String> clusterId,
     SortedMap<MemberId, BrokerState> members,
     Optional<PartitionDistributorConfig> partitionDistributorConfig,
-    Optional<ClusterChangePlan> pendingChanges,
+    Optional<DependencyChangePlan> pendingChanges,
     Optional<CompletedChange> lastChange) {
 
   public static final long UNINITIALIZED_VERSION = 0;
@@ -74,7 +75,7 @@ public record GlobalConfiguration(
       final Optional<String> clusterId,
       final Map<MemberId, BrokerState> members,
       final Optional<PartitionDistributorConfig> partitionDistributorConfig,
-      final Optional<ClusterChangePlan> pendingChanges,
+      final Optional<DependencyChangePlan> pendingChanges,
       final Optional<CompletedChange> lastChange) {
     this(
         version,
@@ -133,7 +134,8 @@ public record GlobalConfiguration(
    * @throws IllegalStateException if the broker is not part of the cluster
    */
   public GlobalConfiguration updateMember(
-      final MemberId memberId, final UnaryOperator<BrokerState> memberStateUpdater) {
+      final MemberId memberId,
+      final Function<BrokerState, @Nullable BrokerState> memberStateUpdater) {
     final BrokerState current = members.get(memberId);
     if (current == null) {
       throw new IllegalStateException(
@@ -141,11 +143,15 @@ public record GlobalConfiguration(
               "Expected to update member %s, but it is not part of the cluster", memberId.id()));
     }
     final var updated = memberStateUpdater.apply(current);
-    if (updated.equals(current)) {
+    if (current.equals(updated)) {
       return this;
     }
     final var updatedMembers = new HashMap<>(members);
-    updatedMembers.put(memberId, updated);
+    if (updated != null) {
+      updatedMembers.put(memberId, updated);
+    } else {
+      updatedMembers.remove(memberId);
+    }
     return withMembers(updatedMembers);
   }
 
@@ -181,16 +187,24 @@ public record GlobalConfiguration(
 
   /**
    * Starts a new configuration change by setting {@code pendingChanges} to a new {@link
-   * ClusterChangePlan} and bumping the config version.
+   * DependencyChangePlan} and bumping the config version.
+   *
+   * <p>The graph is {@link OperationGraph#sequential(List) sequential}: every operation waits for
+   * the one before it, so a cluster-level change runs one operation at a time, as it always has.
+   * That is not an artefact of the encoding but a property of what these operations are — broker
+   * lifecycle steps, taken deliberately one at a time. Two of them also violate the rule that makes
+   * concurrent execution safe at all (see {@link OperationGraph}): {@code MemberRemoveOperation}
+   * writes the entry of the member being removed rather than of the member applying it, so nothing
+   * here may be unchained without first settling what its write set is.
    *
    * @param operations the operations to execute, must be non-empty
    * @return the updated global configuration
-   * @throws IllegalArgumentException if a change is already in progress, or {@code operations} is
-   *     empty
+   * @throws IllegalArgumentException if a change is already in progress, drained or not, or {@code
+   *     operations} is empty
    */
   public GlobalConfiguration startConfigurationChange(
       final List<ClusterConfigurationChangeOperation> operations) {
-    if (hasPendingChanges()) {
+    if (pendingChanges.isPresent()) {
       throw new IllegalArgumentException(
           "Expected to start new configuration change, but there is a configuration change in progress "
               + pendingChanges);
@@ -205,7 +219,7 @@ public record GlobalConfiguration(
         clusterId,
         members,
         partitionDistributorConfig,
-        Optional.of(ClusterChangePlan.init(newVersion, operations)),
+        Optional.of(DependencyChangePlan.sequential(newVersion, operations)),
         lastChange);
   }
 
@@ -214,9 +228,12 @@ public record GlobalConfiguration(
    * either operand.
    *
    * <p>If the versions differ, the higher version wins wholesale. If equal, the result merges:
-   * {@code members} field-by-field by per-member version; {@code pendingChanges} by plan-internal
-   * version; {@code clusterId} first non-empty wins; {@code partitionDistributorConfig} the present
-   * value wins over absent (and if both are present they must agree).
+   * {@code members} field-by-field by per-member version; {@code pendingChanges} by unioning the
+   * two copies' completed operations; {@code clusterId} first non-empty wins; {@code
+   * partitionDistributorConfig} the present value wins over absent (and if both are present they
+   * must agree); {@code lastChange} by {@link CompletedChange#merge}, because {@link
+   * #completeGraphChangeIfDrained()} runs on every broker and two of them can stamp the same
+   * completed change a moment apart.
    *
    * @param other the configuration to merge with
    * @return the merged configuration
@@ -239,10 +256,10 @@ public record GlobalConfiguration(
             .flatMap(Optional::stream)
             .reduce(PartitionDistributorConfig::merge);
 
-    final Optional<ClusterChangePlan> mergedChanges =
+    final Optional<DependencyChangePlan> mergedChanges =
         Stream.of(pendingChanges, other.pendingChanges)
             .flatMap(Optional::stream)
-            .reduce(ClusterChangePlan::merge);
+            .reduce(DependencyChangePlan::merge);
 
     return new GlobalConfiguration(
         version,
@@ -250,7 +267,7 @@ public record GlobalConfiguration(
         mergedMembers,
         mergedDistributorConfig,
         mergedChanges,
-        lastChange);
+        CompletedChange.merge(lastChange, other.lastChange));
   }
 
   public boolean hasPendingChanges() {
@@ -258,77 +275,79 @@ public record GlobalConfiguration(
   }
 
   /**
-   * Returns the next pending operation for the given memberId, or empty if the next pending
-   * operation (if any) is not applicable to that member. Mirrors {@code
-   * ClusterConfiguration#pendingChangesFor(MemberId)}.
-   */
-  public Optional<GlobalChangeOperation> pendingChangesFor(final MemberId memberId) {
-    if (pendingChanges.isEmpty() || !pendingChanges.get().hasPendingChangesFor(memberId)) {
-      return Optional.empty();
-    }
-    return Optional.of((GlobalChangeOperation) pendingChanges.orElseThrow().nextPendingOperation());
-  }
-
-  public GlobalChangeOperation nextPendingOperation() {
-    if (!hasPendingChanges()) {
-      throw new NoSuchElementException();
-    }
-    return (GlobalChangeOperation) pendingChanges.orElseThrow().nextPendingOperation();
-  }
-
-  /**
-   * When the operation returned by {@link #pendingChangesFor(MemberId)} completes, the result is
-   * reflected here by applying {@code configurationUpdater} and then advancing past the completed
-   * operation. Mirrors {@code ClusterConfiguration#advanceConfigurationChange}.
-   */
-  public GlobalConfiguration advanceConfigurationChange(
-      final UnaryOperator<GlobalConfiguration> configurationUpdater) {
-    return configurationUpdater.apply(this).advance();
-  }
-
-  /**
-   * Steps the ongoing change plan past its first pending operation. While operations remain the
-   * plan is simply stepped forward and the version is unchanged. When the last operation is
-   * removed, the change is completed: {@code pendingChanges} is cleared, {@code lastChange} is set,
-   * members whose lifecycle state is {@link BrokerState.State#LEFT} are removed, and the version is
-   * bumped so peers overwrite their local copy on merge. Mirrors {@code
-   * ClusterConfiguration#advance()}.
+   * Everything the given member may start right now. Empty unless a change is running. Mirrors
+   * {@code PartitionGroupConfiguration#runnableFor(MemberId)}.
    *
-   * @throws IllegalStateException if there is no pending change to advance
+   * <p>The plan's graph is sequential (see {@link #startConfigurationChange(List)}), so at most one
+   * of these is ever non-empty at a time — the same one operation the queue used to offer. This
+   * returns a map anyway rather than an {@link Optional}, because the shape a caller has to handle
+   * is a property of the execution model, not of what today's graphs happen to declare: a global
+   * change that one day unchains two operations must not need its driver rewritten.
    */
-  public GlobalConfiguration advance() {
-    if (!hasPendingChanges()) {
-      throw new IllegalStateException(
-          "Expected to advance the configuration change, but there is no pending change");
+  public SortedMap<OperationId, GlobalChangeOperation> runnableFor(final MemberId memberId) {
+    final SortedMap<OperationId, GlobalChangeOperation> runnable = new TreeMap<>();
+    pendingChanges.ifPresent(
+        plan ->
+            plan.runnableFor(memberId)
+                .forEach(
+                    (operationId, operation) ->
+                        runnable.put(operationId, (GlobalChangeOperation) operation)));
+    return runnable;
+  }
+
+  /**
+   * Applies a completed operation's effect and records it against the plan, in one transition.
+   * Mirrors {@code PartitionGroupConfiguration#completeOperation}.
+   *
+   * <p>Deliberately does not move the config version: a version bump here would take the merge off
+   * its structural branch and discard what a peer has recorded against the same plan. Finishing the
+   * change is separate — see {@link #completeGraphChangeIfDrained()}.
+   *
+   * @throws IllegalStateException if no change is in progress after {@code updater} has run
+   */
+  public GlobalConfiguration completeOperation(
+      final OperationId operationId, final UnaryOperator<GlobalConfiguration> updater) {
+    final var updated = updater.apply(this);
+    final var plan =
+        updated
+            .pendingChanges()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Expected to record %s, but no change is in progress"
+                            .formatted(operationId)));
+    return new GlobalConfiguration(
+        updated.version(),
+        updated.clusterId(),
+        updated.members(),
+        updated.partitionDistributorConfig(),
+        Optional.of(plan.completeOperation(operationId)),
+        updated.lastChange());
+  }
+
+  /**
+   * Finishes the change once every operation has completed: records {@code lastChange}, removes
+   * members whose lifecycle state is {@link BrokerState.State#LEFT}, and bumps the version so peers
+   * overwrite their local copy on merge. Returns {@code this} unchanged otherwise, so every broker
+   * may call it on every merge — which is how the change completes without a coordinator. Mirrors
+   * {@code PartitionGroupConfiguration#completeGraphChangeIfDrained()}.
+   */
+  public GlobalConfiguration completeGraphChangeIfDrained() {
+    final var plan = pendingChanges.orElse(null);
+    if (plan == null || plan.hasPendingChanges()) {
+      return this;
     }
-
-    final var result =
-        new GlobalConfiguration(
-            version,
-            clusterId,
-            members,
-            partitionDistributorConfig,
-            Optional.of(pendingChanges.orElseThrow().advance()),
-            lastChange);
-
-    if (result.hasPendingChanges()) {
-      return result;
-    }
-
-    // The last operation has been applied. Complete the change: remove members marked as LEFT and
-    // bump the version so other members merge by overwriting their local copy.
     final var remainingMembers =
-        result.members().entrySet().stream()
+        members.entrySet().stream()
             .filter(entry -> entry.getValue().state() != BrokerState.State.LEFT)
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    final var completedChange = pendingChanges.orElseThrow().completed();
     return new GlobalConfiguration(
-        result.version() + 1,
+        version + 1,
         clusterId,
         remainingMembers,
         partitionDistributorConfig,
         Optional.empty(),
-        Optional.of(completedChange));
+        Optional.of(plan.toCompletedChange()));
   }
 
   /**

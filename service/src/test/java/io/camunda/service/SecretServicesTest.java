@@ -569,11 +569,15 @@ public class SecretServicesTest {
     // given a batch that is entirely malformed
     authorizationsConfig.setEnabled(true);
 
-    // when references carry pattern/glob or whitespace characters in the name segment
+    // when references carry pattern/glob, whitespace or dot characters in the name segment
     final var resolution =
         services
             .resolve(
-                List.of("camunda.secrets.*", "camunda.secrets.a%b", "camunda.secrets.a b"),
+                List.of(
+                    "camunda.secrets.*",
+                    "camunda.secrets.a%b",
+                    "camunda.secrets.a b",
+                    "camunda.secrets.a.b"),
                 authentication)
             .join();
 
@@ -585,6 +589,66 @@ public class SecretServicesTest {
         .containsOnly(SecretErrorCode.INVALID_REFERENCE);
     assertThat(store.resolveCalls()).isEmpty();
     verify(authorizationChecker, never()).retrieveAuthorizedAuthorizationScopes(any(), any());
+  }
+
+  @Test
+  void shouldResolveReferenceWithHyphenInName() {
+    // given a dashed secret name, which the file, GCP and AWS stores all accept
+    authorizationsConfig.setEnabled(true);
+    grantRevealWildcard();
+    store.holds("db-password", "s3cr3t");
+
+    // when
+    final var resolution =
+        services.resolve(List.of("camunda.secrets.db-password"), authentication).join();
+
+    // then the dash reaches the store untouched and the value comes back
+    assertThat(resolution.errors()).isEmpty();
+    assertThat(resolution.resolved())
+        .extracting(ResolvedSecret::reference, ResolvedSecret::value)
+        .containsExactly(tuple("camunda.secrets.db-password", "s3cr3t"));
+    assertThat(store.resolveCalls()).containsExactly(Set.of("db-password"));
+  }
+
+  @Test
+  void shouldAcceptLeadingAndTrailingHyphenInName() {
+    // given names a backing store may legitimately hold: the pattern is not anchored, since
+    // anchoring would only move the store-versus-reference mismatch rather than close it
+    authorizationsConfig.setEnabled(true);
+    grantRevealWildcard();
+    store.holds("-lead", "one");
+    store.holds("trail-", "two");
+
+    // when
+    final var resolution =
+        services
+            .resolve(List.of("camunda.secrets.-lead", "camunda.secrets.trail-"), authentication)
+            .join();
+
+    // then both resolve
+    assertThat(resolution.errors()).isEmpty();
+    assertThat(resolution.resolved())
+        .extracting(ResolvedSecret::reference)
+        .containsExactlyInAnyOrder("camunda.secrets.-lead", "camunda.secrets.trail-");
+  }
+
+  @Test
+  void shouldAuthorizeHyphenatedReferenceByItsFullReferenceString() {
+    // given a grant on the prefix before the dash, not on the whole reference
+    authorizationsConfig.setEnabled(true);
+    grantReveal("camunda.secrets.db");
+    store.holds("db-password", "s3cr3t");
+
+    // when
+    final var resolution =
+        services.resolve(List.of("camunda.secrets.db-password"), authentication).join();
+
+    // then the dash is part of the resource id, so the grant does not carry over to it
+    assertThat(resolution.resolved()).isEmpty();
+    assertThat(resolution.errors())
+        .extracting(SecretServices.SecretResolutionError::code)
+        .containsExactly(SecretErrorCode.ACCESS_DENIED);
+    assertThat(store.resolveCalls()).isEmpty();
   }
 
   @Test
@@ -716,7 +780,8 @@ public class SecretServicesTest {
     authorizationsConfig.setEnabled(true);
     grantReadWildcard();
     store.holds("tls.crt", "certificate");
-    store.holds("db-password", "password");
+    store.holds("a b", "spaced");
+    store.holds("a*b", "globbed");
     store.holds("ok_name", "value");
 
     // when
@@ -725,7 +790,23 @@ public class SecretServicesTest {
     // then only the names that form a valid reference are offered: the others could neither be
     // resolved nor written in a BPMN expression, so listing them would only mislead the caller
     assertThat(references).contains("camunda.secrets.ok_name");
-    assertThat(references).doesNotContain("camunda.secrets.tls.crt", "camunda.secrets.db-password");
+    assertThat(references)
+        .doesNotContain("camunda.secrets.tls.crt", "camunda.secrets.a b", "camunda.secrets.a*b");
+  }
+
+  @Test
+  void shouldListStoreNamesContainingAHyphen() {
+    // given a dashed name, which every backing store holds as a matter of course
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.holds("db-password", "password");
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then it is offered, since resolve() takes it and it can be written in a BPMN expression as
+    // camunda.secrets.`db-password`
+    assertThat(references).contains("camunda.secrets.db-password");
   }
 
   @Test

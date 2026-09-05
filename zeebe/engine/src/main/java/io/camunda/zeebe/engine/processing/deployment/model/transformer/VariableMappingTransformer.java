@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ClusterVariab
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
+import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.DetectedSecret;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
@@ -27,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -38,10 +40,14 @@ import java.util.stream.Collectors;
  * runtime, with each mapping's result visible to subsequent mappings (see {@link InputMapping},
  * {@link OutputMapping} and {@code BpmnVariableMappingBehavior}).
  *
- * <p>Output mappings differ from input mappings in how a nested target is merged at runtime: the
- * result must be merged with the existing scope variable if that variable is a JSON object, at
- * every nesting level. This merging is done by {@code MappingResultBuilder} while accumulating
- * results.
+ * <p>Input and output mappings differ in how a nested target relates to the existing scope variable
+ * at runtime, and each difference is handled by its own {@code MappingResultBuilder}
+ * implementation. An output mapping's result is merged into that variable if it is a JSON object,
+ * at every nesting level, so the merged value is what gets written ({@code
+ * OutputMappingResultBuilder}). An input mapping's result is not merged — it is written as-is — but
+ * when a later mapping in the same list reads that root name in its own source, it sees the mapped
+ * keys layered over the value the scope chain resolves, so a mapping shadows only the keys it
+ * defines ({@code InputMappingResultBuilder}).
  */
 public final class VariableMappingTransformer {
 
@@ -50,7 +56,9 @@ public final class VariableMappingTransformer {
   /**
    * Transforms the input mappings, keeping each mapping as its own source expression plus target
    * path so they can be evaluated one by one in modeling order at runtime and, in the same pass,
-   * detects the secret references they use (see {@link #detectSecretReferences}).
+   * detects the secret references they use (see {@link #detectSecretReferences}) and precomputes
+   * the combined FEEL context expression the legacy resolver evaluates (see {@link
+   * #asFeelContextExpression}).
    */
   public InputMappings transformInputMappings(
       final Collection<? extends ZeebeMapping> inputMappings,
@@ -58,6 +66,9 @@ public final class VariableMappingTransformer {
 
     final var mappings = toMappings(inputMappings, expressionLanguage);
     final var context = asContext(mappings);
+    final var contextExpression =
+        asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
+    final var combinedExpression = parseExpression(contextExpression, expressionLanguage);
 
     final var transformedMappings =
         mappings.stream()
@@ -69,8 +80,68 @@ public final class VariableMappingTransformer {
             .toList();
     return new InputMappings(
         transformedMappings,
+        combinedExpression,
         detectSecretReferences(context),
         detectClusterVariableReferences(context));
+  }
+
+  private String asFeelContextExpression(
+      final MappingContext context,
+      final BiFunction<String, List<String>, Object> contextValueVisitor) {
+    return context.visit(feelContextBuilder(contextValueVisitor));
+  }
+
+  private MappingContextVisitor<String> feelContextBuilder(
+      final BiFunction<String, List<String>, Object> contextValueVisitor) {
+    return new MappingContextVisitor<>() {
+      @Override
+      public String onEntry(final String targetKey, final Expression sourceExpression) {
+        final String expression;
+        if (sourceExpression instanceof StaticExpression) {
+          // due to a regression (https://github.com/camunda/camunda/issues/16043) all the double
+          // quotes inside the static expression must be escaped
+          expression =
+              String.format("\"%s\"", sourceExpression.getExpression().replaceAll("\"", "\\\\\""));
+        } else {
+          expression = sourceExpression.getExpression();
+        }
+        return targetKey + ":" + expression;
+      }
+
+      @Override
+      public String onContext(final List<String> entries) {
+        return "{" + String.join(",", entries) + "}";
+      }
+
+      @Override
+      public String onContextEntry(
+          final String targetKey, final String contextValue, final List<String> contextPath) {
+        return targetKey + ":" + contextValueVisitor.apply(contextValue, contextPath);
+      }
+    };
+  }
+
+  private String mergeContextExpression(
+      final String nestedContext, final List<String> contextPath) {
+    // for a nested target mapping 'x -> a.b', append the nested property 'b' to
+    // the existing context variable 'a' (instead of overriding 'a')
+    // example: x = 1 and a = {'c':2} results in a = {'b':1, 'c':2}
+    final var existingContext = String.join(".", contextPath);
+    return String.format(
+        "if (%s != null) then context merge(%s,%s) else %s",
+        existingContext, existingContext, nestedContext, nestedContext);
+  }
+
+  private Expression parseExpression(
+      final String contextExpression, final ExpressionLanguage expressionLanguage) {
+    final var expression =
+        expressionLanguage.parseExpression(EXPRESSION_MARKER + contextExpression);
+    if (!expression.isValid()) {
+      throw new IllegalStateException(
+          String.format(
+              "Failed to build variable mapping expression: %s", expression.getFailureMessage()));
+    }
+    return expression;
   }
 
   private static Expression toInputSourceExpression(
@@ -88,17 +159,28 @@ public final class VariableMappingTransformer {
 
   /**
    * Transforms the output mappings, keeping each mapping as its own source expression plus target
-   * path so they can be evaluated one by one in modeling order at runtime. A nested target merges
-   * with the existing scope value at every path level at runtime (see {@code
-   * MappingResultBuilder}).
+   * path so they can be evaluated one by one in modeling order at runtime, and also precomputes the
+   * combined FEEL context expression for {@code CombinedOutputMappingResolver} to evaluate on each
+   * completion without rebuilding it.
+   *
+   * <p>A nested target merges with the existing scope value at every path level in ORDERED mode
+   * (see {@code OutputMappingResultBuilder}). In COMBINED mode the pre-built expression evaluates
+   * all mappings in a single FEEL context literal against the outer (job-variable) scope.
    */
-  public List<OutputMapping> transformOutputMappings(
+  public OutputMappings transformOutputMappings(
       final Collection<? extends ZeebeMapping> outputMappings,
       final ExpressionLanguage expressionLanguage) {
 
-    return toMappings(outputMappings, expressionLanguage).stream()
-        .map(mapping -> new OutputMapping(mapping.source, splitPathExpression(mapping.target)))
-        .toList();
+    final var mappings = toMappings(outputMappings, expressionLanguage);
+    final var context = asContext(mappings);
+    final var contextExpression = asFeelContextExpression(context, this::mergeContextExpression);
+    final var combinedExpression = parseExpression(contextExpression, expressionLanguage);
+
+    final var transformedMappings =
+        mappings.stream()
+            .map(mapping -> new OutputMapping(mapping.source, splitPathExpression(mapping.target)))
+            .toList();
+    return new OutputMappings(combinedExpression, transformedMappings);
   }
 
   /**

@@ -13,6 +13,8 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -29,7 +31,8 @@ import io.camunda.zeebe.util.Either;
 
 @ExcludeAuthorizationCheck
 public class AdHocSubProcessInstructionCompleteProcessor
-    implements TypedRecordProcessor<AdHocSubProcessInstructionRecord> {
+    implements TypedRecordProcessor<AdHocSubProcessInstructionRecord>,
+        SuspensionAware<AdHocSubProcessInstructionRecord> {
 
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -66,6 +69,12 @@ public class AdHocSubProcessInstructionCompleteProcessor
             },
             rejection ->
                 rejectionWriter.appendRejection(record, rejection.type(), rejection.reason()));
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(
+      final TypedRecord<AdHocSubProcessInstructionRecord> record) {
+    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
   }
 
   private BpmnElementContext createBpmnElementContext(final ElementInstance elementInstance) {

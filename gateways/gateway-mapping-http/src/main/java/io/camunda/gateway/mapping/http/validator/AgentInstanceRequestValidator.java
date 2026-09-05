@@ -8,7 +8,9 @@
 package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
@@ -17,11 +19,12 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
-import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
+import io.camunda.gateway.protocol.model.AgentTool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +35,9 @@ import org.springframework.http.ProblemDetail;
 
 @NullMarked
 public class AgentInstanceRequestValidator {
+
+  // Mirrors HistoryItemId#maxLength in identifiers.yaml.
+  private static final int MAX_HISTORY_ITEM_ID_LENGTH = 256;
 
   // Note: even if some properties are marked @NotNull in AgentInstanceCreationRequest,
   // no validation is performed during deserialization, so it is still necessary to validate it here
@@ -48,70 +54,22 @@ public class AgentInstanceRequestValidator {
                 request.getElementInstanceKey(), "elementInstanceKey", violations);
           }
 
-          if (request.getDefinition() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition"));
-          } else {
-            final var def = request.getDefinition();
-            if (def.getModel() == null || def.getModel().isBlank()) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.model"));
-            }
-            if (def.getProvider() == null || def.getProvider().isBlank()) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.provider"));
-            }
-            if (def.getSystemPrompt() == null || def.getSystemPrompt().isBlank()) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.systemPrompt"));
-            }
-          }
-
-          if (request.getLimits() != null) {
-            final var limits = request.getLimits();
-            violations.addAll(validateLimit("limits.maxTokens", limits.getMaxTokens()));
-            violations.addAll(validateLimit("limits.maxModelCalls", limits.getMaxModelCalls()));
-            violations.addAll(validateLimit("limits.maxToolCalls", limits.getMaxToolCalls()));
-          }
-
-          return violations;
-        });
-  }
-
-  @SuppressWarnings("ConstantValue")
-  public Optional<ProblemDetail> validateHistoryItemRequest(
-      final String agentInstanceKey, final AgentInstanceHistoryItemRequest request) {
-    return validate(
-        () -> {
-          final List<String> violations = new ArrayList<>();
-
-          validatePositiveKeyFormat(agentInstanceKey, "agentInstanceKey", violations);
-
-          if (request.getElementInstanceKey() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
-          } else {
-            validatePositiveKeyFormat(
-                request.getElementInstanceKey(), "elementInstanceKey", violations);
-          }
-
           if (request.getJobKey() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
           } else {
             validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
           }
 
-          if (request.getRole() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("role"));
-          }
+          final var history = request.getHistory();
 
-          if (request.getContent() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content"));
+          if (history == null || history.isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history"));
           } else {
-            for (int i = 0; i < request.getContent().size(); i++) {
-              validateContentItem("content[" + i + "]", request.getContent().get(i), violations);
+            for (int i = 0; i < history.size(); i++) {
+              validateHistoryItem(i, history.get(i), violations);
             }
-          }
 
-          if (request.getProducedAt() == null || request.getProducedAt().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("producedAt"));
-          } else {
-            validateDate(request.getProducedAt(), "producedAt", violations);
+            validateConfigurationEstablishesDefinition(history, violations);
           }
 
           return violations;
@@ -133,23 +91,6 @@ public class AgentInstanceRequestValidator {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
           } else {
             validateKeyFormat(request.getElementInstanceKey(), "elementInstanceKey", violations);
-          }
-
-          if (request.getMetrics() != null) {
-            final var metrics = request.getMetrics();
-            violations.addAll(validateDelta("metrics.inputTokens", metrics.getInputTokens()));
-            violations.addAll(validateDelta("metrics.outputTokens", metrics.getOutputTokens()));
-            violations.addAll(validateDelta("metrics.modelCalls", metrics.getModelCalls()));
-            violations.addAll(validateDelta("metrics.toolCalls", metrics.getToolCalls()));
-          }
-
-          if (request.getTools() != null) {
-            for (int i = 0; i < request.getTools().size(); i++) {
-              final var tool = request.getTools().get(i);
-              if (tool.getName() == null || tool.getName().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("tools[" + i + "].name"));
-              }
-            }
           }
 
           if (request.getJobKey() != null) {
@@ -181,6 +122,10 @@ public class AgentInstanceRequestValidator {
     if (historyItem.getHistoryItemId() == null || historyItem.getHistoryItemId().isBlank()) {
       violations.add(
           ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].historyItemId"));
+    } else if (historyItem.getHistoryItemId().length() > MAX_HISTORY_ITEM_ID_LENGTH) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              "history[" + index + "].historyItemId", MAX_HISTORY_ITEM_ID_LENGTH));
     }
     if (historyItem.getLoopIteration() == null) {
       violations.add(
@@ -193,7 +138,7 @@ public class AgentInstanceRequestValidator {
     if (historyItem.getRole() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].role"));
     }
-    if (historyItem.getContent() == null || historyItem.getContent().isEmpty()) {
+    if (historyItem.getContent() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].content"));
     } else {
       for (int i = 0; i < historyItem.getContent().size(); i++) {
@@ -207,6 +152,68 @@ public class AgentInstanceRequestValidator {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].producedAt"));
     } else {
       validateDate(historyItem.getProducedAt(), "history[" + index + "].producedAt", violations);
+    }
+    if (historyItem.getTools() != null) {
+      validateTools("history[" + index + "].tools", historyItem.getTools(), violations);
+    }
+    if (historyItem.getModel() != null && historyItem.getModel().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].model"));
+    }
+    if (historyItem.getProvider() != null && historyItem.getProvider().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].provider"));
+    }
+    if (historyItem.getLimits() != null) {
+      final var limits = historyItem.getLimits();
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxTokens", limits.getMaxTokens()));
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxModelCalls", limits.getMaxModelCalls()));
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxToolCalls", limits.getMaxToolCalls()));
+    }
+    if (historyItem.getSystemPrompt() != null) {
+      if (historyItem.getSystemPrompt().isEmpty()) {
+        violations.add(
+            ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].systemPrompt"));
+      } else {
+        for (int i = 0; i < historyItem.getSystemPrompt().size(); i++) {
+          validateContentItem(
+              "history[" + index + "].systemPrompt[" + i + "]",
+              historyItem.getSystemPrompt().get(i),
+              violations);
+        }
+      }
+    }
+  }
+
+  private void validateConfigurationEstablishesDefinition(
+      final List<AgentInstanceHistoryItem> history, final List<String> violations) {
+    final var configurationItems =
+        history.stream()
+            .filter(
+                item ->
+                    item != null && item.getRole() == AgentInstanceHistoryRoleEnum.CONFIGURATION)
+            .toList();
+
+    final boolean hasModel =
+        configurationItems.stream()
+            .anyMatch(item -> item.getModel() != null && !item.getModel().isBlank());
+    final boolean hasProvider =
+        configurationItems.stream()
+            .anyMatch(item -> item.getProvider() != null && !item.getProvider().isBlank());
+    final boolean hasSystemPrompt =
+        configurationItems.stream()
+            .anyMatch(item -> item.getSystemPrompt() != null && !item.getSystemPrompt().isEmpty());
+
+    if (!hasModel) {
+      violations.add(ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE.formatted("model"));
+    }
+    if (!hasProvider) {
+      violations.add(ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE.formatted("provider"));
+    }
+    if (!hasSystemPrompt) {
+      violations.add(
+          ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE.formatted("systemPrompt"));
     }
   }
 
@@ -250,16 +257,23 @@ public class AgentInstanceRequestValidator {
     }
   }
 
+  private void validateTools(
+      final String fieldPrefix, final List<AgentTool> tools, final List<String> violations) {
+    for (int i = 0; i < tools.size(); i++) {
+      final var tool = tools.get(i);
+      if (tool == null) {
+        violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + "[" + i + "]"));
+        continue;
+      }
+      if (tool.getName() == null || tool.getName().isBlank()) {
+        violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + "[" + i + "].name"));
+      }
+    }
+  }
+
   private List<String> validateLimit(final String limitName, final Number limit) {
     if (limit != null && limit.longValue() < -1) {
       return List.of(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(limitName, limit, ">= -1"));
-    }
-    return Collections.emptyList();
-  }
-
-  private List<String> validateDelta(final String fieldName, final @Nullable Number value) {
-    if (value != null && value.longValue() < 0) {
-      return List.of(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(fieldName, value, ">= 0"));
     }
     return Collections.emptyList();
   }

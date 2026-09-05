@@ -88,12 +88,16 @@ async function requestWithThrow<T>({
   }
 }
 
+function getCsrfToken() {
+  return sessionStorage.getItem('X-CSRF-TOKEN');
+}
+
 async function request(
   {url, method, body, headers, signal}: RequestParams,
   {skipSessionCheck = false}: {skipSessionCheck?: boolean} = {},
 ) {
   const clientConfig = getClientConfig();
-  const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
+  const csrfToken = getCsrfToken();
   const hasCsrfToken =
     csrfToken !== null &&
     method !== undefined &&
@@ -199,5 +203,11 @@ function isRequestError(error: unknown): error is RequestError {
   );
 }
 
-export {request, requestAndParse, requestWithThrow, isRequestError};
+export {
+  getCsrfToken,
+  request,
+  requestAndParse,
+  requestWithThrow,
+  isRequestError,
+};
 export type {RequestError};

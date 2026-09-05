@@ -1,0 +1,10 @@
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  data:
+    secondaryStorage:
+      rdbms:
+        # The hostname depends on the name of the PostgreSQL cluster deployed
+        # by the load-test-setup Helm Chart.
+        url: jdbc:postgresql://postgresql-rw:5432/camunda

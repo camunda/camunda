@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
@@ -168,103 +169,32 @@ class ClusterConfigurationTest {
   }
 
   @Test
-  void shouldAdvanceClusterTopologyChanges() {
-    // given
-    final var initialTopology =
-        ClusterConfiguration.init()
-            .addMember(member(1), MemberState.uninitialized())
-            .startConfigurationChange(
-                List.of(
-                    new PartitionLeaveOperation(member(1), 1, 1),
-                    new PartitionLeaveOperation(member(2), 2, 1)));
+  void shouldMergeTwoCopiesOfAQueueChangeByPlanVersion() {
+    // given — two copies of the same queue change, one a step further along. This is the shape a
+    // configuration decoded from the legacy ClusterTopology message carries, and the version is
+    // what a broker reading that message merges by.
+    final var operations =
+        List.<ClusterConfigurationChangeOperation>of(
+            new PartitionLeaveOperation(member(1), 1, 1),
+            new PartitionLeaveOperation(member(2), 2, 1));
+    final var plan = ClusterChangePlan.init(2, operations);
+    final var advanced =
+        new ClusterChangePlan(
+            plan.id(),
+            plan.version() + 1,
+            plan.status(),
+            plan.startedAt(),
+            List.of(new CompletedOperation(operations.get(0), Instant.EPOCH)),
+            List.of(operations.get(1)));
+    final var base = ClusterConfiguration.init().addMember(member(1), MemberState.uninitialized());
+    final var withPlan =
+        ClusterConfiguration.builder().from(base).pendingChanges(Optional.of(plan)).build();
+    final var withAdvancedPlan =
+        ClusterConfiguration.builder().from(base).pendingChanges(Optional.of(advanced)).build();
 
-    // when
-    final var updatedTopology =
-        initialTopology.advanceConfigurationChange(
-            t -> t.updateMember(member(1), MemberState::toActive));
-
-    // then
-    ClusterConfigurationAssert.assertThatClusterTopology(updatedTopology)
-        .hasMemberWithState(1, State.ACTIVE)
-        .hasPendingOperationsWithSize(1);
-  }
-
-  @Test
-  void shouldIncrementVersionWhenChangeIsCompleted() {
-    // given
-    final var initialTopology =
-        ClusterConfiguration.init()
-            .addMember(member(1), MemberState.initializeAsActive(Map.of()))
-            .startConfigurationChange(List.of(new PartitionLeaveOperation(member(1), 1, 1)));
-
-    // when
-    final var updatedTopology =
-        initialTopology.advanceConfigurationChange(
-            t -> t.updateMember(member(1), MemberState::toLeft));
-
-    // then
-    ClusterConfigurationAssert.assertThatClusterTopology(updatedTopology)
-        .doesNotHaveMember(1)
-        .hasPendingOperationsWithSize(0)
-        .hasVersion(initialTopology.version() + 1);
-  }
-
-  @Test
-  void shouldMergeClusterTopologyChanges() {
-    final var initialTopology =
-        ClusterConfiguration.init()
-            .addMember(member(1), MemberState.uninitialized())
-            .startConfigurationChange(
-                List.of(
-                    new PartitionLeaveOperation(member(1), 1, 1),
-                    new PartitionLeaveOperation(member(2), 2, 1)));
-
-    // when
-    final var updatedTopology =
-        initialTopology.advanceConfigurationChange(
-            t -> t.updateMember(member(1), MemberState::toActive));
-
-    final var mergedTopology = initialTopology.merge(updatedTopology);
-
-    // then
-    assertThat(mergedTopology).isEqualTo(updatedTopology);
-  }
-
-  @Test
-  void shouldAddCompletedClusterTopologyChanges() {
-    // given
-    final var initialTopology =
-        ClusterConfiguration.init()
-            .addMember(member(1), MemberState.initializeAsActive(Map.of()))
-            .startConfigurationChange(List.of(new PartitionJoinOperation(member(1), 1, 1)));
-    final var changeId = initialTopology.pendingChanges().orElseThrow().id();
-
-    // when
-    final var finalTopology =
-        initialTopology.advanceConfigurationChange(
-            t ->
-                t.updateMember(
-                    member(1),
-                    m -> m.addPartition(1, PartitionState.active(1, emptyPartitionConfig))));
-
-    // then
-    final var expected =
-        ClusterConfiguration.builder()
-            .version(2)
-            .members(
-                Map.of(
-                    member(1),
-                    MemberState.initializeAsActive(
-                        Map.of(1, PartitionState.active(1, emptyPartitionConfig)))))
-            .lastChange(
-                Optional.of(
-                    new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())))
-            .pendingChanges(Optional.empty())
-            .routingState(Optional.empty())
-            .clusterId(Optional.empty())
-            .build();
-
-    ClusterConfigurationAssert.assertThatClusterTopology(finalTopology).hasSameTopologyAs(expected);
+    // when / then — the further-along copy wins, whichever side receives the merge
+    assertThat(withPlan.merge(withAdvancedPlan)).isEqualTo(withAdvancedPlan);
+    assertThat(withAdvancedPlan.merge(withPlan)).isEqualTo(withAdvancedPlan);
   }
 
   @Test
@@ -432,6 +362,57 @@ class ClusterConfigurationTest {
   }
 
   @Nested
+  class GraphChange {
+
+    private ClusterConfiguration configurationRunningAGraph() {
+      final var builder = OperationGraph.builder();
+      builder.add(new PartitionJoinOperation(member(1), 1, 1, true));
+      builder.add(new PartitionJoinOperation(member(2), 1, 1, true));
+      return ClusterConfiguration.builder()
+          .version(2)
+          .members(Map.of(member(1), MemberState.initializeAsActive(Map.of())))
+          .pendingChanges(Optional.of(DependencyChangePlan.init(3, builder.build())))
+          .build();
+    }
+
+    @Test
+    void shouldCarryTheGraphItWasBuiltWith() {
+      // given / when
+      final var configuration = configurationRunningAGraph();
+
+      // then — the change is held as the graph it is, so a consumer reading it can see that both
+      // operations may run at the same time
+      assertThat(configuration.hasPendingChanges()).isTrue();
+      assertThat(configuration.pendingChanges().orElseThrow())
+          .isInstanceOf(DependencyChangePlan.class);
+    }
+
+    @Test
+    void shouldNotReportAGraphChangeAsARestore() {
+      // given — the restore sentinel id only exists on a queue; a group running a restore as a
+      // graph marks it on the enclosing phased plan, which this projection cannot see
+      final var configuration = configurationRunningAGraph();
+
+      // then
+      assertThat(configuration.isAfterRestore()).isFalse();
+    }
+
+    @Test
+    void shouldCancelAGraphChange() {
+      // given
+      final var configuration = configurationRunningAGraph();
+
+      // when — cancelling reads only the plan's identity and start time, which both models carry
+      final var cancelled = configuration.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled.hasPendingChanges()).isFalse();
+      assertThat(cancelled.lastChange().orElseThrow().status()).isEqualTo(Status.CANCELLED);
+      assertThat(cancelled.lastChange().orElseThrow().id()).isEqualTo(3);
+    }
+  }
+
+  @Nested
   class ZoneAware {
     @Test
     void shouldClassifyZoneAwarenessForUnzoned() {
@@ -573,15 +554,91 @@ class ClusterConfigurationTest {
               .addMember(member(1), MemberState.initializeAsActive(Map.of()))
               .setPartitionDistributorConfig(oldConfig);
       final var newTopology =
-          oldTopology
-              .startConfigurationChange(List.of(new PartitionLeaveOperation(member(1), 1, 1)))
-              .setPartitionDistributorConfig(newConfig);
+          ClusterConfiguration.builder()
+              .from(oldTopology.setPartitionDistributorConfig(newConfig))
+              .pendingChanges(
+                  Optional.of(
+                      DependencyChangePlan.sequential(
+                          3, List.of(new PartitionLeaveOperation(member(1), 1, 1)))))
+              .build();
 
       // when
       final var merged = oldTopology.merge(newTopology);
 
       // then the higher version wins wholesale
       assertThat(merged.partitionDistributorConfig()).hasValue(newConfig);
+    }
+  }
+
+  @Nested
+  class PrimaryMemberForPartition {
+
+    @Test
+    void shouldReturnHighestPriorityActiveMember() {
+      // given
+      final var topology =
+          ClusterConfiguration.init()
+              .addMember(
+                  member(1),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+              .addMember(
+                  member(2),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(3, emptyPartitionConfig))));
+
+      // when / then
+      assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(2));
+    }
+
+    @Test
+    void shouldSkipALearnerEvenWithTheHighestPriority() {
+      // given — a learner cannot vote and can therefore never actually lead
+      final var topology =
+          ClusterConfiguration.init()
+              .addMember(
+                  member(1),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+              .addMember(
+                  member(2),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.joining(9, emptyPartitionConfig).toLearner())));
+
+      // when / then
+      assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(1));
+    }
+
+    @Test
+    void shouldTreatARecoveringMemberAsAValidCandidate() {
+      // given — recovery only pauses stream processing, it does not affect raft voting rights
+      final var topology =
+          ClusterConfiguration.init()
+              .addMember(
+                  member(1),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+              .addMember(
+                  member(2),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(9, emptyPartitionConfig).toRecovering())));
+
+      // when / then
+      assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(2));
+    }
+
+    @Test
+    void shouldReturnEmptyWhenOnlyALearnerReplicatesPartition() {
+      // given
+      final var topology =
+          ClusterConfiguration.init()
+              .addMember(
+                  member(1),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.joining(1, emptyPartitionConfig).toLearner())));
+
+      // when / then
+      assertThat(topology.getPrimaryMemberForPartition(1)).isEmpty();
     }
   }
 }

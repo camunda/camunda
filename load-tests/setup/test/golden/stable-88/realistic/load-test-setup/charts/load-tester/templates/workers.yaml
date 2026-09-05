@@ -140,6 +140,7 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
 apiVersion: apps/v1
@@ -273,6 +274,7 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
 apiVersion: apps/v1
@@ -418,6 +420,7 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
 apiVersion: apps/v1
@@ -551,6 +554,7 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
 apiVersion: apps/v1
@@ -684,6 +688,7 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
 apiVersion: apps/v1

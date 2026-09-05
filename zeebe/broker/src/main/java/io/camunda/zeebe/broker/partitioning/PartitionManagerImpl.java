@@ -13,6 +13,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.search.clients.SearchClientsProxy;
@@ -35,7 +36,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
@@ -102,7 +102,6 @@ public final class PartitionManagerImpl
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
-      final SnapshotApiRequestHandler snapshotApiRequestHandler,
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
@@ -141,7 +140,7 @@ public final class PartitionManagerImpl
             actorSchedulingService,
             brokerCfg,
             localBroker,
-            snapshotApiRequestHandler,
+            brokerClient,
             clusterServices,
             exporterRepository,
             diskSpaceUsageMonitor,
@@ -205,7 +204,8 @@ public final class PartitionManagerImpl
 
   private ActorFuture<Void> joinPartition(
       final PartitionMetadata partitionMetadata,
-      final DynamicPartitionConfig initialPartitionConfig) {
+      final DynamicPartitionConfig initialPartitionConfig,
+      final RaftMember.Type joinMemberType) {
     final var result = concurrencyControl.<Void>createFuture();
     final var id = partitionMetadata.id().number();
     final var context =
@@ -225,6 +225,7 @@ public final class PartitionManagerImpl
             brokerMeterRegistry,
             brokerClient,
             gatewayBrokerTransport);
+    context.joinMemberType(joinMemberType);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {
@@ -365,7 +366,8 @@ public final class PartitionManagerImpl
   public ActorFuture<Void> join(
       final int partitionId,
       final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig partitionConfig) {
+      final DynamicPartitionConfig partitionConfig,
+      final boolean asLearner) {
     final int targetPriority = Collections.max(membersWithPriority.values());
 
     final var members = membersWithPriority.keySet();
@@ -388,7 +390,11 @@ public final class PartitionManagerImpl
             targetPriority,
             primary);
 
-    return joinPartition(partitionMetadata, partitionConfig); // TODO
+    // A learner is replicated to but part of no quorum, so the join never makes a quorum depend on
+    // this empty-log member; the promote operation that follows makes it a voting member once it
+    // has caught up. Only operations from before two-phase joins existed join as a voting member.
+    final var joinMemberType = asLearner ? RaftMember.Type.PROMOTABLE : RaftMember.Type.ACTIVE;
+    return joinPartition(partitionMetadata, partitionConfig, joinMemberType);
   }
 
   @Override
@@ -413,6 +419,58 @@ public final class PartitionManagerImpl
 
                 partitions.remove(partitionId);
                 LOGGER.info("Left partition {}", partitionId);
+                result.complete(null);
+              });
+        });
+    return result;
+  }
+
+  @Override
+  public ActorFuture<Void> promote(final int partitionId) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Promoting member to a voting member of partition {}", partitionId);
+          concurrencyControl.runOnCompletion(
+              partition.promoteMember(),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+                LOGGER.info("Promoted member to a voting member of partition {}", partitionId);
+                result.complete(null);
+              });
+        });
+    return result;
+  }
+
+  @Override
+  public ActorFuture<Void> demote(final int partitionId) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Demoting member to a non-voting member of partition {}", partitionId);
+          concurrencyControl.runOnCompletion(
+              partition.demoteMember(),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+                LOGGER.info("Demoted member to a non-voting member of partition {}", partitionId);
                 result.complete(null);
               });
         });
@@ -556,10 +614,15 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
-    return partitions.keySet().stream()
-        .map(partitionId -> setExportingState(partitionId, exportingState))
-        .collect(new ActorFutureCollector<Void>(concurrencyControl))
-        .thenAccept(ignored -> unit());
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () ->
+            partitions.keySet().stream()
+                .map(partitionId -> setExportingState(partitionId, exportingState))
+                .collect(new ActorFutureCollector<Void>(concurrencyControl))
+                .thenAccept(ignored -> unit())
+                .onComplete(result));
+    return result;
   }
 
   @Override
@@ -592,7 +655,7 @@ public final class PartitionManagerImpl
                   .formatted(partitionId)));
     }
     LOGGER.trace("Setting exporting state {} on partition {}", exportingState, partitionId);
-    return partition.zeebePartition().getAdminAccess().setExportingState(exportingState);
+    return partition.zeebePartition().setExportingState(exportingState);
   }
 
   private void disableExporter(

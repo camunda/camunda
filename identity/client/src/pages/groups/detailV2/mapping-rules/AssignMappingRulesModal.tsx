@@ -1,0 +1,106 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC, useEffect, useState } from "react";
+import { UseEntityModalCustomProps } from "src/components/modalV2";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import useTranslate from "src/utility/localization";
+import { groupMutations } from "src/utility/api/groups/mutations";
+import { MappingRuleMultiSelect } from "src/components/formV2/entitySelection/MappingRuleSelection";
+import FormModal from "src/components/modalV2/FormModal";
+import { useNotifications } from "src/components/notifications";
+import type { Group, MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
+
+const AssignMappingRulesModal: FC<
+  UseEntityModalCustomProps<
+    { id: Group["groupId"] },
+    { assignedMappingRules: MappingRule[] }
+  >
+> = ({ entity: group, assignedMappingRules, onSuccess, open, onClose }) => {
+  const { t, Translate } = useTranslate("groups");
+  const { enqueueNotification } = useNotifications();
+  const [selectedMappingRules, setSelectedMappingRules] = useState<
+    MappingRule[]
+  >([]);
+  const [loadingAssignMappingRule, setLoadingAssignMappingRule] =
+    useState(false);
+
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignMappingRule } = useMutation(
+    groupMutations.assignMappingRule(qc),
+  );
+
+  const canSubmit = group && selectedMappingRules.length;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+
+    setLoadingAssignMappingRule(true);
+    try {
+      await Promise.all(
+        selectedMappingRules.map(({ mappingRuleId }) =>
+          callAssignMappingRule({
+            mappingRuleId: mappingRuleId,
+            groupId: group.id,
+          }),
+        ),
+      );
+      if (selectedMappingRules.length === 1) {
+        enqueueNotification({
+          kind: "success",
+          title: t("mappingRuleAssigned"),
+          subtitle: t("mappingRuleAssignedSuccessfully"),
+        });
+      } else {
+        enqueueNotification({
+          kind: "success",
+          title: t("mappingRulesAssigned"),
+          subtitle: t("mappingRulesAssignedSuccessfully"),
+        });
+      }
+      onSuccess();
+    } catch {
+      // error handled globally
+    } finally {
+      setLoadingAssignMappingRule(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      setSelectedMappingRules([]);
+    }
+  }, [open]);
+
+  return (
+    <FormModal
+      headline={t("assignMappingRule")}
+      confirmLabel={t("assignMappingRule")}
+      loading={loadingAssignMappingRule}
+      loadingDescription={t("assigningMappingRule")}
+      open={open}
+      onSubmit={handleSubmit}
+      submitDisabled={!canSubmit}
+      onClose={onClose}
+    >
+      <p>
+        <Translate i18nKey="searchAndAssignMappingRuleToGroup">
+          Search and assign mapping rule to group
+        </Translate>
+      </p>
+      <MappingRuleMultiSelect
+        value={selectedMappingRules}
+        onChange={setSelectedMappingRules}
+        excluded={assignedMappingRules}
+        autoFocus
+      />
+    </FormModal>
+  );
+};
+
+export default AssignMappingRulesModal;

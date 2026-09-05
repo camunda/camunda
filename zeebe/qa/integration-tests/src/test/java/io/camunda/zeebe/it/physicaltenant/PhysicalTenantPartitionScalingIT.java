@@ -13,6 +13,8 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -46,8 +48,11 @@ final class PhysicalTenantPartitionScalingIT {
 
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
-          .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.none())
-          .withTenant(TENANT_A, Storage.none())
+          .withTenant(
+              PhysicalTenantsITHelper.DEFAULT_TENANT_ID,
+              Storage.none(),
+              DEFAULT_TENANT_PARTITIONS_COUNT)
+          .withTenant(TENANT_A, Storage.none(), TENANT_A_PARTITIONS_COUNT)
           .build();
 
   @TestZeebe(purgeAfterEach = false)
@@ -55,9 +60,17 @@ final class PhysicalTenantPartitionScalingIT {
       TENANTS.configure(
           new TestStandaloneBroker()
               .withUnauthenticatedAccess()
+              // command redistribution retries back off exponentially up to 5 minutes by default;
+              // a scaled-up partition receives pre-existing deployments through exactly that
+              // mechanism, so without a short, flat backoff the hand-off assertion below would
+              // need to out-wait the worst-case retry gap
               .withPtConfig(
                   TENANT_A,
-                  camunda -> camunda.getCluster().setPartitionCount(TENANT_A_PARTITIONS_COUNT)));
+                  camunda -> {
+                    final var distribution = camunda.getProcessing().getEngine().getDistribution();
+                    distribution.setRedistributionInterval(Duration.ofSeconds(1));
+                    distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                  }));
 
   private final ClusterActuator actuator = ClusterActuator.of(broker);
 
@@ -101,6 +114,83 @@ final class PhysicalTenantPartitionScalingIT {
     awaitTopologyPartitionCount(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, targetPartitionCount);
     assertThat(partitionCount(TENANT_A)).isEqualTo(TENANT_A_PARTITIONS_COUNT);
     assertTopologyPartitionCount(TENANT_A, TENANT_A_PARTITIONS_COUNT);
+  }
+
+  /**
+   * Verifies that a partition added by a scale-up serves its own physical tenant's state, not the
+   * default tenant's. A new partition receives existing deployments through bootstrap and
+   * asynchronous redistribution, both of which are driven by broker requests (snapshot chunks,
+   * scale-up and redistribution progress reads) that before #60103 carried no partition group and
+   * were silently answered by the default tenant. A process deployed only to tenant A before the
+   * scale-up is instantiable on the new partition only if that hand-off really happened within
+   * tenant A — the decoy deployment on the default tenant gives a wrong-tenant hand-off concrete
+   * state to leak.
+   */
+  @Test
+  void shouldServeTheScaledUpPartitionFromItsOwnPhysicalTenant() {
+    // given — a process deployed to tenant A, and a decoy deployed to the default tenant, before
+    // tenant A is scaled up
+    final var tenantAProcessId = "scale-up-bootstrap-tenanta";
+    deploy(TENANT_A, tenantAProcessId);
+    deploy(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, "scale-up-bootstrap-default");
+
+    // when — tenant A is scaled up by one partition
+    final var targetPartitionCount = TENANT_A_PARTITIONS_COUNT + 1;
+    awaitAccepted(
+        "tenant A accepts a scale-up scoped to it",
+        () -> scalePartitions(targetPartitionCount, TENANT_A));
+    awaitPartitionCount(TENANT_A, targetPartitionCount);
+    awaitTopologyPartitionCount(TENANT_A, targetPartitionCount);
+
+    // then — an instance of tenant A's process can be created on the new partition; round-robin
+    // request routing cycles through all of tenant A's partitions, so retrying until an instance
+    // key decodes to the new partition proves that partition knows the deployment. NOT_FOUND
+    // rejections are retried: the new partition only learns existing deployments through
+    // asynchronous redistribution after its bootstrap
+    try (final var client = TENANTS.newClientBuilder(broker, TENANT_A).build()) {
+      await("tenant A's new partition %d runs its own processes".formatted(targetPartitionCount))
+          .atMost(Duration.ofMinutes(3))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                final long processInstanceKey =
+                    client
+                        .newCreateInstanceCommand()
+                        .bpmnProcessId(tenantAProcessId)
+                        .latestVersion()
+                        .send()
+                        .join()
+                        .getProcessInstanceKey();
+                assertThat(Protocol.decodePartitionId(processInstanceKey))
+                    .isEqualTo(targetPartitionCount);
+              });
+    }
+  }
+
+  private void deploy(final String physicalTenantId, final String processId) {
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(processId))
+            .endEvent()
+            .done();
+    try (final var client = TENANTS.newClientBuilder(broker, physicalTenantId).build()) {
+      // the tenant's partition group may still be electing a leader right after startup; retry
+      // the first command until it lands
+      await("deployment to physical tenant '%s' succeeds".formatted(physicalTenantId))
+          .atMost(Duration.ofSeconds(30))
+          .ignoreExceptions()
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          client
+                              .newDeployResourceCommand()
+                              .addProcessModel(process, processId + ".bpmn")
+                              .send()
+                              .join()
+                              .getProcesses())
+                      .isNotEmpty());
+    }
   }
 
   private void scalePartitions(final int targetPartitionCount, final String physicalTenant) {

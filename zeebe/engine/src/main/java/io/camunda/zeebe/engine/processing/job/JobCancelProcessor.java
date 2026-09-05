@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -34,6 +35,7 @@ public final class JobCancelProcessor
   public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to cancel job with key '%d', but no such job was found";
   private final JobState jobState;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -41,8 +43,12 @@ public final class JobCancelProcessor
   private final TypedRejectionWriter rejectionWriter;
 
   public JobCancelProcessor(
-      final ProcessingState state, final JobProcessingMetrics jobMetrics, final Writers writers) {
+      final ProcessingState state,
+      final AgentDefinitionBehavior agentDefinitionBehavior,
+      final JobProcessingMetrics jobMetrics,
+      final Writers writers) {
     jobState = state.getJobState();
+    this.agentDefinitionBehavior = agentDefinitionBehavior;
     this.jobMetrics = jobMetrics;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -59,14 +65,12 @@ public final class JobCancelProcessor
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
       jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
-      if (job.isAgentic()) {
+      if (agentDefinitionBehavior.belongsToAgent(job)) {
         // The job is destroyed without completing — discard all its pending history items. The
         // lease is left empty on purpose: the whole job is gone, so every activation's items must
         // be discarded regardless of the lease they were created with.
-        commandWriter.appendFollowUpCommand(
-            jobKey,
-            AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+        commandWriter.appendNewCommand(
+            AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
       }
     } else {
       rejectionWriter.appendRejection(

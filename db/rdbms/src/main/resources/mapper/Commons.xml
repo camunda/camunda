@@ -105,6 +105,111 @@
       </when>
     </choose>
   </sql>
+  <!--
+    Use LOWER on both sides. EQUALS, IN and LIKE must be case-insensitive.
+    ES/OS match_phrase is case-insensitive on the errorMessage text field.
+  -->
+  <sql id="errorMessageOperationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        LOWER(${column}) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+          ESCAPE ${escapeChar}
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        LOWER(${column}) NOT LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+          ESCAPE ${escapeChar}
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        ${column} IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" OR " close=")">
+          LOWER(${column}) LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+            ESCAPE ${escapeChar}
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" AND " close=")">
+          LOWER(${column}) NOT LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+            ESCAPE ${escapeChar}
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        LOWER(${column}) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler})
+          ESCAPE ${escapeChar}
+      </when>
+    </choose>
+  </sql>
+  <!--
+    Oracle treats empty strings as NULL. EQUALS '' and NOT_EQUALS '' must use
+    IS NULL / IS NOT NULL. LIKE '' has the same problem: Oracle binds '' as NULL.
+  -->
+  <sql id="errorMessageOperationCondition" databaseId="oracle">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            ${column} IS NULL
+          </when>
+          <otherwise>
+            LOWER(${column}) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+              ESCAPE ${escapeChar}
+          </otherwise>
+        </choose>
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            ${column} IS NOT NULL
+          </when>
+          <otherwise>
+            LOWER(${column}) NOT LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+              ESCAPE ${escapeChar}
+          </otherwise>
+        </choose>
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        ${column} IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" OR " close=")">
+          <choose>
+            <when test="value != null and value.toString().equals('')">
+              ${column} IS NULL
+            </when>
+            <otherwise>
+              LOWER(${column}) LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+                ESCAPE ${escapeChar}
+            </otherwise>
+          </choose>
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" AND " close=")">
+          <choose>
+            <when test="value != null and value.toString().equals('')">
+              ${column} IS NOT NULL
+            </when>
+            <otherwise>
+              LOWER(${column}) NOT LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+                ESCAPE ${escapeChar}
+            </otherwise>
+          </choose>
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            ${column} IS NULL
+          </when>
+          <otherwise>
+            LOWER(${column}) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler})
+              ESCAPE ${escapeChar}
+          </otherwise>
+        </choose>
+      </when>
+    </choose>
+  </sql>
 
   <sql id="keySetPageFilter">
     <if test="page != null and page.keySetPagination != null and !page.keySetPagination.isEmpty()">

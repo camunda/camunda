@@ -173,7 +173,12 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
             (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
                 b -> b.inboundConnectorTypes("io.camunda:http-webhook:1"),
             "inboundConnectorType",
-            "io.camunda:http-webhook:1"));
+            "io.camunda:http-webhook:1"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.businessIds("msgsub-order-100"),
+            "businessId",
+            "msgsub-order-100"));
   }
 
   @Test

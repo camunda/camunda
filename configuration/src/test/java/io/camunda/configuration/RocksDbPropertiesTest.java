@@ -45,7 +45,7 @@ public class RocksDbPropertiesTest {
         "camunda.data.primary-storage.rocks-db.sst-partitioning-enabled=false",
         "camunda.data.primary-storage.rocks-db.column-family-options.max_write_buffer_number=12",
         "camunda.data.primary-storage.rocks-db.column-family-options.write_buffer_size=67108864",
-        "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestSmallestSeqFirst",
+        "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestLargestSeqFirst",
         "camunda.data.primary-storage.rocks-db.memory-fraction=0.5"
       })
   class WithOnlyUnifiedConfigSet {
@@ -123,7 +123,7 @@ public class RocksDbPropertiesTest {
       assertThat(columnFamilyOptions.getProperty("max_write_buffer_number")).isEqualTo("12");
       assertThat(columnFamilyOptions.getProperty("write_buffer_size")).isEqualTo("67108864");
       assertThat(columnFamilyOptions.getProperty("compaction_pri"))
-          .isEqualTo("kOldestSmallestSeqFirst");
+          .isEqualTo("kOldestLargestSeqFirst");
     }
   }
 
@@ -225,7 +225,7 @@ public class RocksDbPropertiesTest {
         "camunda.data.primary-storage.rocks-db.io-rate-bytes-per-second=20971520",
         "camunda.data.primary-storage.rocks-db.wal-disabled=false",
         "camunda.data.primary-storage.rocks-db.sst-partitioning-enabled=false",
-        "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestSmallestSeqFirst",
+        "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestLargestSeqFirst",
         "camunda.data.primary-storage.rocks-db.memory-fraction=0.6",
         // legacy properties (should be ignored when new ones are present)
         "zeebe.broker.experimental.rocksdb.enableStatistics=false",
@@ -308,7 +308,7 @@ public class RocksDbPropertiesTest {
       // New properties should take precedence over legacy ones
       assertThat(columnFamilyOptions).hasSize(1);
       assertThat(columnFamilyOptions.getProperty("compaction_pri"))
-          .isEqualTo("kOldestSmallestSeqFirst");
+          .isEqualTo("kOldestLargestSeqFirst");
     }
   }
 }

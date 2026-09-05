@@ -36,7 +36,7 @@ handle cross-incident merging.
 
 ### Step 1 — Parse the time window
 
-Read `$ARGUMENTS`. Supported forms:
+Read the time window from the user's request. Supported forms:
 
 | Argument | Meaning |
 |---|---|

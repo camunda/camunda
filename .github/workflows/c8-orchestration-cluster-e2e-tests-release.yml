@@ -91,6 +91,8 @@ jobs:
             base="stable/8.8"
           elif [[ "$major_minor" == "8.9" ]]; then
             base="stable/8.9"
+          elif [[ "$major_minor" == "8.10" ]]; then
+            base="stable/8.10"
           else
             base="main"
           fi
@@ -371,15 +373,30 @@ jobs:
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
           pip install trcli==1.14.1
+          log=$(mktemp)
+          set +e
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             --batch-size 500 \
+            --timeout 180 \
             parse_junit --suite-id 17050 \
             --title "Release C8 Orchestration Cluster API Test Run Results - v${{ needs.validate-release.outputs.release_version }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
-            -f "$JUNIT_RESULTS_FILE"
+            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
+          status=${PIPESTATUS[0]}
+          set -e
+          # trcli's --close-run is not idempotent: past its client timeout it retries
+          # silently and TestRail rejects the retry because the first close landed.
+          # Requiring the Done line means a mid-upload rejection still fails the step.
+          if [ "$status" -ne 0 ] &&
+            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
+            grep -qF 'The test run is already completed' "$log"; then
+            echo "::warning::TestRail close raced its own retry; all results were uploaded"
+            exit 0
+          fi
+          exit "$status"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
@@ -408,7 +425,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-rdbms-dist:
-    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
+    # RDBMS exists from 8.9 onwards. Listed as an exclusion of the branches
+    # that predate it rather than an allow-list of the ones that have it, so a
+    # newly cut stable branch gets these tests by default: stable/8.10 silently
+    # skipped this whole matrix on 8.10.0-alpha5-rc1 (run 32859395813) because
+    # the allow-list still named only 8.9 and main, while every earlier 8.10 RC
+    # had run it by falling through to base=main.
+    if: ${{ !contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), needs.validate-release.outputs.base) }}
     name: "Build Camunda distribution"
     needs: [validate-release]
     runs-on: gcp-perf-core-16-default
@@ -480,7 +503,13 @@ jobs:
   c8-orchestration-cluster-api-tests-rdbms:
     name: API Tests (RDBMS) (${{ needs.validate-release.outputs.base }} / ${{ matrix.database.database-name }})
     needs: [validate-release, build-rdbms-dist]
-    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
+    # RDBMS exists from 8.9 onwards. Listed as an exclusion of the branches
+    # that predate it rather than an allow-list of the ones that have it, so a
+    # newly cut stable branch gets these tests by default: stable/8.10 silently
+    # skipped this whole matrix on 8.10.0-alpha5-rc1 (run 32859395813) because
+    # the allow-list still named only 8.9 and main, while every earlier 8.10 RC
+    # had run it by falling through to base=main.
+    if: ${{ !contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), needs.validate-release.outputs.base) }}
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 60
     permissions: {}
@@ -823,7 +852,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-release.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
+        # Tasklist v1 exists only on 8.6-8.9; 8.10 removed it, as main did.
+        # Named as an allow-list of the branches that HAVE v1, defaulting to
+        # v2-only, so a new stable branch does not inherit a v1 leg: the old
+        # `|| '["v1","v2"]'` catch-all gave stable/8.10 one, and it failed with
+        # "No tests found" pointing at tests/tasklist/v1/ (run 32859395813).
+        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || (needs.validate-release.outputs.base == 'stable/8.8' || needs.validate-release.outputs.base == 'stable/8.9') && '["v1","v2"]' || '["v2"]' ) }}
     needs: validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -1037,15 +1071,18 @@ jobs:
 
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
               echo "Running V2 mode tests"
-              if [[ "${{ needs.validate-release.outputs.base }}" == "main" ]]; then
-                # main: V1 directories removed, run all tests
-                TEST_ARGS+=(tests/)
-              elif [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
+              if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
-              else
+              elif [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.9" ]]; then
                 # stable/8.9: run all tests excluding v1/ directories
                 TEST_ARGS+=(tests/ --grep-invert 'v1/')
+              else
+                # main and stable/8.10+: V1 directories removed, run all tests.
+                # Was the 8.9 arm's else, so stable/8.10 inherited a pointless
+                # --grep-invert 'v1/'; harmless here (verified: 281 tests
+                # collected either way) but wrong by accident.
+                TEST_ARGS+=(tests/)
               fi
             else
               echo "Running V1 mode tests"
@@ -1072,15 +1109,30 @@ jobs:
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
           pip install trcli==1.14.1
+          log=$(mktemp)
+          set +e
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             --batch-size 500 \
+            --timeout 180 \
             parse_junit --suite-id 17050 \
             --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
-            -f "$JUNIT_RESULTS_FILE"
+            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
+          status=${PIPESTATUS[0]}
+          set -e
+          # trcli's --close-run is not idempotent: past its client timeout it retries
+          # silently and TestRail rejects the retry because the first close landed.
+          # Requiring the Done line means a mid-upload rejection still fails the step.
+          if [ "$status" -ne 0 ] &&
+            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
+            grep -qF 'The test run is already completed' "$log"; then
+            echo "::warning::TestRail close raced its own retry; all results were uploaded"
+            exit 0
+          fi
+          exit "$status"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()

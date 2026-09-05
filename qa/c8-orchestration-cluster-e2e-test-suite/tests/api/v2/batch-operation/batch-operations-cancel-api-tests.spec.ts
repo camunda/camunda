@@ -40,12 +40,17 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   test('Cancel active batch operation returns 204 and status becomes CANCELED', async ({
     request,
   }) => {
+    // Use a large instance count so the batch stays ACTIVE long enough for the
+    // cancel command to catch it in flight. Cancellation time scales with the
+    // instance count: a 3-instance batch completes in ~2.5s, so a 30-instance
+    // batch can reach a terminal state between the accepted create and the
+    // first cancel retry, and cancelling a finished batch correctly returns a
+    // permanent 404 that the 240s retry budget cannot recover from. Mirrors the
+    // instance count the sibling suspend suite already relies on for the same
+    // reason.
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        // 30 instances (matching the suspend suite) keep the batch running
-        // long enough to cancel before it completes; a 10-instance batch can
-        // finish first, making the cancel return 404 instead of 204.
-        return createCancellationBatch(request, 30);
+        return createCancellationBatch(request, 500);
       });
 
     await test.step('Cancel batch operation', async () => {
@@ -61,12 +66,11 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   test('Cancel batch operation twice fails on second request', async ({
     request,
   }) => {
+    // Same reason as the test above: the first cancel has to land while the
+    // batch is still ACTIVE, and 30 instances can finish before it does.
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        // 30 instances (matching the suspend suite) keep the batch running
-        // long enough to cancel before it completes; a 10-instance batch can
-        // finish first, making the cancel return 404 instead of 204.
-        return createCancellationBatch(request, 30);
+        return createCancellationBatch(request, 500);
       });
 
     await test.step('Send first cancel request', async () => {

@@ -17,4 +17,13 @@ public interface MutableAgentDefinitionState extends AgentDefinitionState {
    * agentDefinitionKey}.
    */
   void insert(long agentDefinitionKey, AgentDefinitionRecord record);
+
+  /**
+   * Removes {@code record}'s entries from both {@code
+   * AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID} and {@code
+   * AGENT_DEFINITION_BY_KEY}. Idempotent: safe to call more than once for the same key (e.g. on a
+   * redistributed/replayed {@code AgentDefinition:DELETED}), since an already-removed entry is a
+   * no-op rather than an error.
+   */
+  void delete(AgentDefinitionRecord record);
 }

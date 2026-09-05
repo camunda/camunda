@@ -9,12 +9,14 @@ package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
@@ -53,7 +55,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTrans
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
@@ -74,9 +75,11 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -93,7 +96,7 @@ public final class ZeebePartitionFactory {
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
-  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private final BrokerClient brokerClient;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -117,7 +120,7 @@ public final class ZeebePartitionFactory {
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
-      final SnapshotApiRequestHandler snapshotApiRequestHandler,
+      final BrokerClient brokerClient,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
@@ -136,7 +139,7 @@ public final class ZeebePartitionFactory {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+    this.brokerClient = brokerClient;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
@@ -197,7 +200,7 @@ public final class ZeebePartitionFactory {
             commandApiService,
             snapshotStore,
             snapshotCopy,
-            snapshotApiRequestHandler,
+            brokerClient,
             stateController,
             typedRecordProcessorsFactory,
             exporterRepository,
@@ -243,20 +246,8 @@ public final class ZeebePartitionFactory {
       final ZeebeDbFactory<ZbColumnFamilies> zeebeRocksDbFactory,
       final ConstructableSnapshotStore snapshotStore,
       final ConcurrencyControl concurrencyControl) {
-    final Path runtimeDirectory;
-    final var partitionId = raftPartition.id().number();
-    if (brokerCfg.getData().useSeparateRuntimeDirectory()) {
-      final Path rootRuntimeDirectory = Paths.get(brokerCfg.getData().getRuntimeDirectory());
-      try {
-        FileUtil.ensureDirectoryExists(rootRuntimeDirectory);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(
-            "Runtime directory %s does not exist".formatted(rootRuntimeDirectory), e);
-      }
-      runtimeDirectory = rootRuntimeDirectory.resolve(String.valueOf(partitionId));
-    } else {
-      runtimeDirectory = raftPartition.dataDirectory().toPath().resolve(DEFAULT_RUNTIME_DIRECTORY);
-    }
+    final Path runtimeDirectory =
+        resolveRuntimeDirectory(brokerCfg, raftPartition.id(), raftPartition.dataDirectory());
 
     final var continuousBackup = brokerCfg.getData().getBackup().isContinuous();
     return new StateControllerImpl(
@@ -266,6 +257,31 @@ public final class ZeebePartitionFactory {
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
         zeebeDb -> new DbPositionSupplier(zeebeDb, continuousBackup),
         concurrencyControl);
+  }
+
+  /**
+   * Resolves the runtime directory for one partition. When {@code
+   * data.primary-storage.runtime-directory} is not overridden per physical tenant, every tenant's
+   * {@code BrokerCfg} resolves to the same root runtime directory, and partition numbers restart at
+   * 1 per partition group — so the partition-group name must be part of the path, or two tenants'
+   * same-numbered partitions collide on the same on-disk runtime directory.
+   */
+  @VisibleForTesting
+  static Path resolveRuntimeDirectory(
+      final BrokerCfg brokerCfg, final PartitionId partitionId, final File partitionDataDirectory) {
+    if (!brokerCfg.getData().useSeparateRuntimeDirectory()) {
+      return partitionDataDirectory.toPath().resolve(DEFAULT_RUNTIME_DIRECTORY);
+    }
+
+    final Path rootRuntimeDirectory =
+        Paths.get(brokerCfg.getData().getRuntimeDirectory()).resolve(partitionId.group());
+    try {
+      FileUtil.ensureDirectoryExists(rootRuntimeDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(
+          "Runtime directory %s does not exist".formatted(rootRuntimeDirectory), e);
+    }
+    return rootRuntimeDirectory.resolve(String.valueOf(partitionId.number()));
   }
 
   private TypedRecordProcessorsFactory createFactory(

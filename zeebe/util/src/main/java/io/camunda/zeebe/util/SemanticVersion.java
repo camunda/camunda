@@ -10,6 +10,7 @@ package io.camunda.zeebe.util;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isNumeric;
 
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -24,6 +25,18 @@ import org.jspecify.annotations.Nullable;
 public record SemanticVersion(
     int major, int minor, int patch, @Nullable String preRelease, @Nullable String buildMetadata)
     implements Comparable<SemanticVersion> {
+
+  /**
+   * Comparator for Camunda-style pre-release versions (e.g. {@code alpha1}, {@code alpha1-rc1},
+   * {@code rc3}, {@code SNAPSHOT}) which splits identifiers on numeric boundaries so that {@code
+   * alpha2 < alpha10}, and treats qualifiers like {@code -rcN} as lower precedence than the base
+   * pre-release.
+   *
+   * <p>Note: this comparator is not SemVer 2.0.0 compliant for all possible pre-release forms; use
+   * {@link #compareTo(SemanticVersion)} for strict SemVer ordering.
+   */
+  public static final Comparator<SemanticVersion> ALPHA_AND_RELEASE_CANDIDATE_COMPARATOR =
+      new AlphaAndReleaseCandidateComparator();
 
   private static final ConcurrentHashMap<String, SemanticVersion> CACHE =
       new ConcurrentHashMap<>(16);

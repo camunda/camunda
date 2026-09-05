@@ -99,13 +99,12 @@ public class StartCamundaDockerIT extends AbstractCamundaDockerIT {
                     }
                   }
                 },
-                "indicesCheck": {"status": "UP"},
                 "livenessState": {"status": "UP"},
                 "nodeIdProvider":{"status":"UP"},
                 "nodeIdProviderReady":{"status":"UP"},
                 "readinessState": {"status": "UP"},
                 "schemaReadinessCheck":{"status":"UP"},
-                "searchEngineCheck": {"status": "UP"}
+                "searchEngineStatus":{"status":"UP"}
               },
               "groups": ["liveness", "readiness", "startup", "status"]
             }
@@ -120,11 +119,9 @@ public class StartCamundaDockerIT extends AbstractCamundaDockerIT {
               "status": "UP",
               "components": {
                 "brokerReady": {"status": "UP"},
-                "indicesCheck": {"status": "UP"},
                 "nodeIdProviderReady": {"status": "UP"},
                 "readinessState": {"status": "UP"},
-                "schemaReadinessCheck":{"status":"UP"},
-                "searchEngineCheck": {"status": "UP"}
+                "schemaReadinessCheck":{"status":"UP"}
               }
             }
             """);

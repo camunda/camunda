@@ -46,11 +46,112 @@ describe('parseProcessInstancesSearchFilter', () => {
       searchParams: params({active: 'true', elementId: 'nodeA'}),
     });
 
-    expect(result).toMatchObject({
+    expect(result).toEqual({
       state: {$eq: 'ACTIVE'},
       hasIncident: false,
       elementId: {$eq: 'nodeA'},
       elementInstanceState: {$eq: 'ACTIVE'},
+    });
+  });
+
+  it('should not force elementInstanceState to ACTIVE when completed is set alongside elementId', () => {
+    const result = parseProcessInstancesSearchFilter({
+      searchParams: params({completed: 'true', elementId: 'nodeA'}),
+    });
+
+    expect(result).toEqual({
+      state: {$eq: 'COMPLETED'},
+      hasIncident: false,
+      elementId: {$eq: 'nodeA'},
+    });
+  });
+
+  it('should not force elementInstanceState to ACTIVE when canceled is set alongside elementId', () => {
+    const result = parseProcessInstancesSearchFilter({
+      searchParams: params({canceled: 'true', elementId: 'nodeA'}),
+    });
+
+    expect(result).toEqual({
+      state: {$eq: 'TERMINATED'},
+      hasIncident: false,
+      elementId: {$eq: 'nodeA'},
+    });
+  });
+
+  it('should match active elements and executed elements in separate branches', () => {
+    const result = parseProcessInstancesSearchFilter({
+      searchParams: params({
+        active: 'true',
+        completed: 'true',
+        elementId: 'nodeA',
+      }),
+    });
+
+    expect(result).toEqual({
+      $or: [
+        {
+          elementId: {$eq: 'nodeA'},
+          elementInstanceState: {$eq: 'ACTIVE'},
+          state: {$eq: 'ACTIVE'},
+          hasIncident: false,
+        },
+        {
+          elementId: {$eq: 'nodeA'},
+          state: {$eq: 'COMPLETED'},
+          hasIncident: false,
+        },
+      ],
+    });
+  });
+
+  it('should match incident elements and executed elements in separate branches', () => {
+    const result = parseProcessInstancesSearchFilter({
+      searchParams: params({
+        incidents: 'true',
+        canceled: 'true',
+        elementId: 'nodeA',
+      }),
+    });
+
+    expect(result).toEqual({
+      $or: [
+        {
+          elementId: {$eq: 'nodeA'},
+          state: {$eq: 'TERMINATED'},
+          hasIncident: false,
+        },
+        {
+          elementId: {$eq: 'nodeA'},
+          elementInstanceState: {$eq: 'ACTIVE'},
+          hasIncident: true,
+        },
+      ],
+    });
+  });
+
+  it('should match suspended elements and executed elements in separate branches', () => {
+    const result = parseProcessInstancesSearchFilter({
+      searchParams: params({
+        suspended: 'true',
+        completed: 'true',
+        elementId: 'nodeA',
+      }),
+      includeSuspended: true,
+    });
+
+    expect(result).toEqual({
+      $or: [
+        {
+          elementId: {$eq: 'nodeA'},
+          state: {$eq: 'COMPLETED'},
+          hasIncident: false,
+        },
+        {
+          elementId: {$eq: 'nodeA'},
+          elementInstanceState: {$eq: 'ACTIVE'},
+          state: {$eq: 'SUSPENDED'},
+        },
+      ],
     });
   });
 

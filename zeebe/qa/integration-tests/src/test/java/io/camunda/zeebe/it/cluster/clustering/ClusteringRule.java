@@ -752,8 +752,8 @@ public class ClusteringRule extends ExternalResource {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              assertThat(serverOfExpectedLeader.promote())
-                  .describedAs("Promote request is successful")
+              assertThat(serverOfExpectedLeader.anoint())
+                  .describedAs("Anoint request is successful")
                   .succeedsWithin(Duration.ofSeconds(15));
               final int currentLeaderId = getLeaderForPartition(partitionId).getNodeId();
               assertThat(currentLeaderId)
@@ -784,6 +784,7 @@ public class ClusteringRule extends ExternalResource {
             .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
 
     request.setPartitionId(partitionId);
+    request.setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     final BrokerResponse<ProcessInstanceCreationRecord> response =
         gatewayResource.gateway.getBrokerClient().sendRequestWithRetry(request).join();

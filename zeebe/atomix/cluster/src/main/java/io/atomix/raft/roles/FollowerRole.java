@@ -41,6 +41,8 @@ import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
+import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -317,8 +319,11 @@ public final class FollowerRole extends ActiveRole {
 
     if (isRunning() && !complete.get()) {
       if (error != null) {
-        log.warn("Poll request to {} failed: {}", member.memberId(), error.getMessage());
-        quorum.fail(member.memberId());
+        final var cause = FuturesUtil.unwrapCompletionException(error);
+        final var status = VoteErrorStatus.of(cause);
+        log.atLevel(status.logLevel())
+            .log("Poll request to {} failed with {}: {}", member.memberId(), status, cause);
+        quorum.fail(member.memberId(), status);
       } else {
         if (response.term() > raft.getTerm()) {
           raft.setTerm(response.term());
@@ -326,10 +331,10 @@ public final class FollowerRole extends ActiveRole {
 
         if (!response.accepted()) {
           log.debug("Received rejected poll from {}", member);
-          quorum.fail(member.memberId());
+          quorum.fail(member.memberId(), VoteErrorStatus.REJECTED);
         } else if (response.term() != raft.getTerm()) {
           log.debug("Received accepted poll for a different term from {}", member);
-          quorum.fail(member.memberId());
+          quorum.fail(member.memberId(), VoteErrorStatus.INVALID_TERM);
         } else {
           log.debug("Received accepted poll from {}", member);
           quorum.succeed(member.memberId());

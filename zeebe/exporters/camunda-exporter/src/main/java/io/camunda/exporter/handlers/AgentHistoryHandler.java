@@ -11,15 +11,14 @@ import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplat
 
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.AgentContentMapper;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
-import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryLimitsValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryToolValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryRole;
-import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
-import io.camunda.webapps.schema.entities.document.DocumentReferenceMetadataEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHisto
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceLimitsValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
-import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.Instant;
 import java.util.List;
@@ -121,8 +119,14 @@ public class AgentHistoryHandler
                       value.getProducedAt() > 0 ? value.getProducedAt() : record.getTimestamp())))
           .setInputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getInputTokens()))
           .setOutputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
+          .setReasoningTokenCount(
+              ExporterUtil.nullIfNegative(value.getMetrics().getReasoningTokenCount()))
+          .setCacheCreationTokenCount(
+              ExporterUtil.nullIfNegative(value.getMetrics().getCacheCreationTokenCount()))
+          .setCacheReadTokenCount(
+              ExporterUtil.nullIfNegative(value.getMetrics().getCacheReadTokenCount()))
           .setDurationMs(ExporterUtil.nullIfNegative(value.getMetrics().getDurationMs()))
-          .setContent(mapContent(value.getContent()))
+          .setContent(AgentContentMapper.mapContent(value.getContent()))
           .setToolCalls(mapToolCalls(value.getToolCalls()))
           .setHistoryItemId(ExporterUtil.emptyToNull(value.getHistoryItemId()))
           .setTools(mapTools(value.getTools()))
@@ -172,49 +176,6 @@ public class AgentHistoryHandler
           throw new IllegalStateException(
               "Unexpected AgentHistoryIntent on an exported record: " + intent);
     };
-  }
-
-  private static List<AgentHistoryContentValue> mapContent(
-      final List<? extends AgentHistoryMessageContentValue> content) {
-    return content.stream()
-        .map(
-            c ->
-                switch (c.getContentType()) {
-                  case TEXT -> AgentHistoryContentValue.text(ExporterUtil.emptyToNull(c.getText()));
-                  case DOCUMENT ->
-                      AgentHistoryContentValue.document(
-                          mapDocumentReference(c.getDocumentReference()));
-                  case OBJECT -> AgentHistoryContentValue.object(c.getObject());
-                  // should never happen — protocol UNSPECIFIED is always overwritten before export
-                  case UNSPECIFIED ->
-                      throw new IllegalStateException(
-                          "Unexpected UNSPECIFIED AgentHistoryContentType on an exported record");
-                })
-        .toList();
-  }
-
-  private static DocumentReferenceEntity mapDocumentReference(final DocumentReferenceValue ref) {
-    if (ref == null) {
-      return null;
-    }
-
-    final var meta = ref.getMetadata();
-    final var expiresAt =
-        meta.getExpiresAt() > 0
-            ? DateUtil.toOffsetDateTime(Instant.ofEpochMilli(meta.getExpiresAt()))
-            : null;
-    return new DocumentReferenceEntity(
-        ref.getDocumentId(),
-        ref.getStoreId(),
-        ref.getContentHash(),
-        new DocumentReferenceMetadataEntity(
-            meta.getContentType(),
-            meta.getFileName(),
-            expiresAt,
-            meta.getSize(),
-            ExporterUtil.emptyToNull(meta.getProcessDefinitionId()),
-            ExporterUtil.positiveOrNull(meta.getProcessInstanceKey()),
-            meta.getCustomProperties()));
   }
 
   private static List<
@@ -267,6 +228,6 @@ public class AgentHistoryHandler
     if (systemPrompt == null || systemPrompt.isEmpty()) {
       return List.of();
     }
-    return mapContent(systemPrompt);
+    return AgentContentMapper.mapContent(systemPrompt);
   }
 }

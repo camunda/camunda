@@ -12,6 +12,7 @@ import type {
 	GetProcessDefinitionInstanceStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
 type RunningInstancesCount = {
@@ -44,7 +45,7 @@ const runningInstancesCountQuery = () =>
 				endpoints.getProcessDefinitionInstanceStatistics(DEFAULT_SORT),
 			);
 			if (firstError !== null) {
-				throw firstError;
+				throw mapQueryError(firstError);
 			}
 			const firstPage: GetProcessDefinitionInstanceStatisticsResponseBody = await first.json();
 
@@ -59,7 +60,7 @@ const runningInstancesCountQuery = () =>
 				}),
 			);
 			if (remainingError !== null) {
-				throw remainingError;
+				throw mapQueryError(remainingError);
 			}
 			const remainingPage: GetProcessDefinitionInstanceStatisticsResponseBody = await remaining.json();
 			return aggregateRunningInstancesCount(firstPage.items.concat(remainingPage.items));

@@ -49,6 +49,15 @@ const createMockFlowNode = (id: string) => ({
   },
 });
 
+const createMockRoot = () => ({
+  id: 'mock-root',
+  type: 'bpmn:Process',
+  businessObject: {
+    id: 'mock-root',
+    $instanceOf: () => false,
+  },
+});
+
 const createMockedModules = (container: HTMLElement) => ({
   canvas: {
     zoom: vi.fn(),
@@ -113,6 +122,13 @@ class Viewer {
     this.container = container;
     this.bpmnRenderer = bpmnRenderer;
     this.modules = createMockedModules(container);
+    this.container.addEventListener('click', (event) => {
+      if (event.target === this.container) {
+        this.modules.eventBus.emit('element.click', {
+          element: createMockRoot(),
+        });
+      }
+    });
   }
 
   importDefinitions = vi.fn(() => Promise.resolve({}));

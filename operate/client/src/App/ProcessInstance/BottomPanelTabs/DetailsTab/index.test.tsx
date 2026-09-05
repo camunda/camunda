@@ -39,9 +39,27 @@ import {
 import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
 import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
 import {mockSearchAgentInstanceHistory} from 'modules/mocks/api/v2/agentInstances/searchAgentInstanceHistory';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const PROCESS_INSTANCE_ID = '111222333';
 const PROCESS_DEFINITION_KEY = '444555666';
+
+const ElementSelectionUpdater: React.FC = () => {
+  const {selectElement} = useProcessInstanceElementSelectActions();
+
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        selectElement({
+          elementId: 'Task_1',
+        })
+      }
+    >
+      Select element
+    </button>
+  );
+};
 
 const CALL_ACTIVITY_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -274,7 +292,12 @@ function getWrapper(initialSearchParams?: string) {
           children: [
             {
               path: Paths.processInstanceDetails({isRelative: true}),
-              element: children,
+              element: (
+                <>
+                  <ElementSelectionUpdater />
+                  {children}
+                </>
+              ),
             },
           ],
         },
@@ -334,7 +357,9 @@ describe('<DetailsTab />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByTestId('details-tab')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('region', {name: 'Details'}),
+    ).toBeInTheDocument();
     expect(await screen.findByTestId('waiting-status')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -359,6 +384,54 @@ describe('<DetailsTab />', () => {
         'To view the details, select a single element instance in the instance history.',
       ),
     ).toBeInTheDocument();
+    expect(screen.getByRole('region', {name: 'Details'})).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', {name: 'Element Instance'}),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('should preserve the details container and presentation when selecting an element from its instance', async () => {
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+    mockSearchElementInstances().withSuccess(
+      searchResult(
+        [
+          mockElementInstance,
+          {...mockElementInstance, elementInstanceKey: '987654321'},
+        ],
+        2,
+      ),
+    );
+    mockSearchAgentInstances().withSuccess(searchResult([]));
+
+    const {user} = render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const detailsTab = await screen.findByRole('region', {name: 'Details'});
+    expect(await screen.findByText('123456789')).toBeInTheDocument();
+    detailsTab.scrollTop = 120;
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    expect(
+      await screen.findByText(
+        'To view the details, select a single element instance in the instance history.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('region', {name: 'Details'})).toBe(detailsTab);
+    expect(detailsTab.scrollTop).toBe(120);
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', {name: 'Element Instance'}),
+      ).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    expect(screen.getByRole('region', {name: 'Details'})).toBe(detailsTab);
+    expect(detailsTab.scrollTop).toBe(120);
   });
 
   it('should render agent-details and a multi-instance message when multiple element instances are activated', async () => {

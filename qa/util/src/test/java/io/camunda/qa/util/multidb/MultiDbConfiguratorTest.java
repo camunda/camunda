@@ -233,6 +233,9 @@ public class MultiDbConfiguratorTest {
     assertThat(database.getUrl()).isEqualTo(expectedUrl);
     assertThat(database.getIndexPrefix()).isEqualTo(expectedPrefix);
     assertThat(database.getHistory().getPolicyName()).isEqualTo(expectedPrefix + "-ilm");
+    assertThat(database.getHistory().getUsageMetricsPolicyName())
+        .isEqualTo(expectedPrefix + "-usage-metrics-ilm");
+    assertThat(database.getHistory().getUsageMetricsRolloverInterval()).isEqualTo("1M");
     assertThat(database.getHistory().getWaitPeriodBeforeArchiving())
         .isEqualTo(expectedWaitPeriodBeforeArchiving);
     assertThat(database.getBulk().getSize()).isEqualTo(1);

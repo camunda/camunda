@@ -18,10 +18,10 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -119,7 +119,9 @@ public class PartitionStartupAndTransitionContextImpl
   private final MeterRegistry startupMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
   private volatile boolean migrationsPerformed = false;
-  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private volatile boolean migrationSnapshotTaken = false;
+  private final BrokerClient brokerClient;
+  private SnapshotApiRequestHandler snapshotApiRequestHandler;
   private ClusterConfigurationService clusterConfigurationService;
 
   public PartitionStartupAndTransitionContextImpl(
@@ -135,7 +137,7 @@ public class PartitionStartupAndTransitionContextImpl
       final CommandApiService commandApiService,
       final PersistedSnapshotStore persistedSnapshotStore,
       final SnapshotCopy snapshotCopy,
-      final SnapshotApiRequestHandler snapshotApiRequestHandler,
+      final BrokerClient brokerClient,
       final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
@@ -152,7 +154,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.raftPartition = raftPartition;
     messagingService = partitionCommunicationService;
     this.brokerCfg = brokerCfg;
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+    this.brokerClient = brokerClient;
     this.stateController = stateController;
     this.snapshotCopy = snapshotCopy;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
@@ -177,11 +179,11 @@ public class PartitionStartupAndTransitionContextImpl
   public PartitionAdminControl getPartitionAdminControl() {
     return new PartitionAdminControlImpl(
         () -> getPartitionContext().getStreamProcessor(),
-        () -> getPartitionContext().getExporterDirector(),
         () -> snapshotDirector,
         () -> partitionProcessingState,
         () -> zeebeDb,
-        () -> logStream);
+        () -> logStream,
+        this::isMigrationSnapshotTaken);
   }
 
   @Override
@@ -295,11 +297,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setPartitionCommandSender(final InterPartitionCommandSenderService sender) {
     interPartitionCommandSender = sender;
-  }
-
-  @Override
-  public ExporterPhase getExporterPhase() {
-    return partitionProcessingState.getExporterPhase();
   }
 
   @Override
@@ -418,6 +415,21 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public void markMigrationSnapshotTaken() {
+    migrationSnapshotTaken = true;
+  }
+
+  @Override
+  public void resetMigrationSnapshotTaken() {
+    migrationSnapshotTaken = false;
+  }
+
+  @Override
+  public boolean isMigrationSnapshotTaken() {
+    return migrationSnapshotTaken;
+  }
+
+  @Override
   public ComponentTreeListener getComponentTreeListener() {
     return healthGraphMetrics;
   }
@@ -484,8 +496,19 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public BrokerClient getBrokerClient() {
+    return brokerClient;
+  }
+
+  @Override
   public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
     return snapshotApiRequestHandler;
+  }
+
+  @Override
+  public void setSnapshotApiRequestHandler(
+      final SnapshotApiRequestHandler snapshotApiRequestHandler) {
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
   }
 
   @Override

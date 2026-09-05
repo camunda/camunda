@@ -588,6 +588,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       final String bulkRequestName,
       final List<ImportRequestDto> importRequestDtos,
       final Boolean retryFailedRequestsOnNestedDocLimit) {
+    if (importRequestDtos.isEmpty()) {
+      return;
+    }
     final BulkRequest bulkRequest =
         BulkRequest.of(
             b -> {

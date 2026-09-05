@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack;
 
 import io.camunda.zeebe.msgpack.value.StringValue;
+import org.jspecify.annotations.Nullable;
 
 public final class MsgpackPropertyException extends MsgpackException {
 
@@ -23,7 +24,7 @@ public final class MsgpackPropertyException extends MsgpackException {
   }
 
   public MsgpackPropertyException(
-      final StringValue property, final String message, final Throwable cause) {
+      final StringValue property, final @Nullable String message, final @Nullable Throwable cause) {
     super(String.format(MESSAGE_FORMAT, property, message), cause);
     this.property = property;
   }

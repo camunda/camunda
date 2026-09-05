@@ -10,8 +10,10 @@ package io.camunda.db.rdbms.write.domain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -31,7 +33,7 @@ public record AgentInstanceDbModel(
     String processDefinitionId,
     long processDefinitionKey,
     int processDefinitionVersion,
-    String versionTag,
+    String processDefinitionVersionTag,
     String tenantId,
     int partitionId,
     AgentInstanceStatus status,
@@ -43,6 +45,9 @@ public record AgentInstanceDbModel(
     int maxToolCalls,
     long inputTokens,
     long outputTokens,
+    long reasoningTokenCount,
+    long cacheCreationTokenCount,
+    long cacheReadTokenCount,
     int modelCalls,
     int toolCalls,
     String tools,
@@ -53,7 +58,8 @@ public record AgentInstanceDbModel(
     implements Copyable<AgentInstanceDbModel> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentInstanceDbModel.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
 
   public AgentInstanceDbModel {
     // Must stay mutable: MyBatis appends to this via <collection> after construction.
@@ -71,7 +77,7 @@ public record AgentInstanceDbModel(
       final String processDefinitionId,
       final long processDefinitionKey,
       final int processDefinitionVersion,
-      final String versionTag,
+      final String processDefinitionVersionTag,
       final String tenantId,
       final int partitionId,
       final AgentInstanceStatus status,
@@ -83,6 +89,9 @@ public record AgentInstanceDbModel(
       final int maxToolCalls,
       final long inputTokens,
       final long outputTokens,
+      final long reasoningTokenCount,
+      final long cacheCreationTokenCount,
+      final long cacheReadTokenCount,
       final int modelCalls,
       final int toolCalls,
       final String tools,
@@ -98,7 +107,7 @@ public record AgentInstanceDbModel(
         processDefinitionId,
         processDefinitionKey,
         processDefinitionVersion,
-        versionTag,
+        processDefinitionVersionTag,
         tenantId,
         partitionId,
         status,
@@ -110,6 +119,9 @@ public record AgentInstanceDbModel(
         maxToolCalls,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         modelCalls,
         toolCalls,
         tools,
@@ -143,7 +155,7 @@ public record AgentInstanceDbModel(
         processDefinitionId,
         processDefinitionKey,
         processDefinitionVersion,
-        versionTag,
+        processDefinitionVersionTag,
         tenantId,
         partitionId,
         status,
@@ -155,6 +167,9 @@ public record AgentInstanceDbModel(
         maxToolCalls,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         modelCalls,
         toolCalls,
         tools,
@@ -179,6 +194,17 @@ public record AgentInstanceDbModel(
     return deserializeTools(tools);
   }
 
+  /**
+   * Returns the structured system-prompt content list, deserializing the JSON form on every call.
+   * Returns an empty list, not null, when no JSON is stored.
+   */
+  public List<ContentItem> systemPromptItems() {
+    if (systemPrompt == null || systemPrompt.isEmpty()) {
+      return List.of();
+    }
+    return deserializeContentItems(systemPrompt);
+  }
+
   private static List<AgentInstanceToolDbValue> deserializeTools(final String tools) {
     try {
       return MAPPER.readValue(tools, new TypeReference<>() {});
@@ -201,6 +227,28 @@ public record AgentInstanceDbModel(
     }
   }
 
+  private static List<ContentItem> deserializeContentItems(final String json) {
+    try {
+      return MAPPER.readValue(json, new TypeReference<>() {});
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to deserialize agent instance system prompt", e);
+      return Collections.emptyList();
+    }
+  }
+
+  private static String serializeContentItems(final List<ContentItem> items) {
+    if (items == null || items.isEmpty()) {
+      return null;
+    }
+
+    try {
+      return MAPPER.writeValueAsString(items);
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to serialize agent instance system prompt", e);
+      return null;
+    }
+  }
+
   public Builder toBuilder() {
     return new Builder(tools)
         .agentInstanceKey(agentInstanceKey)
@@ -211,7 +259,7 @@ public record AgentInstanceDbModel(
         .processDefinitionId(processDefinitionId)
         .processDefinitionKey(processDefinitionKey)
         .processDefinitionVersion(processDefinitionVersion)
-        .versionTag(versionTag)
+        .processDefinitionVersionTag(processDefinitionVersionTag)
         .tenantId(tenantId)
         .partitionId(partitionId)
         .status(status)
@@ -223,6 +271,9 @@ public record AgentInstanceDbModel(
         .maxToolCalls(maxToolCalls)
         .inputTokens(inputTokens)
         .outputTokens(outputTokens)
+        .reasoningTokenCount(reasoningTokenCount)
+        .cacheCreationTokenCount(cacheCreationTokenCount)
+        .cacheReadTokenCount(cacheReadTokenCount)
         .modelCalls(modelCalls)
         .toolCalls(toolCalls)
         .creationDate(creationDate)
@@ -241,7 +292,7 @@ public record AgentInstanceDbModel(
     private String processDefinitionId;
     private long processDefinitionKey;
     private int processDefinitionVersion;
-    private String versionTag;
+    private String processDefinitionVersionTag;
     private String tenantId;
     private int partitionId;
     private AgentInstanceStatus status;
@@ -253,6 +304,9 @@ public record AgentInstanceDbModel(
     private int maxToolCalls;
     private long inputTokens;
     private long outputTokens;
+    private long reasoningTokenCount;
+    private long cacheCreationTokenCount;
+    private long cacheReadTokenCount;
     private int modelCalls;
     private int toolCalls;
     private String tools;
@@ -312,8 +366,8 @@ public record AgentInstanceDbModel(
       return this;
     }
 
-    public Builder versionTag(final String versionTag) {
-      this.versionTag = versionTag;
+    public Builder processDefinitionVersionTag(final String processDefinitionVersionTag) {
+      this.processDefinitionVersionTag = processDefinitionVersionTag;
       return this;
     }
 
@@ -342,8 +396,19 @@ public record AgentInstanceDbModel(
       return this;
     }
 
+    public Builder truncateDefinitionFields(final int sizeLimit, final Integer byteLimit) {
+      model = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
+      provider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
+      return this;
+    }
+
     public Builder systemPrompt(final String systemPrompt) {
       this.systemPrompt = systemPrompt;
+      return this;
+    }
+
+    public Builder systemPromptItems(final List<ContentItem> systemPromptItems) {
+      systemPrompt = serializeContentItems(systemPromptItems);
       return this;
     }
 
@@ -369,6 +434,21 @@ public record AgentInstanceDbModel(
 
     public Builder outputTokens(final long outputTokens) {
       this.outputTokens = outputTokens;
+      return this;
+    }
+
+    public Builder reasoningTokenCount(final long reasoningTokenCount) {
+      this.reasoningTokenCount = reasoningTokenCount;
+      return this;
+    }
+
+    public Builder cacheCreationTokenCount(final long cacheCreationTokenCount) {
+      this.cacheCreationTokenCount = cacheCreationTokenCount;
+      return this;
+    }
+
+    public Builder cacheReadTokenCount(final long cacheReadTokenCount) {
+      this.cacheReadTokenCount = cacheReadTokenCount;
       return this;
     }
 
@@ -418,7 +498,7 @@ public record AgentInstanceDbModel(
           processDefinitionId,
           processDefinitionKey,
           processDefinitionVersion,
-          versionTag,
+          processDefinitionVersionTag,
           tenantId,
           partitionId,
           status,
@@ -430,6 +510,9 @@ public record AgentInstanceDbModel(
           maxToolCalls,
           inputTokens,
           outputTokens,
+          reasoningTokenCount,
+          cacheCreationTokenCount,
+          cacheReadTokenCount,
           modelCalls,
           toolCalls,
           tools,

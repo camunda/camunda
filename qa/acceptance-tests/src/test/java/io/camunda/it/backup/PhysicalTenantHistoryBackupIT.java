@@ -84,7 +84,8 @@ final class PhysicalTenantHistoryBackupIT {
             .build();
     tenants.configure(BROKER);
 
-    // one repository for both tenants, on purpose — see the class javadoc
+    // a repository per tenant: sharing one is rejected at boot by
+    // SnapshotRepositoryIsolationValidation
     BROKER.withUnifiedConfig(
         camunda ->
             camunda
@@ -121,19 +122,19 @@ final class PhysicalTenantHistoryBackupIT {
     final var tenantATaken = takeBackup(TENANT_A, TENANT_A_BACKUP_ID);
     assertStatus(tenantATaken, 202);
 
-    // then each tenant's snapshots carry its own name prefix
+    // then both tenants name their snapshots the same way — the repository is what separates them
     assertThat(scheduledSnapshots(defaultTaken))
         .isNotEmpty()
         .allSatisfy(name -> assertThat(name).startsWith("camunda_webapps_"));
     assertThat(scheduledSnapshots(tenantATaken))
         .isNotEmpty()
-        .allSatisfy(name -> assertThat(name).startsWith(TENANT_A + "_camunda_webapps_"));
+        .allSatisfy(name -> assertThat(name).startsWith("camunda_webapps_"));
 
     // and each backup completes on its own tenant
     awaitBackupState(DEFAULT_TENANT_ID, DEFAULT_BACKUP_ID, "COMPLETED");
     awaitBackupState(TENANT_A, TENANT_A_BACKUP_ID, "COMPLETED");
 
-    // and neither tenant sees the other's backup, although they share one repository
+    // and neither tenant sees the other's backup
     assertThat(listedBackupIds(DEFAULT_TENANT_ID))
         .contains(DEFAULT_BACKUP_ID)
         .doesNotContain(TENANT_A_BACKUP_ID);

@@ -5,19 +5,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
   </parent>
   <artifactId>tasklist-it-tests</artifactId>
 
   <name>Tasklist Integration Tests</name>
 
   <dependencies>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-webapp</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
@@ -91,18 +85,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-micrometer-metrics-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-health</artifactId>
       <scope>test</scope>
     </dependency>
 

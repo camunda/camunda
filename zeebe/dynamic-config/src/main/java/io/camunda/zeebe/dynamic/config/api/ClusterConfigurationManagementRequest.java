@@ -39,14 +39,48 @@ public sealed interface ClusterConfigurationManagementRequest {
   record RemoveMembersRequest(Set<MemberId> members, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record JoinPartitionRequest(MemberId memberId, int partitionId, int priority, boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+  /**
+   * Adds a member to one partition's replication group, or changes the priority it already
+   * replicates that partition with.
+   *
+   * @param partitionId the partition within {@code physicalTenantId}'s partition group. Partition
+   *     ids restart at 1 in every physical tenant, so this identifies a partition only together
+   *     with the tenant.
+   * @param physicalTenantId the physical tenant whose partition to join, or empty for the default
+   *     physical tenant. A single partition belongs to exactly one tenant, so an absent id cannot
+   *     mean "every tenant" here, unlike the requests that address a whole cluster.
+   */
+  record JoinPartitionRequest(
+      MemberId memberId,
+      int partitionId,
+      int priority,
+      Optional<String> physicalTenantId,
+      boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
 
-  record LeavePartitionRequest(MemberId memberId, int partitionId, boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+    public JoinPartitionRequest {
+      physicalTenantId.ifPresent(assertNonEmpty("physicalTenantId"));
+    }
+  }
 
-  record ReassignPartitionsRequest(Set<MemberId> members, boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+  /**
+   * Removes a member from one partition's replication group.
+   *
+   * @param partitionId the partition within {@code physicalTenantId}'s partition group. Partition
+   *     ids restart at 1 in every physical tenant, so this identifies a partition only together
+   *     with the tenant.
+   * @param physicalTenantId the physical tenant whose partition to leave, or empty for the default
+   *     physical tenant. A single partition belongs to exactly one tenant, so an absent id cannot
+   *     mean "every tenant" here, unlike the requests that address a whole cluster.
+   */
+  record LeavePartitionRequest(
+      MemberId memberId, int partitionId, Optional<String> physicalTenantId, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
+
+    public LeavePartitionRequest {
+      physicalTenantId.ifPresent(assertNonEmpty("physicalTenantId"));
+    }
+  }
 
   /**
    * Purge the partitions and the exported history of the given physical tenant. If no
@@ -176,6 +210,26 @@ public sealed interface ClusterConfigurationManagementRequest {
       implements ClusterConfigurationManagementRequest {}
 
   /**
+   * Discards a disabled physical tenant, so that a broker still holding its partitions may leave
+   * the cluster. Until this is called, a disabled tenant blocks a broker removal exactly as an
+   * enabled one does — disabling is a safety barrier against losing a tenant's data by accident,
+   * not a statement that the data is expendable.
+   *
+   * <p>The tenant must already be disabled, i.e. absent from the brokers' static configuration.
+   *
+   * @param force when true, the request is executed by whichever broker receives it instead of
+   *     being routed to the elected coordinator — the operator's bail-out for when the coordinator
+   *     is unreachable. Normally left false, so the request runs on the coordinator like any other
+   *     configuration change.
+   */
+  record RemovePhysicalTenantRequest(String physicalTenantId, boolean dryRun, boolean force)
+      implements ClusterConfigurationManagementRequest {
+    public RemovePhysicalTenantRequest {
+      assertNonEmpty("physicalTenantId").accept(physicalTenantId);
+    }
+  }
+
+  /**
    * Force-evicts a failed zone's brokers from the member set and drops the zone from the persisted
    * {@code ZoneAwareConfig}, in one atomic change.
    */
@@ -224,7 +278,12 @@ public sealed interface ClusterConfigurationManagementRequest {
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record ExportingStateChangeRequest(ExportingState state, boolean dryRun)
+  /**
+   * @param physicalTenantId the physical tenant to change, or empty for every physical tenant of
+   *     the cluster
+   */
+  record ExportingStateChangeRequest(
+      ExportingState state, Optional<String> physicalTenantId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record CancelChangeRequest(long changeId) implements ClusterConfigurationManagementRequest {

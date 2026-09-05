@@ -15,7 +15,11 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterExportingServices;
+import io.camunda.service.ClusterHistoryBackupServices;
+import io.camunda.service.ClusterRebalanceServices;
 import io.camunda.service.ClusterRecoveryServices;
+import io.camunda.service.ClusterRuntimeBackupServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
 import io.camunda.service.ClusterVariableServices;
@@ -145,11 +149,26 @@ public interface ServiceRegistry {
 
   // -- cluster-wide --
 
+  /**
+   * @throws io.camunda.service.exception.ServiceException with {@code FORBIDDEN} on a cluster whose
+   *     secondary storage cannot serve history backups, where no such service exists. Normally the
+   *     {@code @RequiresSecondaryStorage} gate on the controller answers 403 first, but it decides
+   *     on the request's physical tenant while this service's existence is decided on the
+   *     cluster-wide storage type, so the two can disagree; both paths answer 403.
+   */
+  ClusterHistoryBackupServices clusterHistoryBackupServices();
+
+  ClusterRuntimeBackupServices clusterRuntimeBackupServices();
+
   ClusterStatusServices clusterStatusServices();
 
   ClusterTopologyServices clusterTopologyServices();
 
   ClusterRecoveryServices clusterRecoveryServices();
+
+  ClusterExportingServices clusterExportingServices();
+
+  ClusterRebalanceServices clusterRebalanceServices();
 
   ManagementServices managementServices();
 }

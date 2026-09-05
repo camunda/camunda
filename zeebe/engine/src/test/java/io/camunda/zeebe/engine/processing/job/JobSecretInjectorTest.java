@@ -174,7 +174,7 @@ final class JobSecretInjectorTest {
 
       // and - the collected secret job gets its cached value injected
       final var response = copyOf(batch);
-      injector.injectSecretValues(response, batch);
+      injector.injectSecretValues(response, batch, batch.getLength(), length -> true);
       assertThat(variablesOf(response, 0)).isEqualTo(Map.of("auth", "resolved"));
     }
 
@@ -193,7 +193,7 @@ final class JobSecretInjectorTest {
       // then - both jobs are collected and get their cached values injected
       assertThat(jobKeysOf(batch)).containsExactly(100L, 101L);
       final var response = copyOf(batch);
-      injector.injectSecretValues(response, batch);
+      injector.injectSecretValues(response, batch, batch.getLength(), length -> true);
       assertThat(variablesOfAllJobs(response))
           .containsExactly(Map.of("auth", "t"), Map.of("key", "k"));
     }
@@ -327,7 +327,7 @@ final class JobSecretInjectorTest {
       // then - the job is collected and the value of the named store is injected
       assertThat(jobKeysOf(batch)).containsExactly(100L);
       final var response = copyOf(batch);
-      injector.injectSecretValues(response, batch);
+      injector.injectSecretValues(response, batch, batch.getLength(), length -> true);
       assertThat(variablesOf(response, 0)).isEqualTo(Map.of("auth", "resolved"));
     }
 
@@ -581,6 +581,25 @@ final class JobSecretInjectorTest {
     }
 
     @Test
+    void shouldNotCorruptDashedPlaceholderThatIsPrefixOfAnother() {
+      // given - the same collision with dashed names, which is the shape that actually occurs:
+      // 'db-password' next to 'db-password-old' is an ordinary naming convention, 'token' next to
+      // 'token2' is not
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("h", "camunda.secrets.db-password camunda.secrets.db-password-old"),
+                  ref("db-password", "/h"),
+                  ref("db-password-old", "/h")));
+
+      // when
+      inject(batch, Map.of("db-password", "A", "db-password-old", "BB"));
+
+      // then - neither value is mangled
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("h", "A BB"));
+    }
+
+    @Test
     void shouldInjectAtDeeplyNestedPathAndPreserveSiblings() {
       // given - siblings of every type around the addressed leaf
       final var variables =
@@ -749,73 +768,6 @@ final class JobSecretInjectorTest {
     }
 
     @Test
-    void shouldDropAndReportJobWhoseSecretPlaceholderDoesNotMatch() {
-      // given - the second job's variables hold a text leaf that does not contain the reference's
-      // placeholder, as if the referenced value changed between input mapping evaluation and job
-      // creation; a job with a matching placeholder precedes it and a plain job follows it
-      final Map<String, Object> fitting = Map.of("auth", "camunda.secrets.token");
-      final var response =
-          batchWith(
-              job(fitting, ref("token", "/auth")),
-              job(Map.of("auth", "camunda.secrets.other"), ref("token", "/auth")),
-              job(Map.of("foo", "bar")));
-      final var activated = copyOf(response);
-
-      // when
-      final var droppedJob = inject(response, activated, Map.of("token", "resolved"));
-
-      // then - the mismatched job and every job after it are dropped from both batches; the job
-      // before it keeps its injected value on the response only
-      assertThat(variablesOfAllJobs(response)).containsExactly(Map.of("auth", "resolved"));
-      assertThat(jobKeysOf(response)).containsExactly(100L);
-      assertThat(variablesOfAllJobs(activated)).containsExactly(fitting);
-      assertThat(jobKeysOf(activated)).containsExactly(100L);
-      assertThat(response.getTruncated()).isTrue();
-      assertThat(activated.getTruncated()).isTrue();
-
-      // and - the mismatched job is reported for an incident
-      assertThat(droppedJob)
-          .hasValueSatisfying(
-              dropped -> {
-                assertThat(dropped).isInstanceOf(FailedInjectionJob.class);
-                assertThat(dropped.jobKey()).isEqualTo(101L);
-              });
-    }
-
-    @Test
-    void shouldDropJobWithOneMismatchedSecretAmongSeveralAtDifferentPaths() {
-      // given - two references at different paths on the same job; one placeholder is present in
-      // the variables, the other isn't
-      final var response =
-          batchWith(
-              job(
-                  Map.of("auth", "camunda.secrets.token", "key", "camunda.secrets.other"),
-                  ref("token", "/auth"),
-                  ref("apiKey", "/key")));
-      final var activated = copyOf(response);
-
-      // when
-      final var droppedJob = inject(response, activated, Map.of("token", "t", "apiKey", "k"));
-
-      // then - the whole job is dropped, not a partial injection that leaves the mismatched leaf
-      // stale on the response
-      assertThat(variablesOfAllJobs(response)).isEmpty();
-      assertThat(jobKeysOf(response)).isEmpty();
-      assertThat(variablesOfAllJobs(activated)).isEmpty();
-      assertThat(jobKeysOf(activated)).isEmpty();
-      assertThat(response.getTruncated()).isTrue();
-      assertThat(activated.getTruncated()).isTrue();
-
-      // and - the job is reported for an incident
-      assertThat(droppedJob)
-          .hasValueSatisfying(
-              dropped -> {
-                assertThat(dropped).isInstanceOf(FailedInjectionJob.class);
-                assertThat(dropped.jobKey()).isEqualTo(100L);
-              });
-    }
-
-    @Test
     void shouldDropExceedingAndRemainingJobsFromBothBatches() {
       // given - the first job's value fits, the second job's value exceeds the remaining budget,
       // and a third job without secret references follows
@@ -895,29 +847,560 @@ final class JobSecretInjectorTest {
     }
 
     @Test
-    void shouldSkipWhenPointerDoesNotAddressATextLeaf() {
-      // given - the pointer addresses a container, not a text leaf
-      final var original = Map.of("cfg", Map.of("a", "camunda.secrets.token"));
-      final var batch = batchWith(job(original, ref("token", "/cfg")));
+    void shouldIgnoreReferenceWhenLeafIsNull() {
+      // given - "=if flag then camunda.secrets.token else null" took the else branch
+      final var original = new LinkedHashMap<String, Object>();
+      original.put("t", null);
+      final var batch = batchWith(job(original, ref("token", "/t")));
 
       // when
-      inject(batch, Map.of("token", "resolved"));
+      final var dropped = inject(batch, copyOf(batch), Map.of("token", "resolved"));
 
-      // then - defensively left untouched
+      // then - no placeholder survives at /t, so the job activates untouched
+      assertThat(dropped).isEmpty();
       assertThat(variablesOf(batch, 0)).isEqualTo(original);
     }
 
     @Test
-    void shouldSkipWhenIntermediateSegmentIsMissing() {
-      // given - the recorded path no longer matches the variables document
-      final var original = Map.of("auth", "camunda.secrets.token");
-      final var batch = batchWith(job(original, ref("token", "/auth/nested")));
+    void shouldIgnoreReferenceWhenLeafIsANumber() {
+      // given - "=if flag then camunda.secrets.retries else 3" took the else branch
+      final var original = Map.of("t", 3);
+      final var batch = batchWith(job(original, ref("retries", "/t")));
 
       // when
-      inject(batch, Map.of("token", "resolved"));
+      final var dropped = inject(batch, copyOf(batch), Map.of("retries", "resolved"));
 
-      // then - defensively left untouched
+      // then
+      assertThat(dropped).isEmpty();
       assertThat(variablesOf(batch, 0)).isEqualTo(original);
+    }
+
+    @Test
+    void shouldIgnoreReferenceWhenLeafIsABooleanTrue() {
+      // given - a leaf holding literal `true` must not be mistaken for a "placeholder replaced"
+      // signal: Jackson caches BooleanNode.TRUE as a singleton, so an identity-based check for
+      // that outcome could otherwise collide with a genuine boolean-true leaf
+      final var original = Map.of("t", true);
+      final var batch = batchWith(job(original, ref("token", "/t")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("token", "resolved"));
+
+      // then
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(original);
+    }
+
+    @Test
+    void shouldInjectSiblingEntryWhenOtherEntryIsNull() {
+      // given - a context whose entries mix a precise reference with a conditional one that
+      // evaluated to null
+      final var original = new LinkedHashMap<String, Object>();
+      original.put("a", "camunda.secrets.x");
+      original.put("b", null);
+      final var wrapped =
+          batchWith(job(Map.of("cfg", original), ref("x", "/cfg/a"), ref("y", "/cfg/b")));
+
+      // when
+      final var dropped = inject(wrapped, copyOf(wrapped), Map.of("x", "vx", "y", "vy"));
+
+      // then - /cfg/a resolves; /cfg/b holds no placeholder so it is ignored
+      assertThat(dropped).isEmpty();
+      final var expected = new LinkedHashMap<String, Object>();
+      expected.put("a", "vx");
+      expected.put("b", null);
+      assertThat(variablesOf(wrapped, 0)).isEqualTo(Map.of("cfg", expected));
+    }
+
+    @Test
+    void shouldInjectEvaluatedBranchAndIgnoreTheOther() {
+      // given - "=if cond then camunda.secrets.x else camunda.secrets.y", cond true
+      final var batch =
+          batchWith(job(Map.of("t", "camunda.secrets.x"), ref("x", "/t"), ref("y", "/t")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("x", "vx", "y", "vy"));
+
+      // then - x resolves, y's branch never ran and leaves nothing behind
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("t", "vx"));
+    }
+
+    @Test
+    void shouldInjectEvaluatedBranchRegardlessOfReferenceOrder() {
+      // given - the mirror of the above, so the outcome cannot depend on which reference is
+      // materialized first
+      final var batch =
+          batchWith(job(Map.of("t", "camunda.secrets.y"), ref("x", "/t"), ref("y", "/t")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("x", "vx", "y", "vy"));
+
+      // then
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("t", "vy"));
+    }
+
+    @Test
+    void shouldInjectOneOfThreeReferencesAtTheSamePath() {
+      // given - nested conditionals put three references on one leaf
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("t", "camunda.secrets.q"),
+                  ref("p", "/t"),
+                  ref("q", "/t"),
+                  ref("r", "/t")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("p", "vp", "q", "vq", "r", "vr"));
+
+      // then
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("t", "vq"));
+    }
+
+    @Test
+    void shouldInjectEvaluatedBranchInsideSurroundingText() {
+      // given - a conditional nested inside a concatenation
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("auth", "Bearer camunda.secrets.devT"),
+                  ref("prodT", "/auth"),
+                  ref("devT", "/auth")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("prodT", "vp", "devT", "vd"));
+
+      // then
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("auth", "Bearer vd"));
+    }
+
+    @Test
+    void shouldIgnoreReferenceWhenLeafHoldsUnrelatedText() {
+      // given - "=if true then \"localSecret\" else camunda.secrets.prod"
+      final var original = Map.of("t", "localSecret");
+      final var batch = batchWith(job(original, ref("prod", "/t")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("prod", "resolved"));
+
+      // then
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(original);
+    }
+
+    @Test
+    void shouldIgnoreReferenceWhenAFunctionMangledThePlaceholder() {
+      // given - "=upper case(camunda.secrets.token)" - the placeholder is no longer matchable
+      // and no lowercase token survives either
+      final var original = Map.of("t", "CAMUNDA.SECRETS.TOKEN");
+      final var batch = batchWith(job(original, ref("token", "/t")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("token", "resolved"));
+
+      // then
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(original);
+    }
+
+    @Test
+    void shouldIgnoreReferenceUsedOnlyInACondition() {
+      // given - "=if camunda.secrets.flag = \"on\" then \"a\" else \"b\"" - the secret was
+      // compared, never mapped
+      final var original = Map.of("t", "b");
+      final var batch = batchWith(job(original, ref("flag", "/t")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("flag", "resolved"));
+
+      // then
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(original);
+    }
+
+    @Test
+    void shouldDropAndReportJobWhoseSurvivingPlaceholderNamesAnotherSecret() {
+      // given - the leaf holds a stale placeholder for a secret the job no longer
+      // references; a resolvable job precedes it and a plain job follows it
+      final Map<String, Object> fitting = Map.of("auth", "camunda.secrets.token");
+      final var response =
+          batchWith(
+              job(fitting, ref("token", "/auth")),
+              job(Map.of("authToken", "camunda.secrets.tokenA"), ref("tokenB", "/authToken")),
+              job(Map.of("foo", "bar")));
+      final var activated = copyOf(response);
+
+      // when
+      final var dropped = inject(response, activated, Map.of("token", "resolved", "tokenB", "vb"));
+
+      // then - the mismatched job and everything after it are dropped; the job before it keeps its
+      // injected value on the response only
+      assertThat(variablesOfAllJobs(response)).containsExactly(Map.of("auth", "resolved"));
+      assertThat(jobKeysOf(response)).containsExactly(100L);
+      assertThat(variablesOfAllJobs(activated)).containsExactly(fitting);
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(job.jobKey()).isEqualTo(101L);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/authToken");
+                assertThat(((FailedInjectionJob) job).placeholder())
+                    .isEqualTo("camunda.secrets.tokenB");
+              });
+    }
+
+    @Test
+    void shouldDropJobWithOneMismatchedSecretAmongSeveralAtDifferentPaths() {
+      // given - two references on the SAME job at different paths: one resolves, the other's
+      // placeholder survives; a preceding job resolves cleanly and must not be swept up by the
+      // later drop
+      final Map<String, Object> preceding = Map.of("auth", "camunda.secrets.pre");
+      final var response =
+          batchWith(
+              job(preceding, ref("pre", "/auth")),
+              job(
+                  Map.of("auth", "camunda.secrets.token", "key", "camunda.secrets.other"),
+                  ref("token", "/auth"),
+                  ref("apiKey", "/key")));
+      final var activated = copyOf(response);
+
+      // when
+      final var dropped =
+          inject(response, activated, Map.of("pre", "resolved-pre", "token", "t", "apiKey", "k"));
+
+      // then - by the time /key's surviving placeholder is found, a genuine secret has already
+      // been written into the live document at /auth; the whole job must still be dropped from
+      // both batches so that partial write never reaches the response
+      assertThat(variablesOfAllJobs(response)).containsExactly(Map.of("auth", "resolved-pre"));
+      assertThat(jobKeysOf(response)).containsExactly(100L);
+      assertThat(variablesOfAllJobs(activated)).containsExactly(preceding);
+      assertThat(jobKeysOf(activated)).containsExactly(100L);
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+
+      // and - the mismatched job is reported for an incident
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(job.jobKey()).isEqualTo(101L);
+              });
+    }
+
+    @Test
+    void shouldDropJobWhenSiblingReferencesLeaveAPlaceholderBehind() {
+      // given - two references at the path, neither resolves the placeholder actually there
+      final var response =
+          batchWith(job(Map.of("t", "camunda.secrets.tokenA"), ref("x", "/t"), ref("y", "/t")));
+      final var activated = copyOf(response);
+
+      // when
+      final var dropped = inject(response, activated, Map.of("x", "vx", "y", "vy"));
+
+      // then - siblings do not launder a surviving placeholder
+      assertThat(jobKeysOf(response)).isEmpty();
+      assertThat(jobKeysOf(activated)).isEmpty();
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(job.jobKey()).isEqualTo(100L);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/t");
+                // TimSort is stable and the fixture order is fixed, so "x" always wins today, but
+                // that's an artifact of tie-breaking, not a contract - either sibling is correct
+                assertThat(((FailedInjectionJob) job).placeholder())
+                    .isIn("camunda.secrets.x", "camunda.secrets.y");
+              });
+    }
+
+    @Test
+    void shouldDropJobWhenIntermediateSegmentHoldsAPlaceholder() {
+      // given - the recorded path descends into what is now a string, and that string holds
+      // the placeholder
+      final var batch =
+          batchWith(job(Map.of("auth", "camunda.secrets.token"), ref("token", "/auth/nested")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("token", "resolved"));
+
+      // then - the scalar the walk stopped at is what gets scanned
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/auth/nested");
+              });
+      assertThat(jobKeysOf(batch)).isEmpty();
+    }
+
+    // ---- array pointers: injection can only write into an object, so an array hop always fails
+    // closed, whether the index is in range or out of it ----
+
+    @Test
+    void shouldDropJobWhenPointerRunsIntoAnArrayWithANonNumericSegment() {
+      // given - the recorded path descends into what is now a list, using a non-numeric segment;
+      // an array missing the index must fail closed, the same as an object whose parent can't be
+      // written to, rather than being read as an unset key
+      final var response =
+          batchWith(
+              job(Map.of("foo", List.of("camunda.secrets.token")), ref("token", "/foo/nested")));
+      final var activated = copyOf(response);
+
+      // when
+      final var dropped = inject(response, activated, Map.of("token", "resolved"));
+
+      // then - the array itself is scanned, so the placeholder inside it is found
+      assertThat(jobKeysOf(response)).isEmpty();
+      assertThat(jobKeysOf(activated)).isEmpty();
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(job.jobKey()).isEqualTo(100L);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/foo/nested");
+                assertThat(((FailedInjectionJob) job).placeholder())
+                    .isEqualTo("camunda.secrets.token");
+              });
+    }
+
+    @Test
+    void shouldDropJobWhenClusterVariableSecretIsNestedInAnArrayElement() {
+      // given - the cluster-variable scanner does produce this shape: a secret nested inside a
+      // SECRET_REFERENCE variable's list is recorded at an in-range array-index pointer (see
+      // ClusterVariableSecretReferenceScanner), so the pointer reaches exactly the placeholder -
+      // but injection can only write into an object via ObjectNode.put, so the array element can
+      // never be written to, in range or not
+      final var response =
+          batchWith(
+              job(Map.of("items", List.of("camunda.secrets.token")), ref("token", "/items/0")));
+      final var activated = copyOf(response);
+
+      // when
+      final var dropped = inject(response, activated, Map.of("token", "resolved"));
+
+      // then - the in-range element fails closed the same way an out-of-range one does
+      assertThat(jobKeysOf(response)).isEmpty();
+      assertThat(jobKeysOf(activated)).isEmpty();
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(job.jobKey()).isEqualTo(100L);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/items/0");
+                assertThat(((FailedInjectionJob) job).placeholder())
+                    .isEqualTo("camunda.secrets.token");
+              });
+    }
+
+    @Test
+    void shouldDropJobWhenPointerIndexIsOutOfRangeForAList() {
+      // given - the recorded path indexes past the end of what is now a shorter list
+      final var response =
+          batchWith(
+              job(
+                  Map.of("items", List.of("a", "camunda.secrets.token")),
+                  ref("token", "/items/5")));
+      final var activated = copyOf(response);
+
+      // when
+      final var dropped = inject(response, activated, Map.of("token", "resolved"));
+
+      // then
+      assertThat(jobKeysOf(response)).isEmpty();
+      assertThat(jobKeysOf(activated)).isEmpty();
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(job.jobKey()).isEqualTo(100L);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/items/5");
+                assertThat(((FailedInjectionJob) job).placeholder())
+                    .isEqualTo("camunda.secrets.token");
+              });
+    }
+
+    @Test
+    void shouldDropJobWhenComposedClusterVariablePointerOvershootsIntoAPlaceholder() {
+      // given - "=string(camunda.vars.env.creds)" stringified the value, so the composed
+      // pointer overshoots into a string that still holds the placeholder
+      final var response =
+          batchWith(job(Map.of("foo", "{token: camunda.secrets.X}"), ref("X", "/foo/token")));
+      final var activated = copyOf(response);
+
+      // when
+      final var dropped = inject(response, activated, Map.of("X", "resolved"));
+
+      // then
+      assertThat(jobKeysOf(response)).isEmpty();
+      assertThat(jobKeysOf(activated)).isEmpty();
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(job.jobKey()).isEqualTo(100L);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/foo/token");
+                assertThat(((FailedInjectionJob) job).placeholder()).isEqualTo("camunda.secrets.X");
+              });
+    }
+
+    @Test
+    void shouldDropJobWhenLeafIsAListOfPlaceholders() {
+      // given - a list literal or a "for ... return" produced an array whose elements are
+      // placeholders
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("foo", List.of("camunda.secrets.X", "camunda.secrets.Y")),
+                  ref("X", "/foo"),
+                  ref("Y", "/foo")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("X", "vx", "Y", "vy"));
+
+      // then - array elements are never addressed, and the placeholders inside are found
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/foo");
+              });
+      assertThat(jobKeysOf(batch)).isEmpty();
+    }
+
+    @Test
+    void shouldDropJobWhenLeafIsAnObjectHoldingAPlaceholder() {
+      // given - the pointer addresses a container whose contents hold the placeholder
+      final var response =
+          batchWith(job(Map.of("cfg", Map.of("a", "camunda.secrets.token")), ref("token", "/cfg")));
+      final var activated = copyOf(response);
+
+      // when
+      final var dropped = inject(response, activated, Map.of("token", "resolved"));
+
+      // then
+      assertThat(jobKeysOf(response)).isEmpty();
+      assertThat(jobKeysOf(activated)).isEmpty();
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+      assertThat(dropped)
+          .hasValueSatisfying(
+              job -> {
+                assertThat(job).isInstanceOf(FailedInjectionJob.class);
+                assertThat(job.jobKey()).isEqualTo(100L);
+                assertThat(((FailedInjectionJob) job).path()).isEqualTo("/cfg");
+                assertThat(((FailedInjectionJob) job).placeholder())
+                    .isEqualTo("camunda.secrets.token");
+              });
+    }
+
+    @Test
+    void shouldLeaveUnclaimedLookalikeTextBesideAResolvedReference() {
+      // given - the leaf holds a second placeholder-shaped token that no reference claims; it
+      // is literal customer text, not a reference
+      final var batch =
+          batchWith(job(Map.of("t", "camunda.secrets.x and camunda.secrets.z"), ref("x", "/t")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("x", "vx"));
+
+      // then - x resolves and nothing at /t is unsatisfied, so no scan runs and z passes through
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("t", "vx and camunda.secrets.z"));
+    }
+
+    @Test
+    void shouldIgnoreReferenceWhoseKeyWasNeverMapped() {
+      // given - a secret was added to a cluster variable after the input mapping ran, so its
+      // key is not in the job's variables at all
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("creds", Map.of("a", "camunda.secrets.X")),
+                  ref("X", "/creds/a"),
+                  ref("Y", "/creds/b")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("X", "vx", "Y", "vy"));
+
+      // then - /creds/b is simply unset, so it is absent rather than unsatisfied
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("creds", Map.of("a", "vx")));
+    }
+
+    @Test
+    void shouldLeaveOrphanedPlaceholderWhenNoReferenceClaimsIt() {
+      // given - a secret was removed from a cluster variable after the input mapping baked
+      // both placeholders in, so only one reference reaches the job. Characterises today's
+      // behavior: the orphan passes through, because no reference at /creds/b is unsatisfied
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("creds", Map.of("a", "camunda.secrets.X", "b", "camunda.secrets.Y")),
+                  ref("X", "/creds/a")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("X", "vx"));
+
+      // then - known gap: fixing this needs the reference set and the baked text to come from one
+      // read of ClusterVariableState (tracked separately)
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0))
+          .isEqualTo(Map.of("creds", Map.of("a", "vx", "b", "camunda.secrets.Y")));
+    }
+
+    @Test
+    void shouldInjectAdjacentPlaceholdersWithoutTokenisingThem() {
+      // given - two placeholders concatenated with no separator. They do not tokenise cleanly
+      // (the name class is greedy), which is why the residual scan reads the injected result
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("combined", "camunda.secrets.acamunda.secrets.b"),
+                  ref("a", "/combined"),
+                  ref("b", "/combined")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("a", "VA", "b", "VB"));
+
+      // then - both resolve and no incident is raised for the unmatchable token shape
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("combined", "VAVB"));
+    }
+
+    @Test
+    void shouldNotIncidentOnAdjacentPlaceholdersWhenAThirdReferenceIsUnsatisfied() {
+      // given - the regression the post-injection scan exists for: two adjacent placeholders both
+      // resolve, and a third reference at the same path finds nothing
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("combined", "camunda.secrets.acamunda.secrets.b"),
+                  ref("a", "/combined"),
+                  ref("b", "/combined"),
+                  ref("c", "/combined")));
+
+      // when
+      final var dropped = inject(batch, copyOf(batch), Map.of("a", "VA", "b", "VB", "c", "VC"));
+
+      // then - nothing placeholder-shaped survives, so c's absence is not a failure
+      assertThat(dropped).isEmpty();
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("combined", "VAVB"));
     }
 
     @Test
@@ -946,19 +1429,6 @@ final class JobSecretInjectorTest {
       assertThat(variablesOf(batch, 0)).isEqualTo(original);
     }
 
-    @Test
-    void shouldSkipArraysOnThePointerPath() {
-      // given - the pointer runs into an array element
-      final var original = Map.of("items", List.of("camunda.secrets.token"));
-      final var batch = batchWith(job(original, ref("token", "/items/0")));
-
-      // when
-      inject(batch, Map.of("token", "resolved"));
-
-      // then - array elements are never addressed; the document is untouched
-      assertThat(variablesOf(batch, 0)).isEqualTo(original);
-    }
-
     private static void inject(final JobBatchRecord batch, final Map<String, String> secrets) {
       inject(batch, copyOf(batch), secrets);
     }
@@ -966,6 +1436,11 @@ final class JobSecretInjectorTest {
     /**
      * Mirrors the processor flow: register the jobs of the to-be-activated batch like the
      * collector, then inject the prepared values into the response.
+     *
+     * <p>Sizes the message-size limit at the batch length plus twice the calculation buffer, so the
+     * effective growth the first job may add before it is dropped is exactly one {@link
+     * EngineConfiguration#BATCH_SIZE_CALCULATION_BUFFER} (the injector keeps one buffer as the
+     * framing margin on top of the growth), matching what these drop tests exercise.
      */
     private static Optional<DroppedJob> inject(
         final JobBatchRecord response,
@@ -978,7 +1453,10 @@ final class JobSecretInjectorTest {
         injector.registerForInjection(injector.checkSecrets(job), index, job);
         index++;
       }
-      return injector.injectSecretValues(response, activated);
+      final int baseLength = activated.getLength();
+      final int maxMessageSize = baseLength + 2 * EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
+      return injector.injectSecretValues(
+          response, activated, baseLength, length -> length <= maxMessageSize);
     }
   }
 

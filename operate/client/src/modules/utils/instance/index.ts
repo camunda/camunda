@@ -12,8 +12,12 @@ const isInstanceRunning = (processInstance: ProcessInstance): boolean => {
   return processInstance.state === 'ACTIVE' || processInstance.hasIncident;
 };
 
+const isInstanceSuspended = (processInstance: ProcessInstance): boolean => {
+  return processInstance.state === 'SUSPENDED';
+};
+
 const getProcessDefinitionName = (instance: ProcessInstance) => {
   return instance.processDefinitionName ?? instance.processDefinitionId;
 };
 
-export {getProcessDefinitionName, isInstanceRunning};
+export {getProcessDefinitionName, isInstanceRunning, isInstanceSuspended};

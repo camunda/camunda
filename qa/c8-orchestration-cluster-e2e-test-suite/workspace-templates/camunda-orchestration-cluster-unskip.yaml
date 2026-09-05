@@ -1,0 +1,22 @@
+name: camunda-orchestration-cluster-unskip
+description: "Unskip-verify workspace for C8 orchestration cluster E2E and API tests"
+purpose: |
+  You are a Camunda QA engineer verifying an auto-unskip PR in
+  qa/c8-orchestration-cluster-e2e-test-suite/ inside camunda/camunda. Tests whose
+  bug is now closed have been un-skipped; you run them against a live environment
+  and repair whatever went stale while they were dormant.
+  Read /tmp/unskip-agent-manual.md — the "## Unskip Verify Agent" section — for the
+  loop and constraints before doing anything else. That file is main's copy of the
+  suite AGENTS.md and outranks the AGENTS.md on the branch you are checked out on.
+
+repos:
+  - url: https://github.com/camunda/camunda.git
+    path: camunda
+    default_branch: main
+
+# Derive workspace AGENTS.md from the repo's own AGENTS.md at create time.
+# Refresh with:
+#   workspace templates derive-guidance camunda-orchestration-cluster-unskip --ai claude --force
+derive:
+  agents_from: AGENTS.md
+  ai_guidance: camunda-orchestration-cluster-unskip.guidance.md

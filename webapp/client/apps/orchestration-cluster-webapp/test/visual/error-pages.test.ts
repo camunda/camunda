@@ -39,6 +39,23 @@ test('should match the forbidden page snapshot', async ({network, page, forbidde
 	await expect(page).toHaveScreenshot();
 });
 
+test('should match the component access-denied page snapshot', async ({network, page, componentAccessDeniedPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: []})),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+	);
+
+	await page.goto('/operate');
+	await expect(componentAccessDeniedPage.heading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
 test('should match the generic error page snapshot', async ({network, page}) => {
 	network.use(mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
 

@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -736,6 +736,12 @@
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-core</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
@@ -1220,6 +1226,21 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster/exporter-api.yaml</inputSpec>
+              <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <ignoreFileOverride>${project.basedir}/src/main/resources/api/cluster/.openapi-generator-ignore</ignoreFileOverride>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
+            </configuration>
+          </execution>
+          <execution>
+            <id>upgrade-readiness</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/upgrade-readiness-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
               <minimalUpdate>true</minimalUpdate>
               <ignoreFileOverride>${project.basedir}/src/main/resources/api/cluster/.openapi-generator-ignore</ignoreFileOverride>

@@ -39,7 +39,7 @@ final class AgentInstanceRecordTest {
     assertThat(record.getRootProcessInstanceKey()).isEqualTo(-1L);
     assertThat(record.getProcessDefinitionVersion()).isEqualTo(-1);
     assertThat(record.getAgentDefinitionKey()).isEqualTo(-1L);
-    assertThat(record.getVersionTag()).isEmpty();
+    assertThat(record.getProcessDefinitionVersionTag()).isEmpty();
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
@@ -57,7 +57,7 @@ final class AgentInstanceRecordTest {
             .setRootProcessInstanceKey(2251799813685000L)
             .setProcessDefinitionVersion(3)
             .setAgentDefinitionKey(2251799813685077L)
-            .setVersionTag("v1.2")
+            .setProcessDefinitionVersionTag("v1.2")
             .setTenantId("acme");
 
     // when
@@ -75,7 +75,8 @@ final class AgentInstanceRecordTest {
     assertThat(copy.getProcessDefinitionVersion())
         .isEqualTo(original.getProcessDefinitionVersion());
     assertThat(copy.getAgentDefinitionKey()).isEqualTo(original.getAgentDefinitionKey());
-    assertThat(copy.getVersionTag()).isEqualTo(original.getVersionTag());
+    assertThat(copy.getProcessDefinitionVersionTag())
+        .isEqualTo(original.getProcessDefinitionVersionTag());
     assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());
   }
 
@@ -110,12 +111,16 @@ final class AgentInstanceRecordTest {
   @Test
   void shouldRoundTripDefinitionViaMsgPack() {
     // given
+    final var systemPromptBlock =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("Extract vendor, amount, date.");
     final AgentInstanceRecord original = new AgentInstanceRecord();
     original
         .getDefinition()
         .setModel("gpt-4o")
         .setProvider("openai")
-        .setSystemPrompt("Extract vendor, amount, date.");
+        .setSystemPrompt(List.of(systemPromptBlock));
 
     // when
     final AgentInstanceRecord copy = new AgentInstanceRecord();
@@ -124,7 +129,9 @@ final class AgentInstanceRecordTest {
     // then
     assertThat(copy.getDefinition().getModel()).isEqualTo("gpt-4o");
     assertThat(copy.getDefinition().getProvider()).isEqualTo("openai");
-    assertThat(copy.getDefinition().getSystemPrompt()).isEqualTo("Extract vendor, amount, date.");
+    assertThat(copy.getDefinition().getSystemPrompt())
+        .extracting(AgentHistoryRecordValue.AgentHistoryMessageContentValue::getText)
+        .containsExactly("Extract vendor, amount, date.");
   }
 
   @Test

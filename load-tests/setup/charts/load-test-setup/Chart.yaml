@@ -16,7 +16,7 @@ dependencies:
     condition: load-tester.enabled
 
   - name: prometheus-elasticsearch-exporter
-    version: "7.2.1"
+    version: "7.4.0"
     repository: oci://ghcr.io/prometheus-community/charts
     condition: prometheus-elasticsearch-exporter.enabled
 

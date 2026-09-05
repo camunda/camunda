@@ -7,36 +7,16 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
-import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
 
 public interface PartitionAdminAccess {
   Optional<PartitionAdminAccess> forPartition(int partitionId);
 
   ActorFuture<Void> takeSnapshot();
-
-  default ActorFuture<Void> setExportingState(final ExportingState exportingState) {
-    return switch (exportingState) {
-      case PAUSED -> pauseExporting();
-      case EXPORTING -> resumeExporting();
-      case SOFT_PAUSED -> softPauseExporting();
-      case UNKNOWN ->
-          CompletableActorFuture.completedExceptionally(
-              new IllegalArgumentException(
-                  "Expected exporting state to be a valid value, but was " + exportingState));
-    };
-  }
-
-  ActorFuture<Void> pauseExporting();
-
-  ActorFuture<Void> softPauseExporting();
-
-  ActorFuture<Void> resumeExporting();
 
   ActorFuture<Void> pauseProcessing();
 
@@ -49,9 +29,8 @@ public interface PartitionAdminAccess {
   ActorFuture<FlowControlLimits> getFlowControlConfiguration();
 
   /**
-   * The exporter phase currently persisted for this partition. Every replica answers from its own
-   * persisted state, so callers can verify that a pause took effect on all replicas and not only on
-   * the leader.
+   * Whether this replica's RocksDB state is migrated to the current application version and a
+   * snapshot capturing that migrated state has been taken, for the upgrade-readiness endpoint.
    */
-  ActorFuture<ExporterPhase> getExporterPhase();
+  ActorFuture<PartitionMigrationStatus> getMigrationStatus();
 }

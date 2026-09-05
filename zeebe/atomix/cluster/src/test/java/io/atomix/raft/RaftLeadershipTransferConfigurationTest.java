@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -107,6 +108,7 @@ public class RaftLeadershipTransferConfigurationTest {
     final var leader = raftRule.getLeader().orElseThrow();
     final var driver = new CoordinatedTransferDriver(raftRule, leader);
     final var target = driver.followerOutsideCoordinator();
+    awaitCaughtUp(leader, memberId(target));
     final var sends = dropTimeoutNow(leader);
 
     // when
@@ -134,6 +136,7 @@ public class RaftLeadershipTransferConfigurationTest {
     final var leader = raftRule.getLeader().orElseThrow();
     final var driver = new CoordinatedTransferDriver(raftRule, leader);
     final var target = driver.followerOutsideCoordinator();
+    awaitCaughtUp(leader, memberId(target));
     final var sends = dropTimeoutNow(leader);
 
     // when
@@ -166,6 +169,29 @@ public class RaftLeadershipTransferConfigurationTest {
         builder.withPartitionConfig(config);
       }
     };
+  }
+
+  private static void awaitCaughtUp(final RaftServer leader, final MemberId member) {
+    Awaitility.await("until " + member + " has acknowledged every append")
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> replicationLag(leader, member) == 0);
+  }
+
+  private static long replicationLag(final RaftServer leader, final MemberId member)
+      throws Exception {
+    final var lag = new CompletableFuture<Long>();
+    leader
+        .getContext()
+        .getThreadContext()
+        .execute(
+            () ->
+                lag.complete(
+                    leader
+                        .getContext()
+                        .getCluster()
+                        .getMemberContext(member)
+                        .getReplicationLagBytes()));
+    return lag.get(10, TimeUnit.SECONDS);
   }
 
   private static void setReplicationLag(

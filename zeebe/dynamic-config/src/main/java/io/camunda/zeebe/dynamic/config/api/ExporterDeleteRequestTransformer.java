@@ -10,14 +10,12 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -47,15 +45,6 @@ public final class ExporterDeleteRequestTransformer implements ConfigurationChan
       final String exporterId, final Optional<String> physicalTenantId) {
     this.exporterId = exporterId;
     this.physicalTenantId = physicalTenantId;
-  }
-
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    throw new UnsupportedOperationException(
-        "ExporterDeleteRequestTransformer builds its change plan via "
-            + "phases(CurrentClusterConfiguration); the new-model coordinator path never calls "
-            + "operations(ClusterConfiguration)");
   }
 
   @Override
@@ -95,7 +84,7 @@ public final class ExporterDeleteRequestTransformer implements ConfigurationChan
               "Expected to delete exporter '%s' for physical tenant '%s', but no matching exporters were found"
                   .formatted(exporterId, physicalTenantId.orElse("all tenants"))));
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(groupOperations)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(groupOperations)));
   }
 
   private List<PartitionGroupOperation> deleteOperationsFor(

@@ -27,12 +27,7 @@ public final class TopologyPartitionLeaders implements PartitionLeaders {
 
   @Override
   public PartitionGroupLeaders forGroup(final String physicalTenantId) {
-    final var topology = topologyManager.getTopology(physicalTenantId);
-    if (topology == null) {
-      throw new IllegalStateException(
-          "Topology for physical tenant %s is unavailable".formatted(physicalTenantId));
-    }
-    return new TopologyGroupLeaders(topology);
+    return new TopologyGroupLeaders(topologyManager.getTopology(physicalTenantId));
   }
 
   private record TopologyGroupLeaders(BrokerClusterState topology)

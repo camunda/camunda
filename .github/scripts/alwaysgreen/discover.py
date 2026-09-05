@@ -38,7 +38,58 @@ FIX_LABEL = os.environ.get("ALWAYSGREEN_FIX_LABEL", "alwaysgreen-fix")
 #: Prefix of the per-dispatch-key label the fix workflow stamps on every PR it opens.
 KEY_LABEL_PREFIX = "alwaysgreen-key:"
 #: How long a no-fix verdict keeps its fingerprints out of dispatch.
-NO_FIX_COOLDOWN_DAYS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS", "7"))
+#:
+#: A no-fix verdict records no issue and nothing to close — FIX-AGENT.md is explicit
+#: that it "expires on its own" — so it is a statement about the conditions the agent
+#: met, not about the test. Conditions move on a scale of hours, and seven days let a
+#: transient one mask a week of later failures: run 33464059381 met a Web Modeler
+#: `/api/internal/login` 500, correctly declined to mask it, and thereby suppressed
+#: both SaaS smoke tests until 2026-09-08 — long after the outage had cleared.
+#:
+#: The pipeline runs every 20-40 minutes and an agent takes 7-14, so a genuinely
+#: persistent problem costs a few dispatches a day at this window rather than one a
+#: week. If that proves too eager, the answer is an escalation ladder — stop
+#: dispatching after N consecutive no-fix verdicts on one fingerprint and tell a
+#: human — not a longer blind window.
+NO_FIX_COOLDOWN_HOURS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS", "6"))
+
+#: The knob changed unit with the window, so the old name is refused rather than
+#: converted: reading `..._DAYS=7` as 168 hours would restore the very window this
+#: replaced. Refusing it silently would be indistinguishable from it working, so a
+#: leftover setting says so in the run instead.
+if os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS"):
+    print(
+        "::warning::ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS is no longer read. The no-fix "
+        "cooldown is now set in hours via ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS "
+        f"(currently {NO_FIX_COOLDOWN_HOURS}h).",
+        file=sys.stderr,
+    )
+#: How long an open fix PR keeps holding its dispatch key; see
+#: planning.PR_LOCK_TTL_HOURS. Set to 0 to restore the old never-expiring lock.
+#: Read defensively, matching the degrade-don't-crash bias of everything else here: an
+#: unreadable `createdAt` keeps the lock and a failed lookup suppresses, so a malformed
+#: dial must not raise at import and take down every entry point in this module.
+try:
+    PR_LOCK_TTL_HOURS = int(
+        os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_HOURS", "").strip()
+        or planning.PR_LOCK_TTL_HOURS
+    )
+except ValueError:
+    print(
+        "::warning::unparseable ALWAYSGREEN_PR_LOCK_TTL_HOURS; using the default "
+        f"({planning.PR_LOCK_TTL_HOURS}h).",
+        file=sys.stderr,
+    )
+    PR_LOCK_TTL_HOURS = planning.PR_LOCK_TTL_HOURS
+#: Refused rather than converted, for the same reason as the no-fix knob above: reading
+#: `..._DAYS=2` as 48 hours would restore the window this replaced.
+if os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_DAYS"):
+    print(
+        "::warning::ALWAYSGREEN_PR_LOCK_TTL_DAYS is no longer read. The open fix PR "
+        "lock is now set in hours via ALWAYSGREEN_PR_LOCK_TTL_HOURS "
+        f"(currently {PR_LOCK_TTL_HOURS}h).",
+        file=sys.stderr,
+    )
 #: Cap on artifact downloads while reading past verdicts, so a burst of agent runs
 #: cannot make triage slow.
 NO_FIX_MAX_RUNS = 20
@@ -321,61 +372,104 @@ def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
 # ---------------------------------------------------------------------------
 
 
-def covered_fingerprints() -> set[str]:
-    """Fingerprints claimed by an open fix PR, in any repo a fix can land in.
+def open_fix_prs(repo: str) -> tuple[list[dict], bool]:
+    """Open fix PRs in one repository, with the fields dedupe needs. Returns (prs, ok).
 
-    Scoped to every repo in FIX_PR_REPOS, not just the monorepo: most fixes land in
-    the e2e or chart repo, and reading only `REPO` made those coverage blocks
-    invisible here, so their specs stayed dispatchable.
+    A seam, so `dedupe_inputs` can be unit-tested without a token.
     """
-    out: set[str] = set()
-    for repo in FIX_PR_REPOS:
-        prs = gh_json(
-            [
-                "pr", "list", "--repo", repo,
-                "--search", f"label:{FIX_LABEL} is:open",
-                "--limit", "100", "--json", "number,body",
-            ],
-            [],
-        )
-        for pr in prs if isinstance(prs, list) else []:
-            out |= planning.parse_coverage_block(pr.get("body"))
-    return out
+    prs, err = gh_json_ex(
+        [
+            "pr", "list", "--repo", repo,
+            "--search", f"label:{FIX_LABEL} is:open",
+            "--limit", "100", "--json", "labels,number,createdAt,body",
+        ],
+        None,
+    )
+    if prs is None or not isinstance(prs, list):
+        log(f"::warning::open fix PR lookup failed for {repo}: {err.strip()[:200]}")
+        return [], False
+    return prs, True
 
 
-def open_fix_pr_keys() -> tuple[set[str], bool]:
-    """Dispatch keys that already have an open fix PR, in any repo a fix can land in.
+def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
+    """(covered fingerprints, keys with an open PR, keys decided per spec, ok).
 
-    Read from the `alwaysgreen-key:<base_ref>:<surface>` label the fix workflow
-    stamps, not from the PR body: the body's coverage block is written by the agent
-    and cannot be relied on to exist.
+    One lookup behind one `ok`, across every repo a fix can land in. Coverage used to
+    come from a second, separate `gh` call whose failure was swallowed into an empty
+    set. That was survivable while every open fix PR locked its whole surface, because
+    the key layer caught what the empty set missed; once a claiming PR's key stops
+    locking, the two must agree or a failed coverage lookup dispatches a duplicate fix
+    for a spec that PR already claims.
 
-    Returns (keys, ok). As with `inflight_keys`, a failed lookup makes the caller
-    suppress rather than risk a duplicate PR.
+    Read from the `alwaysgreen-key:<base_ref>:<surface>` label the fix workflow stamps,
+    not from the PR body: the body's coverage block is written by the agent and cannot
+    be relied on to exist.
+
+    A PR past PR_LOCK_TTL_HOURS stops holding its key, so a fix PR left unreviewed
+    cannot wedge its surface shut for good.
+
+    `keys_with_coverage` is the subset whose every active holder claims at least one
+    fingerprint, so `plan` can decide those keys per spec instead of locking the
+    surface. A block that parses to nothing — absent, or present with no `fp=` line —
+    claims nothing, and a key any of whose active holders claims nothing stays out of
+    the subset: the marker comment alone is not a statement of remit.
+
+    Coverage is collected from every open fix PR, expired or not: the specs a PR claims
+    stay claimed for as long as it is open, and only the coarse key lock is time-bound.
+
+    As with `inflight_keys`, a failed lookup makes the caller suppress rather than risk
+    a duplicate PR.
     """
-    out: set[str] = set()
+    covered: set[str] = set()
+    keys: set[str] = set()
+    uncovered: set[str] = set()
     ok = True
+    now = datetime.now(timezone.utc)
     for repo in FIX_PR_REPOS:
-        prs, err = gh_json_ex(
-            [
-                "pr", "list", "--repo", repo,
-                "--search", f"label:{FIX_LABEL} is:open",
-                "--limit", "100", "--json", "labels",
-            ],
-            None,
-        )
-        if prs is None:
-            log(f"::warning::open fix PR lookup failed for {repo}: {err.strip()[:200]}")
+        prs, repo_ok = open_fix_prs(repo)
+        if not repo_ok:
             ok = False
             continue
-        for pr in prs if isinstance(prs, list) else []:
+        for pr in prs:
+            claims = planning.parse_coverage_block(pr.get("body"))
+            covered |= claims
+            pr_keys: set[str] = set()
             for label in pr.get("labels") or []:
                 name = (label.get("name") or "").strip()
                 if name.startswith(KEY_LABEL_PREFIX):
                     key = name[len(KEY_LABEL_PREFIX) :].strip()
                     if key:
-                        out.add(key)
-    return out, ok
+                        pr_keys.add(key)
+            if not pr_keys:
+                continue
+            if planning.pr_lock_expired(
+                pr.get("createdAt") or "", now, PR_LOCK_TTL_HOURS
+            ):
+                log(
+                    f"lock expired after {PR_LOCK_TTL_HOURS}h: {repo}#{pr.get('number')} "
+                    f"no longer holds {', '.join(sorted(pr_keys))}"
+                )
+                continue
+            keys |= pr_keys
+            if not claims:
+                uncovered |= pr_keys
+            log(
+                f"open fix PR {repo}#{pr.get('number')} holds "
+                f"{', '.join(sorted(pr_keys))}, claiming {len(claims)} spec(s)"
+            )
+    # Per key, not per PR: dispatchability is an intersection over every active holder,
+    # so a PR-level line cannot state it. Logged so a suppressed run names its blocker
+    # without anyone cross-listing open fix PRs by hand.
+    for key in sorted(keys):
+        log(
+            f"key {key}: "
+            + (
+                "locked (a holder claims no specs)"
+                if key in uncovered
+                else "decided per spec (every holder claims some)"
+            )
+        )
+    return covered, keys, keys - uncovered, ok
 
 
 def inflight_keys() -> tuple[set[str], bool]:
@@ -432,7 +526,7 @@ def recent_no_fix_fingerprints(workdir: Path) -> set[str]:
     if not isinstance(runs, list):
         return set()
 
-    cutoff = datetime.now(timezone.utc) - timedelta(days=NO_FIX_COOLDOWN_DAYS)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=NO_FIX_COOLDOWN_HOURS)
     out: set[str] = set()
     fetched = 0
     for run in runs:
@@ -631,6 +725,9 @@ def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict
                 "surface": c.surface,
                 "dispatch_key": c.key,
                 "job_name": classify.job_leaf_name(c.job_name),
+                "also_failing_jobs": [
+                    classify.job_leaf_name(n) for n in c.also_failing_jobs
+                ],
                 "evidence_run_url": c.evidence_run_url,
                 "evidence_repo": c.evidence_repo,
                 "job_level": c.job_level,
@@ -687,9 +784,13 @@ def main() -> int:
             keys = {c.key for c in candidates}
             log("::warning::in-flight lookup failed; suppressing dispatch this run")
 
-        pr_keys, pr_keys_ok = open_fix_pr_keys()
-        if not pr_keys_ok:
+        covered, pr_keys, pr_keys_covered, dedupe_ok = dedupe_inputs()
+        if not dedupe_ok:
+            # Cannot prove what an open PR already covers, so suppress every candidate:
+            # the key set and the coverage set must be one snapshot or a partial read
+            # licenses a duplicate PR.
             pr_keys = {c.key for c in candidates}
+            pr_keys_covered = set()
             log("::warning::open fix PR lookup failed; suppressing dispatch this run")
 
         run = gh_json(["api", f"repos/{REPO}/actions/runs/{args.run_id}"], {})
@@ -697,9 +798,10 @@ def main() -> int:
 
         result = planning.plan_dispatches(
             candidates,
-            covered_fingerprints=covered_fingerprints(),
+            covered_fingerprints=covered,
             inflight_keys=keys,
             open_pr_keys=pr_keys,
+            open_pr_keys_with_coverage=pr_keys_covered,
             product_bug_fingerprints=product_bug_fingerprints(),
             recent_no_fix_fingerprints=recent_no_fix_fingerprints(workdir),
             fixed_upstream_fingerprints=fixed_upstream_fingerprints(candidates, started),

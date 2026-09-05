@@ -212,6 +212,7 @@ test.describe('AI agent details', () => {
         .getByRole('button', {name: 'Expand'});
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
+    await resultExpandButton.scrollIntoViewIfNeeded();
     await resultExpandButton.focus();
     await resultExpandButton.click();
 

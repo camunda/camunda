@@ -8,8 +8,8 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2026-08-04T11:55:54.253Z
- * Spec Commit: 7ad6907f6d9cf772438213329bf52fa21d343ed2
+ * Generated At: 2026-08-21T16:01:38.423Z
+ * Spec Commit: c30231a08a134faa0138733d391778da818845e3
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
@@ -20,11 +20,17 @@ test.describe('Agentinstances Validation API Tests', () => {
   }) => {
     const requestBody = {
       elementInstanceKey: null,
-      definition: {
-        model: 'x',
-        provider: 'x',
-        systemPrompt: 'x',
-      },
+      jobKey: null,
+      jobLease: 'x',
+      history: [
+        {
+          historyItemId: 'x',
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 'x',
+        },
+      ],
       __extraField: 'unexpected',
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
@@ -49,16 +55,22 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Param definition.model wrong type (#1)', async ({
+  test('createAgentInstance - Param history.0.historyItemId wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
-      definition: {
-        model: 123,
-        provider: 'x',
-        systemPrompt: 'x',
-      },
+      jobKey: null,
+      jobLease: 'x',
+      history: [
+        {
+          historyItemId: 123,
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 'x',
+        },
+      ],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -70,16 +82,22 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Param definition.model wrong type (#2)', async ({
+  test('createAgentInstance - Param history.0.historyItemId wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
-      definition: {
-        model: true,
-        provider: 'x',
-        systemPrompt: 'x',
-      },
+      jobKey: null,
+      jobLease: 'x',
+      history: [
+        {
+          historyItemId: true,
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 'x',
+        },
+      ],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -91,16 +109,22 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Param definition.provider wrong type (#1)', async ({
+  test('createAgentInstance - Param history.0.producedAt wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
-      definition: {
-        model: 'x',
-        provider: 123,
-        systemPrompt: 'x',
-      },
+      jobKey: null,
+      jobLease: 'x',
+      history: [
+        {
+          historyItemId: 'x',
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 123,
+        },
+      ],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -112,16 +136,22 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Param definition.provider wrong type (#2)', async ({
+  test('createAgentInstance - Param history.0.producedAt wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
-      definition: {
-        model: 'x',
-        provider: true,
-        systemPrompt: 'x',
-      },
+      jobKey: null,
+      jobLease: 'x',
+      history: [
+        {
+          historyItemId: 'x',
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: true,
+        },
+      ],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -133,16 +163,22 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Param definition.systemPrompt wrong type (#1)', async ({
+  test('createAgentInstance - Param jobLease wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
-      definition: {
-        model: 'x',
-        provider: 'x',
-        systemPrompt: 123,
-      },
+      jobKey: null,
+      jobLease: 123,
+      history: [
+        {
+          historyItemId: 'x',
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 'x',
+        },
+      ],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -154,88 +190,22 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Param definition.systemPrompt wrong type (#2)', async ({
+  test('createAgentInstance - Param jobLease wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
-      definition: {
-        model: 'x',
-        provider: 'x',
-        systemPrompt: true,
-      },
-    };
-    const res = await request.post(buildUrl('/agent-instances', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstance - Missing definition (#1)', async ({request}) => {
-    const requestBody = {
-      elementInstanceKey: null,
-    };
-    const res = await request.post(buildUrl('/agent-instances', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstance - Missing definition.model', async ({request}) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      definition: {
-        provider: 'x',
-        systemPrompt: 'x',
-      },
-    };
-    const res = await request.post(buildUrl('/agent-instances', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstance - Missing definition.provider', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      definition: {
-        model: 'x',
-        systemPrompt: 'x',
-      },
-    };
-    const res = await request.post(buildUrl('/agent-instances', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstance - Missing definition.systemPrompt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      definition: {
-        model: 'x',
-        provider: 'x',
-      },
+      jobKey: null,
+      jobLease: true,
+      history: [
+        {
+          historyItemId: 'x',
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 'x',
+        },
+      ],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -251,11 +221,17 @@ test.describe('Agentinstances Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      definition: {
-        model: 'x',
-        provider: 'x',
-        systemPrompt: 'x',
-      },
+      jobKey: null,
+      jobLease: 'x',
+      history: [
+        {
+          historyItemId: 'x',
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 'x',
+        },
+      ],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -267,9 +243,62 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing definition (#2)', async ({request}) => {
+  test('createAgentInstance - Missing history (#1)', async ({request}) => {
     const requestBody = {
-      elementInstanceKey: 'x',
+      elementInstanceKey: null,
+      jobKey: null,
+      jobLease: 'x',
+    };
+    const res = await request.post(buildUrl('/agent-instances', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createAgentInstance - Missing jobKey (#1)', async ({request}) => {
+    const requestBody = {
+      elementInstanceKey: null,
+      jobLease: 'x',
+      history: [
+        {
+          historyItemId: 'x',
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 'x',
+        },
+      ],
+    };
+    const res = await request.post(buildUrl('/agent-instances', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createAgentInstance - format invalid history.0.producedAt', async ({
+    request,
+  }) => {
+    const requestBody = {
+      elementInstanceKey: null,
+      jobKey: null,
+      jobLease: 'x',
+      history: [
+        {
+          historyItemId: 'x',
+          loopIteration: null,
+          role: null,
+          content: [null],
+          producedAt: 'not-a-datetime',
+        },
+      ],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -285,7 +314,41 @@ test.describe('Agentinstances Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      definition: 'x',
+      jobKey: 'x',
+      jobLease: 'x',
+      history: [],
+    };
+    const res = await request.post(buildUrl('/agent-instances', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createAgentInstance - Missing history (#2)', async ({request}) => {
+    const requestBody = {
+      elementInstanceKey: 'x',
+      jobKey: 'x',
+      jobLease: 'x',
+    };
+    const res = await request.post(buildUrl('/agent-instances', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createAgentInstance - Missing jobKey (#2)', async ({request}) => {
+    const requestBody = {
+      elementInstanceKey: 'x',
+      jobLease: 'x',
+      history: [],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -307,10 +370,13 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing combo elementInstanceKey,definition', async ({
+  test('createAgentInstance - Missing combo elementInstanceKey,history', async ({
     request,
   }) => {
-    const requestBody = {};
+    const requestBody = {
+      jobKey: 'x',
+      jobLease: 'x',
+    };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
@@ -321,1328 +387,50 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstanceHistoryItem - Additional prop __extraField', async ({
+  test('createAgentInstance - Missing combo elementInstanceKey,jobKey', async ({
     request,
   }) => {
     const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
       jobLease: 'x',
-      role: null,
-      content: [null],
-      producedAt: 'x',
-      __extraField: 'unexpected',
+      history: [],
     };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl('/agent-instances', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstanceHistoryItem - Body wrong top-level type', async ({
-    request,
-  }) => {
-    const requestBody: string[] = [];
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Param jobLease wrong type (#1)', async ({
+  test('createAgentInstance - Missing combo elementInstanceKey,jobKey,history', async ({
     request,
   }) => {
     const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
-      jobLease: 123,
-      role: null,
-      content: [null],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Param jobLease wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
-      jobLease: true,
-      role: null,
-      content: [null],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Param producedAt wrong type (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
       jobLease: 'x',
-      role: null,
-      content: [null],
-      producedAt: 123,
     };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl('/agent-instances', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstanceHistoryItem - Param producedAt wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
-      jobLease: 'x',
-      role: null,
-      content: [null],
-      producedAt: true,
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing content (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
-      jobLease: 'x',
-      role: null,
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing elementInstanceKey (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: null,
-      jobLease: 'x',
-      role: null,
-      content: [null],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing jobKey (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobLease: 'x',
-      role: null,
-      content: [null],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing jobLease (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
-      role: null,
-      content: [null],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing producedAt (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
-      jobLease: 'x',
-      role: null,
-      content: [null],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing role (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
-      jobLease: 'x',
-      content: [null],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - format invalid producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: null,
-      jobKey: null,
-      jobLease: 'x',
-      role: null,
-      content: [null],
-      producedAt: 'not-a-datetime',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing content (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing elementInstanceKey (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing jobKey (#2)', async ({
+  test('createAgentInstance - Missing combo jobKey,history', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: 'x',
       jobLease: 'x',
-      role: 'x',
-      content: [],
-      producedAt: 'x',
     };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing jobLease (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      role: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing producedAt (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing role (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      jobLease: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing body', async ({request}) => {
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo content,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,content,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobKey', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobLease: 'x',
-      role: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobKey,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobLease: 'x',
-      role: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobKey,jobLease', async ({
-    request,
-  }) => {
-    const requestBody = {
-      role: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobKey,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobLease: 'x',
-      role: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobKey,role', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobLease: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobLease', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      role: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobLease,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      role: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobLease,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      role: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,jobLease,role', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,role', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      jobLease: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,role,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      jobLease: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo elementInstanceKey,role,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      jobKey: 'x',
-      jobLease: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,content,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,jobLease', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      role: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,jobLease,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      role: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,jobLease,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      role: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,jobLease,role', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobLease: 'x',
-      role: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,role', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobLease: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,role,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobLease: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobKey,role,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobLease: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobLease,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      role: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobLease,content,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      role: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobLease,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      role: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobLease,role', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      content: [],
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobLease,role,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo jobLease,role,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo role,content', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      jobLease: 'x',
-      producedAt: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo role,content,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      jobLease: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Missing combo role,producedAt', async ({
-    request,
-  }) => {
-    const requestBody = {
-      elementInstanceKey: 'x',
-      jobKey: 'x',
-      jobLease: 'x',
-      content: [],
-    };
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'x',
-      }),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAgentInstanceHistoryItem - Path param agentInstanceKey pattern violation', async ({
-    request,
-  }) => {
-    const res = await request.post(
-      buildUrl('/agent-instances/{agentInstanceKey}/history', {
-        agentInstanceKey: 'a',
-      }),
-      {
-        headers: jsonHeaders(),
-      },
-    );
+    const res = await request.post(buildUrl('/agent-instances', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -2032,6 +820,8 @@ test.describe('Agentinstances Validation API Tests', () => {
   }) => {
     const requestBody = {
       elementInstanceKey: null,
+      jobKey: null,
+      jobLease: 'x',
       __extraField: 'unexpected',
     };
     const res = await request.patch(
@@ -2062,10 +852,75 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateAgentInstance - Missing elementInstanceKey', async ({
+  test('updateAgentInstance - Param jobLease wrong type (#1)', async ({
     request,
   }) => {
-    const requestBody = {};
+    const requestBody = {
+      elementInstanceKey: null,
+      jobKey: null,
+      jobLease: 123,
+    };
+    const res = await request.patch(
+      buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateAgentInstance - Param jobLease wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      elementInstanceKey: null,
+      jobKey: null,
+      jobLease: true,
+    };
+    const res = await request.patch(
+      buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateAgentInstance - Missing elementInstanceKey (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      jobKey: null,
+      jobLease: 'x',
+    };
+    const res = await request.patch(
+      buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateAgentInstance - Missing elementInstanceKey (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      jobKey: 'x',
+      jobLease: 'x',
+    };
     const res = await request.patch(
       buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
       {

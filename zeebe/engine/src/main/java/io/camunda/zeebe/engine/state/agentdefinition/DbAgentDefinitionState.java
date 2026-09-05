@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAgentDefinitionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.function.LongConsumer;
 import org.agrona.DirectBuffer;
 
 public final class DbAgentDefinitionState implements MutableAgentDefinitionState {
@@ -29,6 +30,9 @@ public final class DbAgentDefinitionState implements MutableAgentDefinitionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbLong>
       agentDefinitionKeyColumnFamily;
 
+  private final DbAgentDefinition dbAgentDefinition = new DbAgentDefinition();
+  private final ColumnFamily<DbLong, DbAgentDefinition> agentDefinitionColumnFamily;
+
   public DbAgentDefinitionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     agentDefinitionKeyColumnFamily =
@@ -37,6 +41,12 @@ public final class DbAgentDefinitionState implements MutableAgentDefinitionState
             transactionContext,
             processDefinitionKeyAndElementId,
             agentDefinitionKey);
+    agentDefinitionColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AGENT_DEFINITION_BY_KEY,
+            transactionContext,
+            agentDefinitionKey,
+            dbAgentDefinition);
   }
 
   @Override
@@ -48,11 +58,42 @@ public final class DbAgentDefinitionState implements MutableAgentDefinitionState
   }
 
   @Override
+  public AgentDefinitionRecord getAgentDefinition(final long agentDefinitionKey) {
+    this.agentDefinitionKey.wrapLong(agentDefinitionKey);
+    final var stored = agentDefinitionColumnFamily.get(this.agentDefinitionKey);
+    return stored == null ? null : stored.getRecord();
+  }
+
+  @Override
+  public void forEachAgentDefinitionKey(
+      final long processDefinitionKey, final LongConsumer callback) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    agentDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        (key, value) -> {
+          callback.accept(value.getValue());
+        });
+  }
+
+  @Override
   public void insert(final long agentDefinitionKey, final AgentDefinitionRecord record) {
     processDefinitionKey.wrapLong(record.getProcessDefinitionKey());
     elementId.wrapBuffer(BufferUtil.wrapString(record.getElementId()));
     this.agentDefinitionKey.wrapLong(agentDefinitionKey);
-    agentDefinitionKeyColumnFamily.insert(
+    agentDefinitionKeyColumnFamily.upsert(
         processDefinitionKeyAndElementId, this.agentDefinitionKey);
+
+    dbAgentDefinition.setRecord(record);
+    agentDefinitionColumnFamily.upsert(this.agentDefinitionKey, dbAgentDefinition);
+  }
+
+  @Override
+  public void delete(final AgentDefinitionRecord record) {
+    processDefinitionKey.wrapLong(record.getProcessDefinitionKey());
+    elementId.wrapBuffer(BufferUtil.wrapString(record.getElementId()));
+    agentDefinitionKeyColumnFamily.deleteIfExists(processDefinitionKeyAndElementId);
+
+    agentDefinitionKey.wrapLong(record.getAgentDefinitionKey());
+    agentDefinitionColumnFamily.deleteIfExists(agentDefinitionKey);
   }
 }

@@ -7,8 +7,8 @@
  */
 
 import {IS_NAV_V2_ENABLED} from 'modules/feature-flags';
-import {AppHeaderV2} from './AppHeaderV2';
 import {LegacyAppHeader} from './LegacyAppHeader';
+import {AppHeaderV2} from './AppHeaderV2';
 
 const AppHeader: React.FC<{hideNavLinks?: boolean}> = ({
   hideNavLinks = false,

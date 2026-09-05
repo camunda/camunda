@@ -21,11 +21,9 @@ import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Objects;
-import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -35,16 +33,17 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestMethodOrder;
 
 /**
- * Integration test for {@link io.camunda.exporter.rdbms.replication.DelayReplicationController}.
+ * Integration test for {@link
+ * io.camunda.exporter.rdbms.replication.DelayReplicationSignalStrategy}.
  *
  * <p>Verifies that exported positions are withheld from acknowledgment until the configured delay
  * elapses, and that they are acknowledged afterwards. Uses H2 in-memory database (vendor-agnostic)
  * — no replication cluster is required.
  *
- * <p>Tagged {@code dl-nightly} because the 1-minute delay makes it too slow for regular CI.
+ * <p>Tagged {@code async-repl} so it runs in the path-scoped async-replication CI job once
+ * re-enabled, rather than nightly-only.
  */
-@Disabled("shouldNotAcknowledgeBeforeDelayExpires currently failing on nightly CI - INC-6678")
-@Tag("dl-nightly")
+@Tag("async-repl")
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
 public class DelayReplicationIT {
@@ -154,7 +153,7 @@ public class DelayReplicationIT {
         .untilAsserted(
             () ->
                 assertThat(getCurrentExporterPosition())
-                    .isCloseTo(getCurrentAcknowledgedExporterPosition(), Offset.offset(5L)));
+                    .isEqualTo(getCurrentAcknowledgedExporterPosition()));
   }
 
   private long getCurrentExporterPosition() {

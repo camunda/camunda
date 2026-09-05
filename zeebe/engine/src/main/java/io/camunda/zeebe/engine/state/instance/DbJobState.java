@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongHashSet;
 import org.slf4j.Logger;
@@ -92,6 +94,21 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffColumnFamily;
   private long nextBackOffDueDate;
 
+  /**
+   * Secondary index: {@code (processInstanceKey, jobKey) → ∅}; supports prefix iteration to find
+   * jobs of a process instance.
+   *
+   * <p>Filled by {@link #insertJobRecordActivatable} (the 8.10+ creation path) and backfilled by
+   * {@link #updateJobState} when a job reaches {@link State#SUSPENDED}, so a pre-8.10 job created
+   * via the deprecated {@link #create} path is indexed the moment it is suspended. Not otherwise
+   * populated by that legacy path, so pre-8.10 jobs that have never been suspended have no entry.
+   */
+  private final DbLong jobIndexProcessInstanceKey;
+
+  private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> processInstanceJobKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
+      jobsByProcessInstanceColumnFamily;
+
   /** In-memory, per-partition memory that the legacy JOB_ACTIVATABLE CF is globally drained. */
   private volatile boolean isLegacyCfDrained = false;
 
@@ -142,6 +159,15 @@ public final class DbJobState implements JobState, MutableJobState {
     backoffColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_BACKOFF, transactionContext, backoffJobKey, DbNil.INSTANCE);
+
+    jobIndexProcessInstanceKey = new DbLong();
+    processInstanceJobKey = new DbCompositeKey<>(jobIndexProcessInstanceKey, fkJob);
+    jobsByProcessInstanceColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOBS_BY_PROCESS_INSTANCE,
+            transactionContext,
+            processInstanceJobKey,
+            DbNil.INSTANCE);
   }
 
   /**
@@ -233,6 +259,10 @@ public final class DbJobState implements JobState, MutableJobState {
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
+
+    // deleteIfExists: a job that predates this CF and was never suspended has no entry here
+    jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
+    jobsByProcessInstanceColumnFamily.deleteIfExists(processInstanceJobKey);
   }
 
   /**
@@ -267,8 +297,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void makeActivatableAfterSecretResolution(final long key) {
     if (!isInState(key, State.WAITING_FOR_SECRET_RESOLUTION)) {
-      // the job is gone, or was already reactivated by another resolved reference of the same
-      // activation; re-inserting it in either case corrupts the activatable index
+      // no-op unless waiting; re-inserting otherwise corrupts the activatable index
       return;
     }
     final JobRecord record = getJob(key);
@@ -421,6 +450,8 @@ public final class DbJobState implements JobState, MutableJobState {
   public void insertJobRecordActivatable(final long key, final JobRecord record) {
     createJobRecord(key, record);
     initializeJobState();
+    jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
+    jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
   }
 
   /** Updates the job record without updating variables */
@@ -437,6 +468,9 @@ public final class DbJobState implements JobState, MutableJobState {
     jobKey.wrapLong(key);
     jobState.setState(newState);
     statesJobColumnFamily.update(fkJob, jobState);
+    if (newState == State.SUSPENDED) {
+      indexJobByProcessInstance(key);
+    }
   }
 
   @Override
@@ -485,6 +519,37 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffKey.wrapLong(backoff);
       backoffColumnFamily.deleteIfExists(backoffJobKey);
     }
+  }
+
+  /**
+   * Backfills the {@code JOBS_BY_PROCESS_INSTANCE} entry for a job that reaches {@link
+   * State#SUSPENDED}. A pre-8.10 job created via the deprecated {@link #create} path was never
+   * indexed at creation; suspension is the point every such job passes through, so index it here.
+   * An 8.10+ job is already indexed by {@link #insertJobRecordActivatable}, and the {@code upsert}
+   * makes the repeat harmless. Reads the persisted record for the {@code processInstanceKey} rather
+   * than trusting a caller-supplied one, so index maintenance stays wholly inside this class.
+   */
+  private void indexJobByProcessInstance(final long key) {
+    final JobRecord job = getJob(key);
+    if (job == null) {
+      return;
+    }
+    jobIndexProcessInstanceKey.wrapLong(job.getProcessInstanceKey());
+    jobKey.wrapLong(key);
+    jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void forEachJobsByProcessInstance(
+      final long processInstanceKey, final long startAtJobKey, final LongPredicate visitor) {
+    jobIndexProcessInstanceKey.wrapLong(processInstanceKey);
+    jobKey.wrapLong(startAtJobKey);
+    final var startAt = startAtJobKey < 0 ? null : processInstanceJobKey;
+    // key-only visitor: every value in this index is DbNil, so reading them would be wasted work
+    final KeyVisitor<DbCompositeKey<DbLong, DbForeignKey<DbLong>>> keyVisitor =
+        key -> visitor.test(key.second().inner().getValue());
+    jobsByProcessInstanceColumnFamily.whileEqualPrefix(
+        jobIndexProcessInstanceKey, startAt, keyVisitor);
   }
 
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {

@@ -142,7 +142,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
                 PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantName));
 
     final ExporterDirector director =
-        exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
+        exporterDirectorBuilder.apply(exporterCtx, exporterPhase(context));
 
     context.getComponentHealthMonitor().registerComponent(director);
 
@@ -152,7 +152,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           if (error == null) {
             context.setExporterDirector(director);
             // Pause/Resume here in case the state was changed after the director was created
-            switch (context.getExporterPhase()) {
+            switch (exporterPhase(context)) {
               case PAUSED:
                 director.pauseExporting();
                 break;
@@ -169,6 +169,16 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
+  }
+
+  /**
+   * The exporter phase to (re)open a director with, sourced from dynamic cluster configuration
+   * rather than any broker-local state — so a pause survives restarts and applies to partitions
+   * that join later, since every replica converges on the same gossiped configuration regardless of
+   * whether it was already running when the pause was applied.
+   */
+  private static ExporterPhase exporterPhase(final PartitionTransitionContext context) {
+    return ExporterPhase.from(context.getDynamicPartitionConfig().exporting().state());
   }
 
   private void deleteOrEnableExportersIfConfigChanged(

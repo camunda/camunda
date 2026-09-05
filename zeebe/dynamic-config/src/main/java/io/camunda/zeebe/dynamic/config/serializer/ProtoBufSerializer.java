@@ -29,8 +29,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
@@ -49,12 +49,14 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
@@ -69,6 +71,8 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartiti
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -79,21 +83,24 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeO
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -109,6 +116,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
@@ -219,7 +228,8 @@ public class ProtoBufSerializer
         encodedClusterTopology.hasLastChange()
             ? Optional.of(decodeCompletedChange(encodedClusterTopology.getLastChange()))
             : Optional.empty();
-    final Optional<ClusterChangePlan> currentChange =
+    // Always a queue: it is the only shape the legacy message can carry.
+    final Optional<ChangePlan> currentChange =
         encodedClusterTopology.hasCurrentChange()
             ? Optional.of(decodeChangePlan(encodedClusterTopology.getCurrentChange()))
             : Optional.empty();
@@ -272,9 +282,14 @@ public class ProtoBufSerializer
     clusterConfiguration
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
+    // The legacy message's currentChange field can only carry a queue, so a dependency-graph change
+    // is flattened into one here. This is the only place that shape is required, and the only place
+    // the flattening happens: a consumer reading the configuration in-process sees the real change.
     clusterConfiguration
         .pendingChanges()
-        .ifPresent(changePlan -> builder.setCurrentChange(encodeChangePlan(changePlan)));
+        .ifPresent(
+            changePlan ->
+                builder.setCurrentChange(encodeChangePlan(ClusterChangePlan.flatten(changePlan))));
     clusterConfiguration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
@@ -446,8 +461,8 @@ public class ProtoBufSerializer
       case LEAVING -> MemberState.State.LEAVING;
       case LEFT -> MemberState.State.LEFT;
       case RECOVERING -> MemberState.State.RECOVERING;
-      case BOOTSTRAPPING ->
-          throw new IllegalStateException("Member cannot be in BOOTSTRAPPING state");
+      case BOOTSTRAPPING, LEARNER ->
+          throw new IllegalStateException("Member cannot be in %s state".formatted(state));
     };
   }
 
@@ -459,6 +474,7 @@ public class ProtoBufSerializer
       case LEAVING -> PartitionState.State.LEAVING;
       case BOOTSTRAPPING -> PartitionState.State.BOOTSTRAPPING;
       case RECOVERING -> PartitionState.State.RECOVERING;
+      case LEARNER -> PartitionState.State.LEARNER;
     };
   }
 
@@ -470,6 +486,7 @@ public class ProtoBufSerializer
       case LEAVING -> Topology.State.LEAVING;
       case BOOTSTRAPPING -> Topology.State.BOOTSTRAPPING;
       case RECOVERING -> Topology.State.RECOVERING;
+      case LEARNER -> Topology.State.LEARNER;
     };
   }
 
@@ -523,12 +540,21 @@ public class ProtoBufSerializer
           builder.setPartitionJoin(
               Topology.PartitionJoinOperation.newBuilder()
                   .setPartitionId(joinOperation.partitionId())
-                  .setPriority(joinOperation.priority()));
+                  .setPriority(joinOperation.priority())
+                  .setAsLearner(joinOperation.asLearner()));
       case final PartitionLeaveOperation leaveOperation ->
           builder.setPartitionLeave(
               Topology.PartitionLeaveOperation.newBuilder()
                   .setPartitionId(leaveOperation.partitionId())
                   .setMinimumAllowedReplicas(leaveOperation.minimumAllowedReplicas()));
+      case final PartitionPromoteOperation promoteOperation ->
+          builder.setPartitionPromote(
+              Topology.PartitionPromoteOperation.newBuilder()
+                  .setPartitionId(promoteOperation.partitionId()));
+      case final PartitionDemoteOperation demoteOperation ->
+          builder.setPartitionDemote(
+              Topology.PartitionDemoteOperation.newBuilder()
+                  .setPartitionId(demoteOperation.partitionId()));
       case final MemberJoinOperation memberJoinOperation ->
           builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -612,6 +638,8 @@ public class ProtoBufSerializer
               Topology.UpdatePartitionDistributorConfigOperation.newBuilder()
                   .setConfig(encodePartitionDistributorConfig(msg.config()))
                   .build());
+      case final RemovePhysicalTenantOperation ignored ->
+          builder.setRemovePhysicalTenant(Topology.RemovePhysicalTenantOperation.newBuilder());
       case final ModeChangeOperation modeChangeOperation ->
           builder.setModeChange(
               Topology.ModeChangeOperation.newBuilder()
@@ -855,12 +883,19 @@ public class ProtoBufSerializer
       return new PartitionJoinOperation(
           memberId,
           topologyChangeOperation.getPartitionJoin().getPartitionId(),
-          topologyChangeOperation.getPartitionJoin().getPriority());
+          topologyChangeOperation.getPartitionJoin().getPriority(),
+          topologyChangeOperation.getPartitionJoin().getAsLearner());
     } else if (topologyChangeOperation.hasPartitionLeave()) {
       return new PartitionLeaveOperation(
           memberId,
           topologyChangeOperation.getPartitionLeave().getPartitionId(),
           topologyChangeOperation.getPartitionLeave().getMinimumAllowedReplicas());
+    } else if (topologyChangeOperation.hasPartitionPromote()) {
+      return new PartitionPromoteOperation(
+          memberId, topologyChangeOperation.getPartitionPromote().getPartitionId());
+    } else if (topologyChangeOperation.hasPartitionDemote()) {
+      return new PartitionDemoteOperation(
+          memberId, topologyChangeOperation.getPartitionDemote().getPartitionId());
     } else if (topologyChangeOperation.hasMemberJoin()) {
       return new MemberJoinOperation(memberId);
     } else if (topologyChangeOperation.hasMemberLeave()) {
@@ -960,6 +995,8 @@ public class ProtoBufSerializer
               () ->
                   new IllegalStateException(
                       "UpdatePartitionDistributorConfig operation has empty config"));
+    } else if (topologyChangeOperation.hasRemovePhysicalTenant()) {
+      return new RemovePhysicalTenantOperation(memberId);
     } else if (topologyChangeOperation.hasModeChange()) {
       final var modeChangeProto = topologyChangeOperation.getModeChange();
       return new ModeChangeOperation(memberId, fromProtoTopologyMode(modeChangeProto.getMode()));
@@ -1017,33 +1054,25 @@ public class ProtoBufSerializer
 
   @Override
   public byte[] encodeJoinPartitionRequest(final JoinPartitionRequest req) {
-    return Requests.JoinPartitionRequest.newBuilder()
-        .setMemberId(req.memberId().id())
-        .setPartitionId(req.partitionId())
-        .setPriority(req.priority())
-        .setDryRun(req.dryRun())
-        .build()
-        .toByteArray();
+    final var builder =
+        Requests.JoinPartitionRequest.newBuilder()
+            .setMemberId(req.memberId().id())
+            .setPartitionId(req.partitionId())
+            .setPriority(req.priority())
+            .setDryRun(req.dryRun());
+    req.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
+    return builder.build().toByteArray();
   }
 
   @Override
   public byte[] encodeLeavePartitionRequest(final LeavePartitionRequest req) {
-    return Requests.LeavePartitionRequest.newBuilder()
-        .setMemberId(req.memberId().id())
-        .setPartitionId(req.partitionId())
-        .setDryRun(req.dryRun())
-        .build()
-        .toByteArray();
-  }
-
-  @Override
-  public byte[] encodeReassignPartitionsRequest(
-      final ReassignPartitionsRequest reassignPartitionsRequest) {
-    return Requests.ReassignAllPartitionsRequest.newBuilder()
-        .addAllMemberIds(reassignPartitionsRequest.members().stream().map(MemberId::id).toList())
-        .setDryRun(reassignPartitionsRequest.dryRun())
-        .build()
-        .toByteArray();
+    final var builder =
+        Requests.LeavePartitionRequest.newBuilder()
+            .setMemberId(req.memberId().id())
+            .setPartitionId(req.partitionId())
+            .setDryRun(req.dryRun());
+    req.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
+    return builder.build().toByteArray();
   }
 
   @Override
@@ -1063,6 +1092,28 @@ public class ProtoBufSerializer
     final var builder = Requests.PurgeRequest.newBuilder().setDryRun(req.dryRun());
     req.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
     return builder.build().toByteArray();
+  }
+
+  @Override
+  public byte[] encodeRemovePhysicalTenantRequest(final RemovePhysicalTenantRequest req) {
+    return Requests.RemovePhysicalTenantRequest.newBuilder()
+        .setDryRun(req.dryRun())
+        .setPhysicalTenantId(req.physicalTenantId())
+        .setForce(req.force())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public RemovePhysicalTenantRequest decodeRemovePhysicalTenantRequest(
+      final byte[] encodedRequest) {
+    try {
+      final var request = Requests.RemovePhysicalTenantRequest.parseFrom(encodedRequest);
+      return new RemovePhysicalTenantRequest(
+          request.getPhysicalTenantId(), request.getDryRun(), request.getForce());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
   }
 
   @Override
@@ -1251,6 +1302,9 @@ public class ProtoBufSerializer
           MemberId.from(joinPartitionRequest.getMemberId()),
           joinPartitionRequest.getPartitionId(),
           joinPartitionRequest.getPriority(),
+          joinPartitionRequest.hasPhysicalTenantId()
+              ? Optional.of(joinPartitionRequest.getPhysicalTenantId())
+              : Optional.empty(),
           joinPartitionRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
@@ -1264,22 +1318,10 @@ public class ProtoBufSerializer
       return new LeavePartitionRequest(
           MemberId.from(leavePartitionRequest.getMemberId()),
           leavePartitionRequest.getPartitionId(),
+          leavePartitionRequest.hasPhysicalTenantId()
+              ? Optional.of(leavePartitionRequest.getPhysicalTenantId())
+              : Optional.empty(),
           leavePartitionRequest.getDryRun());
-    } catch (final InvalidProtocolBufferException e) {
-      throw new DecodingFailed(e);
-    }
-  }
-
-  @Override
-  public ReassignPartitionsRequest decodeReassignPartitionsRequest(final byte[] encodedState) {
-    try {
-      final var reassignPartitionsRequest =
-          Requests.ReassignAllPartitionsRequest.parseFrom(encodedState);
-      return new ReassignPartitionsRequest(
-          reassignPartitionsRequest.getMemberIdsList().stream()
-              .map(MemberId::from)
-              .collect(Collectors.toSet()),
-          reassignPartitionsRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -1646,11 +1688,12 @@ public class ProtoBufSerializer
 
   @Override
   public byte[] encodeExportingStateChangeRequest(final ExportingStateChangeRequest request) {
-    return Requests.ExportingStateChangeRequest.newBuilder()
-        .setState(encodeExportingState(request.state()))
-        .setDryRun(request.dryRun())
-        .build()
-        .toByteArray();
+    final var builder =
+        Requests.ExportingStateChangeRequest.newBuilder()
+            .setState(encodeExportingState(request.state()))
+            .setDryRun(request.dryRun());
+    request.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
+    return builder.build().toByteArray();
   }
 
   @Override
@@ -1659,7 +1702,11 @@ public class ProtoBufSerializer
     try {
       final var request = Requests.ExportingStateChangeRequest.parseFrom(encodedRequest);
       return new ExportingStateChangeRequest(
-          decodeExportingState(request.getState()), request.getDryRun());
+          decodeExportingState(request.getState()),
+          request.hasPhysicalTenantId()
+              ? Optional.of(request.getPhysicalTenantId())
+              : Optional.empty(),
+          request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -1932,7 +1979,7 @@ public class ProtoBufSerializer
             config -> builder.setPartitionDistributor(encodePartitionDistributorConfig(config)));
     configuration
         .pendingChanges()
-        .ifPresent(changePlan -> builder.setPendingChanges(encodeChangePlan(changePlan)));
+        .ifPresent(plan -> builder.setPendingChanges(encodeDependencyChangePlan(plan)));
     configuration
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
@@ -1951,9 +1998,10 @@ public class ProtoBufSerializer
         proto.hasPartitionDistributor()
             ? decodePartitionDistributorConfig(proto.getPartitionDistributor())
             : Optional.empty();
-    final Optional<ClusterChangePlan> pendingChanges =
+    final Optional<DependencyChangePlan> pendingChanges =
         proto.hasPendingChanges()
-            ? Optional.of(decodeChangePlan(proto.getPendingChanges()))
+            ? Optional.of(
+                decodeDependencyChangePlan(GlobalChangeOperation.class, proto.getPendingChanges()))
             : Optional.empty();
     final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> lastChange =
         proto.hasLastChange()
@@ -1986,11 +2034,132 @@ public class ProtoBufSerializer
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
     configuration
         .pendingChanges()
-        .ifPresent(changePlan -> builder.setPendingChanges(encodeChangePlan(changePlan)));
+        .ifPresent(plan -> builder.setPendingChanges(encodeDependencyChangePlan(plan)));
     configuration
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
     return builder.build();
+  }
+
+  private Topology.OperationGraph encodeOperationGraph(final OperationGraph graph) {
+    final var builder = Topology.OperationGraph.newBuilder();
+    graph
+        .operations()
+        .forEach(
+            (operationId, planned) -> {
+              final var operation =
+                  Topology.PlannedOperation.newBuilder().setId(operationId.value());
+              switch (planned.operation()) {
+                case final PartitionGroupOperation groupOperation ->
+                    operation.setPartitionGroupOperation(
+                        encodePartitionGroupChangeOperation(groupOperation));
+                case final GlobalChangeOperation globalOperation ->
+                    operation.setGlobalOperation(encodeGlobalChangeOperation(globalOperation));
+              }
+              planned.groupId().ifPresent(operation::setGroupId);
+              planned.dependsOn().forEach(dependency -> operation.addDependsOn(dependency.value()));
+              builder.addOperations(operation.build());
+            });
+    return builder.build();
+  }
+
+  private OperationGraph decodeOperationGraph(
+      final Class<? extends ClusterConfigurationChangeOperation> expectedKind,
+      final Topology.OperationGraph proto) {
+    final SortedMap<OperationId, OperationGraph.PlannedOperation> operations = new TreeMap<>();
+    proto
+        .getOperationsList()
+        .forEach(
+            planned -> {
+              final var dependsOn = new TreeSet<OperationId>();
+              planned.getDependsOnList().forEach(id -> dependsOn.add(OperationId.of(id)));
+              // An empty groupId means "the sub-configuration holding this graph", which is both
+              // what every graph carries today and what a graph written before the field existed
+              // meant — so absent decodes to absent rather than being guessed at.
+              final var groupId =
+                  planned.getGroupId().isEmpty()
+                      ? Optional.<String>empty()
+                      : Optional.of(planned.getGroupId());
+              operations.put(
+                  OperationId.of(planned.getId()),
+                  new OperationGraph.PlannedOperation(
+                      decodePlannedOperation(expectedKind, planned), dependsOn, groupId));
+            });
+    // OperationGraph.of, not the bare constructor: acyclicity is not an invariant of the
+    // constructor, only of this factory, and this graph came off the wire -- corruption or a
+    // future encoding bug is exactly the source a decode path has to distrust.
+    return OperationGraph.of(operations);
+  }
+
+  /**
+   * An unset oneof is rejected rather than skipped: a planned operation with no operation in it is
+   * a corrupt or forward-versioned encoding, and dropping it silently would hand back a graph
+   * missing a step — which executes to completion and reports success without having done that
+   * step.
+   */
+  private ClusterConfigurationChangeOperation decodePlannedOperation(
+      final Class<? extends ClusterConfigurationChangeOperation> expectedKind,
+      final Topology.PlannedOperation planned) {
+    final ClusterConfigurationChangeOperation operation =
+        switch (planned.getOperationCase()) {
+          case PARTITIONGROUPOPERATION ->
+              decodePartitionGroupChangeOperation(planned.getPartitionGroupOperation());
+          case GLOBALOPERATION -> decodeGlobalChangeOperation(planned.getGlobalOperation());
+          case OPERATION_NOT_SET ->
+              throw new IllegalStateException(
+                  "Expected planned operation %d to carry an operation, but it carries none"
+                      .formatted(planned.getId()));
+        };
+    // The oneof lets either kind travel in either sub-configuration's graph, but only one of them
+    // can run there: the reconciler casts to the kind its scope applies. Rejected here rather than
+    // there, so corrupt or forward-versioned state never reaches the execution loop.
+    if (!expectedKind.isInstance(operation)) {
+      throw new IllegalStateException(
+          "Expected planned operation %d to be a %s, but it is %s"
+              .formatted(planned.getId(), expectedKind.getSimpleName(), operation));
+    }
+    return operation;
+  }
+
+  private Topology.DependencyChangePlan encodeDependencyChangePlan(
+      final DependencyChangePlan plan) {
+    final var builder =
+        Topology.DependencyChangePlan.newBuilder()
+            .setId(plan.id())
+            .setStatus(fromTopologyChangeStatus(plan.status()))
+            .setStartedAt(toTimestamp(plan.startedAt()))
+            .setGraph(encodeOperationGraph(plan.graph()));
+    plan.completed()
+        .forEach(
+            (operationId, at) ->
+                builder.addCompleted(
+                    Topology.OperationCompletion.newBuilder()
+                        .setOperationId(operationId.value())
+                        .setCompletedAt(toTimestamp(at))
+                        .build()));
+    return builder.build();
+  }
+
+  private DependencyChangePlan decodeDependencyChangePlan(
+      final Class<? extends ClusterConfigurationChangeOperation> expectedKind,
+      final Topology.DependencyChangePlan proto) {
+    final SortedMap<OperationId, Instant> completed = new TreeMap<>();
+    proto
+        .getCompletedList()
+        .forEach(
+            completion ->
+                completed.put(
+                    OperationId.of(completion.getOperationId()),
+                    Instant.ofEpochSecond(
+                        completion.getCompletedAt().getSeconds(),
+                        completion.getCompletedAt().getNanos())));
+
+    return new DependencyChangePlan(
+        proto.getId(),
+        toChangeStatus(proto.getStatus()),
+        Instant.ofEpochSecond(proto.getStartedAt().getSeconds(), proto.getStartedAt().getNanos()),
+        decodeOperationGraph(expectedKind, proto.getGraph()),
+        completed);
   }
 
   public PartitionGroupConfiguration decodePartitionGroupConfiguration(
@@ -2002,9 +2171,11 @@ public class ProtoBufSerializer
                     e -> MemberId.from(e.getKey()), e -> decodeBrokerPartitionState(e.getValue())));
     final Optional<RoutingState> routingState =
         proto.hasRoutingState() ? decodeRoutingState(proto.getRoutingState()) : Optional.empty();
-    final Optional<ClusterChangePlan> pendingChanges =
+    final Optional<DependencyChangePlan> pendingChanges =
         proto.hasPendingChanges()
-            ? Optional.of(decodeChangePlan(proto.getPendingChanges()))
+            ? Optional.of(
+                decodeDependencyChangePlan(
+                    PartitionGroupOperation.class, proto.getPendingChanges()))
             : Optional.empty();
     final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> lastChange =
         proto.hasLastChange()
@@ -2028,12 +2199,36 @@ public class ProtoBufSerializer
       final TenantAvailability availability) {
     return Topology.TenantAvailability.newBuilder()
         .setVersion(availability.version())
-        .setDisabled(availability.disabled())
+        .setState(toProtoTenantAvailabilityState(availability.state()))
         .build();
   }
 
+  private static Topology.TenantAvailabilityState toProtoTenantAvailabilityState(
+      final TenantAvailability.State state) {
+    return switch (state) {
+      case ENABLED -> Topology.TenantAvailabilityState.TENANT_ENABLED;
+      case DISABLED -> Topology.TenantAvailabilityState.TENANT_DISABLED;
+      case REMOVED -> Topology.TenantAvailabilityState.TENANT_REMOVED;
+    };
+  }
+
+  /**
+   * An unrecognized state decodes as {@code DISABLED} rather than {@code ENABLED}: if a future peer
+   * introduces a state this broker does not know, treating the tenant as out of service is the safe
+   * reading — a disabled tenant blocks a broker removal, it does not silently permit one.
+   */
+  private static TenantAvailability.State fromProtoTenantAvailabilityState(
+      final Topology.TenantAvailabilityState state) {
+    return switch (state) {
+      case TENANT_ENABLED -> TenantAvailability.State.ENABLED;
+      case TENANT_REMOVED -> TenantAvailability.State.REMOVED;
+      default -> TenantAvailability.State.DISABLED;
+    };
+  }
+
   private TenantAvailability decodeTenantAvailability(final Topology.TenantAvailability proto) {
-    return new TenantAvailability(proto.getVersion(), proto.getDisabled());
+    return new TenantAvailability(
+        proto.getVersion(), fromProtoTenantAvailabilityState(proto.getState()));
   }
 
   private Topology.BrokerState encodeBrokerState(final BrokerState brokerState) {
@@ -2129,21 +2324,13 @@ public class ProtoBufSerializer
                           .map(this::encodeGlobalChangeOperation)
                           .toList())
                   .build());
-      case final PartitionGroupParallelPhase parallelPhase -> {
-        final var parallelBuilder = Topology.PartitionGroupParallelPhase.newBuilder();
-        parallelPhase
-            .groupOperations()
+      case final PartitionGroupPhase groupPhase -> {
+        final var graphBuilder = Topology.PartitionGroupGraphPhase.newBuilder();
+        groupPhase
+            .groupGraphs()
             .forEach(
-                (group, operations) ->
-                    parallelBuilder.putGroupOperations(
-                        group,
-                        Topology.PartitionGroupOperationList.newBuilder()
-                            .addAllOperations(
-                                operations.stream()
-                                    .map(this::encodePartitionGroupChangeOperation)
-                                    .toList())
-                            .build()));
-        builder.setPartitionGroupParallelPhase(parallelBuilder.build());
+                (group, graph) -> graphBuilder.putGroupGraphs(group, encodeOperationGraph(graph)));
+        builder.setPartitionGroupGraphPhase(graphBuilder.build());
       }
     }
     return builder.build();
@@ -2156,8 +2343,18 @@ public class ProtoBufSerializer
               proto.getGlobalPhase().getOperationsList().stream()
                   .map(this::decodeGlobalChangeOperation)
                   .toList());
+      case PARTITIONGROUPGRAPHPHASE ->
+          new PartitionGroupPhase(
+              proto.getPartitionGroupGraphPhase().getGroupGraphsMap().entrySet().stream()
+                  .collect(
+                      Collectors.toMap(
+                          Entry::getKey,
+                          e -> decodeOperationGraph(PartitionGroupOperation.class, e.getValue()))));
+      // Decode-only: nothing writes this variant since the queue phase and the graph phase became
+      // one type, but a configuration persisted or gossiped before that still carries it. A flat
+      // operation list is exactly a sequential graph, so it decodes without loss.
       case PARTITIONGROUPPARALLELPHASE ->
-          new PartitionGroupParallelPhase(
+          PartitionGroupPhase.sequential(
               proto.getPartitionGroupParallelPhase().getGroupOperationsMap().entrySet().stream()
                   .collect(
                       Collectors.toMap(
@@ -2269,12 +2466,23 @@ public class ProtoBufSerializer
               Topology.PartitionJoinOperation.newBuilder()
                   .setPartitionId(op.partitionId())
                   .setPriority(op.priority())
+                  .setAsLearner(op.asLearner())
                   .build());
       case final PartitionLeaveOperation op ->
           builder.setPartitionLeave(
               Topology.PartitionLeaveOperation.newBuilder()
                   .setPartitionId(op.partitionId())
                   .setMinimumAllowedReplicas(op.minimumAllowedReplicas())
+                  .build());
+      case final PartitionPromoteOperation op ->
+          builder.setPartitionPromote(
+              Topology.PartitionPromoteOperation.newBuilder()
+                  .setPartitionId(op.partitionId())
+                  .build());
+      case final PartitionDemoteOperation op ->
+          builder.setPartitionDemote(
+              Topology.PartitionDemoteOperation.newBuilder()
+                  .setPartitionId(op.partitionId())
                   .build());
       case final PartitionReconfigurePriorityOperation op ->
           builder.setPartitionReconfigurePriority(
@@ -2357,6 +2565,8 @@ public class ProtoBufSerializer
                   .setPartitionId(op.partitionId())
                   .addAllBackupIds(op.backupIds())
                   .build());
+      case final RemovePhysicalTenantOperation ignored ->
+          builder.setRemovePhysicalTenant(Topology.RemovePhysicalTenantOperation.newBuilder());
     }
     return builder.build();
   }
@@ -2368,12 +2578,17 @@ public class ProtoBufSerializer
       return new PartitionJoinOperation(
           memberId,
           proto.getPartitionJoin().getPartitionId(),
-          proto.getPartitionJoin().getPriority());
+          proto.getPartitionJoin().getPriority(),
+          proto.getPartitionJoin().getAsLearner());
     } else if (proto.hasPartitionLeave()) {
       return new PartitionLeaveOperation(
           memberId,
           proto.getPartitionLeave().getPartitionId(),
           proto.getPartitionLeave().getMinimumAllowedReplicas());
+    } else if (proto.hasPartitionPromote()) {
+      return new PartitionPromoteOperation(memberId, proto.getPartitionPromote().getPartitionId());
+    } else if (proto.hasPartitionDemote()) {
+      return new PartitionDemoteOperation(memberId, proto.getPartitionDemote().getPartitionId());
     } else if (proto.hasPartitionReconfigurePriority()) {
       return new PartitionReconfigurePriorityOperation(
           memberId,
@@ -2458,6 +2673,8 @@ public class ProtoBufSerializer
           memberId,
           proto.getPartitionRestore().getPartitionId(),
           new TreeSet<>(proto.getPartitionRestore().getBackupIdsList()));
+    } else if (proto.hasRemovePhysicalTenant()) {
+      return new RemovePhysicalTenantOperation(memberId);
     } else {
       throw new IllegalStateException("Unknown partition group change operation: " + proto);
     }
@@ -2480,7 +2697,7 @@ public class ProtoBufSerializer
       case ACTIVE -> BrokerState.State.ACTIVE;
       case LEAVING -> BrokerState.State.LEAVING;
       case LEFT -> BrokerState.State.LEFT;
-      case BOOTSTRAPPING, RECOVERING ->
+      case BOOTSTRAPPING, RECOVERING, LEARNER ->
           throw new IllegalStateException(
               "Broker cannot be in %s lifecycle state".formatted(state));
     };

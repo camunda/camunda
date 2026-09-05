@@ -7,6 +7,7 @@
  */
 
 import {useState} from 'react';
+import {createPortal} from 'react-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {OperationItem} from 'modules/components/OperationItem';
 import {CancelConfirmationModal} from './CancelConfirmationModal';
@@ -33,17 +34,19 @@ const Cancel: React.FC<Props> = ({
         disabled={disabled}
         size="sm"
       />
-      {isCancellationModalVisible && (
-        <CancelConfirmationModal
-          processInstanceKey={processInstanceKey}
-          open={isCancellationModalVisible}
-          onConfirm={() => {
-            setIsCancellationModalVisible(false);
-            onExecute();
-          }}
-          onCancel={() => setIsCancellationModalVisible(false)}
-        />
-      )}
+      {isCancellationModalVisible &&
+        createPortal(
+          <CancelConfirmationModal
+            processInstanceKey={processInstanceKey}
+            open={isCancellationModalVisible}
+            onConfirm={() => {
+              setIsCancellationModalVisible(false);
+              onExecute();
+            }}
+            onCancel={() => setIsCancellationModalVisible(false)}
+          />,
+          document.body,
+        )}
     </>
   );
 };

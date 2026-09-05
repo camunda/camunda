@@ -18,7 +18,6 @@ package io.camunda.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.protocol.rest.SetVariableRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.StringUtil;
@@ -85,11 +84,11 @@ public class SetVariablesRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldRaiseExceptionOnError() {
-    // when
-    assertThatThrownBy(() -> client.newSetVariablesCommand(123).variables("[]").send().join())
-        .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Failed to deserialize json '[]' to 'Map<String, Object>'");
+  void shouldRejectVariablesThatAreNotJsonObject() {
+    // when / then
+    assertThatThrownBy(() -> client.newSetVariablesCommand(123).variables("[]"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("variables must be a JSON object, but was: []");
   }
 
   static class Document {

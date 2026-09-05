@@ -24,6 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstance;
@@ -34,11 +35,11 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 class AgentInstanceAuthorizationIT {
 
   private static final String AGENT_ELEMENT_ID = "agentAuthElement";
+  private static final String AGENT_JOB_TYPE = "agent-task";
   private static final String PROCESS_ID_1 = "agentAuthProcess1";
   private static final String PROCESS_ID_2 = "agentAuthProcess2";
   private static final String PROCESS_ID_3 = "agentAuthProcess3";
@@ -119,12 +121,18 @@ class AgentInstanceAuthorizationIT {
     // Create history item immediately while jobKey1 is still active, before waiting for
     // other agents to be indexed (which can take long enough for the job to expire).
     adminClient
-        .newCreateAgentHistoryItemCommand(agentInstanceKey1)
+        .newUpdateAgentInstanceCommand(agentInstanceKey1)
         .elementInstanceKey(elementInstanceKey1)
         .jobKey(jobKey1)
-        .role(AgentInstanceHistoryRole.USER)
-        .content(List.of(AgentInstanceHistoryContent.text("hello")))
-        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+        .jobLease("test-job-lease")
+        .history(
+            List.of(
+                new AgentInstanceHistoryItem()
+                    .historyItemId(UUID.randomUUID().toString())
+                    .loopIteration(1)
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(List.of(AgentInstanceHistoryContent.text("hello")))
+                    .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job1 so JobCompleteProcessor emits AGENT_HISTORY:COMMIT, transitioning
     // the history item to COMMITTED so it becomes searchable.
@@ -225,9 +233,12 @@ class AgentInstanceAuthorizationIT {
             camundaClient
                 .newCreateAgentInstanceCommand()
                 .elementInstanceKey(elementInstanceKey1)
-                .model("gpt-4o")
-                .provider("openai")
-                .systemPrompt("You are a helpful assistant.")
+                .jobKey(1L)
+                .jobLease("test-job-lease")
+                .history(
+                    List.of(
+                        configurationHistoryItem(
+                            "gpt-4o", "openai", "You are a helpful assistant.")))
                 .execute();
 
     // then
@@ -253,9 +264,12 @@ class AgentInstanceAuthorizationIT {
                     camundaClient
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey3)
-                        .model("gpt-4o")
-                        .provider("openai")
-                        .systemPrompt("You are a helpful assistant.")
+                        .jobKey(jobKey3)
+                        .jobLease("test-job-lease")
+                        .history(
+                            List.of(
+                                configurationHistoryItem(
+                                    "gpt-4o", "openai", "You are a helpful assistant.")))
                         .execute())
             .actual();
 
@@ -278,6 +292,8 @@ class AgentInstanceAuthorizationIT {
             camundaClient
                 .newUpdateAgentInstanceCommand(agentInstanceKey1)
                 .elementInstanceKey(elementInstanceKey1)
+                .jobKey(1L)
+                .jobLease("test-job-lease")
                 .execute();
 
     // then
@@ -299,6 +315,8 @@ class AgentInstanceAuthorizationIT {
                 camundaClient
                     .newUpdateAgentInstanceCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
+                    .jobKey(jobKey3)
+                    .jobLease("test-job-lease")
                     .execute());
   }
 
@@ -311,12 +329,18 @@ class AgentInstanceAuthorizationIT {
     final ThrowingCallable execute =
         () ->
             camundaClient
-                .newCreateAgentHistoryItemCommand(agentInstanceKey1)
+                .newUpdateAgentInstanceCommand(agentInstanceKey1)
                 .elementInstanceKey(elementInstanceKey1)
                 .jobKey(jobKey1)
-                .role(AgentInstanceHistoryRole.USER)
-                .content(List.of(AgentInstanceHistoryContent.text("hello")))
-                .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                .jobLease("test-job-lease")
+                .history(
+                    List.of(
+                        new AgentInstanceHistoryItem()
+                            .historyItemId(UUID.randomUUID().toString())
+                            .loopIteration(1)
+                            .role(AgentInstanceHistoryRole.USER)
+                            .content(List.of(AgentInstanceHistoryContent.text("hello")))
+                            .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
                 .execute();
 
     // then
@@ -335,12 +359,18 @@ class AgentInstanceAuthorizationIT {
         .isThrownBy(
             () ->
                 camundaClient
-                    .newCreateAgentHistoryItemCommand(agentInstanceKey3)
+                    .newUpdateAgentInstanceCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
                     .jobKey(jobKey3)
-                    .role(AgentInstanceHistoryRole.USER)
-                    .content(List.of(AgentInstanceHistoryContent.text("hello")))
-                    .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                    .jobLease("test-job-lease")
+                    .history(
+                        List.of(
+                            new AgentInstanceHistoryItem()
+                                .historyItemId(UUID.randomUUID().toString())
+                                .loopIteration(1)
+                                .role(AgentInstanceHistoryRole.USER)
+                                .content(List.of(AgentInstanceHistoryContent.text("hello")))
+                                .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
                     .execute());
   }
 
@@ -389,7 +419,7 @@ class AgentInstanceAuthorizationIT {
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent()
             .done();
@@ -411,20 +441,10 @@ class AgentInstanceAuthorizationIT {
             .getFirst()
             .getElementInstanceKey();
 
-    final var agentInstanceKey =
-        adminClient
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
-            .execute()
-            .getAgentInstanceKey();
-
     final var activatedJobs =
         adminClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
             .send()
@@ -435,7 +455,32 @@ class AgentInstanceAuthorizationIT {
         .isNotEmpty();
     final long jobKey = activatedJobs.get(0).getKey();
 
+    final var agentInstanceKey =
+        adminClient
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(elementInstanceKey)
+            .jobKey(jobKey)
+            .jobLease("test-job-lease")
+            .history(
+                List.of(
+                    configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
+            .execute()
+            .getAgentInstanceKey();
+
     return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
+  }
+
+  private static AgentInstanceHistoryItem configurationHistoryItem(
+      final String model, final String provider, final String systemPrompt) {
+    return new AgentInstanceHistoryItem()
+        .historyItemId(UUID.randomUUID().toString())
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRole.CONFIGURATION)
+        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+        .producedAt(OffsetDateTime.now())
+        .model(model)
+        .provider(provider)
+        .systemPrompt(List.of(AgentInstanceHistoryContent.text(systemPrompt)));
   }
 
   private record AgentInstanceCreationResult(

@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -83,6 +84,7 @@ public class ResourceDeletionDeleteProcessor
   private final DecisionState decisionState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
   private final ElementInstanceState elementInstanceState;
   private final TimerInstanceState timerInstanceState;
   private final BannedInstanceState bannedInstanceState;
@@ -116,6 +118,7 @@ public class ResourceDeletionDeleteProcessor
     decisionState = processingState.getDecisionState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     processState = processingState.getProcessState();
+    processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
     elementInstanceState = processingState.getElementInstanceState();
     timerInstanceState = processingState.getTimerState();
     bannedInstanceState = processingState.getBannedInstanceState();
@@ -407,18 +410,11 @@ public class ResourceDeletionDeleteProcessor
         !elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
 
     if (finalizedImmediately) {
-      finalizeDeletion(processRecord);
+      processDeletionBehavior.finalizeDeletion(processRecord);
       processDefinitionMetrics.processDefinitionDeleted(process.getKey());
     } else {
       processDefinitionMetrics.processDefinitionDraining(process.getKey());
     }
-  }
-
-  private void finalizeDeletion(final ProcessRecord processRecord) {
-    final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
-    stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETED, processRecord);
-    commandWriter.appendFollowUpCommand(key, ProcessIntent.DELETE_COMPLETE, processRecord);
   }
 
   private ProcessRecord toProcessRecord(final DeployedProcess process) {
@@ -485,21 +481,29 @@ public class ResourceDeletionDeleteProcessor
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
   }
 
-  // Skip DRAINING/deleted versions — they must not hold start-event subscriptions.
+  /**
+   * Latest {@code ACTIVE} version strictly below {@code version}. Skips draining and
+   * pending-deletion versions so they do not hold start-event subscriptions.
+   *
+   * <p>Loads known versions once and scans newest-first. {@code version >=} the deleted latest is
+   * skipped because that version is already draining.
+   */
   private Optional<DeployedProcess> findLatestActiveVersionBelow(
       final DirectBuffer processIdBuffer,
       final String processId,
       final int version,
       final String tenantId) {
-    var candidate = processState.findProcessVersionBefore(processId, version, tenantId);
-    while (candidate.isPresent()) {
-      final int candidateVersion = candidate.get();
+    final var knownVersions = processState.getKnownProcessVersions(processId, tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int candidateVersion = knownVersions.get(i).intValue();
+      if (candidateVersion >= version) {
+        continue;
+      }
       final var process =
           processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
       if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
         return Optional.of(process);
       }
-      candidate = processState.findProcessVersionBefore(processId, candidateVersion, tenantId);
     }
     return Optional.empty();
   }

@@ -44,6 +44,9 @@ public final class ErrorResponseWriter implements BufferWriter {
   private static final String PARTITION_UNAVAILABLE = "Cannot accept requests for partition %d.";
   private static final String OUT_OF_DISK_SPACE =
       "Cannot accept requests for partition %d. Broker is out of disk space";
+  private static final String EXPORTING_CONTROL_REMOVED =
+      "This operation is no longer supported. Use the /actuator/exporting endpoint, or the"
+          + " /v2/exporting and /cluster/v2/exporting REST endpoints instead";
 
   private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   private final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
@@ -101,6 +104,15 @@ public final class ErrorResponseWriter implements BufferWriter {
   public ErrorResponseWriter outOfDiskSpace(final int partitionId) {
     return errorCode(ErrorCode.RESOURCE_EXHAUSTED)
         .errorMessage(String.format(OUT_OF_DISK_SPACE, partitionId));
+  }
+
+  /**
+   * Exporting control was removed from this wire-protocol admin API and from {@code
+   * BrokerAdminService} (the {@code /actuator/partitions} endpoint); exporting state is now managed
+   * exclusively through dynamic cluster configuration.
+   */
+  public ErrorResponseWriter exportingControlRemoved() {
+    return errorCode(ErrorCode.UNSUPPORTED_MESSAGE).errorMessage(EXPORTING_CONTROL_REMOVED);
   }
 
   public ErrorResponseWriter malformedRequest(Throwable e) {

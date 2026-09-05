@@ -20,8 +20,12 @@ import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
+import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -51,6 +55,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,6 +186,37 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
   protected OpenSearchAsyncClient createOSAsyncClient(final ExporterConfiguration config) {
     final var connector = new OpensearchConnector(config.getConnect());
     return connector.createAsyncClient();
+  }
+
+  protected ArchiverRepository createArchiverRepository(
+      final ExporterConfiguration config, final ExporterResourceProvider resourceProvider) {
+    final var isElasticsearch = ConnectionTypes.isElasticSearch(config.getConnect().getType());
+    if (isElasticsearch) {
+      return closeLater(
+          new ElasticsearchArchiverRepository(
+              PARTITION_ID,
+              config.getHistory(),
+              resourceProvider,
+              createAsyncESClient(config),
+              executor,
+              exporterMetrics,
+              LOGGER));
+    } else {
+      final var asyncClient = createOSAsyncClient(config);
+      final var genericClient =
+          new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
+
+      return closeLater(
+          new OpenSearchArchiverRepository(
+              PARTITION_ID,
+              config.getHistory(),
+              resourceProvider,
+              asyncClient,
+              genericClient,
+              executor,
+              exporterMetrics,
+              LOGGER));
+    }
   }
 
   protected <R extends AutoCloseable> R closeLater(final R resource) {

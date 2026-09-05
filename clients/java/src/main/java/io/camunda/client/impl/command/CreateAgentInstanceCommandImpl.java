@@ -17,6 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep2;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep3;
@@ -28,10 +29,12 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAgentInstanceResponseImpl;
 import io.camunda.client.protocol.rest.AgentInstanceCreationRequest;
 import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
-import io.camunda.client.protocol.rest.AgentInstanceDefinition;
-import io.camunda.client.protocol.rest.AgentInstanceLimits;
+import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class CreateAgentInstanceCommandImpl
@@ -51,7 +54,6 @@ public class CreateAgentInstanceCommandImpl
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new AgentInstanceCreationRequest();
-    request.definition(new AgentInstanceDefinition());
   }
 
   @Override
@@ -62,44 +64,37 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep3 model(final String model) {
-    ArgumentUtil.ensureNotNullNorEmpty("model", model);
-    request.getDefinition().model(model);
+  public CreateAgentInstanceCommandStep3 jobKey(final long jobKey) {
+    ArgumentUtil.ensureGreaterThan("jobKey", jobKey, 0);
+    request.jobKey(String.valueOf(jobKey));
     return this;
   }
 
   @Override
-  public CreateAgentInstanceCommandStep4 provider(final String provider) {
-    ArgumentUtil.ensureNotNullNorEmpty("provider", provider);
-    request.getDefinition().provider(provider);
+  public CreateAgentInstanceCommandStep4 jobLease(final String jobLease) {
+    ArgumentUtil.ensureNotNull("jobLease", jobLease);
+    if (jobLease.trim().isEmpty()) {
+      throw new IllegalArgumentException("jobLease must not be blank");
+    }
+    request.jobLease(jobLease);
     return this;
   }
 
   @Override
-  public CreateAgentInstanceCommandStep5 systemPrompt(final String systemPrompt) {
-    ArgumentUtil.ensureNotNullNorEmpty("systemPrompt", systemPrompt);
-    request.getDefinition().systemPrompt(systemPrompt);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep5 maxTokens(final long maxTokens) {
-    ArgumentUtil.ensureGreaterThan("maxTokens", maxTokens, -2);
-    ensureLimits().maxTokens(maxTokens);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep5 maxModelCalls(final int maxModelCalls) {
-    ArgumentUtil.ensureGreaterThan("maxModelCalls", maxModelCalls, -2);
-    ensureLimits().maxModelCalls(maxModelCalls);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep5 maxToolCalls(final int maxToolCalls) {
-    ArgumentUtil.ensureGreaterThan("maxToolCalls", maxToolCalls, -2);
-    ensureLimits().maxToolCalls(maxToolCalls);
+  public CreateAgentInstanceCommandStep5 history(final List<AgentInstanceHistoryItem> history) {
+    ArgumentUtil.ensureNotNull("history", history);
+    if (history.isEmpty()) {
+      throw new IllegalArgumentException("history must not be empty");
+    }
+    final List<io.camunda.client.protocol.rest.AgentInstanceHistoryItem> protocolHistory =
+        new ArrayList<>(history.size());
+    for (final AgentInstanceHistoryItem item : history) {
+      if (item == null) {
+        throw new IllegalArgumentException("history must not contain null elements");
+      }
+      protocolHistory.add(AgentInstanceHistoryMapper.toProtocolHistoryItem(item));
+    }
+    request.history(protocolHistory);
     return this;
   }
 
@@ -111,22 +106,42 @@ public class CreateAgentInstanceCommandImpl
 
   @Override
   public CamundaFuture<CreateAgentInstanceResponse> send() {
+    ensureConfigurationEstablishesDefinition(request.getHistory());
+
     final HttpCamundaFuture<CreateAgentInstanceResponse> result = new HttpCamundaFuture<>();
-    final CreateAgentInstanceResponseImpl response = new CreateAgentInstanceResponseImpl();
     httpClient.post(
         "/agent-instances",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         AgentInstanceCreationResult.class,
-        response::setResponse,
+        CreateAgentInstanceResponseImpl::new,
         result);
     return result;
   }
 
-  private AgentInstanceLimits ensureLimits() {
-    if (request.getLimits() == null) {
-      request.limits(new AgentInstanceLimits());
+  private void ensureConfigurationEstablishesDefinition(
+      final List<io.camunda.client.protocol.rest.AgentInstanceHistoryItem> history) {
+    final List<io.camunda.client.protocol.rest.AgentInstanceHistoryItem> configurationItems =
+        history.stream()
+            .filter(
+                item ->
+                    item != null && item.getRole() == AgentInstanceHistoryRoleEnum.CONFIGURATION)
+            .collect(Collectors.toList());
+
+    final boolean hasModel =
+        configurationItems.stream()
+            .anyMatch(item -> item.getModel() != null && !item.getModel().trim().isEmpty());
+    final boolean hasProvider =
+        configurationItems.stream()
+            .anyMatch(item -> item.getProvider() != null && !item.getProvider().trim().isEmpty());
+    final boolean hasSystemPrompt =
+        configurationItems.stream()
+            .anyMatch(item -> item.getSystemPrompt() != null && !item.getSystemPrompt().isEmpty());
+
+    if (!hasModel || !hasProvider || !hasSystemPrompt) {
+      throw new IllegalArgumentException(
+          "history must include a CONFIGURATION item establishing model, provider, and"
+              + " systemPrompt when history is not empty");
     }
-    return request.getLimits();
   }
 }

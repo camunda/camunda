@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.repository;
 
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +23,17 @@ public interface BusinessValueOverviewRepository {
   Optional<BusinessValueOverviewDto> getByKey(
       String tenantId, String processDefinitionKey, MetricRange metricRange);
 
-  List<BusinessValueOverviewDto> readByRange(MetricRange metricRange);
+  /**
+   * Reads business-value overview rows for the given range, optionally restricted to a subset of
+   * tenant identifiers.
+   *
+   * <p>Passing {@code null} for {@code tenantIds} returns every row for the range and is reserved
+   * for internal, tenant-agnostic callers. Passing an empty collection returns no rows — a shortcut
+   * for callers that have already determined the caller sees no tenants. Any non-empty collection
+   * is pushed down to a {@code terms} filter on the tenant identifier so the read stays bounded
+   * even when the fleet-wide row count exceeds the repository's fetch limit.
+   */
+  List<BusinessValueOverviewDto> readByRange(MetricRange metricRange, Collection<String> tenantIds);
 
   static String documentId(
       final String tenantId, final String processDefinitionKey, final MetricRange metricRange) {

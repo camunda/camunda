@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,8 +34,8 @@ import java.util.stream.Collectors;
  * PartitionReassignRequestTransformer} does inline for the legacy single-group model: it does not
  * itself decide *what* the target distribution should be (that's the reassigner's job) or *how* the
  * resulting operations get applied (that's up to the caller — e.g. wrapping the result in a {@link
- * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase} and starting
- * a pending change, whether from a bootstrap-time initializer or a runtime management-API request).
+ * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase} and starting a
+ * pending change, whether from a bootstrap-time initializer or a runtime management-API request).
  *
  * <p>{@code targetDistribution} may span several groups; the current distribution for each group it
  * touches is read from {@code currentConfiguration}. A group with no entry in {@code
@@ -97,7 +98,8 @@ public final class PartitionReassignmentOperationsGenerator {
 
     // Every existing partition id of a group targetDistribution touches must be present in
     // targetDistribution — mirroring AdditivePartitionReassigner/PartitionReassignmentSupport
-    // #validateNoRemoval. Without this, a targetDistribution that silently omits an existing
+    // #validateExistingPartitionsAreNotRemoved. Without this, a targetDistribution that silently
+    // omits an existing
     // partition (e.g. a caller-side bug, or a reassigner change that starts supporting removal
     // without this generator being updated) would produce no leave operations for it at all: the
     // partition would simply be left out of the result, never mentioned again, without any
@@ -182,7 +184,10 @@ public final class PartitionReassignmentOperationsGenerator {
     }
   }
 
-  /** A partition with no prior state: bootstrap the primary, then join every other member. */
+  /**
+   * A partition with no prior state: bootstrap the primary, then join every other member as a
+   * learner and promote it once caught up.
+   */
   private static List<PartitionGroupOperation> bootstrapPartition(
       final PartitionMetadata target,
       final Optional<DynamicPartitionConfig> config,
@@ -198,7 +203,9 @@ public final class PartitionReassignmentOperationsGenerator {
 
     for (final MemberId member : target.members().stream().sorted().toList()) {
       if (!member.equals(primary)) {
-        operations.add(new PartitionJoinOperation(member, partitionId, target.getPriority(member)));
+        operations.add(
+            new PartitionJoinOperation(member, partitionId, target.getPriority(member), true));
+        operations.add(new PartitionPromoteOperation(member, partitionId));
       }
     }
     return operations;

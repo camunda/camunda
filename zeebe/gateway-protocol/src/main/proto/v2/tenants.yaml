@@ -52,6 +52,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/search:
     post:
@@ -95,6 +96,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}:
     get:
@@ -142,6 +144,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     put:
       x-eventually-consistent: false
@@ -194,6 +197,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
@@ -236,6 +240,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/users/{username}:
     put:
@@ -287,6 +292,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
@@ -338,6 +344,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/users/search:
     post:
@@ -378,6 +385,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TenantUserSearchResult'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/clients/{clientId}:
     put:
@@ -431,6 +439,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
@@ -482,6 +491,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/clients/search:
     post:
@@ -522,6 +532,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TenantClientSearchResult'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/groups/{groupId}:
     put:
@@ -581,6 +592,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
@@ -632,6 +644,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/groups/search:
     post:
@@ -672,6 +685,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TenantGroupSearchResult'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/roles/search:
     post:
@@ -712,6 +726,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TenantRoleSearchResult'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/roles/{roleId}:
     put:
@@ -765,6 +780,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
@@ -817,6 +833,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/mapping-rules/{mappingRuleId}:
     put:
@@ -868,6 +885,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
@@ -917,6 +935,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /tenants/{tenantId}/mapping-rules/search:
     post:
@@ -957,6 +976,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TenantMappingRuleSearchResult'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -1064,12 +1084,17 @@ components:
       type: object
       properties:
         field:
-          description: The field to sort by.
+          description: >-
+            The field to sort by. `key` is deprecated and should not be used
+            anymore.
           type: string
           enum:
             - key
             - name
             - tenantId
+          x-deprecated-enum-members:
+            - name: key
+              deprecatedInVersion: "8.10.0"
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:

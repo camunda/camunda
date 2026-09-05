@@ -76,13 +76,6 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   @Override
   protected EvaluateDecisionCommandImpl setVariablesInternal(final String variables) {
     grpcRequestObjectBuilder.setVariables(variables);
-    // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
-    // gRPC and REST handle setting variables differently:
-    // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
-    //    The engine checks if the provided String can be transformed into a Map, if not it
-    //    throws an error.
-    // - For REST commands, users have to provide a valid JSON Object String.
-    //    Otherwise, the client throws an exception already.
     if (useRest) {
       httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
     }

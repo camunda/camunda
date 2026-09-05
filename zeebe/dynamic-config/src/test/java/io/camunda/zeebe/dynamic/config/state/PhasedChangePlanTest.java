@@ -15,7 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOpe
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +29,8 @@ class PhasedChangePlanTest {
 
   private final GlobalPhase globalPhase0 =
       new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_1)));
-  private final PartitionGroupParallelPhase groupPhase1 =
-      new PartitionGroupParallelPhase(
+  private final PartitionGroupPhase groupPhase1 =
+      PartitionGroupPhase.sequential(
           Map.of("groupA", List.of(new UpdateIncarnationNumberOperation(MEMBER_2))));
   private final GlobalPhase globalPhase2 =
       new GlobalPhase(List.of(new MemberLeaveOperation(MEMBER_1)));
@@ -197,12 +197,12 @@ class PhasedChangePlanTest {
     }
 
     @Test
-    void shouldDefensivelyCopyPartitionGroupParallelPhaseOperations() {
+    void shouldDefensivelyCopyPartitionGroupPhaseOperations() {
       // given
       final var mutableOps =
           new java.util.ArrayList<PartitionGroupOperation>(
               List.of(new UpdateIncarnationNumberOperation(MEMBER_1)));
-      final var phase = new PartitionGroupParallelPhase(Map.of("g1", mutableOps));
+      final var phase = PartitionGroupPhase.sequential(Map.of("g1", mutableOps));
 
       // when
       mutableOps.add(new UpdateIncarnationNumberOperation(MEMBER_2));

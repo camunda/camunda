@@ -18,6 +18,7 @@ import {useResolveIncident} from 'modules/mutations/incidents/useResolveIncident
 type IncidentOperationProps = {
   incidentKey: string;
   jobKey: string | null;
+  disabled?: boolean;
 };
 
 const IncidentOperation: React.FC<IncidentOperationProps> = (props) => {
@@ -50,7 +51,7 @@ const IncidentOperation: React.FC<IncidentOperationProps> = (props) => {
           onClick={handleClick}
           data-testid="retry-incident"
           title="Retry Incident"
-          disabled={isPending}
+          disabled={isPending || props.disabled}
           size="sm"
         />
       </OperationItems>

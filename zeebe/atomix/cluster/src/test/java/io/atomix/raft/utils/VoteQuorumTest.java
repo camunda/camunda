@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Nested;
@@ -117,8 +118,8 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.fail(new MemberId("1"));
-      quorum.fail(new MemberId("2"));
+      quorum.fail(new MemberId("1"), VoteErrorStatus.UNKNOWN);
+      quorum.fail(new MemberId("2"), VoteErrorStatus.UNKNOWN);
 
       // then
       verify(callback, only()).accept(false);
@@ -134,8 +135,8 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.fail(new MemberId("1"));
-      quorum.fail(new MemberId("2"));
+      quorum.fail(new MemberId("1"), VoteErrorStatus.UNKNOWN);
+      quorum.fail(new MemberId("2"), VoteErrorStatus.UNKNOWN);
       quorum.succeed(new MemberId("1"));
       quorum.succeed(new MemberId("2"));
 
@@ -236,8 +237,8 @@ final class VoteQuorumTest {
               Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.fail(new MemberId("1"));
-      quorum.fail(new MemberId("4"));
+      quorum.fail(new MemberId("1"), VoteErrorStatus.UNKNOWN);
+      quorum.fail(new MemberId("4"), VoteErrorStatus.UNKNOWN);
 
       // then
       verify(callback, only()).accept(false);
@@ -255,8 +256,8 @@ final class VoteQuorumTest {
               Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.fail(new MemberId("1"));
-      quorum.fail(new MemberId("4"));
+      quorum.fail(new MemberId("1"), VoteErrorStatus.UNKNOWN);
+      quorum.fail(new MemberId("4"), VoteErrorStatus.UNKNOWN);
       quorum.succeed(new MemberId("1"));
       quorum.succeed(new MemberId("2"));
       quorum.succeed(new MemberId("3"));

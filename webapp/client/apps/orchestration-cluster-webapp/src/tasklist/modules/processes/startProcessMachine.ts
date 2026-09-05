@@ -9,6 +9,7 @@
 import {t} from 'i18next';
 import {assign, fromPromise, setup, type SnapshotFrom} from 'xstate';
 import type {useNavigate} from '@tanstack/react-router';
+import {toast} from '@camunda/design-system';
 import type {
 	CreateProcessInstanceResponseBody,
 	ProcessDefinition,
@@ -46,6 +47,46 @@ type StartProcessEvent = {
 
 type StartProcessStatusTag =
 	'status:starting' | 'status:waiting_for_tasks' | 'status:start_succeeded' | 'status:start_failed';
+
+type NotifyOptions = {
+	kind: 'success' | 'error';
+	title: string;
+	subtitle?: string;
+	isDismissable?: boolean;
+	isActionable?: boolean;
+	actionButtonLabel?: string;
+	onActionButtonClick?: () => void;
+};
+
+function isShadcnRoute() {
+	return window.location.pathname.startsWith('/shadcn');
+}
+
+function notify(options: NotifyOptions) {
+	const {kind, title, subtitle, isDismissable = true, isActionable, actionButtonLabel, onActionButtonClick} = options;
+
+	if (isShadcnRoute()) {
+		toast[kind](title, {
+			description: subtitle,
+			action:
+				isActionable === true && actionButtonLabel !== undefined && onActionButtonClick !== undefined
+					? {label: actionButtonLabel, onClick: onActionButtonClick}
+					: undefined,
+			duration: isDismissable ? undefined : Infinity,
+		});
+		return;
+	}
+
+	notificationsStore.displayNotification({
+		kind,
+		title,
+		subtitle,
+		isDismissable,
+		isActionable,
+		actionButtonLabel,
+		onActionButtonClick,
+	});
+}
 
 function getStartProcessFailureReason(error: unknown): StartProcessFailureReason {
 	const result = requestErrorSchema.safeParse(error);
@@ -95,7 +136,7 @@ const queryNewProcessInstanceTasksLogic = fromPromise<QueryUserTasksResponseBody
 
 const navigateToTaskLogic = fromPromise<void, {navigate: Navigate; userTaskKey: string}>(async ({input}) => {
 	await input.navigate({
-		to: '/tasklist/$userTaskKey',
+		to: isShadcnRoute() ? '/shadcn/tasklist/$userTaskKey' : '/tasklist/$userTaskKey',
 		params: {userTaskKey: input.userTaskKey},
 		search: {filter: 'all-open', sortBy: 'creation'},
 	});
@@ -125,7 +166,10 @@ const startProcessMachine = setup({
 		})),
 		closeStartForm: ({context, event}) => {
 			if (event.process.hasStartForm) {
-				void context.navigate({to: '/tasklist/processes', search: true});
+				void context.navigate({
+					to: isShadcnRoute() ? '/shadcn/tasklist/processes' : '/tasklist/processes',
+					search: true,
+				});
 			}
 		},
 		storeProcessInstanceKey: assign((_, params: {processInstanceKey: string}) => ({
@@ -143,7 +187,7 @@ const startProcessMachine = setup({
 			failureReason: getStartProcessFailureReason(params.error),
 		})),
 		notifySuccess: () => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'success',
 				title: t('tasklist.processesStartProcessNotificationSuccess'),
 				isDismissable: true,
@@ -157,7 +201,7 @@ const startProcessMachine = setup({
 			}
 
 			if (context.failureReason === 'forbidden') {
-				notificationsStore.displayNotification({
+				notify({
 					kind: 'error',
 					title: t('tasklist.processesStartProcessFailed'),
 					subtitle: t('tasklist.taskActionForbidden'),
@@ -166,7 +210,7 @@ const startProcessMachine = setup({
 				return;
 			}
 
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'error',
 				title:
 					getClientConfig().deployment.isMultiTenancyEnabled && process.tenantId === undefined
@@ -178,18 +222,17 @@ const startProcessMachine = setup({
 		},
 		notifyNewTasks: ({context}) => {
 			context.tasks.forEach(({elementId, name, processDefinitionId, processName, userTaskKey}) => {
-				notificationsStore.displayNotification({
+				notify({
 					kind: 'success',
 					title: t('tasklist.processesNewTaskNotification', {
 						processName: processName ?? processDefinitionId,
 						taskName: name ?? elementId,
 					}),
-					isDismissable: false,
 					isActionable: true,
 					actionButtonLabel: t('tasklist.processesNewTaskNotificationAction'),
 					onActionButtonClick: () => {
 						void context.navigate({
-							to: '/tasklist/$userTaskKey',
+							to: isShadcnRoute() ? '/shadcn/tasklist/$userTaskKey' : '/tasklist/$userTaskKey',
 							params: {userTaskKey},
 							search: {filter: 'all-open', sortBy: 'creation'},
 						});
@@ -295,7 +338,10 @@ const startProcessMachine = setup({
 			tags: 'status:waiting_for_tasks',
 			invoke: {
 				src: 'navigateToTask',
-				input: ({context}) => ({navigate: context.navigate, userTaskKey: context.tasks[0]?.userTaskKey ?? ''}),
+				input: ({context}) => ({
+					navigate: context.navigate,
+					userTaskKey: context.tasks[0]?.userTaskKey ?? '',
+				}),
 				onDone: {target: 'Succeeded'},
 				onError: {target: 'Succeeded'},
 			},

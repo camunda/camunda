@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.client.api;
 import static io.camunda.zeebe.broker.client.BrokerMemberIds.ONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
@@ -18,6 +19,7 @@ import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -372,6 +374,19 @@ public final class BrokerClientTest {
   }
 
   @Test
+  void shouldRejectRequestWithoutPartitionGroup() {
+    // given - a request whose partition group (physical tenant) was never set
+    final var request = TestCommand.withUnsetPartitionGroup();
+
+    // when / then - the request fails instead of being routed to the default tenant
+    assertThatThrownBy(() -> client.sendRequest(request))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("no partition group (physical tenant) was set")
+        .hasMessageContaining(request.getType());
+    assertThat(broker.getReceivedCommandRequests()).isEmpty();
+  }
+
+  @Test
   void shouldFailRequestAddressingPartitionOfUnknownGroup() {
     // given - a request addressing a partition that only exists in the default group
     final var request = new TestCommand();
@@ -577,10 +592,26 @@ public final class BrokerClientTest {
         final UnifiedRecordValue record,
         final long key,
         final RequestDispatchStrategy dispatchStrategy) {
+      this(record, key, dispatchStrategy, true);
+    }
+
+    private TestCommand(
+        final UnifiedRecordValue record,
+        final long key,
+        final RequestDispatchStrategy dispatchStrategy,
+        final boolean stampDefaultPartitionGroup) {
       super(VALUE_TYPE, INTENT);
       this.record = record;
       this.key = key;
       this.dispatchStrategy = dispatchStrategy;
+      if (stampDefaultPartitionGroup) {
+        setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      }
+    }
+
+    private static TestCommand withUnsetPartitionGroup() {
+      return new TestCommand(
+          new UnifiedRecordValue(10), Protocol.encodePartitionId(1, 1), null, false);
     }
 
     @Override

@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.shared.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -38,10 +39,12 @@ final class GatewayIntegrationTest {
     final var latch = new CountDownLatch(1);
     final AtomicReference<Throwable> errorResponse = new AtomicReference<>();
     final var client = gateway.bean(BrokerClient.class);
+    final var request = new BrokerCreateProcessInstanceRequest();
+    request.setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // when
     client.sendRequestWithRetry(
-        new BrokerCreateProcessInstanceRequest(),
+        request,
         (k, r) -> {},
         error -> {
           errorResponse.set(error);

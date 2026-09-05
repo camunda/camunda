@@ -33,6 +33,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.observation.SecurityObservationSettings;
 import org.springframework.security.core.Authentication;
@@ -61,6 +62,7 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 @Import({
   OidcOverrideBeansConfiguration.class,
   BasicAuthBeansConfiguration.class,
+  MembershipResolutionContextPropagatorConfiguration.class,
   SaasCspModeCompatibility.class,
   PhysicalTenantSecurityConfiguration.class,
   ClusterAdminBasicSecurityConfiguration.class,
@@ -69,9 +71,10 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 })
 public class WebSecurityConfig {
 
+  /** The host's path declarations. */
   @Bean
-  public SecurityPathPort securityPathPort() {
-    return new SecurityPathAdapter();
+  public SecurityPathPort securityPathPort(final Environment environment) {
+    return SecurityPathAdapter.fromEnvironment(environment);
   }
 
   @Bean

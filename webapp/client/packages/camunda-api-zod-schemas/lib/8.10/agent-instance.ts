@@ -30,10 +30,35 @@ const agentInstanceStatusSchema = z.enum([
 ]);
 type AgentInstanceStatus = z.infer<typeof agentInstanceStatusSchema>;
 
+const agentInstanceTextContentSchema = z.object({
+	contentType: z.literal('TEXT'),
+	text: z.string(),
+});
+type AgentInstanceTextContent = z.infer<typeof agentInstanceTextContentSchema>;
+
+const agentInstanceDocumentContentSchema = z.object({
+	contentType: z.literal('DOCUMENT'),
+	documentReference: documentReferenceSchema,
+});
+type AgentInstanceDocumentContent = z.infer<typeof agentInstanceDocumentContentSchema>;
+
+const agentInstanceObjectContentSchema = z.object({
+	contentType: z.literal('OBJECT'),
+	object: z.unknown(),
+});
+type AgentInstanceObjectContent = z.infer<typeof agentInstanceObjectContentSchema>;
+
+const agentInstanceMessageContentSchema = z.discriminatedUnion('contentType', [
+	agentInstanceTextContentSchema,
+	agentInstanceDocumentContentSchema,
+	agentInstanceObjectContentSchema,
+]);
+type AgentInstanceMessageContent = z.infer<typeof agentInstanceMessageContentSchema>;
+
 const agentInstanceDefinitionSchema = z.object({
 	model: z.string(),
 	provider: z.string(),
-	systemPrompt: z.string(),
+	systemPrompt: z.array(agentInstanceMessageContentSchema),
 });
 type AgentInstanceDefinition = z.infer<typeof agentInstanceDefinitionSchema>;
 
@@ -61,6 +86,7 @@ type AgentTool = z.infer<typeof agentToolSchema>;
 
 const agentInstanceSchema = z.object({
 	agentInstanceKey: z.string(),
+	agentDefinitionKey: z.string(),
 	status: agentInstanceStatusSchema,
 	definition: agentInstanceDefinitionSchema,
 	metrics: agentInstanceMetricsSchema,
@@ -84,6 +110,7 @@ type AgentInstance = z.infer<typeof agentInstanceSchema>;
 const agentInstanceFilterSchema = z
 	.object({
 		agentInstanceKey: basicStringFilterSchema,
+		agentDefinitionKey: basicStringFilterSchema,
 		status: getEnumFilterSchema(agentInstanceStatusSchema),
 		elementId: basicStringFilterSchema,
 		processInstanceKey: basicStringFilterSchema,
@@ -104,6 +131,7 @@ type AgentInstanceFilter = z.infer<typeof agentInstanceFilterSchema>;
 const queryAgentInstancesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: [
 		'agentInstanceKey',
+		'agentDefinitionKey',
 		'status',
 		'elementId',
 		'processInstanceKey',
@@ -124,36 +152,11 @@ type QueryAgentInstancesResponseBody = z.infer<typeof queryAgentInstancesRespons
 const getAgentInstanceResponseBodySchema = agentInstanceSchema;
 type GetAgentInstanceResponseBody = z.infer<typeof getAgentInstanceResponseBodySchema>;
 
-const agentInstanceHistoryRoleSchema = z.enum(['USER', 'ASSISTANT', 'TOOL_RESULT']);
+const agentInstanceHistoryRoleSchema = z.enum(['USER', 'ASSISTANT', 'TOOL_RESULT', 'CONFIGURATION']);
 type AgentInstanceHistoryRole = z.infer<typeof agentInstanceHistoryRoleSchema>;
 
 const agentInstanceHistoryCommitStatusSchema = z.enum(['COMMITTED', 'PENDING', 'DISCARDED']);
 type AgentInstanceHistoryCommitStatus = z.infer<typeof agentInstanceHistoryCommitStatusSchema>;
-
-const agentInstanceTextContentSchema = z.object({
-	contentType: z.literal('TEXT'),
-	text: z.string(),
-});
-type AgentInstanceTextContent = z.infer<typeof agentInstanceTextContentSchema>;
-
-const agentInstanceDocumentContentSchema = z.object({
-	contentType: z.literal('DOCUMENT'),
-	documentReference: documentReferenceSchema,
-});
-type AgentInstanceDocumentContent = z.infer<typeof agentInstanceDocumentContentSchema>;
-
-const agentInstanceObjectContentSchema = z.object({
-	contentType: z.literal('OBJECT'),
-	object: z.record(z.string(), z.unknown()),
-});
-type AgentInstanceObjectContent = z.infer<typeof agentInstanceObjectContentSchema>;
-
-const agentInstanceMessageContentSchema = z.discriminatedUnion('contentType', [
-	agentInstanceTextContentSchema,
-	agentInstanceDocumentContentSchema,
-	agentInstanceObjectContentSchema,
-]);
-type AgentInstanceMessageContent = z.infer<typeof agentInstanceMessageContentSchema>;
 
 const agentInstanceToolCallSchema = z.object({
 	toolCallId: z.string(),
@@ -172,6 +175,7 @@ type AgentInstanceHistoryItemMetrics = z.infer<typeof agentInstanceHistoryItemMe
 
 const agentInstanceHistoryItemSchema = z.object({
 	historyItemKey: z.string(),
+	historyItemId: z.string(),
 	agentInstanceKey: z.string(),
 	elementInstanceKey: z.string(),
 	jobKey: z.string(),
@@ -183,6 +187,11 @@ const agentInstanceHistoryItemSchema = z.object({
 	metrics: agentInstanceHistoryItemMetricsSchema.nullable(),
 	commitStatus: agentInstanceHistoryCommitStatusSchema,
 	producedAt: z.string(),
+	tools: z.array(agentToolSchema),
+	model: z.string().nullable(),
+	provider: z.string().nullable(),
+	limits: agentInstanceLimitsSchema,
+	systemPrompt: z.array(agentInstanceMessageContentSchema),
 });
 type AgentInstanceHistoryItem = z.infer<typeof agentInstanceHistoryItemSchema>;
 
@@ -198,24 +207,6 @@ const agentInstanceHistoryFilterSchema = z
 	})
 	.partial();
 type AgentInstanceHistoryFilter = z.infer<typeof agentInstanceHistoryFilterSchema>;
-
-const createAgentInstanceHistoryItemRequestBodySchema = z.object({
-	elementInstanceKey: z.string(),
-	jobKey: z.string(),
-	jobLease: z.string(),
-	loopIteration: z.number().int().nullable().optional(),
-	role: agentInstanceHistoryRoleSchema,
-	content: z.array(agentInstanceMessageContentSchema),
-	toolCalls: z.array(agentInstanceToolCallSchema).nullable().optional(),
-	metrics: agentInstanceHistoryItemMetricsSchema.nullable().optional(),
-	producedAt: z.string(),
-});
-type CreateAgentInstanceHistoryItemRequestBody = z.infer<typeof createAgentInstanceHistoryItemRequestBodySchema>;
-
-const createAgentInstanceHistoryItemResponseBodySchema = z.object({
-	historyItemKey: z.string(),
-});
-type CreateAgentInstanceHistoryItemResponseBody = z.infer<typeof createAgentInstanceHistoryItemResponseBodySchema>;
 
 const queryAgentInstanceHistoryRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['producedAt', 'historyItemKey', 'loopIteration'] as const,
@@ -235,11 +226,6 @@ const queryAgentInstances = {
 	method: 'POST',
 	getUrl: () => `/${API_VERSION}/agent-instances/search` as const,
 } as const satisfies Endpoint;
-
-const createAgentInstanceHistoryItem = {
-	method: 'POST',
-	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}/history` as const,
-} as const satisfies Endpoint<{agentInstanceKey: string}>;
 
 const queryAgentInstanceHistory = {
 	method: 'POST',
@@ -267,13 +253,10 @@ export {
 	agentInstanceHistoryItemMetricsSchema,
 	agentInstanceHistoryItemSchema,
 	agentInstanceHistoryFilterSchema,
-	createAgentInstanceHistoryItemRequestBodySchema,
-	createAgentInstanceHistoryItemResponseBodySchema,
 	queryAgentInstanceHistoryRequestBodySchema,
 	queryAgentInstanceHistoryResponseBodySchema,
 	getAgentInstance,
 	queryAgentInstances,
-	createAgentInstanceHistoryItem,
 	queryAgentInstanceHistory,
 };
 export type {
@@ -297,8 +280,6 @@ export type {
 	AgentInstanceHistoryItemMetrics,
 	AgentInstanceHistoryItem,
 	AgentInstanceHistoryFilter,
-	CreateAgentInstanceHistoryItemRequestBody,
-	CreateAgentInstanceHistoryItemResponseBody,
 	QueryAgentInstanceHistoryRequestBody,
 	QueryAgentInstanceHistoryResponseBody,
 };

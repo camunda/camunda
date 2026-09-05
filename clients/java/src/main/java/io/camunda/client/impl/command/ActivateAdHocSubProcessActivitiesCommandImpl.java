@@ -59,6 +59,7 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
 
   @Override
   public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(final String elementId) {
+    resetAccumulatedVariables();
     latestActivateElement = new AdHocSubProcessActivateActivityReference().elementId(elementId);
     httpRequestObject.addElementsItem(latestActivateElement);
     return this;
@@ -68,6 +69,9 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
   public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(
       final String elementId, final Map<String, Object> variables) {
     activateElement(elementId);
+    if (variables != null) {
+      replaceAccumulatedVariables(variables);
+    }
     latestActivateElement.setVariables(variables);
     return this;
   }
@@ -102,6 +106,9 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
   @Override
   protected ActivateAdHocSubProcessActivitiesCommandStep2 setVariablesInternal(
       final String variables) {
+    if (latestActivateElement == null) {
+      throw new IllegalStateException("An element must be activated before setting variables");
+    }
     latestActivateElement.setVariables(jsonMapper.fromJsonAsMap(variables));
     return this;
   }

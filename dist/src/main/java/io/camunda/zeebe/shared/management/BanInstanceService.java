@@ -22,10 +22,6 @@ public final class BanInstanceService {
     this.client = client;
   }
 
-  public void banInstance(final long key) {
-    client.sendRequest(new BrokerAdminRequest().banInstance(key));
-  }
-
   public void banInstance(final long key, final String physicalTenantId) {
     final var request = new BrokerAdminRequest().banInstance(key);
     request.setPartitionGroup(physicalTenantId);

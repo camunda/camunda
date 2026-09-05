@@ -10,14 +10,16 @@ import { defineConfig, PluginOption, UserConfig } from "vite";
 import svgr from "vite-plugin-svgr";
 import react from "@vitejs/plugin-react";
 import sbom from "rollup-plugin-sbom";
+import tailwindcss from "@tailwindcss/vite";
 
 const outDir = "dist";
 const contextPath = process.env.CONTEXT_PATH ?? "";
-const proxyPath = `^${contextPath}/(v2|login|logout).*`;
+const proxyPath = `^${contextPath}/(v2|login|logout|session/heartbeat).*`;
 const configPath = `^${contextPath}/config.js`;
 
 const plugins: PluginOption[] = [
   react(),
+  tailwindcss(),
   svgr({
     svgrOptions: {
       exportType: "default",
@@ -30,43 +32,41 @@ const plugins: PluginOption[] = [
 ];
 
 // https://vitejs.dev/config/
-export default defineConfig(
-  ({ mode }): UserConfig => ({
-    base: "",
-    plugins:
-      mode === "sbom"
-        ? [
-            ...plugins,
-            sbom({
-              specVersion: "1.6",
-            }),
-          ]
-        : plugins,
-    resolve: {
-      tsconfigPaths: true,
+export default defineConfig(({ mode }): UserConfig => ({
+  base: "",
+  plugins:
+    mode === "sbom"
+      ? [
+          ...plugins,
+          sbom({
+            specVersion: "1.6",
+          }),
+        ]
+      : plugins,
+  resolve: {
+    tsconfigPaths: true,
+  },
+  build: {
+    outDir,
+    license: {
+      fileName: "assets/vendor.LICENSE.txt",
     },
-    build: {
-      outDir,
-      license: {
-        fileName: "assets/vendor.LICENSE.txt",
-      },
-      rolldownOptions: {
-        output: {
-          postBanner: "/*! licenses: /assets/vendor.LICENSE.txt */",
-        },
+    rolldownOptions: {
+      output: {
+        postBanner: "/*! licenses: /assets/vendor.LICENSE.txt */",
       },
     },
-    server: {
-      proxy: {
-        [proxyPath]: {
-          target: "http://localhost:8080",
-          changeOrigin: true,
-        },
-        [configPath]: {
-          target: "http://localhost:8080/admin",
-          changeOrigin: true,
-        },
+  },
+  server: {
+    proxy: {
+      [proxyPath]: {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+      [configPath]: {
+        target: "http://localhost:8080/admin",
+        changeOrigin: true,
       },
     },
-  }),
-);
+  },
+}));

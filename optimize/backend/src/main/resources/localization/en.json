@@ -60,18 +60,16 @@
     "imprint": "Imprint",
     "academy": "Camunda Academy",
     "feedback": "Feedback and Support",
+    "slackCommunityChannel": "Slack Community Channel",
     "info": "Info",
     "settings": "Settings",
     "notifications": "Notifications",
     "notificationsDismissAll": "Dismiss all",
     "notificationsEmptyTitle": "No notifications",
     "notificationsEmptyDescription": "New updates regarding your processes, clusters and more will appear here.",
-    "sidebarCollapse": "Collapse",
-    "sidebarExpand": "Expand",
-    "sidebarCollapseAria": "Collapse sidebar",
-    "sidebarExpandAria": "Expand sidebar",
-    "sidebarGroupCollapseAria": "Collapse {label}",
-    "sidebarGroupExpandAria": "Expand {label}"
+    "mainNavigation": "Main navigation",
+    "breadcrumb": "Camunda context",
+    "version": "Version {version}"
   },
   "login": {
     "label": "Log in",

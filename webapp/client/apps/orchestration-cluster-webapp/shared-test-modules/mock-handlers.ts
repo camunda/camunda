@@ -64,6 +64,11 @@ const mockQueryBatchOperationsEndpoint = createEndpointMock({
 	method: endpoints.queryBatchOperations.method,
 });
 
+const mockQueryProcessInstancesEndpoint = createEndpointMock({
+	endpoint: endpoints.queryProcessInstances.getUrl(),
+	method: endpoints.queryProcessInstances.method,
+});
+
 const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryDecisionDefinitions.getUrl(),
 	method: endpoints.queryDecisionDefinitions.method,
@@ -77,6 +82,11 @@ const mockQueryDecisionInstancesEndpoint = createEndpointMock({
 const mockCreateDecisionInstancesDeletionBatchOperationEndpoint = createEndpointMock({
 	endpoint: endpoints.createDecisionInstancesDeletionBatchOperation.getUrl(),
 	method: endpoints.createDecisionInstancesDeletionBatchOperation.method,
+});
+
+const mockGetDecisionDefinitionXmlEndpoint = createEndpointMock({
+	endpoint: endpoints.getDecisionDefinitionXml.getUrl({decisionDefinitionKey: ':decisionDefinitionKey'}),
+	method: endpoints.getDecisionDefinitionXml.method,
 });
 
 const mockCurrentUserEndpoint = createEndpointMock({
@@ -205,10 +215,12 @@ export {
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockQueryBatchOperationsEndpoint,
+	mockQueryProcessInstancesEndpoint,
 	mockGetDecisionInstanceEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
+	mockGetDecisionDefinitionXmlEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 };

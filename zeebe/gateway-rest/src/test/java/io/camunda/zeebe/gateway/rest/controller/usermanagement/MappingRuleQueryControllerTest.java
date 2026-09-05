@@ -15,6 +15,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.MappingRuleFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -185,6 +187,142 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(mappingRuleServices).search(eq(new MappingRuleQuery.Builder().build()), any());
+  }
+
+  @Test
+  void shouldSearchMappingRulesWithOrOperator() {
+    // given
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingRuleEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(
+                    List.of(
+                        new MappingRuleEntity(
+                            "mapping-top", 100L, "Claim Name1", "Claim Value1", "Map Name1")))
+                .build());
+
+    final var orFilters =
+        List.of(
+            new MappingRuleFilter.Builder().claimName("claim-a").claimValue("value-a").build(),
+            new MappingRuleFilter.Builder().claimName("claim-b").build());
+
+    final var expectedFilter = new MappingRuleFilter.Builder().mappingRuleId("mapping-top");
+    orFilters.forEach(expectedFilter::addOrOperation);
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(MAPPING_RULE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "mappingRuleId": "mapping-top",
+                "$or": [
+                  { "claimName": "claim-a", "claimValue": "value-a" },
+                  { "claimName": "claim-b" }
+                ]
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "claimName": "Claim Name1",
+                 "claimValue": "Claim Value1",
+                 "name": "Map Name1",
+                 "mappingRuleId": "mapping-top"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(mappingRuleServices)
+        .search(eq(new MappingRuleQuery.Builder().filter(expectedFilter.build()).build()), any());
+  }
+
+  @Test
+  void shouldSearchMappingRulesWithMappingRuleIdLikeFilter() {
+    // given
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingRuleEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(
+                    List.of(
+                        new MappingRuleEntity(
+                            "mapping-top", 100L, "Claim Name1", "Claim Value1", "Map Name1")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(MAPPING_RULE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "mappingRuleId": { "$like": "mapping-*" }
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "claimName": "Claim Name1",
+                 "claimValue": "Claim Value1",
+                 "name": "Map Name1",
+                 "mappingRuleId": "mapping-top"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(mappingRuleServices)
+        .search(
+            eq(
+                new MappingRuleQuery.Builder()
+                    .filter(
+                        new MappingRuleFilter.Builder()
+                            .mappingRuleIdOperations(Operation.like("mapping-*"))
+                            .build())
+                    .build()),
+            any());
   }
 
   @Test

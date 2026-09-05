@@ -19,6 +19,8 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
@@ -224,6 +226,52 @@ final class PhysicalTenantProvisioningInitializerTest {
     assertThat(result).isEqualTo(configuration);
   }
 
+  @Test
+  void shouldPlaceANewTenantOnAZoneAwareClusterByCurrentLoadNotByRoundRobinIndex() {
+    // given — a zone-aware cluster (zone-a: 1 replica/priority 100, zone-b: 1 replica/priority 50,
+    // RF 2). tenantA already has 2 partitions, both replicated onto zone-a_0, so zone-a_0 carries
+    // twice the load of zone-a_1/zone-a_2 there — a skew that only the actual current distribution
+    // shows, not the partition count or ordering. tenantZ (sorted AFTER tenantA, so it lands at
+    // list index 2) is the new tenant being provisioned.
+    //
+    // The previous implementation delegated to the full ZoneAwarePartitionDistributor, which
+    // recomputes purely from (partition's position in the sorted target list) modulo (zone broker
+    // count) — completely blind to zone-a_0's actual extra load. For tenantZ at index 2 with 3
+    // zone-a brokers, that formula picks zone-a_2. The reassigner under test instead picks
+    // zone-a's actual least-loaded member, zone-a_1.
+    final var zoneA0 = MemberId.from("zone-a", 0);
+    final var zoneA1 = MemberId.from("zone-a", 1);
+    final var zoneB0 = MemberId.from("zone-b", 0);
+    final var zoneB1 = MemberId.from("zone-b", 1);
+    final var existingTenantA =
+        Set.of(
+            partition("tenantA", 1, Set.of(zoneA0, zoneB0), zoneA0),
+            partition("tenantA", 2, Set.of(zoneA0, zoneB1), zoneA0));
+    final var zoneSpecs = List.of(new ZoneSpec("zone-a", 1, 100), new ZoneSpec("zone-b", 1, 50));
+    final var configuration =
+        configurationWithMembers(
+                existingTenantA, Set.of(zoneA0, zoneA1, MemberId.from("zone-a", 2), zoneB0, zoneB1))
+            .updateGlobalConfiguration(
+                global -> global.setPartitionDistributorConfig(new ZoneAwareConfig(zoneSpecs)));
+    final var staticConfiguration =
+        staticConfigWith(
+            List.of(tenantPartitionIds("tenantA", 2), tenantPartitionIds("tenantZ", 1)), 2);
+    final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then — tenantZ's zone-a replica lands on the actually-least-loaded zone-a_1, not on
+    // zone-a_2 (which a from-scratch, index-based recomputation would have chosen instead)
+    final var tenantZOperations =
+        result.partitionGroup("tenantZ").pendingChanges().orElseThrow().pendingOperations();
+    final var tenantZTargetMembers =
+        tenantZOperations.stream().map(ClusterConfigurationChangeOperation::memberId).toList();
+    final var tenantZZoneAMember =
+        tenantZTargetMembers.stream().filter(m -> m.isInZone("zone-a")).findFirst().orElseThrow();
+    assertThat(tenantZZoneAMember).isEqualTo(zoneA1);
+  }
+
   private StaticConfiguration staticConfigWith(final List<List<PartitionId>> tenantPartitionIds) {
     return staticConfigWith(tenantPartitionIds, 1);
   }
@@ -268,6 +316,11 @@ final class PhysicalTenantProvisioningInitializerTest {
     for (int i = 0; i < 3; i++) {
       members.add(member(i));
     }
+    return configurationWithMembers(existing, members);
+  }
+
+  private CurrentClusterConfiguration configurationWithMembers(
+      final Set<PartitionMetadata> existing, final Set<MemberId> members) {
     final var tenantConfigs =
         existing.stream()
             .map(p -> p.id().group())

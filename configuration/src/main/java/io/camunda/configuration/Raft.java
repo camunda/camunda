@@ -10,6 +10,8 @@ package io.camunda.configuration;
 
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPENDS_PER_FOLLOWER;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPEND_BATCH_SIZE;
+import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_JOIN_CATCH_UP_TIMEOUT;
+import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_PROMOTION_LAG_THRESHOLD;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_CHUNK_SIZE;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
 
@@ -132,6 +134,22 @@ public class Raft {
    * requestTimeout is recommended.
    */
   private Duration configurationChangeTimeout = Duration.ofSeconds(10);
+
+  /**
+   * Sets how long a member joining a partition is given to catch up to the entry that admitted it.
+   * A join is only complete once the joiner has replicated that entry; until then it is a
+   * non-voting learner. If the joiner does not get there in time, the attempt fails and is retried
+   * from scratch, so a value below the time a joiner needs to replicate the backlog makes joins
+   * fail repeatedly. On slow networks or with large logs, raise it.
+   */
+  private Duration joinCatchUpTimeout = DEFAULT_JOIN_CATCH_UP_TIMEOUT;
+
+  /**
+   * Sets the maximum replication lag, in bytes, a learner may have for the leader to promote it to
+   * a voting member. Promoting a learner that still lags would shrink the effective quorum, so the
+   * leader waits until the learner is within this threshold.
+   */
+  private DataSize promotionLagThreshold = DEFAULT_PROMOTION_LAG_THRESHOLD;
 
   /**
    * If the leader is not able to reach the quorum, the leader may step down. This is triggered if
@@ -336,6 +354,22 @@ public class Raft {
     this.configurationChangeTimeout = configurationChangeTimeout;
   }
 
+  public Duration getJoinCatchUpTimeout() {
+    return joinCatchUpTimeout;
+  }
+
+  public void setJoinCatchUpTimeout(final Duration joinCatchUpTimeout) {
+    this.joinCatchUpTimeout = joinCatchUpTimeout;
+  }
+
+  public DataSize getPromotionLagThreshold() {
+    return promotionLagThreshold;
+  }
+
+  public void setPromotionLagThreshold(final DataSize promotionLagThreshold) {
+    this.promotionLagThreshold = promotionLagThreshold;
+  }
+
   public Duration getMaxQuorumResponseTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-quorum-response-timeout",
@@ -435,6 +469,12 @@ public class Raft {
      */
     private int maxTransferAttempts = 3;
 
+    /**
+     * How long the coordinator waits for a partition with no contactable leader to get one before
+     * giving up with {@code NO_LEADER}.
+     */
+    private Duration leaderWaitTimeout = Duration.ofMinutes(1);
+
     public DataSize getReplicationLagThreshold() {
       return replicationLagThreshold;
     }
@@ -469,6 +509,17 @@ public class Raft {
             "maxTransferAttempts must be positive but was %s".formatted(maxTransferAttempts));
       }
       this.maxTransferAttempts = maxTransferAttempts;
+    }
+
+    public Duration getLeaderWaitTimeout() {
+      return leaderWaitTimeout;
+    }
+
+    public void setLeaderWaitTimeout(final Duration leaderWaitTimeout) {
+      if (leaderWaitTimeout == null || leaderWaitTimeout.isNegative()) {
+        throw new IllegalArgumentException("leaderWaitTimeout must be non-negative");
+      }
+      this.leaderWaitTimeout = leaderWaitTimeout;
     }
   }
 }

@@ -221,10 +221,24 @@ describe('IncidentsTable', () => {
 
     expect(
       await firstIncidentRow.findByRole('button', {name: 'Retry Incident'}),
-    ).toBeInTheDocument();
+    ).toBeEnabled();
     expect(
       secondIncidentRow.queryByRole('button', {name: 'Retry Incident'}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should disable retry when the process instance is suspended', () => {
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        isProcessInstanceSuspended
+        incidents={[{...firstIncident, processInstanceKey: '1'}]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(screen.getByRole('button', {name: 'Retry Incident'})).toBeDisabled();
   });
 
   it('should provide a link to root cause decision instance for DECISION_EVALUATION_ERROR', () => {

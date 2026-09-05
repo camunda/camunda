@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.UserTaskProperties;
@@ -78,6 +79,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final JobState jobState;
   private final UserTaskState userTaskState;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
 
   public ProcessInstanceMigrationUserTaskBehavior(
       final StateWriter stateWriter,
@@ -89,6 +91,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     this.commandWriter = commandWriter;
     this.jobState = jobState;
     this.userTaskState = userTaskState;
+    agentDefinitionBehavior = bpmnBehaviors.agentDefinitionBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
   }
 
@@ -160,16 +163,14 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
-    if (job.isAgentic()) {
+    if (agentDefinitionBehavior.belongsToAgent(job)) {
       // The job is destroyed without completing — discard all its pending history items. The lease
       // is left empty on purpose: the whole job is gone, so every activation's items must be
       // discarded regardless of the lease they were created with. Today the cancelled job is a
       // user-task job (never agentic), so this is a no-op; kept to future-proof job-worker user
       // tasks that carry an associated agent instance.
-      commandWriter.appendFollowUpCommand(
-          jobKey,
-          AgentHistoryIntent.DISCARD,
-          new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+      commandWriter.appendNewCommand(
+          AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
     }
   }
 

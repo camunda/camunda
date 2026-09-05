@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Iterables;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
@@ -25,23 +26,23 @@ import java.time.Duration;
 import java.util.Objects;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
-@Tag("rdbms")
+@Tag("async-repl")
 @TestInstance(Lifecycle.PER_CLASS)
 abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer> {
 
   protected static final Duration DEFAULT_MAX_LAG = Duration.ofSeconds(3);
 
   /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
-  protected @AutoClose R cluster;
+  protected R cluster;
 
-  protected @AutoClose TestCamundaApplication testInstance;
-  protected @AutoClose CamundaClient camundaClient;
+  protected TestCamundaApplication testInstance;
+  protected CamundaClient camundaClient;
   protected MeterRegistry meterRegistry;
 
   /**
@@ -54,6 +55,34 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
     return DEFAULT_MAX_LAG;
   }
 
+  /**
+   * How often the RDBMS writer flushes on its own schedule, independent of per-record exports.
+   * Defaults to a realistic non-zero interval; override to {@code Duration.ZERO} for scenarios that
+   * need every export to flush inline via {@code RdbmsExporter.export(Record)} instead of the
+   * periodic {@code flushAndReschedule()} background task - the latter does not escalate {@code
+   * ExporterPositionMismatchException} to a reopen the way the inline path does.
+   */
+  protected Duration getFlushInterval() {
+    return Duration.ofMillis(500);
+  }
+
+  /**
+   * The JDBC URL used to wire {@link TestCamundaApplication} to the cluster. Defaults to the
+   * primary's URL; overridden by failover scenarios that need a URL covering multiple hosts.
+   */
+  protected String jdbcUrl(final R cluster) {
+    return cluster.getJdbcUrl();
+  }
+
+  /**
+   * The async-replication mechanism under test. Defaults to LSN-based tracking; override to
+   * exercise {@code TimeMonitoringReplicationSignalStrategy} (lag-based) against the same cluster
+   * and test scenarios instead.
+   */
+  protected ReplicationType getReplicationType() {
+    return ReplicationType.LOG_SEQ;
+  }
+
   @BeforeAll
   void beforeAll() {
     cluster = createCluster();
@@ -64,18 +93,23 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
             .withUnifiedConfig(
                 cfg -> {
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
-                  cfg.getData().getSecondaryStorage().getRdbms().setUrl(cluster.getJdbcUrl());
+                  cfg.getData().getSecondaryStorage().getRdbms().setUrl(jdbcUrl(cluster));
                   cfg.getData().getSecondaryStorage().getRdbms().setUsername(cluster.getUsername());
                   cfg.getData().getSecondaryStorage().getRdbms().setPassword(cluster.getPassword());
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()
-                      .setFlushInterval(Duration.ofMillis(500));
+                      .setFlushInterval(getFlushInterval());
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()
                       .getAsyncReplication()
                       .setEnabled(true);
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setType(getReplicationType());
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()
@@ -91,6 +125,18 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
                       .getRdbms()
                       .getAsyncReplication()
                       .setPauseOnMaxLagExceeded(true);
+                  if (getReplicationType() == ReplicationType.DELAY) {
+                    cfg.getData()
+                        .getSecondaryStorage()
+                        .getRdbms()
+                        .getAsyncReplication()
+                        .setDelay(Duration.ofSeconds(30));
+                  }
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setQueueDebounceTime(Duration.ZERO);
                 })
             .withBasicAuth();
 
@@ -109,6 +155,14 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
     waitForProcessesToBeDeployed(camundaClient, 1);
 
     exporterAcknowledgedAll();
+  }
+
+  @AfterAll
+  void afterAll() {
+    // preserve order, first shutdown Camunda, then the database
+    camundaClient.close();
+    testInstance.close();
+    cluster.close();
   }
 
   protected void startProcessInstances(final int count) {

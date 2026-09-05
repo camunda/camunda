@@ -1084,11 +1084,14 @@ final class ElasticsearchArchiverRepositoryIT {
     retention.setEnabled(true);
     // ensure all templates are created
     startupSchema();
-    // create indices for all templates with a date in the index name
+    // create indices for all templates with a date and ordinal in the index name
     final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
     final String date = "2026-01-10";
+    final String ordinalSuffix = "ord000001";
     for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
       searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
+      searchClientAdapter.createIndex(
+          indexTemplate.getIndexPattern().replace("*", ordinalSuffix), 0);
     }
     final var asyncClient = spy(new ElasticsearchAsyncClient(transport));
     final var indicesClientSpy = spy(asyncClient.indices());
@@ -1116,7 +1119,9 @@ final class ElasticsearchArchiverRepositoryIT {
               assertThat(request.index()).hasSize(1);
               final String[] split = request.index().getFirst().split(",");
               assertThat(split)
-                  .hasSize(3); // 3 patterns (wildcard + runtime exclusion + alias exclusion)
+                  .hasSize(
+                      4); // 4 patterns (wildcard + runtime exclusion + alias exclusion + ordinal
+              // exclusion)
               final var matchingTemplate =
                   resourceProvider.getIndexTemplateDescriptors().stream()
                       .filter(
@@ -1128,7 +1133,8 @@ final class ElasticsearchArchiverRepositoryIT {
                   .containsExactly(
                       matchingTemplate.get().getIndexPattern(),
                       "-" + matchingTemplate.get().getFullQualifiedName(),
-                      "-" + matchingTemplate.get().getAlias());
+                      "-" + matchingTemplate.get().getAlias(),
+                      "-" + matchingTemplate.get().getFullQualifiedName() + "ord*");
             });
     for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
       Awaitility.await()
@@ -1144,6 +1150,14 @@ final class ElasticsearchArchiverRepositoryIT {
                 assertThat(
                         settings
                             .get(template.getFullQualifiedName())
+                            .settings()
+                            .index()
+                            .lifecycle())
+                    .isNull();
+                // Check ordinal index (should not have ILM policy)
+                assertThat(
+                        settings
+                            .get(template.getIndexPattern().replace("*", ordinalSuffix))
                             .settings()
                             .index()
                             .lifecycle())
@@ -1548,7 +1562,7 @@ final class ElasticsearchArchiverRepositoryIT {
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
             objectMapper)
-        .startup();
+        .startupOnce();
   }
 
   private void putLifecyclePolicies() throws IOException {

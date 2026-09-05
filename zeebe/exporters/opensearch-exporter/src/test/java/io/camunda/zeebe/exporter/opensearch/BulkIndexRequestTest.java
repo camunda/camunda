@@ -93,18 +93,18 @@ final class BulkIndexRequestTest {
     recordAsMap.remove("agent");
     recordAsMap.remove("requestChannelType");
     recordAsMap.remove("requestToolName");
-    // the storage ordinal key is stripped from every record value during serialization; it can
-    // appear at any nesting level (e.g. embedded job records), so remove it recursively
-    removeStorageOrdinalKeys(recordAsMap);
+    // storageOrdinalKey is stripped from record values during serialization;
+    // it can appear at any nesting level (e.g. embedded job records), so remove it recursively
+    removeStrippedKeys(recordAsMap);
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
-  private static void removeStorageOrdinalKeys(final Object node) {
+  private static void removeStrippedKeys(final Object node) {
     if (node instanceof final Map<?, ?> map) {
       map.remove("storageOrdinalKey");
-      map.values().forEach(BulkIndexRequestTest::removeStorageOrdinalKeys);
+      map.values().forEach(BulkIndexRequestTest::removeStrippedKeys);
     } else if (node instanceof final Collection<?> collection) {
-      collection.forEach(BulkIndexRequestTest::removeStorageOrdinalKeys);
+      collection.forEach(BulkIndexRequestTest::removeStrippedKeys);
     }
   }
 

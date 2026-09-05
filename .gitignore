@@ -96,6 +96,7 @@ scripts/codeowners-utils/output/
 
 # Superpowers scratch specs/plans (local workflow docs, not tracked)
 docs/superpowers/
+.superpowers/
 
 # Load test
 load-tests/setup/c8-*

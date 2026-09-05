@@ -114,6 +114,7 @@ public final class RecoveryPartitionManager
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
+  private final String brokerComponentName;
   private @Nullable BackupStore backupStore;
   private @Nullable ExecutorService restoreExecutor;
 
@@ -128,7 +129,9 @@ public final class RecoveryPartitionManager
       final MeterRegistry meterRegistry,
       final AtomixServerTransport gatewayBrokerTransport,
       final @Nullable IntFunction<Long> exportedPositionSupplier,
-      final TopologyManagerImpl topologyManager) {
+      final TopologyManagerImpl topologyManager,
+      final String brokerComponentName) {
+    this.brokerComponentName = brokerComponentName;
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     actorSchedulingService = schedulingService;
@@ -239,9 +242,11 @@ public final class RecoveryPartitionManager
                 // reported once the partition is registered as INACTIVE above, since
                 // onHealthChanged is a no-op for a partition the topology doesn't know about yet
                 recoveryPartitions.forEach(
-                    p ->
-                        topologyManager.onHealthChanged(
-                            p.partitionId().number(), HealthStatus.HEALTHY));
+                    p -> {
+                      topologyManager.onHealthChanged(
+                          p.partitionId().number(), HealthStatus.HEALTHY);
+                      p.healthMetrics().setRecovering();
+                    });
                 failedPartitionIds.forEach(
                     id -> topologyManager.onHealthChanged(id, HealthStatus.DEAD));
                 if (recoveryPartitions.isEmpty()) {
@@ -280,7 +285,8 @@ public final class RecoveryPartitionManager
         brokerCfg,
         brokerInfo,
         gatewayBrokerTransport,
-        backupStore);
+        backupStore,
+        brokerComponentName);
   }
 
   private void stopInternal(final ActorFuture<Void> result) {
@@ -620,7 +626,8 @@ public final class RecoveryPartitionManager
   public ActorFuture<Void> join(
       final int partitionId,
       final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig partitionConfig) {
+      final DynamicPartitionConfig partitionConfig,
+      final boolean asLearner) {
     return CompletableActorFuture.completedExceptionally(
         new IllegalStateException("Cannot perform join on a recovering partition"));
   }
@@ -629,6 +636,18 @@ public final class RecoveryPartitionManager
   public ActorFuture<Void> leave(final int partitionId) {
     return CompletableActorFuture.completedExceptionally(
         new IllegalStateException("Cannot perform leave on a recovering partition"));
+  }
+
+  @Override
+  public ActorFuture<Void> promote(final int partitionId) {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException("Cannot perform promote on a recovering partition"));
+  }
+
+  @Override
+  public ActorFuture<Void> demote(final int partitionId) {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException("Cannot perform demote on a recovering partition"));
   }
 
   @Override

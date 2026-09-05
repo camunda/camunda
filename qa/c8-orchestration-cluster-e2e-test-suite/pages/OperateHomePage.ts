@@ -23,7 +23,7 @@ class OperateHomePage {
   readonly variableValueEditor: Locator;
   readonly saveVariableButton: Locator;
   readonly editVariableSpinner: Locator;
-  readonly settingsButton: Locator;
+  readonly userMenuButton: Locator;
   readonly logoutButton: Locator;
   readonly openButton: Locator;
   readonly closeButton: Locator;
@@ -32,13 +32,13 @@ class OperateHomePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.operateBanner = page.getByRole('link', {name: 'Camunda logo Operate'});
+    this.operateBanner = page.getByRole('link', {name: 'Camunda Operate'});
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
-    this.operationsMenuButton = page
-      .locator('.cds--header__menu-title')
-      .filter({hasText: /^Operations$/});
+    this.operationsMenuButton = page.getByRole('button', {
+      name: 'Toggle Operations',
+    });
     this.batchOperationsNavItem = page.getByRole('link', {
       name: 'Batch operations',
     });
@@ -56,8 +56,8 @@ class OperateHomePage {
       .getByTestId('variable-operation-spinner')
       .locator('circle')
       .nth(1);
-    this.settingsButton = page.getByRole('button', {name: 'Open Settings'});
-    this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.userMenuButton = page.getByRole('button', {name: /^User menu/});
+    this.logoutButton = page.getByRole('menuitem', {name: /log out/i});
     this.openButton = page
       .getByTestId('variable-testVariable')
       .getByLabel('Open');
@@ -112,7 +112,7 @@ class OperateHomePage {
   }
 
   async logout(): Promise<void> {
-    await this.settingsButton.click();
+    await this.userMenuButton.click();
     await this.logoutButton.click();
   }
 

@@ -7,27 +7,38 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
 import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class UpdatePartitionDistributionTransformerTest {
@@ -45,17 +56,23 @@ class UpdatePartitionDistributionTransformerTest {
   private static final Set<MemberId> MEMBERS = Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0);
 
   private static final List<PartitionId> PARTITION_IDS =
-      IntStream.rangeClosed(1, 3).mapToObj(i -> new PartitionId("temp", i)).toList();
+      IntStream.rangeClosed(1, 3)
+          .mapToObj(i -> new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, i))
+          .toList();
 
   /** Builds a topology whose partitions are placed by ZoneAwarePartitionDistributor. */
-  private static ClusterConfiguration buildTopology(
+  private static CurrentClusterConfiguration buildTopology(
       final ZoneAwareConfig config, final Set<MemberId> members) {
     final var distribution =
         new ZoneAwarePartitionDistributor(config.zones())
             .distributePartitions(members, PARTITION_IDS, config.replicationFactor());
-    final var topology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
-    return topology.setPartitionDistributorConfig(config);
+    return ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            members,
+            distribution,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_CONFIG),
+            "c")
+        .updateGlobalConfiguration(
+            globalConfiguration -> globalConfiguration.setPartitionDistributorConfig(config));
   }
 
   @Test
@@ -72,18 +89,21 @@ class UpdatePartitionDistributionTransformerTest {
 
     // when
     final var result =
-        new UpdatePartitionDistributionTransformer(newConfig).operations(currentTopology);
+        plannedOperations(new UpdatePartitionDistributionTransformer(newConfig), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
             new UpdatePartitionDistributorConfigOperation(COORDINATOR, newConfig),
-            new PartitionJoinOperation(ZONE_A_1, 1, 2),
+            new PartitionJoinOperation(ZONE_A_1, 1, 2, true),
+            new PartitionPromoteOperation(ZONE_A_1, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 3),
-            new PartitionJoinOperation(ZONE_A_0, 2, 2),
+            new PartitionJoinOperation(ZONE_A_0, 2, 2, true),
+            new PartitionPromoteOperation(ZONE_A_0, 2),
             new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 3),
-            new PartitionJoinOperation(ZONE_A_1, 3, 2),
+            new PartitionJoinOperation(ZONE_A_1, 3, 2, true),
+            new PartitionPromoteOperation(ZONE_A_1, 3),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 3, 3));
   }
 
@@ -102,17 +122,20 @@ class UpdatePartitionDistributionTransformerTest {
 
     // when
     final var result =
-        new UpdatePartitionDistributionTransformer(newConfig).operations(currentTopology);
+        plannedOperations(new UpdatePartitionDistributionTransformer(newConfig), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
             new UpdatePartitionDistributorConfigOperation(COORDINATOR, newConfig),
+            new PartitionDemoteOperation(ZONE_A_1, 1),
             new PartitionLeaveOperation(ZONE_A_1, 1, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 2),
+            new PartitionDemoteOperation(ZONE_A_0, 2),
             new PartitionLeaveOperation(ZONE_A_0, 2, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 2),
+            new PartitionDemoteOperation(ZONE_A_1, 3),
             new PartitionLeaveOperation(ZONE_A_1, 3, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 3, 2));
   }
@@ -127,7 +150,7 @@ class UpdatePartitionDistributionTransformerTest {
 
     // when
     final var result =
-        new UpdatePartitionDistributionTransformer(newConfig).operations(currentTopology);
+        plannedOperations(new UpdatePartitionDistributionTransformer(newConfig), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -149,13 +172,17 @@ class UpdatePartitionDistributionTransformerTest {
     final var distribution =
         new RoundRobinPartitionDistributor().distributePartitions(plainMembers, PARTITION_IDS, 2);
     final var roundRobinTopology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            plainMembers,
+            distribution,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_CONFIG),
+            "c");
     final var newConfig =
         new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
     final var transformer = new UpdatePartitionDistributionTransformer(newConfig);
 
     // when
-    final var result = transformer.operations(roundRobinTopology);
+    final var result = plannedOperations(transformer, roundRobinTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -172,14 +199,20 @@ class UpdatePartitionDistributionTransformerTest {
         new RoundRobinPartitionDistributor(List.of(ZONE_A, ZONE_B))
             .distributePartitions(mixedMembers, PARTITION_IDS, 2);
     final var mixedTopology =
-        ConfigurationUtil.getClusterConfigFrom(mixedDistribution, PARTITION_CONFIG, "c")
-            .setPartitionDistributorConfig(INITIAL_CONFIG);
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+                mixedMembers,
+                mixedDistribution,
+                Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_CONFIG),
+                "c")
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration.setPartitionDistributorConfig(INITIAL_CONFIG));
     final var newConfig =
         new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 500), new ZoneSpec(ZONE_B, 1, 1000)));
 
     // when
     final var result =
-        new UpdatePartitionDistributionTransformer(newConfig).operations(mixedTopology);
+        plannedOperations(new UpdatePartitionDistributionTransformer(newConfig), mixedTopology);
 
     // then
     EitherAssert.assertThat(result)
@@ -197,7 +230,7 @@ class UpdatePartitionDistributionTransformerTest {
             new PartitionDistributorConfig.RoundRobinConfig());
 
     // when
-    final var result = transformer.operations(currentTopology);
+    final var result = plannedOperations(transformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result)
@@ -214,12 +247,93 @@ class UpdatePartitionDistributionTransformerTest {
         new UpdatePartitionDistributionTransformer(new PartitionDistributorConfig.FixedConfig());
 
     // when
-    final var result = transformer.operations(currentTopology);
+    final var result = plannedOperations(transformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result)
         .isLeft()
         .left()
         .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class);
+  }
+
+  @Nested
+  class Phases {
+
+    private static final ZoneAwareConfig HIGHER_REPLICATION_FACTOR =
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 2, 1000), new ZoneSpec(ZONE_B, 1, 500)));
+
+    /**
+     * The replication factor of a zone-aware cluster is derived from its zone layout, so this is
+     * both the placement check and the replication-factor one: a tenant left out of the plan keeps
+     * the replication factor of the layout being replaced.
+     */
+    @Test
+    void shouldApplyTheDerivedReplicationFactorToEveryTenant() {
+      // given — two tenants at replication factor 2, and a layout that raises it to 3
+      final var configuration = withMirroredTenant(buildTopology(INITIAL_CONFIG, MEMBERS));
+
+      // when
+      final var phases =
+          new UpdatePartitionDistributionTransformer(HIGHER_REPLICATION_FACTOR)
+              .phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(partitionGroupPhase(phases.get()).groupOperations())
+          .describedAs("every tenant's partitions are replanned, not only the default tenant's")
+          .containsOnlyKeys(CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_A)
+          .allSatisfy(
+              (groupId, operations) ->
+                  assertThat(operations)
+                      .describedAs(
+                          "tenant '%s' gains the third replica of every partition", groupId)
+                      .filteredOn(PartitionJoinOperation.class::isInstance)
+                      .hasSize(PARTITION_IDS.size()));
+    }
+
+    /**
+     * The layout is global state, so it is persisted once for the whole cluster and before any
+     * partition moves — a partition placed by the new distributor must not be applied while the old
+     * layout is still the persisted one.
+     */
+    @Test
+    void shouldPersistTheLayoutOnceBeforeAnyTenantIsReplanned() {
+      // given
+      final var configuration = withMirroredTenant(buildTopology(INITIAL_CONFIG, MEMBERS));
+
+      // when
+      final var phases =
+          new UpdatePartitionDistributionTransformer(HIGHER_REPLICATION_FACTOR)
+              .phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(phases.get()).hasSize(2);
+      assertThat(((GlobalPhase) phases.get().getFirst()).operations())
+          .containsExactly(
+              new UpdatePartitionDistributorConfigOperation(
+                  COORDINATOR, HIGHER_REPLICATION_FACTOR));
+    }
+
+    @Test
+    void shouldRejectAnInvalidRequestBeforePlanningAnyTenant() {
+      // given — a request body the endpoint does not support
+      final var configuration = withMirroredTenant(buildTopology(INITIAL_CONFIG, MEMBERS));
+
+      // when
+      final var phases =
+          new UpdatePartitionDistributionTransformer(new RoundRobinConfig()).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases)
+          .isLeft()
+          .left()
+          .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
+          .satisfies(
+              e ->
+                  assertThat(e)
+                      .hasMessageContaining(
+                          "Only ZONE_AWARE partition distribution config is supported."));
+    }
   }
 }

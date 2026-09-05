@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import org.jspecify.annotations.Nullable;
 
 /** Checkpoint info stored in db in msgpack format. */
 public final class CheckpointInfo extends UnpackedObject implements DbValue {
@@ -58,7 +59,7 @@ public final class CheckpointInfo extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public CheckpointType getType() {
+  public @Nullable CheckpointType getType() {
     return typeProperty.getValue();
   }
 

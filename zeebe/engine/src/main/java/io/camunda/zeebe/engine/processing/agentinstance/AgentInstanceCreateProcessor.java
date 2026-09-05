@@ -9,23 +9,27 @@ package io.camunda.zeebe.engine.processing.agentinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior.LeaseMismatchHandling;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
+import io.camunda.zeebe.engine.state.immutable.AgentHistoryState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -33,6 +37,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
+import java.util.function.Predicate;
 
 public final class AgentInstanceCreateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
@@ -61,8 +66,10 @@ public final class AgentInstanceCreateProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final AgentDefinitionState agentDefinitionState;
+  private final AgentHistoryState agentHistoryState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
+  private final AgentHistoryBatchBehavior historyBatchHelper;
 
   public AgentInstanceCreateProcessor(
       final Writers writers,
@@ -75,8 +82,10 @@ public final class AgentInstanceCreateProcessor
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     agentDefinitionState = processingState.getAgentDefinitionState();
+    agentHistoryState = processingState.getAgentHistoryState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
+    historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
 
   @Override
@@ -119,11 +128,6 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
-    // Reject CREATE when an agent instance already exists for this element instance. The existence
-    // check runs before the active-state and element-type guards so that a late retry against an
-    // element instance that has since left ACTIVE (e.g. parked in COMPLETING behind an incident)
-    // gets ALREADY_EXISTS rather than INVALID_STATE. Both the stream rejection and the HTTP
-    // response are consistent: no success event is emitted.
     final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
     if (existingAgentInstanceKey != -1L) {
       writeRejection(
@@ -165,6 +169,26 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
+    final var validJob =
+        historyBatchHelper.validateJobContext(
+            commandValue.getJobKey(),
+            commandValue.getJobLease(),
+            commandValue.getElementInstanceKey(),
+            commandValue.getHistory(),
+            LeaseMismatchHandling.REJECT);
+    if (validJob.isLeft()) {
+      final var rejection = validJob.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
+    if (isHistoryValid.isLeft()) {
+      final var rejection = isHistoryValid.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var deployedProcess =
         processState.getProcessByKeyAndTenant(
             elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
@@ -182,7 +206,8 @@ public final class AgentInstanceCreateProcessor
             .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
             .setProcessDefinitionVersion(elementInstanceValue.getVersion())
             .setAgentDefinitionKey(agentDefinitionKey)
-            .setVersionTag(deployedProcess == null ? "" : deployedProcess.getVersionTag())
+            .setProcessDefinitionVersionTag(
+                deployedProcess == null ? "" : deployedProcess.getVersionTag())
             .setTenantId(elementInstanceValue.getTenantId())
             .setStatus(AgentInstanceStatus.INITIALIZING);
 
@@ -198,7 +223,56 @@ public final class AgentInstanceCreateProcessor
         .setMaxModelCalls(commandValue.getLimits().getMaxModelCalls())
         .setMaxToolCalls(commandValue.getLimits().getMaxToolCalls());
 
+    if (!commandValue.getHistory().isEmpty()) {
+      historyBatchHelper.applyInstanceChangesFromHistory(
+          event,
+          commandValue.getJobKey(),
+          commandValue.getJobLease(),
+          commandValue.getElementInstanceKey(),
+          commandValue.getHistory());
+    }
+
+    // event.getHistory() allocates a fresh list on every call — now that
+    // applyInstanceChangesFromHistory has populated it above, read it once here and reuse it for
+    // both loops below.
+    final var history = event.getHistory();
+
+    // Unlike UPDATE (which defers this to AgentHistoryCommitProcessor, once the item is actually
+    // committed), CREATE applies a CONFIGURATION item's changes right here, before its own
+    // AGENT_INSTANCE:CREATED is appended below — so a newly created instance always starts with a
+    // valid, usable definition instead of a placeholder one.
+    history.stream()
+        .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
+        .filter(item -> item.getRole() == AgentHistoryRole.CONFIGURATION)
+        .forEach(item -> AgentHistoryBatchBehavior.applyConfigurationChanges(event, item));
+
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
+
+    // AGENT_HISTORY items reference their AgentInstance parent by key, so they can only be
+    // created after AGENT_INSTANCE:CREATED above has assigned that key.
+    history.stream()
+        .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
+        .forEach(
+            item -> {
+              stateWriter.appendFollowUpEvent(
+                  item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item);
+              // CONFIGURATION changes are applied directly above, during CREATE itself, rather
+              // than deferred like an UPDATE's would be — so the history record must commit
+              // immediately too, instead of sitting PENDING/discardable.
+              if (item.getRole() == AgentHistoryRole.CONFIGURATION) {
+                // Read the item back from state rather than reusing the untrimmed in-memory
+                // `item`: AgentHistoryCreatedApplier, applied synchronously by the CREATED event
+                // just appended above, has already trimmed it down to identity fields plus the
+                // CONFIGURATION-specific ones — the exact shape AgentHistoryCommitProcessor's own
+                // COMMITTED event re-emits for UPDATE. Fetching it keeps both paths' COMMITTED
+                // events identical in shape without duplicating that trimming logic here.
+                stateWriter.appendFollowUpEvent(
+                    item.getAgentHistoryKey(),
+                    AgentHistoryIntent.COMMITTED,
+                    agentHistoryState.get(item.getAgentHistoryKey()));
+              }
+            });
+
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);
   }
@@ -213,6 +287,6 @@ public final class AgentInstanceCreateProcessor
 
   @Override
   public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
-    return SuspensionBehavior.BUFFER;
+    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
   }
 }

@@ -7,20 +7,23 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-import io.atomix.cluster.MemberId;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents the ongoing cluster configuration changes. The pendingOperations are executed
- * sequentially. Only after completing one operation, the next operation is started. Once an
- * operation is completed, it should be removed from the plan, so that the next operation can be
- * picked up.
+ * A change as the legacy single-group configuration represents it: a queue of pending operations,
+ * run one at a time, plus the ones already completed.
  *
- * <p>version starts at 1 and increments every time an operation is completed and removed from the
- * pending operations. This helps to choose the latest state of the configuration change when
- * receiving gossip update out of order.
+ * <p><b>Nothing executes this any more.</b> Every scope — the global configuration and every
+ * partition group — runs a {@link DependencyChangePlan} instead, so what survives here is the shape
+ * the legacy {@code ClusterTopology} message can carry, and only that: a broker without the graph
+ * model reads that message from gossip and from a v1 configuration file, and its {@code
+ * currentChange} field is typed as this record. A live change is rendered into it by {@link
+ * #flatten(ChangePlan)} at that encode, and decoding it is the only way one comes back.
+ *
+ * <p>{@code version} starts at 1 and increments once per completed operation, which is what a
+ * broker on that legacy path merges by ({@link #merge}) to choose between two copies it sees out of
+ * order.
  */
 public record ClusterChangePlan(
     long id,
@@ -28,7 +31,8 @@ public record ClusterChangePlan(
     Status status,
     Instant startedAt,
     List<CompletedOperation> completedOperations,
-    List<ClusterConfigurationChangeOperation> pendingOperations) {
+    List<ClusterConfigurationChangeOperation> pendingOperations)
+    implements ChangePlan {
 
   private static final long RESTORE_CHANGE_ID = -2L;
 
@@ -48,23 +52,43 @@ public record ClusterChangePlan(
     return init(RESTORE_CHANGE_ID, operations);
   }
 
+  /**
+   * Renders any change as this queue. A queue is returned as itself; a {@link DependencyChangePlan}
+   * flattens into its pending and completed operations in plan order — a valid, merely slower,
+   * sequential reading of the same change.
+   *
+   * <p>Necessarily lossy: a queue cannot express that several operations are running at once, and a
+   * reader that merges by {@link #version()} alone would keep only one of two concurrent
+   * completions. That is a property of this model, not something the flattening can repair, so
+   * nothing here tries to.
+   *
+   * <p><b>Only call this where the queue shape is actually required</b> — today that is encoding
+   * the legacy {@code ClusterTopology} message, which a broker without the graph model reads from
+   * gossip and from a v1 configuration file, and whose {@code currentChange} field is typed as this
+   * record. A receiver on that path merges what it decodes with {@link #merge}, using the version
+   * above, and would execute the flattened queue one operation at a time. Every consumer that only
+   * reads a change should take a {@link ChangePlan} instead and see the real one.
+   */
+  public static ClusterChangePlan flatten(final ChangePlan plan) {
+    if (plan instanceof final ClusterChangePlan queue) {
+      return queue;
+    }
+    // Dependency order, not id order: the receiver executes this queue head-first, so an id
+    // ordering that happens not to be topological would make it run an operation before one the
+    // graph says it waits for. Every graph the builder produces is already in topological id
+    // order; one decoded from the wire is whatever the sender wrote.
+    final var graph = (DependencyChangePlan) plan;
+    return new ClusterChangePlan(
+        graph.id(),
+        graph.version(),
+        graph.status(),
+        graph.startedAt(),
+        graph.completedOperations(),
+        graph.pendingOperationsInDependencyOrder());
+  }
+
   public boolean isRestore() {
     return id == RESTORE_CHANGE_ID;
-  }
-
-  /** To be called when the first operation is completed. */
-  ClusterChangePlan advance() {
-    // List#subList hold on to the original list. Make a copy to prevent a potential memory leak.
-    final var nextPendingOperations =
-        List.copyOf(pendingOperations.subList(1, pendingOperations.size()));
-    final var newCompletedOperations = new ArrayList<>(completedOperations);
-    newCompletedOperations.add(new CompletedOperation(pendingOperations.get(0), Instant.now()));
-    return new ClusterChangePlan(
-        id, version + 1, status, startedAt(), newCompletedOperations, nextPendingOperations);
-  }
-
-  CompletedChange completed() {
-    return new CompletedChange(id, Status.COMPLETED, startedAt(), Instant.now());
   }
 
   public ClusterChangePlan merge(final ClusterChangePlan other) {
@@ -78,18 +102,12 @@ public record ClusterChangePlan(
     return this;
   }
 
-  public boolean hasPendingChangesFor(final MemberId memberId) {
-    return !pendingOperations.isEmpty() && pendingOperations.get(0).memberId().equals(memberId);
-  }
-
-  public ClusterConfigurationChangeOperation nextPendingOperation() {
-    return pendingOperations().get(0);
-  }
-
+  @Override
   public boolean hasPendingChanges() {
     return !pendingOperations().isEmpty();
   }
 
+  @Override
   public CompletedChange cancel() {
     return new CompletedChange(id, Status.CANCELLED, startedAt(), Instant.now());
   }

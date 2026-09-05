@@ -162,6 +162,186 @@ class SecretReferenceTest {
     assertThat(new SecretReference("token").reference()).isEqualTo("camunda.secrets.token");
   }
 
+  @ParameterizedTest(name = "[{index}] {0}")
+  @ValueSource(
+      strings = {
+        // case A: a secret reference inside a FEEL list literal
+        "=[camunda.secrets.x]",
+        "=[camunda.secrets.x, camunda.secrets.y]",
+        "=[1, camunda.secrets.x]",
+        // case B: a secret reference inside a context literal produced by a branch, not the root
+        "=if true then {x: camunda.secrets.token} else null",
+        "=if true then null else {x: camunda.secrets.token}",
+        // nested if/then/else, reference several branches deep
+        "=if a then (if b then {x: camunda.secrets.token} else null) else null",
+        // a list nested inside a context produced by a branch
+        "=if a then {x: [camunda.secrets.token]} else null",
+        // a list nested inside a root context (the list itself is still not descended)
+        "={x: [camunda.secrets.token]}",
+        // mixed: the then-branch alone is imprecise, so the whole conditional still is
+        "=if c then {x: camunda.secrets.a} else camunda.secrets.b"
+      })
+  void shouldReportImpreciseReference(final String source) {
+    // when / then
+    assertThat(SecretReference.hasImpreciseReference(expressionLanguage.parseExpression(source)))
+        .isTrue();
+  }
+
+  @ParameterizedTest(name = "[{index}] {0}")
+  @ValueSource(
+      strings = {
+        // a plain scalar reference
+        "=camunda.secrets.token",
+        // embedded in a string via concatenation - still a single scalar leaf
+        "=\"Bearer \" + camunda.secrets.token",
+        // a context literal is descended precisely, at the root and nested
+        "={x: camunda.secrets.token}",
+        "={x: {y: camunda.secrets.token}}",
+        // a list or conditional with no secret reference inside is not flagged
+        "=[1, 2, 3]",
+        "=if true then 1 else 2",
+        // no reference at all
+        "=userId + orderId",
+        // not an expression: the whole value is a literal, parse() already returns nothing for it
+        "camunda.secrets.token",
+        // container and secret in different branches: the secret branch is leaf-precise and the
+        // container branch leaves no placeholder
+        "=if useDefault then {x: \"literal\"} else camunda.secrets.token",
+        // same, list variant
+        "=if useDefault then [1, 2] else camunda.secrets.token",
+        // the secret is only in the condition, so no placeholder ever reaches the mapping target
+        "=if camunda.secrets.flag = \"on\" then {x: 1} else null"
+      })
+  void shouldNotReportImpreciseReference(final String source) {
+    // when / then
+    assertThat(SecretReference.hasImpreciseReference(expressionLanguage.parseExpression(source)))
+        .isFalse();
+  }
+
+  @Test
+  void shouldNotReportImpreciseReferenceForNullExpression() {
+    // when / then
+    assertThat(SecretReference.hasImpreciseReference(null)).isFalse();
+  }
+
+  @Test
+  void shouldReportBothBranchesOfAConditionalAtTheEnclosingPath() {
+    // given - FEEL takes one branch, but detection cannot know which, so both are recorded
+    final var source = "=if cond then camunda.secrets.x else camunda.secrets.y";
+
+    // when
+    final var located = SecretReference.parse(expressionLanguage.parseExpression(source));
+
+    // then - both at the empty path, i.e. the mapping target's own leaf
+    assertThat(located)
+        .extracting(DetectedSecret::path, DetectedSecret::secret)
+        .containsExactlyInAnyOrder(
+            tuple(List.of(), new SecretReference("x")), tuple(List.of(), new SecretReference("y")));
+  }
+
+  @Test
+  void shouldReportEveryBranchOfNestedConditionals() {
+    // given
+    final var source =
+        "=if a then (if b then camunda.secrets.p else camunda.secrets.q) else camunda.secrets.r";
+
+    // when / then
+    assertThat(referencesIn(source))
+        .containsExactlyInAnyOrder(
+            new SecretReference("p"), new SecretReference("q"), new SecretReference("r"));
+  }
+
+  @Test
+  void shouldReportConditionalNestedInsideConcatenation() {
+    // given
+    final var source =
+        "=\"Bearer \" + (if prod then camunda.secrets.prodT else camunda.secrets.devT)";
+
+    // when / then
+    assertThat(referencesIn(source))
+        .containsExactlyInAnyOrder(new SecretReference("prodT"), new SecretReference("devT"));
+  }
+
+  @Test
+  void shouldReportOnlyTheSecretBranchWhenTheOtherIsALiteral() {
+    // given
+    final var source = "=if true then \"localSecret\" else camunda.secrets.prod";
+
+    // when / then
+    assertThat(referencesIn(source)).containsExactly(new SecretReference("prod"));
+  }
+
+  @Test
+  void shouldReportSecretUsedOnlyInAConditionalCondition() {
+    // given - the secret is compared, never mapped, but it is still a reference
+    final var source = "=if camunda.secrets.flag = \"on\" then \"a\" else \"b\"";
+
+    // when / then
+    assertThat(referencesIn(source)).containsExactly(new SecretReference("flag"));
+  }
+
+  @Test
+  void shouldDeduplicateTheSameSecretInBothBranches() {
+    // given - one reference, so injection always finds its placeholder
+    final var source = "=if c then camunda.secrets.t else camunda.secrets.t";
+
+    // when / then
+    assertThat(referencesIn(source)).containsExactly(new SecretReference("t"));
+  }
+
+  @Test
+  void shouldReportSecretWrappedInAFunctionCall() {
+    // given - the reference is detected even though the function will mangle the placeholder
+    // beyond matching at injection
+    final var source = "=upper case(camunda.secrets.token)";
+
+    // when / then
+    assertThat(referencesIn(source)).containsExactly(new SecretReference("token"));
+  }
+
+  @Test
+  void shouldReportSecretInsideAListLiteralAtTheEnclosingPath() {
+    // given - a list literal is not descended, so the reference lands on the enclosing path
+    final var source = "=[camunda.secrets.X, camunda.secrets.Y]";
+
+    // when
+    final var located = SecretReference.parse(expressionLanguage.parseExpression(source));
+
+    // then
+    assertThat(located)
+        .extracting(DetectedSecret::path, DetectedSecret::secret)
+        .containsExactlyInAnyOrder(
+            tuple(List.of(), new SecretReference("X")), tuple(List.of(), new SecretReference("Y")));
+  }
+
+  @Test
+  void shouldReportSecretBehindAListIndexAtTheEnclosingPath() {
+    // given - indexing a list literal yields a text leaf at runtime, so this resolves fine
+    final var source = "=[camunda.secrets.x][1]";
+
+    // when
+    final var located = SecretReference.parse(expressionLanguage.parseExpression(source));
+
+    // then
+    assertThat(located)
+        .extracting(DetectedSecret::path, DetectedSecret::secret)
+        .containsExactly(tuple(List.of(), new SecretReference("x")));
+  }
+
+  @Test
+  void shouldReportSecretInsideAForReturnAtTheEnclosingPath() {
+    // given - produces a list at runtime, which injection cannot address
+    final var source = "=for i in [1, 2] return camunda.secrets.token";
+
+    // when
+    final var located = SecretReference.parse(expressionLanguage.parseExpression(source));
+
+    // then
+    assertThat(located)
+        .extracting(DetectedSecret::path, DetectedSecret::secret)
+        .containsExactly(tuple(List.of(), new SecretReference("token")));
+  }
+
   static Stream<Arguments> sourcesWithReferences() {
     return Stream.of(
         arguments("=camunda.secrets.token", refs("token")),
@@ -178,6 +358,15 @@ class SecretReferenceTest {
         arguments("=camunda.secrets.tokén", refs("tokén")),
         // backtick-escaped names allow special characters
         arguments("=camunda.secrets.`my-secret`", refs("my-secret")),
+        // backticks escape a dot too, so this is a three-segment name 'tls.crt' rather than the
+        // four-segment path the unquoted camunda.secrets.tls.crt is. The detector reports it and
+        // the engine resolves it from the store, while SecretServices' charset rejects the same
+        // name on /v2/secrets/resolve — the #60364 mismatch, one charset over
+        arguments("=camunda.secrets.`tls.crt`", refs("tls.crt")),
+        // written bare, a dash is FEEL's minus operator, so the source parses as
+        // camunda.secrets.my - secret and only 'my' is reported. Backticks are the way to write a
+        // dashed name, and the evaluation of the subtraction fails afterwards
+        arguments("=camunda.secrets.my-secret", refs("my")),
         // a reference used inside a comment is not part of the expression
         arguments("=camunda.secrets.token // camunda.secrets.other", refs("token")),
         // a literal reference is ignored

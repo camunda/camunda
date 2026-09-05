@@ -46,7 +46,7 @@ jobs:
     steps:
       - name: Generate a GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets-1.1.0
         with:
           github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -63,6 +63,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
           token: ${{ steps.github-token.outputs.token }}
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -77,9 +78,10 @@ jobs:
         run: make -C load-tests/setup/test update-golden
 
       - name: Commit and push golden files
-        uses: camunda/action-git-commit@v1
+        uses: camunda/action-git-commit@7aca5a200a50699bff14ac8e7950ce48be225aa0 # v1.9.0
         with:
           commit-message: "test: update load-test golden files"
+          github-token: ${{ steps.github-token.outputs.token }}
 
       - name: Observe build status
         if: always()

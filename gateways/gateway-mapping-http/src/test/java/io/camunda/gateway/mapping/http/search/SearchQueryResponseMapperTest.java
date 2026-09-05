@@ -27,10 +27,6 @@ import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
@@ -48,10 +44,14 @@ import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
 import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.search.entities.DocumentMetadata;
+import io.camunda.search.entities.DocumentReference;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -1046,8 +1046,48 @@ class SearchQueryResponseMapperTest {
             654L, // agentDefinitionKey
             List.of(456L), // elementInstanceKeys
             AgentInstanceEntity.AgentInstanceStatus.IDLE,
-            new AgentInstanceEntity.AgentInstanceDefinition("gpt-4o", "openai", "You are helpful"),
-            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 1, 2),
+            new AgentInstanceEntity.AgentInstanceDefinition(
+                "gpt-4o",
+                "openai",
+                List.of(new ContentItem(ContentType.TEXT, "You are helpful", null, null))),
+            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 0L, 0L, 0L, 1, 2),
+            new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
+            List.of(
+                new AgentInstanceEntity.AgentInstanceTool("search", "Web search", "searchTask")),
+            "agentElement", // elementId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            321L, // processDefinitionKey
+            "processId", // processDefinitionId
+            1, // processDefinitionVersion
+            "v1", // processDefinitionVersionTag
+            "tenant", // tenantId
+            OffsetDateTime.now(), // creationDate
+            OffsetDateTime.now(), // lastUpdatedDate
+            null); // completionDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toAgentInstanceResult(entity);
+
+    // then
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getAgentDefinitionKey()).isEqualTo("654");
+  }
+
+  @Test
+  void shouldMapAllMetricsForAgentInstance() {
+    // given
+    final var entity =
+        new AgentInstanceEntity(
+            123L, // agentInstanceKey
+            654L, // agentDefinitionKey
+            List.of(456L), // elementInstanceKeys
+            AgentInstanceEntity.AgentInstanceStatus.IDLE,
+            new AgentInstanceEntity.AgentInstanceDefinition(
+                "gpt-4o",
+                "openai",
+                List.of(new ContentItem(ContentType.TEXT, "You are helpful", null, null))),
+            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 30L, 40L, 50L, 1, 2),
             new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
             List.of(
                 new AgentInstanceEntity.AgentInstanceTool("search", "Web search", "searchTask")),
@@ -1067,8 +1107,13 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toAgentInstanceResult(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
-    assertThat(response.getAgentDefinitionKey()).isEqualTo("654");
+    assertThat(response.getMetrics().getInputTokens()).isEqualTo(10);
+    assertThat(response.getMetrics().getOutputTokens()).isEqualTo(20);
+    assertThat(response.getMetrics().getReasoningTokenCount()).isEqualTo(30);
+    assertThat(response.getMetrics().getCacheCreationTokenCount()).isEqualTo(40);
+    assertThat(response.getMetrics().getCacheReadTokenCount()).isEqualTo(50);
+    assertThat(response.getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(response.getMetrics().getToolCalls()).isEqualTo(2);
   }
 
   @Test
@@ -1473,7 +1518,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
               List.of(),
-              new Metrics(10L, 20L, 30L),
+              new Metrics(10L, 20L, 30L, 40L, 50L, 60L),
               null,
               null,
               null,
@@ -1497,7 +1542,10 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(10);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(20);
-      assertThat(result.getMetrics().getDurationMs()).isEqualTo(30);
+      assertThat(result.getMetrics().getReasoningTokenCount()).isEqualTo(30);
+      assertThat(result.getMetrics().getCacheCreationTokenCount()).isEqualTo(40);
+      assertThat(result.getMetrics().getCacheReadTokenCount()).isEqualTo(50);
+      assertThat(result.getMetrics().getDurationMs()).isEqualTo(60);
       assertThat(result.getContent()).hasSize(1);
       assertThat(result.getContent().get(0).getContentType()).isEqualTo("TEXT");
     }
@@ -1524,7 +1572,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(new ContentItem(ContentType.DOCUMENT, null, docRef, null)),
               List.of(),
-              new Metrics(0L, 0L, 0L),
+              new Metrics(0L, 0L, null, null, null, 0L),
               null,
               null,
               null,
@@ -1562,7 +1610,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.TOOL_RESULT,
               null,
               null,
-              new Metrics(0L, 0L, 0L),
+              new Metrics(0L, 0L, null, null, null, 0L),
               null,
               null,
               null,
@@ -1599,7 +1647,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(),
               List.of(toolCall),
-              new Metrics(5L, 10L, 100L),
+              new Metrics(5L, 10L, null, null, null, 100L),
               null,
               null,
               null,
@@ -1637,7 +1685,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(),
               List.of(),
-              new Metrics(0L, 0L, 0L),
+              new Metrics(0L, 0L, null, null, null, 0L),
               null,
               null,
               null,
@@ -1709,7 +1757,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(),
               List.of(),
-              new Metrics(100L, 200L, null),
+              new Metrics(100L, 200L, null, null, null, null),
               null,
               null,
               null,
@@ -1725,6 +1773,9 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getMetrics()).isNotNull();
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(100L);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(200L);
+      assertThat(result.getMetrics().getReasoningTokenCount()).isNull();
+      assertThat(result.getMetrics().getCacheCreationTokenCount()).isNull();
+      assertThat(result.getMetrics().getCacheReadTokenCount()).isNull();
       assertThat(result.getMetrics().getDurationMs()).isNull();
     }
 

@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior.LeaseMismatchHandling;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -19,7 +21,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.List;
 
 public final class AgentHistoryCreateProcessor
     implements TypedRecordProcessor<AgentHistoryRecord>, SuspensionAware<AgentHistoryRecord> {
@@ -40,9 +42,9 @@ public final class AgentHistoryCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
-  private final JobState jobState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
+  private final AgentHistoryBatchBehavior historyHelper;
 
   public AgentHistoryCreateProcessor(
       final Writers writers,
@@ -53,9 +55,9 @@ public final class AgentHistoryCreateProcessor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
-    jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
+    historyHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
 
   @Override
@@ -98,37 +100,21 @@ public final class AgentHistoryCreateProcessor
       return;
     }
 
-    final var jobKey = commandValue.getJobKey();
-    if (jobState.getState(jobKey) != JobState.State.ACTIVATED) {
-      writeRejection(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to create agent history entry for job with key '%d', but the job is not active."
-              .formatted(jobKey));
-      return;
-    }
-    final var job = jobState.getJob(jobKey);
-
-    if (job.hasLeaseToken() && !commandValue.getJobLease().equals(job.getLeaseToken())) {
-      writeRejection(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to create agent history entry for job with key '%d', but the supplied lease does not match. The job may have been re-activated."
-              .formatted(jobKey));
+    final var validJob =
+        historyHelper.validateJobContext(
+            commandValue.getJobKey(),
+            commandValue.getJobLease(),
+            commandValue.getElementInstanceKey(),
+            List.of(commandValue),
+            LeaseMismatchHandling.REJECT);
+    if (validJob.isLeft()) {
+      final var rejection = validJob.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
 
+    final var job = validJob.get();
     final var jobElementInstanceKey = job.getElementInstanceKey();
-    final var commandElementInstanceKey = commandValue.getElementInstanceKey();
-    if (jobElementInstanceKey != commandElementInstanceKey) {
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          "Expected element instance key '%d' for agent history entry, but job '%d' is associated with element instance '%d'."
-              .formatted(commandElementInstanceKey, jobKey, jobElementInstanceKey));
-      return;
-    }
-
     if (!agentInstanceRecord.getElementInstanceKeys().contains(jobElementInstanceKey)) {
       writeRejection(
           command,
@@ -178,6 +164,6 @@ public final class AgentHistoryCreateProcessor
 
   @Override
   public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryRecord> record) {
-    return SuspensionBehavior.BUFFER;
+    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
   }
 }

@@ -34,12 +34,21 @@ import org.jspecify.annotations.Nullable;
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
+
+  /**
+   * Bounds how far processing runs ahead of the commit index. In healthy operation the queue holds
+   * roughly the records processed within one commit round trip, which is orders of magnitude below
+   * this. It is a safety valve against unbounded memory when commits are slow, not a tuning knob.
+   */
+  public static final int DEFAULT_MAX_PENDING_SIDE_EFFECTS = 1000;
+
   public static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private @Nullable ActorControl actor;
   private @Nullable LogStream logStream;
   private @Nullable PartitionId partitionId;
   private @Nullable LogStreamReader logStreamReader;
+  private @Nullable LogStreamReader processingLogStreamReader;
   private @Nullable RecordValues recordValues;
   private @Nullable TransactionContext transactionContext;
 
@@ -58,6 +67,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private @Nullable KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private int maxPendingSideEffects = DEFAULT_MAX_PENDING_SIDE_EFFECTS;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private EventFilter processingFilter = e -> true;
   private @Nullable ControllableStreamClock clock;
@@ -133,6 +143,17 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
+  /**
+   * Sets the reader that is used for processing records. In contrast to {@link
+   * #logStreamReader(LogStreamReader)}, this reader may also read records that have not been
+   * committed yet.
+   */
+  public StreamProcessorContext processingLogStreamReader(
+      final LogStreamReader processingLogStreamReader) {
+    this.processingLogStreamReader = processingLogStreamReader;
+    return this;
+  }
+
   public StreamProcessorContext eventCache(final RecordValues recordValues) {
     this.recordValues = recordValues;
     return this;
@@ -179,8 +200,26 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return requireNonNull(actor);
   }
 
+  /**
+   * Returns the reader that replay reads committed records from.
+   *
+   * <p>Only valid while replay is running. In {@link StreamProcessorMode#PROCESSING} the stream
+   * processor closes this reader once replay completes, so that it stops pinning log positions that
+   * nothing needs any more. Consumers that outlive replay must use {@link
+   * #getProcessingLogStreamReader()}.
+   */
   public LogStreamReader getLogStreamReader() {
     return requireNonNull(logStreamReader);
+  }
+
+  /**
+   * Returns the reader used for processing records, which may also read uncommitted records.
+   *
+   * <p>Only set in {@link StreamProcessorMode#PROCESSING}, because replay never reads uncommitted
+   * records.
+   */
+  public LogStreamReader getProcessingLogStreamReader() {
+    return requireNonNull(processingLogStreamReader);
   }
 
   public RecordValues getRecordValues() {
@@ -238,6 +277,15 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxCommandsInBatch() {
     return maxCommandsInBatch;
+  }
+
+  public StreamProcessorContext maxPendingSideEffects(final int maxPendingSideEffects) {
+    this.maxPendingSideEffects = maxPendingSideEffects;
+    return this;
+  }
+
+  public int getMaxPendingSideEffects() {
+    return maxPendingSideEffects;
   }
 
   public StreamProcessorContext maxRecoverableRetries(final int maxRecoverableRetries) {

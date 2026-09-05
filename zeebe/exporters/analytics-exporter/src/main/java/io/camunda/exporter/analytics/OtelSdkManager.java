@@ -19,6 +19,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.EXPORT_WINDOW;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Tenant.PHYSICAL_ID;
 
 import io.camunda.exporter.analytics.sampling.HashSampler;
 import io.camunda.zeebe.util.VersionUtil;
@@ -278,6 +279,7 @@ public class OtelSdkManager implements AutoCloseable {
                 .put(CLUSTER_ID, context.clusterId())
                 .put(PARTITION_ID, context.partitionId())
                 .put(DIGEST, context.exporterDigest())
+                .put(PHYSICAL_ID, context.physicalTenantId())
                 .build());
   }
 }

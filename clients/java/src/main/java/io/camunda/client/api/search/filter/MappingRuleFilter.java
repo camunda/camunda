@@ -15,9 +15,11 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import io.camunda.client.api.search.filter.builder.StringProperty;
+import java.util.List;
+import java.util.function.Consumer;
 
-public interface MappingRuleFilter extends SearchRequestFilter {
+public interface MappingRuleFilter extends MappingRuleFilterBase {
 
   /**
    * Filter mapping rules by the specified mapping rule id.
@@ -25,7 +27,11 @@ public interface MappingRuleFilter extends SearchRequestFilter {
    * @param mappingRuleId the id of the mapping rule
    * @return the updated filter
    */
+  @Override
   MappingRuleFilter mappingRuleId(final String mappingRuleId);
+
+  @Override
+  MappingRuleFilter mappingRuleId(Consumer<StringProperty> fn);
 
   /**
    * Filter mapping rules by the specified claim name.
@@ -33,6 +39,7 @@ public interface MappingRuleFilter extends SearchRequestFilter {
    * @param claimName the name of the claim
    * @return the updated filter
    */
+  @Override
   MappingRuleFilter claimName(final String claimName);
 
   /**
@@ -41,6 +48,7 @@ public interface MappingRuleFilter extends SearchRequestFilter {
    * @param claimValue the value of the claim
    * @return the updated filter
    */
+  @Override
   MappingRuleFilter claimValue(final String claimValue);
 
   /**
@@ -49,5 +57,17 @@ public interface MappingRuleFilter extends SearchRequestFilter {
    * @param name the name of the mapping rule
    * @return the updated filter
    */
+  @Override
   MappingRuleFilter name(final String name);
+
+  @Override
+  MappingRuleFilter name(Consumer<StringProperty> fn);
+
+  /**
+   * Combine this filter with a list of alternative filter groups using OR logic.
+   *
+   * @param filters the alternative filter groups
+   * @return the updated filter
+   */
+  MappingRuleFilterBase orFilters(List<Consumer<MappingRuleFilterBase>> filters);
 }

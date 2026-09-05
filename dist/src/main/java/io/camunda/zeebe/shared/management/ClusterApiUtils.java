@@ -14,6 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
@@ -45,14 +46,17 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingSt
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
@@ -61,7 +65,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRouti
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -112,6 +116,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 
@@ -280,19 +285,26 @@ final class ClusterApiUtils {
               configuration.globalConfiguration().pendingChanges(),
               completed,
               pending);
-      case final PartitionGroupParallelPhase parallelPhase ->
-          parallelPhase
-              .groupOperations()
-              .forEach(
-                  (groupId, operations) ->
-                      splitSubConfigOperations(
-                          groupId,
-                          operations,
-                          Optional.ofNullable(configuration.partitionGroups().get(groupId))
-                              .flatMap(PartitionGroupConfiguration::pendingChanges),
-                          completed,
-                          pending));
+      case final PartitionGroupPhase groupPhase ->
+          splitGroupOperations(configuration, groupPhase.groupOperations(), completed, pending);
     }
+  }
+
+  private static void splitGroupOperations(
+      final CurrentClusterConfiguration configuration,
+      final Map<String, ? extends List<? extends ClusterConfigurationChangeOperation>>
+          groupOperations,
+      final List<Operation> completed,
+      final List<Operation> pending) {
+    groupOperations.forEach(
+        (groupId, operations) ->
+            splitSubConfigOperations(
+                groupId,
+                operations,
+                Optional.ofNullable(configuration.partitionGroups().get(groupId))
+                    .flatMap(PartitionGroupConfiguration::pendingChanges),
+                completed,
+                pending));
   }
 
   /**
@@ -305,7 +317,7 @@ final class ClusterApiUtils {
   private static void splitSubConfigOperations(
       final String physicalTenantId,
       final List<? extends ClusterConfigurationChangeOperation> phaseOperations,
-      final Optional<ClusterChangePlan> subConfigPlan,
+      final Optional<? extends ChangePlan> subConfigPlan,
       final List<Operation> completed,
       final List<Operation> pending) {
     if (subConfigPlan.isEmpty()) {
@@ -377,6 +389,13 @@ final class ClusterApiUtils {
     return operations.stream().map(op -> mapOperation(physicalTenantId, op)).toList();
   }
 
+  private static Stream<Operation> mapGroupOperations(
+      final Map<String, ? extends List<? extends ClusterConfigurationChangeOperation>>
+          groupOperations) {
+    return groupOperations.entrySet().stream()
+        .flatMap(entry -> mapOperations(entry.getKey(), entry.getValue()).stream());
+  }
+
   private static List<Operation> mapPhaseOperations(final List<Phase> phases) {
     return phases.stream()
         .flatMap(
@@ -384,10 +403,8 @@ final class ClusterApiUtils {
                 switch (phase) {
                   case final GlobalPhase globalPhase ->
                       mapOperations(null, globalPhase.operations()).stream();
-                  case final PartitionGroupParallelPhase partitionGroupPhase ->
-                      partitionGroupPhase.groupOperations().entrySet().stream()
-                          .flatMap(
-                              entry -> mapOperations(entry.getKey(), entry.getValue()).stream());
+                  case final PartitionGroupPhase groupPhase ->
+                      mapGroupOperations(groupPhase.groupOperations());
                 })
         .toList();
   }
@@ -409,6 +426,14 @@ final class ClusterApiUtils {
               new Operation()
                   .operation(OperationEnum.PARTITION_LEAVE)
                   .partitionId(leave.partitionId());
+          case final PartitionPromoteOperation promote ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_PROMOTE)
+                  .partitionId(promote.partitionId());
+          case final PartitionDemoteOperation demote ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_DEMOTE)
+                  .partitionId(demote.partitionId());
           case final PartitionReconfigurePriorityOperation reconfigure ->
               new Operation()
                   .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
@@ -426,6 +451,11 @@ final class ClusterApiUtils {
               new Operation()
                   .operation(OperationEnum.BROKER_REMOVE)
                   .brokers(List.of(brokerIdValue(memberRemoveOperation.memberToRemove())));
+          case final RemovePhysicalTenantOperation ignored ->
+              // A partition-group operation, so physicalTenantId here is already the target group.
+              new Operation()
+                  .operation(OperationEnum.REMOVE_PHYSICAL_TENANT)
+                  .physicalTenant(physicalTenantId);
           case final PartitionDisableExporterOperation disableExporterOperation ->
               new Operation()
                   .operation(OperationEnum.PARTITION_DISABLE_EXPORTER)
@@ -707,6 +737,7 @@ final class ClusterApiUtils {
       case ACTIVE -> PartitionStateCode.ACTIVE;
       case LEAVING -> PartitionStateCode.LEAVING;
       case RECOVERING -> PartitionStateCode.RECOVERING;
+      case LEARNER -> PartitionStateCode.LEARNER;
       // TODO: Define state code for BootStrapping
       case BOOTSTRAPPING, UNKNOWN -> PartitionStateCode.UNKNOWN;
     };
@@ -908,12 +939,12 @@ final class ClusterApiUtils {
         .completedAt(mapInstantToDateTime(completedChange.completedAt()));
   }
 
-  private static TopologyChange mapOngoingChange(final ClusterChangePlan clusterChangePlan) {
+  private static TopologyChange mapOngoingChange(final ChangePlan changePlan) {
     return new TopologyChange()
-        .id(clusterChangePlan.id())
-        .status(mapChangeStatus(clusterChangePlan.status()))
-        .pending(mapOperations(clusterChangePlan.pendingOperations()))
-        .completed(mapCompletedOperations(clusterChangePlan.completedOperations()));
+        .id(changePlan.id())
+        .status(mapChangeStatus(changePlan.status()))
+        .pending(mapOperations(changePlan.pendingOperations()))
+        .completed(mapCompletedOperations(changePlan.completedOperations()));
   }
 
   private static io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum
@@ -962,6 +993,16 @@ final class ClusterApiUtils {
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
                   .brokerId(brokerIdValue(leave.memberId()))
                   .partitionId(leave.partitionId());
+          case final PartitionPromoteOperation promote ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_PROMOTE)
+                  .brokerId(brokerIdValue(promote.memberId()))
+                  .partitionId(promote.partitionId());
+          case final PartitionDemoteOperation demote ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DEMOTE)
+                  .brokerId(brokerIdValue(demote.memberId()))
+                  .partitionId(demote.partitionId());
           case final PartitionReconfigurePriorityOperation reconfigure ->
               new TopologyChangeCompletedInner()
                   .operation(
@@ -1080,6 +1121,10 @@ final class ClusterApiUtils {
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_MODE_CHANGE)
                   .brokerId(brokerIdValue(modeChange.memberId()));
+          case final RemovePhysicalTenantOperation removal ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.REMOVE_PHYSICAL_TENANT)
+                  .brokerId(brokerIdValue(removal.memberId()));
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);

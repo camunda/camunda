@@ -12,13 +12,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.migration.DbMigrationState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.VersionUtil;
+import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 final class ZeebePartitionAdminAccessTest {
 
@@ -47,5 +58,98 @@ final class ZeebePartitionAdminAccessTest {
 
     // then
     assertThat(resumed).succeedsWithin(Duration.ofSeconds(5));
+  }
+
+  /**
+   * Uses a real, on-disk ZeebeDb since {@link ZeebePartitionAdminAccess#getMigrationStatus()} opens
+   * a second transaction context on the live db, the same technique already used for banning
+   * instances -- mocking ZeebeDb itself would not exercise that path.
+   */
+  @Nested
+  final class MigrationStatus {
+
+    @TempDir private File dbDirectory;
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+
+    @BeforeEach
+    void openDb() throws Exception {
+      zeebeDb = DefaultZeebeDbFactory.<ZbColumnFamilies>defaultFactory().createDb(dbDirectory);
+      when(adminControl.getZeebeDb()).thenReturn(zeebeDb);
+    }
+
+    @AfterEach
+    void closeDb() throws Exception {
+      zeebeDb.close();
+    }
+
+    @Test
+    void shouldReportMigratedWhenVersionMatchesAndSnapshotTaken() {
+      // given
+      writeMigratedByVersion(VersionUtil.getVersion());
+      when(adminControl.isMigrationSnapshotTaken()).thenReturn(true);
+
+      // when
+      final var status = sut.getMigrationStatus().join();
+
+      // then
+      assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+    }
+
+    @Test
+    void shouldReportMigrationInProgressWhenVersionMatchesButSnapshotNotYetTaken() {
+      // given
+      writeMigratedByVersion(VersionUtil.getVersion());
+      when(adminControl.isMigrationSnapshotTaken()).thenReturn(false);
+
+      // when
+      final var status = sut.getMigrationStatus().join();
+
+      // then
+      assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+    }
+
+    @Test
+    void shouldReportMigrationInProgressWhenNoVersionRecordedYet() {
+      // given - nothing written, fresh partition
+
+      // when
+      final var status = sut.getMigrationStatus().join();
+
+      // then
+      assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+      assertThat(status.detail()).contains("no migrated-by-version");
+    }
+
+    @Test
+    void shouldReportUnknownWhenZeebeDbIsNotYetOpen() {
+      // given
+      when(adminControl.getZeebeDb()).thenReturn(null);
+
+      // when
+      final var status = sut.getMigrationStatus().join();
+
+      // then
+      assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+    }
+
+    @Test
+    void shouldSeeFreshDataOnRepeatedReadsInsteadOfOpeningANewContextEachTime() {
+      // given - readMigrationStatus() reuses one transaction context across calls (see
+      // ZeebePartitionAdminAccess#migrationState) instead of leaking a fresh one on every read;
+      // this must not mean later reads see stale data
+      when(adminControl.isMigrationSnapshotTaken()).thenReturn(true);
+      assertThat(sut.getMigrationStatus().join().code())
+          .isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+
+      // when - the version is written after the first read, through a different transaction
+      writeMigratedByVersion(VersionUtil.getVersion());
+
+      // then - the reused context still picks up the newly committed value
+      assertThat(sut.getMigrationStatus().join().code()).isEqualTo(MigrationStatusCode.MIGRATED);
+    }
+
+    private void writeMigratedByVersion(final String version) {
+      new DbMigrationState(zeebeDb, zeebeDb.createContext()).setMigratedByVersion(version);
+    }
   }
 }

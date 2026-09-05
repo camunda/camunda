@@ -24,6 +24,8 @@ import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest;
+import io.camunda.zeebe.management.cluster.ConfigurationChange;
+import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -144,6 +146,23 @@ public interface ClusterActuator {
       @Param boolean dryRun);
 
   /**
+   * Request that the broker joins the given physical tenant's partition with the given priority.
+   * Partition ids restart at 1 in every physical tenant, so the partition is only identified by the
+   * two together.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown
+   */
+  @RequestLine("POST /brokers/{brokerId}/partitions/{partitionId}?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Body("%7B\"priority\": {priority}%7D")
+  PlannedOperationsResponse joinPartition(
+      @Param final int brokerId,
+      @Param final int partitionId,
+      @Param final int priority,
+      @Param final String physicalTenant);
+
+  /**
    * Request that the broker leaves the partition.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
@@ -161,6 +180,19 @@ public interface ClusterActuator {
   @RequestLine("DELETE /brokers/{brokerId}/partitions/{partitionId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   PlannedOperationsResponse leavePartition(@Param final int brokerId, @Param final int partitionId);
+
+  /**
+   * Request that the broker leaves the given physical tenant's partition. Partition ids restart at
+   * 1 in every physical tenant, so the partition is only identified by the two together.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown
+   */
+  @RequestLine(
+      "DELETE /brokers/{brokerId}/partitions/{partitionId}?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse leavePartition(
+      @Param final int brokerId, @Param final int partitionId, @Param final String physicalTenant);
 
   /**
    * Queries the current cluster topology
@@ -326,6 +358,27 @@ public interface ClusterActuator {
   @RequestLine("DELETE /changes/{changeId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   GetTopologyResponse cancelChange(@Param final long changeId);
+
+  /**
+   * Returns the status and operations of one configuration change - the pending plan if {@code
+   * changeId} matches it, otherwise the last completed change.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     no change with this id is known
+   */
+  @RequestLine("GET /changes/{changeId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  ConfigurationChange getChange(@Param final long changeId);
+
+  /**
+   * Lists every configuration change currently known to this broker (the pending plan, if any, and
+   * the last completed change).
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("GET /changes")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  GetConfigurationChangesResponse getChanges();
 
   // invalid parameter types
   @RequestLine("POST /brokers")

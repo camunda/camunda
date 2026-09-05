@@ -80,42 +80,36 @@ public interface ConfigurationChangeCoordinator {
   interface ConfigurationChangeRequest {
 
     /**
-     * Returns a list of operations to apply to the current configuration. The operations will be
-     * applied in the given order in the list.
+     * Returns the phases to execute for this request. A phase is applied to the sub-configurations
+     * it targets — {@link io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase} to
+     * the cluster-wide broker lifecycle, {@link
+     * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase} to each named
+     * physical tenant's partition group at once — and one phase is fully drained before the next
+     * begins.
      *
-     * @param clusterConfiguration the current cluster configuration
-     * @return Either with the list of operations to apply or an exception if the request is not
-     *     valid.
-     */
-    Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-        final ClusterConfiguration clusterConfiguration);
-
-    /**
-     * Returns the phases to execute for this request, on the new multi-partition-group model. The
-     * default implementation derives them from {@link #operations(ClusterConfiguration)} using the
-     * same operation-kind-run splitting that {@link CurrentClusterConfiguration#toPhases(List)}
-     * applies when migrating a legacy plan: each maximal run of consecutive operations of the same
-     * kind becomes one phase, and every {@link
-     * io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation} run targets the default group.
-     *
-     * <p>This is the only method the new-model coordinator path calls to determine what to validate
-     * and apply — {@link #operations(ClusterConfiguration)} is not called directly on that path. A
-     * future request implementation that targets non-default groups only needs to override this
-     * method to build {@link
-     * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase}s for
-     * those groups; no change is needed in the coordinator, the manager, or any other new-model
-     * code.
+     * <p>A request that plans partition work has to decide which physical tenants it applies to.
+     * There is no cluster-wide default to fall back on: partition ids restart at 1 in every tenant,
+     * so a partition is only identified together with the tenant that owns it.
      *
      * @param clusterConfiguration the current cluster configuration
      * @return Either with the list of phases to apply or an exception if the request is not valid.
      */
-    default Either<Exception, List<Phase>> phases(
-        final CurrentClusterConfiguration clusterConfiguration) {
-      return operations(clusterConfiguration.toLegacyDefault())
-          .map(CurrentClusterConfiguration::toPhases);
-    }
+    Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration clusterConfiguration);
 
     default boolean isForced() {
+      return false;
+    }
+
+    /**
+     * Whether {@link #phases(CurrentClusterConfiguration)} should see disabled physical tenants
+     * (see {@link CurrentClusterConfiguration#activePartitionGroups()}). Defaults to {@code false}:
+     * the coordinator passes a view with disabled partition groups removed, so a request that
+     * enumerates "all physical tenants" when none is explicitly targeted automatically skips
+     * disabled ones, and a request that explicitly targets a disabled tenant by id sees it as
+     * absent. Override to {@code true} for a request that must operate on disabled tenants as well,
+     * e.g. one that manages tenant availability itself.
+     */
+    default boolean applyToDisabledTenants() {
       return false;
     }
   }

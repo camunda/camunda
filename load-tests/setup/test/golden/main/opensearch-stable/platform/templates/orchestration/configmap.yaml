@@ -94,7 +94,6 @@ data:
     
       # Database configuration - Separated syntax.
       database:
-        awsEnabled: false
     
       data:
         snapshot-period: "5m"
@@ -191,11 +190,6 @@ data:
           enabled: false
         identity:
           redirectRootUrl: "http://localhost:8080/operate"
-        # OpenSearch
-        opensearch:
-          awsEnabled: false
-        zeebeOpensearch:
-          awsEnabled: false
         # Zeebe instance
         zeebe:
           # Gateway address
@@ -212,13 +206,6 @@ data:
           enabled: false
         identity:
           redirectRootUrl: "http://localhost:8080/tasklist"
-        # OpenSearch
-        opensearch:
-          awsEnabled: false
-        zeebeOpensearch:
-          awsEnabled: false
-          username: ""
-          password: "${VALUES_OPENSEARCH_PASSWORD:}"
         # Zeebe instance
         zeebe:
           # Gateway address

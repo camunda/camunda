@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,6 +17,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyImpl;
 import org.junit.jupiter.api.Test;
 
 final class TopologyPartitionLeadersTest {
@@ -54,14 +54,16 @@ final class TopologyPartitionLeadersTest {
   }
 
   @Test
-  void shouldFailToObtainAGroupViewWhenTheTopologyIsNotYetKnown() {
+  void shouldReportNoLeaderWhenTheTopologyIsNotYetKnown() {
     // given
-    when(topologyManager.getTopology("tenant-a")).thenReturn(null);
+    when(topologyManager.getTopology("tenant-a"))
+        .thenReturn(BrokerClientTopologyImpl.uninitialized());
 
-    // when / then
-    assertThatThrownBy(() -> partitionLeaders.forGroup("tenant-a"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("tenant-a");
+    // when
+    final var leader = partitionLeaders.forGroup("tenant-a").currentLeader(3);
+
+    // then
+    assertThat(leader).isEmpty();
   }
 
   @Test

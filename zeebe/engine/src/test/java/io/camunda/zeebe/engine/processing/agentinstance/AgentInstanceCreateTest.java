@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -79,7 +80,13 @@ public class AgentInstanceCreateTest {
     assertThat(created.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
     assertThat(created.getValue().getDefinition().getProvider()).isEqualTo("openai");
     assertThat(created.getValue().getDefinition().getSystemPrompt())
-        .isEqualTo("You are a helpful agent.");
+        .hasSize(1)
+        .first()
+        .satisfies(
+            block -> {
+              assertThat(block.getContentType()).isEqualTo(AgentHistoryContentType.TEXT);
+              assertThat(block.getText()).isEqualTo("You are a helpful agent.");
+            });
     assertThat(created.getValue().getLimits().getMaxTokens()).isEqualTo(1000L);
     assertThat(created.getValue().getLimits().getMaxModelCalls()).isEqualTo(10);
     assertThat(created.getValue().getLimits().getMaxToolCalls()).isEqualTo(20);
@@ -180,14 +187,14 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
-  public void shouldFetchVersionTagFromProcessState() {
+  public void shouldFetchProcessDefinitionVersionTagFromProcessState() {
     // given
-    final var versionTag = "v1.2.3";
+    final var processDefinitionVersionTag = "v1.2.3";
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
-                .versionTag(versionTag)
+                .versionTag(processDefinitionVersionTag)
                 .startEvent()
                 .serviceTask(
                     SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
@@ -203,12 +210,13 @@ public class AgentInstanceCreateTest {
         ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
 
     // then
-    assertThat(created.getValue().getVersionTag()).isEqualTo(versionTag);
+    assertThat(created.getValue().getProcessDefinitionVersionTag())
+        .isEqualTo(processDefinitionVersionTag);
   }
 
   @Test
   public void shouldStampAgentDefinitionKeyResolvedFromAgentDefinition() {
-    // given -- a service task carrying an agent marker mints an AgentDefinition at deploy time,
+    // given -- a service task carrying an agent marker creates an AgentDefinition at deploy time,
     // keyed by (processDefinitionKey, elementId) in the AgentDefinitionState column family.
     final var processMetadata =
         ENGINE
@@ -244,7 +252,7 @@ public class AgentInstanceCreateTest {
 
   @Test
   public void shouldRejectWhenElementHasNoAgentDefinition() {
-    // given -- a plain service task with no agent marker mints no AgentDefinition at deploy time,
+    // given -- a plain service task with no agent marker creates no AgentDefinition at deploy time,
     // so there is nothing to attach an agent instance to.
     ENGINE
         .deployment()

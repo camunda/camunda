@@ -30,7 +30,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeO
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -109,14 +109,10 @@ final class ClusterModeChangeMapper {
     final List<ClusterConfigurationChangeOperation> clusterWideOperations = new ArrayList<>();
     for (final Phase phase : requireNonNull(response.response()).phases()) {
       switch (phase) {
-        case final PartitionGroupParallelPhase parallelPhase ->
-            parallelPhase
-                .groupOperations()
-                .forEach(
-                    (physicalTenantId, operations) ->
-                        operationsPerTenant
-                            .computeIfAbsent(physicalTenantId, tenant -> new ArrayList<>())
-                            .addAll(operations));
+        // A phase carries its operations plus the edges between them. The edges say what may run
+        // when, which this view does not report, so it reads the operations alone.
+        case final PartitionGroupPhase groupPhase ->
+            collectPerTenant(groupPhase.groupOperations(), operationsPerTenant);
         // Broker lifecycle operations belong to the cluster, not to any single physical tenant.
         case final GlobalPhase globalPhase ->
             clusterWideOperations.addAll(globalPhase.operations());
@@ -131,6 +127,17 @@ final class ClusterModeChangeMapper {
       groups.add(new PlannedGroup(null, clusterWideOperations));
     }
     return groups;
+  }
+
+  private static void collectPerTenant(
+      final Map<String, ? extends List<? extends ClusterConfigurationChangeOperation>>
+          groupOperations,
+      final Map<String, List<ClusterConfigurationChangeOperation>> operationsPerTenant) {
+    groupOperations.forEach(
+        (physicalTenantId, operations) ->
+            operationsPerTenant
+                .computeIfAbsent(physicalTenantId, tenant -> new ArrayList<>())
+                .addAll(operations));
   }
 
   private static Status mapErrorStatus(final ErrorResponse.ErrorCode code) {

@@ -36,7 +36,6 @@ import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
@@ -114,6 +113,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AgentDefinitionGetRequest;
 import io.camunda.client.api.fetch.AgentInstanceGetRequest;
 import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
@@ -149,6 +149,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AgentDefinitionSearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceHistorySearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceSearchRequest;
 import io.camunda.client.api.search.request.AuditLogSearchRequest;
@@ -2399,12 +2400,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       long userTaskKey);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a document.
+   * Command to create a document.
    *
    * <pre>
    *   camundaClient
@@ -2420,12 +2416,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentCommandStep1 newCreateDocumentCommand();
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
+   * Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
    * command allows you to create multiple documents in a single request. This can be more efficient
    * than creating each document individually, however, there are multiple limitations to consider.
    * <br>
@@ -2468,12 +2459,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand();
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
+   * Command to get a document.
    *
    * <pre>
    *   camundaClient
@@ -2488,12 +2474,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
+   * Command to get a document.
    *
    * <pre>
    *   camundaClient
@@ -2508,12 +2489,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -2529,12 +2505,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -2550,12 +2521,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
@@ -2570,12 +2536,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
@@ -3599,10 +3560,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *   CreateAgentInstanceResponse response = camundaClient
    *       .newCreateAgentInstanceCommand()
-   *       .elementInstanceKey(2251799813685248)
-   *       .model("gpt-4o")
-   *       .provider("openai")
-   *       .systemPrompt("You are a helpful assistant.")
+   *       .elementInstanceKey(2251799813685248L)
+   *       .jobKey(jobKey)
+   *       .jobLease(jobLease)
+   *       .history(List.of(configurationHistoryItem))
    *       .send()
    *       .join();
    * </pre>
@@ -3612,27 +3573,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateAgentInstanceCommandStep1 newCreateAgentInstanceCommand();
 
   /**
-   * Creates a command to append a conversation history item to an agent instance.
-   *
-   * <pre>
-   *   CreateAgentHistoryItemResponse response = camundaClient
-   *       .newCreateAgentHistoryItemCommand(agentInstanceKey)
-   *       .elementInstanceKey(elementInstanceKey)
-   *       .jobKey(jobKey)
-   *       .jobLease(jobLease)
-   *       .role(AgentInstanceHistoryRole.ASSISTANT)
-   *       .content(contentList)
-   *       .producedAt(OffsetDateTime.now())
-   *       .send()
-   *       .join();
-   * </pre>
-   *
-   * @param agentInstanceKey the key of the agent instance
-   * @return a builder for creating an agent history item
-   */
-  CreateAgentHistoryItemCommandStep1 newCreateAgentHistoryItemCommand(long agentInstanceKey);
-
-  /**
    * Creates a command to update an existing agent instance.
    *
    * <pre>
@@ -3640,6 +3580,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *       .newUpdateAgentInstanceCommand(agentInstanceKey)
    *       .elementInstanceKey(elementInstanceKey)
    *       .status(AgentInstanceUpdateStatus.THINKING)
+   *       .jobKey(jobKey)
+   *       .jobLease(jobLease)
    *       .send()
    *       .join();
    * </pre>
@@ -3726,6 +3668,37 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for searching global task listeners
    */
   GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest();
+
+  /**
+   * Creates a request to fetch an agent definition by its key.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionGetRequest(agentDefinitionKey)
+   *       .send();
+   * </pre>
+   *
+   * @param agentDefinitionKey the key of the agent definition to retrieve
+   * @return a builder for fetching an agent definition
+   */
+  AgentDefinitionGetRequest newAgentDefinitionGetRequest(long agentDefinitionKey);
+
+  /**
+   * Creates a request to search for agent definitions.
+   *
+   * <p>Agent definitions can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionSearchRequest()
+   *       .filter(f -> f.agentType(AgentDefinitionType.AI_AGENT_SUB_PROCESS))
+   *       .sort(s -> s.processDefinitionKey().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching agent definitions
+   */
+  AgentDefinitionSearchRequest newAgentDefinitionSearchRequest();
 
   /**
    * Creates a request to fetch an agent instance by its key.

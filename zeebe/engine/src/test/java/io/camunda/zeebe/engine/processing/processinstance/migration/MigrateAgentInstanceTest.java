@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceDefinition;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,11 +22,13 @@ import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.Rule;
@@ -35,13 +38,6 @@ import org.junit.rules.TestWatcher;
 public class MigrateAgentInstanceTest {
 
   private static final String AGENT_JOB_TYPE = "agent-job";
-
-  /**
-   * {@code zeebe:modelerTemplate} id the deploy-time transformer maps to {@code AI_AGENT_TASK} as a
-   * fallback when no explicit {@code zeebe:agentDefinition} marker is present.
-   */
-  private static final String AI_AGENT_TASK_TEMPLATE_ID =
-      "io.camunda.connectors.agenticai.aiagent.v1";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -129,7 +125,7 @@ public class MigrateAgentInstanceTest {
         .describedAs("Definition fields are updated to the target process definition")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
-        .hasVersionTag("v2")
+        .hasProcessDefinitionVersionTag("v2")
         .describedAs("elementId is remapped despite \"A\" having no active element instance")
         .hasElementId("A2");
   }
@@ -320,7 +316,7 @@ public class MigrateAgentInstanceTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
         .hasProcessDefinitionVersion(1)
-        .hasVersionTag("v2")
+        .hasProcessDefinitionVersionTag("v2")
         .hasElementId("A2")
         .describedAs(
             "Properties migration must not touch stay exactly as they were before migration")
@@ -328,7 +324,11 @@ public class MigrateAgentInstanceTest {
             new AgentInstanceDefinition()
                 .setModel("gpt-4o")
                 .setProvider("openai")
-                .setSystemPrompt(firstSystemPrompt));
+                .setSystemPrompt(
+                    List.of(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText(firstSystemPrompt))));
 
     Assertions.assertThat(migratedValuesByAgentInstanceKey.get(secondAgentInstanceKey))
         .describedAs(
@@ -338,7 +338,7 @@ public class MigrateAgentInstanceTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
         .hasProcessDefinitionVersion(1)
-        .hasVersionTag("v2")
+        .hasProcessDefinitionVersionTag("v2")
         .hasElementId("B")
         .describedAs(
             "Properties migration must not touch stay exactly as they were before migration")
@@ -346,7 +346,11 @@ public class MigrateAgentInstanceTest {
             new AgentInstanceDefinition()
                 .setModel("claude-sonnet-4-5")
                 .setProvider("anthropic")
-                .setSystemPrompt(secondSystemPrompt));
+                .setSystemPrompt(
+                    List.of(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText(secondSystemPrompt))));
   }
 
   @Test
@@ -430,7 +434,7 @@ public class MigrateAgentInstanceTest {
   public void shouldReResolveAgentDefinitionKeyWhenElementIsRemapped() {
     // given — an agent-marked service task "A" is remapped to an agent-marked service task "A2" in
     // a different target process definition, so the target element has its own, distinct agent
-    // definition minted at deploy time
+    // definition created at deploy time
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
@@ -505,7 +509,7 @@ public class MigrateAgentInstanceTest {
   @Test
   public void shouldReResolveAgentDefinitionKeyWhenElementKeepsItsId() {
     // given — an agent-marked service task "A" is migrated to another process definition that keeps
-    // the same element id "A" (a self-mapping); the target still mints its own agent definition
+    // the same element id "A" (a self-mapping); the target still creates its own agent definition
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
@@ -835,137 +839,6 @@ public class MigrateAgentInstanceTest {
                 .getFirst())
         .describedAs(
             "migrating an element without an agent instance onto an agent element is allowed")
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
-  }
-
-  @Test
-  public void shouldRejectMigrationWhenTemplateBasedAgentDefinitionTypeChanges() {
-    // given — the source agent element declares its type via a recognized zeebe:modelerTemplate
-    // (the fallback path, no explicit zeebe:agentDefinition marker), resolving to AI_AGENT_TASK; it
-    // is mapped onto an external agent task. This proves the modeler-template fallback type is
-    // honored on migration: were it not, the source would resolve to UNSPECIFIED and wrongly pass
-    final String processId = helper.getBpmnProcessId();
-    final String targetProcessId = helper.getBpmnProcessId() + "2";
-
-    final var deployment =
-        engine
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .serviceTask(
-                        "A",
-                        t ->
-                            t.zeebeJobType(AGENT_JOB_TYPE)
-                                .zeebeModelerTemplate(AI_AGENT_TASK_TEMPLATE_ID))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(targetProcessId)
-                    .startEvent()
-                    .serviceTask(
-                        "A2", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey =
-        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
-
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
-
-    final var agentTaskInstance =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("A")
-            .getFirst();
-    engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
-
-    // when
-    final var rejection =
-        engine
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("A", "A2")
-            .expectRejection()
-            .migrate();
-
-    // then
-    Assertions.assertThat(rejection)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            String.format(
-                """
-                Expected to migrate process instance '%d' \
-                but the agent instance element with id 'A' has agent definition type 'AI_AGENT_TASK' \
-                while the mapped target element with id 'A2' has a different agent definition \
-                type 'EXTERNAL_AGENT'. \
-                An agent instance's type must not change on migration.""",
-                processInstanceKey));
-  }
-
-  @Test
-  public void shouldAllowMigrationBetweenTemplateAndMarkerOfSameAgentType() {
-    // given — the source agent element declares AI_AGENT_TASK via a zeebe:modelerTemplate fallback
-    // while the target declares the same type via an explicit zeebe:agentDefinition marker;
-    // switching element templates (or template <-> marker) is allowed as long as the resolved agent
-    // definition type is unchanged
-    final String processId = helper.getBpmnProcessId();
-    final String targetProcessId = helper.getBpmnProcessId() + "2";
-
-    final var deployment =
-        engine
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .serviceTask(
-                        "A",
-                        t ->
-                            t.zeebeJobType(AGENT_JOB_TYPE)
-                                .zeebeModelerTemplate(AI_AGENT_TASK_TEMPLATE_ID))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(targetProcessId)
-                    .startEvent()
-                    .serviceTask(
-                        "A2", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey =
-        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
-
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
-
-    final var agentTaskInstance =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("A")
-            .getFirst();
-    engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
-
-    // when
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "A2")
-        .migrate();
-
-    // then — the migration is accepted since both sides resolve to AI_AGENT_TASK
-    Assertions.assertThat(
-            RecordingExporter.processInstanceMigrationRecords(
-                    ProcessInstanceMigrationIntent.MIGRATED)
-                .withRecordKey(processInstanceKey)
-                .getFirst())
-        .describedAs(
-            "migrating between an element template and an explicit marker of the same agent "
-                + "definition type is allowed")
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
   }
 }

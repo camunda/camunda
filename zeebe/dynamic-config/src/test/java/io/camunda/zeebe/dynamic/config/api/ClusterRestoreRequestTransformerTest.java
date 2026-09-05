@@ -16,15 +16,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -34,7 +31,8 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -54,56 +52,6 @@ final class ClusterRestoreRequestTransformerTest {
   private static final String TENANT_C = "tenant-c";
 
   @Test
-  void shouldRestoreTheRequestedPhysicalTenantFromItsOwnParameters() {
-    // given — a request naming exactly one physical tenant
-    final var request =
-        new ClusterRestoreRequest(
-            Map.of(
-                TENANT_B,
-                new TenantRestoreArguments(
-                    new RestoreParameters(List.of(55L), null, null), "elasticsearch", false)),
-            false);
-    final var transformer = new ClusterRestoreRequestTransformer(request, registry());
-
-    // when
-    final var result = transformer.operations(recoveringConfiguration());
-
-    // then
-    EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .contains(new PartitionRestoreOperation(MEMBER, 1, new TreeSet<>(List.of(55L))));
-  }
-
-  @Test
-  void shouldRejectARestoreOfEveryPhysicalTenant() {
-    // given a request naming no physical tenant
-    final var request = new ClusterRestoreRequest(Map.of(), false);
-    final var transformer = new ClusterRestoreRequestTransformer(request, registry());
-
-    // when
-    final var result = transformer.operations(recoveringConfiguration());
-
-    // then — the legacy single-group entry point has no per-tenant view to fall back to
-    EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
-  }
-
-  @Test
-  void shouldRejectARestoreNamingMoreThanOnePhysicalTenant() {
-    // given a request naming two physical tenants at once
-    final var args =
-        new TenantRestoreArguments(
-            new RestoreParameters(List.of(55L), null, null), "elasticsearch", false);
-    final var request = new ClusterRestoreRequest(Map.of(TENANT_B, args, TENANT_C, args), false);
-    final var transformer = new ClusterRestoreRequestTransformer(request, registry());
-
-    // when
-    final var result = transformer.operations(recoveringConfiguration());
-
-    // then — same as above: the legacy entry point only ever supports one physical tenant
-    EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
-  }
-
-  @Test
   void shouldRestoreOnlyTheNamedPhysicalTenantOnTheMultiGroupModel() {
     // given — a broker that replicates a partition of all three physical tenants, all in recovery,
     // but the request only names tenant-b
@@ -115,10 +63,8 @@ final class ClusterRestoreRequestTransformerTest {
 
     // then — one phase, scoped to tenant-b's own partition; the other two tenants are untouched
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            new PartitionGroupParallelPhase(
-                Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L)))));
+    assertThat(groupOperationsOf(result.get()))
+        .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L))));
   }
 
   @Test
@@ -135,13 +81,12 @@ final class ClusterRestoreRequestTransformerTest {
 
     // then — all three physical tenants restore in the same phase, each from its own backup
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            new PartitionGroupParallelPhase(
-                Map.of(
-                    DEFAULT_GROUP, defaultRestoreOperations(List.of(100L)),
-                    TENANT_B, tenantBRestoreOperations(List.of(55L)),
-                    TENANT_C, tenantCRestoreOperations(List.of(77L)))));
+    assertThat(groupOperationsOf(result.get()))
+        .isEqualTo(
+            Map.of(
+                DEFAULT_GROUP, defaultRestoreOperations(List.of(100L)),
+                TENANT_B, tenantBRestoreOperations(List.of(55L)),
+                TENANT_C, tenantCRestoreOperations(List.of(77L))));
   }
 
   @Test
@@ -158,10 +103,8 @@ final class ClusterRestoreRequestTransformerTest {
 
     // then — the restore is planned rather than refused as a cluster that is not recovering
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            new PartitionGroupParallelPhase(
-                Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L)))));
+    assertThat(groupOperationsOf(result.get()))
+        .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L))));
   }
 
   @Test
@@ -285,12 +228,6 @@ final class ClusterRestoreRequestTransformerTest {
         Optional.empty());
   }
 
-  private static ClusterConfiguration recoveringConfiguration() {
-    final var partitions = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
-    return ClusterConfiguration.init()
-        .addMember(MEMBER, MemberState.initializeAsActive(partitions).toRecovering());
-  }
-
   /** Resolves every request to the backups it asked for, on the single partition of the member. */
   private static RequestValidatorRegistry registry() {
     return registryOf(1);
@@ -325,5 +262,15 @@ final class ClusterRestoreRequestTransformerTest {
           }
         });
     return registry;
+  }
+
+  /**
+   * The operations each group's graph holds, in plan order. The graph's dependency structure is
+   * covered separately; these assertions are about which operations a request produces.
+   */
+  private static Map<String, List<PartitionGroupOperation>> groupOperationsOf(
+      final List<Phase> phases) {
+    assertThat(phases).singleElement().isInstanceOf(PartitionGroupPhase.class);
+    return ((PartitionGroupPhase) phases.getFirst()).groupOperations();
   }
 }

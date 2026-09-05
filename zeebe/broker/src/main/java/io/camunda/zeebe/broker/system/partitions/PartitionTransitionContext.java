@@ -15,9 +15,9 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -27,6 +27,7 @@ import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -97,8 +98,6 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setPartitionCommandSender(InterPartitionCommandSenderService sender);
 
-  ExporterPhase getExporterPhase();
-
   Collection<ExporterDescriptor> getExportedDescriptors();
 
   AtomixLogStorage getLogStorage();
@@ -122,6 +121,12 @@ public interface PartitionTransitionContext extends PartitionContext {
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
 
   AtomixServerTransport getGatewayBrokerTransport();
+
+  BrokerClient getBrokerClient();
+
+  SnapshotApiRequestHandler getSnapshotApiRequestHandler();
+
+  void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);
 
   BackupApiRequestHandler getBackupApiRequestHandler();
 
@@ -163,6 +168,26 @@ public interface PartitionTransitionContext extends PartitionContext {
   void markMigrationsDone();
 
   boolean areMigrationsPerformed();
+
+  /**
+   * Marks that a snapshot capturing the migrated state has been taken since this replica last ran
+   * its migrations. A later role transition alone never un-sets this -- {@link
+   * io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector} itself is recreated
+   * on every transition, but the snapshot it already took keeps existing regardless. It can,
+   * however, be reverted by {@link #resetMigrationSnapshotTaken()} when a *new* migration cycle
+   * starts, e.g. because a received snapshot transfer reverted this replica to an older, unmigrated
+   * version that needs to migrate again.
+   */
+  void markMigrationSnapshotTaken();
+
+  /**
+   * Invalidates a previously-marked {@link #markMigrationSnapshotTaken()} because a new migration
+   * cycle is starting (see {@link #markMigrationsDone()}) -- whatever was true about a prior
+   * migration's snapshot says nothing about whether *this* one has been snapshotted yet.
+   */
+  void resetMigrationSnapshotTaken();
+
+  boolean isMigrationSnapshotTaken();
 
   ComponentTreeListener getComponentTreeListener();
 

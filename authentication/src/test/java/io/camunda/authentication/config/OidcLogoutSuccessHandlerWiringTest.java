@@ -56,9 +56,9 @@ import org.springframework.web.util.UriComponentsBuilder;
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
       "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com",
-      "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
-      "camunda.security.authentication.oidc.token-uri=token.example.com",
-      "camunda.security.authentication.oidc.jwk-set-uri=jwks.example.com",
+      "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+      "camunda.security.authentication.oidc.token-uri=https://token.example.com",
+      "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com",
       "camunda.security.authentication.oidc.end-session-endpoint-uri=https://idp.example.com/protocol/openid-connect/logout"
     })
 public class OidcLogoutSuccessHandlerWiringTest extends AbstractWebSecurityConfigTest {

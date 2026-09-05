@@ -8,14 +8,17 @@
 package io.camunda.optimize.service.report;
 
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_L1_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.AUTOMATION_RATE_BY_PROCESS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.COUNT_BY_DATE_L1_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.COUNT_BY_PROCESS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.DURATION_AVG_TOTAL_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.DURATION_PERCENTILES_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.VOLUME_TOTAL_L1_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,14 +43,17 @@ class BusinessValueReportPickerExclusionIT extends AbstractBrokerlessZeebeCCSMIT
   private static final List<String> BVD_REPORT_IDS =
       List.of(
           WORK_HANDLED_TOTAL_REPORT_ID,
+          VOLUME_TOTAL_L1_REPORT_ID,
           DURATION_AVG_TOTAL_REPORT_ID,
           COUNT_BY_PROCESS_REPORT_ID,
           COUNT_BY_DATE_REPORT_ID,
+          COUNT_BY_DATE_L1_REPORT_ID,
           DURATION_BY_PROCESS_REPORT_ID,
           DURATION_PERCENTILES_REPORT_ID,
           DURATION_BY_DATE_REPORT_ID,
           AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
           AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+          AUTOMATION_RATE_AGGREGATE_L1_REPORT_ID,
           AUTOMATION_RATE_BY_PROCESS_REPORT_ID);
 
   private ReportReader reportReader;

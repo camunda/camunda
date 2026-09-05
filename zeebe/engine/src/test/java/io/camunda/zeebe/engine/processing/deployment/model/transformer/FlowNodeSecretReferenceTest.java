@@ -55,6 +55,20 @@ class FlowNodeSecretReferenceTest {
   }
 
   @Test
+  void shouldStoreBacktickedHyphenatedSecretReference() {
+    // given - a dashed store name, which FEEL only accepts backtick-escaped
+    final var task =
+        transform(t -> t.zeebeInputExpression("camunda.secrets.`db-password`", "auth.password"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - the dash survives into the reference the job record carries to the store
+    assertThat(secretReferences)
+        .containsExactly(entry("/auth/password", Set.of(new SecretReference("db-password"))));
+  }
+
+  @Test
   void shouldStoreMultipleReferencesForSingleInputMapping() {
     // given
     final var task =
@@ -255,6 +269,45 @@ class FlowNodeSecretReferenceTest {
 
     // then
     assertThat(secretReferences).containsExactly(entry("/a", Set.of(new SecretReference("s2"))));
+  }
+
+  @Test
+  void shouldKeyBothConditionalBranchesToTheSameTargetPointer() {
+    // given - two references, one leaf
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression(
+                    "if cond then camunda.secrets.x else camunda.secrets.y", "authToken"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - both land on the mapping target's pointer, not on separate ones
+    assertThat(secretReferences)
+        .containsExactly(
+            entry("/authToken", Set.of(new SecretReference("x"), new SecretReference("y"))));
+  }
+
+  @Test
+  void shouldKeepAPreciseEntryAndAConditionalEntryOnSeparatePointers() {
+    // given - a context mixes a precise reference with a conditional entry
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression(
+                    "{a: camunda.secrets.x, b: if c then camunda.secrets.y else null}", "cfg"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - "/cfg/a" and "/cfg/b" are separate keys; the conditional entry is still scoped to its
+    // own context key because the context itself is descended precisely
+    assertThat(secretReferences)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                "/cfg/a", Set.of(new SecretReference("x")),
+                "/cfg/b", Set.of(new SecretReference("y"))));
   }
 
   private ExecutableFlowNode transform(final Consumer<ServiceTaskBuilder> modifier) {

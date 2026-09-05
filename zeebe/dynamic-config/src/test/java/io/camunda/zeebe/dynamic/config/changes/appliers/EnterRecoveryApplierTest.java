@@ -21,9 +21,11 @@ import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -90,6 +92,48 @@ final class EnterRecoveryApplierTest {
   }
 
   @Test
+  void shouldRejectIfLocalMemberIsPresentButNotActiveInCluster() {
+    // given
+    final var group =
+        groupWithMembers(
+            Map.of(
+                memberId, new BrokerPartitionState(1, Instant.EPOCH, Map.of(), Mode.PROCESSING)));
+    final var globalConfigurationWithLocalMemberJoining =
+        globalConfigurationWith(
+            Map.of(memberId, BrokerState.uninitialized().setState(BrokerState.State.JOINING)));
+
+    // when
+    final var result =
+        new EnterRecoveryApplier(memberId, modeChangeExecutor)
+            .init(globalConfigurationWithLocalMemberJoining, group);
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("not an active member of the cluster");
+  }
+
+  @Test
+  void shouldSucceedAsNoOpWhenLocalMemberIsAlreadyRecovering() {
+    // given — member restarted while applying this operation and is already RECOVERING
+    final var recoveringMember =
+        new BrokerPartitionState(1, Instant.EPOCH, Map.of(), Mode.RECOVERING);
+    final var group = groupWithMembers(Map.of(memberId, recoveringMember));
+
+    // when
+    final var result =
+        new EnterRecoveryApplier(memberId, modeChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, group);
+
+    // then — transition is a no-op: it succeeds but leaves the member untouched
+    assertThat(result).isRight();
+    final var resultingGroup = result.get().apply(group);
+    Assertions.assertThat(resultingGroup).isEqualTo(group);
+    Assertions.assertThat(resultingGroup.getMember(memberId).mode()).isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
   void shouldExecuteEnterRecoveryCallbackAndSetModeRecovering() {
     // given
     final var group =
@@ -107,5 +151,23 @@ final class EnterRecoveryApplierTest {
     // then
     verify(modeChangeExecutor, times(1)).enterRecovery();
     Assertions.assertThat(resultingGroup.getMember(memberId).mode()).isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
+  void shouldFailApplyWhenExecutorFails() {
+    // given
+    when(modeChangeExecutor.enterRecovery())
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("Force failure")));
+    final var applier = new EnterRecoveryApplier(memberId, modeChangeExecutor);
+
+    // when
+    final var result = applier.apply();
+
+    // then
+    Assertions.assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Force failure");
   }
 }

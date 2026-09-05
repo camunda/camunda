@@ -18,6 +18,9 @@ paths:
   /valid-multiple-deprecated/{id}:
     $ref: 'enums.yaml#/paths/~1valid-multiple-deprecated~1{id}'
 
+  /valid-inline-enum/{id}:
+    $ref: 'enums.yaml#/paths/~1valid-inline-enum~1{id}'
+
   # ── Invalid cases ───────────────────────────────────────────
   /invalid-not-array/{id}:
     $ref: 'enums.yaml#/paths/~1invalid-not-array~1{id}'
@@ -45,3 +48,9 @@ paths:
 
   /invalid-no-enum/{id}:
     $ref: 'enums.yaml#/paths/~1invalid-no-enum~1{id}'
+
+  /invalid-null-value/{id}:
+    $ref: 'enums.yaml#/paths/~1invalid-null-value~1{id}'
+
+  /invalid-inline-enum/{id}:
+    $ref: 'enums.yaml#/paths/~1invalid-inline-enum~1{id}'

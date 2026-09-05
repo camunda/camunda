@@ -1,0 +1,135 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {test, expect} from '#/pw-modules/test-extend';
+import {HttpResponse} from 'msw';
+import {
+	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
+	mockGetUserTaskEndpoint,
+	mockLicenseEndpoint,
+	mockQueryVariablesByUserTaskEndpoint,
+	mockQueryUserTaskAuditLogsEndpoint,
+	mockQueryUserTasksEndpoint,
+	mockSystemConfigurationEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {createQueryUserTaskAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
+
+const currentUser = createCurrentUser();
+
+test.beforeEach(({network}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(currentUser),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
+		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
+		}),
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					name: 'Review invoice',
+					processName: 'Invoice process',
+					assignee: null,
+					candidateUsers: ['alice'],
+					candidateGroups: ['managers'],
+					priority: 50,
+				}),
+			),
+		}),
+		mockQueryUserTaskAuditLogsEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTaskAuditLogsResponse({items: []})),
+		}),
+	);
+});
+
+test.describe('Task details page', () => {
+	test('should render task name, process name, and details panel', async ({shadcnTaskDetailPage, page}) => {
+		await shadcnTaskDetailPage.goto('2251799813685281');
+
+		await expect(shadcnTaskDetailPage.detailsInfo).toBeVisible();
+		await expect(page.getByText('Review invoice')).toBeVisible();
+		await expect(page.getByText('Invoice process')).toBeVisible();
+		await expect(shadcnTaskDetailPage.aside).toBeVisible();
+		await expect(page.getByText('Creation date')).toBeVisible();
+		await expect(page.getByText('alice')).toBeVisible();
+		await expect(page.getByText('managers')).toBeVisible();
+	});
+
+	test('should render the tab navigation with Task, Process, and History tabs', async ({shadcnTaskDetailPage}) => {
+		await shadcnTaskDetailPage.goto('2251799813685281');
+
+		await expect(shadcnTaskDetailPage.taskTab).toBeVisible();
+		await expect(shadcnTaskDetailPage.processTab).toBeVisible();
+		await expect(shadcnTaskDetailPage.historyTab).toBeVisible();
+		await expect(shadcnTaskDetailPage.taskTab).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test('should switch tabs and update the URL', async ({network, shadcnTaskDetailPage: taskDetailPage, page}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({
+				successResponse: new HttpResponse(BPMN_XML, {headers: {'Content-Type': 'text/xml'}}),
+			}),
+		);
+
+		await taskDetailPage.goto('2251799813685281');
+
+		await taskDetailPage.processTab.click();
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/process/);
+		await expect(taskDetailPage.processTabContent).toBeAttached();
+		await expect(taskDetailPage.detailsInfo).toBeVisible();
+		await expect(taskDetailPage.aside).toBeVisible();
+		await expect(taskDetailPage.processName('Invoice process')).toBeVisible();
+		await expect(taskDetailPage.processVersion(1)).toBeVisible();
+		await expect(taskDetailPage.processDiagramZoomReset).toBeVisible();
+		await expect(taskDetailPage.processDiagramZoomIn).toBeVisible();
+		await expect(taskDetailPage.processDiagramZoomOut).toBeVisible();
+
+		await taskDetailPage.historyTab.click();
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history/);
+		await expect(taskDetailPage.historyTabContent).toBeAttached();
+
+		await taskDetailPage.taskTab.click();
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281$/);
+		await expect(taskDetailPage.taskTabContent).toBeAttached();
+	});
+
+	test('should keep task details visible when process access is forbidden', async ({
+		network,
+		shadcnTaskDetailPage: taskDetailPage,
+	}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({
+				successResponse: new HttpResponse(null, {status: 403}),
+			}),
+		);
+
+		await taskDetailPage.gotoProcess('2251799813685281');
+
+		await expect(taskDetailPage.detailsInfo).toBeVisible();
+		await expect(taskDetailPage.aside).toBeVisible();
+		await expect(taskDetailPage.processTab).toHaveAttribute('aria-selected', 'true');
+		await expect(taskDetailPage.processForbiddenError).toBeVisible();
+		await expect(taskDetailPage.processRetryButton).not.toBeVisible();
+	});
+});

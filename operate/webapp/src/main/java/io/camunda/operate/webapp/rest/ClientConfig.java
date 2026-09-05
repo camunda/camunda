@@ -13,13 +13,18 @@ import io.camunda.operate.EnvironmentService;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.ServletContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ClientConfig {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClientConfig.class);
 
   public boolean isEnterprise;
   public boolean canLogout;
@@ -35,6 +40,7 @@ public class ClientConfig {
   public boolean multiTenancyEnabled;
   public String databaseType;
   public boolean waitStatesEnabled;
+  public boolean isNavV2Enabled;
   @Autowired private OperateProfileService profileService;
   @Autowired private EnvironmentService environmentService;
   @Autowired private OperateProperties operateProperties;
@@ -44,6 +50,16 @@ public class ClientConfig {
   private boolean waitStatesEnabledProperty;
 
   @Autowired private ServletContext context;
+
+  @PostConstruct
+  public void logNavV2Resolution() {
+    final boolean isSaas = isSaas();
+    LOGGER.debug(
+        "Operate nav v2 resolved to {} (explicit override={}, isSaas={})",
+        operateProperties.resolveNavV2Enabled(isSaas),
+        operateProperties.getNavV2Enabled(),
+        isSaas);
+  }
 
   public String asJson() {
     isEnterprise = operateProperties.isEnterprise();
@@ -60,11 +76,16 @@ public class ClientConfig {
     multiTenancyEnabled = cslProperties.getMultiTenancy().isChecksEnabled();
     databaseType = environmentService.getDatabaseType();
     waitStatesEnabled = waitStatesEnabledProperty;
+    isNavV2Enabled = operateProperties.resolveNavV2Enabled(isSaas());
     try {
       return String.format(
           "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));
     } catch (final JsonProcessingException e) {
       return "window.clientConfig = {};";
     }
+  }
+
+  private boolean isSaas() {
+    return cslProperties.getSaas() != null && cslProperties.getSaas().getClusterId() != null;
   }
 }

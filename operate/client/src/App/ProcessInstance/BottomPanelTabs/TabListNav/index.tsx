@@ -8,7 +8,7 @@
 
 import {useLocation, useNavigate, type Path} from 'react-router-dom';
 import {Tag} from '@carbon/react';
-import {cn} from './cn';
+import {cn} from 'modules/utils/cn';
 import {Nav, Button} from './styled';
 
 type Props = {

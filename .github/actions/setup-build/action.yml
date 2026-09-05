@@ -27,7 +27,7 @@ inputs:
     default: "false"
   harbor:
     description: |
-      If enabled, logs into Harbor with a CI account.
+      If enabled, logs into Harbor with a Harbor robot account.
       Harbor login is automatically disabled for fork PRs.
     required: false
     default: "false"
@@ -151,12 +151,33 @@ runs:
         secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
-        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
+        secret/data/products/camunda/ci/harbor username | harbor-username;
+        secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
-    uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+    # wretry retries setup-java through transient network/setup failures (INC-7417). Same pattern
+    # as build-platform-docker; `_js_action` pin lets the *_context inputs be overridden.
+    # `token` is passed explicitly since github_context is blanked (setup-java defaults it from it).
+    uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
     with:
-      distribution: ${{ inputs.java-distribution }}
-      java-version: ${{ inputs.java-version }}
+      action: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      attempt_limit: 3
+      attempt_delay: 10000
+      github_token: ${{ github.token }}
+      github_context: '{}'
+      env_context: '{}'
+      job_context: '{}'
+      matrix_context: '{}'
+      with: |
+        distribution: ${{ inputs.java-distribution }}
+        java-version: ${{ inputs.java-version }}
+        token: ${{ github.token }}
+  # wretry leaks the wrapped action's INPUT_* vars into GITHUB_ENV; blank them (cannot unset).
+  - name: Clear setup-java inputs leaked into the job environment by wretry
+    if: always()
+    shell: bash
+    run: |
+      env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
   - name: Register Maven problem matcher
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"
@@ -229,13 +250,27 @@ runs:
       githubServer: false
       servers: ${{ steps.maven.outputs.servers }}
       mirrors: ${{ steps.maven.outputs.mirrors }}
+  - uses: ./.github/actions/apt-fast-mirror-failover
+    if: inputs.time-zone != '' && runner.os == 'Linux'
+  # tzdata is not installed in self-hosted runners. `timeout` runs inside the sudo'd
+  # root process tree so it can self-terminate a hung apt-get without nick-fields/retry
+  # having to kill across the privilege boundary -- doing that externally throws
+  # `kill EPERM` and crashes instead of retrying, see
+  # https://github.com/nick-fields/retry/issues/124.
+  - name: Install tzdata
+    if: inputs.time-zone != '' && runner.os == 'Linux'
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    with:
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_minutes: 2
+      shell: bash
+      command: sudo timeout 115 bash -c "apt-get update && apt-get install -y tzdata"
   - name: Set Time Zone
     if: inputs.time-zone != '' && runner.os == 'Linux'
     env:
       TZ_IDENTIFIER: ${{ inputs.time-zone }}
     run: |
-      # tzdata is not installed in self-hosted runners
-      sudo apt-get update && sudo apt-get install -y tzdata
       echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone
       sudo rm -rf /etc/localtime
       sudo ln -s /usr/share/zoneinfo/${TZ_IDENTIFIER} /etc/localtime
@@ -266,8 +301,8 @@ runs:
       inputs.harbor == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.secrets.outputs.ci-account-username }}
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.ci-account-password }}
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.harbor-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.harbor-password }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10

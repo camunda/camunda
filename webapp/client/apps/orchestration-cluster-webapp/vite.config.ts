@@ -16,6 +16,7 @@ import viteReact from '@vitejs/plugin-react';
 import sbom from 'rollup-plugin-sbom';
 import {playwright} from '@vitest/browser-playwright';
 import path from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
 
 const injectCustomCss: PluginOption = {
 	name: 'inject-custom-css',
@@ -34,6 +35,7 @@ const injectCustomCss: PluginOption = {
 
 const basePlugins: PluginOption[] = [
 	devtools(),
+	tailwindcss(),
 	tanstackRouter({
 		target: 'react',
 		autoCodeSplitting: true,
@@ -98,10 +100,17 @@ const config = defineConfig(({mode}) => ({
 	test: {
 		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
 		reporters: process.env['CI'] ? ['default', 'github-actions', 'html', 'junit'] : ['default'],
-		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
+		outputFile: process.env['CI']
+			? {
+					html: 'test-artifacts/html/index.html',
+					junit: 'TEST-unit.xml',
+				}
+			: undefined,
+		retry: process.env['CI'] ? 3 : 0,
 		browser: {
 			enabled: true,
-			screenshotFailures: false,
+			screenshotFailures: Boolean(process.env['CI']),
+			screenshotDirectory: 'test-artifacts/screenshots',
 			headless: true,
 			viewport: {
 				width: 1280,

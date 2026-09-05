@@ -53,24 +53,36 @@ Each guard returns silently instead of throwing, because an exception in an even
 process instance, or fails the partition on replay. The precondition is enforced by the guard, not
 documented as a caller obligation.
 
-**D2. Suspend and resume walk the element instance tree and write one job event per affected job.**
-Both use `ProcessInstanceSuspensionJobBehavior` (same `ArrayDeque` walk pattern as migration). Cost
-is paid once per suspend/resume, not on every poll.
+**D2. Suspend walks the element instance tree; resume searches the jobs-by-process-instance index
+(D5). Both write one job event per affected job.** Both use
+`ProcessInstanceSuspensionJobBehavior`; suspend's tree walk follows the same `ArrayDeque` pattern as
+migration. Cost is paid once per suspend, and once per resume cycle, not on every poll.
 
 - **Suspend:** append `Job.SUSPENDED` for every `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job,
-  then append `ProcessInstance.SUSPENDED`. Job parking finishes before the instance marker is set.
-- **Resume:** append `Job.RESUMED` for every `SUSPENDED` job, then call
-  `BpmnJobActivationBehavior.publishWork` so stream and poll workers see the job again.
+  then append `ProcessInstance.SUSPENDED`. Suspending every job finishes before the instance marker
+  is set, in one record batch: `Job.SUSPENDED` carries the job's own record, including its variables,
+  so it is not fixed-size, but it is the only record suspend writes per job — no activation record
+  alongside it. The batch's size scales with the aggregate serialized size of every job the walk
+  suspends, since suspend does not chunk (see Consequences).
+- **Resume:** a `RESUME_JOBS` command searches `JOBS_BY_PROCESS_INSTANCE` (see D5) from the resume
+  cursor, finds the first `SUSPENDED` entry it reaches, appends `Job.RESUMED` for it, and calls
+  `BpmnJobActivationBehavior.publishWork` so stream and poll workers see the job again, before
+  appending the next `RESUME_JOBS` for what it did not reach. One job per cycle bounds each cycle's
+  batch to that job's own hand-out cost, the same limit any other hand-out already has: publishing a
+  job a stream is waiting for appends a `JobBatch.ACTIVATED` on top of `Job.RESUMED`, carrying the
+  job's fetched variables a second time, so a resume cycle's size depends on the one job it reaches
+  rather than on every job the instance suspended.
 - **Child instances:** left untouched. `ElementInstanceState.getChildren` does not return a child
-  instance root, so the walk never reaches those jobs.
+  instance root, so the suspend-time walk never reaches those jobs; the resume-time search excludes
+  them structurally, since the index is keyed by each job's own `processInstanceKey` (see D5).
 - **Other job states at suspend time:** `ACTIVATED`, `FAILED`, and `ERROR_THROWN` stay as they are
   (already off the activatable index). An `ACTIVATED` job that times out while the instance is still
-  `SUSPENDED` is parked by `JobTimeOutProcessor` (see D3) so it does not loop on rejected timeouts.
+  `SUSPENDED` is re-suspended by `JobTimeOutProcessor` (see D3) so it does not loop on rejected timeouts.
 - **Secret-waiting:** overridden to `SUSPENDED` so a later secret resolution cannot put the job back
   into the hand-out index while the instance is suspended.
 
-**D3. Most worker lifecycle commands need no new handling; `JobTimeOut` is the exception that parks
-an already-activated job.**
+**D3. Most worker lifecycle commands need no new handling; `JobTimeOut` is the exception that
+re-suspends an already-activated job.**
 
 Command surface table:
 
@@ -86,10 +98,10 @@ Command surface table:
 
 Notes:
 
-- `JobTimeOut` checks `getSuspensionState == SUSPENDED`, not `isSuspended`, so a job is not re-parked
+- `JobTimeOut` checks `getSuspensionState == SUSPENDED`, not `isSuspended`, so a job is not re-suspended
   during `RESUMING`. `Job.SUSPENDED` is a follow-up event (same batch, bypasses the gate). Exporters
   still see `TIMED_OUT` only; that matches D4.
-- `CANCELABLE_STATES` includes `SUSPENDED` so termination deletes parked jobs.
+- `CANCELABLE_STATES` includes `SUSPENDED` so termination deletes suspended jobs.
 - The `JobRecurAfterBackoff` `SUSPENDED` switch branch is a safety net only; the gate already blocks
   that processor while suspended.
 
@@ -98,19 +110,72 @@ allow-list (`JobHandler.JOB_EVENTS`, `JobExportHandler.EXPORTABLE_INTENTS`) that
 these intents, so they reach no secondary storage. Suspension of a job stays visible at process
 instance level only.
 
+**D5. `JOBS_BY_PROCESS_INSTANCE` is a key-only secondary index of every job by its process
+instance, closing the resume re-walk that D2 originally paid per cycle.** A new column family
+(`ZbColumnFamilies`, value 163, `PARTITION_LOCAL`), keyed `[processInstanceKey | jobKey] -> DbNil`,
+lets resume search a process instance's jobs directly instead of walking the element instance tree
+once per `RESUME_JOBS` cycle. This is unrelated to the rejected "Dedicated job column family (eager)"
+alternative above: that alternative would have moved the job *record* itself into another column
+family, creating a second place to keep a record consistent; this index stores only the key,
+alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PRIORITY` and
+`JOBS_BY_SECRET_REFERENCE`.
+
+- **Scope.** The index covers every job on the process instance, not only suspended ones — broader
+  than suspend/resume alone needs, because it is a generic, reusable secondary index. `DbJobState`
+  owns it wholly — no caller passes index keys in; it is kept in sync at three points inside the
+  class: `insertJobRecordActivatable` upserts an entry on job creation via the 8.10+ applier path;
+  `updateJobState` upserts on the transition to `SUSPENDED` (the backfill, below); `delete()`
+  removes the entry (`deleteIfExists`), covering completion, cancellation, and error-thrown alike.
+  The deprecated `create()` path (replaying pre-8.10 log events) does not populate the index —
+  pre-8.10 jobs that have never been suspended have no entry, but that is acceptable because the
+  `SUSPENDED` transition backfills each one the moment it is suspended. `suspendJobs` (D2) does not
+  read this index to find jobs to suspend — it still walks the tree once per suspend, because
+  suspending is what determines which jobs need to be suspended in the first place; the index cannot
+  help find jobs that are not yet known to be suspended. Only the resume-side lookup,
+  `ProcessInstanceSuspensionJobBehavior#forEachSuspendedJob`, reads it, searching from the resume
+  cursor and skipping any entry the search reaches that is not currently `SUSPENDED`.
+- **Backfilling jobs that predate the index.** A job created before 8.10 was created via the
+  deprecated `create()` path, which does not populate the index, so on its own the index would miss
+  it. `updateJobState` closes that gap: on the transition to `SUSPENDED` it upserts an index entry
+  using the persisted job record's `processInstanceKey` (read from state, not trusting a
+  caller-supplied value), so index maintenance stays entirely inside `DbJobState` rather than
+  leaking onto the mutable-state interface. Because `Job.SUSPENDED` is the only event that writes
+  `SUSPENDED`, this catches every such job going forward, including an `ACTIVATED` job that times
+  out while the instance is suspended (the `JobTimeOut` row in D3's table already covers that
+  transition writing `Job.SUSPENDED`). No startup migration is needed on top of this: process
+  instance suspension has
+  not shipped in any released version, so no released cluster's snapshot could ever hold a job
+  already `SUSPENDED` before this applier existed to index it. A cluster running unreleased code
+  from between this feature's own stacked PRs merging is not a supported upgrade path; pre-release
+  builds are not held to the same snapshot-compatibility guarantee as released versions.
+- **Resume cursor.** The cursor is carried on the `RESUME_JOBS` command itself via
+  `ProcessInstanceRecord.resumeFromJobKey` (sentinel `-1` meaning "start from the beginning"),
+  not persisted in state. `ProcessInstanceResumeJobsProcessor` reads the cursor from the incoming
+  command, passes it to `ProcessInstanceSuspensionJobBehavior.forEachSuspendedJob`, and — after
+  resuming a job — writes the next `RESUME_JOBS` follow-up with the cursor advanced to that job's
+  key, so the next cycle's search continues from there. When no job is found the cursor is not
+  included in the `COMPLETE_RESUMING` follow-up, since that command has no resume semantics.
+  A stalled-then-restarted resume re-appends `DRAIN` without a new `RESUMING` event, so the last
+  `RESUME_JOBS` command's cursor value is effectively re-used — the restart correctly continues
+  from where it left off rather than re-scanning from zero.
+- **Alternatives rejected during design** (see Source): a one-off migration alone, without hooking
+  the applier, was rejected as too big a migration that engine governance would push back on.
+  Populating the index eagerly on every job activation, rather than only at creation and
+  suspension, was rejected as an action in the hottest path of the engine.
+
 ## Alternatives considered
 
 - **Gate at hand-out time.** Skip suspended jobs while collecting an activation batch, the behavior
   already used for banned instances. Rejected on the measured cost above: paid on every poll, even
   an empty one, and linear in backlog size — 10k suspended jobs would cost about 30 ms per poll on
   the single-threaded stream processor, blocking every other command on the partition.
-- **Parked column family (eager).** Move a job's record to a dedicated column family at suspend time
-  and back at resume time. Removes the job from the activatable index like this design does, but
-  adds a new column family and a second location for job records to be kept consistent with, for no
-  benefit over reusing the existing `State` enum.
-- **Parked column family (lazy).** Same column family, but move the record only when a poll actually
-  encounters it. Keeps the hand-out-time cost this design was built to avoid, since the move happens
-  during activation rather than at suspend time.
+- **Dedicated job column family (eager).** Move a job's record to a dedicated column family at
+  suspend time and back at resume time. Removes the job from the activatable index like this design
+  does, but adds a new column family and a second location for job records to be kept consistent
+  with, for no benefit over reusing the existing `State` enum.
+- **Dedicated job column family (lazy).** Same column family, but move the record only when a poll
+  actually encounters it. Keeps the hand-out-time cost this design was built to avoid, since the
+  move happens during activation rather than at suspend time.
 - **Group the activatable index by process instance.** Would let a suspend or resume find its jobs
   by index prefix instead of walking the element instance tree. Rejected because it changes the
   activatable index layout and activation order for a benefit — a different lookup path for a rare
@@ -121,15 +186,22 @@ instance level only.
 
 ## Consequences
 
-- One `Job.SUSPENDED` / `Job.RESUMED` event per affected job in the same batch as the instance
-  marker. A very large instance can hit the max record batch size (same limit as migration).
-  Chunking via a `SUSPENDING` intermediate state is a possible later extension.
-- The walk visits every active element of the instance, not only job-backed ones, and blocks the
-  partition while it runs. Accepted because suspend/resume are rare; the same cost on activation
+- One `Job.SUSPENDED` event per affected job in the same batch as the instance marker. A very large
+  instance can still hit the max record batch size on suspend (same limit as migration); suspend does
+  not chunk. Resume does not share this limit: one job per `RESUME_JOBS` cycle keeps each cycle's
+  batch bounded to that job's own activation cost.
+- Resume no longer re-walks the tree per cycle: `JOBS_BY_PROCESS_INSTANCE` (D5) lets each
+  `RESUME_JOBS` cycle search from the resume cursor, so a large instance's total resume cost across
+  its whole chain is O(n) — one search continuing where the last cycle left off — rather than
+  quadratic in its suspended job count. This closes
+  [#60323](https://github.com/camunda/camunda/issues/60323), the follow-up filed to track that cost.
+- Suspend's tree walk visits every active element of the instance, not only job-backed ones, and
+  blocks the partition while it runs. Accepted because suspend is rare; the same cost on activation
   would not be. We run on the same path as process instance migration which is fine so far.
-- No downgrade once a job is parked: older brokers fail on the unknown `SUSPENDED` enum name.
+- No downgrade once a job is suspended: older brokers fail on the unknown `SUSPENDED` enum name.
 - Every new exhaustive `JobState.State` switch must handle `SUSPENDED`.
-- Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking.
+- Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking for
+  suspend.
 
 ## Open questions
 
@@ -149,4 +221,6 @@ instance level only.
 - [PR #59617 review thread](https://camunda.slack.com/archives/C08CKAP10DQ/p1786428784267579) —
   discussion of the element instance walk cost, log stream blocking, and API visibility that this
   ADR's Consequences and Open questions capture.
+- [#60323](https://github.com/camunda/camunda/issues/60323) — resume cost still quadratic in
+  suspended jobs after this ADR's one-job-per-cycle revision; resolved by D5's cursor-based index.
 

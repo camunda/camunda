@@ -10,19 +10,14 @@ package io.camunda.db.rdbms;
 /**
  * A no-operation {@link RdbmsSchemaManager} for physical tenants with {@code auto-ddl=false}.
  *
- * <p>The schema is managed externally (by the operator), so no migration is run. The tenant is
- * always reported as initialized so the RDBMS exporter can open against the externally managed
- * schema.
+ * <p>The schema is managed externally (by the operator), so no migration is run. The attempt
+ * succeeds without any I/O, which makes the tenant ready at once so the RDBMS exporter can open
+ * against the externally managed schema.
  */
 public class NoopSchemaManager implements RdbmsSchemaManager {
 
   @Override
   public void initialize() {
     // no-op: the schema is managed externally
-  }
-
-  @Override
-  public boolean isInitialized() {
-    return true;
   }
 }

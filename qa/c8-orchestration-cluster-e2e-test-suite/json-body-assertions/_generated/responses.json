@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "3e5afc119524e80dbdaea89139fd1263994c836d",
-    "generatedAt": "2026-08-16T12:06:45.963Z",
+    "commit": "c1c1304630f06fedad4aa6da3a9758a7336c50ea",
+    "generatedAt": "2026-09-03T12:13:07.049Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "e8f9402c230cd72a9f8b093c0258f078ca84f099c2a16ee2887027dd83ff4345"
+    "specSha256": "f1506177e7d57fda5fd1d287043cde354acebfa461b80f62375345c44e023d20"
   },
   "responses": [
     {
@@ -156,6 +156,27 @@
           {
             "name": "agentInstanceKey",
             "type": "string"
+          },
+          {
+            "name": "createdHistory",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "historyItemId",
+                  "type": "string"
+                },
+                {
+                  "name": "historyItemKey",
+                  "type": "string"
+                },
+                {
+                  "name": "isDuplicate",
+                  "type": "boolean"
+                }
+              ],
+              "optional": []
+            }
           }
         ],
         "optional": []
@@ -186,7 +207,7 @@
           },
           {
             "name": "definition",
-            "type": "0",
+            "type": "object",
             "children": {
               "required": [
                 {
@@ -199,7 +220,7 @@
                 },
                 {
                   "name": "systemPrompt",
-                  "type": "string"
+                  "type": "array<object|object|object>"
                 }
               ],
               "optional": []
@@ -219,7 +240,7 @@
           },
           {
             "name": "limits",
-            "type": "0",
+            "type": "object",
             "children": {
               "required": [
                 {
@@ -244,6 +265,14 @@
             "children": {
               "required": [
                 {
+                  "name": "cacheCreationTokenCount",
+                  "type": "number"
+                },
+                {
+                  "name": "cacheReadTokenCount",
+                  "type": "number"
+                },
+                {
                   "name": "inputTokens",
                   "type": "number"
                 },
@@ -253,6 +282,10 @@
                 },
                 {
                   "name": "outputTokens",
+                  "type": "number"
+                },
+                {
+                  "name": "reasoningTokenCount",
                   "type": "number"
                 },
                 {
@@ -307,7 +340,7 @@
           },
           {
             "name": "tools",
-            "type": "array<items>",
+            "type": "array<object>",
             "children": {
               "required": [
                 {
@@ -340,7 +373,7 @@
         "required": [
           {
             "name": "createdHistory",
-            "type": "array<object>",
+            "type": "array<items>",
             "children": {
               "required": [
                 {
@@ -393,7 +426,7 @@
                 },
                 {
                   "name": "definition",
-                  "type": "0",
+                  "type": "object",
                   "children": {
                     "required": [
                       {
@@ -406,7 +439,7 @@
                       },
                       {
                         "name": "systemPrompt",
-                        "type": "string"
+                        "type": "array<object|object|object>"
                       }
                     ],
                     "optional": []
@@ -426,7 +459,7 @@
                 },
                 {
                   "name": "limits",
-                  "type": "0",
+                  "type": "object",
                   "children": {
                     "required": [
                       {
@@ -451,6 +484,14 @@
                   "children": {
                     "required": [
                       {
+                        "name": "cacheCreationTokenCount",
+                        "type": "number"
+                      },
+                      {
+                        "name": "cacheReadTokenCount",
+                        "type": "number"
+                      },
+                      {
                         "name": "inputTokens",
                         "type": "number"
                       },
@@ -460,6 +501,10 @@
                       },
                       {
                         "name": "outputTokens",
+                        "type": "number"
+                      },
+                      {
+                        "name": "reasoningTokenCount",
                         "type": "number"
                       },
                       {
@@ -514,7 +559,7 @@
                 },
                 {
                   "name": "tools",
-                  "type": "array<items>",
+                  "type": "array<object>",
                   "children": {
                     "required": [
                       {
@@ -565,20 +610,6 @@
               ],
               "optional": []
             }
-          }
-        ],
-        "optional": []
-      }
-    },
-    {
-      "path": "/agent-instances/{agentInstanceKey}/history",
-      "method": "POST",
-      "status": "201",
-      "schema": {
-        "required": [
-          {
-            "name": "historyItemKey",
-            "type": "string"
           }
         ],
         "optional": []
@@ -659,10 +690,20 @@
                 },
                 {
                   "name": "metrics",
-                  "type": "0",
+                  "type": "object",
                   "nullable": true,
                   "children": {
                     "required": [
+                      {
+                        "name": "cacheCreationTokenCount",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "cacheReadTokenCount",
+                        "type": "number",
+                        "nullable": true
+                      },
                       {
                         "name": "durationMs",
                         "type": "number",
@@ -675,6 +716,11 @@
                       },
                       {
                         "name": "outputTokens",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "reasoningTokenCount",
                         "type": "number",
                         "nullable": true
                       }
@@ -1334,6 +1380,10 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "authorizationsEnabled",
+            "type": "boolean"
+          },
           {
             "name": "items",
             "type": "array<schema>",
@@ -4776,6 +4826,23 @@
             "type": "string"
           },
           {
+            "name": "referencedSecrets",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "secretName",
+                  "type": "string"
+                },
+                {
+                  "name": "storeId",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
             "name": "result",
             "type": "unknown",
             "nullable": true
@@ -6797,6 +6864,11 @@
             "type": "array<object>",
             "children": {
               "required": [
+                {
+                  "name": "businessId",
+                  "type": "string",
+                  "nullable": true
+                },
                 {
                   "name": "correlationKey",
                   "type": "string",
@@ -9446,7 +9518,8 @@
                           "joining",
                           "active",
                           "leaving",
-                          "recovering"
+                          "recovering",
+                          "learner"
                         ]
                       }
                     ],
@@ -9654,6 +9727,932 @@
       }
     },
     {
+      "path": "/cluster/v2/exporting",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "EXPORTING",
+              "PAUSED",
+              "SOFT_PAUSED",
+              "MIXED"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "400",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "409",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "500",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "502",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "503",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "504",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime/state",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "schema",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "backupStates",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "checkpointId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointTimestamp",
+                              "type": "string"
+                            },
+                            {
+                              "name": "checkpointType",
+                              "type": "string",
+                              "enumValues": [
+                                "MANUAL_BACKUP",
+                                "SCHEDULED_BACKUP"
+                              ]
+                            },
+                            {
+                              "name": "firstLogPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number",
+                              "nullable": true
+                            }
+                          ],
+                          "optional": []
+                        }
+                      },
+                      {
+                        "name": "checkpointStates",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "checkpointId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointTimestamp",
+                              "type": "string"
+                            },
+                            {
+                              "name": "checkpointType",
+                              "type": "string",
+                              "enumValues": [
+                                "MARKER",
+                                "SCHEDULED_BACKUP",
+                                "MANUAL_BACKUP"
+                              ]
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            }
+                          ],
+                          "optional": []
+                        }
+                      },
+                      {
+                        "name": "ranges",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "end",
+                              "type": "items",
+                              "nullable": true,
+                              "children": {
+                                "required": [
+                                  {
+                                    "name": "checkpointId",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointTimestamp",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "name": "checkpointType",
+                                    "type": "string",
+                                    "enumValues": [
+                                      "MANUAL_BACKUP",
+                                      "SCHEDULED_BACKUP"
+                                    ]
+                                  },
+                                  {
+                                    "name": "firstLogPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "partitionId",
+                                    "type": "number",
+                                    "nullable": true
+                                  }
+                                ],
+                                "optional": []
+                              }
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "start",
+                              "type": "items",
+                              "nullable": true,
+                              "children": {
+                                "required": [
+                                  {
+                                    "name": "checkpointId",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointTimestamp",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "name": "checkpointType",
+                                    "type": "string",
+                                    "enumValues": [
+                                      "MANUAL_BACKUP",
+                                      "SCHEDULED_BACKUP"
+                                    ]
+                                  },
+                                  {
+                                    "name": "firstLogPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "partitionId",
+                                    "type": "number",
+                                    "nullable": true
+                                  }
+                                ],
+                                "optional": []
+                              }
+                            }
+                          ],
+                          "optional": []
+                        }
+                      }
+                    ],
+                    "optional": []
+                  }
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime/state/sync",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "schema",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "backupStates",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "checkpointId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointTimestamp",
+                              "type": "string"
+                            },
+                            {
+                              "name": "checkpointType",
+                              "type": "string",
+                              "enumValues": [
+                                "MANUAL_BACKUP",
+                                "SCHEDULED_BACKUP"
+                              ]
+                            },
+                            {
+                              "name": "firstLogPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number",
+                              "nullable": true
+                            }
+                          ],
+                          "optional": []
+                        }
+                      },
+                      {
+                        "name": "checkpointStates",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "checkpointId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointTimestamp",
+                              "type": "string"
+                            },
+                            {
+                              "name": "checkpointType",
+                              "type": "string",
+                              "enumValues": [
+                                "MARKER",
+                                "SCHEDULED_BACKUP",
+                                "MANUAL_BACKUP"
+                              ]
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            }
+                          ],
+                          "optional": []
+                        }
+                      },
+                      {
+                        "name": "ranges",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "end",
+                              "type": "items",
+                              "nullable": true,
+                              "children": {
+                                "required": [
+                                  {
+                                    "name": "checkpointId",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointTimestamp",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "name": "checkpointType",
+                                    "type": "string",
+                                    "enumValues": [
+                                      "MANUAL_BACKUP",
+                                      "SCHEDULED_BACKUP"
+                                    ]
+                                  },
+                                  {
+                                    "name": "firstLogPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "partitionId",
+                                    "type": "number",
+                                    "nullable": true
+                                  }
+                                ],
+                                "optional": []
+                              }
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "start",
+                              "type": "items",
+                              "nullable": true,
+                              "children": {
+                                "required": [
+                                  {
+                                    "name": "checkpointId",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointTimestamp",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "name": "checkpointType",
+                                    "type": "string",
+                                    "enumValues": [
+                                      "MANUAL_BACKUP",
+                                      "SCHEDULED_BACKUP"
+                                    ]
+                                  },
+                                  {
+                                    "name": "firstLogPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "partitionId",
+                                    "type": "number",
+                                    "nullable": true
+                                  }
+                                ],
+                                "optional": []
+                              }
+                            }
+                          ],
+                          "optional": []
+                        }
+                      }
+                    ],
+                    "optional": []
+                  }
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime/{backupId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "failureReason",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "details",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "brokerId",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "brokerVersion",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "checkpointPosition",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "createdAt",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "failureReason",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "firstLogPosition",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "snapshotId",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "state",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "failureReason",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "state",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/history",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/history",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "scheduledSnapshots",
+                  "type": "array<string>"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/history/{backupId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "details",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "failures",
+                        "type": "array<string>"
+                      },
+                      {
+                        "name": "snapshotName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "startTime",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "state",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "failureReason",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "IN_PROGRESS",
+                    "COMPLETED",
+                    "FAILED",
+                    "INCOMPLETE",
+                    "INCOMPATIBLE",
+                    "NOT_FOUND"
+                  ]
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/cluster/v2/mode",
       "method": "PATCH",
       "status": "200",
@@ -9694,6 +10693,486 @@
               ],
               "optional": []
             }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/rebalance",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "lastCompletedRebalance",
+            "type": "0",
+            "nullable": true,
+            "children": {
+              "required": [
+                {
+                  "name": "finishedAt",
+                  "type": "string"
+                },
+                {
+                  "name": "partitions",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "currentLeader",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "desiredLeader",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "physicalTenantId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "progress",
+                        "type": "string",
+                        "enumValues": [
+                          "PENDING",
+                          "TRANSFERRING",
+                          "COMPLETED"
+                        ]
+                      },
+                      {
+                        "name": "result",
+                        "type": "string",
+                        "enumValues": [
+                          "TRANSFERRED",
+                          "ALREADY_LEADER",
+                          "NOT_MEMBER",
+                          "NOT_REPLICATING",
+                          "UNREACHABLE",
+                          "NOT_COORDINATOR",
+                          "STALE_CONFIGURATION",
+                          "TRANSFER_IN_PROGRESS",
+                          "LAG_TOO_HIGH",
+                          "LEADER_INITIALIZING",
+                          "CONFIGURATION_CHANGE_IN_PROGRESS",
+                          "PAUSE_FAILED",
+                          "REPLICATION_TIMED_OUT",
+                          "TIMEOUT_NOW_EXHAUSTED",
+                          "LEADER_CHANGED",
+                          "NO_LEADER",
+                          "NO_RESPONSE",
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED"
+                        ],
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "rebalanceId",
+                  "type": "number"
+                },
+                {
+                  "name": "result",
+                  "type": "string",
+                  "enumValues": [
+                    "COMPLETED",
+                    "CANCELLED",
+                    "FAILED"
+                  ]
+                },
+                {
+                  "name": "startedAt",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "partitions",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "currentLeader",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "desiredLeader",
+                  "type": "string"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "TRANSFERRING",
+                    "UNBALANCED",
+                    "BALANCED"
+                  ]
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "runningRebalance",
+            "type": "object",
+            "nullable": true,
+            "children": {
+              "required": [
+                {
+                  "name": "cancelRequested",
+                  "type": "boolean"
+                },
+                {
+                  "name": "dryRun",
+                  "type": "boolean"
+                },
+                {
+                  "name": "partitions",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "currentLeader",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "desiredLeader",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "physicalTenantId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "progress",
+                        "type": "string",
+                        "enumValues": [
+                          "PENDING",
+                          "TRANSFERRING",
+                          "COMPLETED"
+                        ]
+                      },
+                      {
+                        "name": "result",
+                        "type": "string",
+                        "enumValues": [
+                          "TRANSFERRED",
+                          "ALREADY_LEADER",
+                          "NOT_MEMBER",
+                          "NOT_REPLICATING",
+                          "UNREACHABLE",
+                          "NOT_COORDINATOR",
+                          "STALE_CONFIGURATION",
+                          "TRANSFER_IN_PROGRESS",
+                          "LAG_TOO_HIGH",
+                          "LEADER_INITIALIZING",
+                          "CONFIGURATION_CHANGE_IN_PROGRESS",
+                          "PAUSE_FAILED",
+                          "REPLICATION_TIMED_OUT",
+                          "TIMEOUT_NOW_EXHAUSTED",
+                          "LEADER_CHANGED",
+                          "NO_LEADER",
+                          "NO_RESPONSE",
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED"
+                        ],
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "rebalanceId",
+                  "type": "number"
+                },
+                {
+                  "name": "startedAt",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "BALANCED",
+              "BALANCING",
+              "UNBALANCED"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/rebalance",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "lastCompletedRebalance",
+            "type": "0",
+            "nullable": true,
+            "children": {
+              "required": [
+                {
+                  "name": "finishedAt",
+                  "type": "string"
+                },
+                {
+                  "name": "partitions",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "currentLeader",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "desiredLeader",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "physicalTenantId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "progress",
+                        "type": "string",
+                        "enumValues": [
+                          "PENDING",
+                          "TRANSFERRING",
+                          "COMPLETED"
+                        ]
+                      },
+                      {
+                        "name": "result",
+                        "type": "string",
+                        "enumValues": [
+                          "TRANSFERRED",
+                          "ALREADY_LEADER",
+                          "NOT_MEMBER",
+                          "NOT_REPLICATING",
+                          "UNREACHABLE",
+                          "NOT_COORDINATOR",
+                          "STALE_CONFIGURATION",
+                          "TRANSFER_IN_PROGRESS",
+                          "LAG_TOO_HIGH",
+                          "LEADER_INITIALIZING",
+                          "CONFIGURATION_CHANGE_IN_PROGRESS",
+                          "PAUSE_FAILED",
+                          "REPLICATION_TIMED_OUT",
+                          "TIMEOUT_NOW_EXHAUSTED",
+                          "LEADER_CHANGED",
+                          "NO_LEADER",
+                          "NO_RESPONSE",
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED"
+                        ],
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "rebalanceId",
+                  "type": "number"
+                },
+                {
+                  "name": "result",
+                  "type": "string",
+                  "enumValues": [
+                    "COMPLETED",
+                    "CANCELLED",
+                    "FAILED"
+                  ]
+                },
+                {
+                  "name": "startedAt",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "partitions",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "currentLeader",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "desiredLeader",
+                  "type": "string"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "TRANSFERRING",
+                    "UNBALANCED",
+                    "BALANCED"
+                  ]
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "runningRebalance",
+            "type": "object",
+            "nullable": true,
+            "children": {
+              "required": [
+                {
+                  "name": "cancelRequested",
+                  "type": "boolean"
+                },
+                {
+                  "name": "dryRun",
+                  "type": "boolean"
+                },
+                {
+                  "name": "partitions",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "currentLeader",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "desiredLeader",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "physicalTenantId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "progress",
+                        "type": "string",
+                        "enumValues": [
+                          "PENDING",
+                          "TRANSFERRING",
+                          "COMPLETED"
+                        ]
+                      },
+                      {
+                        "name": "result",
+                        "type": "string",
+                        "enumValues": [
+                          "TRANSFERRED",
+                          "ALREADY_LEADER",
+                          "NOT_MEMBER",
+                          "NOT_REPLICATING",
+                          "UNREACHABLE",
+                          "NOT_COORDINATOR",
+                          "STALE_CONFIGURATION",
+                          "TRANSFER_IN_PROGRESS",
+                          "LAG_TOO_HIGH",
+                          "LEADER_INITIALIZING",
+                          "CONFIGURATION_CHANGE_IN_PROGRESS",
+                          "PAUSE_FAILED",
+                          "REPLICATION_TIMED_OUT",
+                          "TIMEOUT_NOW_EXHAUSTED",
+                          "LEADER_CHANGED",
+                          "NO_LEADER",
+                          "NO_RESPONSE",
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED"
+                        ],
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "rebalanceId",
+                  "type": "number"
+                },
+                {
+                  "name": "startedAt",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "BALANCED",
+              "BALANCING",
+              "UNBALANCED"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/rebalance",
+      "method": "DELETE",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "wasRunning",
+            "type": "boolean"
           }
         ],
         "optional": []
@@ -9863,7 +11342,8 @@
                                 "joining",
                                 "active",
                                 "leaving",
-                                "recovering"
+                                "recovering",
+                                "learner"
                               ]
                             }
                           ],

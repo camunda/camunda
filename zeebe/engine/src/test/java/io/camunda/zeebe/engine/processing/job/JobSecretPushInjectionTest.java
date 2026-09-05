@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -257,6 +258,85 @@ public final class JobSecretPushInjectionTest {
   }
 
   @Test
+  public void shouldNameTheMismatchedReferenceWhenInjectionFailsOnPush() {
+    // given - the default tenant, required for a tenant-scoped cluster variable and for the job
+    // that belongs to it to be looked up later
+    engine.tenant().newTenant().withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER).create();
+
+    // and - a SECRET_REFERENCE cluster variable that currently points at "tokenA"
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.tokenA"))
+        .create();
+
+    // and - a service task whose start execution listener opens a window between the input
+    // mapping baking the *then-current* placeholder ("tokenA") into the job's variables and the
+    // job's creation, which resolves the reference from whatever the cluster variable holds by then
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("mismatch-process")
+            .startEvent()
+            .serviceTask(
+                "mismatch-task",
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeStartExecutionListener("mismatch-start-el")
+                        .zeebeInputExpression("camunda.vars.tenant.creds.token", "authToken"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("mismatch-process").create();
+    final long listenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("mismatch-start-el")
+            .getFirst()
+            .getKey();
+
+    // and - inside that window the reference is repointed at "tokenB", whose value is cached
+    // before the job becomes activatable, so the push path actually attempts (and fails) the
+    // replacement instead of parking the job on an uncached reference
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .withValue(Map.of("token", "camunda.secrets.tokenB"))
+        .update();
+    CACHED_SECRETS.put("tokenB", "resolved-B");
+
+    // when - completing the listener lets the job be created with a "tokenB" reference while its
+    // variables still literally hold "camunda.secrets.tokenA", and the push path injects it
+    engine.job().withKey(listenerJobKey).complete();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(JOB_TYPE)
+            .getFirst()
+            .getKey();
+
+    // then - the incident names the mismatched placeholder and its JSON pointer, the same detail
+    // the batch path gives, instead of the cause-neutral fallback message
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).withJobKey(jobKey).getFirst();
+    assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains(
+            "the secret reference 'camunda.secrets.tokenB' could not be resolved at '/authToken'")
+        .contains("Fix the variable's value or the input mapping that sets it");
+
+    // and - the job is not pushed, and no exported record leaks the resolved value
+    assertThat(jobStream.getActivatedJobs()).isEmpty();
+    assertThat(RecordingExporter.getRecords())
+        .noneMatch(record -> record.getValue().toString().contains("resolved-B"));
+  }
+
+  @Test
   public void shouldRequestResolutionAgainWhenTheIncidentIsResolved() {
     // given - a job with an incident for a reference that failed to resolve
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
@@ -392,6 +472,63 @@ public final class JobSecretPushInjectionTest {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(JOB_TYPE)).isEqualTo(1));
     assertThat(jobStream.getActivatedJobs()).isEmpty();
+  }
+
+  /**
+   * A lease-skip counting regression, but this suite is the only place that can reproduce it:
+   * {@code SecretReferenceBatchReactivateJobsProcessor} reactivating jobs a resolved secret parked
+   * together is the only production path that demotes several same-type leased jobs within one
+   * shared-notification batch. Every trigger {@link ActivatableJobsPushWithLeaseTest} covers
+   * processes a single job per command, so none of them can build that precondition.
+   */
+  @Test
+  public void shouldCountEveryLeaseSkipWhenABatchDemotesJobsOfTheSameType() {
+    // given - two jobs already leased via a leasing stream, each carrying its own lease token
+    JOB_STREAMER.clearStreams();
+    final RecordingJobStream leasingStream = registerLeasingJobStream();
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final long firstJobKey =
+        jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create());
+    final long secondJobKey =
+        jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create());
+    Awaitility.await("until both jobs are leased on the leasing stream")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(leasingStream.getActivatedJobs()).hasSize(2));
+    final String firstToken = leaseTokenOf(leasingStream, firstJobKey);
+    final String secondToken = leaseTokenOf(leasingStream, secondJobKey);
+
+    // and - each job parks for secret resolution again once its cached value is evicted
+    CACHED_SECRETS.remove(SECRET_NAME);
+    engine.job().withKey(firstJobKey).withLeaseToken(firstToken).withRetries(3).fail();
+    engine.job().withKey(secondJobKey).withLeaseToken(secondToken).withRetries(3).fail();
+    awaitResolutionRequests(2);
+
+    // and - only a non-leasing stream remains registered by the time the reference resolves
+    JOB_STREAMER.clearStreams();
+    final RecordingJobStream nonLeasingStream = registerJobStream();
+    final double skippedBefore = skippedMetric();
+
+    // when - the reference resolves, reactivating both jobs through one shared-notification batch
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.BATCH_JOBS_REACTIVATED)
+        .withSecretReference(SECRET_NAME)
+        .getFirst();
+
+    // then - the batch demotes both jobs from push to notify-only, and each must count on its own
+    Awaitility.await("until the skip signal accounts for both demoted jobs")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(skippedMetric() - skippedBefore)
+                    .describedAs(
+                        "a batch that demotes several same-type leased jobs must count every "
+                            + "demotion, not only the first job of the type")
+                    .isEqualTo(2));
+    assertThat(nonLeasingStream.getActivatedJobs())
+        .describedAs("neither leased job may be pushed to a non-leasing stream")
+        .isEmpty();
   }
 
   /**
@@ -573,6 +710,34 @@ public final class JobSecretPushInjectionTest {
             .setTimeout(30_000L)
             .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     return JOB_STREAMER.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
+  }
+
+  private RecordingJobStream registerLeasingJobStream() {
+    final var worker = BufferUtil.wrapString("test");
+    final var properties =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(30_000L)
+            .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
+            .setWithLease(true);
+    return JOB_STREAMER.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
+  }
+
+  private String leaseTokenOf(final RecordingJobStream jobStream, final long jobKey) {
+    return jobStream.getActivatedJobs().stream()
+        .filter(activatedJob -> activatedJob.jobKey() == jobKey)
+        .findFirst()
+        .orElseThrow()
+        .jobRecord()
+        .getLeaseToken();
+  }
+
+  private double skippedMetric() {
+    // the counter is only registered once the first lease-skip fires, so a read taken before any
+    // job has been demoted for a lease collision must treat "not registered yet" as zero rather
+    // than fail: shouldCountEveryLeaseSkipWhenABatchDemotesJobsOfTheSameType reads this as a
+    // before/after delta, and its "before" snapshot runs before that first demotion happens
+    return findJobCounter("skipped").map(Counter::count).orElse(0.0);
   }
 
   private long jobKeyOf(final long processInstanceKey) {

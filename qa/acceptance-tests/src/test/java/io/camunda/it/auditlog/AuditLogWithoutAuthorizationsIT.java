@@ -18,10 +18,10 @@ import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -60,7 +60,7 @@ public class AuditLogWithoutAuthorizationsIT {
 
     Awaitility.await("Audit log entry is created for the process instance")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var auditLogs =

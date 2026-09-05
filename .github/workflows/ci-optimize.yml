@@ -16,6 +16,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runE2eTests:
+        description: "Set to true if Optimize front-end or back-end code was changed"
+        type: boolean
+        required: false
+        default: true
       runDockerfileChecks:
         description: "Set to true if optimize.Dockerfile was changed"
         type: boolean
@@ -36,6 +41,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runE2eTests:
+        description: "Set to true if Optimize front-end or back-end code was changed"
+        type: boolean
+        required: false
+        default: true
       runDockerfileChecks:
         description: "Set to true if optimize.Dockerfile was changed"
         type: boolean
@@ -99,6 +109,13 @@ jobs:
       fail-fast: false
       matrix:
         includedGroups: [ 'ccsm-test' ]
+        cslEnabled: [ 'false', 'true' ]
+        # This entry deliberately omits cslEnabled so it merges into both matrix values above,
+        # instead of two near-duplicate entries repeating excludedGroups/profiles. Do not add
+        # cslEnabled back to only one of them: the other combination would then have no include
+        # entry supplying `profiles`, so `-P` would swallow the next Maven argument instead of
+        # activating `ccsm-it` (which wires up src/it/java and failsafe) — Maven only warns on an
+        # unknown profile, so that job would go green having run zero ITs.
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
@@ -115,7 +132,6 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          harbor: true
           maven-cache-key-modifier: optimize-tests
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -145,6 +161,9 @@ jobs:
         uses: ./.github/actions/run-maven
         env:
           LIMITS_CPU: 8
+          # optimize/upgrade's ITs select their database via this env var rather than
+          # the -Ddatabase.type system property that optimize/backend's ITs use.
+          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
         with:
           threads: 8
           parameters: >
@@ -152,13 +171,14 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend -am
+            -Doptimize.security.csl.enabled=${{ matrix.cslEnabled }}
+            -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend,upgrade -am
 
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
+          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-junit
           path: |
             **/failsafe-reports/**
 
@@ -167,14 +187,14 @@ jobs:
         if: always()
         continue-on-error: true
         with:
-          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-docker
+          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-docker
 
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "optimize-it-elasticsearch/${{ matrix.includedGroups }}"
+          job_name: "optimize-it-elasticsearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -192,6 +212,9 @@ jobs:
       fail-fast: false
       matrix:
         includedGroups: [ 'ccsm-test' ]
+        cslEnabled: [ 'false', 'true' ]
+        # See the identical comment on the Elasticsearch job above: this entry deliberately omits
+        # cslEnabled so it merges into both matrix values instead of duplicating itself per value.
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: 'openSearchSingleTestFailOK'
@@ -208,7 +231,6 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          harbor: true
           maven-cache-key-modifier: optimize-tests
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -238,6 +260,9 @@ jobs:
         uses: ./.github/actions/run-maven
         env:
           LIMITS_CPU: 8
+          # optimize/upgrade's ITs select their database via this env var rather than
+          # the -Ddatabase.type system property that optimize/backend's ITs use.
+          CAMUNDA_OPTIMIZE_DATABASE: opensearch
         with:
           threads: 8
           parameters: >
@@ -245,13 +270,14 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend -am
+            -Doptimize.security.csl.enabled=${{ matrix.cslEnabled }}
+            -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend,upgrade -am
 
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
+          name: integration-test-opensearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-junit
           path: |
             **/failsafe-reports/**
 
@@ -260,14 +286,14 @@ jobs:
         if: always()
         continue-on-error: true
         with:
-          archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-docker
+          archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-docker
 
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "optimize-it-opensearch/${{ matrix.includedGroups }}"
+          job_name: "optimize-it-opensearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -297,11 +323,11 @@ jobs:
         id: "pom_info"
         uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
         with:
-          work-dir: ./optimize
+          work-dir: ./parent
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache: v1.0.0
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache-1.0.0
         with:
           directory: optimize/client
       - name: Install dependencies
@@ -352,7 +378,7 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: hadolint/hadolint-action@2a66e89f53d0771bb131a7fa31f3136336094aa6 # v3.4.0
+      - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           dockerfile: ${{ matrix.dockerfile }}
           ignore: DL3018,DL3008
@@ -431,9 +457,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   optimize-e2e-smoke:
     name: "E2E / Self-Managed (Smoke)"
-    if: inputs.runFeTests
+    if: inputs.runE2eTests
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions: { }
     env:
       TEST_TYPE: E2E
@@ -449,28 +475,35 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
+      - uses: ./.github/actions/apt-fast-mirror-failover
+      # Every network-bound, sudo'd step below is wrapped in its own `sudo timeout ...`
+      # so a hang self-terminates inside the sudo'd root process tree instead of
+      # requiring nick-fields/retry to kill across the privilege boundary -- doing
+      # that externally throws `kill EPERM` and crashes instead of retrying, see
+      # https://github.com/nick-fields/retry/issues/124. Budgeted against the 7-minute
+      # outer timeout: 90s + 30s + 180s = 300s worst case, leaving 2 minutes of headroom
+      # for the (fast, non-network) tee/verification steps and process overhead.
+      # google-chrome-stable itself gets the largest share (180s): it and its
+      # dependencies are a much bigger download than the other two apt calls.
       - name: Install Google Chrome
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_wait_seconds: 15
-          timeout_minutes: 5
+          timeout_minutes: 7
           shell: bash
           command: |
             set -euo pipefail
 
             if ! command -v google-chrome >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y --no-install-recommends wget gnupg ca-certificates
+              sudo timeout 90 bash -c "apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates"
 
-              wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
-                | sudo gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg
+              sudo timeout 30 bash -o pipefail -c 'wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg'
 
               echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
                 | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
 
-              sudo apt-get update
-              sudo apt-get install -y --no-install-recommends google-chrome-stable
+              sudo timeout 180 bash -c "apt-get update && apt-get install -y --no-install-recommends google-chrome-stable"
             fi
 
             google-chrome --version
@@ -485,7 +518,6 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          harbor: true
           maven-cache-key-modifier: optimize-e2e-smoke
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -503,6 +535,8 @@ jobs:
           compose_file: optimize/client/docker-compose.yml
           project_name: e2e
           additional_flags: "--profile self-managed"
+        env:
+          CAMUNDA_VERSION: ${{ steps.pom_info.outputs.x_camunda_docker_version }}
 
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
@@ -525,7 +559,7 @@ jobs:
         run: |
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
-            if [[ $count -eq 17 ]]; then
+            if [[ $count -eq 60 ]]; then
               echo "Process definitions imported ($count). Waiting for process instance import to stabilize..."
               prev="-1"
               stable=0
@@ -543,7 +577,7 @@ jobs:
               echo "Import stabilized at $cur process instances"
               break
             fi
-            echo "Index has $count entities. Waiting for 17..."
+            echo "Index has $count entities. Waiting for 60..."
             sleep 10
           done
 

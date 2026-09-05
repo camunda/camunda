@@ -11,19 +11,29 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.util.LinkedHashSet;
+import java.util.function.Function;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Rejects a deployment when a {@code camunda.secrets.<name>} reference is used as a string literal
- * in an input-mapping source; only expression usage (a FEEL path) is allowed. This removes the
- * literal-vs-expression ambiguity, so a reference left in a valid input mapping is always an
- * expression.
+ * in a source the engine may resolve as an expression; only expression usage (a FEEL path) is
+ * allowed. This removes the literal-vs-expression ambiguity, so a reference left in a valid source
+ * is always an expression.
+ *
+ * <p>It applies uniformly to the two places a secret reference can be authored: a {@link
+ * ZeebeInput} mapping source (outbound) and a {@link ZeebeProperty} value (inbound). Both are
+ * validated by the same rule so the two forms behave identically. Use {@link
+ * #forInput(ExpressionLanguage)} and {@link #forProperty(ExpressionLanguage)} to obtain the two
+ * registrations.
  *
  * <p>Detection is purely static: a static value (no leading {@code =}) is scanned as a whole, and a
  * FEEL expression is scanned only inside its double-quoted string literals. A bare path such as
@@ -33,33 +43,60 @@ import org.jspecify.annotations.NullMarked;
  * deployment.
  */
 @NullMarked
-final class SecretReferenceLiteralValidator implements ModelElementValidator<ZeebeInput> {
+final class SecretReferenceLiteralValidator<T extends ModelElementInstance>
+    implements ModelElementValidator<T> {
 
   // Matches one whole double-quoted string literal, so only quoted text is scanned for a reference.
-  // As a regex (after Java unescaping): "(?:\\.|[^"\\])*"
-  //   "        an opening double quote
-  //   (?: )*   zero or more of, in order:
-  //     \\.      a backslash escape (backslash + any char), so \" does not end the literal
-  //     [^"\\]   any character that is not a double quote or a backslash
-  //   "        a closing double quote
+  // As a regex (after Java unescaping): "[^"\]*+(?:\\.[^"\]*+)*+"
+  //   "              opening double quote
+  //   [^"\]*+        a possessive run of non-quote, non-backslash chars
+  //   (?:\\.[^"\]*+)*+  zero or more: one escape (\\ + any char) then another safe run
+  //   "              closing double quote
+  // Unrolled + possessive: long safe runs avoid per-char alternation, and *+ / ++ prevent the
+  // recursive group-loop StackOverflowError that greedy * hit on multi-kilobyte escaped FEEL
+  // strings (e.g. embedded JSON with many \"). See #59121.
   // e.g. it matches "ab" and "a\"b".
-  private static final Pattern STRING_LITERAL = Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");
+  private static final Pattern STRING_LITERAL =
+      Pattern.compile("\"[^\"\\\\]*+(?:\\\\.[^\"\\\\]*+)*+\"");
 
+  private final Class<T> elementType;
+  private final Function<T, @Nullable String> sourceExtractor;
+  private final String location;
   private final ExpressionLanguage expressionLanguage;
 
-  SecretReferenceLiteralValidator(final ExpressionLanguage expressionLanguage) {
+  private SecretReferenceLiteralValidator(
+      final Class<T> elementType,
+      final Function<T, @Nullable String> sourceExtractor,
+      final String location,
+      final ExpressionLanguage expressionLanguage) {
+    this.elementType = elementType;
+    this.sourceExtractor = sourceExtractor;
+    this.location = location;
     this.expressionLanguage = expressionLanguage;
   }
 
-  @Override
-  public Class<ZeebeInput> getElementType() {
-    return ZeebeInput.class;
+  /** Validates the source of an input mapping ({@code zeebe:input}). */
+  static SecretReferenceLiteralValidator<ZeebeInput> forInput(
+      final ExpressionLanguage expressionLanguage) {
+    return new SecretReferenceLiteralValidator<>(
+        ZeebeInput.class, ZeebeInput::getSource, "input mapping source", expressionLanguage);
+  }
+
+  /** Validates the value of a property ({@code zeebe:property}). */
+  static SecretReferenceLiteralValidator<ZeebeProperty> forProperty(
+      final ExpressionLanguage expressionLanguage) {
+    return new SecretReferenceLiteralValidator<>(
+        ZeebeProperty.class, ZeebeProperty::getValue, "property value", expressionLanguage);
   }
 
   @Override
-  public void validate(
-      final ZeebeInput element, final ValidationResultCollector validationResultCollector) {
-    final String source = element.getSource();
+  public Class<T> getElementType() {
+    return elementType;
+  }
+
+  @Override
+  public void validate(final T element, final ValidationResultCollector validationResultCollector) {
+    final String source = sourceExtractor.apply(element);
     if (source == null) {
       return;
     }
@@ -87,8 +124,8 @@ final class SecretReferenceLiteralValidator implements ModelElementValidator<Zee
           0,
           String.format(
               "Secret reference(s) %s must be used as an expression (e.g. '=camunda.secrets.<name>'),"
-                  + " not as a string literal, in input mapping source '%s'.",
-              formatted, source));
+                  + " not as a string literal, in %s '%s'.",
+              formatted, location, source));
     }
   }
 
@@ -96,6 +133,9 @@ final class SecretReferenceLiteralValidator implements ModelElementValidator<Zee
    * Every double-quoted string literal in a FEEL expression body, joined by a separator so adjacent
    * literals cannot fuse into a spurious match. Text outside string literals (such as a {@code
    * camunda.secrets.token} path expression) is not matched, so only quoted usage is flagged.
+   *
+   * <p>Uses an unrolled possessive regex ({@link #STRING_LITERAL}) so multi-kilobyte escaped FEEL
+   * strings cannot overflow the stream-processor stack. See #59121.
    */
   private static String stringLiterals(final String feelBody) {
     return STRING_LITERAL

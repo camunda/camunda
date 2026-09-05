@@ -9,13 +9,11 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -51,15 +49,6 @@ final class ExporterEnableRequestTransformer implements ConfigurationChangeReque
   }
 
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    throw new UnsupportedOperationException(
-        "ExporterEnableRequestTransformer builds its change plan via "
-            + "phases(CurrentClusterConfiguration); the new-model coordinator path never calls "
-            + "operations(ClusterConfiguration)");
-  }
-
-  @Override
   public Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration clusterConfiguration) {
     if (physicalTenantId.isPresent()
@@ -83,7 +72,7 @@ final class ExporterEnableRequestTransformer implements ConfigurationChangeReque
         groupOperations.put(groupId, operations);
       }
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(groupOperations)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(groupOperations)));
   }
 
   private List<PartitionGroupOperation> enableOperationsFor(

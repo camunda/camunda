@@ -11,7 +11,12 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -40,7 +45,8 @@ public final class SuspensionCheck {
    * Decides how to treat the command; commands whose processor is not {@link SuspensionAware}, or
    * whose target is not suspended, are always processed. The resolved target process instance key
    * is returned alongside the decision so callers reuse it rather than re-deriving it (external
-   * {@code JOB}/{@code INCIDENT}/{@code USER_TASK} commands don't carry it on the wire).
+   * {@code JOB}/{@code INCIDENT}/{@code USER_TASK}/{@code AD_HOC_SUB_PROCESS_INSTRUCTION} commands
+   * don't carry it on the wire).
    */
   public SuspensionResult resolve(
       final TypedRecord<?> command, final TypedRecordProcessor<?> processor) {
@@ -86,9 +92,8 @@ public final class SuspensionCheck {
 
   /**
    * Resolves the process instance a command targets. Most values carry their own {@code
-   * processInstanceKey}; external {@code JOB}, {@code INCIDENT} and {@code USER_TASK} commands only
-   * carry the entity key, so the persisted entity is consulted. Returns {@code -1} when it can't be
-   * resolved.
+   * processInstanceKey}. However, a few other external commands only carry the entity key, so the
+   * persisted entity is consulted. Returns {@code -1} when it can't be resolved.
    */
   private long resolveProcessInstanceKey(final TypedRecord<?> command) {
     if (command.getValue() instanceof final ProcessInstanceRelated processInstanceRelated) {
@@ -112,8 +117,51 @@ public final class SuspensionCheck {
         final var userTask = processingState.getUserTaskState().getUserTask(key);
         yield userTask != null ? userTask.getProcessInstanceKey() : -1;
       }
+      case AD_HOC_SUB_PROCESS_INSTRUCTION -> {
+        final var adHocValue = (AdHocSubProcessInstructionRecordValue) command.getValue();
+        final var elementInstance =
+            processingState
+                .getElementInstanceState()
+                .getInstance(adHocValue.getAdHocSubProcessInstanceKey());
+        yield elementInstance != null ? elementInstance.getValue().getProcessInstanceKey() : -1;
+      }
+      case VARIABLE_DOCUMENT -> {
+        final var scopeKey = ((VariableDocumentRecordValue) command.getValue()).getScopeKey();
+        final var scope = processingState.getElementInstanceState().getInstance(scopeKey);
+        yield scope != null ? scope.getValue().getProcessInstanceKey() : -1;
+      }
+      case AGENT_INSTANCE -> resolveAgentInstanceProcessInstanceKey(command);
+      case AGENT_HISTORY -> resolveAgentHistoryProcessInstanceKey(command);
       default -> -1;
     };
+  }
+
+  /**
+   * CREATE carries {@code elementInstanceKey} on the value; the target element instance's process
+   * instance key is looked up. Every other AgentInstance command (currently only UPDATE) targets an
+   * existing agent instance identified by the command's own key.
+   */
+  private long resolveAgentInstanceProcessInstanceKey(final TypedRecord<?> command) {
+    if (command.getIntent() == AgentInstanceIntent.CREATE) {
+      final var value = (AgentInstanceRecordValue) command.getValue();
+      final var elementInstance =
+          processingState.getElementInstanceState().getInstance(value.getElementInstanceKey());
+      return elementInstance != null ? elementInstance.getValue().getProcessInstanceKey() : -1;
+    }
+
+    final var agentInstance = processingState.getAgentInstanceState().getRecord(command.getKey());
+    return agentInstance != null ? agentInstance.getProcessInstanceKey() : -1;
+  }
+
+  /**
+   * CREATE carries {@code agentInstanceKey} on the value; the target agent instance's process
+   * instance key is looked up.
+   */
+  private long resolveAgentHistoryProcessInstanceKey(final TypedRecord<?> command) {
+    final var value = (AgentHistoryRecordValue) command.getValue();
+    final var agentInstance =
+        processingState.getAgentInstanceState().getRecord(value.getAgentInstanceKey());
+    return agentInstance != null ? agentInstance.getProcessInstanceKey() : -1;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

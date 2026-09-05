@@ -36,7 +36,8 @@ public record MessageSubscriptionDbModel(
     Integer processDefinitionVersion,
     String serializedToolProperties,
     String toolName,
-    String inboundConnectorType)
+    String inboundConnectorType,
+    String businessId)
     implements Copyable<MessageSubscriptionDbModel> {
 
   public Map<String, String> toolProperties() {
@@ -72,7 +73,8 @@ public record MessageSubscriptionDbModel(
         processDefinitionVersion,
         serializedToolProperties,
         truncatedToolName,
-        truncatedInboundConnectorType);
+        truncatedInboundConnectorType,
+        businessId);
   }
 
   @Override
@@ -102,7 +104,8 @@ public record MessageSubscriptionDbModel(
         .processDefinitionName(processDefinitionName)
         .processDefinitionVersion(processDefinitionVersion)
         .toolName(toolName)
-        .inboundConnectorType(inboundConnectorType);
+        .inboundConnectorType(inboundConnectorType)
+        .businessId(businessId);
   }
 
   public static class Builder implements ObjectBuilder<MessageSubscriptionDbModel> {
@@ -125,6 +128,7 @@ public record MessageSubscriptionDbModel(
     private String serializedToolProperties;
     private String toolName;
     private String inboundConnectorType;
+    private String businessId;
 
     public Builder() {}
 
@@ -208,6 +212,11 @@ public record MessageSubscriptionDbModel(
       return this;
     }
 
+    public Builder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -254,7 +263,8 @@ public record MessageSubscriptionDbModel(
           processDefinitionVersion,
           serializedToolProperties,
           toolName,
-          inboundConnectorType);
+          inboundConnectorType,
+          businessId);
     }
   }
 }

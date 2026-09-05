@@ -19,6 +19,7 @@ import io.camunda.client.spring.properties.CamundaClientAuthProperties.AuthMetho
 import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -28,8 +29,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.logging.Log;
+import org.springframework.boot.EnvironmentPostProcessor;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.env.EnvironmentPostProcessor;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -45,6 +48,13 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
   private static final String OVERRIDE_PREFIX = "camunda.client.worker.override.";
   private static final List<String> LEGACY_OVERRIDE_PREFIX =
       List.of("camunda.client.zeebe.override.", "zeebe.client.worker.override.");
+  private static final String CLUSTER_VARIABLES_ENABLED =
+      "camunda.client.cluster-variables.enabled";
+  private static final String CLUSTER_VARIABLES_GLOBAL = "camunda.client.cluster-variables.global";
+  private static final String CLUSTER_VARIABLES_TENANT = "camunda.client.cluster-variables.tenant";
+  private static final String CLUSTER_VARIABLES_VARIABLES =
+      "camunda.client.cluster-variables.variables";
+  private static final String CLUSTER_VARIABLES_LEGACY_SOURCE = "cluster-variables-legacy";
   private static final Map<AuthMethod, Set<String>> IMPLICIT_AUTH_METHOD_INDICATORS;
 
   static {
@@ -67,6 +77,7 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
       final ConfigurableEnvironment environment, final SpringApplication application) {
     mapLegacyProperties(environment);
     mapLegacyOverrides(environment);
+    mapLegacyClusterVariables(environment);
     processClientMode(environment);
     processAuthMethod(environment);
     // Note: a single-client application (only camunda.client.*) is projected onto one 'default'
@@ -112,6 +123,94 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
       }
     }
     return result.values().stream();
+  }
+
+  private void mapLegacyClusterVariables(final ConfigurableEnvironment environment) {
+    if (environment.getPropertySources().contains(CLUSTER_VARIABLES_LEGACY_SOURCE)) {
+      // Spring Cloud bootstrap runs EnvironmentPostProcessors twice; the legacy source added on
+      // the first pass would otherwise be mistaken for a user-configured 'variables' property.
+      return;
+    }
+    final Binder binder = Binder.get(environment);
+    if (!binder.bind(CLUSTER_VARIABLES_ENABLED, Boolean.class).orElse(true)) {
+      return;
+    }
+    final Map<String, Object> global =
+        binder
+            .bind(CLUSTER_VARIABLES_GLOBAL, Bindable.mapOf(String.class, Object.class))
+            .orElseGet(Map::of);
+    final Map<String, Object> tenant =
+        binder
+            .bind(CLUSTER_VARIABLES_TENANT, Bindable.mapOf(String.class, Object.class))
+            .orElseGet(Map::of);
+    if (global.isEmpty() && tenant.isEmpty()) {
+      return;
+    }
+
+    final boolean hasVariables =
+        !binder
+            .bind(CLUSTER_VARIABLES_VARIABLES, Bindable.listOf(ClusterVariableEntry.class))
+            .orElseGet(List::of)
+            .isEmpty();
+    if (hasVariables) {
+      log.warn(
+          String.format(
+              "Ignoring '%s' and '%s' because '%s' is configured",
+              CLUSTER_VARIABLES_GLOBAL, CLUSTER_VARIABLES_TENANT, CLUSTER_VARIABLES_VARIABLES));
+      return;
+    }
+
+    final Map<String, Object> mapped = new LinkedHashMap<>();
+    final int[] index = {0};
+    if (!global.isEmpty()) {
+      log.warn(
+          String.format(
+              "The property '%s' is deprecated, use '%s' instead",
+              CLUSTER_VARIABLES_GLOBAL, CLUSTER_VARIABLES_VARIABLES));
+      global.forEach((name, value) -> putClusterVariable(mapped, index[0]++, name, value, null));
+    }
+    if (!tenant.isEmpty()) {
+      log.warn(
+          String.format(
+              "The property '%s' is deprecated, use '%s' instead",
+              CLUSTER_VARIABLES_TENANT, CLUSTER_VARIABLES_VARIABLES));
+      tenant.forEach(
+          (tenantId, tenantVariables) -> {
+            if (tenantId == null || tenantId.isBlank()) {
+              throw new IllegalArgumentException(
+                  "Invalid tenant ID in '"
+                      + CLUSTER_VARIABLES_TENANT
+                      + "': tenant ID must not be null or blank");
+            }
+            if (!(tenantVariables instanceof Map<?, ?>)) {
+              throw new IllegalArgumentException(
+                  "Invalid value for tenant '"
+                      + tenantId
+                      + "' in '"
+                      + CLUSTER_VARIABLES_TENANT
+                      + "': expected a map of variable name to value");
+            }
+            ((Map<?, ?>) tenantVariables)
+                .forEach(
+                    (name, value) ->
+                        putClusterVariable(
+                            mapped, index[0]++, String.valueOf(name), value, tenantId));
+          });
+    }
+    addMapPropertySourceFirst(CLUSTER_VARIABLES_LEGACY_SOURCE, mapped, environment);
+  }
+
+  private static void putClusterVariable(
+      final Map<String, Object> mapped,
+      final int index,
+      final String name,
+      final Object value,
+      final String tenantId) {
+    mapped.put(CLUSTER_VARIABLES_VARIABLES + "[" + index + "].name", name);
+    mapped.put(CLUSTER_VARIABLES_VARIABLES + "[" + index + "].value", value);
+    if (tenantId != null) {
+      mapped.put(CLUSTER_VARIABLES_VARIABLES + "[" + index + "].tenant-id", tenantId);
+    }
   }
 
   private void mapLegacyProperties(final ConfigurableEnvironment environment) {

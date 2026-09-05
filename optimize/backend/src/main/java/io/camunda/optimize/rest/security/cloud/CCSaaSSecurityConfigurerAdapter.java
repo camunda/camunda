@@ -62,6 +62,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenValidator;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
@@ -81,7 +82,9 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.util.UriComponentsBuilder;
 
-// Backs off when CSL is active (optimize.security.csl.enabled=true) to avoid colliding chains. See
+// Active only when an operator explicitly opts back into the legacy stack
+// (optimize.security.csl.enabled=false); CSL is the default since 8.10 (camunda/camunda#58483).
+// The flag and this legacy stack are removed together at 8.11 (camunda/camunda#58484).
 // https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md
 @Configuration
 @EnableWebSecurity
@@ -89,7 +92,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @ConditionalOnProperty(
     name = "optimize.security.csl.enabled",
     havingValue = "false",
-    matchIfMissing = true)
+    matchIfMissing = false)
 public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
@@ -254,19 +257,21 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory() {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
-    decoderFactory.setJwtValidatorFactory(clientRegistration -> createIdTokenValidators());
+    decoderFactory.setJwtValidatorFactory(this::createIdTokenValidators);
     return decoderFactory;
   }
 
   /** Creates JWT validators specifically for ID token validation during OAuth2 login */
   @SuppressWarnings("unchecked")
-  private OAuth2TokenValidator<Jwt> createIdTokenValidators() {
-    // Only include role validation for ID tokens
+  OAuth2TokenValidator<Jwt> createIdTokenValidators(final ClientRegistration clientRegistration) {
+    // Restores the issuer/audience checks Spring's OIDC login normally applies (OIDC Core
+    // §3.1.3.7), which this class's custom validator factory would otherwise silently drop.
+    final OAuth2TokenValidator<Jwt> oidcIdTokenValidator =
+        new OidcIdTokenValidator(clientRegistration);
     final OAuth2TokenValidator<Jwt> roleValidator =
         new RoleValidator(ALLOWED_ORG_ROLES, getAuth0Configuration().getOrganizationId());
 
-    // The role validation uses organization claims which are present in ID tokens
-    return JwtValidators.createDefaultWithValidators(roleValidator);
+    return JwtValidators.createDefaultWithValidators(oidcIdTokenValidator, roleValidator);
   }
 
   @SuppressWarnings("unchecked")

@@ -11,8 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
@@ -68,52 +66,47 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
                     + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
       }
     }
-    if (changesMembership || newReplicationFactor.isPresent() || newPartitionCount.isEmpty()) {
-      // Cluster membership and the replication factor have no tenant dimension, so a request
-      // carrying either is planned exactly the way it always was, against the default group. So is
-      // a request that changes neither those nor the partition count, which has nothing to plan.
-      // That such a change redistributes only the default tenant's partitions, rather than every
-      // tenant's, is a gap that predates physical tenants being scalable at all; closing it needs
-      // global and partition-group phases planned together, tracked in #60192 and #60193.
-      return ConfigurationChangeRequest.super.phases(clusterConfiguration);
+    // The replication factor of a zone-aware cluster follows from its zone specs, so it cannot be
+    // set directly. Checked before anything else that could plan, so that a request combining a
+    // replication factor with a membership change is answered with this rather than with whatever
+    // the zone-aware distributor raises about the resulting replica sum.
+    if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
+      return Either.left(
+          new InvalidRequest(
+              "Changing the replication factor is not supported on zone-aware clusters."));
+    }
+    if (changesMembership) {
+      if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
+        return Either.left(
+            new InvalidRequest(
+                new IllegalArgumentException(
+                    "Cannot add and remove the same member in the same request")));
+      }
+      // Membership has no tenant dimension, but the partitions it moves do: every tenant's
+      // partitions have to be redistributed over the new member set, not just the default
+      // tenant's, which is what ScaleRequestTransformer plans.
+      final var newSetOfMembers =
+          new HashSet<>(clusterConfiguration.globalConfiguration().members().keySet());
+      newSetOfMembers.addAll(membersToAdd);
+      newSetOfMembers.removeAll(membersToRemove);
+      return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
+          .phases(clusterConfiguration);
+    }
+    if (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
+      // Changes neither membership nor a partition dimension, so there is nothing to plan.
+      return Either.right(List.of());
     }
 
     final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
-    if (!clusterConfiguration.hasPartitionGroup(groupId)) {
+    // Only the partition count targets a group; the replication factor spans every tenant, so a
+    // request carrying it alone has no group that has to exist.
+    if (newPartitionCount.isPresent() && !clusterConfiguration.hasPartitionGroup(groupId)) {
       return Either.left(
           new NotFound(
               "Expected to patch physical tenant '%s', but there's no such tenant"
                   .formatted(groupId)));
     }
     return PartitionGroupScalingPhases.phases(
-        groupId, clusterConfiguration, newPartitionCount.get());
-  }
-
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    // Changing the replication factor on a zone-aware cluster requires adjusting zone specs,
-    // which is not yet supported.
-    // !isNotZoneAware is required as not a single broker can be zoned.
-    if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
-      return Either.left(
-          new InvalidRequest(
-              "Changing the replication factor is not supported on zone-aware clusters."));
-    }
-
-    // if membersToAdd and membersToRemove have common items, reject the request
-    if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
-      return Either.left(
-          new ClusterConfigurationRequestFailedException.InvalidRequest(
-              new IllegalArgumentException(
-                  "Cannot add and remove the same member in the same request")));
-    }
-
-    final var newSetOfMembers = new HashSet<>(clusterConfiguration.members().keySet());
-    newSetOfMembers.addAll(membersToAdd);
-    newSetOfMembers.removeAll(membersToRemove);
-
-    return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
-        .operations(clusterConfiguration);
+        groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
   }
 }

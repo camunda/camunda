@@ -37,9 +37,9 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
       "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com",
-      "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
-      "camunda.security.authentication.oidc.token-uri=token.example.com",
-      "camunda.security.authentication.oidc.jwk-set-uri=jwks.example.com"
+      "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+      "camunda.security.authentication.oidc.token-uri=https://token.example.com",
+      "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com"
     })
 public class OidcLogoutSuccessHandlerNoEndSessionWiringTest extends AbstractWebSecurityConfigTest {
 

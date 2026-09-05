@@ -83,6 +83,7 @@ import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcesso
 import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretReferenceProcessors;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -175,6 +176,11 @@ public final class EngineProcessors {
         new MessageCorrelationMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var secretResolutionMetrics =
         new SecretResolutionMetrics(typedRecordProcessorContext.getMeterRegistry());
+    // built here rather than with the other secret reference processors because the job activation
+    // paths wake it, so it has to exist before the behaviors and job processors that call it
+    final var secretResolutionScheduler =
+        new SecretResolutionScheduler(
+            scheduledTaskStateFactory, secretStoreRegistry, config, secretResolutionMetrics);
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -284,10 +290,10 @@ public final class EngineProcessors {
             messageCorrelationMetrics,
             processDefinitionMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
-            featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
             cslCheck,
             tenantCheck,
-            secretStoreRegistry);
+            secretStoreRegistry,
+            secretResolutionScheduler);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -372,7 +378,8 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         incidentMetrics,
-        secretStoreRegistry);
+        secretStoreRegistry,
+        secretResolutionScheduler);
 
     final var userTaskProcessor =
         createUserTaskProcessor(
@@ -541,10 +548,7 @@ public final class EngineProcessors {
         keyGenerator,
         processingState,
         incidentMetrics,
-        scheduledTaskStateFactory,
-        secretStoreRegistry,
-        config,
-        secretResolutionMetrics,
+        secretResolutionScheduler,
         bpmnBehaviors.jobActivationBehavior());
 
     return typedRecordProcessors;
@@ -639,10 +643,10 @@ public final class EngineProcessors {
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final SecretResolutionScheduler secretResolutionScheduler) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -660,10 +664,10 @@ public final class EngineProcessors {
         messageCorrelationMetrics,
         processDefinitionMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
-        evaluateDuplicateOutputMappingTargetsInOrder,
         cslCheck,
         tenantCheck,
-        secretStoreRegistry);
+        secretStoreRegistry,
+        secretResolutionScheduler);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(

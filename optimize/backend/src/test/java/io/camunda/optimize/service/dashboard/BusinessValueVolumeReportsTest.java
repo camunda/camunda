@@ -64,8 +64,8 @@ public class BusinessValueVolumeReportsTest {
     final ProcessReportDataDto data =
         captureReportData(
             BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID,
-            BusinessValueDashboardService.KPI_WORK_HANDLED_NAME,
-            BusinessValueDashboardService.KPI_WORK_HANDLED_DESCRIPTION);
+            BusinessValueDashboardService.KPI_COMPLETED_INSTANCES_NAME,
+            BusinessValueDashboardService.KPI_COMPLETED_INSTANCES_DESCRIPTION);
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
@@ -87,8 +87,8 @@ public class BusinessValueVolumeReportsTest {
     final ProcessReportDataDto data =
         captureReportData(
             BusinessValueDashboardService.COUNT_BY_PROCESS_REPORT_ID,
-            BusinessValueDashboardService.KPI_WORK_HANDLED_NAME,
-            BusinessValueDashboardService.KPI_WORK_HANDLED_DESCRIPTION);
+            BusinessValueDashboardService.KPI_TOP_BY_VOLUME_NAME,
+            BusinessValueDashboardService.KPI_TOP_BY_VOLUME_DESCRIPTION);
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
@@ -116,8 +116,8 @@ public class BusinessValueVolumeReportsTest {
     final ProcessReportDataDto data =
         captureReportData(
             BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID,
-            BusinessValueDashboardService.KPI_MOMENTUM_NAME,
-            BusinessValueDashboardService.KPI_MOMENTUM_DESCRIPTION);
+            BusinessValueDashboardService.KPI_COMPLETED_INSTANCES_OVER_TIME_NAME,
+            BusinessValueDashboardService.KPI_COMPLETED_INSTANCES_OVER_TIME_DESCRIPTION);
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);

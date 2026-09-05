@@ -103,20 +103,10 @@ public final class SetVariablesTest {
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   public void shouldRejectIfVariablesAreInvalid(final boolean useRest) {
-    // given
-    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
-
-    // then
-    if (useRest) {
-      assertThatThrownBy(
-              () -> getCommand(client, useRest, processInstanceKey).variables("[]").send().join())
-          .hasMessageContaining("Failed to deserialize json '[]' to 'Map<String, Object>");
-    } else {
-      assertThatThrownBy(
-              () -> getCommand(client, useRest, processInstanceKey).variables("[]").send().join())
-          .hasMessageContaining(
-              "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
-    }
+    // when / then
+    assertThatThrownBy(() -> getCommand(client, useRest, 1L).variables("[]"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("variables must be a JSON object, but was: []");
   }
 
   @ParameterizedTest

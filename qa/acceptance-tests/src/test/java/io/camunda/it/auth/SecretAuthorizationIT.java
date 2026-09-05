@@ -57,11 +57,14 @@ class SecretAuthorizationIT {
 
   private static final String TOKEN_VALUE = "token-file-value";
   private static final String OTHER_VALUE = "a-file-value";
+  private static final String DASHED_VALUE = "db-password-file-value";
 
   /**
-   * The broker reads a real file-based store. {@code tls.crt} is deliberately among the secrets:
-   * the file store accepts that name but it cannot form a {@code camunda.secrets.<name>} reference,
-   * so the listing has to leave it out.
+   * The broker reads a real file-based store. {@code db-password} and {@code tls.crt} are
+   * deliberately among the secrets: they are the two sides of the reference charset the endpoints
+   * accept (see {@code SecretServices.REFERENCE_NAME_PATTERN}). The file store takes both names,
+   * but only the dashed one can form a reference, so it is granted, listed and resolved like any
+   * other name while the listing has to leave {@code tls.crt} out.
    */
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -74,6 +77,8 @@ class SecretAuthorizationIT {
                 Files.writeString(directory.resolve("a"), OTHER_VALUE, StandardCharsets.UTF_8);
                 Files.writeString(directory.resolve("b"), "b-file-value", StandardCharsets.UTF_8);
                 Files.writeString(
+                    directory.resolve("db-password"), DASHED_VALUE, StandardCharsets.UTF_8);
+                Files.writeString(
                     directory.resolve("tls.crt"), "certificate", StandardCharsets.UTF_8);
               });
 
@@ -83,6 +88,7 @@ class SecretAuthorizationIT {
   // Held by the store (one file per secret, the file name being the bare secret name).
   private static final String GRANTED_REFERENCE = "camunda.secrets.token";
   private static final String OTHER_REFERENCE = "camunda.secrets.a";
+  private static final String DASHED_REFERENCE = "camunda.secrets.db-password";
   // No file of that name exists, so a wildcard-authorized lookup misses.
   private static final String UNKNOWN_REFERENCE = "camunda.secrets.doesnotexist";
 
@@ -108,8 +114,10 @@ class SecretAuthorizationIT {
       new TestUser(
           REVEAL_USER,
           "password",
-          // Granted REVEAL on GRANTED_REFERENCE only — not on OTHER_REFERENCE.
-          List.of(new Permissions(SECRET, REVEAL, List.of(GRANTED_REFERENCE))));
+          // Granted REVEAL on GRANTED_REFERENCE and DASHED_REFERENCE only — not on
+          // OTHER_REFERENCE. The dashed reference is granted as its own resource id, so a grant on
+          // it has to survive the dash all the way through the authorization stack.
+          List.of(new Permissions(SECRET, REVEAL, List.of(GRANTED_REFERENCE, DASHED_REFERENCE))));
 
   @UserDefinition
   private static final TestUser WILDCARD_USER_DEF =
@@ -154,6 +162,26 @@ class SecretAuthorizationIT {
     final var body = read(response.body());
     assertThat(references(body.get("resolved"))).containsExactly(GRANTED_REFERENCE);
     assertThat(body.get("resolved").get(0).get("value").asText()).isEqualTo(TOKEN_VALUE);
+    assertThat(body.get("errors")).isEmpty();
+  }
+
+  @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
+  void shouldResolveHyphenatedReferenceWhenAuthorizedOnIt(
+      @Authenticated(REVEAL_USER) final CamundaClient client) throws Exception {
+    // when a user with SECRET:REVEAL on a dashed reference resolves it — the scenario of
+    // https://github.com/camunda/camunda/issues/60364, through the real authorization stack
+    final var response = resolve(client, REVEAL_USER, List.of(DASHED_REFERENCE));
+
+    // then the dash survives the grant, the reference charset and the store lookup alike: the name
+    // is matched as one resource id and the value on disk comes back
+    assertThat(response.statusCode()).isEqualTo(200);
+    final var body = read(response.body());
+    assertThat(references(body.get("resolved"))).containsExactly(DASHED_REFERENCE);
+    assertThat(body.get("resolved").get(0).get("value").asText()).isEqualTo(DASHED_VALUE);
     assertThat(body.get("errors")).isEmpty();
   }
 
@@ -273,13 +301,16 @@ class SecretAuthorizationIT {
     // when a user granted SECRET:READ:* lists references
     final var response = list(client, WILDCARD_READ_USER);
 
-    // then every secret the store holds is returned as a reference, names only. The store's
-    // tls.crt is left out: it cannot form a valid reference, so it would only offer the caller
-    // something resolve() and any BPMN expression reject.
+    // then every secret the store holds is returned as a reference, names only. The dashed name is
+    // among them verbatim, unescaped — it is a reference resolve() accepts, and escaping it is the
+    // author's job only once it goes into a FEEL expression. The store's tls.crt is left out: it
+    // cannot form a valid reference, so it would only offer the caller something resolve() and any
+    // BPMN expression reject.
     assertThat(response.statusCode()).isEqualTo(200);
     final var body = read(response.body());
     assertThat(referenceNames(body.get("references")))
-        .containsExactlyInAnyOrder(GRANTED_REFERENCE, OTHER_REFERENCE, "camunda.secrets.b");
+        .containsExactlyInAnyOrder(
+            GRANTED_REFERENCE, OTHER_REFERENCE, DASHED_REFERENCE, "camunda.secrets.b");
   }
 
   @Test

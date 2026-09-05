@@ -57,6 +57,70 @@ paths:
           $ref: 'components.yaml#/responses/GatewayError'
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
+  /brokers/{brokerId}/partitions/{partitionId}:
+    post:
+      summary: Add a broker to a partition's replication group, or change its priority
+      description: Adds the broker to the replication group of the given partition, replicating it
+        with the requested priority. If the broker already replicates the partition, only its
+        priority is changed. The broker must be running to complete the operation.
+        Partition ids restart at 1 in every physical tenant, so the partition is resolved within
+        the physical tenant named by physicalTenant, or within the default physical tenant when
+        the parameter is absent.
+      parameters:
+        - $ref: '#/components/parameters/BrokerId'
+        - $ref: '#/components/parameters/PartitionId'
+        - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/DefaultingPhysicalTenantParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/PartitionJoinRequest"
+      responses:
+        '202':
+          $ref: '#/components/responses/JoinPartitionResponse'
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+    delete:
+      summary: Remove a broker from a partition's replication group
+      description: Removes the broker from the replication group of the given partition. The
+        partition must keep at least one replica, so the last remaining replica cannot be removed.
+        The broker must be running to complete the operation.
+        Partition ids restart at 1 in every physical tenant, so the partition is resolved within
+        the physical tenant named by physicalTenant, or within the default physical tenant when
+        the parameter is absent.
+      parameters:
+        - $ref: '#/components/parameters/BrokerId'
+        - $ref: '#/components/parameters/PartitionId'
+        - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/DefaultingPhysicalTenantParameter'
+      responses:
+        '202':
+          $ref: '#/components/responses/LeavePartitionResponse'
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
   /brokers:
     post:
       summary: Reconfigure the cluster with the given brokers.
@@ -227,7 +291,7 @@ paths:
               $ref: "components.yaml#/schemas/RoutingState"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
-        - $ref: '#/components/parameters/RoutingStatePhysicalTenantParameter'
+        - $ref: '#/components/parameters/DefaultingPhysicalTenantParameter'
       responses:
         '202':
           description: Accepted
@@ -381,6 +445,39 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
       x-added-in-version: "8.10.0"
 
+  /physical-tenants/{physicalTenantId}:
+    delete:
+      summary: Remove a disabled physical tenant
+      description: Discards the given disabled physical tenant, so that brokers still holding its
+        partitions may leave the cluster. The tenant must already be disabled, i.e. removed from
+        the brokers' static configuration. Removal is permanent — the tenant id cannot be brought
+        back — and does not delete the tenant's data, which stays on the brokers' disks until
+        reclaimed out of band. A normal request runs on the elected coordinator; with force, it is
+        executed by whichever broker received it — the bail-out for a disaster where the
+        coordinator is unreachable.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantId'
+        - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/ForceParameter'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
+
 components:
   parameters:
     BrokerId:
@@ -397,6 +494,20 @@ components:
       description: Name of the zone
       schema:
         type: string
+    PhysicalTenantId:
+      name: physicalTenantId
+      required: true
+      in: path
+      description: Id of the physical tenant
+      schema:
+        $ref: 'components.yaml#/schemas/PhysicalTenantId'
+    PartitionId:
+      name: partitionId
+      required: true
+      in: path
+      description: Id of the partition
+      schema:
+        $ref: 'components.yaml#/schemas/PartitionId'
     ChangeId:
       name: changeId
       required: true
@@ -421,7 +532,7 @@ components:
       required: false
       schema:
         $ref: 'components.yaml#/schemas/PhysicalTenantId'
-    RoutingStatePhysicalTenantParameter:
+    DefaultingPhysicalTenantParameter:
       name: physicalTenant
       description: Id of the physical tenant to target. If not specified, the default physical tenant is targeted,
         not every physical tenant - unlike the other operations taking this parameter.
@@ -472,6 +583,20 @@ components:
 
     ClusterConfigPurgeResponse:
       description: Request to purge cluster data is accepted.
+      content:
+        application/json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+    JoinPartitionResponse:
+      description: Request for the broker to join the partition is accepted.
+      content:
+        application/json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+    LeavePartitionResponse:
+      description: Request for the broker to leave the partition is accepted.
       content:
         application/json:
           schema:

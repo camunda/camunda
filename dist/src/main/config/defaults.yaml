@@ -17,6 +17,15 @@ camunda: # Type: io.camunda.configuration.Camunda
       interceptors: null # Type: List<io.camunda.configuration.Interceptor>, Env: CAMUNDA_API_GRPC_INTERCEPTORS
       # Sets the number of threads the gateway will use to communicate with the broker cluster
       management-threads: null # Type: Integer, Env: CAMUNDA_API_GRPC_MANAGEMENTTHREADS
+      # Sets the maximum age of a gRPC connection before the gateway proactively closes it (via GOAWAY),
+      # forcing the client to reconnect. Defaults to 5 minutes. Set to unset to disable, keeping grpc-java's
+      # own default of an unbounded connection age.
+      max-connection-age: "5m" # Type: Duration, Env: CAMUNDA_API_GRPC_MAXCONNECTIONAGE
+      # Sets the grace period, after the maximum connection age elapses, during which existing calls on the
+      # connection may finish before it is forcibly terminated. Only takes effect when the maximum
+      # connection age is set. Defaults to 1 minute. Set to unset to disable, keeping grpc-java's own
+      # default of an infinite grace period.
+      max-connection-age-grace: "1m" # Type: Duration, Env: CAMUNDA_API_GRPC_MAXCONNECTIONAGEGRACE
       # Sets the minimum keep alive interval. This setting specifies the minimum accepted interval between
       # keep alive pings. This value must be specified as a positive integer followed by 's' for seconds,
       # 'm' for minutes or 'h' for hours.
@@ -625,6 +634,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_DATABASENAME
 
+        # Whether to verify the cluster health of the search engine
+        health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HEALTHCHECKENABLED
         history: # Type: io.camunda.configuration.DocumentBasedHistory
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_DATABASENAME
 
@@ -719,6 +730,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_DATABASENAME
 
+        # Whether to verify the cluster health of the search engine
+        health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HEALTHCHECKENABLED
         history: # Type: io.camunda.configuration.DocumentBasedHistory
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_DATABASENAME
 
@@ -893,7 +906,8 @@ camunda: # Type: io.camunda.configuration.Camunda
 
         # Password for the database configured as secondary storage.
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD
-        # The prefix to use for all database artifacts like tables, indexes etc.
+        # The prefix to use for all database artifacts like tables, indexes etc. Normalized to upper case,
+        # because the generated table names it is prepended to are upper case.
         prefix: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PREFIX
         # Process definition cache configuration. Defines the size of the process definition cache.
         process-cache: null # Type: io.camunda.configuration.RdbmsCache, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PROCESSCACHE
@@ -960,6 +974,7 @@ camunda: # Type: io.camunda.configuration.Camunda
 
     schema-manager: # Type: io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties
       create-schema: null # Type: Boolean, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_CREATESCHEMA
+      health-check-enabled: null # Type: Boolean, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_HEALTHCHECKENABLED
       perform-cleanup: null # Type: Boolean, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_PERFORMCLEANUP
       retry: # Type: io.camunda.search.schema.config.SchemaManagerConfiguration$SchemaManagerRetryConfiguration
         max-retries: null # Type: Integer, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_RETRY_MAXRETRIES
@@ -1312,6 +1327,38 @@ camunda: # Type: io.camunda.configuration.Camunda
         # invalid BPMN or DMN resource.
         results-output-max-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
 
+      storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals
+        # Controls whether the archiverless mode is enabled.
+        enable-archiverless: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
+        # Override default storage ordinal key with fixed value, mainly used during initial testing
+        fixed-storage-ordinal-key: -1 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINALKEY
+
+      mappings: # Type: io.camunda.configuration.EngineMappings
+        # Experimental: controls the input-mapping resolver used during process
+        # instance execution:
+        # COMBINED (default) merges all input mappings into a single combined result,
+        # while ORDERED applies mappings in modeling order.
+        input-mode: COMBINED # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTMODE
+        # Experimental: when set, also evaluates input mappings with this second
+        # resolver and logs a warning
+        # if the results differ from the primary resolver. Intended for migration diagnostics
+        # only: each activation evaluates mappings with both resolvers and compares the
+        # result documents, which adds overhead for large mapping sets. Has no effect
+        # when null (default) or when set to the same value as input-mode.
+        input-comparison-mode: ~ # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
+        # Experimental: controls the output-mapping resolver used during process
+        # instance execution:
+        # COMBINED (default) merges all output mappings into a single combined result,
+        # while ORDERED applies mappings in modeling order.
+        output-mode: COMBINED # Type: OutputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTMODE
+        # Experimental: when set, also evaluates output mappings with this second
+        # resolver and logs a warning
+        # if the results differ from the primary resolver. Intended for migration diagnostics
+        # only: each completion evaluates mappings with both resolvers and compares the
+        # result documents, which adds overhead for large mapping sets. Has no effect
+        # when null (default) or when set to the same value as output-mode.
+        output-comparison-mode: ~ # Type: OutputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTCOMPARISONMODE
+
     flow-control: # Type: io.camunda.configuration.FlowControl
       request: # Type: io.camunda.configuration.Limit
         aimd: # Type: io.camunda.configuration.Aimd
@@ -1398,6 +1445,14 @@ camunda: # Type: io.camunda.configuration.Camunda
     # (see maxMessageSize), processing will be rolled back and retried with a smaller maximum batch size.
     # Lowering the command limit can reduce the frequency of rollback and retry.
     max-commands-in-batch: 100 # Type: Integer, Env: CAMUNDA_PROCESSING_MAXCOMMANDSINBATCH
+    # Sets how many processed records may wait for their side effects to be committed before processing
+    # stops reading new records. Processing reads records as soon as they are appended, while a record's
+    # side effects, such as command responses, only run once its results are committed. This limit bounds
+    # the memory those waiting side effects retain when commits are slow. It is a safety valve rather than
+    # a tuning knob: the default sits far above the number of records processed within one commit round
+    # trip, so it should not be reached in normal operation. Raise it only to trade memory for throughput
+    # on a partition whose commit latency is genuinely high. Must be a positive integer. Default is 1000.
+    max-pending-side-effects: 1000 # Type: Integer, Env: CAMUNDA_PROCESSING_MAXPENDINGSIDEEFFECTS
     # Sets the maximum number of recoverable retries for state update and replay operations. When the
     # limit is reached, the operation fails and the partition restarts. Must be a positive integer.
     # Default is 1000.
@@ -1632,6 +1687,7 @@ camunda: # Type: io.camunda.configuration.Camunda
 
     enterprise: null # Type: Boolean, Env: CAMUNDA_WEBAPP_ENTERPRISE
     login-delegated: null # Type: Boolean, Env: CAMUNDA_WEBAPP_LOGINDELEGATED
+    new-design-system-enabled: null # Type: Boolean, Env: CAMUNDA_WEBAPP_NEWDESIGNSYSTEMENABLED
 
   webapps: # Type: io.camunda.configuration.Webapps
     identity: # Type: io.camunda.configuration.Webapp

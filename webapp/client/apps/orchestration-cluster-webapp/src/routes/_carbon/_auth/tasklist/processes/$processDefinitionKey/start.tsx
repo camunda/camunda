@@ -20,10 +20,9 @@ import {
 } from '#/tasklist/modules/processes/components/StartProcessFormModal';
 import {useUploadDocuments} from '#/tasklist/modules/form-js/useUploadDocuments';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
-import {ProcessStartFormImportError, ProcessStartFormNotFoundError} from '#/shared/errors';
+import {ForbiddenError, ProcessStartFormImportError, ProcessStartFormNotFoundError} from '#/shared/errors';
 import {useStartProcess} from '#/tasklist/modules/processes/useStartProcess';
 
-const HTTP_STATUS_FORBIDDEN = 403;
 const HTTP_STATUS_NOT_FOUND = 404;
 
 function useCloseStartProcessForm() {
@@ -48,7 +47,7 @@ function getErrorVariant(error: unknown): StartProcessFormModalErrorVariant {
 		return 'not-found';
 	}
 
-	if (result.success && result.data.response?.status === HTTP_STATUS_FORBIDDEN) {
+	if (error instanceof ForbiddenError) {
 		return 'forbidden';
 	}
 

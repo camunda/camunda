@@ -9,6 +9,7 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
@@ -231,5 +232,53 @@ describe('IncidentsTab', () => {
         'There are no incidents matching this filter set',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should enable retry when the process instance is active', async () => {
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([
+        createIncident({
+          processInstanceKey: PROCESS_INSTANCE_ID,
+        }),
+      ]),
+    );
+
+    render(<IncidentsTab />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: 'Retry Incident'}),
+      ).toBeEnabled();
+    });
+  });
+
+  it('should disable retry when the process instance is suspended', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([
+        createIncident({
+          processInstanceKey: PROCESS_INSTANCE_ID,
+        }),
+      ]),
+    );
+
+    render(<IncidentsTab />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: 'Retry Incident'}),
+      ).toBeDisabled();
+    });
   });
 });

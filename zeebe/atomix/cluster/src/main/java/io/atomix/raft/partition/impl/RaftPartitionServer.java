@@ -128,12 +128,12 @@ public class RaftPartitionServer implements HealthMonitorable {
         .thenApply(v -> this);
   }
 
-  public CompletableFuture<RaftPartitionServer> join() {
+  public CompletableFuture<RaftPartitionServer> join(final Type type) {
     final var metrics = new RaftStartupMetrics(partition.name(), meterRegistry);
     final long joinStartTime = System.currentTimeMillis();
-    LOGGER.info("Server joining partition {}", partition.id());
+    LOGGER.info("Server joining partition {} as {}", partition.id(), type);
     return server
-        .join(partitionMetadata.members())
+        .join(type, partitionMetadata.members())
         .whenComplete(
             (r, e) -> {
               if (e == null) {
@@ -152,6 +152,45 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public CompletableFuture<RaftPartitionServer> leave() {
     return server.leave().thenApply(v -> this);
+  }
+
+  /**
+   * Promotes the local member to {@link Type#ACTIVE} via a reconfiguration that is forwarded to the
+   * current leader, making it a full voting member. This is the second phase of the two-phase join
+   * flow for members that joined as {@link Type#PROMOTABLE} and have caught up to the leader's log.
+   *
+   * <p>{@code NO_LEADER}, {@code UNAVAILABLE} and {@code PROTOCOL_ERROR} responses are retried
+   * internally without a deadline. A {@code CONFIGURATION_ERROR} - the member is not caught up yet,
+   * another configuration change is in progress, or the request was built from a stale
+   * configuration view - fails the returned future and the caller is expected to retry. There is no
+   * production caller yet; this supports the dynamic-config orchestration of two-phase joins
+   * (#57392).
+   *
+   * @return a future to be completed once the local member is an ACTIVE part of the committed
+   *     configuration
+   */
+  public CompletableFuture<RaftPartitionServer> promoteMember() {
+    return server.cluster().getLocalMember().promote(Type.ACTIVE).thenApply(v -> this);
+  }
+
+  /**
+   * Demotes the local member to {@link Type#PASSIVE} via a reconfiguration that is forwarded to the
+   * current leader, removing it from all quorums. This is the first phase of a two-phase leave:
+   * demote, then {@link #leave()}, so that the removal can commit without the departing member's
+   * participation. The target is PASSIVE rather than PROMOTABLE because a departing member has no
+   * promotion intent and must not be shipped the leader's uncommitted tail.
+   *
+   * <p>{@code NO_LEADER}, {@code UNAVAILABLE} and {@code PROTOCOL_ERROR} responses are retried
+   * internally without a deadline. A {@code CONFIGURATION_ERROR} - e.g. another configuration
+   * change is in progress or the request was built from a stale configuration view - fails the
+   * returned future and the caller is expected to retry. There is no production caller yet; this
+   * supports the dynamic-config orchestration of two-phase leaves (#57392).
+   *
+   * @return a future to be completed once the local member is a PASSIVE part of the committed
+   *     configuration
+   */
+  public CompletableFuture<RaftPartitionServer> demoteMember() {
+    return server.cluster().getLocalMember().demote(Type.PASSIVE).thenApply(v -> this);
   }
 
   public CompletableFuture<RaftPartitionServer> forceReconfigure(
@@ -193,6 +232,10 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public RaftLogReader openReader() {
     return server.getContext().getLog().openCommittedReader();
+  }
+
+  public RaftLogReader openUncommittedReader() {
+    return server.getContext().getLog().openUncommittedReader();
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -370,8 +413,8 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.stepDown();
   }
 
-  public CompletableFuture<RaftServer> promote() {
-    return server.promote();
+  public CompletableFuture<RaftServer> anoint() {
+    return server.anoint();
   }
 
   public Collection<RaftMember> getMembers() {

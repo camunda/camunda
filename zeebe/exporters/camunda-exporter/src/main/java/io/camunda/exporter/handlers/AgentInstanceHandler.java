@@ -9,22 +9,32 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.AGENT_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_CREATION_TOKEN_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_READ_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.INPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.LAST_UPDATED_DATE;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_MODEL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_TOKENS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_TOOL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL_CALLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION_TAG;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROVIDER;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.REASONING_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.SYSTEM_PROMPT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
-import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
 
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.AgentContentMapper;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity.AgentInstanceToolValue;
@@ -105,17 +115,21 @@ public class AgentInstanceHandler
         .setBpmnProcessId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessDefinitionVersion(value.getProcessDefinitionVersion())
-        .setVersionTag(ExporterUtil.emptyToNull(value.getVersionTag()))
+        .setProcessDefinitionVersionTag(
+            ExporterUtil.emptyToNull(value.getProcessDefinitionVersionTag()))
         .setTenantId(value.getTenantId())
         .setStatus(mapStatus(value.getStatus()))
         .setModel(value.getDefinition().getModel())
         .setProvider(value.getDefinition().getProvider())
-        .setSystemPrompt(value.getDefinition().getSystemPrompt())
+        .setSystemPrompt(AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()))
         .setMaxTokens(value.getLimits().getMaxTokens())
         .setMaxModelCalls(value.getLimits().getMaxModelCalls())
         .setMaxToolCalls(value.getLimits().getMaxToolCalls())
         .setInputTokens(value.getMetrics().getInputTokens())
         .setOutputTokens(value.getMetrics().getOutputTokens())
+        .setReasoningTokenCount(value.getMetrics().getReasoningTokenCount())
+        .setCacheCreationTokenCount(value.getMetrics().getCacheCreationTokenCount())
+        .setCacheReadTokenCount(value.getMetrics().getCacheReadTokenCount())
         .setModelCalls(value.getMetrics().getModelCalls())
         .setToolCalls(value.getMetrics().getToolCalls())
         .setTools(mapTools(value.getTools()))
@@ -144,13 +158,22 @@ public class AgentInstanceHandler
     updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(AGENT_DEFINITION_KEY, entity.getAgentDefinitionKey());
     updateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
-    updateFields.put(VERSION_TAG, entity.getVersionTag());
+    updateFields.put(PROCESS_DEFINITION_VERSION_TAG, entity.getProcessDefinitionVersionTag());
     updateFields.put(ELEMENT_ID, entity.getElementId());
 
     // Runtime fields
     updateFields.put(STATUS, entity.getStatus());
+    updateFields.put(MODEL, entity.getModel());
+    updateFields.put(PROVIDER, entity.getProvider());
+    updateFields.put(SYSTEM_PROMPT, entity.getSystemPrompt());
+    updateFields.put(MAX_TOKENS, entity.getMaxTokens());
+    updateFields.put(MAX_MODEL_CALLS, entity.getMaxModelCalls());
+    updateFields.put(MAX_TOOL_CALLS, entity.getMaxToolCalls());
     updateFields.put(INPUT_TOKENS, entity.getInputTokens());
     updateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
+    updateFields.put(REASONING_TOKEN_COUNT, entity.getReasoningTokenCount());
+    updateFields.put(CACHE_CREATION_TOKEN_COUNT, entity.getCacheCreationTokenCount());
+    updateFields.put(CACHE_READ_TOKEN_COUNT, entity.getCacheReadTokenCount());
     updateFields.put(MODEL_CALLS, entity.getModelCalls());
     updateFields.put(TOOL_CALLS, entity.getToolCalls());
     updateFields.put(TOOLS, entity.getTools());

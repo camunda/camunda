@@ -22,8 +22,13 @@ public class DocumentBasedHistory {
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = ProcessInstanceRetentionMode.PI_HIERARCHY;
   private static final boolean DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED = true;
   private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
+  /* keep in sync with RetentionConfiguration.DEFAULT_USAGE_METRICS_POLICY_NAME */
+  private static final String DEFAULT_HISTORY_USAGE_METRICS_POLICY_NAME =
+      "camunda-usage-metrics-retention-policy";
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
+  /* keep in sync with ExporterConfiguration.HistoryConfiguration.usageMetricsRolloverInterval */
+  private static final String DEFAULT_HISTORY_USAGE_METRICS_ROLLOVER_INTERVAL = "1M";
   /* This should be kept in sync with CamundaBackgroundTaskManagerFactory.DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE */
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
   /* This should be kept in sync with CamundaBackgroundTaskManagerFactory.DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE */
@@ -49,8 +54,10 @@ public class DocumentBasedHistory {
           "delay-between-runs",
           "zeebe.broker.exporters.camundaexporter.args.history.delayBetweenRuns",
           "max-delay-between-runs",
-          "zeebe.broker.exporters.camundaexporter.args.history.maxDelayBetweenRuns");
-  private final String prefix;
+          "zeebe.broker.exporters.camundaexporter.args.history.maxDelayBetweenRuns",
+          "usage-metrics-rollover-interval",
+          "zeebe.broker.exporters.camundaexporter.args.history.usageMetricsRolloverInterval");
+  private String prefix = "";
 
   private boolean processInstanceEnabled = DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED;
 
@@ -91,6 +98,22 @@ public class DocumentBasedHistory {
 
   /** Defines the name of the created and applied ILM policy. */
   private String policyName = DEFAULT_HISTORY_POLICY_NAME;
+
+  /** Defines the name of the created and applied usage-metrics ILM policy. */
+  private String usageMetricsPolicyName = DEFAULT_HISTORY_USAGE_METRICS_POLICY_NAME;
+
+  /** Time range for creating dated usage-metrics indices. */
+  private String usageMetricsRolloverInterval = DEFAULT_HISTORY_USAGE_METRICS_ROLLOVER_INTERVAL;
+
+  /**
+   * No-arg constructor solely so spring-boot-configuration-processor does not treat this class as
+   * constructor-bound — with a single parameterized constructor, the processor derives metadata
+   * only from that constructor's parameters and silently ignores every getter/setter below.
+   * Deliberately unused and {@code private}: nothing — not even a test — should ever call it;
+   * {@link #DocumentBasedHistory(String)} remains the only real construction path (see {@link
+   * DocumentBasedSecondaryStorageDatabase}). Do not remove as dead code.
+   */
+  private DocumentBasedHistory() {}
 
   public DocumentBasedHistory(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.history".formatted(databaseName);
@@ -242,6 +265,32 @@ public class DocumentBasedHistory {
     this.policyName = policyName;
   }
 
+  public String getUsageMetricsPolicyName() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        prefix + ".usage-metrics-policy-name",
+        usageMetricsPolicyName,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyUsageMetricsPolicyNameProperties());
+  }
+
+  public void setUsageMetricsPolicyName(final String usageMetricsPolicyName) {
+    this.usageMetricsPolicyName = usageMetricsPolicyName;
+  }
+
+  public String getUsageMetricsRolloverInterval() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        prefix + ".usage-metrics-rollover-interval",
+        usageMetricsRolloverInterval,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(LEGACY_BROKER_PROPERTIES.get("usage-metrics-rollover-interval")));
+  }
+
+  public void setUsageMetricsRolloverInterval(final String usageMetricsRolloverInterval) {
+    this.usageMetricsRolloverInterval = usageMetricsRolloverInterval;
+  }
+
   public int getArchiveByIdMaxRetryAttempts() {
     return archiveByIdMaxRetryAttempts;
   }
@@ -262,5 +311,11 @@ public class DocumentBasedHistory {
     return Set.of(
         "camunda.database.retention.policyName",
         "zeebe.broker.exporters.camundaexporter.args.history.retention.policyName");
+  }
+
+  private Set<String> legacyUsageMetricsPolicyNameProperties() {
+    return Set.of(
+        "camunda.database.retention.usageMetricsPolicyName",
+        "zeebe.broker.exporters.camundaexporter.args.history.retention.usageMetricsPolicyName");
   }
 }

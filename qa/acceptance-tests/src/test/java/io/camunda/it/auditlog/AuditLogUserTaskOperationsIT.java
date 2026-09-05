@@ -18,11 +18,11 @@ import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -203,7 +203,7 @@ public class AuditLogUserTaskOperationsIT {
 
     Awaitility.await("Audit log entry is created for the updated user task")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var auditLogItems =
@@ -226,7 +226,7 @@ public class AuditLogUserTaskOperationsIT {
 
     Awaitility.await("Audit log entry is created for the updated user task")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var auditLogItems =
@@ -249,7 +249,7 @@ public class AuditLogUserTaskOperationsIT {
 
     Awaitility.await("Audit log entry is created for the completed user task")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var auditLogItems =

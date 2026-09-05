@@ -27,6 +27,7 @@ import io.camunda.gateway.protocol.model.LimitPagination;
 import io.camunda.gateway.protocol.model.OffsetPagination;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.UserTaskFilterFields;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
@@ -346,67 +347,125 @@ public class SimpleSearchQueryMapper {
     final var filterModel =
         io.camunda.gateway.protocol.model.UserTaskFilter.Builder.create().build();
     if (filter != null) {
-      ofNullable(filter.getState())
-          .map(
-              s ->
-                  io.camunda.gateway.protocol.model.AdvancedUserTaskStateFilter.Builder.create()
-                      .$eq(s)
-                      .build())
-          .ifPresent(filterModel::state);
-      ofNullable(filter.getAssignee())
-          .map(SimpleSearchQueryMapper::getStringFilter)
-          .ifPresent(filterModel::assignee);
-      ofNullable(filter.getBusinessId())
-          .map(SimpleSearchQueryMapper::getStringFilter)
-          .ifPresent(filterModel::businessId);
-      ofNullable(filter.getPriority())
-          .map(SimpleSearchQueryMapper::getIntegerFilter)
-          .ifPresent(filterModel::priority);
-      ofNullable(filter.getElementId()).ifPresent(filterModel::elementId);
-      ofNullable(filter.getName())
-          .map(SimpleSearchQueryMapper::getStringFilter)
-          .ifPresent(filterModel::name);
-      ofNullable(filter.getCandidateGroup())
-          .map(SimpleSearchQueryMapper::getStringFilter)
-          .ifPresent(filterModel::candidateGroup);
-      ofNullable(filter.getCandidateUser())
-          .map(SimpleSearchQueryMapper::getStringFilter)
-          .ifPresent(filterModel::candidateUser);
-      ofNullable(filter.getTenantId())
-          .map(SimpleSearchQueryMapper::getStringFilter)
-          .ifPresent(filterModel::tenantId);
-      ofNullable(filter.getProcessDefinitionId())
-          .map(SimpleSearchQueryMapper::getStringFilter)
-          .ifPresent(filterModel::processDefinitionId);
-      ofNullable(filter.getCreationDate())
-          .map(SimpleSearchQueryMapper::getDateTimeFilter)
-          .ifPresent(filterModel::creationDate);
-      ofNullable(filter.getCompletionDate())
-          .map(SimpleSearchQueryMapper::getDateTimeFilter)
-          .ifPresent(filterModel::completionDate);
-      ofNullable(filter.getFollowUpDate())
-          .map(SimpleSearchQueryMapper::getDateTimeFilter)
-          .ifPresent(filterModel::followUpDate);
-      ofNullable(filter.getDueDate())
-          .map(SimpleSearchQueryMapper::getDateTimeFilter)
-          .ifPresent(filterModel::dueDate);
-      ofNullable(filter.getProcessInstanceVariables())
-          .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
-          .ifPresent(filterModel::processInstanceVariables);
-      ofNullable(filter.getLocalVariables())
-          .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
-          .ifPresent(filterModel::localVariables);
-      ofNullable(filter.getUserTaskKey()).ifPresent(filterModel::userTaskKey);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(SimpleSearchQueryMapper::getBasicStringFilter)
-          .ifPresent(filterModel::processDefinitionKey);
-      ofNullable(filter.getProcessInstanceKey())
-          .map(SimpleSearchQueryMapper::getBasicStringFilter)
-          .ifPresent(filterModel::processInstanceKey);
-      ofNullable(filter.getElementInstanceKey()).ifPresent(filterModel::elementInstanceKey);
-      ofNullable(filter.getTags()).ifPresent(filterModel::tags);
+      mapUserTaskFilterFields(filter, filterModel);
+      ofNullable(filter.get$Or())
+          .filter(not(List::isEmpty))
+          .ifPresent(
+              orGroups ->
+                  filterModel.$or(
+                      orGroups.stream()
+                          .map(
+                              fields -> {
+                                final var mapped = UserTaskFilterFields.Builder.create().build();
+                                mapUserTaskFilterFields(fields, mapped);
+                                return mapped;
+                              })
+                          .toList()));
     }
     return filterModel;
+  }
+
+  private static void mapUserTaskFilterFields(
+      final io.camunda.gateway.protocol.model.simple.UserTaskFilter source,
+      final io.camunda.gateway.protocol.model.UserTaskFilterFields target) {
+    mapUserTaskFilterFields(toUserTaskFilterFields(source), target);
+  }
+
+  private static void mapUserTaskFilterFields(
+      final io.camunda.gateway.protocol.model.simple.UserTaskFilterFields source,
+      final io.camunda.gateway.protocol.model.UserTaskFilterFields target) {
+    ofNullable(source.getState())
+        .map(
+            s ->
+                io.camunda.gateway.protocol.model.AdvancedUserTaskStateFilter.Builder.create()
+                    .$eq(s)
+                    .build())
+        .ifPresent(target::state);
+    ofNullable(source.getAssignee())
+        .map(SimpleSearchQueryMapper::getStringFilter)
+        .ifPresent(target::assignee);
+    ofNullable(source.getBusinessId())
+        .map(SimpleSearchQueryMapper::getStringFilter)
+        .ifPresent(target::businessId);
+    ofNullable(source.getPriority())
+        .map(SimpleSearchQueryMapper::getIntegerFilter)
+        .ifPresent(target::priority);
+    ofNullable(source.getElementId()).ifPresent(target::elementId);
+    ofNullable(source.getName())
+        .map(SimpleSearchQueryMapper::getStringFilter)
+        .ifPresent(target::name);
+    ofNullable(source.getCandidateGroup())
+        .map(SimpleSearchQueryMapper::getStringFilter)
+        .ifPresent(target::candidateGroup);
+    ofNullable(source.getCandidateUser())
+        .map(SimpleSearchQueryMapper::getStringFilter)
+        .ifPresent(target::candidateUser);
+    ofNullable(source.getTenantId())
+        .map(SimpleSearchQueryMapper::getStringFilter)
+        .ifPresent(target::tenantId);
+    ofNullable(source.getProcessDefinitionId())
+        .map(SimpleSearchQueryMapper::getStringFilter)
+        .ifPresent(target::processDefinitionId);
+    ofNullable(source.getCreationDate())
+        .map(SimpleSearchQueryMapper::getDateTimeFilter)
+        .ifPresent(target::creationDate);
+    ofNullable(source.getCompletionDate())
+        .map(SimpleSearchQueryMapper::getDateTimeFilter)
+        .ifPresent(target::completionDate);
+    ofNullable(source.getFollowUpDate())
+        .map(SimpleSearchQueryMapper::getDateTimeFilter)
+        .ifPresent(target::followUpDate);
+    ofNullable(source.getDueDate())
+        .map(SimpleSearchQueryMapper::getDateTimeFilter)
+        .ifPresent(target::dueDate);
+    ofNullable(source.getProcessInstanceVariables())
+        .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
+        .ifPresent(target::processInstanceVariables);
+    ofNullable(source.getLocalVariables())
+        .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
+        .ifPresent(target::localVariables);
+    ofNullable(source.getUserTaskKey()).ifPresent(target::userTaskKey);
+    ofNullable(source.getProcessDefinitionKey())
+        .map(SimpleSearchQueryMapper::getBasicStringFilter)
+        .ifPresent(target::processDefinitionKey);
+    ofNullable(source.getProcessInstanceKey())
+        .map(SimpleSearchQueryMapper::getBasicStringFilter)
+        .ifPresent(target::processInstanceKey);
+    ofNullable(source.getElementInstanceKey()).ifPresent(target::elementInstanceKey);
+    ofNullable(source.getTags()).ifPresent(target::tags);
+  }
+
+  private static io.camunda.gateway.protocol.model.simple.UserTaskFilterFields
+      toUserTaskFilterFields(final io.camunda.gateway.protocol.model.simple.UserTaskFilter source) {
+    final var fields = new io.camunda.gateway.protocol.model.simple.UserTaskFilterFields();
+    if (source == null) {
+      return fields;
+    }
+
+    fields
+        .state(source.getState())
+        .assignee(source.getAssignee())
+        .businessId(source.getBusinessId())
+        .priority(source.getPriority())
+        .elementId(source.getElementId())
+        .name(source.getName())
+        .candidateGroup(source.getCandidateGroup())
+        .candidateUser(source.getCandidateUser())
+        .tenantId(source.getTenantId())
+        .processDefinitionId(source.getProcessDefinitionId())
+        .creationDate(source.getCreationDate())
+        .completionDate(source.getCompletionDate())
+        .followUpDate(source.getFollowUpDate())
+        .dueDate(source.getDueDate())
+        .processInstanceVariables(source.getProcessInstanceVariables())
+        .localVariables(source.getLocalVariables())
+        .userTaskKey(source.getUserTaskKey())
+        .processDefinitionKey(source.getProcessDefinitionKey())
+        .processInstanceKey(source.getProcessInstanceKey())
+        .elementInstanceKey(source.getElementInstanceKey())
+        .tags(source.getTags());
+
+    return fields;
   }
 
   public static io.camunda.gateway.protocol.model.UserTaskVariableFilter toUserTaskVariableFilter(

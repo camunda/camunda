@@ -10,10 +10,14 @@ package io.camunda.authentication.config.spi;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 class SecurityPathAdapterTest {
 
-  private final SecurityPathAdapter port = new SecurityPathAdapter();
+  // No webapp-enabled property set, so the adapter resolves CSL's default (enabled) and the
+  // webappPaths() assertion below pins the enabled set.
+  private final SecurityPathAdapter port =
+      SecurityPathAdapter.fromEnvironment(new MockEnvironment());
 
   @Test
   void shouldExposeApiPaths() {
@@ -113,5 +117,19 @@ class SecurityPathAdapterTest {
     assertThat(port.adminFilterBypassPaths())
         .containsExactlyInAnyOrder(
             "/login", "/logout", "/sso-callback", "/post-logout", "/admin/setup", "/admin/assets");
+  }
+
+  @Test
+  void shouldReportNoWebappPathsWhenWebappDisabled() {
+    // given
+    final var environment =
+        new MockEnvironment()
+            .withProperty("camunda.security.authentication.webapp-enabled", "false");
+
+    // when
+    final var disabledPort = SecurityPathAdapter.fromEnvironment(environment);
+
+    // then
+    assertThat(disabledPort.webappPaths()).isEmpty();
   }
 }

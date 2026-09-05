@@ -97,9 +97,7 @@ class HealthConfigurationInitializerTest {
       final var indicators = initializer.collectLivenessGroupHealthIndicators(profiles);
 
       // then — only broker indicators, no ES-dependent indicators from webapp profiles
-      assertThat(indicators)
-          .containsExactly("brokerReady", "nodeIdProviderReady")
-          .doesNotContain("indicesCheck", "searchEngineCheck");
+      assertThat(indicators).containsExactly("brokerReady", "nodeIdProviderReady");
     }
 
     @ParameterizedTest
@@ -124,7 +122,7 @@ class HealthConfigurationInitializerTest {
       final var indicators = initializer.collectLivenessGroupHealthIndicators(profiles);
 
       // then — must not contain any ES-dependent indicators
-      assertThat(indicators).doesNotContain("indicesCheck", "searchEngineCheck");
+      assertThat(indicators).doesNotContain("schemaReadinessCheck");
     }
   }
 
@@ -193,37 +191,6 @@ class HealthConfigurationInitializerTest {
     }
 
     @Test
-    void shouldIncludeIndicesCheckForOperateWithES() {
-      // given
-      withElasticsearchSecondaryStorage();
-      withHttpGatewayEnabled();
-      final var profiles = List.of(Profile.OPERATE.getId());
-
-      // when
-      final var indicators =
-          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
-
-      // then
-      assertThat(indicators).contains("readinessState", "indicesCheck", "schemaReadinessCheck");
-    }
-
-    @Test
-    void shouldIncludeSearchEngineCheckForTasklistWithES() {
-      // given
-      withElasticsearchSecondaryStorage();
-      withHttpGatewayEnabled();
-      final var profiles = List.of(Profile.TASKLIST.getId());
-
-      // when
-      final var indicators =
-          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
-
-      // then
-      assertThat(indicators)
-          .contains("readinessState", "searchEngineCheck", "schemaReadinessCheck");
-    }
-
-    @Test
     void shouldNotIncludeEsIndicatorsWithRdbms() {
       // given
       withRdbmsSecondaryStorage();
@@ -234,9 +201,7 @@ class HealthConfigurationInitializerTest {
           initializer.collectReadinessGroupHealthIndicators(profiles, environment);
 
       // then
-      assertThat(indicators)
-          .contains("readinessState")
-          .doesNotContain("indicesCheck", "searchEngineCheck", "schemaReadinessCheck");
+      assertThat(indicators).contains("readinessState").doesNotContain("schemaReadinessCheck");
     }
 
     @Test

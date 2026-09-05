@@ -10,16 +10,26 @@ package io.camunda.exporter.analytics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableForm;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -28,6 +38,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class AnalyticsRecordFilterTest {
 
   private static final int TEST_PARTITION_ID = 1;
+  private static final int REMOTE_PARTITION = 3;
+  private static final int CLUSTER_PARTITION_COUNT = 5;
   private static final ProtocolFactory FACTORY = new ProtocolFactory();
 
   private final AnalyticsRecordFilter filter =
@@ -121,5 +133,122 @@ class AnalyticsRecordFilterTest {
 
     // when / then
     assertThat(filter.acceptRecord(record)).isFalse();
+  }
+
+  /**
+   * The engine's {@code ResourceDeletionDeleteProcessor} runs on every partition and mints the
+   * DELETED event key locally, so only the definition key in the value identifies the originating
+   * partition. Exactly one partition of the cluster may emit the event; anything else is an N-fold
+   * over-count.
+   */
+  @ParameterizedTest
+  @MethodSource("deletedDefinitionsOwnedByRemotePartition")
+  void shouldAcceptDeletedDefinitionOnOriginatingPartitionOnly(final Record<?> record) {
+    // given — the definition was minted on REMOTE_PARTITION, the event key on the local one
+    final var acceptingPartitions =
+        IntStream.rangeClosed(1, CLUSTER_PARTITION_COUNT)
+            .filter(partition -> definitionFilter(partition).acceptRecord(record))
+            .boxed()
+            .toList();
+
+    // when / then
+    assertThat(acceptingPartitions).containsExactly(REMOTE_PARTITION);
+  }
+
+  private static Stream<Named<Record<?>>> deletedDefinitionsOwnedByRemotePartition() {
+    final long definitionKey = Protocol.encodePartitionId(REMOTE_PARTITION, 7);
+    return Stream.of(
+        Named.of("PROCESS", deletedProcess(definitionKey)),
+        Named.of("DECISION", deletedDecision(definitionKey)),
+        Named.of("FORM", deletedForm(definitionKey)));
+  }
+
+  @Test
+  void shouldAcceptCreatedDefinitionFromLocalPartition() {
+    // given — for CREATED the event key and the value's definition key are the same key
+    final long definitionKey = Protocol.encodePartitionId(TEST_PARTITION_ID, 7);
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.PROCESS,
+            r ->
+                r.withKey(definitionKey)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(ProcessIntent.CREATED)
+                    .withValue(process(definitionKey)));
+
+    // when / then
+    assertThat(definitionFilter(TEST_PARTITION_ID).acceptRecord(record)).isTrue();
+  }
+
+  private static AnalyticsRecordFilter definitionFilter(final int partitionId) {
+    return new AnalyticsRecordFilter(
+        Set.of(ValueType.PROCESS, ValueType.DECISION, ValueType.FORM),
+        Set.of(
+            ProcessIntent.CREATED,
+            ProcessIntent.DELETED,
+            DecisionIntent.DELETED,
+            FormIntent.DELETED),
+        partitionId);
+  }
+
+  private static Record<?> deletedProcess(final long processDefinitionKey) {
+    return FACTORY.generateRecord(
+        ValueType.PROCESS,
+        r ->
+            r.withKey(locallyMintedEventKey())
+                .withRecordType(RecordType.EVENT)
+                .withIntent(ProcessIntent.DELETED)
+                .withValue(process(processDefinitionKey)));
+  }
+
+  private static Record<?> deletedDecision(final long decisionKey) {
+    return FACTORY.generateRecord(
+        ValueType.DECISION,
+        r ->
+            r.withKey(locallyMintedEventKey())
+                .withRecordType(RecordType.EVENT)
+                .withIntent(DecisionIntent.DELETED)
+                .withValue(
+                    ImmutableDecisionRecordValue.builder()
+                        .withDecisionId("credit-scoring")
+                        .withDecisionKey(decisionKey)
+                        .withDecisionName("Credit scoring")
+                        .withVersion(3)
+                        .withTenantId("acme")
+                        .build()));
+  }
+
+  private static Record<?> deletedForm(final long formKey) {
+    return FACTORY.generateRecord(
+        ValueType.FORM,
+        r ->
+            r.withKey(locallyMintedEventKey())
+                .withRecordType(RecordType.EVENT)
+                .withIntent(FormIntent.DELETED)
+                .withValue(
+                    ImmutableForm.builder()
+                        .withFormId("customer-onboarding")
+                        .withFormKey(formKey)
+                        .withVersion(3)
+                        .withResourceName("onboarding.form")
+                        .withResource("{\"components\":[]}".getBytes(StandardCharsets.UTF_8))
+                        .withTenantId("acme")
+                        .build()));
+  }
+
+  private static ImmutableProcess process(final long processDefinitionKey) {
+    return ImmutableProcess.builder()
+        .withBpmnProcessId("order-process")
+        .withProcessDefinitionKey(processDefinitionKey)
+        .withVersion(3)
+        .withResourceName("order-process.bpmn")
+        .withResource("<definitions/>".getBytes(StandardCharsets.UTF_8))
+        .withTenantId("acme")
+        .build();
+  }
+
+  /** Every partition mints the same event key for its own copy of the DELETED follow-up event. */
+  private static long locallyMintedEventKey() {
+    return Protocol.encodePartitionId(TEST_PARTITION_ID, 99);
   }
 }

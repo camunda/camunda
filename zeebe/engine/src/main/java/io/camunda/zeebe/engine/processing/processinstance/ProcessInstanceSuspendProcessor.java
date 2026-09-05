@@ -11,6 +11,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.InstantSource;
 
 public final class ProcessInstanceSuspendProcessor
     implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
@@ -53,11 +56,15 @@ public final class ProcessInstanceSuspendProcessor
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
+  private final ProcessInstanceSuspensionMessageSubscriptionBehavior suspensionSubscriptionBehavior;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final InstantSource clock) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
@@ -68,6 +75,15 @@ public final class ProcessInstanceSuspendProcessor
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
             elementInstanceState, processingState.getJobState(), stateWriter);
+    suspensionSubscriptionBehavior =
+        new ProcessInstanceSuspensionMessageSubscriptionBehavior(
+            elementInstanceState,
+            processingState.getProcessMessageSubscriptionState(),
+            stateWriter,
+            writers.sideEffect(),
+            subscriptionCommandSender,
+            transientProcessMessageSubscriptionState,
+            clock);
   }
 
   @Override
@@ -82,6 +98,7 @@ public final class ProcessInstanceSuspendProcessor
     // Park jobs before the instance-level SUSPENDED event so suspension is complete when the
     // marker is written. A later SUSPENDING intermediate state can chunk this work first.
     suspensionJobBehavior.suspendJobs(command.getKey());
+    suspensionSubscriptionBehavior.closeSubscriptions(command.getKey());
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);

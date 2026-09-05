@@ -15,12 +15,12 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -185,7 +185,7 @@ public class UserTaskIT {
     // then
     Awaitility.await()
         .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
+        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () -> {
               final var tasks =
@@ -411,7 +411,7 @@ public class UserTaskIT {
       final CamundaClient client, final Consumer<UserTaskFilter> filterConsumer) {
     Awaitility.await()
         .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
+        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () ->
                 !client

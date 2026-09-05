@@ -25,10 +25,12 @@ import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -143,6 +145,50 @@ final class PartitionForceReconfigureApplierTest {
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("does not have the partition");
+  }
+
+  @Test
+  void shouldInitSuccessfullyWithoutChangingConfiguration() {
+    // given
+    final var group =
+        groupWithMembers(
+            Map.of(member1, brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
+    final var globalConfig =
+        globalConfigurationWith(Map.of(member1, BrokerState.initializeAsActive()));
+
+    // when
+    final var result =
+        new PartitionForceReconfigureApplier(member1, 1, List.of(member1), partitionChangeExecutor)
+            .init(globalConfig, group);
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get().apply(group)).isEqualTo(group);
+  }
+
+  @Test
+  void shouldFailApplyFutureIfForceReconfigureFails() {
+    // given
+    final var group =
+        groupWithMembers(
+            Map.of(member1, brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
+    final var globalConfig =
+        globalConfigurationWith(Map.of(member1, BrokerState.initializeAsActive()));
+    final var applier =
+        new PartitionForceReconfigureApplier(member1, 1, List.of(member1), partitionChangeExecutor);
+    when(partitionChangeExecutor.forceReconfigure(anyInt(), any()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("force fail")));
+
+    // when
+    assertThat(applier.init(globalConfig, group)).isRight();
+    final var applyFuture = applier.apply();
+
+    // then
+    Assertions.assertThat(applyFuture)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("force fail");
   }
 
   @Test

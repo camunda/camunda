@@ -6,15 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ComponentProps, useEffect, useMemo, useState} from 'react';
-import {Link, useHistory} from 'react-router-dom';
+import './c4-ui.scss';
+import {ComponentProps, useEffect, useLayoutEffect, useMemo, useState} from 'react';
+import {useHistory, useLocation} from 'react-router-dom';
 import {
   C3LicenseTag,
   C3UserConfigurationProvider,
-  preview_C3NavigationV2 as C3NavigationV2,
-  preview_useC3NavigationV2 as useC3NavigationV2,
-  preview_useClusterWebappBreadcrumbs as useClusterWebappBreadcrumbs,
+  preview_C3ToolsArea as C3ToolsArea,
+  preview_useCamundaTools as useCamundaTools,
+  type UseCamundaToolsOptions,
 } from '@camunda/camunda-composite-components';
+import {
+  AppHeader,
+  AppSidebar,
+  C4Provider,
+  CamundaLogo,
+  SidebarProvider,
+  Text,
+  TooltipProvider,
+  useSidebar,
+  type GlobalActionButton,
+  type UserMenuItem,
+} from '@camunda/design-system';
 
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -22,12 +35,17 @@ import {isLogoutHidden} from 'config';
 import {useDocs, useErrorHandling, useUiConfig, useUser} from 'hooks';
 
 import {getUserToken} from '../service';
+import ForwardRefLink from './ForwardRefLink';
+import InfoMenu from './InfoMenu';
+import LogoutAwareUserMenu from './LogoutAwareUserMenu';
+import useBreadcrumbs from './useBreadcrumbs';
 import useSidebarChildren from './useSidebarChildren';
-import useCamundaToolsConfig from './useCamundaToolsConfig';
 
 import '../Header.scss';
 
 const SKIP_TO_CONTENT_TARGET_ID = 'main-content';
+// Mirrors SidebarProvider's default `collapsedWidth`.
+const COLLAPSED_SIDEBAR_WIDTH = '3.5rem';
 
 export default function HeaderV2({noActions}: {noActions?: boolean}) {
   const [userToken, setUserToken] = useState<string | null>(null);
@@ -55,6 +73,7 @@ export default function HeaderV2({noActions}: {noActions?: boolean}) {
 
 function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boolean}) {
   const history = useHistory();
+  const {pathname, search} = useLocation();
   const {getBaseDocsUrl} = useDocs();
   const {user} = useUser();
   const {mightFail} = useErrorHandling();
@@ -66,70 +85,174 @@ function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boole
     mightFail(isLogoutHidden(), setLogoutHidden, showError);
   }, [mightFail, user]);
 
-  const timezone = t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const toolsOptions = useMemo(
+    () =>
+      ({
+        notifications: isCloud
+          ? {
+              title: t('navigation.notifications').toString(),
+              labels: {
+                dismissAll: t('navigation.notificationsDismissAll').toString(),
+                emptyTitle: t('navigation.notificationsEmptyTitle').toString(),
+                emptyDescription: t('navigation.notificationsEmptyDescription').toString(),
+              },
+            }
+          : undefined,
+      }) satisfies UseCamundaToolsOptions,
+    [isCloud]
+  );
+  const {tools, ToolsProvider} = useCamundaTools(toolsOptions);
 
-  const breadcrumbs = useClusterWebappBreadcrumbs({currentApp: 'optimize'});
-  const sidebarChildren = useSidebarChildren(noActions);
-  const {tools, ToolsProvider} = useCamundaToolsConfig({
-    noActions,
-    isCloud,
-    enterpriseMode,
-    optimizeVersion,
-    userName: user?.name ?? '',
-    userEmail: user?.email ?? '',
-    docsUrl: getBaseDocsUrl(),
-    timezone,
-    logoutHidden,
-    onLogout: () => {
-      history.replace('/logout');
-    },
-  });
+  const globalActions = useMemo<GlobalActionButton[]>(() => {
+    const actions: GlobalActionButton[] = [];
 
-  const showLicenseTag = !noActions && licenseType !== 'saas';
+    if (isCloud) {
+      actions.push({
+        key: 'notifications',
+        label: t('navigation.notifications').toString(),
+        element: <C3ToolsArea tools={tools} />,
+      });
+    }
 
-  const options = useMemo(
-    (): Parameters<typeof useC3NavigationV2>[0] => ({
-      app: {
-        ariaLabel: t('appFullName').toString(),
-        linkProps: {to: '/'},
+    if (!noActions) {
+      actions.push({
+        key: 'info',
+        label: t('navigation.info').toString(),
+        element: <InfoMenu docsUrl={getBaseDocsUrl()} enterpriseMode={enterpriseMode} />,
+      });
+    }
+
+    return actions;
+  }, [isCloud, noActions, tools, getBaseDocsUrl, enterpriseMode]);
+
+  const userMenuItems = useMemo<UserMenuItem[]>(
+    () => [
+      {
+        key: 'terms',
+        label: t('navigation.termsOfUse').toString(),
+        onClick: () =>
+          window.open(
+            'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
+            '_blank'
+          ),
       },
-      skipToContentTargetId: SKIP_TO_CONTENT_TARGET_ID,
-      sidebarLabels: {
-        collapse: t('navigation.sidebarCollapse').toString(),
-        expand: t('navigation.sidebarExpand').toString(),
-        toggleAriaLabel: (expanded) =>
-          expanded
-            ? t('navigation.sidebarCollapseAria').toString()
-            : t('navigation.sidebarExpandAria').toString(),
-        groupToggleAriaLabel: ({label, isExpanded}) =>
-          isExpanded
-            ? t('navigation.sidebarGroupCollapseAria', {label}).toString()
-            : t('navigation.sidebarGroupExpandAria', {label}).toString(),
+      {
+        key: 'privacy',
+        label: t('navigation.privacyPolicy').toString(),
+        onClick: () => window.open('https://camunda.com/legal/privacy/', '_blank'),
       },
-      activeItemKey: '',
-      sidebarChildren,
-      breadcrumbs,
-      tools,
-      // @ts-expect-error - we need to fix it from the C3 side
-      linkComponent: Link,
-      headerTrailingContent: showLicenseTag ? (
-        <C3LicenseTag
-          isProductionLicense={validLicense}
-          isCommercial={commercial}
-          expiresAt={expiresAt ?? undefined}
-        />
-      ) : undefined,
-    }),
-    [sidebarChildren, breadcrumbs, tools, showLicenseTag, validLicense, commercial, expiresAt]
+      {
+        key: 'imprint',
+        label: t('navigation.imprint').toString(),
+        onClick: () => window.open('https://camunda.com/legal/imprint/', '_blank'),
+      },
+    ],
+    []
   );
 
-  const {navProps} = useC3NavigationV2(options);
+  const breadcrumb = useBreadcrumbs();
+  const sidebarChildren = useSidebarChildren(noActions);
+  const hasSidebar = sidebarChildren.length > 0;
+  const showLicenseTag = !noActions && licenseType !== 'saas';
 
   return (
     <ToolsProvider>
-      <C3NavigationV2 {...navProps} />
+      <C4Provider>
+        <TooltipProvider>
+          <SidebarProvider>
+            <SidebarBodySync hasSidebar={hasSidebar} />
+            <AppHeader
+              skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
+              showSidebarTrigger={hasSidebar}
+              logo={
+                <ForwardRefLink
+                  to="/"
+                  aria-label={t('appFullName').toString()}
+                  className="flex items-center"
+                >
+                  <CamundaLogo className="HeaderV2-logo block" />
+                </ForwardRefLink>
+              }
+              breadcrumb={breadcrumb}
+              trailing={
+                showLicenseTag ? (
+                  <div className="HeaderV2-license-tag flex items-center">
+                    <C3LicenseTag
+                      isProductionLicense={validLicense}
+                      isCommercial={commercial}
+                      expiresAt={expiresAt ?? undefined}
+                    />
+                  </div>
+                ) : undefined
+              }
+              globalActions={globalActions}
+              actions={
+                noActions ? undefined : (
+                  <LogoutAwareUserMenu
+                    userName={user?.name ?? ''}
+                    userEmail={user?.email ?? ''}
+                    items={userMenuItems}
+                    canLogout={!logoutHidden}
+                    onLogout={() => history.replace('/logout')}
+                    ariaLabel={t('navigation.settings').toString()}
+                    customSection={<UserMenuFooter optimizeVersion={optimizeVersion} />}
+                  />
+                )
+              }
+            />
+            {hasSidebar && (
+              <AppSidebar
+                ariaLabel={t('navigation.mainNavigation').toString()}
+                items={sidebarChildren}
+                activeItemKey={`${pathname}${search}`}
+                linkComponent={ForwardRefLink}
+              />
+            )}
+          </SidebarProvider>
+        </TooltipProvider>
+      </C4Provider>
     </ToolsProvider>
   );
+}
+
+function UserMenuFooter({optimizeVersion}: {optimizeVersion: string}) {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return (
+    <div className="px-2 py-1.5">
+      <Text variant="helper" as="p">
+        {t('footer.timezone')} {timezone}
+      </Text>
+      <Text variant="helper" as="p">
+        {t('navigation.version', {version: optimizeVersion})}
+      </Text>
+    </div>
+  );
+}
+
+/**
+ * `SidebarProvider` publishes `--app-sidebar-width` on its own wrapper, but Optimize
+ * renders the header as a sibling of `<main>`, so the variable never reaches the page
+ * content. Republishing it on `<body>` is what lets the content offset itself.
+ */
+function SidebarBodySync({hasSidebar}: {hasSidebar: boolean}) {
+  const sidebar = useSidebar();
+  const width =
+    !hasSidebar || !sidebar || sidebar.isMobile
+      ? '0px'
+      : sidebar.expanded
+        ? sidebar.width
+        : COLLAPSED_SIDEBAR_WIDTH;
+
+  useLayoutEffect(() => {
+    document.body.style.setProperty('--app-sidebar-width', width);
+
+    return () => {
+      document.body.style.removeProperty('--app-sidebar-width');
+    };
+  }, [width]);
+
+  return null;
 }
 
 function getStage(host: string): 'dev' | 'int' | 'prod' {

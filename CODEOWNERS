@@ -25,6 +25,8 @@
 /.github/actions/renew-github-token/*                    @camunda/engineering-operations
 /.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
 /.github/dependency-review-config.json                   @camunda/engineering-operations
+/.github/actions/release-notes/**                        @camunda/engineering-operations
+/.github/workflows/release-notes*                        @camunda/engineering-operations
 
 ###################
 ## Core Features ##
@@ -41,7 +43,7 @@
 /.github/workflows/assign-urgency-to-issues-cron.yml                          @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-nightly-metrics-report.yml        @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-responses-regenerate.yml          @camunda/core-features
-/.github/workflows/frontend-sbom-snyk-nightly.yml                             @camunda/core-features
+/.github/workflows/frontend-sbom-snyk-nightly.yml                             @camunda/orchestration-cluster-webapps
 /.github/workflows/optimize-release-optimize-c8-only.yml                      @camunda/core-features
 /.github/workflows/publish-zod-schemas.yml                                    @camunda/core-features
 /.github/workflows/verify-x-added-in-version-annotations.yml                 @camunda/core-features
@@ -129,9 +131,11 @@
 ##########################
 
 # Performance + Load testing
-/load-tests/ @camunda/reliability-testing
+/.github/renovate/team-reliability-testing.json5 @camunda/reliability-testing
+/.github/scripts/load-test* @camunda/reliability-testing
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
 /.tool-versions @camunda/reliability-testing
+/load-tests/ @camunda/reliability-testing
 
 #################
 ## Agentic AI  ##
@@ -172,7 +176,7 @@
 #################
 ## Camunda Ex  ##
 #################
-/clients/        @camunda/c8-java-sdk
+/clients/        @camunda/c8-api-team
 /library-parent/ @camunda/c8-java-sdk
 /testing/        @camunda/c8-testing
 

@@ -21,12 +21,12 @@ import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import org.awaitility.Awaitility;
@@ -468,7 +468,7 @@ public class AuditLogResourceOperationsIT {
 
     // wait for the process instance to reach a terminal state in secondary storage
     Awaitility.await("Process instance terminated")
-        .atMost(Duration.ofSeconds(10))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () ->
                 client
@@ -640,7 +640,7 @@ public class AuditLogResourceOperationsIT {
       final String entityKey) {
     return Awaitility.await("Audit log entry is created")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () -> {
               final var auditLogItems =

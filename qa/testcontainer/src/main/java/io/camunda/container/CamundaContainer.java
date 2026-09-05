@@ -37,8 +37,10 @@ import org.testcontainers.utility.TestcontainersConfiguration;
 public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF>>
     extends GenericContainer<SELF> {
   public static final String CAMUNDA_CONTAINER_IMAGE_PROPERTY = "camunda.container.image";
+  public static final String CAMUNDA_CONTAINER_IMAGE_ENV = "CAMUNDA_CONTAINER_IMAGE";
   public static final String DEFAULT_CAMUNDA_CONTAINER_IMAGE = "camunda/camunda";
   public static final String CAMUNDA_CONTAINER_VERSION_PROPERTY = "camunda.container.version";
+  public static final String CAMUNDA_CONTAINER_VERSION_ENV = "CAMUNDA_CONTAINER_VERSION";
   public static final String DEFAULT_CAMUNDA_VERSION = "8.10-SNAPSHOT";
   public static final String DEFAULT_CAMUNDA_DATA_PATH = "/usr/local/camunda/data";
   public static final String DEFAULT_CAMUNDA_LOGS_PATH = "/usr/local/camunda/logs";
@@ -95,14 +97,32 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
 
   /** Returns the default Camunda docker image, without a tag */
   public static String getDefaultImage() {
-    return TestcontainersConfiguration.getInstance()
-        .getEnvVarOrProperty(CAMUNDA_CONTAINER_IMAGE_PROPERTY, DEFAULT_CAMUNDA_CONTAINER_IMAGE);
+    return resolve(
+        CAMUNDA_CONTAINER_IMAGE_PROPERTY,
+        System.getenv(CAMUNDA_CONTAINER_IMAGE_ENV),
+        DEFAULT_CAMUNDA_CONTAINER_IMAGE);
   }
 
   /** Returns the default Camunda docker image tag/version */
   public static String getDefaultVersion() {
-    return TestcontainersConfiguration.getInstance()
-        .getEnvVarOrProperty(CAMUNDA_CONTAINER_VERSION_PROPERTY, DEFAULT_CAMUNDA_VERSION);
+    return resolve(
+        CAMUNDA_CONTAINER_VERSION_PROPERTY,
+        System.getenv(CAMUNDA_CONTAINER_VERSION_ENV),
+        DEFAULT_CAMUNDA_VERSION);
+  }
+
+  /**
+   * Resolves an image coordinate honoring, in order: a {@code TESTCONTAINERS_}-prefixed env var or
+   * a {@code .testcontainers.properties} entry (via Testcontainers), then the plain unprefixed env
+   * var, then the hardcoded default. The plain env var is honored explicitly because
+   * Testcontainers' {@code getEnvVarOrProperty} only reads env vars carrying the {@code
+   * TESTCONTAINERS_} prefix, so a CI-provided {@code CAMUNDA_CONTAINER_IMAGE}/{@code
+   * CAMUNDA_CONTAINER_VERSION} override would otherwise be silently ignored and tests would fall
+   * back to the Docker Hub nightly image.
+   */
+  static String resolve(final String property, final String envValue, final String fallback) {
+    final String envOrDefault = (envValue != null && !envValue.isBlank()) ? envValue : fallback;
+    return TestcontainersConfiguration.getInstance().getEnvVarOrProperty(property, envOrDefault);
   }
 
   /**

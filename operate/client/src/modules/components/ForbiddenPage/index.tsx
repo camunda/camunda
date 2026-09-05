@@ -15,7 +15,7 @@ const ForbiddenPage: React.FC = () => {
   return (
     <>
       <AppHeader hideNavLinks />
-      <Grid>
+      <Grid id="main-content" tabIndex={-1}>
         <Content gap={6}>
           <ForbiddenIcon />
           <Stack gap={3}>

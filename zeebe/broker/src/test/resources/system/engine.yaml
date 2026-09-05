@@ -48,3 +48,6 @@ zeebe:
           businessIdUniquenessEnabled: true
         startup:
           rpaReexportMigrationEnabled: false
+        storageOrdinals:
+          enableArchiverless: true
+          fixedStorageOrdinalKey: 1001

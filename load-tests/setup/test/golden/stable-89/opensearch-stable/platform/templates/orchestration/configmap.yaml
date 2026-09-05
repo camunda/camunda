@@ -262,7 +262,7 @@ data:
             args:
               authentication:
                 username: ""
-                password: "${VALUES_OPENSEARCH_PASSWORD:}"
+                password: "${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}"
               url: "http://opensearch:9200"
               index:
                 prefix: "zeebe-record"

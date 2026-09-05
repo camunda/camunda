@@ -34,7 +34,7 @@ public class SecondaryStorage {
   private boolean autoconfigureCamundaExporter = true;
 
   /** Configuration for retention behavior */
-  private Retention retention = new Retention();
+  @NestedConfigurationProperty private Retention retention = new Retention();
 
   /** Determines the type of the secondary storage database. */
   private SecondaryStorageType type = SecondaryStorageType.elasticsearch;

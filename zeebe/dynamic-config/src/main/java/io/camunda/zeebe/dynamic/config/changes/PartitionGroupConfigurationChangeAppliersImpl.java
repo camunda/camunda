@@ -16,14 +16,17 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.ExitRecoveryApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.ExportingStateChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionBootstrapApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDeleteExporterApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDemoteApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDisableExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionEnableExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionForceReconfigureApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionJoinApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionPreRestoreApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionPromoteApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionReconfigurePriorityApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionRestoreApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.RemovePhysicalTenantApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateIncarnationNumberApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateRoutingStateApplier;
@@ -34,14 +37,17 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingSt
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
@@ -74,13 +80,21 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
     return switch (operation) {
       case final PartitionJoinOperation op ->
           new PartitionJoinApplier(
-              op.memberId(), op.partitionId(), op.priority(), partitionChangeExecutor);
+              op.memberId(),
+              op.partitionId(),
+              op.priority(),
+              op.asLearner(),
+              partitionChangeExecutor);
       case final PartitionLeaveOperation op ->
           new PartitionLeaveApplier(
               op.memberId(),
               op.partitionId(),
               op.minimumAllowedReplicas(),
               partitionChangeExecutor);
+      case final PartitionPromoteOperation op ->
+          new PartitionPromoteApplier(op.memberId(), op.partitionId(), partitionChangeExecutor);
+      case final PartitionDemoteOperation op ->
+          new PartitionDemoteApplier(op.memberId(), op.partitionId(), partitionChangeExecutor);
       case final PartitionBootstrapOperation op ->
           new PartitionBootstrapApplier(op, partitionChangeExecutor);
       case final PartitionReconfigurePriorityOperation op ->
@@ -118,6 +132,7 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final UpdateRoutingState op ->
           new UpdateRoutingStateApplier(op, partitionScalingChangeExecutor);
       case final UpdateIncarnationNumberOperation ignored -> new UpdateIncarnationNumberApplier();
+      case final RemovePhysicalTenantOperation ignored -> new RemovePhysicalTenantApplier();
       case final DeleteHistoryOperation ignored ->
           new DeleteHistoryApplier(partitionChangeExecutor);
       case final ModeChangeOperation op ->

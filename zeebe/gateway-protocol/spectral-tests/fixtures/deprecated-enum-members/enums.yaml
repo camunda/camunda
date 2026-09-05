@@ -61,6 +61,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidMultipleDeprecatedResult'
 
+  /valid-inline-enum/{id}:
+    get:
+      operationId: getValidInlineEnum
+      summary: Property-level inline enum (not a named schema) with a valid deprecated member
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidInlineEnumResult'
+
   # ── Invalid cases ───────────────────────────────────────────
 
   /invalid-not-array/{id}:
@@ -233,6 +252,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidNoEnumResult'
+
+  /invalid-null-value/{id}:
+    get:
+      operationId: getInvalidNullValue
+      summary: Extension key present with no value (null)
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNullValueResult'
+
+  /invalid-inline-enum/{id}:
+    get:
+      operationId: getInvalidInlineEnum
+      summary: Property-level inline enum with a malformed deprecated member
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidInlineEnumResult'
 
 components:
   schemas:
@@ -465,3 +522,58 @@ components:
         value:
           description: The value.
           $ref: '#/components/schemas/InvalidNoEnumEnum'
+
+    InvalidNullValueEnum:
+      description: Extension key present with no value (e.g. a YAML indentation mistake).
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members:
+
+    InvalidNullValueResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidNullValueEnum'
+
+    # ── Inline (non-named) enum cases ─────────────────────────
+    # The enum lives directly on the property, with no separate named
+    # schema for the extension to attach to via $ref.
+
+    ValidInlineEnumResult:
+      description: An inline property enum with a properly deprecated member.
+      type: object
+      required:
+        - sortField
+      properties:
+        sortField:
+          description: The field to sort by.
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - LEGACY_MODE
+          x-deprecated-enum-members:
+            - name: LEGACY_MODE
+              deprecatedInVersion: "8.9.0"
+
+    InvalidInlineEnumResult:
+      description: An inline property enum with a malformed deprecated member.
+      type: object
+      required:
+        - sortField
+      properties:
+        sortField:
+          description: The field to sort by.
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - LEGACY_MODE
+          x-deprecated-enum-members:
+            - name: LEGACY_MODE
+              deprecatedInVersion: "8.9"

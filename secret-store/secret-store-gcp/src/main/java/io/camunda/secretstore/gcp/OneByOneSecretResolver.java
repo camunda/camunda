@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -65,20 +66,6 @@ final class OneByOneSecretResolver implements GcpSecretResolver {
     return results;
   }
 
-  private SecretResolutionResult resolveSingle(final String name) {
-    final var secretId = secretId(name);
-    try {
-      final var response =
-          client.accessSecretVersion(SecretVersionName.of(projectId, secretId, LATEST_VERSION));
-      return new Resolved(response.getPayload().getData().toStringUtf8());
-    } catch (final ApiException e) {
-      final var code = classify(e);
-      return new Failed(code, messageFor(code, "secret", secretId), e);
-    } catch (final RuntimeException e) {
-      throw storeUnavailable(e);
-    }
-  }
-
   @Override
   public List<String> list() {
     LOG.debug(
@@ -87,8 +74,12 @@ final class OneByOneSecretResolver implements GcpSecretResolver {
         pathPrefix);
     final var names = new ArrayList<String>();
     try {
-      for (final var secret : client.listSecrets(ProjectName.of(projectId)).iterateAll()) {
-        final var secretId = SecretName.parse(secret.getName()).getSecret();
+      for (final var secret : client.listSecrets(ProjectName.of(requireProjectId())).iterateAll()) {
+        final var parsedName =
+            Objects.requireNonNull(
+                SecretName.parse(secret.getName()),
+                "GCP returned an unparsable secret name: " + secret.getName());
+        final var secretId = parsedName.getSecret();
         if (secretId.startsWith(pathPrefix)) {
           final var logicalName = secretId.substring(pathPrefix.length());
           if (!logicalName.isBlank()) {
@@ -102,18 +93,38 @@ final class OneByOneSecretResolver implements GcpSecretResolver {
     }
   }
 
-  private String secretId(final String name) {
-    return pathPrefix + name;
-  }
-
   @Override
   public void validateConnectivity() {
     // one-by-one mode resolves via accessSecretVersion and lists via listSecrets; a single-result
     // listSecrets is the cheapest probe that exercises this mode's IAM footprint.
+    final var projectId = requireProjectId();
     client.listSecrets(
         ListSecretsRequest.newBuilder()
             .setParent(ProjectName.of(projectId).toString())
             .setPageSize(1)
             .build());
+  }
+
+  private SecretResolutionResult resolveSingle(final String name) {
+    final var secretId = secretId(name);
+    try {
+      final var projectId = requireProjectId();
+      final var response =
+          client.accessSecretVersion(SecretVersionName.of(projectId, secretId, LATEST_VERSION));
+      return new Resolved(response.getPayload().getData().toStringUtf8());
+    } catch (final ApiException e) {
+      final var code = classify(e);
+      return new Failed(code, messageFor(code, "secret", secretId), e);
+    } catch (final RuntimeException e) {
+      throw storeUnavailable(e);
+    }
+  }
+
+  private String secretId(final String name) {
+    return pathPrefix + name;
+  }
+
+  private String requireProjectId() {
+    return Objects.requireNonNull(projectId, "projectId must be non-null");
   }
 }

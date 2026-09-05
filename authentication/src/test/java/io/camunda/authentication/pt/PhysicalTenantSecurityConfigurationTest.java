@@ -10,6 +10,7 @@ package io.camunda.authentication.pt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
+import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -37,11 +38,13 @@ class PhysicalTenantSecurityConfigurationTest {
   }
 
   @Test
-  void shouldReturnEmptyDescriptorsWhenNoPhysicalTenantsConfigured() {
+  void shouldReturnOnlyDefaultAliasDescriptorWhenNoPhysicalTenantsConfigured() {
     runner.run(
         context -> {
           final var provider = context.getBean(CamundaSecurityScopeProvider.class);
-          assertThat(provider.get()).isEmpty();
+          assertThat(provider.get())
+              .extracting(ScopedSecurityDescriptor::basePath)
+              .containsExactly("/physical-tenants/default");
         });
   }
 

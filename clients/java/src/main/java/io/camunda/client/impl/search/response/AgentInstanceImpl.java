@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.response;
 
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.client.impl.util.EnumUtil;
@@ -177,12 +178,17 @@ public class AgentInstanceImpl implements AgentInstance {
 
     private final String model;
     private final String provider;
-    private final String systemPrompt;
+    private final List<AgentInstanceHistoryContent> systemPrompt;
 
-    DefinitionImpl(final io.camunda.client.protocol.rest.AgentInstanceDefinition proto) {
+    DefinitionImpl(final io.camunda.client.protocol.rest.AgentInstanceDefinitionResult proto) {
       model = proto.getModel();
       provider = proto.getProvider();
-      systemPrompt = proto.getSystemPrompt();
+      systemPrompt =
+          proto.getSystemPrompt() == null
+              ? Collections.emptyList()
+              : proto.getSystemPrompt().stream()
+                  .map(AgentInstanceHistoryImpl::toContent)
+                  .collect(Collectors.toList());
     }
 
     @Override
@@ -196,7 +202,7 @@ public class AgentInstanceImpl implements AgentInstance {
     }
 
     @Override
-    public String getSystemPrompt() {
+    public List<AgentInstanceHistoryContent> getSystemPrompt() {
       return systemPrompt;
     }
   }
@@ -205,12 +211,18 @@ public class AgentInstanceImpl implements AgentInstance {
 
     private final long inputTokens;
     private final long outputTokens;
+    private final long reasoningTokenCount;
+    private final long cacheCreationTokenCount;
+    private final long cacheReadTokenCount;
     private final int modelCalls;
     private final int toolCalls;
 
     MetricsImpl(final io.camunda.client.protocol.rest.AgentInstanceMetrics proto) {
       inputTokens = proto.getInputTokens();
       outputTokens = proto.getOutputTokens();
+      reasoningTokenCount = proto.getReasoningTokenCount();
+      cacheCreationTokenCount = proto.getCacheCreationTokenCount();
+      cacheReadTokenCount = proto.getCacheReadTokenCount();
       modelCalls = proto.getModelCalls();
       toolCalls = proto.getToolCalls();
     }
@@ -223,6 +235,21 @@ public class AgentInstanceImpl implements AgentInstance {
     @Override
     public long getOutputTokens() {
       return outputTokens;
+    }
+
+    @Override
+    public long getReasoningTokenCount() {
+      return reasoningTokenCount;
+    }
+
+    @Override
+    public long getCacheCreationTokenCount() {
+      return cacheCreationTokenCount;
+    }
+
+    @Override
+    public long getCacheReadTokenCount() {
+      return cacheReadTokenCount;
     }
 
     @Override

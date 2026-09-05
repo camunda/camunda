@@ -50,6 +50,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -331,8 +333,7 @@ public class CCSMTokenService {
     if (provider == null) {
       return Optional.empty();
     }
-    if (!(SecurityContextHolder.getContext().getAuthentication()
-        instanceof OAuth2AuthenticationToken)) {
+    if (!CslAuthentication.isCslAuthenticatedRequest()) {
       return Optional.empty();
     }
     return Optional.ofNullable(provider.getCamundaAuthentication())
@@ -345,8 +346,32 @@ public class CCSMTokenService {
       return Optional.empty();
     }
     // Under CSL the token lives in the OIDC session's authorized client; fall back to the auth
-    // cookie for the legacy CCSM setup.
-    return cslSessionAccessToken(request).or(() -> AuthCookieService.getAuthCookieToken(request));
+    // cookie for the legacy CCSM setup, then to the validated bearer token for stateless API
+    // callers (e.g. the Web Modeler cluster proxy) that carry neither a session nor an auth cookie.
+    return cslSessionAccessToken(request)
+        .or(() -> AuthCookieService.getAuthCookieToken(request))
+        .or(this::cslBearerAccessToken);
+  }
+
+  // Only under CSL: the legacy public API path (api.jwtAuthForApiEnabled) also authenticates as a
+  // JwtAuthenticationToken, which must keep resolving no token here to avoid per-tenant Identity
+  // calls for API requests that previously resolved none.
+  private Optional<String> cslBearerAccessToken() {
+    if (!isCslActive()) {
+      return Optional.empty();
+    }
+    if (SecurityContextHolder.getContext().getAuthentication()
+        instanceof final JwtAuthenticationToken jwtToken) {
+      return Optional.ofNullable(jwtToken.getToken())
+          .map(Jwt::getTokenValue)
+          .filter(StringUtils::isNotBlank);
+    }
+    return Optional.empty();
+  }
+
+  private boolean isCslActive() {
+    return camundaAuthenticationProviderProvider != null
+        && camundaAuthenticationProviderProvider.getIfAvailable() != null;
   }
 
   private Optional<HttpServletRequest> currentRequest() {
@@ -376,15 +401,12 @@ public class CCSMTokenService {
         .map(token -> token.getTokenValue());
   }
 
+  // Propagates Identity failures so callers can distinguish a failed lookup (worth retrying) from a
+  // user who genuinely has no tenants (a valid, cacheable result).
   public List<TenantDto> getAuthorizedTenantsFromToken(final String accessToken) {
-    try {
-      return identity.tenants().forToken(accessToken).stream()
-          .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
-          .toList();
-    } catch (final Exception e) {
-      LOG.error("Could not retrieve authorized tenants from identity.", e);
-      return Collections.emptyList();
-    }
+    return identity.tenants().forToken(accessToken).stream()
+        .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
+        .toList();
   }
 
   private String extractTokenFromAuthorizationValue(final String cookieValue) {

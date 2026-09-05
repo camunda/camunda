@@ -40,4 +40,15 @@ public interface EvaluateExpressionResponse {
    * @return the list of warnings, or an empty list if none
    */
   List<EvaluationWarning> getWarnings();
+
+  /**
+   * Returns the secret references resolved from trusted sources while evaluating the expression: a
+   * {@code camunda.secrets.<name>} reference used directly in the expression, or one carried by a
+   * {@code SECRET_REFERENCE}-kind cluster variable the expression read. References appearing only
+   * in request-body variables or plain cluster variables are excluded, so callers may safely
+   * resolve exactly the references reported here.
+   *
+   * @return the list of referenced secrets, or an empty list if none
+   */
+  List<SecretReference> getReferencedSecrets();
 }

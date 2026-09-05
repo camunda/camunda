@@ -11,7 +11,7 @@
 # Usage: load-test-install-camunda-platform.sh <namespace> <install-target> <image-tag> \
 #          <image-repository> <image-registry> <camunda-repo> <optimize-repo> \
 #          <perform-read-benchmarks> <enable-optimize> <enable-optimize-metrics> \
-#          <metrics-exporter-built> <enable-chaos> <physical-tenants> [OPTIONS]
+#          <metrics-exporter-built> <enable-chaos> <physical-tenant-count> [OPTIONS]
 #
 #   namespace                  Load-test namespace (also the setup folder name)
 #   install-target             Make target to run (install or install-stable)
@@ -25,7 +25,7 @@
 #   enable-optimize-metrics    Enable the load-tester Optimize report-evaluation meter (true/false)
 #   metrics-exporter-built     Whether build-metrics-exporter-image ran this run (true/false)
 #   enable-chaos               Enable chaos-killer (true/false)
-#   physical-tenants           Deploy a second physical tenant (true/false)
+#   physical-tenant-count      Number of extra physical tenants (pt1..ptN) to deploy (0 = disabled)
 #
 # Options (all optional, empty by default):
 #   --optimize-tag TAG            Explicit Optimize image tag (empty to use the built image)
@@ -51,7 +51,7 @@ enable_optimize="$9"
 enable_optimize_metrics="${10}"
 metrics_exporter_built="${11}"
 enable_chaos="${12}"
-physical_tenants="${13}"
+physical_tenant_count="${13}"
 shift 13
 
 optimize_tag=""
@@ -144,7 +144,7 @@ fi
 make "${install_target}" \
   scenario="${scenario}" \
   chaos="${enable_chaos}" \
-  physical_tenants="${physical_tenants}" \
+  physical_tenant_count="${physical_tenant_count}" \
   additional_platform_configuration="$additional_platform_config" \
   additional_load_test_configuration="$load_test_config" \
   additional_load_test_setup_configuration="$additional_load_test_setup_configuration"

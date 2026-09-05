@@ -23,6 +23,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusPayload;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -42,6 +45,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -138,9 +143,71 @@ final class AdminApiRequestHandlerTest {
     }
   }
 
+  /**
+   * Exporting is controlled exclusively through dynamic cluster configuration; this wire-protocol
+   * admin API no longer applies these requests, and rejects them outright rather than risk a
+   * mixed-mode cluster silently drifting between the two mechanisms during a rolling upgrade. See
+   * ADR {@code docs/adr/management/006-exporting-state-via-dynamic-config.md}.
+   */
   @Nested
   @ExtendWith(MockitoExtension.class)
-  final class PauseExportingRequest {
+  final class ExportingControlRequest {
+    @RegisterExtension
+    final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
+
+    private final PartitionAdminAccess adminAccess;
+    private final AdminApiRequestHandler handler;
+
+    public ExportingControlRequest(
+        @Mock final PartitionAdminAccess adminAccess,
+        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition,
+        @Mock final AtomixServerTransport transport,
+        @Mock final ClusterConfigurationService clusterConfigurationService) {
+      this.adminAccess = adminAccess;
+      handler =
+          new AdminApiRequestHandler(
+              null,
+              transport,
+              adminAccess,
+              raftPartition,
+              clusterConfigurationService,
+              BrokerMemberId.from(1));
+    }
+
+    @BeforeEach
+    void startHandler() {
+      scheduler.submitActor(handler);
+      scheduler.workUntilDone();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = AdminRequestType.class,
+        names = {
+          "PAUSE_EXPORTING",
+          "SOFT_PAUSE_EXPORTING",
+          "RESUME_EXPORTING",
+          "GET_EXPORTING_STATE"
+        })
+    void shouldRejectExportingControlRequests(final AdminRequestType type) {
+      // given
+      final var request = new AdminRequest();
+      request.setPartitionId(1);
+      request.setType(type);
+
+      // when
+      final var responseFuture = handleRequest(request, handler);
+      scheduler.workUntilDone();
+
+      // then
+      assertErrorCode(responseFuture, ErrorCode.UNSUPPORTED_MESSAGE);
+      Mockito.verifyNoInteractions(adminAccess);
+    }
+  }
+
+  @Nested
+  @ExtendWith(MockitoExtension.class)
+  final class GetMigrationStatusRequest {
     @RegisterExtension
     final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
 
@@ -148,7 +215,7 @@ final class AdminApiRequestHandlerTest {
     private final AdminApiRequestHandler handler;
     private final AdminRequest request;
 
-    public PauseExportingRequest(
+    public GetMigrationStatusRequest(
         @Mock final PartitionAdminAccess adminAccess,
         @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition,
         @Mock final AtomixServerTransport transport,
@@ -167,7 +234,7 @@ final class AdminApiRequestHandlerTest {
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
-      request.setType(AdminRequestType.PAUSE_EXPORTING);
+      request.setType(AdminRequestType.GET_MIGRATION_STATUS);
     }
 
     @BeforeEach
@@ -177,8 +244,12 @@ final class AdminApiRequestHandlerTest {
     }
 
     @Test
-    void shouldPauseExportingForGivenPartition() {
-      when(adminAccess.pauseExporting()).thenReturn(CompletableActorFuture.completed(null));
+    void shouldReportMigrationStatusForGivenPartition() {
+      // given
+      final var status =
+          new PartitionMigrationStatus(
+              MigrationStatusCode.MIGRATED, "migrated to 8.10.0 and snapshotted");
+      when(adminAccess.getMigrationStatus()).thenReturn(CompletableActorFuture.completed(status));
 
       // when
       final var responseFuture = handleRequest(request, handler);
@@ -187,180 +258,21 @@ final class AdminApiRequestHandlerTest {
       // then
       assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
       verify(adminAccess).forPartition(request.getPartitionId());
-      verify(adminAccess).pauseExporting();
+      final var decoded =
+          responseFuture
+              .thenApply(Either::get)
+              .thenApply(response -> MigrationStatusPayload.decode(response.getPayload()))
+              .join();
+      assertThat(decoded).isEqualTo(status);
     }
 
     @Test
-    void shouldRespondWithFailureIfPausingFails() {
+    void shouldRespondWithFailureIfReadingStatusFails() {
       // given
-      when(adminAccess.pauseExporting())
+      when(adminAccess.getMigrationStatus())
           .thenReturn(
               CompletableActorFuture.completedExceptionally(
-                  new RuntimeException("Exporting fails")));
-
-      // when
-      final var responseFuture = handleRequest(request, handler);
-      scheduler.workUntilDone();
-
-      // then
-      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
-    }
-
-    @Test
-    void shouldRespondWithFailureIfPartitionNotFound() {
-      // given
-      request.setPartitionId(5);
-
-      // when
-      final var responseFuture = handleRequest(request, handler);
-      scheduler.workUntilDone();
-
-      // then
-      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
-    }
-  }
-
-  @Nested
-  @ExtendWith(MockitoExtension.class)
-  final class SoftPauseExportingRequest {
-    @RegisterExtension
-    final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
-
-    private final PartitionAdminAccess adminAccess;
-    private final AdminApiRequestHandler handler;
-    private final AdminRequest request;
-
-    public SoftPauseExportingRequest(
-        @Mock final PartitionAdminAccess adminAccess,
-        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition,
-        @Mock final AtomixServerTransport transport,
-        @Mock final ClusterConfigurationService clusterConfigurationService) {
-      this.adminAccess = adminAccess;
-      final int partitionId = 1;
-      when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
-      handler =
-          new AdminApiRequestHandler(
-              null,
-              transport,
-              adminAccess,
-              raftPartition,
-              clusterConfigurationService,
-              BrokerMemberId.from(1));
-
-      request = new AdminRequest();
-      request.setPartitionId(partitionId);
-      request.setType(AdminRequestType.SOFT_PAUSE_EXPORTING);
-    }
-
-    @BeforeEach
-    void startHandler() {
-      scheduler.submitActor(handler);
-      scheduler.workUntilDone();
-    }
-
-    @Test
-    void shouldSoftPauseExportingForGivenPartition() {
-      when(adminAccess.softPauseExporting()).thenReturn(CompletableActorFuture.completed(null));
-
-      // when
-      final var responseFuture = handleRequest(request, handler);
-      scheduler.workUntilDone();
-
-      // then
-      assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
-      verify(adminAccess).forPartition(request.getPartitionId());
-      verify(adminAccess).softPauseExporting();
-    }
-
-    @Test
-    void shouldRespondWithFailureIfPausingFails() {
-      // given
-      when(adminAccess.softPauseExporting())
-          .thenReturn(
-              CompletableActorFuture.completedExceptionally(
-                  new RuntimeException("Exporting fails")));
-
-      // when
-      final var responseFuture = handleRequest(request, handler);
-      scheduler.workUntilDone();
-
-      // then
-      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
-    }
-
-    @Test
-    void shouldRespondWithFailureIfPartitionNotFound() {
-      // given
-      request.setPartitionId(5);
-
-      // when
-      final var responseFuture = handleRequest(request, handler);
-      scheduler.workUntilDone();
-
-      // then
-      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
-    }
-  }
-
-  @Nested
-  @ExtendWith(MockitoExtension.class)
-  final class ResumeExportingRequest {
-    @RegisterExtension
-    final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
-
-    final AdminRequest request;
-    private final PartitionAdminAccess adminAccess;
-    private final AdminApiRequestHandler handler;
-
-    public ResumeExportingRequest(
-        @Mock final PartitionAdminAccess adminAccess,
-        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition,
-        @Mock final AtomixServerTransport transport,
-        @Mock final ClusterConfigurationService clusterConfigurationService) {
-      this.adminAccess = adminAccess;
-      final int partitionId = 1;
-      when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
-      handler =
-          new AdminApiRequestHandler(
-              null,
-              transport,
-              adminAccess,
-              raftPartition,
-              clusterConfigurationService,
-              BrokerMemberId.from(1));
-
-      request = new AdminRequest();
-      request.setPartitionId(partitionId);
-      request.setType(AdminRequestType.RESUME_EXPORTING);
-    }
-
-    @BeforeEach
-    void startHandler() {
-      scheduler.submitActor(handler);
-      scheduler.workUntilDone();
-    }
-
-    @Test
-    void shouldResumeExportingForGivenPartition() {
-      when(adminAccess.resumeExporting()).thenReturn(CompletableActorFuture.completed(null));
-
-      // when
-      final var responseFuture = handleRequest(request, handler);
-      scheduler.workUntilDone();
-
-      // then
-      assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
-      verify(adminAccess).forPartition(request.getPartitionId());
-      verify(adminAccess).resumeExporting();
-    }
-
-    @Test
-    void shouldRespondWithFailureIfPausingFails() {
-      // given
-      when(adminAccess.resumeExporting())
-          .thenReturn(
-              CompletableActorFuture.completedExceptionally(
-                  new RuntimeException("Exporting fails")));
+                  new RuntimeException("Migration status read fails")));
 
       // when
       final var responseFuture = handleRequest(request, handler);

@@ -8,6 +8,7 @@
 package io.camunda.authentication.config;
 
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -66,7 +67,9 @@ public class BasicAuthBeansConfiguration {
 
   @Bean
   public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
-      final MembershipPort membershipPort) {
-    return new LazyUsernamePasswordAuthenticationTokenConverter(membershipPort);
+      final MembershipPort membershipPort,
+      final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
+    return new LazyUsernamePasswordAuthenticationTokenConverter(
+        membershipPort, membershipResolutionContextPropagator);
   }
 }

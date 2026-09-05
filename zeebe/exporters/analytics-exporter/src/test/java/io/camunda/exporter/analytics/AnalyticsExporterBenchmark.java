@@ -13,7 +13,10 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
@@ -92,12 +95,19 @@ public class AnalyticsExporterBenchmark {
     final var factory = new ProtocolFactory();
 
     // Pre-generate records once — avoids allocation noise inside benchmarks
+    final var rootProcessInstance =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withParentProcessInstanceKey(-1L)
+            .build();
     piCreatedRecord =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_CREATION,
+            ValueType.PROCESS_INSTANCE,
             r ->
                 r.withRecordType(RecordType.EVENT)
-                    .withIntent(ProcessInstanceCreationIntent.CREATED));
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                    .withValue(rootProcessInstance));
     jobRecord = factory.generateRecord(ValueType.JOB);
 
     controllerSigning = new ExporterTestController();

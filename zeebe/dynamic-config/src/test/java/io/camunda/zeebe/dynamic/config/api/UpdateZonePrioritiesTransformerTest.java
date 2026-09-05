@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
 import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -23,21 +27,23 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class UpdateZonePrioritiesTransformerTest {
 
+  public static final String GROUP_NAME = "temp";
   private static final DynamicPartitionConfig PARTITION_CONFIG = DynamicPartitionConfig.init();
-
   private static final List<PartitionId> PARTITION_IDS =
-      IntStream.rangeClosed(1, 2).mapToObj(i -> new PartitionId("temp", i)).toList();
+      IntStream.rangeClosed(1, 2).mapToObj(i -> new PartitionId(GROUP_NAME, i)).toList();
 
-  // Builds a fully zone-aware ClusterConfiguration with one member per zone. Modeled on
+  // Builds a fully zone-aware cluster topology with one member per zone. Modeled on
   // ForceRemoveZoneTransformerTest#buildTopology /
   // UpdatePartitionDistributionTransformerTest#buildTopology.
-  private ClusterConfiguration zoneAwareCluster(final ZoneSpec... zones) {
+  private CurrentClusterConfiguration zoneAwareCluster(final ZoneSpec... zones) {
     final var config = new ZoneAwareConfig(List.of(zones));
     final var members =
         config.zones().stream()
@@ -47,8 +53,10 @@ final class UpdateZonePrioritiesTransformerTest {
         new ZoneAwarePartitionDistributor(config.zones())
             .distributePartitions(Set.copyOf(members), PARTITION_IDS, config.replicationFactor());
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
-    return topology.setPartitionDistributorConfig(config);
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            members, distribution, Map.of(GROUP_NAME, PARTITION_CONFIG), "c");
+    return topology.updateGlobalConfiguration(
+        globalConfiguration -> globalConfiguration.setPartitionDistributorConfig(config));
   }
 
   @Test
@@ -58,7 +66,7 @@ final class UpdateZonePrioritiesTransformerTest {
 
     // when requesting order [zone-b, zone-a]  (zone-b should now be leader)
     final var result =
-        new UpdateZonePrioritiesTransformer(List.of(ZONE_B, ZONE_A)).operations(config);
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_B, ZONE_A)), config);
 
     // then the persisted config keeps the SAME priority values {3,1} but re-assigned
     EitherAssert.assertThat(result).isRight();
@@ -86,7 +94,7 @@ final class UpdateZonePrioritiesTransformerTest {
 
     // when a zone is unknown / set mismatch
     final var result =
-        new UpdateZonePrioritiesTransformer(List.of(ZONE_A, ZONE_C)).operations(config);
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A, ZONE_C)), config);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -100,7 +108,7 @@ final class UpdateZonePrioritiesTransformerTest {
   void shouldRejectDuplicateZoneInRequest() {
     final var config = zoneAwareCluster(new ZoneSpec(ZONE_A, 1, 3), new ZoneSpec(ZONE_B, 1, 1));
     final var result =
-        new UpdateZonePrioritiesTransformer(List.of(ZONE_A, ZONE_A)).operations(config);
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A, ZONE_A)), config);
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
@@ -110,7 +118,8 @@ final class UpdateZonePrioritiesTransformerTest {
   @Test
   void shouldRejectIncompleteZoneList() {
     final var config = zoneAwareCluster(new ZoneSpec(ZONE_A, 1, 3), new ZoneSpec(ZONE_B, 1, 1));
-    final var result = new UpdateZonePrioritiesTransformer(List.of(ZONE_A)).operations(config);
+    final var result =
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A)), config);
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
@@ -121,12 +130,44 @@ final class UpdateZonePrioritiesTransformerTest {
   @Test
   void shouldRejectWhenNotZoneAware() {
     // given a non-zone-aware cluster (no PartitionDistributorConfig persisted)
-    final var config = ClusterConfiguration.init();
-    final var result = new UpdateZonePrioritiesTransformer(List.of(ZONE_A)).operations(config);
+    final var config = CurrentClusterConfiguration.init();
+    final var result =
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A)), config);
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
         .hasMessageContaining(
             "Updating zone priorities requires a persisted zone-aware partition distribution config, but was not set");
+  }
+
+  @Nested
+  class Phases {
+
+    /**
+     * Leadership follows the Raft priorities of each partition, so moving it to another zone means
+     * reconfiguring the priorities of every tenant's partitions — a tenant left out keeps its
+     * leaders where they were.
+     */
+    @Test
+    void shouldReconfigurePrioritiesForEveryTenant() {
+      // given — two tenants on a cluster where zone-a leads
+      final var configuration =
+          withMirroredTenant(
+              zoneAwareCluster(new ZoneSpec(ZONE_A, 1, 3), new ZoneSpec(ZONE_B, 1, 1)));
+
+      // when — zone-b takes over leadership
+      final var phases =
+          new UpdateZonePrioritiesTransformer(List.of(ZONE_B, ZONE_A)).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(partitionGroupPhase(phases.get()).groupOperations())
+          .containsOnlyKeys(CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_A)
+          .allSatisfy(
+              (groupId, operations) ->
+                  assertThat(operations)
+                      .describedAs("tenant '%s' moves its leaders to zone-b", groupId)
+                      .anyMatch(PartitionReconfigurePriorityOperation.class::isInstance));
+    }
   }
 }

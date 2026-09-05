@@ -137,6 +137,81 @@ public final class SystemContextTestFactory {
         physicalTenantIds);
   }
 
+  /**
+   * Builds a {@link SystemContext} where each physical tenant id maps to its own {@link BrokerCfg},
+   * mirroring the shape {@code SystemContextLoader} builds in production. Use this over {@link
+   * #singleTenant} whenever a test needs a non-default physical tenant to have a genuinely
+   * different effective configuration from the root one.
+   *
+   * @param rootBrokerCfg the root {@link BrokerCfg}, used for root-only validation
+   * @param brokerCfgsByTenant per-tenant {@link BrokerCfg}, keyed by physical tenant id; must
+   *     include an entry for {@link PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID}
+   */
+  public static SystemContext multiTenant(
+      final Duration shutdownTimeout,
+      final BrokerCfg rootBrokerCfg,
+      final Map<String, BrokerCfg> brokerCfgsByTenant,
+      final ActorScheduler scheduler,
+      final AtomixCluster cluster,
+      final BrokerClient brokerClient,
+      final MeterRegistry meterRegistry,
+      final EngineSecurityConfig securityConfiguration,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final NodeIdProvider nodeIdProvider,
+      final PhysicalTenantIds physicalTenantIds) {
+    if (!brokerCfgsByTenant.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
+      throw new IllegalArgumentException(
+          "brokerCfgsByTenant must include an entry for "
+              + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    }
+    final Map<String, PhysicalTenantContext> contextsByTenant = new HashMap<>();
+    brokerCfgsByTenant.forEach(
+        (tenantId, tenantCfg) -> {
+          final var exporterRepository = new ExporterRepository();
+          tenantCfg
+              .getExporters()
+              .forEach(
+                  (id, cfg) -> {
+                    try {
+                      exporterRepository.load(id, cfg);
+                    } catch (final Exception e) {
+                      throw new RuntimeException(e);
+                    }
+                  });
+          contextsByTenant.put(
+              tenantId,
+              new PhysicalTenantContext(
+                  securityConfiguration,
+                  brokerRequestAuthorizationConverter,
+                  featureFlagsFrom(tenantCfg),
+                  tenantCfg,
+                  exporterRepository,
+                  new SecretStoreRegistry(Map.of())));
+        });
+
+    return new SystemContext(
+        shutdownTimeout,
+        rootBrokerCfg,
+        scheduler,
+        cluster,
+        brokerClient,
+        meterRegistry,
+        contextsByTenant,
+        tenantId -> userServices,
+        passwordEncoder,
+        authConfig -> jwtDecoder,
+        authConfig -> oidcClaimsProvider,
+        searchClientsProxy,
+        Map.of(),
+        nodeIdProvider,
+        physicalTenantIds);
+  }
+
   private static FeatureFlags featureFlagsFrom(final BrokerCfg brokerCfg) {
     return brokerCfg.getExperimental().getFeatures().toFeatureFlags();
   }

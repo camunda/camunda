@@ -91,6 +91,29 @@
       ],
       enabled: false,
     },
+
+    {
+      // Run "go mod tidy" on Golang updates
+      matchFileNames: ["load-tests/**"],
+      matchManagers: ["gomod"],
+      postUpdateOptions: ["gomodTidy"],
+    },
+
+    {
+      // Disable Renovate for Data Layer team dependencies.
+      // They will be addressed differently: https://github.com/camunda/camunda/issues/60658
+      matchFileNames: ["load-tests/**"],
+      // Only disable the update of Docker images. The related Helm Charts can
+      // still be updated, as long as we specifically configure the underlying
+      // Docker images they deploy.
+      matchDatasources: ["docker"],
+      matchPackageNames: [
+        "**/elasticsearch",
+        "**/opensearch",
+        "**/postgres",
+      ],
+      enabled: false,
+    },
   ],
 
   ignorePaths: [

@@ -173,7 +173,7 @@ public class OptimizeTomcatConfig {
   }
 
   private boolean isCslEnabled() {
-    return environment.getProperty("optimize.security.csl.enabled", Boolean.class, false);
+    return environment.getProperty("optimize.security.csl.enabled", Boolean.class, true);
   }
 
   @Bean

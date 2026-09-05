@@ -206,6 +206,10 @@ class RegistryHistoryBackupApiTest {
    * Every operation, not just one: {@code BackupServiceImpl.getBackups} does not call {@code
    * validateRepositoryExists} the way take and delete do, so this pre-check is the only guard on
    * the list path.
+   *
+   * <p>Answers 403, like a repository the store does not have: an unconfigured repository says this
+   * deployment cannot serve history backups for the tenant, which is what the endpoint's
+   * secondary-storage gate already answers 403 for one level up.
    */
   @ParameterizedTest
   @MethodSource("allOperations")
@@ -219,7 +223,7 @@ class RegistryHistoryBackupApiTest {
         .isThrownBy(() -> operation.accept(api))
         .satisfies(
             e -> {
-              assertThat(e.getStatus()).isEqualTo(Status.INVALID_ARGUMENT);
+              assertThat(e.getStatus()).isEqualTo(Status.FORBIDDEN);
               assertThat(e.getMessage()).contains(TENANT_ID);
             });
   }
@@ -267,7 +271,7 @@ class RegistryHistoryBackupApiTest {
         Arguments.of(new BackupAlreadyRunningException("running"), Status.INVALID_STATE),
         Arguments.of(new InvalidRequestException("invalid"), Status.INVALID_ARGUMENT),
         Arguments.of(new ResourceNotFoundException("missing"), Status.NOT_FOUND),
-        Arguments.of(new MissingRepositoryException("no repo"), Status.NOT_FOUND),
+        Arguments.of(new MissingRepositoryException("no repo"), Status.FORBIDDEN),
         Arguments.of(new BackupRepositoryConnectionException("unreachable"), Status.UNAVAILABLE),
         Arguments.of(new IndexNotFoundException(List.of("index-1")), Status.INTERNAL),
         Arguments.of(new BackupException("something else"), Status.INTERNAL));
@@ -295,6 +299,26 @@ class RegistryHistoryBackupApiTest {
     // when / then
     assertThatExceptionOfType(ServiceException.class)
         .isThrownBy(() -> api.getBackups(TENANT_ID, true, "*"))
+        .satisfies(e -> assertThat(e.getStatus()).isEqualTo(Status.FORBIDDEN));
+  }
+
+  /**
+   * The two must not collapse onto one status: the cluster-wide endpoints read {@code NOT_FOUND} as
+   * "this physical tenant was reached and holds nothing", so a repository missing from the store
+   * has to be distinguishable from a backup that simply does not exist.
+   */
+  @Test
+  void shouldDistinguishAMissingRepositoryFromAMissingBackup() {
+    // given
+    when(backupService.getBackupState(42L)).thenThrow(new MissingRepositoryException("no repo"));
+    when(backupService.getBackupState(43L)).thenThrow(new ResourceNotFoundException("no such id"));
+
+    // when / then
+    assertThatExceptionOfType(ServiceException.class)
+        .isThrownBy(() -> api.getBackupState(TENANT_ID, 42L))
+        .satisfies(e -> assertThat(e.getStatus()).isEqualTo(Status.FORBIDDEN));
+    assertThatExceptionOfType(ServiceException.class)
+        .isThrownBy(() -> api.getBackupState(TENANT_ID, 43L))
         .satisfies(e -> assertThat(e.getStatus()).isEqualTo(Status.NOT_FOUND));
   }
 

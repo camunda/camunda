@@ -1,5 +1,49 @@
 # Changelog
 
+## v0.0.92
+
+### 🚀 Enhancements
+
+- Add `state` field (`ACTIVE`, `DRAINING`, `DELETED`) to the 8.8 and 8.9 process-definition schemas, exposing and enabling filtering on the draining state ([#56988](https://github.com/camunda/camunda/issues/56988))
+
+### ❤️ Contributors
+
+- Ambrose Tan ([@tanjinyi](https://github.com/tanjinyi))
+
+## v0.0.91
+
+### 🚀 Enhancements
+
+- Accept a top-level `$or` clause in the 8.10 user task search filter, matching the other search endpoints ([#59998](https://github.com/camunda/camunda/issues/59998))
+
+### ❤️ Contributors
+
+- Aleksander Dytko ([@aleksander-dytko](https://github.com/aleksander-dytko))
+
+## v0.0.90
+
+### 🩹 Fixes
+
+- Type `AgentInstanceDefinition.systemPrompt` as a content block array instead of a plain string, matching the breaking API change from [#60602](https://github.com/camunda/camunda/pull/60602) ([#60624](https://github.com/camunda/camunda/issues/60624))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.89
+
+### 🩹 Fixes
+
+- Align agent instance types with their latest OpenAPI spec
+  - Add `agentDefinitionKey` to agent instances, their search filter, and sort fields
+  - Add `CONFIGURATION` to the agent instance history role enum
+  - Add `historyItemId`, `tools`, `model`, `provider`, `limits`, and `systemPrompt` to agent instance history items
+  - Widen `AgentInstanceObjectContent.object` to accept any JSON value instead of only objects
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.88
 
 ### 🚀 Enhancements

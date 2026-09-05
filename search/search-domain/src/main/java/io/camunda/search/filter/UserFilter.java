@@ -24,7 +24,8 @@ public record UserFilter(
     List<Operation<String>> emailOperations,
     String tenantId,
     String groupId,
-    String roleId)
+    String roleId,
+    List<UserFilter> orFilters)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -34,7 +35,8 @@ public record UserFilter(
         .emailOperations(emailOperations)
         .tenantId(tenantId)
         .groupId(groupId)
-        .roleId(roleId);
+        .roleId(roleId)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<UserFilter> {
@@ -44,6 +46,7 @@ public record UserFilter(
     private String tenantId;
     private String groupId;
     private String roleId;
+    private List<UserFilter> orFilters;
 
     public Builder usernameOperations(final List<Operation<String>> operations) {
       usernameOperations = addValuesToList(usernameOperations, operations);
@@ -117,6 +120,19 @@ public record UserFilter(
       return this;
     }
 
+    public Builder addOrOperation(final UserFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<UserFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public UserFilter build() {
       return new UserFilter(
@@ -125,7 +141,8 @@ public record UserFilter(
           emailOperations,
           tenantId,
           groupId,
-          roleId);
+          roleId,
+          orFilters);
     }
   }
 }

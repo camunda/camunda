@@ -16,12 +16,14 @@ import {mockInstance, Wrapper} from './index.setup';
 import {createUser, mockProcessXML, searchResult} from 'modules/testUtils';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('InstanceHeader - Business ID', () => {
   beforeEach(() => {
     mockQueryBatchOperationItems().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockMe().withSuccess(createUser());
   });
 

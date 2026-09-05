@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -27,7 +27,7 @@ public interface MutableSuspensionState extends SuspensionState {
    * index from the record it was built from. Callers are responsible for key generation and
    * uniqueness.
    */
-  void bufferCommand(long bufferedCommandKey, ProcessInstanceBufferedCommandRecord command);
+  void bufferCommand(long bufferedCommandKey, BufferedCommandRecord command);
 
   /**
    * Removes a single buffered command entry. No-op if it does not exist. The process instance it

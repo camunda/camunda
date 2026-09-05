@@ -32,14 +32,16 @@ import org.springframework.core.Ordered;
 
 /**
  * Verifies that exactly one security setup is active per {@code optimize.security.csl.enabled}
- * state, for both the CCSM and CCSaaS editions (ADR-0038). Default (property absent/false) keeps
- * the legacy adapters active with the CSL wiring absent; {@code true} flips this so the legacy
- * adapters (and, for CCSaaS, the Auth0 client-registration publisher) back off while {@link
- * OptimizeCamundaSecurityConfig} takes over.
+ * state, for both the CCSM and CCSaaS editions (ADR-0038). Default (property absent or {@code
+ * true}, since camunda/camunda#58483) activates {@link OptimizeCamundaSecurityConfig} with the
+ * legacy adapters (and, for CCSaaS, the Auth0 client-registration publisher) backed off; explicit
+ * {@code false} is the escape hatch that flips this back to the legacy stack through 8.10
+ * (camunda/camunda#58484).
  */
 class CslSecurityChainSelectionTest {
 
   private static final String CSL_FLAG_ENABLED = "optimize.security.csl.enabled=true";
+  private static final String CSL_FLAG_DISABLED = "optimize.security.csl.enabled=false";
 
   // Explicit static endpoints (no issuer-uri) so CSL builds the OIDC client registration without
   // any network/discovery call.
@@ -98,19 +100,24 @@ class CslSecurityChainSelectionTest {
   }
 
   @Test
-  void shouldActivateLegacyCcsmChainWhenFlagAbsent() {
-    ccsmRunner.run(
-        context -> {
-          assertThat(context).hasNotFailed();
-          assertThat(context).hasSingleBean(CCSMSecurityConfigurerAdapter.class);
-          assertThat(context).doesNotHaveBean(OptimizeCamundaSecurityConfig.class);
-          assertThat(context).doesNotHaveBean(SecurityPathPort.class);
-          assertThat(context).doesNotHaveBean("externalSharingRequestAdjuster");
-        });
+  void shouldActivateCslChainForCcsmWhenFlagAbsent() {
+    ccsmRunner
+        .withPropertyValues(STATIC_OIDC_PROPERTIES)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context).doesNotHaveBean(CCSMSecurityConfigurerAdapter.class);
+              assertThat(context).hasSingleBean(OptimizeCamundaSecurityConfig.class);
+              assertThat(context.getBean(SecurityPathPort.class))
+                  .isInstanceOf(OptimizeSecurityPathAdapter.class);
+              assertThat(context.getBean(MembershipPort.class))
+                  .isInstanceOf(OptimizeMembershipAdapter.class);
+              assertExternalSharingFilterRegistered(context);
+            });
   }
 
   @Test
-  void shouldActivateCslChainForCcsmWhenFlagEnabled() {
+  void shouldActivateCslChainForCcsmWhenFlagExplicitlyEnabled() {
     ccsmRunner
         .withPropertyValues(STATIC_OIDC_PROPERTIES)
         .withPropertyValues(CSL_FLAG_ENABLED)
@@ -128,18 +135,37 @@ class CslSecurityChainSelectionTest {
   }
 
   @Test
-  void shouldActivateLegacyCcsaasChainWhenFlagAbsent() {
-    ccsaasRunner.run(
-        context -> {
-          assertThat(context).hasNotFailed();
-          assertThat(context).hasSingleBean(CCSaaSSecurityConfigurerAdapter.class);
-          assertThat(context).hasSingleBean(CCSaasAuth0WebSecurityConfig.class);
-          assertThat(context).doesNotHaveBean(OptimizeCamundaSecurityConfig.class);
-        });
+  void shouldActivateLegacyCcsmChainWhenFlagExplicitlyDisabled() {
+    ccsmRunner
+        .withPropertyValues(CSL_FLAG_DISABLED)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context).hasSingleBean(CCSMSecurityConfigurerAdapter.class);
+              assertThat(context).doesNotHaveBean(OptimizeCamundaSecurityConfig.class);
+              assertThat(context).doesNotHaveBean(SecurityPathPort.class);
+              assertThat(context).doesNotHaveBean("externalSharingRequestAdjuster");
+            });
   }
 
   @Test
-  void shouldActivateCslChainForCcsaasWhenFlagEnabled() {
+  void shouldActivateCslChainForCcsaasWhenFlagAbsent() {
+    ccsaasRunner
+        .withPropertyValues(STATIC_OIDC_PROPERTIES)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context).doesNotHaveBean(CCSaaSSecurityConfigurerAdapter.class);
+              assertThat(context).doesNotHaveBean(CCSaasAuth0WebSecurityConfig.class);
+              assertThat(context).hasSingleBean(OptimizeCamundaSecurityConfig.class);
+              assertThat(context.getBean(MembershipPort.class))
+                  .isInstanceOf(OptimizeMembershipAdapter.class);
+              assertExternalSharingFilterRegistered(context);
+            });
+  }
+
+  @Test
+  void shouldActivateCslChainForCcsaasWhenFlagExplicitlyEnabled() {
     ccsaasRunner
         .withPropertyValues(STATIC_OIDC_PROPERTIES)
         .withPropertyValues(CSL_FLAG_ENABLED)
@@ -152,6 +178,19 @@ class CslSecurityChainSelectionTest {
               assertThat(context.getBean(MembershipPort.class))
                   .isInstanceOf(OptimizeMembershipAdapter.class);
               assertExternalSharingFilterRegistered(context);
+            });
+  }
+
+  @Test
+  void shouldActivateLegacyCcsaasChainWhenFlagExplicitlyDisabled() {
+    ccsaasRunner
+        .withPropertyValues(CSL_FLAG_DISABLED)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context).hasSingleBean(CCSaaSSecurityConfigurerAdapter.class);
+              assertThat(context).hasSingleBean(CCSaasAuth0WebSecurityConfig.class);
+              assertThat(context).doesNotHaveBean(OptimizeCamundaSecurityConfig.class);
             });
   }
 

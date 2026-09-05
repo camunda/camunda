@@ -18,3 +18,6 @@ todos.json
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Vitest browser mode
+/test-artifacts/

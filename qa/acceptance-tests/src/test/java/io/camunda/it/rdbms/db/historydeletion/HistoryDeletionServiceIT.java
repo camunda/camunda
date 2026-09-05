@@ -14,12 +14,14 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.it.rdbms.db.fixtures.AgentDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.history.ProcessInstanceHistory;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.time.Duration;
 import java.time.InstantSource;
 import org.junit.jupiter.api.Tag;
@@ -176,6 +178,74 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     assertThat(rdbmsService.getVariableReader().findLookupVariableNames(targetPdKey)).isEmpty();
     assertThat(rdbmsService.getVariableReader().findLookupVariableNames(controlPdKey))
         .containsExactly(controlVarName);
+  }
+
+  @TestTemplate
+  public void shouldDeleteAgentDefinitionsWhenDeletingProcessDefinition(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var writers = rdbmsService.createWriter(0);
+    final var historyDeletionService =
+        new HistoryDeletionService(
+            writers,
+            rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
+            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000),
+            InstantSource.system());
+
+    // target process definition — no live process instances so it is eligible for deletion
+    final var targetProcDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long targetPdKey = targetProcDef.processDefinitionKey();
+    final var targetAgentDefinition =
+        AgentDefinitionFixtures.createAndSaveRandomAgentDefinition(
+            testApplication, b -> b.processDefinitionKey(targetPdKey));
+
+    // control process definition whose agent definition must survive (not scheduled for deletion)
+    final var controlProcDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long controlPdKey = controlProcDef.processDefinitionKey();
+    final var controlAgentDefinition =
+        AgentDefinitionFixtures.createAndSaveRandomAgentDefinition(
+            testApplication, b -> b.processDefinitionKey(controlPdKey));
+
+    // schedule target process definition for deletion (no live process instances)
+    final var deletionModel =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(targetPdKey)
+            .resourceType(HistoryDeletionDbModel.HistoryDeletionTypeDbModel.PROCESS_DEFINITION)
+            .batchOperationKey(ProcessInstanceFixtures.nextKey())
+            .partitionId(0)
+            .build();
+    writers.getHistoryDeletionWriter().create(deletionModel);
+    writers.flush();
+
+    // pre-condition: the target agent definition exists
+    assertThat(
+            rdbmsService
+                .getAgentDefinitionDbReader()
+                .getByKey(
+                    targetAgentDefinition.agentDefinitionKey(), ResourceAccessChecks.disabled()))
+        .isNotNull();
+
+    // when
+    historyDeletionService.deleteHistory(0);
+
+    // then: target agent definition removed; control untouched
+    assertThat(
+            rdbmsService
+                .getAgentDefinitionDbReader()
+                .getByKey(
+                    targetAgentDefinition.agentDefinitionKey(), ResourceAccessChecks.disabled()))
+        .isNull();
+    assertThat(
+            rdbmsService
+                .getAgentDefinitionDbReader()
+                .getByKey(
+                    controlAgentDefinition.agentDefinitionKey(), ResourceAccessChecks.disabled()))
+        .isNotNull();
   }
 
   private void auditLogsNotDeleted(final RdbmsService rdbmsService, final long processInstanceKey) {

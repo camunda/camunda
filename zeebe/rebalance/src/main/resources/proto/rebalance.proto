@@ -15,6 +15,7 @@ message RebalanceOverrides {
   optional uint64 replicationLagThresholdBytes = 1;
   optional uint64 replicationTimeoutMillis = 2;
   optional uint32 maxTransferAttempts = 3;
+  optional uint64 leaderWaitTimeoutMillis = 4;
 }
 
 message RebalanceStatusResponse {
@@ -22,6 +23,37 @@ message RebalanceStatusResponse {
   RunningRebalance running = 1;
   // Absent until a rebalance has run on this coordinator.
   CompletedRebalance lastCompleted = 2;
+  // The cluster's current leadership/balance status (independent of any running
+  // rebalance)
+  ClusterLeadershipStatus leadershipStatus = 3;
+}
+
+message ClusterLeadershipStatus {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    BALANCING = 1;
+    UNBALANCED = 2;
+    BALANCED = 3;
+  }
+
+  State state = 1;
+  repeated PartitionLeadershipStatus partitions = 2;
+}
+
+message PartitionLeadershipStatus {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    TRANSFERRING = 1;
+    UNBALANCED = 2;
+    BALANCED = 3;
+  }
+
+  string physicalTenantId = 1;
+  uint32 partitionId = 2;
+  // Absent while the partition has no current leader.
+  optional string currentLeader = 3;
+  string desiredLeader = 4;
+  State state = 5;
 }
 
 message RunningRebalance {
@@ -31,6 +63,7 @@ message RunningRebalance {
   bool cancelRequested = 4;
   // Empty until the rebalance has been planned.
   repeated PartitionRebalance partitions = 5;
+  google.protobuf.Timestamp startedAt = 6;
 }
 
 message CompletedRebalance {
@@ -45,10 +78,9 @@ message CompletedRebalance {
 
   uint64 rebalanceId = 1;
   RebalanceOutcome outcome = 2;
-  bool dryRun = 3;
-  repeated PartitionRebalance partitions = 4;
-  google.protobuf.Timestamp startedAt = 5;
-  google.protobuf.Timestamp finishedAt = 6;
+  repeated PartitionRebalance partitions = 3;
+  google.protobuf.Timestamp startedAt = 4;
+  google.protobuf.Timestamp finishedAt = 5;
 }
 
 message PartitionRebalance {
@@ -83,6 +115,7 @@ message PartitionRebalance {
     NO_LEADER = 16;
     NO_RESPONSE = 17;
     CANCELLED = 18;
+    PHYSICAL_TENANT_DISABLED = 19;
   }
 
   // The partition group the partition belongs to; partition ids are unique only within a group.

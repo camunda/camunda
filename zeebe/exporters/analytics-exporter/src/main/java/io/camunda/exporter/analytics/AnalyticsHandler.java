@@ -17,6 +17,9 @@ import io.camunda.zeebe.protocol.record.RecordValue;
  */
 public interface AnalyticsHandler<T extends RecordValue> {
 
+  /** Returns the category this handler belongs to. Every handler must make a deliberate choice. */
+  AnalyticsCategory category();
+
   void handle(Record<T> record);
 
   /**

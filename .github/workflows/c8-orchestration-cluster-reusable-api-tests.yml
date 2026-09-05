@@ -99,8 +99,48 @@ jobs:
         shell: bash
         run: |
           echo "Checking if services are up..."
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            app_containers=(operate tasklist)
+          else
+            app_containers=(camunda)
+          fi
           ready=false
+          declare -A non_running
           for i in {1..90}; do
+            # Fail fast if an app container crashed, instead of waiting out the
+            # full ~15 min timeout. Resolve the container through compose rather
+            # than by bare name: stable/8.7 sets container_name to
+            # operate-${DATABASE}, so `docker inspect operate` matches nothing
+            # there. --all is required or compose omits an already-exited
+            # container. Test Running rather than a status allowlist so a crash
+            # loop is caught too (8.7 sets restart: always, which surfaces as
+            # `restarting`, never `exited`) along with a container that was never
+            # created at all. Two consecutive observations keep a single
+            # legitimate restart from failing the job.
+            for c in "${app_containers[@]}"; do
+              cid="$(DATABASE=elasticsearch docker compose ps --all --quiet "$c" 2>/dev/null || true)"
+              running=""
+              if [[ -n "$cid" ]]; then
+                running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+              fi
+              if [[ "$running" == "true" ]]; then
+                non_running["$c"]=0
+                continue
+              fi
+              non_running["$c"]=$(( ${non_running["$c"]:-0} + 1 ))
+              if (( ${non_running["$c"]} >= 2 )); then
+                if [[ -z "$cid" ]]; then
+                  echo "No container for service '$c' on two consecutive checks; it was never created or has been removed."
+                else
+                  echo "Container for service '$c' is not running on two consecutive checks; it will never become ready."
+                  docker inspect "$cid" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}} restartCount={{.RestartCount}}' || true
+                fi
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: service '$c' is not running."
+                exit 1
+              fi
+            done
+
             if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
@@ -142,12 +182,16 @@ jobs:
       - name: Print Docker logs before failing
         shell: bash
         if: failure()
+        # DATABASE must be set: docker-compose.yml interpolates it into the
+        # camunda service's depends_on / env_file, so an unset value makes the
+        # compose project invalid ("depends on undefined service") and this
+        # diagnostic step errors out instead of printing the container logs.
         run: |
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
-            docker compose logs tasklist
-            docker compose logs operate
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
           else
-            docker compose logs camunda
+            DATABASE=elasticsearch docker compose logs camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -254,15 +298,30 @@ jobs:
           BRANCH_NAME: ${{ inputs.branch }}
         run: |
           pip install trcli==1.14.1
+          log=$(mktemp)
+          set +e
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             --batch-size 500 \
+            --timeout 180 \
             parse_junit --suite-id 17050 \
             --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (Mode ${{ inputs.camunda_mode }}) - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
-            -f "$JUNIT_RESULTS_FILE"
+            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
+          status=${PIPESTATUS[0]}
+          set -e
+          # trcli's --close-run is not idempotent: past its client timeout it retries
+          # silently and TestRail rejects the retry because the first close landed.
+          # Requiring the Done line means a mid-upload rejection still fails the step.
+          if [ "$status" -ne 0 ] &&
+            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
+            grep -qF 'The test run is already completed' "$log"; then
+            echo "::warning::TestRail close raced its own retry; all results were uploaded"
+            exit 0
+          fi
+          exit "$status"
 
       - name: Sanitize branch name for artifact names
         id: sanitize

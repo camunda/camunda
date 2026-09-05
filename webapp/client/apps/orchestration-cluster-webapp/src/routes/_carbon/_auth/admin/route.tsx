@@ -7,25 +7,38 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
-import {getClientConfig} from '#/shared/config/getClientConfig';
-import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
+import {ComponentAccessDeniedError, ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
+import {assertComponentAccessible} from '#/shared/componentAccess';
+import {queries} from '#/shared/http/queries';
+import {ComponentAccessDeniedPage} from '#/shared/pages/ComponentAccessDeniedPage';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
 import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 
 export const Route = createFileRoute('/_carbon/_auth/admin')({
-	beforeLoad: () => {
-		if (!getClientConfig().components.active.includes('admin')) {
-			throw new ComponentNotAvailableError('admin');
-		}
+	beforeLoad: async ({context: {queryClient}}) => {
+		const {authorizedComponents} = await queryClient.ensureQueryData(queries.getCurrentUser());
+		assertComponentAccessible('admin', authorizedComponents);
 	},
 	errorComponent: ({error}) => {
+		if (error instanceof ComponentAccessDeniedError) {
+			return (
+				<main id="main-content" className="cds--content">
+					<ComponentAccessDeniedPage />
+				</main>
+			);
+		}
+
 		if (error instanceof ComponentNotAvailableError || error instanceof ForbiddenError) {
-			return <ForbiddenPage />;
+			return (
+				<main id="main-content" className="cds--content">
+					<ForbiddenPage />
+				</main>
+			);
 		}
 		throw error;
 	},
 	notFoundComponent: () => (
-		<main className="cds--content">
+		<main id="main-content" className="cds--content">
 			<NotFoundPage />
 		</main>
 	),

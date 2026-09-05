@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.broker.protocol.commandapi;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
@@ -119,6 +120,11 @@ public final class ExecuteCommandRequest implements ClientRequest {
   @Override
   public RequestType getRequestType() {
     return RequestType.COMMAND;
+  }
+
+  @Override
+  public String getPartitionGroup() {
+    return DEFAULT_PHYSICAL_TENANT_ID;
   }
 
   @Override

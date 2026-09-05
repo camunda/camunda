@@ -1,6 +1,8 @@
 # description: Orchestrates weekday release load tests across all active stable branches and main.
-#              Each branch has a hardcoded release tag. Patch releases do NOT require updates —
-#              only new minor versions or deprecated branches need changes.
+#              Each branch has a hardcoded release tag. These patch pins DO need periodic manual
+#              updates (e.g., 8.8.17 -> 8.8.18) to avoid version skew between the load-test client
+#              and the pinned server tag — remember to update both the `with: tag:` input and the
+#              Slack "Tested versions" notification text below.
 # calls: camunda-release-load-test.yaml (one call per branch),
 #        camunda-verify-and-cleanup-load-test.yml (verify + delete namespace per branch)
 # notifications: Slack (#reliability-testing-alerts) with per-branch results
@@ -25,9 +27,12 @@ env:
 
 jobs:
   # Stable branch load tests — one job per active branch.
-  # Patch releases (e.g., 8.8.17 -> 8.8.18) do NOT require updates — the existing tag remains valid.
+  # These patch pins DO need periodic manual updates (e.g., 8.8.17 -> 8.8.18) to avoid version
+  # skew between the load-test client and the pinned server tag.
   #
   # When to update:
+  # - A patch release should be tested: bump the tag below and the matching line in the Slack
+  #   "Tested versions" notification (see notify-on-success)
   # - A new minor version is released (e.g., 8.10): add a new job and update verify-and-cleanup/notify
   # - A stable branch is deprecated: remove the corresponding job and update verify-and-cleanup/notify
   release-load-test-8-7:
@@ -36,7 +41,7 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-8-7-x
-      tag: '8.7.25'
+      tag: '8.7.37'
 
   release-load-test-8-8:
     name: Release load test (stable/8.8)
@@ -44,7 +49,7 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-8-8-x
-      tag: '8.8.17'
+      tag: '8.8.35'
 
   release-load-test-8-9:
     name: Release load test (stable/8.9)
@@ -52,7 +57,15 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-8-9-x
-      tag: '8.9.1'
+      tag: '8.9.16'
+
+  release-load-test-8-10:
+    name: Release load test (stable/8.10)
+    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.10
+    secrets: inherit
+    with:
+      name: schedule-release-8-10-x
+      tag: '8.10.0-alpha4'
 
   release-load-test-main:
     name: Release load test (main)
@@ -60,7 +73,10 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-main
-      tag: '8.9.1'
+      # main tracks its own release line's latest published pre-release (8.10 alpha), not
+      # stable/8.9's tag — there is no 8.10 stable yet. Bump this to the newest 8.10.0-alphaN
+      # as new alphas are cut.
+      tag: '8.10.0-alpha4'
 
   # Verify and cleanup jobs — one per branch, run in parallel.
   # Each job waits for pods + gateway connectivity, then deletes the namespace.
@@ -91,6 +107,15 @@ jobs:
     with:
       namespace: c8-schedule-release-8-9-x
 
+  verify-and-cleanup-8-10:
+    name: Verify and cleanup (stable/8.10)
+    needs: [release-load-test-8-10]
+    if: always()
+    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-schedule-release-8-10-x
+
   verify-and-cleanup-main:
     name: Verify and cleanup (main)
     needs: [release-load-test-main]
@@ -103,12 +128,18 @@ jobs:
   notify-on-success:
     name: Notify on success
     runs-on: ubuntu-latest
-    needs: [verify-and-cleanup-8-7, verify-and-cleanup-8-8, verify-and-cleanup-8-9, verify-and-cleanup-main]
+    needs:
+      - verify-and-cleanup-8-7
+      - verify-and-cleanup-8-8
+      - verify-and-cleanup-8-9
+      - verify-and-cleanup-8-10
+      - verify-and-cleanup-main
     if: >-
       always() &&
       needs.verify-and-cleanup-8-7.result == 'success' &&
       needs.verify-and-cleanup-8-8.result == 'success' &&
       needs.verify-and-cleanup-8-9.result == 'success' &&
+      needs.verify-and-cleanup-8-10.result == 'success' &&
       needs.verify-and-cleanup-main.result == 'success'
     timeout-minutes: 5
     permissions: {}
@@ -144,10 +175,11 @@ jobs:
                   type: mrkdwn
                   text: |-
                     *Tested versions:*
-                    • stable/8.7: `8.7.25` (${{ needs.verify-and-cleanup-8-7.result }})
-                    • stable/8.8: `8.8.17` (${{ needs.verify-and-cleanup-8-8.result }})
-                    • stable/8.9: `8.9.1` (${{ needs.verify-and-cleanup-8-9.result }})
-                    • main: `8.9.1` (${{ needs.verify-and-cleanup-main.result }})
+                    • stable/8.7: `8.7.37` (${{ needs.verify-and-cleanup-8-7.result }})
+                    • stable/8.8: `8.8.35` (${{ needs.verify-and-cleanup-8-8.result }})
+                    • stable/8.9: `8.9.16` (${{ needs.verify-and-cleanup-8-9.result }})
+                    • stable/8.10: `8.10.0-alpha4` (${{ needs.verify-and-cleanup-8-10.result }})
+                    • main: `8.10.0-alpha4` (${{ needs.verify-and-cleanup-main.result }})
 
               - type: context
                 elements:
@@ -167,12 +199,18 @@ jobs:
   notify-on-failure:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [verify-and-cleanup-8-7, verify-and-cleanup-8-8, verify-and-cleanup-8-9, verify-and-cleanup-main]
+    needs:
+      - verify-and-cleanup-8-7
+      - verify-and-cleanup-8-8
+      - verify-and-cleanup-8-9
+      - verify-and-cleanup-8-10
+      - verify-and-cleanup-main
     if: >-
       always() &&
       (needs.verify-and-cleanup-8-7.result == 'failure' ||
       needs.verify-and-cleanup-8-8.result == 'failure' ||
       needs.verify-and-cleanup-8-9.result == 'failure' ||
+      needs.verify-and-cleanup-8-10.result == 'failure' ||
       needs.verify-and-cleanup-main.result == 'failure')
     timeout-minutes: 5
     permissions: {}
@@ -211,6 +249,7 @@ jobs:
                     • stable/8.7: ${{ needs.verify-and-cleanup-8-7.result }}
                     • stable/8.8: ${{ needs.verify-and-cleanup-8-8.result }}
                     • stable/8.9: ${{ needs.verify-and-cleanup-8-9.result }}
+                    • stable/8.10: ${{ needs.verify-and-cleanup-8-10.result }}
                     • main: ${{ needs.verify-and-cleanup-main.result }}
 
               - type: section

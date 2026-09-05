@@ -12,8 +12,9 @@ package io.camunda.db.rdbms;
  * consults this registry, scoped to a single tenant id, before exporting records to make sure the
  * target schema is ready.
  *
- * @see DefaultRdbmsSchemaManagerRegistry the production implementation that initializes every
- *     tenant's schema at startup
+ * @see RdbmsSchemaManagers builds the per-tenant schema managers the implementation runs; the
+ *     implementation itself, {@code RdbmsSchemaInitializer}, lives in the distribution because
+ *     orchestrating them is not this module's concern
  */
 public interface RdbmsSchemaManagerRegistry {
 

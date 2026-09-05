@@ -38,15 +38,16 @@ function getReporters(): Pick<
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
-  plugins:
-    mode === 'sbom'
+  plugins: [
+    ...plugins,
+    ...(mode === 'sbom'
       ? [
-          ...plugins,
           sbom({
             specVersion: '1.6',
           }),
         ]
-      : plugins,
+      : []),
+  ],
   preview: {
     port: 3003,
     open: false,
@@ -64,6 +65,10 @@ export default defineConfig(({mode}) => ({
         bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
       },
       '/logout': {
+        target: 'http://localhost:8080',
+        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+      },
+      '/session/heartbeat': {
         target: 'http://localhost:8080',
         bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
       },
@@ -103,7 +108,10 @@ export default defineConfig(({mode}) => ({
     server: {
       deps: {
         // this was necessary due to some issues with styled-components which appeared when bumping C3 on this https://github.com/camunda/camunda/pull/44663
-        inline: ['@camunda/camunda-composite-components'],
+        inline: [
+          '@camunda/camunda-composite-components',
+          '@camunda/design-system',
+        ],
       },
     },
     projects: [

@@ -14,14 +14,15 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
-import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
+import io.camunda.gateway.protocol.model.OwnAuthorizationSearchResult;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.in.CamundaUserPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -44,14 +45,17 @@ public class AuthenticationController {
   private final CamundaUserPort camundaUserPort;
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final CamundaSecurityLibraryProperties securityProperties;
 
   public AuthenticationController(
       final CamundaUserPort camundaUserPort,
       final ServiceRegistry serviceRegistry,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final CamundaSecurityLibraryProperties securityProperties) {
     this.camundaUserPort = camundaUserPort;
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+    this.securityProperties = securityProperties;
   }
 
   @CamundaGetMapping(path = "/me")
@@ -75,7 +79,7 @@ public class AuthenticationController {
    * #getCurrentUser()}.
    */
   @CamundaPostMapping(path = "/me/authorizations/search")
-  public ResponseEntity<AuthorizationSearchResult> searchOwnAuthorizations(
+  public ResponseEntity<OwnAuthorizationSearchResult> searchOwnAuthorizations(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final AuthorizationSearchQuery query) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -88,7 +92,7 @@ public class AuthenticationController {
             q -> searchOwn(physicalTenantId, q, authentication));
   }
 
-  private ResponseEntity<AuthorizationSearchResult> searchOwn(
+  private ResponseEntity<OwnAuthorizationSearchResult> searchOwn(
       final String physicalTenantId,
       final AuthorizationQuery query,
       final CamundaAuthentication authentication) {
@@ -98,7 +102,8 @@ public class AuthenticationController {
               .authorizationServices(physicalTenantId)
               .searchOwnAuthorizations(query, authentication);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
+          SearchQueryResponseMapper.toOwnAuthorizationSearchQueryResponse(
+              result, securityProperties.getAuthorizations().isEnabled()));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

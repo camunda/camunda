@@ -11,16 +11,14 @@ import io.camunda.db.rdbms.write.domain.AgentHistoryDbModel;
 import io.camunda.db.rdbms.write.domain.AgentHistoryDbModel.Builder;
 import io.camunda.db.rdbms.write.service.AgentHistoryWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.exporter.rdbms.utils.AgentContentMapper;
 import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.exporter.rdbms.utils.ExportUtil;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
+import io.camunda.search.entities.ContentItem;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
@@ -28,7 +26,6 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHisto
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceLimitsValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
-import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -87,8 +84,14 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
             .producedAt(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMillis)))
             .inputTokens(ExportUtil.nullIfNegative(value.getMetrics().getInputTokens()))
             .outputTokens(ExportUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
+            .reasoningTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getReasoningTokenCount()))
+            .cacheCreationTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getCacheCreationTokenCount()))
+            .cacheReadTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getCacheReadTokenCount()))
             .durationMs(ExportUtil.nullIfNegative(value.getMetrics().getDurationMs()))
-            .contentItems(mapContent(value.getContent()))
+            .contentItems(AgentContentMapper.mapContent(value.getContent()))
             .toolCallValues(mapToolCalls(value.getToolCalls()))
             .historyItemId(ExportUtil.emptyToNull(value.getHistoryItemId()))
             .toolValues(mapTools(value.getTools()))
@@ -149,7 +152,7 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
     if (systemPrompt == null || systemPrompt.isEmpty()) {
       return List.of();
     }
-    return mapContent(systemPrompt);
+    return AgentContentMapper.mapContent(systemPrompt);
   }
 
   private static AgentInstanceHistoryCommitStatus mapCommitStatus(final AgentHistoryIntent intent) {
@@ -161,55 +164,6 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
           throw new IllegalStateException(
               "Unexpected AgentHistoryIntent on an exported record: " + intent);
     };
-  }
-
-  private static List<ContentItem> mapContent(
-      final List<? extends AgentHistoryMessageContentValue> content) {
-    return content.stream()
-        .map(
-            c ->
-                switch (c.getContentType()) {
-                  case TEXT ->
-                      new ContentItem(
-                          ContentType.TEXT, ExportUtil.emptyToNull(c.getText()), null, null);
-                  case DOCUMENT ->
-                      new ContentItem(
-                          ContentType.DOCUMENT,
-                          null,
-                          mapDocumentReference(c.getDocumentReference()),
-                          null);
-                  case OBJECT -> new ContentItem(ContentType.OBJECT, null, null, c.getObject());
-                  case UNSPECIFIED ->
-                      throw new IllegalStateException(
-                          "should never happen — protocol UNSPECIFIED is always overwritten before export");
-                })
-        .toList();
-  }
-
-  private static DocumentReference mapDocumentReference(final DocumentReferenceValue ref) {
-    if (ref == null) {
-      return null;
-    }
-
-    final var meta = ref.getMetadata();
-    final var expiresAt =
-        meta.getExpiresAt() > 0
-            ? DateUtil.toOffsetDateTime(Instant.ofEpochMilli(meta.getExpiresAt()))
-            : null;
-    final Long processInstanceKey =
-        meta.getProcessInstanceKey() > 0 ? meta.getProcessInstanceKey() : null;
-    return new DocumentReference(
-        ref.getStoreId(),
-        ref.getDocumentId(),
-        ExportUtil.emptyToNull(ref.getContentHash()),
-        new DocumentMetadata(
-            meta.getContentType(),
-            meta.getFileName(),
-            expiresAt,
-            meta.getSize(),
-            ExportUtil.emptyToNull(meta.getProcessDefinitionId()),
-            processInstanceKey,
-            meta.getCustomProperties()));
   }
 
   private static List<ToolCall> mapToolCalls(

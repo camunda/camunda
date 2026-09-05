@@ -345,46 +345,78 @@ make template-load-test-setup-chaos
 
 In the GitHub workflow, set the `enable-chaos` input to `true`.
 
-#### Optional second physical tenant
+#### Optional physical tenants (pt1..ptN)
 
-A load test can exercise **two physical tenants** (`default` and `testfoo`) on a single cluster that
-share one RDBMS, isolated by table prefix (`DEFAULT_` / `TESTFOO_`). This validates physical-tenant
-isolation and independent load per tenant.
+A load test can exercise **N extra physical tenants** (`pt1`, `pt2`, ..., `ptN`) alongside the
+default tenant, all sharing the namespace's `secondary_storage` and isolated from it and from each
+other:
 
-Because physical tenants are isolated by RDBMS table prefix, this only works with an rdbms
-`secondary_storage` (`postgresql`, `mysql`, `mariadb`, `mssql`, `oracle`); any other value fails fast.
+- **rdbms** (`postgresql`, `mysql`, `mariadb`, `mssql`, `oracle`): shared database, isolated by table
+  prefix (`DEFAULT_`, `PT1_`, `PT2_`, ...).
+- **elasticsearch** / **opensearch**: shared cluster, isolated by index prefix (`default-`, `pt1-`,
+  `pt2-`, ...).
+- **none**: no storage layer to isolate — this still exercises broker/engine/REST-routing-level
+  physical-tenant isolation without a storage layer to configure.
+
+This is supported starting from `stable-810` only.
 
 ```sh
-make install physical_tenants=true secondary_storage=postgresql scenario=typical
+make install physical_tenant_count=3 secondary_storage=postgresql scenario=typical
 ```
 
-When enabled, the Makefile:
+When `physical_tenant_count > 0`, the Makefile:
 
-- Applies `camunda-platform-two-physical-tenants-shared-rdbms.yaml` (a copy of
-  `camunda-platform-values-rdbms.yaml` that also declares the `testfoo` tenant: its `TESTFOO_` prefix,
-  OIDC provider assignment, and orchestration-client authorizations) instead of the plain rdbms values.
-- Clones the generated `load-test-credentials` secret into `load-test-credentials-testfoo`, overriding
-  only the REST address to the tenant path `http://camunda:8080/physical-tenants/testfoo`.
+- Generates `camunda-platform-physical-tenants.yaml` (see `generate-physical-tenant-values.sh`) —
+  the storage prefixes above, plus per-tenant orchestration-client authorizations (the same grants
+  the default tenant has: `CREATE` on `RESOURCE`, `CREATE_PROCESS_INSTANCE`/`UPDATE_PROCESS_INSTANCE`/
+  `READ_PROCESS_INSTANCE`/`READ_PROCESS_DEFINITION` on `PROCESS_DEFINITION`, `CREATE` on `MESSAGE`) and
+  OIDC provider assignment — and layers it on top of the plain storage values.
+- Clones the generated `load-test-credentials` secret into `load-test-credentials-pt<i>` per tenant,
+  overriding only the REST address to that tenant's path `http://camunda:8080/physical-tenants/pt<i>`.
 - Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
-  tester, renames them to `starter-testfoo`/`worker-testfoo`, and applies them. The testfoo tester uses
-  REST (`global.preferRest.enabled=true`) because gRPC only routes to the default physical tenant.
+  tester, renames them to `starter-pt<i>`/`worker-pt<i>`, and applies them — looped over `pt1..ptN`.
+  Each tester uses REST (`global.preferRest.enabled=true`) because gRPC only routes to the default
+  physical tenant.
 
-A second Helm release is not used because the `camunda-load-tests` subchart hardcodes the
-`starter`/`worker` resource names, which would collide in the same namespace.
+A second Helm release per tenant is not used because the `camunda-load-tests` subchart hardcodes the
+`starter`/`worker` resource names, which would collide in the same namespace. This also means each
+extra tenant gets its own starter/worker deployment set, not a shared pool that scales work across
+tenants.
 
-In the GitHub workflow, set the `physical-tenants` input to `true` (with an rdbms
-`secondary-storage-type`).
+In the GitHub workflow, set the `physical-tenant-count` input (with `secondary-storage-type` set to
+the storage you want all tenants to share).
 
-Verify both tenants receive writes:
+Verify the tenants receive writes — for rdbms, table names fold to the RDBMS's default identifier
+case (e.g. Postgres lowercases unquoted identifiers):
 
 ```sh
 kubectl exec -n <namespace> postgresql-0 -- env PGPASSWORD=camunda \
   psql -U camunda -d camunda -c "
 SELECT 'default' AS tenant, COUNT(*) FROM default_process_instance
-UNION ALL SELECT 'testfoo', COUNT(*) FROM testfoo_process_instance;"
+UNION ALL SELECT 'pt1', COUNT(*) FROM pt1_process_instance;"
 ```
 
+For elasticsearch/opensearch, check indices named `default-*`/`pt1-*` etc. instead.
+
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
+
+##### Sizing for extra tenants (elasticsearch/opensearch)
+
+Each extra tenant with its own index prefix adds a full set of Camunda's indices to the cluster.
+`physical_tenant_count` does not auto-scale the ES/OS node count — if you're pushing past a couple of
+tenants, watch the per-node shard limit and bump the cluster size yourself via the existing
+`load-test-setup-helm-values` workflow input (or directly on `make install`):
+
+```sh
+make install physical_tenant_count=3 secondary_storage=elasticsearch \
+  additional_load_test_setup_configuration="--set elasticsearch.count=5"
+```
+
+`elasticsearch.count` (ECK custom resource, default 3) is defined in
+`charts/load-test-setup/values.yaml`; the `opensearch` subchart has its own replica value under the
+same file. As a rough starting point, plan for one additional node per 2-3 extra tenants at the
+default shard settings — reduce further if you also raise the shard/replica counts in the platform
+values.
 
 ### Running specific scenarios
 

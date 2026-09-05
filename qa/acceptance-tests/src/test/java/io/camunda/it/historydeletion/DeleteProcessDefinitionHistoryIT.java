@@ -7,6 +7,7 @@
  */
 package io.camunda.it.historydeletion;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.util.TestHelper.assertAllProcessInstanceDependantDataDeleted;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
@@ -26,12 +27,17 @@ import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.HistoryDeletion;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
+import io.camunda.search.query.AgentDefinitionQuery;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
+import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -58,6 +64,10 @@ public class DeleteProcessDefinitionHistoryIT {
               });
 
   private static final Duration DELETION_TIMEOUT = Duration.ofSeconds(30);
+  private static final String AGENT_ELEMENT_ID = "agentAhsp";
+  private static final String AGENT_JOB_TYPE = "agent-task";
+  private static final String AGENT_ELEMENT_ID_V1_1 = "agentAhspV1First";
+  private static final String AGENT_ELEMENT_ID_V1_2 = "agentAhspV1Second";
   private static CamundaClient camundaClient;
 
   @Test
@@ -549,6 +559,169 @@ public class DeleteProcessDefinitionHistoryIT {
             .join()
             .items();
     assertThat(remainingSubscriptions).hasSize(1);
+  }
+
+  @Test
+  void shouldDeleteAgentDefinitionsWhenDeletingProcessDefinitionWithHistory() {
+    // given - two versions of one process, each with an agent-calling element, plus a second,
+    // unrelated process with its own agent-calling element
+    final var processId = Strings.newRandomValidBpmnId();
+    // v1 has two agent-calling elements, so the delete assertion below proves a whole version's
+    // agent definitions are removed together, not just one
+    final var processV1 =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .adHocSubProcess(AGENT_ELEMENT_ID_V1_1, p -> p.task("agentTask1"))
+                .zeebeJobType(AGENT_JOB_TYPE)
+                .zeebeAiAgentSubProcessDefinition()
+                .adHocSubProcess(AGENT_ELEMENT_ID_V1_2, p -> p.task("agentTask2"))
+                .zeebeJobType(AGENT_JOB_TYPE)
+                .zeebeAiAgentSubProcessDefinition()
+                .endEvent("end")
+                .done(),
+            processId + "-v1.bpmn");
+    final var processDefinitionKeyV1 = processV1.getProcessDefinitionKey();
+
+    final var processV2 =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTaskV2"))
+                .zeebeJobType(AGENT_JOB_TYPE)
+                .zeebeAiAgentSubProcessDefinition()
+                .endEvent("end")
+                .done(),
+            processId + "-v2.bpmn");
+    final var processDefinitionKeyV2 = processV2.getProcessDefinitionKey();
+
+    assertThat(processDefinitionKeyV2)
+        .describedAs(
+            "v1 and v2 differ only by inner task id, so Zeebe treats them as distinct deployments")
+        .isNotEqualTo(processDefinitionKeyV1);
+    assertThat(processV1.getVersion()).isEqualTo(1);
+    assertThat(processV2.getVersion()).isEqualTo(2);
+
+    final var otherProcessId = Strings.newRandomValidBpmnId();
+    final var otherProcess =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(otherProcessId)
+                .startEvent()
+                .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
+                .zeebeJobType(AGENT_JOB_TYPE)
+                .zeebeAiAgentSubProcessDefinition()
+                .endEvent("end")
+                .done(),
+            otherProcessId + ".bpmn");
+    final var otherProcessDefinitionKey = otherProcess.getProcessDefinitionKey();
+
+    // and - deploy-time creation of all agent definitions has completed (v1 has two, v2 and the
+    // other process have one each)
+    awaitAgentDefinitionCount(processDefinitionKeyV1, 2);
+    awaitAgentDefinitionCount(processDefinitionKeyV2, 1);
+    awaitAgentDefinitionCount(otherProcessDefinitionKey, 1);
+
+    // when - only v1's history is hard-deleted
+    camundaClient
+        .newDeleteResourceCommand(processDefinitionKeyV1)
+        .deleteHistory(true)
+        .send()
+        .join();
+    assertProcessDefinitionDeleted(camundaClient, processDefinitionKeyV1);
+
+    // then - both of v1's agent definitions are gone, while v2's and the other process's survive
+    awaitAgentDefinitionCount(processDefinitionKeyV1, 0);
+    awaitAgentDefinitionCount(processDefinitionKeyV2, 1);
+    awaitAgentDefinitionCount(otherProcessDefinitionKey, 1);
+  }
+
+  @Test
+  void shouldNotDeleteAgentDefinitionsWhenDeletingProcessDefinitionWithoutHistory() {
+    // given - a deployed process with an agent-calling element
+    final var processId = Strings.newRandomValidBpmnId();
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
+                .zeebeJobType(AGENT_JOB_TYPE)
+                .zeebeAiAgentSubProcessDefinition()
+                .endEvent("end")
+                .done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+
+    // and - deploy-time creation of the agent definition has completed
+    awaitAgentDefinitionCount(processDefinitionKey, 1);
+
+    // when - the process definition is deleted without history (undeploy only, no hard delete)
+    final DeleteResourceResponse result =
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(false)
+            .send()
+            .join();
+    assertThat(result.getCreateBatchOperationResponse()).isNull();
+
+    // then - the process definition is marked as deleted in secondary storage, which confirms
+    // the deletion pipeline has run
+    Awaitility.await("Process definition should be marked as deleted")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var deleted =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .filter(
+                          f ->
+                              f.processDefinitionKey(processDefinitionKey)
+                                  .state(ProcessDefinitionState.DELETED))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(deleted).hasSize(1);
+            });
+
+    // and - its agent definition is untouched, because undeploy without history must not remove
+    // secondary storage data
+    awaitAgentDefinitionCount(processDefinitionKey, 1);
+  }
+
+  private void awaitAgentDefinitionCount(final long processDefinitionKey, final int expectedCount) {
+    // under physical-tenant mode, camundaClient routes deploys through the tenant-scoped REST
+    // path, so the process (and its agent definitions) land in that tenant's own store, not
+    // "default" - read back from the same physical tenant the client wrote to
+    final var physicalTenantId =
+        Optional.ofNullable(CamundaMultiDBExtension.getPhysicalTenant())
+            .orElse(DEFAULT_PHYSICAL_TENANT_ID);
+    Awaitility.await(
+            "Agent definitions for process definition "
+                + processDefinitionKey
+                + " should number "
+                + expectedCount)
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        BROKER
+                            .bean(PhysicalTenantSearchClientReaders.class)
+                            .readersByPhysicalTenant()
+                            .get(physicalTenantId)
+                            .agentDefinitionReader()
+                            .search(
+                                AgentDefinitionQuery.of(
+                                    b ->
+                                        b.filter(
+                                            f -> f.processDefinitionKeys(processDefinitionKey))),
+                                ResourceAccessChecks.disabled())
+                            .items())
+                    .hasSize(expectedCount));
   }
 
   /** Asserts that a process definition has been deleted from secondary storage. */

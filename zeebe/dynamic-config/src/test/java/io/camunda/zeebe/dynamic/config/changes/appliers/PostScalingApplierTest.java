@@ -21,9 +21,11 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -85,5 +87,45 @@ final class PostScalingApplierTest {
 
     // then
     verify(clusterChangeExecutor, times(1)).postScaling(clusterMembers);
+  }
+
+  @Test
+  void shouldPreserveGlobalConfigurationAfterApply() {
+    // given
+    final var initialConfig =
+        globalConfigurationWith(Map.of(memberId, BrokerState.initializeAsActive()));
+    final var applier = new PostScalingApplier(memberId, clusterMembers, clusterChangeExecutor);
+    when(clusterChangeExecutor.postScaling(any()))
+        .thenReturn(CompletableActorFuture.completed(null));
+
+    // when
+    final var initResult = applier.init(currentClusterConfigurationWith(initialConfig));
+    final var configAfterInit = initResult.get().apply(initialConfig);
+    final var configAfterApply = applier.apply().join().apply(configAfterInit);
+
+    // then
+    Assertions.assertThat(configAfterApply).isEqualTo(initialConfig);
+  }
+
+  @Test
+  void shouldFailApplyFutureIfPostScalingFails() {
+    // given
+    final var initialConfig =
+        globalConfigurationWith(Map.of(memberId, BrokerState.initializeAsActive()));
+    final var applier = new PostScalingApplier(memberId, clusterMembers, clusterChangeExecutor);
+    when(clusterChangeExecutor.postScaling(any()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(
+                new RuntimeException("Failed to execute operation")));
+    applier.init(currentClusterConfigurationWith(initialConfig));
+
+    // when
+    final var applyFuture = applier.apply();
+
+    // then
+    Assertions.assertThat(applyFuture)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Failed to execute operation");
   }
 }

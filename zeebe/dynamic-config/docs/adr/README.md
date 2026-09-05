@@ -9,4 +9,5 @@ tier structure and cross-cutting ADRs.
 |                             ADR                             |                                    Decision                                     |
 |-------------------------------------------------------------|---------------------------------------------------------------------------------|
 | [0001](0001-multi-partition-group-cluster-configuration.md) | Extend dynamic cluster configuration to support multiple named partition groups |
+| [0002](0002-dependency-graph-partition-group-changes.md)    | Model partition-group changes as a dependency graph, scoped to one group        |
 

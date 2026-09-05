@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.sort;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY;
@@ -41,6 +42,7 @@ public class MessageSubscriptionFieldSortingTransformer implements FieldSortingT
       case "tenantId" -> TENANT_ID;
       case "toolName" -> TOOL_NAME;
       case "inboundConnectorType" -> INBOUND_CONNECTOR_TYPE;
+      case "businessId" -> BUSINESS_ID;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }

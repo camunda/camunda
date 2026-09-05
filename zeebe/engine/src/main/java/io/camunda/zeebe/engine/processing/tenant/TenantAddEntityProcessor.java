@@ -149,7 +149,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     sideEffectWriter.appendSideEffect(
         () -> {
           membershipStateAdapter.invalidateAll();
-          return true;
         });
   }
 

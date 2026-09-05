@@ -56,7 +56,7 @@ final class PhysicalTenantClusterEndpointIT {
 
   @TestZeebe(purgeAfterEach = false)
   private static final TestStandaloneBroker BROKER =
-      TENANTS.configureAdminRoles(new TestStandaloneBroker().withUnauthenticatedAccess());
+      TENANTS.configureStatic(new TestStandaloneBroker().withUnauthenticatedAccess());
 
   private final ClusterActuator actuator = ClusterActuator.of(BROKER);
 

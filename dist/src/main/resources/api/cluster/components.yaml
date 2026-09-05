@@ -279,13 +279,14 @@ schemas:
         example: 1000
 
   AddZoneRequest:
-    description: Request body for adding back a previously force-removed zone. The zone name is
-      given in the path.
+    description: >
+      Request body for adding back a previously force-removed zone. The zone name is given in the
+      path. The zone's brokers are given either as an explicit list in `brokers` or as a count in
+      `numberOfBrokers`; exactly one of the two must be set.
     type: object
     required:
       - numberOfReplicas
       - priority
-      - brokers
     properties:
       numberOfReplicas:
         type: integer
@@ -299,9 +300,32 @@ schemas:
         example: 1000
       brokers:
         type: array
-        description: The brokers to re-add to the zone
+        description: >
+          The brokers to re-add to the zone. Mutually exclusive with `numberOfBrokers`.
         items:
           $ref: "components.yaml#/schemas/BrokerId"
+      numberOfBrokers:
+        type: integer
+        format: int32
+        minimum: 1
+        description: >
+          Number of brokers deployed in the zone. The broker ids are derived from it as
+          `<zoneId>_0` through `<zoneId>_<numberOfBrokers - 1>`, matching the ids the brokers of a
+          zone-aware cluster assign themselves. Mutually exclusive with `brokers`.
+        example: 3
+
+  PartitionJoinRequest:
+    description: Request body for adding a broker to a partition's replication group. The broker
+      and the partition are given in the path.
+    type: object
+    required:
+      - priority
+    properties:
+      priority:
+        type: integer
+        format: int32
+        description: Preferred-leader ranking of the broker within the partition; higher value wins
+        example: 1
 
   ClusterZoneMigrationRequest:
     description: >
@@ -575,6 +599,9 @@ schemas:
           - EXIT_RECOVERY
           - AWAIT_MODE_CHANGE
           - EXPORTING_STATE_CHANGE
+          - REMOVE_PHYSICAL_TENANT
+          - PARTITION_PROMOTE
+          - PARTITION_DEMOTE
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
@@ -715,6 +742,7 @@ schemas:
       - ACTIVE
       - LEAVING
       - RECOVERING
+      - LEARNER
 
   TopologyVersion:
     title: TopologyVersion

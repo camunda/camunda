@@ -6,31 +6,45 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {matchPath, useLocation} from 'react-router-dom';
 import {Bot, Branch, ChartLineSmooth, Dashboard, Folder, Task} from '@carbon/react/icons';
-import type {SidebarNodeDescriptor} from '@camunda/camunda-composite-components';
+import type {CarbonIconType} from '@carbon/icons-react';
+import type {NavIcon, SidebarNode} from '@camunda/design-system';
 
 import {t} from 'translation';
+
+/**
+ * Carbon declares `tabIndex` as `string | number` in its icons' `propTypes`, which is
+ * invariant against React's SVG props. The mismatch is type-only — nothing reads
+ * `propTypes` — so the icon renders unchanged.
+ */
+function navIcon(icon: CarbonIconType): NavIcon {
+  return icon as NavIcon;
+}
 
 function isCurrentPage(active: string[], pathname: string): boolean {
   return active.some((path) => matchPath(pathname, {path, exact: true}) !== null);
 }
 
-export default function useSidebarChildren(noActions?: boolean): SidebarNodeDescriptor[] {
+export default function useSidebarChildren(noActions?: boolean): SidebarNode[] {
   const {pathname} = useLocation();
+
+  const isAnalysis = isCurrentPage(['/analysis/', '/analysis/*'], pathname);
+  // A manual toggle sticks for the side of the Analysis boundary it was made on.
+  const [expansion, setExpansion] = useState({section: isAnalysis, expanded: isAnalysis});
+  const analysisExpanded = expansion.section === isAnalysis ? expansion.expanded : isAnalysis;
 
   if (noActions) {
     return [];
   }
 
-  const isAnalysis = isCurrentPage(['/analysis/', '/analysis/*'], pathname);
-
-  const children = [
+  const children: SidebarNode[] = [
     {
       type: 'item',
       key: 'dashboards',
       label: t('navigation.dashboards').toString(),
-      icon: Dashboard,
+      icon: navIcon(Dashboard),
       linkProps: {to: '/'},
       isActive: isCurrentPage(
         ['/', '/processes/', '/processes/*', '/dashboard/instant/*'],
@@ -41,7 +55,7 @@ export default function useSidebarChildren(noActions?: boolean): SidebarNodeDesc
       type: 'item',
       key: 'collections',
       label: t('navigation.collections').toString(),
-      icon: Folder,
+      icon: navIcon(Folder),
       linkProps: {to: '/collections'},
       isActive:
         isCurrentPage(['/collections/', '/report/*', '/dashboard/*', '/collection/*'], pathname) &&
@@ -51,16 +65,17 @@ export default function useSidebarChildren(noActions?: boolean): SidebarNodeDesc
       type: 'group-item',
       key: 'analysis',
       label: t('navigation.analysis').toString(),
-      icon: ChartLineSmooth,
+      icon: navIcon(ChartLineSmooth),
       linkProps: {to: '/analysis'},
       isActive: isAnalysis,
-      defaultExpanded: isAnalysis,
+      isExpanded: analysisExpanded,
+      onToggleExpand: (expanded) => setExpansion({section: isAnalysis, expanded}),
       children: [
         {
           type: 'item',
           key: 'analysis-task',
           label: t('analysis.task.label').toString(),
-          icon: Task,
+          icon: navIcon(Task),
           linkProps: {to: '/analysis/taskAnalysis'},
           isActive: isCurrentPage(['/analysis/', '/analysis/taskAnalysis'], pathname),
         },
@@ -68,7 +83,7 @@ export default function useSidebarChildren(noActions?: boolean): SidebarNodeDesc
           type: 'item',
           key: 'analysis-branch',
           label: t('analysis.branchAnalysis').toString(),
-          icon: Branch,
+          icon: navIcon(Branch),
           linkProps: {to: '/analysis/branchAnalysis'},
           isActive: isCurrentPage(['/analysis/branchAnalysis'], pathname),
         },
@@ -78,12 +93,11 @@ export default function useSidebarChildren(noActions?: boolean): SidebarNodeDesc
       type: 'item',
       key: 'agentic-control-plane',
       label: t('navigation.agenticControlPlane').toString(),
-      icon: Bot,
+      icon: navIcon(Bot),
       linkProps: {to: '/agentic-control-plane'},
       isActive: isCurrentPage(['/agentic-control-plane', '/agentic-control-plane/*'], pathname),
     },
   ];
 
-  // @ts-expect-error - we need to fix it from the C3 side
   return children;
 }

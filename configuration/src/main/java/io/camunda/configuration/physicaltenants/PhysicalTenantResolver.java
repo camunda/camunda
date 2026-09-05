@@ -56,14 +56,21 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
    * deployment that would write into a shared or incompatible secondary storage fails fast at boot.
    * There is intentionally no opt-out toggle — hard isolation between physical tenants is the
    * point.
+   *
+   * <p>Running them last is load-bearing for {@link GenericExporterIsolationValidation}, which
+   * compares each tenant's <em>narrowed</em> exporter map: moving this call above {@link
+   * PhysicalTenantExporterConfigurations#narrowToAssigned} would make every unassigned root catalog
+   * entry look like a cross-tenant collision.
    */
   private static final List<CrossTenantValidation> CROSS_TENANT_VALIDATIONS =
       List.of(
           new SecondaryStorageIsolationValidation(),
           new RetentionPolicyIsolationValidation(),
+          new GenericExporterIsolationValidation(),
           new SecondaryStorageTypeHomogeneityValidation(),
           new DocumentStoreIsolationValidation(),
-          new PrimaryStorageBackupIsolationValidation());
+          new PrimaryStorageBackupIsolationValidation(),
+          new SnapshotRepositoryIsolationValidation());
 
   private final Map<String, Camunda> resolved;
 
@@ -82,6 +89,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantRequiredOverrideValidation.validate(environment);
     PhysicalTenantAssignedProvidersValidation.validate(environment);
     PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment);
+    PhysicalTenantExporterAssignedValidation.validateRootAssignedAbsent(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
     for (final String physicalTenantId : physicalTenantIds) {
@@ -102,6 +110,16 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
       resolvedPhysicalTenants.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
+
+    PhysicalTenantExporterAssignedValidation.validate(
+        environment, resolvedPhysicalTenants, physicalTenantIds);
+    resolvedPhysicalTenants.forEach(
+        (physicalTenantId, physicalTenantCfg) ->
+            PhysicalTenantExporterConfigurations.narrowToAssigned(
+                physicalTenantCfg, physicalTenantId, environment));
+
+    // must stay below the narrowing above: GenericExporterIsolationValidation compares the tenants'
+    // narrowed exporter maps
     CROSS_TENANT_VALIDATIONS.forEach(v -> v.validate(resolvedPhysicalTenants));
     PhysicalTenantDocumentAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);

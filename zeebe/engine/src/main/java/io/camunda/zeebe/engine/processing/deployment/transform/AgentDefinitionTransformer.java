@@ -20,9 +20,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
 
 /**
- * Mints {@code AgentDefinition} records for elements carrying a recognized agent marker (explicit
- * {@code zeebe:agentDefinition}, or a {@code zeebe:modelerTemplate} fallback — see {@code
- * AgentElementTypeTransformer}) at deploy time.
+ * Creates {@code AgentDefinition} records for elements carrying an explicit {@code
+ * zeebe:agentDefinition} marker (see {@code AgentElementTypeTransformer}) at deploy time.
  */
 final class AgentDefinitionTransformer {
 
@@ -35,17 +34,17 @@ final class AgentDefinitionTransformer {
   }
 
   /**
-   * Mints an {@code AgentDefinition} for every element of {@code process} for which {@link
+   * Creates an {@code AgentDefinition} for every element of {@code process} for which {@link
    * ExecutableJobWorkerElement#isAgentDefinition()} is {@code true}, appending each to {@code
    * deployment.agentDefinitionsMetadata()} and emitting an {@code AgentDefinition:CREATED}
-   * follow-up event keyed with a freshly minted {@code agentDefinitionKey}.
+   * follow-up event keyed with a freshly generated {@code agentDefinitionKey}.
    *
    * <p>A multi-instance activity is represented in {@link ExecutableProcess#getFlowElements()} by
    * its wrapping {@link ExecutableMultiInstanceBody}, which replaces the original element outright
    * rather than merely decorating it, so the marker must be looked up on {@link
    * ExecutableMultiInstanceBody#getInnerActivity()} instead of the body itself.
    *
-   * @param deployment the deployment record to append minted agent definitions to
+   * @param deployment the deployment record to append created agent definitions to
    * @param process the executable process to scan for agent-marked elements
    * @param processMetadata the (already finalized) metadata of the process version these agent
    *     definitions belong to
@@ -58,7 +57,7 @@ final class AgentDefinitionTransformer {
         .map(AgentDefinitionTransformer::resolveJobWorkerElement)
         .filter(Objects::nonNull)
         .filter(ExecutableJobWorkerElement::isAgentDefinition)
-        .forEach(element -> mintAgentDefinition(deployment, processMetadata, element));
+        .forEach(element -> createAgentDefinition(deployment, processMetadata, element));
   }
 
   /**
@@ -79,7 +78,7 @@ final class AgentDefinitionTransformer {
         : null;
   }
 
-  private void mintAgentDefinition(
+  private void createAgentDefinition(
       final DeploymentRecord deployment,
       final ProcessMetadata processMetadata,
       final ExecutableJobWorkerElement element) {

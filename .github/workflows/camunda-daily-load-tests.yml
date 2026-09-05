@@ -1,14 +1,19 @@
-# description: Runs a daily max-load stress test against main.
-#              After a 15-minute warmup, profiles the next 30 minutes of both
-#              runs via async-profiler.
-#              After a 3-hour soak: snapshots metrics as a GitHub artifact,
-#              posts a side-by-side summary table (with flamegraph links) to
-#              Slack, then immediately deletes both namespaces to reduce cost.
+# description: Runs a daily max-load stress test against main, currently in three variants: gRPC
+#              and REST (both against Elasticsearch), and no-secondary-storage (exporters
+#              disabled). After a 15-minute warmup, profiles the next 30 minutes of each variant
+#              via async-profiler. After a 3-hour soak: snapshots metrics as a GitHub artifact,
+#              posts a side-by-side summary table (with flamegraph links) to Slack (the scheduled
+#              run always posts; a manual run only when opted in via the post-to-slack input),
+#              then immediately deletes the namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
-# calls: camunda-load-test.yml (scenario: max),
-#        profile-load-test.yml,
-#        camunda-load-test-metrics.yaml,
-#        camunda-delete-load-test.yml
+#              Each variant's full lifecycle (setup, warmup, profile, soak, collect-metrics,
+#              cleanup) is delegated to the reusable stress-load-test.yml workflow via a
+#              matrix — adding a variant is a one-line matrix entry, not a 6-job copy-paste.
+#              The no-secondary-storage variant only runs this daily `max` leg; it deliberately
+#              does not get its own multi-week weekly endurance rotation, since that long-horizon
+#              engine coverage is not storage-specific and is already provided by the ES/OS/RDBMS
+#              weekly runs.
+# calls: stress-load-test.yml (per variant)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Daily Camunda Platform Load Tests
@@ -19,6 +24,11 @@ on:
         description: 'Docker image tag, that should be reused for the load tests. Allows to skip the docker image build step, can be used for recreating previous tests.'
         type: string
         default: ""
+        required: false
+      post-to-slack:
+        description: 'Post the results to the reliability-testing Slack channel (useful for an end-to-end test run). Always posts on the scheduled run regardless of this input.'
+        type: boolean
+        default: false
         required: false
   schedule:
     # Runs at 2 am Monday-Friday https://crontab.guru/#0_2_*_*_1-5
@@ -73,188 +83,105 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
 
-  setup-max-load-test:
-    name: Setup max load test
-    needs:
-      - benchmark-data
-    uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
-    with:
-      name: ${{ needs.benchmark-data.outputs.benchmark }}
-      ttl: 1
-      scenario: max
-      build-frontend: true
-      # Daily runs are short-lived (soak for ~3h then delete), so they don't need
-      # the default disk size sized for longer-running/manual load tests.
-      load-test-setup-helm-values: --set elasticsearch.storage.requests=64Gi
-
-  setup-max-rest-load-test:
-    name: Setup max REST load test
-    needs:
-      - benchmark-data
-    uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
-    with:
-      name: ${{ needs.benchmark-data.outputs.benchmark }}-rest
-      ttl: 1
-      scenario: max
-      build-frontend: true
-      load-test-load: --set global.preferRest.enabled=true
-      load-test-setup-helm-values: --set elasticsearch.storage.requests=64Gi
-
-  # Wait 15 minutes after setup succeeds before profiling starts, mirroring the
-  # warmup convention the rest of the load-test flow already uses (see
-  # WARMUP_SECONDS in resolve-daily.py and await-benchmark's `sleep 900` in
-  # camunda-pr-load-test.yaml): profiling from t=0 would capture pod startup
-  # and ramp-up noise instead of steady-state behavior.
-  warmup-grpc:
-    name: Warmup before profiling (gRPC)
-    runs-on: ubuntu-latest
-    needs: setup-max-load-test
-    if: needs.setup-max-load-test.result == 'success'
-    timeout-minutes: 20
-    permissions: { }
-    steps:
-      - name: Wait 15 minutes for warmup period
-        run: sleep 900
-
-  warmup-rest:
-    name: Warmup before profiling (REST)
-    runs-on: ubuntu-latest
-    needs: setup-max-rest-load-test
-    if: needs.setup-max-rest-load-test.result == 'success'
-    timeout-minutes: 20
-    permissions: { }
-    steps:
-      - name: Wait 15 minutes for warmup period
-        run: sleep 900
-
-  # Profile the first 30 minutes post-warmup of each run via async-profiler.
-  # Runs concurrently with soak (not on its critical path).
-  profile-grpc:
-    name: Profile gRPC pods
-    needs: [ benchmark-data, setup-max-load-test, warmup-grpc ]
-    if: needs.warmup-grpc.result == 'success'
+  run-variant:
+    name: ${{ matrix.variant.label }}
+    needs: benchmark-data
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/profile-load-test.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each entry fully describes one variant. Adding a variant (e.g. a future RDBMS leg) is
+        # a new entry here — also add its "key:label" pair to VARIANT_ORDER in the
+        # aggregate-metrics job below (in matrix order), or its metrics will be silently dropped
+        # from the Slack summary and the combined artifact.
+        variant:
+          - key: grpc
+            label: gRPC
+            load-test-load: ''
+            load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
+            secondary-storage-type: elasticsearch
+          - key: rest
+            label: REST
+            load-test-load: '--set global.preferRest.enabled=true'
+            load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
+            secondary-storage-type: elasticsearch
+          - key: none
+            label: None
+            load-test-load: '--set load-tester.starter.rate=500'
+            load-test-setup-helm-values: ''
+            secondary-storage-type: none
+    uses: ./.github/workflows/stress-load-test.yml
     secrets: inherit
     with:
-      name: c8-${{ needs.benchmark-data.outputs.benchmark }}
-      pod: ''
-      test-type: grpc
-      duration-seconds: '1800'
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-${{ matrix.variant.key }}
+      build-frontend: true
+      load-test-load: ${{ matrix.variant.load-test-load }}
+      load-test-setup-helm-values: ${{ matrix.variant.load-test-setup-helm-values }}
+      secondary-storage-type: ${{ matrix.variant.secondary-storage-type }}
 
-  profile-rest:
-    name: Profile REST pods
-    needs: [ benchmark-data, setup-max-rest-load-test, warmup-rest ]
-    if: needs.warmup-rest.result == 'success'
-    permissions:
-      contents: read
-      id-token: write
-    uses: ./.github/workflows/profile-load-test.yml
-    secrets: inherit
-    with:
-      name: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
-      pod: ''
-      test-type: rest
-      duration-seconds: '1800'
-
-  # Wait 3 hours per variant, anchored to that variant's own setup completion,
-  # before taking its metrics snapshot. gRPC and REST setups build+deploy
-  # independently and don't reliably finish at the same time, so a single
-  # shared soak job (anchored to whichever setup finished last) would shift
-  # the metrics window for the earlier-finishing variant later than its
-  # actual start, cutting off the beginning of its run. Mirrors the
-  # per-variant warmup-grpc/warmup-rest pattern above.
-  # `Soak`'s name is intentionally unchanged (kept for gRPC): soak.started_at
-  # is read by the PR load-test resolver (SOAK_JOB_NAME in resolve-daily.py)
-  # to anchor the daily-vs-PR comparison window, which is always the gRPC
-  # namespace; the resolver adds WARMUP_SECONDS + METRICS_WINDOW_SECONDS as
-  # an offset. `REST soak`'s name deliberately does not start with "Soak" so
-  # that lookup keeps resolving to the gRPC job only.
-  soak-grpc:
-    name: Soak
+  # Aggregates every variant's metrics artifact into one place.
+  aggregate-metrics:
+    name: Aggregate variant metrics
     runs-on: ubuntu-latest
-    needs: setup-max-load-test
-    if: needs.setup-max-load-test.result == 'success'
-    timeout-minutes: 195
-    permissions: { }
-    outputs:
-      soak_end_epoch: ${{ steps.timing.outputs.soak_end_epoch }}
-    steps:
-      - name: Wait 3 hours for soak period
-        run: sleep 10800
-      - name: Record soak end time
-        id: timing
-        run: echo "soak_end_epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
-
-  soak-rest:
-    name: REST soak
-    runs-on: ubuntu-latest
-    needs: setup-max-rest-load-test
-    if: needs.setup-max-rest-load-test.result == 'success'
-    timeout-minutes: 195
-    permissions: { }
-    outputs:
-      soak_end_epoch: ${{ steps.timing.outputs.soak_end_epoch }}
-    steps:
-      - name: Wait 3 hours for soak period
-        run: sleep 10800
-      - name: Record soak end time
-        id: timing
-        run: echo "soak_end_epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
-
-  # Gated on its own setup: if the gRPC setup failed, its namespace was never
-  # created, so skip metrics collection rather than query a missing namespace.
-  collect-metrics-grpc:
-    name: Collect metrics (gRPC)
-    needs: [ benchmark-data, setup-max-load-test, soak-grpc ]
-    if: needs.soak-grpc.result == 'success' && needs.setup-max-load-test.result == 'success'
-    uses: ./.github/workflows/camunda-load-test-metrics.yaml
-    secrets: inherit
-    with:
-      namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
-      duration-seconds: '10800'
-      at: ${{ needs.soak-grpc.outputs.soak_end_epoch }}
-
-  collect-metrics-rest:
-    name: Collect metrics (REST)
-    needs: [ benchmark-data, setup-max-rest-load-test, soak-rest ]
-    if: needs.soak-rest.result == 'success' && needs.setup-max-rest-load-test.result == 'success'
-    uses: ./.github/workflows/camunda-load-test-metrics.yaml
-    secrets: inherit
-    with:
-      namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
-      duration-seconds: '10800'
-      at: ${{ needs.soak-rest.outputs.soak_end_epoch }}
-
-  # Upload both metrics JSON files as a workflow artifact (90-day retention).
-  upload-metrics:
-    name: Upload metrics artifacts
-    runs-on: ubuntu-latest
-    needs: [ benchmark-data, collect-metrics-grpc, collect-metrics-rest ]
-    # Run if at least one side collected metrics; a skipped side just yields an empty file.
-    if: always() && (needs.collect-metrics-grpc.result == 'success' || needs.collect-metrics-rest.result == 'success')
+    needs: [ benchmark-data, run-variant ]
+    if: always()
     timeout-minutes: 5
-    permissions: { }
+    permissions:
+      actions: read
+      contents: read
     steps:
-      - name: Write metrics JSON files
+      - name: Download variant metrics artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true # a variant whose collect-metrics never ran just yields fewer entries below
+        with:
+          pattern: stress-test-result-*
+          path: variant-metrics
+          # No merge-multiple: every artifact contains a file named stress-result.json, so each
+          # needs its own per-artifact-name folder to avoid one variant's file overwriting another's.
+      - name: Merge into the legacy combined artifact + variants manifest
         env:
-          GRPC_JSON: ${{ needs.collect-metrics-grpc.outputs.results-json }}
-          REST_JSON: ${{ needs.collect-metrics-rest.outputs.results-json }}
+          BENCHMARK: ${{ needs.benchmark-data.outputs.benchmark }}
+          # Keep in sync with the `run-variant` matrix above (key:label pairs) — this determines
+          # the Slack summary table's column order, which is not guaranteed by artifact download
+          # order. key here must match the -<key> suffix used to build the run-variant name above.
+          VARIANT_ORDER: 'grpc:gRPC rest:REST none:None'
         run: |
-          printf '%s' "$GRPC_JSON" > metrics-grpc.json
-          printf '%s' "$REST_JSON" > metrics-rest.json
-      - name: Upload metrics artifacts
+          manifest='[]'
+          for entry in $VARIANT_ORDER; do
+            key="${entry%%:*}"
+            label="${entry#*:}"
+            f="variant-metrics/stress-test-result-${BENCHMARK}-${key}/stress-result.json"
+            if [ ! -f "$f" ]; then
+              continue
+            fi
+            jq '.results' "$f" > "metrics-${key}.json"
+            entry_json=$(jq --arg key "$key" --arg label "$label" '. + {key: $key, label: $label}' "$f")
+            manifest=$(jq --argjson v "$entry_json" '. + [$v]' <<<"$manifest")
+          done
+          if [ "$manifest" = '[]' ]; then
+            echo "::warning::No variant metrics artifacts found; Slack summary and legacy artifact will be empty"
+          fi
+          # Written to a FILE, not $GITHUB_OUTPUT: this job also uses secrets.VAULT_* below (Observe
+          # build status), and GitHub Actions silently drops any $GITHUB_OUTPUT write whose value
+          # happens to contain a substring matching a secret registered anywhere in the job (see
+          # https://github.com/orgs/community/discussions/26636). Files aren't subject to that
+          # masking, so the artifact is the only reliable transport here — same reasoning already
+          # applied to upload-variant-metrics above.
+          echo "$manifest" > variants.json
+      - name: Upload combined metrics artifact
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
+          # resolve-daily.py only checks this artifact for existence by name prefix — keep the
+          # name stable even though its internal file layout changed.
           name: daily-load-test-metrics-${{ needs.benchmark-data.outputs.benchmark }}
           path: |
-            metrics-grpc.json
-            metrics-rest.json
+            metrics-*.json
+            variants.json
           retention-days: 90
+          if-no-files-found: ignore
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
@@ -269,15 +196,18 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  # Post a side-by-side gRPC vs REST metrics table to Slack.
+  # Post a side-by-side metrics table (one column per variant) to Slack.
   notify-results:
     name: Notify Slack with results
     runs-on: ubuntu-latest
-    needs: [ benchmark-data, soak-grpc, collect-metrics-grpc, collect-metrics-rest, profile-grpc, profile-rest ]
-    # Post if at least one side collected metrics; the skipped side renders as n/a.
-    # `always()` means a profile-grpc/profile-rest failure never blocks this job -
-    # profiling is supplementary and just yields no flamegraph links below.
-    if: always() && (needs.collect-metrics-grpc.result == 'success' || needs.collect-metrics-rest.result == 'success')
+    needs: [ benchmark-data, aggregate-metrics ]
+    # Data-presence is checked inside post-load-test-results-to-slack.py after the manifest
+    # download, not here. Manual runs post only when explicitly asked; the scheduled run always
+    # posts.
+    if: >
+      always() &&
+      needs.aggregate-metrics.result == 'success' &&
+      (github.event_name != 'workflow_dispatch' || inputs.post-to-slack == true)
     timeout-minutes: 5
     permissions:
       actions: read
@@ -286,6 +216,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Download variant manifest
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: daily-load-test-metrics-${{ needs.benchmark-data.outputs.benchmark }}
+          path: variant-manifest
       - name: List flamegraph artifacts
         id: flamegraph-artifacts
         # Best-effort enhancement: a failure here shouldn't block the Slack results
@@ -302,8 +237,8 @@ jobs:
             const runURL = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const links = data.artifacts
               .filter(a => a.name.startsWith('flamegraph-'))
-              .map(a => `<${runURL}/artifacts/${a.id}|${a.name}>`)
-              .join(' · ');
+              .map(a => `• <${runURL}/artifacts/${a.id}|${a.name}>`)
+              .join('\n');
             core.setOutput('links', links);
       - name: Import Slack webhook from Vault
         id: slack-secrets
@@ -320,16 +255,11 @@ jobs:
         # queries.yaml is the canonical source of metric names/labels/formats;
         # the script reads it directly so the Slack table stays in sync.
         env:
-          GRPC_RESULTS_JSON: ${{ needs.collect-metrics-grpc.outputs.results-json }}
-          REST_RESULTS_JSON: ${{ needs.collect-metrics-rest.outputs.results-json }}
+          VARIANTS_JSON_FILE: variant-manifest/variants.json
           BENCHMARK: ${{ needs.benchmark-data.outputs.benchmark }}
           SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-          # gRPC's own soak end; used only to build the Grafana deep-link time
-          # range for both dashboards, not for metrics query correctness (each
-          # collect-metrics-* job already queried its own variant's window).
-          SOAK_END_EPOCH: ${{ needs.soak-grpc.outputs.soak_end_epoch }}
           FLAMEGRAPH_LINKS: ${{ steps.flamegraph-artifacts.outputs.links }}
         run: python3 .github/scripts/post-load-test-results-to-slack.py
       - name: Observe build status
@@ -342,37 +272,10 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  # Delete namespaces immediately after metrics are collected to reduce cluster cost.
-  # Runs regardless of whether metrics collection succeeded or was skipped, as long
-  # as we have a valid namespace name (benchmark-data succeeded).
-  cleanup-grpc:
-    name: Cleanup gRPC namespace
-    needs: [ benchmark-data, collect-metrics-grpc ]
-    if: always() && needs.benchmark-data.result == 'success'
-    permissions:
-      contents: read
-      id-token: write
-    uses: ./.github/workflows/camunda-delete-load-test.yml
-    secrets: inherit
-    with:
-      namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
-
-  cleanup-rest:
-    name: Cleanup REST namespace
-    needs: [ benchmark-data, collect-metrics-rest ]
-    if: always() && needs.benchmark-data.result == 'success'
-    permissions:
-      contents: read
-      id-token: write
-    uses: ./.github/workflows/camunda-delete-load-test.yml
-    secrets: inherit
-    with:
-      namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
-
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-max-load-test, setup-max-rest-load-test, soak-grpc, soak-rest, collect-metrics-grpc, collect-metrics-rest, upload-metrics, notify-results ]
+    needs: [ run-variant, aggregate-metrics, notify-results ]
     if: failure()
     timeout-minutes: 5
     permissions: { }

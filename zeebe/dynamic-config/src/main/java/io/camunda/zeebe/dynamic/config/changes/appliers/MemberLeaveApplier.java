@@ -16,7 +16,9 @@ import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 
 /**
@@ -63,24 +65,42 @@ public final class MemberLeaveApplier implements GlobalConfigurationChangeApplie
     }
 
     final var partitionsByGroup = new TreeMap<String, Object>();
+    final var disabledGroups = new TreeSet<String>();
     currentClusterConfiguration
         .partitionGroups()
         .forEach(
             (groupId, group) -> {
+              // A removed tenant's member map is already empty, so it is excluded naturally.
               final var broker = group.getMember(memberId);
               if (broker != null && !broker.partitions().isEmpty()) {
                 partitionsByGroup.put(groupId, broker.partitions());
+                if (group.isDisabled()) {
+                  disabledGroups.add(groupId);
+                }
               }
             });
     if (!partitionsByGroup.isEmpty()) {
       return Either.left(
           new IllegalStateException(
-              "Expected to remove member %s, but the member still has partitions assigned. Partitions by group: %s"
-                  .formatted(memberId, partitionsByGroup)));
+              "Expected to remove member %s, but the member still has partitions assigned. Partitions by group: %s%s"
+                  .formatted(memberId, partitionsByGroup, disabledTenantHint(disabledGroups))));
     }
 
     return Either.right(
         config -> config.updateMember(memberId, broker -> broker.setState(State.LEAVING)));
+  }
+
+  /**
+   * Explains why an operator can't just wait or retry: a disabled tenant runs on no broker, so no
+   * plan can move its partitions off the departing one. The only ways forward are to re-enable it
+   * and scale down normally, or remove it and discard its data.
+   */
+  private static String disabledTenantHint(final Set<String> disabledGroups) {
+    if (disabledGroups.isEmpty()) {
+      return "";
+    }
+    return ". Physical tenant(s) %s are disabled, so no operation can move their partitions off this broker: either re-add them to the brokers' static configuration and retry, or remove those physical tenants to discard their data"
+        .formatted(disabledGroups);
   }
 
   @Override

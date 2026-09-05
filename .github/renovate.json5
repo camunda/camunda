@@ -178,6 +178,16 @@
       ],
     },
     {
+      description: "infra-global-github-actions sub-actions come from a custom manager, so the matchManagers rule above does not reach them.",
+      matchDepNames: [
+        "/^camunda\\/infra-global-github-actions\\//",
+      ],
+      addLabels: [
+        "area/build",
+        "component/build-pipeline",
+      ],
+    },
+    {
       description: "Do not let Renovate edit generated agentic-workflow lock files *.lock.yml and managed upstream. Update by upgrading the gh-aw toolchain and recompiling, never via Renovate.",
       matchFileNames: [
         ".github/workflows/*.lock.yml",
@@ -193,6 +203,17 @@
         "/^github/gh-aw-actions(/.+)?$/",
       ],
       enabled: false,
+    },
+    {
+      description: "Wandalen/wretry.action releases a `vX.Y.Z` composite tag and a paired `vX.Y.Z_js_action` tag together (the composite's own dependency); we pin the latter (see PR #60406). Renovate's versioning strips the `_js_action` suffix and can't tell the two tags apart, so digest updates resolve to the composite's commit instead. Scope this dependency to only consider `_js_action`-suffixed tags.",
+      matchFileNames: [
+        ".github/actions/build-platform-docker/action.yml",
+        ".github/actions/setup-build/action.yml",
+      ],
+      matchPackageNames: [
+        "Wandalen/wretry.action",
+      ],
+      extractVersion: "^(?<version>v\\d+\\.\\d+\\.\\d+)_js_action$",
     },
     {
       description: "Identify updates related to builds, tooling, etc. that should be routed to Engineering Operations team.",
@@ -812,6 +833,20 @@
       ],
       allowedVersions: "<4",
     },
+
+    {
+      // Disable Renovate for load tests on stable branches.
+      // Once a stable branch is branched off main, all load test dependencies
+      // under load-tests/ in stable branches are unused and unmaintained and
+      // should not be updated anymore.
+      // Only the code in the main branch is relevant and should receive
+      // updates.
+      // This is not part of .github/renovate/team-reliability-testing.json5 as
+      // matchBaseBranches needs to have baseBranchPatterns configured beforehand.
+      matchFileNames: ["load-tests/**"],
+      matchBaseBranches: ["/^stable\\/8\\..*/"],
+      enabled: false,
+    },
   ],
   dockerfile: {
     managerFilePatterns: [
@@ -927,6 +962,21 @@
         "action:\\s+(?<depName>[\\w.-]+/[\\w.-]+)@(?<currentDigest>[a-f0-9]{40})\\s+#\\s*(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
       ],
       datasourceTemplate: "github-tags",
+    },
+    {
+      // Per-family extractVersion keeps each sub-action's tags from matching another family's release line.
+      description: "Track camunda/infra-global-github-actions sub-actions pinned to a per-action release tag (comment format '# <action>-X.Y.Z'), which the default github-actions manager cannot version-track because it drops the sub-action path from depName.",
+      customType: "regex",
+      managerFilePatterns: [
+        "/^\\.github/.+\\.ya?ml$/",
+      ],
+      matchStrings: [
+        "uses:\\s*camunda/infra-global-github-actions/[\\w./-]+@(?<currentDigest>[a-f0-9]{40})\\s+#\\s*(?<family>[a-z0-9-]+?)-(?<currentValue>\\d+\\.\\d+\\.\\d+)\\b",
+      ],
+      depNameTemplate: "camunda/infra-global-github-actions/{{{family}}}",
+      packageNameTemplate: "camunda/infra-global-github-actions",
+      datasourceTemplate: "github-tags",
+      extractVersionTemplate: "^{{{family}}}-(?<version>\\d+\\.\\d+\\.\\d+)$",
     },
   ],
 }

@@ -42,7 +42,6 @@ class ZeebeAgentInstanceImportIT extends AbstractBrokerlessZeebeCCSMIT {
   private static final String ELEMENT_ID = "agentTask";
   private static final String MODEL = "gpt-4o";
   private static final String PROVIDER = "openai";
-  private static final String SYSTEM_PROMPT = "You are a helpful assistant.";
   // Fixed base timestamp so seeded record times are deterministic across runs (no wall-clock
   // dependency). Each seeded record's timestamp = BASE + position * 1000ms.
   private static final long BASE_TIMESTAMP_MS =
@@ -734,7 +733,6 @@ class ZeebeAgentInstanceImportIT extends AbstractBrokerlessZeebeCCSMIT {
     final AgentDefinitionValueDto def = new AgentDefinitionValueDto();
     def.setModel(MODEL);
     def.setProvider(PROVIDER);
-    def.setSystemPrompt(SYSTEM_PROMPT);
     return def;
   }
 

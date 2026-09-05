@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write;
 
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatus;
+import io.camunda.db.rdbms.read.replication.ReplicationStatus;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
@@ -246,7 +246,7 @@ public class RdbmsWriterMetrics {
    * @param replicatedPosition the last position confirmed as replicated by the required quorum
    */
   public void recordReplicationStatus(
-      final List<ReplicationLogStatus> statuses,
+      final List<? extends ReplicationStatus> statuses,
       final boolean paused,
       final long flushedPosition,
       final long replicatedPosition) {
@@ -255,7 +255,7 @@ public class RdbmsWriterMetrics {
     pendingPositionsValue.set(Math.max(0, flushedPosition - replicatedPosition));
 
     final var currentReplicaIds =
-        statuses.stream().map(ReplicationLogStatus::replicaId).collect(Collectors.toSet());
+        statuses.stream().map(ReplicationStatus::replicaId).collect(Collectors.toSet());
 
     final var staleReplicaIds = new ArrayList<>(replicaLagGauges.keySet());
     staleReplicaIds.removeAll(currentReplicaIds);

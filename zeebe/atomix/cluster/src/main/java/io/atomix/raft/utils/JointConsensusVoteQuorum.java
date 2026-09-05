@@ -68,9 +68,9 @@ public class JointConsensusVoteQuorum implements VoteQuorum {
   }
 
   @Override
-  public void fail(final MemberId member) {
-    oldQuorum.fail(member);
-    newQuorum.fail(member);
+  public void fail(final MemberId member, final VoteErrorStatus statusCode) {
+    oldQuorum.fail(member, statusCode);
+    newQuorum.fail(member, statusCode);
   }
 
   @Override

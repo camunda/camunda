@@ -25,6 +25,8 @@ import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.zeebe.shared.management.PhysicalTenantScope;
+import io.camunda.zeebe.shared.management.UnknownPhysicalTenantException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -65,12 +67,13 @@ public class BackupController {
   }
 
   @WriteOperation
-  public WebEndpointResponse<?> takeBackup(final long backupId) {
+  public WebEndpointResponse<?> takeBackup(
+      final long backupId, @Nullable final String physicalTenant) {
     try {
       validateBackupId(backupId);
-      validateRepositoryNameIsConfigured();
+      final var targets = resolveTargets(physicalTenant);
       final var scheduledSnapshots = new ArrayList<String>();
-      for (final PhysicalTenantBackup backup : backupServiceRegistry.physicalTenantBackups()) {
+      for (final PhysicalTenantBackup backup : targets) {
         scheduledSnapshots.addAll(
             backup
                 .backupService()
@@ -86,12 +89,12 @@ public class BackupController {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> getBackupState(@Selector final long backupId) {
+  public WebEndpointResponse<?> getBackupState(
+      @Selector final long backupId, @Nullable final String physicalTenant) {
     try {
       validateBackupId(backupId);
-      validateRepositoryNameIsConfigured();
       final var perPhysicalTenantStates =
-          backupServiceRegistry.physicalTenantBackups().stream()
+          resolveTargets(physicalTenant).stream()
               .map(
                   backup ->
                       new TenantBackupState(
@@ -108,13 +111,14 @@ public class BackupController {
 
   @ReadOperation
   public WebEndpointResponse<?> getBackups(
-      @Nullable final Boolean verbose, @Nullable final String pattern) {
+      @Nullable final Boolean verbose,
+      @Nullable final String pattern,
+      @Nullable final String physicalTenant) {
     try {
       final boolean verboseValue = verbose != null ? verbose : true;
       final String patternValue = pattern != null ? pattern : "*";
-      validateRepositoryNameIsConfigured();
       final var byBackupId =
-          backupServiceRegistry.physicalTenantBackups().stream()
+          resolveTargets(physicalTenant).stream()
               .flatMap(
                   backup ->
                       backup.backupService().getBackups(verboseValue, patternValue).stream()
@@ -131,12 +135,11 @@ public class BackupController {
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> deleteBackup(@Selector final long backupId) {
+  public WebEndpointResponse<?> deleteBackup(
+      @Selector final long backupId, @Nullable final String physicalTenant) {
     try {
       validateBackupId(backupId);
-      validateRepositoryNameIsConfigured();
-      backupServiceRegistry
-          .physicalTenantBackups()
+      resolveTargets(physicalTenant)
           .forEach(backup -> backup.backupService().deleteBackup(backupId));
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
@@ -145,12 +148,27 @@ public class BackupController {
     }
   }
 
-  private void validateRepositoryNameIsConfigured() {
+  /**
+   * The physical tenants an operation covers: the requested one alone, or every tenant with a
+   * backup service. Only the tenants actually in scope are checked for a repository, so narrowing
+   * to a healthy tenant still works while another tenant is misconfigured.
+   */
+  private List<PhysicalTenantBackup> resolveTargets(@Nullable final String physicalTenant) {
     if (backupServiceRegistry.isEmpty()) {
       throw new InvalidRequestException("No backup repository configured.");
     }
+    final List<String> targetIds;
+    try {
+      targetIds =
+          PhysicalTenantScope.resolve(physicalTenant, backupServiceRegistry::physicalTenantIds);
+    } catch (final UnknownPhysicalTenantException e) {
+      // an unroutable request is a bad request, like any other invalid parameter here
+      throw new InvalidRequestException(e.getMessage());
+    }
+    final var targets = targetIds.stream().map(backupServiceRegistry::forPhysicalTenant).toList();
+
     final var tenantsMissingRepository =
-        backupServiceRegistry.physicalTenantBackups().stream()
+        targets.stream()
             .filter(
                 backup ->
                     backup.repositoryProps().repositoryName() == null
@@ -161,6 +179,7 @@ public class BackupController {
       throw new InvalidRequestException(
           "No backup repository configured for physical tenant(s): " + tenantsMissingRepository);
     }
+    return targets;
   }
 
   private AggregatedBackupState aggregate(final List<TenantBackupState> perTenantStates) {

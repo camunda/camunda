@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.zeebe.agentinstance;
 
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
@@ -139,7 +140,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
-  public String getVersionTag() {
+  public String getProcessDefinitionVersionTag() {
     return null;
   }
 
@@ -334,7 +335,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
     private String model = "";
     private String provider = "";
-    private String systemPrompt = "";
 
     public AgentDefinitionValueDto() {}
 
@@ -357,17 +357,17 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     }
 
     @Override
-    public String getSystemPrompt() {
-      return systemPrompt;
-    }
-
-    public void setSystemPrompt(final String systemPrompt) {
-      this.systemPrompt = systemPrompt;
+    @JsonIgnore
+    public List<AgentHistoryRecordValue.AgentHistoryMessageContentValue> getSystemPrompt() {
+      // Optimize does not use the system prompt content, so it is never populated here. Ignored
+      // by Jackson so deserializing a real record with a non-empty array doesn't try to mutate
+      // this immutable list.
+      return List.of();
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(model, provider, systemPrompt);
+      return Objects.hash(model, provider);
     }
 
     @Override
@@ -376,9 +376,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         return false;
       }
       final AgentDefinitionValueDto that = (AgentDefinitionValueDto) o;
-      return Objects.equals(model, that.model)
-          && Objects.equals(provider, that.provider)
-          && Objects.equals(systemPrompt, that.systemPrompt);
+      return Objects.equals(model, that.model) && Objects.equals(provider, that.provider);
     }
 
     @Override

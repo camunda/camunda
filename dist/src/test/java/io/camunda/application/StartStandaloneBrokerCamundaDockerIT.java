@@ -39,7 +39,7 @@ public class StartStandaloneBrokerCamundaDockerIT extends AbstractCamundaDockerI
             .waitingFor(
                 new HttpWaitStrategy()
                     .forPort(MANAGEMENT_PORT)
-                    .forPath("/actuator/health")
+                    .forPath("/actuator/health/readiness")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(300))
             // disable the REST API

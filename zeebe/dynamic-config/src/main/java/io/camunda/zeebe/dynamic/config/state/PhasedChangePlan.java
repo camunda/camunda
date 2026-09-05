@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,8 +32,8 @@ import org.jspecify.annotations.NullMarked;
  * <p>{@link #scope()} identifies which sub-configuration(s) this plan touches, derived from its
  * phases: a plan with any {@link GlobalPhase} has {@link Global} scope (cluster-wide, conflicts
  * with everything); otherwise it has {@link Groups} scope, the union of every partition group named
- * across its {@link PartitionGroupParallelPhase}s. Multiple plans with disjoint {@link Groups}
- * scopes may be pending concurrently; see {@link PhasedChangeState}.
+ * across its {@link PartitionGroupPhase}s. Multiple plans with disjoint {@link Groups} scopes may
+ * be pending concurrently; see {@link PhasedChangeState}.
  */
 @NullMarked
 public record PhasedChangePlan(
@@ -116,24 +117,35 @@ public record PhasedChangePlan(
   /**
    * Returns the scope of this plan: {@link Global} if any phase is a {@link GlobalPhase} (the plan
    * touches cluster-wide broker lifecycle, and therefore conflicts with every other plan);
-   * otherwise {@link Groups}, the union of every partition group id named across the plan's {@link
-   * PartitionGroupParallelPhase}s.
+   * otherwise {@link Groups}, the union of every partition group id named across the plan's
+   * partition-group phases.
    */
   public Scope scope() {
     return scopeOf(phases);
   }
 
-  /** Same as {@link #scope()}, computable before a plan (and its id) exists. */
+  /**
+   * Same as {@link #scope()}, computable before a plan (and its id) exists.
+   *
+   * <p>Switches over every phase kind rather than filtering for the one it cares about. The result
+   * feeds {@link #conflicts(Scope, Scope)}, which decides whether two plans may be pending
+   * concurrently — a phase kind added later and silently contributing no group ids would make its
+   * plan look like it touches nothing, admitting a second plan onto the very groups it is changing.
+   * That failure is invisible at runtime (a rejection that should happen, doesn't), so it has to be
+   * a compile error instead.
+   */
   public static Scope scopeOf(final List<Phase> phases) {
-    if (phases.stream().anyMatch(GlobalPhase.class::isInstance)) {
-      return new Global();
+    final Set<String> groupIds = new HashSet<>();
+    for (final var phase : phases) {
+      switch (phase) {
+        case final GlobalPhase ignored -> {
+          // Cluster-wide: conflicts with everything, so no group set can narrow it.
+          return new Global();
+        }
+        case final PartitionGroupPhase groupPhase ->
+            groupIds.addAll(groupPhase.groupGraphs().keySet());
+      }
     }
-    final Set<String> groupIds =
-        phases.stream()
-            .filter(PartitionGroupParallelPhase.class::isInstance)
-            .map(PartitionGroupParallelPhase.class::cast)
-            .flatMap(phase -> phase.groupOperations().keySet().stream())
-            .collect(Collectors.toUnmodifiableSet());
     return new Groups(groupIds);
   }
 
@@ -150,9 +162,6 @@ public record PhasedChangePlan(
     final var groupsB = ((Groups) b).groupIds();
     return !Collections.disjoint(groupsA, groupsB);
   }
-
-  /** The sub-configuration(s) a {@link PhasedChangePlan} touches. See {@link #scope()}. */
-  public sealed interface Scope permits Global, Groups {}
 
   /** Cluster-wide scope: touches {@link GlobalConfiguration}, conflicts with every other plan. */
   public record Global() implements Scope {}
@@ -175,22 +184,51 @@ public record PhasedChangePlan(
   }
 
   /**
-   * A phase whose operations are activated atomically into the {@code pendingChanges} of each named
-   * partition group.
+   * A phase whose named partition groups each run an {@link OperationGraph}, activated atomically
+   * into the {@code pendingChanges} of every named group.
+   *
+   * <p>The graph is the only execution model a phase has: an operation runs once everything it
+   * depends on has completed, so concurrency is the <em>absence of an edge</em>. A transformer that
+   * has no parallelism to express builds its phase with {@link #sequential(Map)}, which chains
+   * every operation behind its predecessor and therefore behaves exactly like the one-at-a-time
+   * queue that preceded it.
    */
-  public record PartitionGroupParallelPhase(
-      Map<String, List<PartitionGroupOperation>> groupOperations) implements Phase {
-    public PartitionGroupParallelPhase {
-      groupOperations =
+  public record PartitionGroupPhase(Map<String, OperationGraph> groupGraphs) implements Phase {
+    public PartitionGroupPhase {
+      groupGraphs = Map.copyOf(groupGraphs);
+    }
+
+    /** A phase in which each group runs its operations strictly one after another. */
+    public static PartitionGroupPhase sequential(
+        final Map<String, List<PartitionGroupOperation>> groupOperations) {
+      return new PartitionGroupPhase(
           groupOperations.entrySet().stream()
               .collect(
-                  Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> List.copyOf(e.getValue())));
+                  Collectors.toUnmodifiableMap(
+                      Map.Entry::getKey, e -> OperationGraph.sequential(e.getValue()))));
+    }
+
+    /** {@link #sequential(Map)} for the common single-group case. */
+    public static PartitionGroupPhase sequential(
+        final String groupId, final List<PartitionGroupOperation> operations) {
+      return sequential(Map.of(groupId, operations));
+    }
+
+    /** Every operation of this phase per group, flattening the dependencies away for reporting. */
+    public Map<String, List<PartitionGroupOperation>> groupOperations() {
+      return groupGraphs.entrySet().stream()
+          .collect(
+              Collectors.toUnmodifiableMap(
+                  Map.Entry::getKey,
+                  e ->
+                      e.getValue().inOrder().stream()
+                          .map(PartitionGroupOperation.class::cast)
+                          .toList()));
     }
   }
 
-  /**
-   * A single phase in a {@link PhasedChangePlan}. Exactly one of the two permitted subtypes is
-   * active.
-   */
-  public sealed interface Phase permits GlobalPhase, PartitionGroupParallelPhase {}
+  /** The sub-configuration(s) a {@link PhasedChangePlan} touches. See {@link #scope()}. */
+  public sealed interface Scope permits Global, Groups {}
+
+  public sealed interface Phase permits GlobalPhase, PartitionGroupPhase {}
 }

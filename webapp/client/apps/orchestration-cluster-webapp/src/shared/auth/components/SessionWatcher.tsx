@@ -20,7 +20,6 @@ const SessionWatcher: React.FC = observer(() => {
 	const removeNotification = useRef<(() => void) | null>(null);
 	const {t} = useTranslation();
 	const isTasklistIndex = location.href === '/tasklist';
-	const isShadcn = location.pathname.startsWith('/shadcn');
 
 	const isSessionExpired =
 		status === 'logged-out' ||
@@ -47,17 +46,7 @@ const SessionWatcher: React.FC = observer(() => {
 		}
 	}, [status]);
 
-	if (isSessionExpired && isShadcn) {
-		return (
-			<Navigate
-				to="/shadcn/tasklist/login"
-				search={location.href === '/shadcn/tasklist' ? {} : {redirect: location.href}}
-				replace
-			/>
-		);
-	}
-
-	if (isSessionExpired && !isShadcn) {
+	if (isSessionExpired) {
 		return (
 			<Navigate
 				to={isTasklistPath(location.pathname) ? '/tasklist/login' : '/login'}

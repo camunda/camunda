@@ -149,7 +149,7 @@
       <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
-      <column name="VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="INTEGER"/>
       <column name="STATUS" type="VARCHAR(20)"/>
@@ -161,6 +161,9 @@
       <column name="MAX_TOOL_CALLS" type="INTEGER"/>
       <column name="INPUT_TOKENS" type="BIGINT"/>
       <column name="OUTPUT_TOKENS" type="BIGINT"/>
+      <column name="REASONING_TOKEN_COUNT" type="BIGINT"/>
+      <column name="CACHE_CREATION_TOKEN_COUNT" type="BIGINT"/>
+      <column name="CACHE_READ_TOKEN_COUNT" type="BIGINT"/>
       <column name="MODEL_CALLS" type="INTEGER"/>
       <column name="TOOL_CALLS" type="INTEGER"/>
       <column name="TOOLS" type="CLOB"/>
@@ -519,6 +522,17 @@
     </createTable>
   </changeSet>
 
+  <changeSet id="add_business_id_to_message_subscription" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="BUSINESS_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="BUSINESS_ID" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
   <changeSet id="add_business_id_to_correlated_message_subscription" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
@@ -589,6 +603,9 @@
       <column name="PRODUCED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="INPUT_TOKENS" type="BIGINT"/>
       <column name="OUTPUT_TOKENS" type="BIGINT"/>
+      <column name="REASONING_TOKEN_COUNT" type="BIGINT"/>
+      <column name="CACHE_CREATION_TOKEN_COUNT" type="BIGINT"/>
+      <column name="CACHE_READ_TOKEN_COUNT" type="BIGINT"/>
       <column name="DURATION_MS" type="BIGINT"/>
       <column name="CONTENT" type="CLOB"/>
       <column name="TOOL_CALLS" type="CLOB"/>

@@ -11,10 +11,13 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
 import java.time.Duration;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -29,14 +32,26 @@ class RdbmsExporterPhysicalTenantConfigTest {
   private static final String TENANT_A = "tenanta";
   private static final String TENANT_B = "tenantb";
 
+  private MockEnvironment environment;
+
+  @BeforeEach
+  void setUp() {
+    environment = new MockEnvironment();
+    UnifiedConfigurationHelper.setCustomEnvironment(environment);
+  }
+
+  @AfterEach
+  void tearDown() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
+
   @Test
   void shouldResolveExporterConfigurationPerPhysicalTenant() {
     // given three physical tenants (the default plus two named) each with its own rdbms settings
-    final MockEnvironment environment = new MockEnvironment();
     environment.setProperty("camunda.data.secondary-storage.type", "rdbms");
-    configureTenant(environment, DEFAULT_PHYSICAL_TENANT_ID, "10", "PT1S");
-    configureTenant(environment, TENANT_A, "100", "PT2S");
-    configureTenant(environment, TENANT_B, "500", "PT9S");
+    configureTenant(DEFAULT_PHYSICAL_TENANT_ID, "10", "PT1S");
+    configureTenant(TENANT_A, "100", "PT2S");
+    configureTenant(TENANT_B, "500", "PT9S");
 
     final PhysicalTenantResolver resolver = PhysicalTenantResolver.of(environment, new Camunda());
 
@@ -62,11 +77,8 @@ class RdbmsExporterPhysicalTenantConfigTest {
         .isEqualTo(Duration.ofSeconds(1));
   }
 
-  private static void configureTenant(
-      final MockEnvironment environment,
-      final String tenantId,
-      final String queueSize,
-      final String flushInterval) {
+  private void configureTenant(
+      final String tenantId, final String queueSize, final String flushInterval) {
     final String base = "camunda.physical-tenants." + tenantId + ".";
     // A distinct storage location per tenant satisfies the secondary-storage isolation validation.
     environment.setProperty(

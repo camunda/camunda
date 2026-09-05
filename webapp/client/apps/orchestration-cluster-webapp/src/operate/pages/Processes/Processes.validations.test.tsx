@@ -11,11 +11,15 @@ import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockQueryProcessDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
 
@@ -37,6 +41,8 @@ const ERRORS = {
 	parentInstanceId: 'Key has to be a 16 to 19 digit number',
 	batchOperationKey: 'Key has to be a 16 to 19 digit number or a UUID',
 } as const;
+
+const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesResponse());
 
 describe('Validations', () => {
 	beforeEach(() => {
@@ -68,7 +74,10 @@ describe('Validations', () => {
 		},
 	]) {
 		it(`should validate ${label}`, async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderProcessesPage();
 			const getSearch = () => screen.router.state.location.search as Record<string, unknown>;

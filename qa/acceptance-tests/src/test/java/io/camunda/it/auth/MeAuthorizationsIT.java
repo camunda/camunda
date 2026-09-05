@@ -17,6 +17,7 @@ import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static io.camunda.client.api.search.enums.ResourceType.USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -41,6 +42,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -70,6 +72,7 @@ class MeAuthorizationsIT {
   private static final String STRANGER = "meAuthorizationsStranger";
   private static final String DIRECT_PROCESS_ID = "meAuthorizationsDirectProcess";
   private static final String STRANGER_DECISION_ID = "meAuthorizationsStrangerDecision";
+  private static final ObjectMapper JSON = new ObjectMapper();
 
   @UserDefinition
   private static final TestUser ME_USER =
@@ -109,7 +112,7 @@ class MeAuthorizationsIT {
 
   @Test
   void shouldReturnAuthorizationsGrantedDirectlyViaGroupAndViaRole(
-      @Authenticated(ME) final CamundaClient meClient) {
+      @Authenticated(ME) final CamundaClient meClient) throws Exception {
     Awaitility.await()
         .untilAsserted(
             () -> {
@@ -149,11 +152,12 @@ class MeAuthorizationsIT {
                   .extracting(item -> item.getResourceType().name())
                   .doesNotContain("DECISION_DEFINITION");
             });
+    assertAuthorizationsAreEnabled(meClient);
   }
 
   @Test
-  void shouldFilterOwnAuthorizationsByResourceType(
-      @Authenticated(ME) final CamundaClient meClient) {
+  void shouldFilterOwnAuthorizationsByResourceType(@Authenticated(ME) final CamundaClient meClient)
+      throws Exception {
     Awaitility.await()
         .untilAsserted(
             () -> {
@@ -175,6 +179,23 @@ class MeAuthorizationsIT {
                         assertThat(item.getResourceId()).isEqualTo(DIRECT_PROCESS_ID);
                       });
             });
+    assertAuthorizationsAreEnabled(meClient);
+  }
+
+  private void assertAuthorizationsAreEnabled(final CamundaClient client) throws Exception {
+    // when
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(createUri(client, "v2/authentication/me/authorizations/search"))
+            .header("Authorization", basicAuthentication())
+            .POST(BodyPublishers.noBody())
+            .build();
+    final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+    final var responseBody = JSON.readTree(response.body());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertThat(responseBody.path("authorizationsEnabled").asBoolean()).isTrue();
   }
 
   @Test
@@ -191,6 +212,10 @@ class MeAuthorizationsIT {
 
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  private static String basicAuthentication() {
+    return "Basic " + Base64.getEncoder().encodeToString((ME + ":" + PASSWORD).getBytes());
   }
 
   private static URI createUri(final CamundaClient client, final String path)

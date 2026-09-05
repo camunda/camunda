@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
@@ -97,8 +98,8 @@ public class RawTransactionalColumnFamily {
         });
   }
 
-  public byte[] get(final ZeebeTransaction transaction, final byte[] key, final int keyLen)
-      throws Exception {
+  public byte @Nullable [] get(
+      final ZeebeTransaction transaction, final byte[] key, final int keyLen) throws Exception {
     return transaction.get(
         transactionDb.getDefaultNativeHandle(),
         transactionDb.getReadOptionsNativeHandle(),

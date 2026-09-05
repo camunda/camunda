@@ -58,3 +58,4 @@ jobs:
       target-version: ${{ matrix.version }}
       orchestration-tag: ${{ matrix.orchestration-tag }}
       ref: ${{ github.event.pull_request.head.ref }}
+      base-ref: ${{ github.event.pull_request.base.sha }}

@@ -13,11 +13,17 @@ function mockAgentInstance(
 ): AgentInstance {
   return {
     agentInstanceKey: '2251799813851828',
+    agentDefinitionKey: '2251799813851827',
     status: 'TOOL_CALLING',
     definition: {
       model: 'gpt-4',
       provider: 'openai',
-      systemPrompt: 'You are a helpful assistant.',
+      systemPrompt: [
+        {
+          contentType: 'TEXT',
+          text: 'You are a helpful assistant.',
+        },
+      ],
     },
     metrics: {
       inputTokens: 100,

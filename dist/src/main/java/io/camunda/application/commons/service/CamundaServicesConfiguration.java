@@ -31,7 +31,12 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterExportingServices;
+import io.camunda.service.ClusterHistoryBackupServices;
+import io.camunda.service.ClusterRebalanceServices;
 import io.camunda.service.ClusterRecoveryServices;
+import io.camunda.service.ClusterRuntimeBackupServices;
+import io.camunda.service.ClusterRuntimeBackupServices.PhysicalTenantBackupPort;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
 import io.camunda.service.ClusterVariableServices;
@@ -80,11 +85,14 @@ import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
@@ -142,6 +150,8 @@ public class CamundaServicesConfiguration {
       final GatewayRestConfiguration gatewayRestConfiguration,
       final BrokerTopologyManager brokerTopologyManager,
       final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender,
+      final RebalanceRequestSender rebalanceRequestSender,
+      final ExportingStateController exportingStateController,
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
@@ -153,7 +163,6 @@ public class CamundaServicesConfiguration {
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
-    final var exportingRequestBroadcaster = new ExportingRequestBroadcaster(brokerClient);
 
     final var builder = new DefaultServiceRegistry.Builder();
     builder.managementServices(managementServices);
@@ -164,6 +173,9 @@ public class CamundaServicesConfiguration {
     // Collected here as well as bound per tenant, so the cluster-wide ClusterRecoveryServices can
     // resolve the restore environment of a tenant named in a cluster-admin restore's overrides.
     final Map<String, TenantRestoreEnvironment> restoreEnvironmentByTenant = new HashMap<>();
+    // Collected here as well as bound per tenant, so the cluster-wide ClusterRuntimeBackupServices
+    // fans out over the very ports the per-tenant services use.
+    final List<PhysicalTenantBackupPort> runtimeBackupPorts = new ArrayList<>();
 
     physicalTenantResolver
         .getAll()
@@ -192,6 +204,11 @@ public class CamundaServicesConfiguration {
                       tenantConfig.getData().getSecondaryStorage().getType().name(),
                       tenantConfig.getData().getPrimaryStorage().getBackup().isContinuous());
               restoreEnvironmentByTenant.put(tenantId, restoreEnvironment);
+
+              // -- per-tenant runtime-backup port: the broker-facing backup API plus the
+              // deployment-time backup-id mode, shared by the per-tenant and cluster-wide services
+              final var runtimeBackupPort = runtimeBackupPort(tenantId, tenantConfig, brokerClient);
+              runtimeBackupPorts.add(runtimeBackupPort);
 
               // -- per-tenant process cache --
               final var processCacheConfig = tenantConfig.getApi().getRest().getProcessCache();
@@ -319,8 +336,7 @@ public class CamundaServicesConfiguration {
                   .backupServices(
                       tenantId,
                       runtimeBackupServices(
-                          tenantId,
-                          tenantConfig,
+                          runtimeBackupPort,
                           brokerClient,
                           securityContextProvider,
                           authorizationChecker,
@@ -392,7 +408,7 @@ public class CamundaServicesConfiguration {
                           tenantId,
                           brokerClient,
                           securityContextProvider,
-                          exportingRequestBroadcaster,
+                          exportingStateController.getByTenant(tenantId),
                           authorizationChecker,
                           tenantSecurity.getAuthorizations(),
                           executor,
@@ -553,6 +569,14 @@ public class CamundaServicesConfiguration {
                               executor)));
             });
 
+    // Outside the per-tenant loop on purpose: one cluster-wide service fans out over every tenant,
+    // so building it per tenant would construct N of them and keep only the last.
+    historyBackupApi.ifAvailable(
+        historyBackup ->
+            builder.clusterHistoryBackupServices(
+                new ClusterHistoryBackupServices(
+                    historyBackup, physicalTenantResolver.getAll().keySet(), executor)));
+
     // The readiness bean must be resolved lazily, not injected directly: on Elasticsearch and
     // OpenSearch it depends on the search schema initializer, which depends on
     // BrokerModuleConfiguration, which depends back on this ServiceRegistry — injecting it eagerly
@@ -567,24 +591,26 @@ public class CamundaServicesConfiguration {
     builder.clusterRecoveryServices(
         new ClusterRecoveryServices(clusterConfigurationRequestSender, restoreEnvironmentByTenant));
 
+    builder.clusterExportingServices(
+        new ClusterExportingServices(exportingStateController.clusterWide()));
+    builder.clusterRebalanceServices(new ClusterRebalanceServices(rebalanceRequestSender));
+
+    builder.clusterRuntimeBackupServices(new ClusterRuntimeBackupServices(runtimeBackupPorts));
+
     return builder.build();
   }
 
   /**
-   * Builds the per-tenant {@link RuntimeBackupServices}, mirroring the wiring of the {@code
-   * backupRuntime} actuator ({@code BackupEndpoint}): backup ids must be omitted (they are
-   * generated from the current timestamp plus the configured offset) whenever continuous backups, a
-   * backup schedule, or a checkpoint interval is configured for the physical tenant.
+   * Builds the per-tenant runtime-backup port, mirroring the wiring of the {@code backupRuntime}
+   * actuator ({@code BackupEndpoint}): backup ids must be omitted (they are generated from the
+   * current timestamp plus the configured offset) whenever continuous backups, a backup schedule,
+   * or a checkpoint interval is configured for the physical tenant.
+   *
+   * <p>The port is what both the per-tenant and the cluster-wide service are built on, so the mode
+   * the per-tenant endpoint enforces is by construction the mode the cluster-wide one reports.
    */
-  private static RuntimeBackupServices runtimeBackupServices(
-      final String tenantId,
-      final Camunda tenantConfig,
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final AuthorizationChecker authorizationChecker,
-      final AuthorizationsConfiguration authorizationsConfig,
-      final ApiServicesExecutorProvider executor,
-      final BrokerRequestAuthorizationConverter converter) {
+  private static PhysicalTenantBackupPort runtimeBackupPort(
+      final String tenantId, final Camunda tenantConfig, final BrokerClient brokerClient) {
     final var backupCfg = tenantConfig.getData().getPrimaryStorage().getBackup();
     final var backupIdGenerated =
         backupCfg.isContinuous()
@@ -593,14 +619,25 @@ public class CamundaServicesConfiguration {
                 && !backupCfg.getCheckpointInterval().isZero());
     final var backupApi =
         new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
+    return new PhysicalTenantBackupPort(tenantId, backupApi, backupIdGenerated);
+  }
+
+  private static RuntimeBackupServices runtimeBackupServices(
+      final PhysicalTenantBackupPort port,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final AuthorizationChecker authorizationChecker,
+      final AuthorizationsConfiguration authorizationsConfig,
+      final ApiServicesExecutorProvider executor,
+      final BrokerRequestAuthorizationConverter converter) {
     return new RuntimeBackupServices(
-        tenantId,
+        port.physicalTenantId(),
         brokerClient,
         securityContextProvider,
-        backupApi,
+        port.api(),
         authorizationChecker,
         authorizationsConfig,
-        backupIdGenerated,
+        port.backupIdGenerated(),
         executor,
         converter);
   }

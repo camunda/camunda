@@ -11,6 +11,8 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import java.time.Duration;
+import java.util.stream.Stream;
 
 /** Metrics for coordinated leadership transfer (rebalancing). */
 @SuppressWarnings("NullableProblems")
@@ -20,9 +22,19 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
    * leader waited for the desired leader to catch up during a leadership transfer.
    */
   PARTITION_PAUSE_DURATION {
+    private static final Duration[] BUCKETS =
+        Stream.of(100, 250, 500, 1_000, 2_500, 5_000, 10_000, 15_000, 20_000, 30_000, 60_000)
+            .map(Duration::ofMillis)
+            .toArray(Duration[]::new);
+
     @Override
     public String getBaseUnit() {
       return "ms";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
     }
 
     @Override
@@ -71,45 +83,6 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public KeyName[] getKeyNames() {
       return new KeyName[] {PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT};
-    }
-  },
-
-  /** Duration of a per-partition coordinated leadership transfer attempt, tagged by result. */
-  PARTITION_TRANSFER_DURATION {
-    @Override
-    public String getBaseUnit() {
-      return "ms";
-    }
-
-    @Override
-    public String getName() {
-      return "zeebe.cluster.rebalance.partition.duration";
-    }
-
-    @Override
-    public Type getType() {
-      return Type.TIMER;
-    }
-
-    @Override
-    public String getDescription() {
-      return "Duration of a per-partition coordinated leadership transfer attempt, by result";
-    }
-
-    @Override
-    public KeyName[] getKeyNames() {
-      return new KeyName[] {
-        RebalanceKeyNames.RESULT, PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT
-      };
-    }
-  };
-
-  public enum RebalanceKeyNames implements KeyName {
-    RESULT;
-
-    @Override
-    public String asString() {
-      return "result";
     }
   }
 }

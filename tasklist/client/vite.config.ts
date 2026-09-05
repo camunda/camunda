@@ -39,6 +39,10 @@ export default defineConfig(({mode}) => ({
         target: 'http://localhost:8080',
         bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
       },
+      '/session/heartbeat': {
+        target: 'http://localhost:8080',
+        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+      },
       '/client-config.js': 'http://localhost:8080/tasklist',
     },
   },

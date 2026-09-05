@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-bom</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -38,7 +38,7 @@
     <failsafe.excluded.nightly>dl-nightly</failsafe.excluded.nightly>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>2.5.0</version.agrona>
+    <version.agrona>2.6.0</version.agrona>
     <version.animal-sniffer>1.27</version.animal-sniffer>
     <version.assertj>3.27.7</version.assertj>
     <version.assertj-assertions-generator>2.2.0</version.assertj-assertions-generator>
@@ -46,8 +46,8 @@
     <version.bouncycastle>1.85</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
     <version.camunda-license-check>2.11.2</version.camunda-license-check>
-    <version.camunda-security-library>0.1.0-alpha66</version.camunda-security-library>
-    <version.checkstyle>13.10.0</version.checkstyle>
+    <version.camunda-security-library>0.1.0-alpha67</version.camunda-security-library>
+    <version.checkstyle>14.0.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
     <version.commons-lang>3.20.0</version.commons-lang>
     <version.commons-logging>1.4.0</version.commons-logging>
@@ -55,19 +55,19 @@
     <version.commons-codec>1.22.1</version.commons-codec>
     <version.commons-compress>1.28.0</version.commons-compress>
     <version.commons-validator>1.11.0</version.commons-validator>
-    <version.zstd-jni>1.5.7-13</version.zstd-jni>
+    <version.zstd-jni>1.5.7-16</version.zstd-jni>
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
     <version.elasticsearch.client>8.19.20</version.elasticsearch.client>
-    <version.elasticsearch-java-client>8.19.20</version.elasticsearch-java-client>
+    <version.elasticsearch-java-client>8.19.21</version.elasticsearch-java-client>
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.50.0</version.error-prone>
-    <version.nullaway>0.13.8</version.nullaway>
+    <version.nullaway>0.14.0</version.nullaway>
     <version.grpc>1.83.1</version.grpc>
     <version.gson>2.14.0</version.gson>
-    <version.guava>33.6.0-jre</version.guava>
+    <version.guava>33.7.1-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
@@ -75,9 +75,9 @@
     <version.httpcore5>5.4.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.10.0-alpha4.2</version.identity>
-    <version.instancio>5.6.0</version.instancio>
-    <version.jackson>2.22.1</version.jackson>
-    <version.jackson3>3.2.1</version.jackson3>
+    <version.instancio>6.0.0</version.instancio>
+    <version.jackson>2.22.2</version.jackson>
+    <version.jackson3>3.2.2</version.jackson3>
     <version.json-base>3.0.0</version.json-base>
     <version.json-flattener>0.18.2</version.json-flattener>
     <version.jspecify>1.0.1</version.jspecify>
@@ -97,12 +97,12 @@
     <version.opensearch.container>2.19.6</version.opensearch.container>
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
     <version.prometheus>1.3.5</version.prometheus>
-    <version.protobuf>4.35.1</version.protobuf>
-    <version.protobuf-common>2.74.0</version.protobuf-common>
-    <version.micrometer>1.17.0</version.micrometer>
+    <version.protobuf>4.36.0</version.protobuf>
+    <version.protobuf-common>2.75.0</version.protobuf-common>
+    <version.micrometer>1.17.1</version.micrometer>
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
-    <version.sbe>1.39.0</version.sbe>
-    <version.scala>3.8.4</version.scala>
+    <version.sbe>1.40.1</version.sbe>
+    <version.scala>3.9.0</version.scala>
     <version.slf4j>2.0.18</version.slf4j>
     <version.snakeyaml>2.6</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
@@ -117,13 +117,13 @@
     <version.feel-scala>1.22.0</version.feel-scala>
     <version.dmn-scala>1.12.2</version.dmn-scala>
     <version.rest-assured>6.0.1</version.rest-assured>
-    <version.spring>7.0.8</version.spring>
-    <version.spring-security>7.1.0</version.spring-security>
-    <version.spring-boot>4.1.0</version.spring-boot>
-    <version.spring-ai>2.0.0-M7</version.spring-ai>
-    <version.mcp-sdk>2.0.0</version.mcp-sdk>
+    <version.spring>7.0.9</version.spring>
+    <version.spring-security>7.1.1</version.spring-security>
+    <version.spring-boot>4.1.1</version.spring-boot>
+    <version.spring-ai>2.0.1</version.spring-ai>
+    <version.mcp-sdk>2.0.1</version.mcp-sdk>
     <version.jsonschema-generator>5.0.0</version.jsonschema-generator>
-    <version.tomcat>11.0.24</version.tomcat>
+    <version.tomcat>11.0.25</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -132,27 +132,30 @@
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.6.0</version.json-smart>
-    <version.byte-buddy>1.18.11-jdk5</version.byte-buddy>
+    <version.byte-buddy>1.18.12-jdk5</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.4.0</version.resilience4j>
     <version.kotlin-stdlib>2.4.10</version.kotlin-stdlib>
     <version.immutables>2.12.2</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.191</version.classgraph>
+    <version.classgraph>4.8.194</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.10.3</version.spotbugs>
+    <version.spotbugs>4.10.4</version.spotbugs>
     <version.archunit>1.5.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
-    <version.jnr-ffi>2.3.0</version.jnr-ffi>
-    <version.jnr-posix>3.2.1</version.jnr-posix>
+    <version.jnr-ffi>2.3.1</version.jnr-ffi>
+    <version.jnr-posix>3.2.2</version.jnr-posix>
     <version.jnr-constants>0.11.0</version.jnr-constants>
-    <version.feign>13.13</version.feign>
-    <version.google-sdk>26.85.1</version.google-sdk>
+    <version.feign>13.14</version.feign>
+    <version.google-sdk>26.87.0</version.google-sdk>
+    <!-- Must stay >= the version gax-httpjson needs; see the override further down in
+         dependencyManagement for why this is pinned at all. -->
+    <version.google-http-client>2.2.0</version.google-http-client>
     <version.azure-sdk>1.3.8</version.azure-sdk>
-    <version.awssdk>2.49.3</version.awssdk>
+    <version.awssdk>2.54.9</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.bind-api>4.0.5</version.bind-api>
@@ -160,21 +163,21 @@
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.22</version.jackson-annotations>
     <version.json-path>3.0.0</version.json-path>
-    <version.swagger-annotations>2.2.53</version.swagger-annotations>
-    <version.swagger-parser>2.1.46</version.swagger-parser>
+    <version.swagger-annotations>2.2.54</version.swagger-annotations>
+    <version.swagger-parser>2.1.47</version.swagger-parser>
     <version.checker-qual>4.2.2</version.checker-qual>
     <version.java-jwt>4.6.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.13</version.postgresql>
     <version.h2>2.4.240</version.h2>
-    <version.aws-advanced-jdbc-wrapper>4.3.0</version.aws-advanced-jdbc-wrapper>
+    <version.aws-advanced-jdbc-wrapper>4.4.0</version.aws-advanced-jdbc-wrapper>
     <version.aws-signing>4.0.1</version.aws-signing>
     <version.tc-keycloak>4.3.1</version.tc-keycloak>
     <version.jakarta-activation>2.1.4</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.19.1</version.jna-platform>
-    <version.liquibase>5.0.3</version.liquibase>
+    <version.liquibase>5.0.4</version.liquibase>
     <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.2.4</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
@@ -204,7 +207,7 @@
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
-    <version.auth0>4.2.0</version.auth0>
+    <version.auth0>5.0.0</version.auth0>
     <version.auth0.commons>1.12.0</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.okio-jvm>3.18.1</version.okio-jvm>
@@ -212,14 +215,14 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.38.2</version.nimbus-sdk>
-    <version.keycloak>26.7.1</version.keycloak>
+    <version.keycloak>26.7.2</version.keycloak>
     <version.keycloak-client>26.0.12</version.keycloak-client>
     <version.jna>5.19.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>4.1.0</version.mybatis-spring>
     <version.mybatis>3.5.19</version.mybatis>
     <version.mybatis-spring-boot-starter>4.1.0</version.mybatis-spring-boot-starter>
-    <version.javassist>3.32.0-GA</version.javassist>
+    <version.javassist>3.33.0-GA</version.javassist>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -232,7 +235,7 @@
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.15.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.17.1</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.10.0</plugin.version.dependency>
+    <plugin.version.dependency>3.11.0</plugin.version.dependency>
     <plugin.version.enforcer>3.6.3</plugin.version.enforcer>
     <plugin.version.exec>3.6.3</plugin.version.exec>
     <plugin.version.failsafe>3.5.6</plugin.version.failsafe>
@@ -1258,6 +1261,15 @@
         <version>${version.micrometer}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <!--
+        TODO: drop once feign-parent's googlehttpclient.version reaches 2.2.0.
+      -->
+      <dependency>
+        <groupId>com.google.http-client</groupId>
+        <artifactId>google-http-client</artifactId>
+        <version>${version.google-http-client}</version>
       </dependency>
 
       <!--
@@ -2584,6 +2596,12 @@
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
+              the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
+              and don't set the system property -->
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
             <properties>
               <property>
                 <name>listener</name>
@@ -2621,6 +2639,12 @@
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
+              the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
+              and don't set the system property -->
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
             <properties>
               <property>
                 <name>listener</name>
@@ -2746,33 +2770,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>${plugin.version.resources}</version>
-        </plugin>
-
-        <!--This plugin's configuration is used to store Eclipse m2e settings
-          only. It has no influence on the Maven build itself. -->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <versionRange>[1.3.2,)</versionRange>
-                    <goals>
-                      <goal>java</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore/>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
         </plugin>
 
         <!-- Ant run plugin -->
@@ -3114,6 +3111,59 @@
   </build>
 
   <profiles>
+    <!--
+      This plugin's configuration is used to store Eclipse m2e settings only. It has no
+      influence on the Maven build itself, and org.eclipse.m2e:lifecycle-mapping is not
+      published to Maven Central (only to Eclipse's own p2 repository), so the declaration
+      must stay invisible to plain Maven. Since maven-dependency-plugin 3.11.0,
+      dependency:go-offline / dependency:resolve-plugins also try to pre-resolve plugins
+      declared in pluginManagement (not just ones bound to the build lifecycle), which made
+      CI fail with "Could not find artifact org.eclipse.m2e:lifecycle-mapping:jar:1.0.0"
+      once this repo picked up that version (see PR #54531). Guarding the declaration with
+      the m2e.version property activation - the pattern m2e itself documents for exactly
+      this situation - keeps it visible to the IDE (m2e sets that property when it
+      processes the POM) while hiding it from the CLI/CI build, so no plugin ever needs an
+      excludeGroupIds workaround for it.
+      -->
+    <profile>
+      <id>m2e</id>
+      <activation>
+        <property>
+          <name>m2e.version</name>
+        </property>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.eclipse.m2e</groupId>
+              <artifactId>lifecycle-mapping</artifactId>
+              <version>1.0.0</version>
+              <configuration>
+                <lifecycleMappingMetadata>
+                  <pluginExecutions>
+                    <pluginExecution>
+                      <pluginExecutionFilter>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <versionRange>[1.3.2,)</versionRange>
+                        <goals>
+                          <goal>java</goal>
+                        </goals>
+                      </pluginExecutionFilter>
+                      <action>
+                        <ignore/>
+                      </action>
+                    </pluginExecution>
+                  </pluginExecutions>
+                </lifecycleMappingMetadata>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+
     <profile>
       <id>skip-random-tests</id>
       <build>
@@ -3220,12 +3270,6 @@
             <configuration>
               <forkCount>${forkCount}</forkCount>
               <reuseForks>true</reuseForks>
-              <systemPropertyVariables>
-                <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
-                the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
-                and don't set the system property -->
-                <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-              </systemPropertyVariables>
               <properties>
                 <configurationParameters>${junitConfigurationParameters}</configurationParameters>
               </properties>
@@ -3237,12 +3281,6 @@
             <configuration>
               <forkCount>${forkCount}</forkCount>
               <reuseForks>true</reuseForks>
-              <systemPropertyVariables>
-                <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
-                the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
-                and don't set the system property -->
-                <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-              </systemPropertyVariables>
               <properties>
                 <configurationParameters>${junitConfigurationParameters}</configurationParameters>
               </properties>

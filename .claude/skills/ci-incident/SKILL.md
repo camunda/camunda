@@ -29,8 +29,8 @@ stop and ask for the incident ID.
 
 ### Step 1 — Parse the incident ID
 
-The incident ID comes from `$ARGUMENTS`. If empty, ask the user for it before proceeding. Do not
-guess from recent context.
+Read the incident ID from the user's request. If it is missing, ask the user for it before
+proceeding. Do not guess from recent context.
 
 ### Step 2 — Pull incident state
 
@@ -56,7 +56,20 @@ If the Slack MCP is available, read recent messages from the incident's Slack ch
 
 If the Slack MCP is not available, note this in the brief and continue.
 
-### Step 4 — Match a runbook
+### Step 4 — Search for similar incidents
+
+Check for a recurring pattern before matching a runbook:
+
+- `incident_list` with `query: "<title or active alert name>"`, scoped to resolved/closed
+  incidents, excluding the current one.
+- `gh issue list --repo camunda/camunda --search "<alert or job/workflow name>"` for existing
+  tracking (flake tickets, deferred fixes, runbook follow-ups).
+
+If found, pull its postmortem (`incident_show` with `include: ["postmortem", "investigation"]`)
+and note the prior root cause, fix, and whether its follow-up was completed. If the same root
+cause recurs despite that fix, flag it explicitly — the fix didn't hold.
+
+### Step 5 — Match a runbook
 
 Read [docs/monorepo-docs/ci-runbooks.md](../../../docs/monorepo-docs/ci-runbooks.md).
 
@@ -69,7 +82,7 @@ Match the incident title and active alert name(s) against the `###` headings und
 - **No match**: list the available runbook headings and ask which applies, or confirm this is a
   novel incident with no runbook.
 
-### Step 5 — Locate the current process step
+### Step 6 — Locate the current process step
 
 Read the **CI Incident Management** section of
 [docs/monorepo-docs/processes.md](../../../docs/monorepo-docs/processes.md).
@@ -82,19 +95,20 @@ Based on incident status + Slack history, determine which step the incident is i
 
 This tells you what action is expected next (e.g. assign roles, post update, create follow-ups).
 
-### Step 6 — Brief the responder
+### Step 7 — Brief the responder
 
 In a single concise message, give the responder:
 
 - **State**: title, severity, status, lead, opened-at
 - **Slack TL;DR**: what's been tried, who's active, last update time
+- **Similar incidents**: past occurrences found (with what fixed it last time), or none found
 - **Runbook**: matched heading + the Troubleshooting steps
 - **Process step**: which of the three steps the incident is in, and what's expected
 - **Next action**: one concrete recommendation
 
 Then wait for the responder to direct the next move.
 
-### Step 7 — Drive the response
+### Step 8 — Drive the response
 
 Work through the runbook with the responder. Prioritize mitigation (stopping the bleeding) over root causing and resolution. Use relevant CI skills from this repository, e.g. for troubleshooting. Specific rules:
 
@@ -106,8 +120,13 @@ Work through the runbook with the responder. Prioritize mitigation (stopping the
   and getting explicit confirmation.
 - **Don't change state silently**: never change severity, status, or role assignments without the
   responder explicitly instructing it.
+- **Don't stop at mitigation — finish root causing**: alerts can self-resolve mid-investigation
+  because of how failure-event alerting is implemented; a quiet alert doesn't mean the incident is
+  understood. Keep investigating until the root cause is known.
+- **Keep incident open until all attached alerts are resolved**: check for attached alerts that are
+  still firing, and reject resolving or closing the incident if any are.
 
-### Step 8 — Wrap-up
+### Step 9 — Wrap-up
 
 When the incident moves to resolved or closed:
 

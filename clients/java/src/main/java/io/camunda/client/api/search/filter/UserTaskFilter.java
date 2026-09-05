@@ -21,7 +21,6 @@ import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -29,332 +28,126 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /** Interface for defining user task filters in search queries. */
-public interface UserTaskFilter extends SearchRequestFilter {
+public interface UserTaskFilter extends UserTaskFilterBase {
 
-  /**
-   * Filters user tasks by the specified key.
-   *
-   * @param value the key of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter userTaskKey(final Long value);
 
-  /**
-   * Filters user tasks by the specified state.
-   *
-   * @param state the state of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter state(final UserTaskState state);
 
-  /**
-   * Filters user tasks by the specified state using {@link UserTaskStateProperty} consumer.
-   *
-   * @param fn the {@link UserTaskStateProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter state(final Consumer<UserTaskStateProperty> fn);
 
-  /**
-   * Filters user tasks by the specified assignee.
-   *
-   * @param assignee the assignee of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter assignee(final String assignee);
 
-  /**
-   * Filters user tasks by the specified assignee using {@link StringProperty} consumer.
-   *
-   * @param fn the assignee {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter assignee(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters user tasks by the business ID of their owning process instance. This only works for
-   * user tasks created with 8.10 and onwards. Tasks from prior versions don't contain this data.
-   *
-   * @param businessId the business ID of the owning process instance
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter businessId(final String businessId);
 
-  /**
-   * Filters user tasks by the business ID of their owning process instance using {@link
-   * StringProperty} consumer. This only works for user tasks created with 8.10 and onwards. Tasks
-   * from prior versions don't contain this data.
-   *
-   * @param fn the business ID {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter businessId(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters user tasks by the specified priority.
-   *
-   * @param priority the priority of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter priority(final Integer priority);
 
-  /**
-   * Filters user tasks by the specified priority using {@link IntegerProperty} consumer.
-   *
-   * @param fn the priority {@link IntegerProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter priority(final Consumer<IntegerProperty> fn);
 
-  /**
-   * Filters user tasks by the specified task definition ID.
-   *
-   * @param taskDefinitionId the task definition ID of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter elementId(final String taskDefinitionId);
 
-  /**
-   * Filters user tasks by their name. This only works for data created with 8.8 and onwards.
-   * Instances from prior versions don't contain this data.
-   *
-   * @param name the element name of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter name(final String name);
 
-  /**
-   * Filters user tasks by their name using {@link StringProperty} consumer. This only works for
-   * data created with 8.8 and onwards. Instances from prior versions don't contain this data.
-   *
-   * @param fn the name {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter name(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters user tasks by tags associated with the process instance. Matches user tasks where the
-   * process instance has ALL of the provided tags (AND logic).
-   *
-   * <p>Example: {@code .tags(Set.of("tag1", "tag2"))} matches process instances with tag1 AND tag2.
-   *
-   * @param tags the Set of tag values to filter by (AND logic)
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter tags(final Set<String> tags);
 
-  /**
-   * Filters user tasks by tags associated with the process instance. Matches user tasks where the
-   * process instance has ALL of the provided tags (AND logic).
-   *
-   * <p>Example: {@code .tags("tag1", "tag2")} matches process instances with tag1 AND tag2.
-   *
-   * @param tags the tag values to filter by (AND logic)
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter tags(final String... tags);
 
-  /**
-   * Filters user tasks by the specified candidate group.
-   *
-   * @param candidateGroup the candidate group of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter candidateGroup(final String candidateGroup);
 
-  /**
-   * Filters user tasks by the specified candidate group using {@link StringProperty} consumer.
-   *
-   * @param fn the candidate group {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter candidateGroup(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters user tasks by the specified candidate user.
-   *
-   * @param candidateUser the candidate user of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter candidateUser(final String candidateUser);
 
-  /**
-   * Filters user tasks by the specified candidate user using {@link StringProperty} consumer.
-   *
-   * @param fn the candidate user {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter candidateUser(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters user tasks by the specified process definition key.
-   *
-   * @param processDefinitionKey the process definition key of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter processDefinitionKey(final Long processDefinitionKey);
 
-  /**
-   * Filters user tasks by the specified process definition key using {@link BasicLongProperty}
-   * consumer.
-   *
-   * @param fn the process definition key {@link BasicLongProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
 
-  /**
-   * Filters user tasks by the specified process instance key.
-   *
-   * @param processInstanceKey the process instance key of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter processInstanceKey(final Long processInstanceKey);
 
-  /**
-   * Filters user tasks by the specified process instance key using {@link BasicLongProperty}
-   * consumer.
-   *
-   * @param fn the process instance key {@link BasicLongProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
 
-  /**
-   * Filters user tasks by the specified tenant ID.
-   *
-   * @param tenantId representing the tenant associated with this task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter tenantId(final String tenantId);
 
-  /**
-   * Filters user tasks by the specified tenantId using {@link StringProperty} consumer.
-   *
-   * @param fn the {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter tenantId(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters user tasks by the specified Process Definition Id.
-   *
-   * @param bpmnProcessId from the task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter bpmnProcessId(final String bpmnProcessId);
 
-  /**
-   * Filters user tasks by the specified Process Definition Id using {@link StringProperty}
-   * consumer.
-   *
-   * @param fn the Process Definition Id {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter bpmnProcessId(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters user tasks by specified Process Instance Variables.
-   *
-   * @param variableValueFilters from the task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter processInstanceVariables(
       final List<Consumer<VariableValueFilter>> variableValueFilters);
 
-  /**
-   * Filters user tasks by specified Map of Process Instance Variables.
-   *
-   * @param variableValueFilters from the task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter processInstanceVariables(final Map<String, Object> variableValueFilters);
 
-  /**
-   * Filters user tasks by specified Local Variables.
-   *
-   * @param variableValueFilters from the task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter localVariables(final List<Consumer<VariableValueFilter>> variableValueFilters);
 
-  /**
-   * Filters user tasks by specified Map of Local Variables.
-   *
-   * @param variableValueFilters from the task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter localVariables(final Map<String, Object> variableValueFilters);
 
-  /**
-   * Filters user tasks by the specified element instance key.
-   *
-   * @param elementInstanceKey the element instance key of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter elementInstanceKey(final Long elementInstanceKey);
 
-  /**
-   * Filters user tasks by the specified creation date.
-   *
-   * @param creationDate the creation date of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter creationDate(final OffsetDateTime creationDate);
 
-  /**
-   * Filters user tasks by the specified {@link DateTimeProperty} creation date.
-   *
-   * @param creationDate the creation date of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter creationDate(final Consumer<DateTimeProperty> creationDate);
 
-  /**
-   * Filters user tasks by the specified completion date.
-   *
-   * @param completionDate the completion date of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter completionDate(final OffsetDateTime completionDate);
 
-  /**
-   * Filters user tasks by the specified {@link DateTimeProperty} completion date.
-   *
-   * @param completionDate the completion date of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter completionDate(final Consumer<DateTimeProperty> completionDate);
 
-  /**
-   * Filters user tasks by the specified follow-up date.
-   *
-   * @param followUpDate the follow-up date of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter followUpDate(final OffsetDateTime followUpDate);
 
-  /**
-   * Filters user tasks by the specified {@link DateTimeProperty} follow-up date.
-   *
-   * @param followUpDate the follow-up date of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter followUpDate(final Consumer<DateTimeProperty> followUpDate);
 
-  /**
-   * Filters user tasks by the specified due date.
-   *
-   * @param dueDate the due date of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter dueDate(final OffsetDateTime dueDate);
 
-  /**
-   * Filters user tasks by the specified {@link DateTimeProperty} due date.
-   *
-   * @param dueDate the due date of the user task
-   * @return the updated filter
-   */
+  @Override
   UserTaskFilter dueDate(final Consumer<DateTimeProperty> dueDate);
+
+  /** Filter by or conjunction using {@link UserTaskFilterBase} consumer. */
+  UserTaskFilterBase orFilters(List<Consumer<UserTaskFilterBase>> filters);
 }

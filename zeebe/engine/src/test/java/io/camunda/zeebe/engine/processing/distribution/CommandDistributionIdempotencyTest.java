@@ -382,6 +382,14 @@ public class CommandDistributionIdempotencyTest {
             DeploymentCreateProcessor.class
           },
           {
+            "Deployment.CREATE is idempotent (with agent definition)",
+            new Scenario(
+                ValueType.DEPLOYMENT,
+                DeploymentIntent.CREATE,
+                CommandDistributionIdempotencyTest::deployProcessWithAgentDefinition),
+            DeploymentCreateProcessor.class
+          },
+          {
             "Group.CREATE is idempotent",
             new Scenario(
                 ValueType.GROUP,
@@ -505,6 +513,25 @@ public class CommandDistributionIdempotencyTest {
                 ResourceDeletionIntent.DELETE,
                 () -> {
                   final var process = deployProcess();
+                  return ENGINE
+                      .resourceDeletion()
+                      .withResourceKey(
+                          process
+                              .getValue()
+                              .getProcessesMetadata()
+                              .getFirst()
+                              .getProcessDefinitionKey())
+                      .delete();
+                }),
+            ResourceDeletionDeleteProcessor.class
+          },
+          {
+            "ResourceDeletion.DELETE is idempotent (with agent definition)",
+            new Scenario(
+                ValueType.RESOURCE_DELETION,
+                ResourceDeletionIntent.DELETE,
+                () -> {
+                  final var process = deployProcessWithAgentDefinition();
                   return ENGINE
                       .resourceDeletion()
                       .withResourceKey(
@@ -1013,6 +1040,22 @@ public class CommandDistributionIdempotencyTest {
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess().startEvent().endEvent().done())
+        .expectCreated()
+        .deploy();
+  }
+
+  private static Record<DeploymentRecordValue> deployProcessWithAgentDefinition() {
+    return ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess()
+                .startEvent()
+                .serviceTask(
+                    "agent-task",
+                    t -> t.zeebeJobType("agent-task-job").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
         .expectCreated()
         .deploy();
   }

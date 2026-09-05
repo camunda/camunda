@@ -11,15 +11,21 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @ExcludeAuthorizationCheck
@@ -29,22 +35,38 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to delete process message subscription for element with key '%d' and message name '%s', "
           + "but no such subscription was found.";
+  private static final String NOT_CLOSING_MESSAGE =
+      "Expected to delete process message subscription for element with key '%d' and message name"
+          + " '%s', but it is not in CLOSING state.";
 
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final TypedCommandWriter commandWriter;
   private final ProcessMessageSubscriptionState subscriptionState;
+  private final SuspensionState suspensionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final KeyGenerator keyGenerator;
+
+  // Scratch copy of the manifest, taken before CREATED (whose applier re-reads the shared record),
+  // so the REOPEN command we buffer keeps the right field values.
+  private final ProcessMessageSubscriptionRecord reopenScratch =
+      new ProcessMessageSubscriptionRecord();
 
   public ProcessMessageSubscriptionDeleteProcessor(
       final ProcessMessageSubscriptionState subscriptionState,
+      final SuspensionState suspensionState,
       final Writers writers,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final KeyGenerator keyGenerator) {
     this.subscriptionState = subscriptionState;
+    this.suspensionState = suspensionState;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
+    this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
+    commandWriter = writers.command();
   }
 
   @Override
@@ -63,8 +85,37 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
-        subscription.getKey(), ProcessMessageSubscriptionIntent.DELETED, subscription.getRecord());
+    if (!subscription.isClosing()) {
+      // DELETE ack for a row never put into CLOSING — a protocol violation; emit a terminal
+      // rejection so replay is deterministic rather than a silent gap.
+      final var reason = String.format(NOT_CLOSING_MESSAGE, elementInstanceKey, messageName);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      return;
+    }
+
+    final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
+    if (subscription.getRecord().isClosedForSuspend()) {
+      // Restore the PI-side row to OPENED as the durable resume manifest and buffer a REOPEN so the
+      // drain re-subscribes it one row per batch on resume. Snapshot before CREATED, whose applier
+      // re-reads the shared record.
+      reopenScratch.wrap(subscription.getRecord());
+      stateWriter.appendFollowUpEvent(
+          subscription.getKey(),
+          ProcessMessageSubscriptionIntent.CREATED,
+          subscription.getRecord());
+      bufferReopenCommand(subscription.getKey(), reopenScratch);
+      retriggerDrainIfResuming(processInstanceKey, reopenScratch);
+    } else {
+      stateWriter.appendFollowUpEvent(
+          subscription.getKey(),
+          ProcessMessageSubscriptionIntent.DELETED,
+          subscription.getRecord());
+      // A non-suspend close (e.g. a buffered command terminating the element mid-resume) can clear
+      // the last CLOSING row while the instance is RESUMING and the drain is parked waiting on it.
+      // Re-wake the drain here too, otherwise the instance stays RESUMING forever. Self-gates on
+      // RESUMING, so it is a no-op for the common unsuspended close.
+      retriggerDrainIfResuming(processInstanceKey, subscription.getRecord());
+    }
 
     // update transient state in a side-effect to ensure that these changes only take effect after
     // the command has been successfully processed
@@ -72,8 +123,47 @@ public final class ProcessMessageSubscriptionDeleteProcessor
         () -> {
           transientProcessMessageSubscriptionState.remove(
               new PendingSubscription(elementInstanceKey, messageName, tenantId));
-          return true;
         });
+  }
+
+  /**
+   * Buffers a {@code REOPEN} for the restored manifest row (mirroring {@code
+   * CommandBufferingBehavior}); the drain replays it one row per batch on resume. Consumed exactly
+   * once (drain writes {@code DRAINED}), so a later CREATE ack flipping the row's state cannot
+   * re-reopen it — hence no resume cursor is needed.
+   */
+  private void bufferReopenCommand(
+      final long subscriptionKey, final ProcessMessageSubscriptionRecord manifest) {
+    final var bufferedCommandRecord =
+        new BufferedCommandRecord()
+            .setProcessInstanceKey(manifest.getProcessInstanceKey())
+            .setProcessDefinitionKey(manifest.getProcessDefinitionKey())
+            .setTenantId(manifest.getTenantId())
+            .setCommandKey(subscriptionKey)
+            .setValueType(ValueType.PROCESS_MESSAGE_SUBSCRIPTION)
+            .setIntent(ProcessMessageSubscriptionIntent.REOPEN)
+            .setCommandValue(manifest);
+    stateWriter.appendFollowUpEvent(
+        keyGenerator.nextKey(), BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
+  }
+
+  /**
+   * If the close acks while the instance is already RESUMING, the drain may have emptied the buffer
+   * and be waiting; the just-buffered REOPEN needs a fresh {@code DRAIN} to be picked up. The drain
+   * re-checks state, so triggering once per draining row is safe.
+   */
+  private void retriggerDrainIfResuming(
+      final long processInstanceKey, final ProcessMessageSubscriptionRecord manifest) {
+    if (suspensionState.getSuspensionState(processInstanceKey) != SuspensionState.State.RESUMING) {
+      return;
+    }
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey,
+        BufferedCommandIntent.DRAIN,
+        new BufferedCommandRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setProcessDefinitionKey(manifest.getProcessDefinitionKey())
+            .setTenantId(manifest.getTenantId()));
   }
 
   private void rejectCommand(final TypedRecord<ProcessMessageSubscriptionRecord> command) {

@@ -18,16 +18,21 @@ import io.micrometer.core.instrument.Tags;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class HealthTreeMetrics implements ComponentTreeListener {
+  public static final int RECOVERING_VALUE = 2;
   private static final Logger LOG = LoggerFactory.getLogger(HealthTreeMetrics.class);
   private static final int MAX_PATH_ITERATIONS = 8;
   private final MeterRegistry meterRegistry;
   private final Map<String, Meter.Id> meters = new HashMap<>();
   // Map of child -> parent: a child only has 1 parent
   private final Map<String, String> relationships = new HashMap<>();
+  // Holds the value suppliers of recovering nodes: Micrometer keeps only a weak reference to the
+  // object a gauge reads from, so without this the gauge would start reporting NaN once collected
+  private final Map<String, AtomicInteger> recoveringValues = new HashMap<>();
   private final Tags extraTags;
 
   public HealthTreeMetrics(final MeterRegistry meterRegistry) {
@@ -78,12 +83,37 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
     }
   }
 
+  /**
+   * Registers a node that constantly reports {@link #RECOVERING_VALUE}, for a component that exists
+   * only while its partition is in recovery mode. Such a component has no {@link
+   * io.camunda.zeebe.util.health.HealthReport} of its own, so {@link
+   * #registerNode(HealthMonitorable)} cannot be used; register any relationship first so the
+   * reported path matches the one the normal component uses.
+   */
+  public void registerRecoveringNode(final String componentName) {
+    final var value = new AtomicInteger(RECOVERING_VALUE);
+    final var meterDoc = HealthMetricsDoc.NODES;
+    final var builder =
+        Gauge.builder(meterDoc.getName(), value, AtomicInteger::intValue)
+            .description(meterDoc.getDescription())
+            .tag(NodesKeyNames.ID.asString(), componentName)
+            .tag(NodesKeyNames.PATH.asString(), pathOf(componentName));
+
+    if (extraTags != null) {
+      builder.tags(extraTags);
+    }
+
+    recoveringValues.put(componentName, value);
+    meters.put(componentName, builder.register(meterRegistry).getId());
+  }
+
   @Override
   public void close() {
     for (final var id : meters.values()) {
       meterRegistry.remove(id);
     }
     meters.clear();
+    recoveringValues.clear();
   }
 
   private Gauge buildNodeGauge(final HealthMonitorable component) {
@@ -119,6 +149,7 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
 
   private void removeFromRegistry(final String metricName) {
     final var meterId = meters.remove(metricName);
+    recoveringValues.remove(metricName);
     if (meterId != null) {
       meterRegistry.remove(meterId);
     }

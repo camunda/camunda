@@ -7,22 +7,22 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration.DEFAULT_GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -41,9 +41,14 @@ class UpdateRoutingStateTransformerTest {
   private final MemberId id1 = MemberId.from("1");
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
-  private final ClusterConfiguration currentTopology =
-      ClusterConfiguration.init()
-          .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
+  private final CurrentClusterConfiguration currentTopology =
+      CurrentClusterConfiguration.init()
+          .updateGlobalConfiguration(
+              globalConfiguration ->
+                  globalConfiguration.addMember(id1, BrokerState.initializeAsActive()))
+          .initPartitionGroup(DEFAULT_GROUP)
+          .updatePartitionGroupConfig(
+              DEFAULT_GROUP, group -> group.addMember(id1, hostingAPartition()));
 
   @Test
   void shouldGenerateUpdateRoutingStateOperationWhenEnabled() {
@@ -57,7 +62,7 @@ class UpdateRoutingStateTransformerTest {
     final var transformer = new UpdateRoutingStateTransformer(routingState);
 
     // when
-    final var result = transformer.operations(currentTopology);
+    final var result = plannedOperations(transformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -73,7 +78,7 @@ class UpdateRoutingStateTransformerTest {
     final var transformer = new UpdateRoutingStateTransformer(Optional.empty());
 
     // when
-    final var result = transformer.operations(currentTopology);
+    final var result = plannedOperations(transformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -110,7 +115,7 @@ class UpdateRoutingStateTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(TENANT_B, List.of(new UpdateRoutingState(id1, routingState)))));
   }
 
@@ -128,8 +133,31 @@ class UpdateRoutingStateTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(DEFAULT_GROUP, List.of(new UpdateRoutingState(id0, routingState)))));
+  }
+
+  @Test
+  void shouldRejectWhenNoBrokerOfThePhysicalTenantHoldsAPartition() {
+    // given — a tenant whose only broker holds none of its partitions, which is the one broker the
+    // operation could be dispatched to
+    final var configuration = cluster(Map.of(DEFAULT_GROUP, group(Map.of(id0, holdingNothing()))));
+    final var transformer =
+        new UpdateRoutingStateTransformer(
+            Optional.of(RoutingState.initializeWithPartitionCount(1)));
+
+    // when
+    final var result = transformer.phases(configuration);
+
+    // then — the request fails rather than the planning throwing, which would escape the request
+    // instead of answering it
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidState.class)
+        .satisfies(
+            error ->
+                assertThat(error).hasMessageContaining("none of its members hold any partitions"));
   }
 
   private CurrentClusterConfiguration twoTenantCluster() {
@@ -160,6 +188,10 @@ class UpdateRoutingStateTransformerTest {
   private PartitionGroupConfiguration group(final Map<MemberId, BrokerPartitionState> members) {
     return new PartitionGroupConfiguration(
         1, 0, members, Optional.empty(), Optional.empty(), Optional.empty());
+  }
+
+  private BrokerPartitionState holdingNothing() {
+    return BrokerPartitionState.initialize(Map.of());
   }
 
   private BrokerPartitionState hostingAPartition() {

@@ -7,39 +7,37 @@
  */
 
 import {
-  Connect,
-  Document,
-  Enterprise,
-  Folder,
-  Group,
-  License,
-  ListChecked,
+  Bot,
+  File,
+  ListChecks,
+  Package,
   Settings,
+  ShieldCheck,
   User,
-  UserAccess,
-} from "@carbon/react/icons";
-import type { CarbonIconType } from "@carbon/icons-react";
-import type { SidebarNodeDescriptor } from "@camunda/camunda-composite-components";
+  UserCog,
+  Users,
+  Waypoints,
+  Zap,
+} from "lucide-react";
+import type { NavIcon, SidebarNode } from "@camunda/design-system";
 
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import { Paths } from "src/components/global/routePaths";
 
-const ROUTE_ICONS: Record<string, CarbonIconType> = {
+const ROUTE_ICONS: Record<string, NavIcon> = {
   [Paths.users()]: User,
-  [Paths.groups()]: Group,
-  [Paths.roles()]: UserAccess,
-  [Paths.tenants()]: Enterprise,
-  [Paths.mappingRules()]: Connect,
-  [Paths.authorizations()]: License,
+  [Paths.groups()]: Users,
+  [Paths.roles()]: UserCog,
+  [Paths.tenants()]: Package,
+  [Paths.mappingRules()]: Waypoints,
+  [Paths.authorizations()]: ShieldCheck,
   [Paths.clusterVariables()]: Settings,
-  [Paths.operationsLog()]: ListChecked,
-  [Paths.globalTaskListeners()]: Folder,
-  [Paths.mcpProcesses()]: Folder,
+  [Paths.operationsLog()]: ListChecks,
+  [Paths.globalTaskListeners()]: Zap,
+  [Paths.mcpProcesses()]: Bot,
 };
 
-export function useSidebarChildren(
-  hideNavLinks: boolean,
-): SidebarNodeDescriptor[] {
+export function useSidebarChildren(hideNavLinks: boolean): SidebarNode[] {
   const routes = useGlobalRoutes();
 
   if (hideNavLinks) {
@@ -50,7 +48,7 @@ export function useSidebarChildren(
     type: "item" as const,
     key: route.key,
     label: route.label,
-    icon: ROUTE_ICONS[route.key] ?? Document,
+    icon: ROUTE_ICONS[route.key] ?? File,
     isActive: route.isCurrentPage,
     linkProps: { to: route.key },
   }));

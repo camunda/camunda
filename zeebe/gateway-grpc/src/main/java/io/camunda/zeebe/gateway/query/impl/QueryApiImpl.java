@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.gateway.query.impl;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.query.QueryApi;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.grpc.Context;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -56,13 +60,18 @@ public final class QueryApiImpl implements QueryApi {
       final long key,
       final ValueType valueType,
       final Duration timeout,
-      final CompletableFuture<String> result) {
+      final CompletableFuture<String> result)
+      throws Exception {
     final var request = new BrokerExecuteQuery();
     final var partitionId = Protocol.decodePartitionId(key);
 
     request.setKey(key);
     request.setPartitionId(partitionId);
     request.setValueType(valueType);
+    request.setPartitionGroup(
+        Objects.requireNonNullElse(
+            Context.current().call(InterceptorUtil.getPhysicalTenantIdKey()::get),
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
 
     client
         .sendRequestWithRetry(request, timeout)

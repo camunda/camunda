@@ -150,7 +150,7 @@ final class TestSupport {
             ValueType.JOB_METRICS_BATCH,
             ValueType.RESOURCE_REEXPORT,
             ValueType.SECRET_REFERENCE,
-            ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND);
+            ValueType.BUFFERED_COMMAND);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

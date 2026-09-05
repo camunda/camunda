@@ -9,6 +9,8 @@ package io.camunda.optimize.service.db.repository.os;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_OVERVIEW_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.stringTerms;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static java.lang.String.format;
 
@@ -20,9 +22,11 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.index.BusinessValueOverviewIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
@@ -98,15 +102,24 @@ public class BusinessValueOverviewRepositoryOS implements BusinessValueOverviewR
   }
 
   @Override
-  public List<BusinessValueOverviewDto> readByRange(final MetricRange metricRange) {
+  public List<BusinessValueOverviewDto> readByRange(
+      final MetricRange metricRange, final Collection<String> tenantIds) {
     if (metricRange == null) {
       throw new IllegalArgumentException("metricRange must not be null");
     }
+    if (tenantIds != null && tenantIds.isEmpty()) {
+      return List.of();
+    }
+    final Query rangeTerm = term(BusinessValueOverviewIndex.METRIC_RANGE, metricRange.getId());
+    final Query query =
+        tenantIds == null
+            ? rangeTerm
+            : and(rangeTerm, stringTerms(BusinessValueOverviewIndex.TENANT_ID, tenantIds));
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(
                 indexNameService.getOptimizeIndexAliasForIndex(BUSINESS_VALUE_OVERVIEW_INDEX_NAME))
-            .query(term(BusinessValueOverviewIndex.METRIC_RANGE, metricRange.getId()))
+            .query(query)
             .size(LIST_FETCH_LIMIT);
     final List<BusinessValueOverviewDto> rows =
         osClient.searchValues(requestBuilder, BusinessValueOverviewDto.class);

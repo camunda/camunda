@@ -25,7 +25,7 @@
       PROCESS_DEFINITION_ID,
       PROCESS_DEFINITION_KEY,
       PROCESS_DEFINITION_VERSION,
-      VERSION_TAG,
+      PROCESS_DEFINITION_VERSION_TAG,
       TENANT_ID,
       PARTITION_ID,
       STATUS,
@@ -37,6 +37,9 @@
       MAX_TOOL_CALLS,
       INPUT_TOKENS,
       OUTPUT_TOKENS,
+      REASONING_TOKEN_COUNT,
+      CACHE_CREATION_TOKEN_COUNT,
+      CACHE_READ_TOKEN_COUNT,
       MODEL_CALLS,
       TOOL_CALLS,
       TOOLS,
@@ -53,7 +56,7 @@
       #{processDefinitionId},
       #{processDefinitionKey},
       #{processDefinitionVersion},
-      #{versionTag},
+      #{processDefinitionVersionTag},
       #{tenantId},
       #{partitionId},
       #{status},
@@ -65,6 +68,9 @@
       #{maxToolCalls},
       #{inputTokens},
       #{outputTokens},
+      #{reasoningTokenCount},
+      #{cacheCreationTokenCount},
+      #{cacheReadTokenCount},
       #{modelCalls},
       #{toolCalls},
       #{tools, jdbcType=CLOB},
@@ -75,25 +81,36 @@
   </insert>
 
   <!--
-  Partial update: mutable fields plus the process-definition fields (only ever changed by a MIGRATED event)
-  Limits and identity columns are the only ones left genuinely write-once.
+  Partial update: mutable fields plus the process-definition fields (only ever changed by a MIGRATED event).
+  Model, provider, systemPrompt and the limits are mutable too - a CONFIGURATION history item commit
+  can change any of them via an UPDATED event - so they are included here rather than treated as
+  write-once. Only the identity columns are genuinely write-once.
   -->
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     UPDATE ${prefix}AGENT_INSTANCE
     SET
-      AGENT_DEFINITION_KEY       = #{agentDefinitionKey},
-      PROCESS_DEFINITION_ID      = #{processDefinitionId},
-      PROCESS_DEFINITION_KEY     = #{processDefinitionKey},
-      PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
-      VERSION_TAG                = #{versionTag},
-      ELEMENT_ID                 = #{elementId},
-      STATUS                     = #{status},
-      INPUT_TOKENS               = #{inputTokens},
-      OUTPUT_TOKENS              = #{outputTokens},
-      MODEL_CALLS                = #{modelCalls},
-      TOOL_CALLS                 = #{toolCalls},
-      TOOLS                      = #{tools, jdbcType=CLOB},
-      LAST_UPDATED_DATE          = #{lastUpdatedDate, jdbcType=TIMESTAMP}
+      AGENT_DEFINITION_KEY           = #{agentDefinitionKey},
+      PROCESS_DEFINITION_ID          = #{processDefinitionId},
+      PROCESS_DEFINITION_KEY         = #{processDefinitionKey},
+      PROCESS_DEFINITION_VERSION     = #{processDefinitionVersion},
+      PROCESS_DEFINITION_VERSION_TAG = #{processDefinitionVersionTag},
+      ELEMENT_ID                     = #{elementId},
+      STATUS                         = #{status},
+      MODEL                          = #{model},
+      PROVIDER                       = #{provider},
+      SYSTEM_PROMPT                  = #{systemPrompt, jdbcType=CLOB},
+      MAX_TOKENS                     = #{maxTokens},
+      MAX_MODEL_CALLS                = #{maxModelCalls},
+      MAX_TOOL_CALLS                 = #{maxToolCalls},
+      INPUT_TOKENS                   = #{inputTokens},
+      OUTPUT_TOKENS                  = #{outputTokens},
+      REASONING_TOKEN_COUNT          = #{reasoningTokenCount},
+      CACHE_CREATION_TOKEN_COUNT     = #{cacheCreationTokenCount},
+      CACHE_READ_TOKEN_COUNT         = #{cacheReadTokenCount},
+      MODEL_CALLS                    = #{modelCalls},
+      TOOL_CALLS                     = #{toolCalls},
+      TOOLS                          = #{tools, jdbcType=CLOB},
+      LAST_UPDATED_DATE              = #{lastUpdatedDate, jdbcType=TIMESTAMP}
       <if test="completionDate != null">
         , COMPLETION_DATE = #{completionDate, jdbcType=TIMESTAMP}
       </if>
@@ -158,7 +175,7 @@
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="_long" name="processDefinitionKey"/>
       <arg column="PROCESS_DEFINITION_VERSION" javaType="_int" name="processDefinitionVersion"/>
-      <arg column="VERSION_TAG" javaType="java.lang.String" name="versionTag"/>
+      <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String" name="processDefinitionVersionTag"/>
       <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
       <arg column="PARTITION_ID" javaType="_int" name="partitionId"/>
       <arg column="STATUS" javaType="io.camunda.search.entities.AgentInstanceEntity$AgentInstanceStatus" name="status"/>
@@ -170,6 +187,9 @@
       <arg column="MAX_TOOL_CALLS" javaType="_int" name="maxToolCalls"/>
       <arg column="INPUT_TOKENS" javaType="_long" name="inputTokens"/>
       <arg column="OUTPUT_TOKENS" javaType="_long" name="outputTokens"/>
+      <arg column="REASONING_TOKEN_COUNT" javaType="_long" name="reasoningTokenCount"/>
+      <arg column="CACHE_CREATION_TOKEN_COUNT" javaType="_long" name="cacheCreationTokenCount"/>
+      <arg column="CACHE_READ_TOKEN_COUNT" javaType="_long" name="cacheReadTokenCount"/>
       <arg column="MODEL_CALLS" javaType="_int" name="modelCalls"/>
       <arg column="TOOL_CALLS" javaType="_int" name="toolCalls"/>
       <arg column="TOOLS" javaType="java.lang.String" name="tools"/>
@@ -200,7 +220,7 @@
             ai.PROCESS_DEFINITION_ID,
             ai.PROCESS_DEFINITION_KEY,
             ai.PROCESS_DEFINITION_VERSION,
-            ai.VERSION_TAG,
+            ai.PROCESS_DEFINITION_VERSION_TAG,
             ai.TENANT_ID,
             ai.PARTITION_ID,
             ai.STATUS,
@@ -212,6 +232,9 @@
             ai.MAX_TOOL_CALLS,
             ai.INPUT_TOKENS,
             ai.OUTPUT_TOKENS,
+            ai.REASONING_TOKEN_COUNT,
+            ai.CACHE_CREATION_TOKEN_COUNT,
+            ai.CACHE_READ_TOKEN_COUNT,
             ai.MODEL_CALLS,
             ai.TOOL_CALLS,
             ai.TOOLS,
@@ -301,9 +324,9 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
-      <if test="filter.versionTagOperations != null and !filter.versionTagOperations.isEmpty()">
-        <foreach collection="filter.versionTagOperations" item="operation">
-          AND ai.VERSION_TAG
+      <if test="filter.processDefinitionVersionTagOperations != null and !filter.processDefinitionVersionTagOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionVersionTagOperations" item="operation">
+          AND ai.PROCESS_DEFINITION_VERSION_TAG
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>

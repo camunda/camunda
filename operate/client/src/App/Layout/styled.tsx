@@ -8,11 +8,13 @@
 
 import styled from 'styled-components';
 
-const PageContent = styled.main`
-  padding-top: var(--cds-spacing-09);
-  padding-left: var(--c3-sidebar-width, 0);
+const PageContent = styled.main<{$hasStickyHeader?: boolean}>`
+  padding-top: ${({$hasStickyHeader}) =>
+    $hasStickyHeader ? '0' : 'var(--cds-spacing-09)'};
+  padding-left: var(--app-sidebar-width, 0);
   transition: padding-left 0.15s ease-out;
-  height: 100%;
+  height: ${({$hasStickyHeader}) =>
+    $hasStickyHeader ? 'calc(100% - var(--cds-spacing-09))' : '100%'};
 `;
 
 export {PageContent};

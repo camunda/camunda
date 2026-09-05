@@ -21,13 +21,15 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.response.AgentInstance;
-import io.camunda.client.protocol.rest.AgentInstanceDefinition;
+import io.camunda.client.protocol.rest.AgentInstanceDefinitionResult;
 import io.camunda.client.protocol.rest.AgentInstanceLimits;
 import io.camunda.client.protocol.rest.AgentInstanceMetrics;
 import io.camunda.client.protocol.rest.AgentInstanceResult;
 import io.camunda.client.protocol.rest.AgentInstanceStatusEnum;
+import io.camunda.client.protocol.rest.AgentInstanceTextContent;
 import io.camunda.client.protocol.rest.AgentTool;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -66,14 +68,21 @@ class GetAgentInstanceTest extends ClientRestTest {
             .elementInstanceKeys(Collections.singletonList("6000"))
             .tools(Collections.singletonList(tool))
             .definition(
-                new AgentInstanceDefinition()
+                new AgentInstanceDefinitionResult()
                     .model("gpt-4o")
                     .provider("openai")
-                    .systemPrompt("You are a helpful agent"))
+                    .systemPrompt(
+                        Collections.singletonList(
+                            new AgentInstanceTextContent()
+                                .contentType("TEXT")
+                                .text("You are a helpful agent"))))
             .metrics(
                 new AgentInstanceMetrics()
                     .inputTokens(100L)
                     .outputTokens(200L)
+                    .reasoningTokenCount(70L)
+                    .cacheCreationTokenCount(80L)
+                    .cacheReadTokenCount(90L)
                     .modelCalls(5)
                     .toolCalls(3))
             .limits(new AgentInstanceLimits().maxModelCalls(10).maxToolCalls(20).maxTokens(5000L)));
@@ -139,11 +148,27 @@ class GetAgentInstanceTest extends ClientRestTest {
           softly
               .assertThat(definition.getSystemPrompt())
               .as("systemPrompt")
-              .isEqualTo("You are a helpful agent");
+              .hasSize(1)
+              .first()
+              .isInstanceOfSatisfying(
+                  AgentInstanceHistoryContent.TextContent.class,
+                  block -> assertThat(block.getText()).isEqualTo("You are a helpful agent"));
 
           final AgentInstance.Metrics metrics = result.getMetrics();
           softly.assertThat(metrics.getInputTokens()).as("inputTokens").isEqualTo(100L);
           softly.assertThat(metrics.getOutputTokens()).as("outputTokens").isEqualTo(200L);
+          softly
+              .assertThat(metrics.getReasoningTokenCount())
+              .as("reasoningTokenCount")
+              .isEqualTo(70L);
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("cacheCreationTokenCount")
+              .isEqualTo(80L);
+          softly
+              .assertThat(metrics.getCacheReadTokenCount())
+              .as("cacheReadTokenCount")
+              .isEqualTo(90L);
           softly.assertThat(metrics.getModelCalls()).as("modelCalls").isEqualTo(5);
           softly.assertThat(metrics.getToolCalls()).as("toolCalls").isEqualTo(3);
 

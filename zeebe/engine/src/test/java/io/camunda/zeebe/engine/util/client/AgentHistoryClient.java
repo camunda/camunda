@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
@@ -18,7 +17,6 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -74,6 +72,11 @@ public final class AgentHistoryClient {
     return this;
   }
 
+  public AgentHistoryClient withHistoryItemId(final String historyItemId) {
+    record.setHistoryItemId(historyItemId);
+    return this;
+  }
+
   public AgentHistoryClient withElementInstanceKey(final long elementInstanceKey) {
     record.setElementInstanceKey(elementInstanceKey);
     return this;
@@ -109,7 +112,7 @@ public final class AgentHistoryClient {
             .setToolCallId(toolCallId)
             .setToolName(toolName)
             .setElementId(elementId)
-            .setArguments(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(Map.of()))));
+            .setArguments(Map.of()));
     return this;
   }
 

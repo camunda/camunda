@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-library-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
@@ -147,6 +147,10 @@
             <!-- Exclude tests that use Jackson 3.x (tools.jackson.*) which is not available in Spring Boot 3.x -->
             <exclude>io/camunda/client/impl/CamundaObjectMapperTest.java</exclude>
             <exclude>io/camunda/client/spring/configuration/JsonMapperConfigurationTest.java</exclude>
+            <!-- Exclude test that uses org.springframework.boot.health.contributor, which is a
+                 Spring Boot 4.x-only package; Spring Boot 3.x has its own
+                 CamundaClientHealthIndicator override under org.springframework.boot.actuate.health -->
+            <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicatorTest.java</exclude>
           </testExcludes>
         </configuration>
       </plugin>
@@ -206,14 +210,17 @@
                     <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.class</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.class</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.class</exclude>
+                    <exclude>io/camunda/client/spring/properties/CamundaClientPropertiesPostProcessor.class</exclude>
                     <!-- The same overrides in the shaded sources jar (createSourcesJar). Filters
                          match by literal path, so the .class excludes above don't cover .java. -->
                     <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicator.java</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.java</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.java</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.java</exclude>
+                    <exclude>io/camunda/client/spring/properties/CamundaClientPropertiesPostProcessor.java</exclude>
                     <!-- Exclude META-INF services that we override -->
                     <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
+                    <exclude>META-INF/spring.factories</exclude>
                   </excludes>
                 </filter>
               </filters>

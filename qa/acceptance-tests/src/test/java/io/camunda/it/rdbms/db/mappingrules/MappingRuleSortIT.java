@@ -133,7 +133,7 @@ public class MappingRuleSortIT {
             .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
-                    new MappingRuleFilter.Builder().name(name).build(),
+                    new MappingRuleFilter.Builder().names(name).build(),
                     MappingRuleSort.of(b -> b.name().desc()),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
 

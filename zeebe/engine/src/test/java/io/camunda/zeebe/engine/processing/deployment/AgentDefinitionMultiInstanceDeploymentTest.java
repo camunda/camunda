@@ -18,7 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Pins down that an agent-marked element still mints its {@code AgentDefinition} when it is also
+ * Pins down that an agent-marked element still creates its {@code AgentDefinition} when it is also
  * configured as a multi-instance activity.
  */
 public final class AgentDefinitionMultiInstanceDeploymentTest {
@@ -63,7 +63,8 @@ public final class AgentDefinitionMultiInstanceDeploymentTest {
 
     Assertions.assertThat(agentDefinitionRecord.getValue())
         .describedAs(
-            "Should mint an AgentDefinition for the original service task, not its wrapping multi-instance body")
+            "Should create an AgentDefinition for the original service task, not its wrapping"
+                + " multi-instance body")
         .hasAgentType(AgentDefinitionType.AI_AGENT_TASK)
         .hasName("AI Agent Task")
         .hasElementId(elementId)
@@ -106,7 +107,8 @@ public final class AgentDefinitionMultiInstanceDeploymentTest {
 
     Assertions.assertThat(agentDefinitionRecord.getValue())
         .describedAs(
-            "Should mint an AgentDefinition for the original ad-hoc sub-process, not its wrapping multi-instance body")
+            "Should create an AgentDefinition for the original ad-hoc sub-process, not its"
+                + " wrapping multi-instance body")
         .hasAgentType(AgentDefinitionType.AI_AGENT_SUB_PROCESS)
         .hasName("AI Agent")
         .hasElementId(elementId)

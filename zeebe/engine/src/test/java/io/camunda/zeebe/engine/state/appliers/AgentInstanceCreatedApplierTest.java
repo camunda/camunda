@@ -13,9 +13,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
@@ -70,6 +72,50 @@ public class AgentInstanceCreatedApplierTest {
     assertThat(stored.getElementId()).isEqualTo("agent-task");
     assertThat(stored.getProcessInstanceKey()).isEqualTo(7L);
     assertThat(stored.getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
+  }
+
+  @Test
+  void shouldNotPersistHistoryBatch() {
+    // given — a CREATED event echoing back a history batch (as AgentInstanceCreateProcessor does).
+    final long agentInstanceKey = 43L;
+    final var record =
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING);
+    record.addHistoryItem(
+        new AgentHistoryRecord().setHistoryItemId("item-1").setRole(AgentHistoryRole.USER));
+
+    // when
+    applier.applyState(agentInstanceKey, record);
+
+    // then — history is a transient per-command payload, not real AgentInstance state: every item
+    // it carries is already persisted independently as its own AGENT_HISTORY record.
+    final var stored = agentInstanceState.getRecord(agentInstanceKey);
+    assertThat(stored).isNotNull();
+    assertThat(stored.getHistory()).isEmpty();
+  }
+
+  @Test
+  void shouldNotPersistJobContext() {
+    // given — a CREATED event echoing back the job context that produced its history batch (as
+    // AgentInstanceCreateProcessor does).
+    final long agentInstanceKey = 44L;
+    final var record =
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING)
+            .setJobKey(123L)
+            .setJobLease("lease-1");
+
+    // when
+    applier.applyState(agentInstanceKey, record);
+
+    // then — jobKey/jobLease are per-command payload, not real AgentInstance state: they're
+    // redundant with what's already captured on the separate AGENT_HISTORY entities.
+    final var stored = agentInstanceState.getRecord(agentInstanceKey);
+    assertThat(stored).isNotNull();
+    assertThat(stored.getJobKey()).isEqualTo(-1L);
+    assertThat(stored.getJobLease()).isEmpty();
   }
 
   @Test

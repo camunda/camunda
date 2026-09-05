@@ -383,7 +383,7 @@ public final class JobStateTest {
 
   @Test
   public void shouldNotParkJobForSecretResolutionWhenItIsNotUpForActivation() {
-    // given - a job a worker already holds
+    // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord();
     createAndActivateJobRecord(jobKey, jobRecord);
@@ -391,13 +391,13 @@ public final class JobStateTest {
     // when
     jobState.parkForSecretResolution(jobKey, jobRecord);
 
-    // then - the activation keeps the job, parking it would take its state away from the worker
+    // then
     assertJobState(jobKey, State.ACTIVATED);
   }
 
   @Test
   public void shouldMakeWaitingJobActivatableAfterSecretResolution() {
-    // given - a job parked while its secret references are resolved
+    // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord();
     parkJobForSecretResolution(jobKey, jobRecord);
@@ -412,19 +412,35 @@ public final class JobStateTest {
 
   @Test
   public void shouldNotMakeJobActivatableAfterSecretResolutionWhenItNoLongerWaits() {
-    // given - a job that was already reactivated by another resolved reference of the same
-    // activation, and has been activated by a worker since
+    // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord();
     parkJobForSecretResolution(jobKey, jobRecord);
     jobState.makeActivatableAfterSecretResolution(jobKey);
     jobState.activate(jobKey, jobRecord);
 
-    // when - the resolution of the second reference reactivates it again
+    // when
     jobState.makeActivatableAfterSecretResolution(jobKey);
 
-    // then - the activated job is left alone; re-inserting it would hand it out twice
+    // then
     assertJobState(jobKey, State.ACTIVATED);
+    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
+  }
+
+  @Test
+  public void shouldNotMakeSuspendedJobActivatableAfterSecretResolution() {
+    // given
+    final long jobKey = 1L;
+    final JobRecord jobRecord = newJobRecord();
+    parkJobForSecretResolution(jobKey, jobRecord);
+    jobState.updateJobState(jobKey, State.SUSPENDED);
+    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
+
+    // when
+    jobState.makeActivatableAfterSecretResolution(jobKey);
+
+    // then
+    assertJobState(jobKey, State.SUSPENDED);
     refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
   }
 
@@ -433,14 +449,14 @@ public final class JobStateTest {
     // given
     final long jobKey = 999L;
 
-    // when / then - no exception, no state change
+    // when / then
     jobState.makeActivatableAfterSecretResolution(jobKey);
     assertThat(jobState.exists(jobKey)).isFalse();
   }
 
   @Test
   public void shouldKeepJobParkedWhenUpdatingPriorityOfJobWaitingForSecretResolution() {
-    // given - a job parked while its secret references are resolved
+    // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord();
     parkJobForSecretResolution(jobKey, jobRecord);
@@ -448,7 +464,7 @@ public final class JobStateTest {
     // when
     jobState.updateJobPriority(jobKey, 99);
 
-    // then - the new priority is stored, but the job is not put back into the activatable index
+    // then
     assertThat(jobState.getJob(jobKey).getPriority()).isEqualTo(99);
     assertJobState(jobKey, State.WAITING_FOR_SECRET_RESOLUTION);
     refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
@@ -868,6 +884,173 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+  }
+
+  @Test
+  public void shouldIndexJobByProcessInstanceOnCreation() {
+    // given
+    final long processInstanceKey = 10L;
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord().setProcessInstanceKey(processInstanceKey);
+
+    // when - the 8.10+ creation path
+    jobState.insertJobRecordActivatable(key, jobRecord);
+
+    // then
+    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).containsExactly(key);
+  }
+
+  @Test
+  public void shouldNotIndexJobCreatedViaDeprecatedPath() {
+    // given / when - the deprecated create() path does not populate the index
+    final long processInstanceKey = 10L;
+    jobState.create(1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
+
+    // then - a pre-8.10 job that has never been suspended has no entry
+    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).isEmpty();
+  }
+
+  @Test
+  public void shouldBackfillIndexWhenDeprecatedJobIsSuspended() {
+    // given - a job created via the deprecated path, so it is not yet indexed
+    final long processInstanceKey = 10L;
+    final long key = 1L;
+    jobState.create(key, newJobRecord().setProcessInstanceKey(processInstanceKey));
+    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).isEmpty();
+
+    // when - it is suspended, the point every pre-8.10 job passes through
+    jobState.updateJobState(key, State.SUSPENDED);
+
+    // then - the index is backfilled
+    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).containsExactly(key);
+  }
+
+  @Test
+  public void shouldNotDuplicateIndexWhenAlreadyIndexedJobIsSuspended() {
+    // given - a job already indexed at creation
+    final long processInstanceKey = 10L;
+    final long key = 1L;
+    jobState.insertJobRecordActivatable(
+        key, newJobRecord().setProcessInstanceKey(processInstanceKey));
+
+    // when - suspension re-indexes it
+    jobState.updateJobState(key, State.SUSPENDED);
+
+    // then - the upsert leaves a single entry
+    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).containsExactly(key);
+  }
+
+  @Test
+  public void shouldRemoveJobFromProcessInstanceIndexOnDeletion() {
+    // given
+    final long processInstanceKey = 10L;
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord().setProcessInstanceKey(processInstanceKey);
+    jobState.insertJobRecordActivatable(key, jobRecord);
+
+    // when
+    jobState.delete(key, jobRecord);
+
+    // then
+    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).isEmpty();
+  }
+
+  @Test
+  public void shouldOnlyIndexJobsOfTheGivenProcessInstance() {
+    // given
+    final JobRecord jobOfInstanceOne = newJobRecord().setProcessInstanceKey(10L);
+    final JobRecord jobOfInstanceTwo = newJobRecord().setProcessInstanceKey(20L);
+    jobState.insertJobRecordActivatable(1L, jobOfInstanceOne);
+    jobState.insertJobRecordActivatable(2L, jobOfInstanceTwo);
+
+    // when
+    final var visited = visitAllJobsOfProcessInstance(10L);
+
+    // then
+    assertThat(visited).containsExactly(1L);
+  }
+
+  @Test
+  public void shouldStartAtFirstEntryWhenStartAtIsNegative() {
+    // given
+    final long processInstanceKey = 10L;
+    jobState.insertJobRecordActivatable(
+        1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
+    jobState.insertJobRecordActivatable(
+        2L, newJobRecord().setProcessInstanceKey(processInstanceKey));
+
+    // when - a non-sentinel negative key, to prove any negative (not only -1) starts from the first
+    final var visited = new ArrayList<Long>();
+    jobState.forEachJobsByProcessInstance(
+        processInstanceKey,
+        -2L,
+        jobKey -> {
+          visited.add(jobKey);
+          return true;
+        });
+
+    // then
+    assertThat(visited).containsExactly(1L, 2L);
+  }
+
+  @Test
+  public void shouldIncludeStartAtJobKeyInSearch() {
+    // given
+    final long processInstanceKey = 10L;
+    jobState.insertJobRecordActivatable(
+        1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
+    jobState.insertJobRecordActivatable(
+        2L, newJobRecord().setProcessInstanceKey(processInstanceKey));
+
+    // when
+    final var visited = new ArrayList<Long>();
+    jobState.forEachJobsByProcessInstance(
+        processInstanceKey,
+        2L,
+        jobKey -> {
+          visited.add(jobKey);
+          return true;
+        });
+
+    // then - the given key itself is included, not skipped
+    assertThat(visited).containsExactly(2L);
+  }
+
+  @Test
+  public void shouldContinuePastACursorKeyThatNoLongerExists() {
+    // given - two indexed jobs, then the one the cursor points at is deleted (e.g. cancelled
+    // between resume cycles) so the cursor now names a key with no index entry
+    final long processInstanceKey = 10L;
+    final JobRecord deleted = newJobRecord().setProcessInstanceKey(processInstanceKey);
+    jobState.insertJobRecordActivatable(1L, deleted);
+    jobState.insertJobRecordActivatable(
+        2L, newJobRecord().setProcessInstanceKey(processInstanceKey));
+    jobState.delete(1L, deleted);
+
+    // when - seeking from the deleted key
+    final var visited = new ArrayList<Long>();
+    jobState.forEachJobsByProcessInstance(
+        processInstanceKey,
+        1L,
+        jobKey -> {
+          visited.add(jobKey);
+          return true;
+        });
+
+    // then - the seek lands on the next key >= the cursor, so iteration continues from there
+    assertThat(visited).containsExactly(2L);
+  }
+
+  private List<Long> visitAllJobsOfProcessInstance(final long processInstanceKey) {
+    final List<Long> visited = new ArrayList<>();
+    jobState.forEachJobsByProcessInstance(
+        processInstanceKey,
+        -1L,
+        jobKey -> {
+          visited.add(jobKey);
+          return true;
+        });
+    return visited;
   }
 
   private void createAndActivateJobRecord(final long key, final JobRecord record) {

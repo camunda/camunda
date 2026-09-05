@@ -15,20 +15,29 @@
  */
 package io.camunda.client.impl.response;
 
+import io.camunda.client.api.response.AgentInstanceCreatedHistoryItem;
 import io.camunda.client.api.response.CreateAgentInstanceResponse;
 import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
+import java.util.List;
 
 public class CreateAgentInstanceResponseImpl implements CreateAgentInstanceResponse {
 
-  private long agentInstanceKey;
+  private final long agentInstanceKey;
+  private final List<AgentInstanceCreatedHistoryItem> createdHistory;
 
-  public CreateAgentInstanceResponseImpl setResponse(final AgentInstanceCreationResult result) {
+  public CreateAgentInstanceResponseImpl(final AgentInstanceCreationResult result) {
     agentInstanceKey = Long.parseLong(result.getAgentInstanceKey());
-    return this;
+    createdHistory =
+        AgentInstanceCreatedHistoryItemImpl.toCreatedHistory(result.getCreatedHistory());
   }
 
   @Override
   public long getAgentInstanceKey() {
     return agentInstanceKey;
+  }
+
+  @Override
+  public List<AgentInstanceCreatedHistoryItem> getCreatedHistory() {
+    return createdHistory;
   }
 }

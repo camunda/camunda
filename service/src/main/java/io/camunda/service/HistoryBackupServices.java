@@ -17,6 +17,7 @@ import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.backup.HistoryBackupApi;
+import io.camunda.service.backup.HistoryBackupRequests;
 import io.camunda.service.backup.HistoryBackupState;
 import io.camunda.service.backup.HistoryBackupTaken;
 import io.camunda.service.exception.ErrorMapper;
@@ -42,9 +43,6 @@ import org.jspecify.annotations.Nullable;
  */
 @NullMarked
 public final class HistoryBackupServices {
-
-  /** Matches the wildcard the runtime backup endpoints use for "every backup". */
-  private static final String WILDCARD = "*";
 
   private final String physicalTenantId;
   private final HistoryBackupApi api;
@@ -74,11 +72,12 @@ public final class HistoryBackupServices {
     if (!hasPermission(BACKUP_CREATE_AUTHORIZATION, authentication)) {
       return failedFuture(BACKUP_CREATE_AUTHORIZATION);
     }
-    if (backupId == null || backupId <= 0) {
-      return invalidArgument("A backupId must be provided and it must be > 0");
-    }
 
-    return callAsync(() -> api.takeBackup(physicalTenantId, backupId));
+    return validated(
+        () -> {
+          final var id = HistoryBackupRequests.requireValidBackupId(backupId);
+          return callAsync(() -> api.takeBackup(physicalTenantId, id));
+        });
   }
 
   public CompletableFuture<HistoryBackupState> getBackupState(
@@ -86,11 +85,12 @@ public final class HistoryBackupServices {
     if (!hasPermission(BACKUP_READ_AUTHORIZATION, authentication)) {
       return failedFuture(BACKUP_READ_AUTHORIZATION);
     }
-    if (backupId <= 0) {
-      return invalidArgument("A backupId must be provided and it must be > 0");
-    }
 
-    return callAsync(() -> api.getBackupState(physicalTenantId, backupId));
+    return validated(
+        () -> {
+          final var id = HistoryBackupRequests.requireValidBackupId(backupId);
+          return callAsync(() -> api.getBackupState(physicalTenantId, id));
+        });
   }
 
   public CompletableFuture<List<HistoryBackupState>> listBackups(
@@ -100,12 +100,12 @@ public final class HistoryBackupServices {
     if (!hasPermission(BACKUP_READ_AUTHORIZATION, authentication)) {
       return failedFuture(BACKUP_READ_AUTHORIZATION);
     }
-    if (prefix != null && !prefix.endsWith(WILDCARD)) {
-      return invalidArgument("Expected a prefix ending with '*', but got '%s'".formatted(prefix));
-    }
 
-    return callAsync(
-        () -> api.getBackups(physicalTenantId, verbose, prefix != null ? prefix : WILDCARD));
+    return validated(
+        () -> {
+          final var queried = HistoryBackupRequests.requireValidPrefix(prefix);
+          return callAsync(() -> api.getBackups(physicalTenantId, verbose, queried));
+        });
   }
 
   public CompletableFuture<Void> deleteBackup(
@@ -113,15 +113,25 @@ public final class HistoryBackupServices {
     if (!hasPermission(BACKUP_DELETE_AUTHORIZATION, authentication)) {
       return failedFuture(BACKUP_DELETE_AUTHORIZATION);
     }
-    if (backupId <= 0) {
-      return invalidArgument("A backupId must be provided and it must be > 0");
-    }
 
-    return callAsync(
+    return validated(
         () -> {
-          api.deleteBackup(physicalTenantId, backupId);
-          return null;
+          final var id = HistoryBackupRequests.requireValidBackupId(backupId);
+          return callAsync(
+              () -> {
+                api.deleteBackup(physicalTenantId, id);
+                return null;
+              });
         });
+  }
+
+  /** Turns a rejection raised by {@link HistoryBackupRequests} into a failed future. */
+  private static <T> CompletableFuture<T> validated(final Supplier<CompletableFuture<T>> request) {
+    try {
+      return request.get();
+    } catch (final ServiceException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   /**
@@ -137,11 +147,6 @@ public final class HistoryBackupServices {
               }
               return value;
             });
-  }
-
-  private <T> CompletableFuture<T> invalidArgument(final String message) {
-    return CompletableFuture.failedFuture(
-        new ServiceException(message, ServiceException.Status.INVALID_ARGUMENT));
   }
 
   private <T> CompletableFuture<T> failedFuture(

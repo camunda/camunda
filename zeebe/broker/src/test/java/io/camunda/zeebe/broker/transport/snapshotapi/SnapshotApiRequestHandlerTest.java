@@ -56,6 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -124,10 +125,8 @@ public class SnapshotApiRequestHandlerTest {
             new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L), true));
 
     scaleUpProgressInvocationCount = new AtomicInteger();
-
-    snapshotHandler = submitActor(new SnapshotApiRequestHandler(serverTransport, brokerClient));
-
     takeSnapshotMock = mock(TakeSnapshot.class);
+
     // Snapshot actors:
     final var senderDirectory = temporaryFolder.resolve("sender");
     final var receiverDirectory = temporaryFolder.resolve("receiver");
@@ -140,14 +139,7 @@ public class SnapshotApiRequestHandlerTest {
                 snapshotPath -> SnapshotFilesInfo.none(),
                 new SimpleMeterRegistry()));
 
-    final var transferService =
-        new SnapshotTransferServiceImpl(
-            senderSnapshotStore,
-            takeSnapshotMock,
-            1,
-            SnapshotCopyUtil::copyAllFiles,
-            snapshotHandler);
-    snapshotHandler.addTransferService(partition, transferService);
+    snapshotHandler = submitActor(newHandler(partition, senderSnapshotStore));
 
     receiverSnapshotStore =
         submitActor(
@@ -158,7 +150,9 @@ public class SnapshotApiRequestHandlerTest {
                 snapshotPath -> SnapshotFilesInfo.none(),
                 new SimpleMeterRegistry()));
 
-    client = new SnapshotTransferServiceClient(brokerClient);
+    client =
+        new SnapshotTransferServiceClient(
+            brokerClient, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     scheduler.workUntilDone();
   }
@@ -176,7 +170,7 @@ public class SnapshotApiRequestHandlerTest {
     if (position > snapshotProcessedPosition) {
       when(takeSnapshotMock.takeSnapshot(eq(position))).thenReturn(takePersistedSnapshot(position));
     }
-    mockBootstrappedAtWith(position);
+    mockBootstrappedAtWith(partition, position);
 
     final var transfer =
         submitActor(
@@ -202,6 +196,74 @@ public class SnapshotApiRequestHandlerTest {
         .isGreaterThan(0.1D);
   }
 
+  // Regression test for https://github.com/camunda/camunda/issues/60676: partitions of different
+  // partition groups (physical tenants) share partition numbers, so the handler serving one group's
+  // partition must never answer requests addressed to another group's partition of the same number.
+  @Test
+  void shouldServeSnapshotsFromTheRequestedPartitionGroup() {
+    // given -- a second physical tenant whose partition has the same number as the default one
+    final var tenantPartition = new PartitionId("tenanta", partitionId);
+    final var tenantSenderStore =
+        submitActor(
+            new FileBasedSnapshotStore(
+                0,
+                partitionId,
+                temporaryFolder.resolve("tenant-sender"),
+                snapshotPath -> SnapshotFilesInfo.none(),
+                new SimpleMeterRegistry()));
+    submitActor(newHandler(tenantPartition, tenantSenderStore));
+
+    final var defaultSnapshot = takePersistedSnapshot(11L);
+    final var tenantSnapshot =
+        SnapshotTransferUtil.takePersistedSnapshot(
+            tenantSenderStore,
+            SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS,
+            57L,
+            receiverSnapshotStore);
+    scheduler.workUntilDone();
+    assertThat(defaultSnapshot).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(tenantSnapshot).succeedsWithin(Duration.ofSeconds(30));
+    mockBootstrappedAtWith(tenantPartition, 57L);
+
+    final var transfer =
+        submitActor(
+            new SnapshotTransferImpl(
+                tenantPartition,
+                ignore -> new SnapshotTransferServiceClient(brokerClient, "tenanta"),
+                snapshotMetrics,
+                receiverSnapshotStore));
+
+    // when
+    final var persistedSnapshot = transfer.getLatestSnapshot(partitionId);
+    scheduler.workUntilDone();
+
+    // then -- the received snapshot is the tenant's own, not the default tenant's
+    assertThat(persistedSnapshot)
+        .succeedsWithin(Duration.ofSeconds(30))
+        .satisfies(
+            snapshot -> {
+              assertThat(snapshot.getId())
+                  .isEqualTo(tenantSenderStore.getLatestSnapshot().get().getId());
+              assertThat(snapshot.getId())
+                  .isNotEqualTo(senderSnapshotStore.getLatestSnapshot().get().getId());
+            });
+  }
+
+  private SnapshotApiRequestHandler newHandler(
+      final PartitionId partition, final FileBasedSnapshotStore snapshotStore) {
+    return new SnapshotApiRequestHandler(
+        partition,
+        serverTransport,
+        brokerClient,
+        concurrency ->
+            new SnapshotTransferServiceImpl(
+                snapshotStore,
+                takeSnapshotMock,
+                partition.number(),
+                SnapshotCopyUtil::copyAllFiles,
+                concurrency));
+  }
+
   private ActorFuture<PersistedSnapshot> takePersistedSnapshot(final long processedPosition) {
     return SnapshotTransferUtil.takePersistedSnapshot(
         senderSnapshotStore,
@@ -217,23 +279,23 @@ public class SnapshotApiRequestHandlerTest {
     return actor;
   }
 
-  private void mockBootstrappedAtWith(final long position) {
+  private void mockBootstrappedAtWith(final PartitionId partition, final long position) {
     serverTransport.subscribe(
         partition,
         RequestType.COMMAND,
-        (output, partition, requestId, buffer, offset, length) -> {
+        (output, partitionNumber, requestId, buffer, offset, length) -> {
           // assume the request is a GetScaleUpProgress
           scaleUpProgressInvocationCount.incrementAndGet();
           final var writer =
               new CommandResponseWriterImpl(output)
-                  .partitionId(partitionId)
+                  .partitionId(partitionNumber)
                   .valueWriter(new ScaleRecord().statusResponse(3, List.of(), 2, position))
                   .recordType(RecordType.COMMAND)
                   .valueType(ValueType.SCALE);
           output.sendResponse(
               new ServerResponseImpl()
                   .writer(writer)
-                  .setPartitionId(partitionId)
+                  .setPartitionId(partitionNumber)
                   .setRequestId(requestId));
         });
   }

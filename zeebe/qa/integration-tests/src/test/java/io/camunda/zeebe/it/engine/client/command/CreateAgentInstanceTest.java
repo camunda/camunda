@@ -10,7 +10,10 @@ package io.camunda.zeebe.it.engine.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
@@ -20,6 +23,9 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
 import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.AutoClose;
@@ -57,9 +63,12 @@ public final class CreateAgentInstanceTest {
                     client
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey)
-                        .model("test-model")
-                        .provider("test-provider")
-                        .systemPrompt("You are a helpful assistant.")
+                        .jobKey(1L)
+                        .jobLease("test-job-lease")
+                        .history(
+                            List.of(
+                                configurationHistoryItem(
+                                    "test-model", "test-provider", "You are a helpful assistant.")))
                         .execute())
             .actual();
 
@@ -83,9 +92,12 @@ public final class CreateAgentInstanceTest {
                     client
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(nonExistingKey)
-                        .model("test-model")
-                        .provider("test-provider")
-                        .systemPrompt("You are a helpful assistant.")
+                        .jobKey(1L)
+                        .jobLease("test-job-lease")
+                        .history(
+                            List.of(
+                                configurationHistoryItem(
+                                    "test-model", "test-provider", "You are a helpful assistant.")))
                         .execute())
             .actual();
 
@@ -117,15 +129,28 @@ public final class CreateAgentInstanceTest {
             .getFirst()
             .getValue()
             .getElementInstanceKey();
+    final long jobKey =
+        client
+            .newActivateJobsCommand()
+            .jobType("agent-conflict-job")
+            .maxJobsToActivate(1)
+            .send()
+            .join()
+            .getJobs()
+            .getFirst()
+            .getKey();
 
     // first CREATE — must succeed and return the new agentInstanceKey.
     final var firstResult =
         client
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
-            .model("test-model")
-            .provider("test-provider")
-            .systemPrompt("You are a helpful assistant.")
+            .jobKey(jobKey)
+            .jobLease("test-job-lease")
+            .history(
+                List.of(
+                    configurationHistoryItem(
+                        "test-model", "test-provider", "You are a helpful assistant.")))
             .execute();
 
     // when - second CREATE for the same element instance (different payload to rule out
@@ -137,9 +162,14 @@ public final class CreateAgentInstanceTest {
                     client
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey)
-                        .model("different-model")
-                        .provider("test-provider")
-                        .systemPrompt("A different system prompt.")
+                        .jobKey(jobKey)
+                        .jobLease("test-job-lease")
+                        .history(
+                            List.of(
+                                configurationHistoryItem(
+                                    "different-model",
+                                    "test-provider",
+                                    "A different system prompt.")))
                         .execute())
             .actual();
 
@@ -152,5 +182,18 @@ public final class CreateAgentInstanceTest {
         .endsWith(
             "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'."
                 .formatted(elementInstanceKey, firstResult.getAgentInstanceKey()));
+  }
+
+  private AgentInstanceHistoryItem configurationHistoryItem(
+      final String model, final String provider, final String systemPrompt) {
+    return new AgentInstanceHistoryItem()
+        .historyItemId(UUID.randomUUID().toString())
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRole.CONFIGURATION)
+        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+        .producedAt(OffsetDateTime.now())
+        .model(model)
+        .provider(provider)
+        .systemPrompt(List.of(AgentInstanceHistoryContent.text(systemPrompt)));
   }
 }

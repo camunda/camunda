@@ -7,6 +7,7 @@
  */
 
 import {useState} from 'react';
+import {createPortal} from 'react-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
 import {DeleteConfirmationModal} from './DeleteConfirmationModal';
@@ -32,17 +33,19 @@ const Delete: React.FC<Props> = ({
         disabled={disabled}
         size="sm"
       />
-      {isDeleteModalVisible && (
-        <DeleteConfirmationModal
-          processInstanceKey={processInstanceKey}
-          open={isDeleteModalVisible}
-          onConfirm={() => {
-            setIsDeleteModalVisible(false);
-            onExecute();
-          }}
-          onCancel={() => setIsDeleteModalVisible(false)}
-        />
-      )}
+      {isDeleteModalVisible &&
+        createPortal(
+          <DeleteConfirmationModal
+            processInstanceKey={processInstanceKey}
+            open={isDeleteModalVisible}
+            onConfirm={() => {
+              setIsDeleteModalVisible(false);
+              onExecute();
+            }}
+            onCancel={() => setIsDeleteModalVisible(false)}
+          />,
+          document.body,
+        )}
     </>
   );
 };

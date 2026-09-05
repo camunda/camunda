@@ -85,7 +85,7 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   /**
    * @return the version tag of the process definition
    */
-  String getVersionTag();
+  String getProcessDefinitionVersionTag();
 
   /**
    * @return the ID of the tenant that owns this agent instance
@@ -177,9 +177,9 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
     String getProvider();
 
     /**
-     * @return the system prompt used to configure the agent
+     * @return the system prompt used to configure the agent, as content blocks
      */
-    String getSystemPrompt();
+    List<AgentHistoryRecordValue.AgentHistoryMessageContentValue> getSystemPrompt();
   }
 
   /** Represents the operational limits configured for an agent instance. */

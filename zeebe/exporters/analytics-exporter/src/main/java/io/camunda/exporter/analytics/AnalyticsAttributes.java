@@ -40,11 +40,23 @@ public final class AnalyticsAttributes {
         AttributeKey.longKey("camunda.event.time_max");
 
     // Event name values
-    public static final String PROCESS_INSTANCE_CREATED = "process_instance_created";
-    public static final String ADHOC_SUBPROCESS_ACTIVATED = "adhoc_subprocess_activated";
-    public static final String USAGE_METRIC_EXPORTED = "usage_metric_exported";
-    public static final String HEARTBEAT = "heartbeat";
-    public static final String USER_TASK_CREATED = "user_task_created";
+
+    public static final String PROCESS_INSTANCE_ACTIVATED = "camunda.process.instance.activated";
+    public static final String HEARTBEAT = "camunda.telemetry.heartbeat";
+    public static final String USER_TASK_CREATED = "camunda.user_task.created";
+    public static final String TENANT_CREATED = "camunda.tenant.created";
+    public static final String TENANT_DELETED = "camunda.tenant.deleted";
+    public static final String PROCESS_INCIDENT_CREATED = "camunda.process.incident.created";
+    public static final String PROCESS_INCIDENT_RESOLVED = "camunda.process.incident.resolved";
+    public static final String PROCESS_DEFINITION_CREATED = "camunda.process.definition.created";
+    public static final String PROCESS_DEFINITION_DELETED = "camunda.process.definition.deleted";
+    public static final String DECISION_DEFINITION_CREATED = "camunda.decision.definition.created";
+    public static final String DECISION_DEFINITION_DELETED = "camunda.decision.definition.deleted";
+    public static final String FORM_DEFINITION_CREATED = "camunda.form.definition.created";
+    public static final String FORM_DEFINITION_DELETED = "camunda.form.definition.deleted";
+    public static final String AGENT_INSTANCE_CREATED = "camunda.agent.instance.created";
+    public static final String AGENT_INSTANCE_COMPLETED = "camunda.agent.instance.completed";
+    public static final String USER_TASK_ASSIGNED = "camunda.user_task.assigned";
 
     private Event() {}
   }
@@ -61,6 +73,17 @@ public final class AnalyticsAttributes {
 
   public static final class Tenant {
     public static final AttributeKey<String> ID = AttributeKey.stringKey("camunda.tenant.id");
+
+    /**
+     * Physical-tenant id of the broker/exporter instance that produced the signal. Unlike {@link
+     * #ID} (the logical tenant of the specific record, which varies per event), this is static for
+     * the lifetime of the exporter instance, so it is set once as an OTel {@code Resource}
+     * attribute in {@link io.camunda.exporter.analytics.OtelSdkManager#buildResource} and applies
+     * automatically to every log record, metric point, and heartbeat emitted through that Resource
+     * — individual handlers and call sites never set it.
+     */
+    public static final AttributeKey<String> PHYSICAL_ID =
+        AttributeKey.stringKey("camunda.tenant.physical_id");
 
     private Tenant() {}
   }
@@ -86,8 +109,48 @@ public final class AnalyticsAttributes {
     private Element() {}
   }
 
+  public static final class UserTask {
+    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.user_task.key");
+
+    private UserTask() {}
+  }
+
+  public static final class Incident {
+    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.incident.key");
+
+    private Incident() {}
+  }
+
+  public static final class Decision {
+    public static final AttributeKey<String> ID = AttributeKey.stringKey("camunda.decision.id");
+    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.decision.key");
+    public static final AttributeKey<Long> VERSION =
+        AttributeKey.longKey("camunda.decision.version");
+
+    private Decision() {}
+  }
+
+  public static final class Form {
+    public static final AttributeKey<String> ID = AttributeKey.stringKey("camunda.form.id");
+    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.form.key");
+    public static final AttributeKey<Long> VERSION = AttributeKey.longKey("camunda.form.version");
+
+    private Form() {}
+  }
+
+  public static final class Agent {
+    public static final AttributeKey<Long> INSTANCE_KEY =
+        AttributeKey.longKey("camunda.agent.instance_key");
+    public static final AttributeKey<Long> DEFINITION_KEY =
+        AttributeKey.longKey("camunda.agent.definition_key");
+    public static final AttributeKey<String> STATUS =
+        AttributeKey.stringKey("camunda.agent.status");
+
+    private Agent() {}
+  }
+
   public static final class Metric {
-    public static final String PROCESS_INSTANCE_CREATED = "camunda.process_instance.created";
+    public static final String DECISION_INSTANCE_EVALUATED = "camunda.decision.instance.evaluated";
     public static final String EXPORT_WINDOW = "camunda.metric.export_window";
     public static final AttributeKey<Long> SEQUENCE_NUMBER =
         AttributeKey.longKey("camunda.metric.sequence_number");
@@ -97,9 +160,9 @@ public final class AnalyticsAttributes {
 
   public static final class Heartbeat {
     public static final AttributeKey<String> BROKER_VERSION =
-        AttributeKey.stringKey("camunda.heartbeat.broker_version");
+        AttributeKey.stringKey("camunda.telemetry.heartbeat.broker_version");
     public static final AttributeKey<String> EXPORTER_VERSION =
-        AttributeKey.stringKey("camunda.heartbeat.exporter_version");
+        AttributeKey.stringKey("camunda.telemetry.heartbeat.exporter_version");
 
     private Heartbeat() {}
   }
@@ -109,18 +172,5 @@ public final class AnalyticsAttributes {
         AttributeKey.stringKey("camunda.exporter.digest");
 
     private Exporter() {}
-  }
-
-  public static final class UsageMetric {
-    public static final AttributeKey<String> EVENT_TYPE =
-        AttributeKey.stringKey("camunda.usage_metric.event_type");
-    public static final AttributeKey<Long> COUNT =
-        AttributeKey.longKey("camunda.usage_metric.count");
-    public static final AttributeKey<Long> INTERVAL_START =
-        AttributeKey.longKey("camunda.usage_metric.interval_start");
-    public static final AttributeKey<Long> INTERVAL_END =
-        AttributeKey.longKey("camunda.usage_metric.interval_end");
-
-    private UsageMetric() {}
   }
 }

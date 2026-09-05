@@ -41,9 +41,9 @@ public class AgentHistoryDiscardOnJobDestructionTest {
   private static final String SERVICE_TASK_ID = "agent-task";
   private static final String BOUNDARY_ID = "error-boundary";
   private static final String ERROR_CODE = "boom";
-  private static final String AGENTIC_JOB_TYPE =
-      JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+  private static final String AGENTIC_JOB_TYPE = "agentic-task";
   private static final String PLAIN_JOB_TYPE = "plain-service-task";
+  private static final String EXTERNAL_AGENT_JOB_TYPE = "external-agent-task";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -96,23 +96,116 @@ public class AgentHistoryDiscardOnJobDestructionTest {
   }
 
   @Test
-  public void shouldNotDiscardWhenNonAgenticJobIsCanceled() {
-    // given
-    final var fixture = deployActivateAndCreatePendingItem(process(PLAIN_JOB_TYPE), PLAIN_JOB_TYPE);
+  public void shouldDiscardPendingItemsWhenExternalAgentJobCanceledByCancelCommand() {
+    // given — external agent marker, job type does not carry the legacy agentic prefix
+    final var fixture =
+        deployActivateAndCreatePendingItem(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(EXTERNAL_AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
+                .endEvent()
+                .done(),
+            EXTERNAL_AGENT_JOB_TYPE);
+
+    // when — explicit JOB:CANCEL command (JobCancelProcessor path)
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(fixture.jobKey)
+            .job(JobIntent.CANCEL, new JobRecord().setType(EXTERNAL_AGENT_JOB_TYPE)));
+
+    // then
+    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+  }
+
+  @Test
+  public void shouldDiscardPendingItemsWhenExternalAgentJobThrowsCaughtError() {
+    // given — external agent marker, job type does not carry the legacy agentic prefix
+    final var fixture =
+        deployActivateAndCreatePendingItem(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(EXTERNAL_AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
+                .boundaryEvent(BOUNDARY_ID, b -> b.error(ERROR_CODE))
+                .endEvent()
+                .moveToActivity(SERVICE_TASK_ID)
+                .endEvent()
+                .done(),
+            EXTERNAL_AGENT_JOB_TYPE);
+
+    // when — error is caught by the boundary event, so the job is deleted without completing
+    ENGINE
+        .job()
+        .ofInstance(fixture.processInstanceKey)
+        .withType(EXTERNAL_AGENT_JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+  }
+
+  @Test
+  public void shouldDiscardPendingItemsWhenExternalAgentJobCanceledByProcessInstanceCancellation() {
+    // given — external agent marker, job type does not carry the legacy agentic prefix
+    final var fixture =
+        deployActivateAndCreatePendingItem(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(EXTERNAL_AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
+                .endEvent()
+                .done(),
+            EXTERNAL_AGENT_JOB_TYPE);
 
     // when
     ENGINE.processInstance().withInstanceKey(fixture.processInstanceKey).cancel();
+
+    // then
+    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+  }
+
+  @Test
+  public void shouldNotDiscardWhenNonAgenticJobIsCanceled() {
+    // given — a plain service task with no agent definition anywhere, so it cannot carry a
+    // pending history item in the first place
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(PLAIN_JOB_TYPE))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.jobs().withType(PLAIN_JOB_TYPE).activate();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(PLAIN_JOB_TYPE)
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
     final long clockResetKey = ENGINE.clock().reset().getKey();
 
-    // then — the job is canceled but no discard is emitted for this non-agentic job. Scope by
-    // jobKey so residual async records from other tests on the shared engine cannot interfere.
+    // then — scope by jobKey so residual async records from other tests on the shared engine
+    // cannot interfere.
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getKey() == clockResetKey)
                 .withValueType(ValueType.AGENT_HISTORY)
                 .filter(r -> r.getIntent() == AgentHistoryIntent.DISCARD)
-                .filter(r -> ((AgentHistoryRecordValue) r.getValue()).getJobKey() == fixture.jobKey)
+                .filter(r -> ((AgentHistoryRecordValue) r.getValue()).getJobKey() == jobKey)
                 .exists())
+        .describedAs(
+            "no discard command is emitted for a job whose element has no agent definition")
         .isFalse();
   }
 
@@ -124,6 +217,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .withJobKey(jobKey)
             .getFirst();
     assertThat(discardCommand.getRecordType()).isEqualTo(RecordType.COMMAND);
+    assertThat(discardCommand.getKey()).isEqualTo(-1L);
     assertThat(discardCommand.getValue().getJobLease()).isEmpty();
 
     // and the pending item is discarded

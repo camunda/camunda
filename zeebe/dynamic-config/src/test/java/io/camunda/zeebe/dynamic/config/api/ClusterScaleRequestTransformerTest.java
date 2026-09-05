@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration.DEFAULT_GROUP;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,25 +15,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
@@ -238,15 +241,24 @@ final class ClusterScaleRequestTransformerTest {
                 zone.isPresent()
                     ? ((ZoneAwareConfig) effectiveConfig).replicationFactor()
                     : replicationFactor);
-    ClusterConfiguration oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "clusterId");
+    CurrentClusterConfiguration oldClusterTopology =
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            oldMembers,
+            oldDistribution,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionConfig),
+            "clusterId");
     if (zone.isPresent()) {
-      oldClusterTopology = oldClusterTopology.setPartitionDistributorConfig(effectiveConfig);
+      oldClusterTopology =
+          oldClusterTopology.updateGlobalConfiguration(
+              globalConfiguration ->
+                  globalConfiguration.setPartitionDistributorConfig(effectiveConfig));
     }
     for (final MemberId member : oldMembers) {
-      if (!oldClusterTopology.hasMember(member)) {
+      if (!oldClusterTopology.globalConfiguration().hasMember(member)) {
         oldClusterTopology =
-            oldClusterTopology.addMember(member, MemberState.initializeAsActive(Map.of()));
+            oldClusterTopology.updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration.addMember(member, BrokerState.initializeAsActive()));
       }
     }
     // when
@@ -267,40 +279,46 @@ final class ClusterScaleRequestTransformerTest {
       final int partitionCount,
       final Set<MemberId> expectedMembers,
       final ClusterScaleRequest patchRequest,
-      final ClusterConfiguration oldClusterTopology,
+      final CurrentClusterConfiguration oldClusterTopology,
       final Set<PartitionMetadata> expectedNewDistribution,
       final Optional<String> zone) {
 
     // when
-    final var result =
+    final var phasesResult =
         new ClusterScaleRequestTransformer(
                 patchRequest.brokerCount(),
                 patchRequest.newPartitionCount(),
                 patchRequest.newReplicationFactor(),
                 zone)
-            .operations(oldClusterTopology);
-    assertThat(result).isRight();
-    final var operations = result.get();
+            .phases(oldClusterTopology);
+    assertThat(phasesResult).isRight();
+    final var phases = phasesResult.get();
+    final var operations = TestChangePlan.flatten(phases);
 
-    // apply operations to generate new topology
-    final ClusterConfiguration newTopology =
-        TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
+    // apply phases to generate new topology
+    final var newTopology = TestTopologyChangeSimulator.apply(oldClusterTopology, phases);
 
     // then
-    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
+    final var newDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(
+            newTopology, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(newDistribution)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedNewDistribution);
-    assertThat(newTopology.members().keySet())
+    assertThat(newTopology.getMembers())
         .describedAs("Expected cluster members")
         .containsExactlyInAnyOrderElementsOf(expectedMembers);
-    assertThat(newTopology.partitionCount()).isEqualTo(partitionCount);
+    assertThat(
+            newTopology
+                .partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .partitionCount())
+        .isEqualTo(partitionCount);
   }
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(id -> new PartitionId("temp", id))
+        .mapToObj(id -> new PartitionId(DEFAULT_GROUP, id))
         .collect(Collectors.toList());
   }
 
@@ -317,9 +335,10 @@ final class ClusterScaleRequestTransformerTest {
 
     // when
     final var result =
-        new ClusterScaleRequestTransformer(
-                Optional.of(3), Optional.empty(), Optional.of(3), Optional.of(ZONE_A))
-            .operations(topology);
+        plannedOperations(
+            new ClusterScaleRequestTransformer(
+                Optional.of(3), Optional.empty(), Optional.of(3), Optional.of(ZONE_A)),
+            topology);
 
     // then
     assertThat(result)
@@ -335,9 +354,10 @@ final class ClusterScaleRequestTransformerTest {
 
     // when
     final var result =
-        new ClusterScaleRequestTransformer(
-                Optional.of(3), Optional.empty(), Optional.empty(), Optional.of("zoneX"))
-            .operations(topology);
+        plannedOperations(
+            new ClusterScaleRequestTransformer(
+                Optional.of(3), Optional.empty(), Optional.empty(), Optional.of("zoneX")),
+            topology);
 
     // then
     assertThat(result)
@@ -350,19 +370,21 @@ final class ClusterScaleRequestTransformerTest {
   @Test
   void shouldRejectNonZoneAwareCluster() {
     // given
+    final var members = membersInZone(Optional.of(ZONE_A), 3);
     final var distribution =
         new RoundRobinConfig()
             .toDistributor()
-            .distributePartitions(
-                membersInZone(Optional.of(ZONE_A), 3), getSortedPartitionIds(3), 1);
+            .distributePartitions(members, getSortedPartitionIds(3), 1);
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, partitionConfig, "clusterId");
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            members, distribution, Map.of(DEFAULT_GROUP, partitionConfig), "clusterId");
 
     // when
     final var result =
-        new ClusterScaleRequestTransformer(
-                Optional.of(4), Optional.empty(), Optional.empty(), Optional.of(ZONE_A))
-            .operations(topology);
+        plannedOperations(
+            new ClusterScaleRequestTransformer(
+                Optional.of(4), Optional.empty(), Optional.empty(), Optional.of(ZONE_A)),
+            topology);
 
     // then
     assertThat(result)
@@ -371,7 +393,7 @@ final class ClusterScaleRequestTransformerTest {
         .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class);
   }
 
-  private ClusterConfiguration zoneAwareTopology(
+  private CurrentClusterConfiguration zoneAwareTopology(
       final int zoneABrokers, final int zoneAReplicas, final int partitionCount) {
     final var config = zoneAwareConfig(zoneAReplicas);
     final var members = scaledMembers(zoneABrokers);
@@ -380,15 +402,10 @@ final class ClusterScaleRequestTransformerTest {
             .toDistributor()
             .distributePartitions(
                 members, getSortedPartitionIds(partitionCount), config.replicationFactor());
-    var topology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, partitionConfig, "temp")
-            .setPartitionDistributorConfig(config);
-    for (final MemberId member : members) {
-      if (!topology.hasMember(member)) {
-        topology = topology.addMember(member, MemberState.initializeAsActive(Map.of()));
-      }
-    }
-    return topology;
+    return ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            members, distribution, Map.of(DEFAULT_GROUP, partitionConfig), "clusterId")
+        .updateGlobalConfiguration(
+            globalConfiguration -> globalConfiguration.setPartitionDistributorConfig(config));
   }
 
   private ZoneAwareConfig zoneAwareConfig(final int zoneAReplicas) {
@@ -453,18 +470,25 @@ final class ClusterScaleRequestTransformerTest {
         Optional.empty(), newPartitionCount, Optional.empty(), Optional.empty(), physicalTenantId);
   }
 
-  private static PartitionGroupParallelPhase singlePhase(
-      final Either<Exception, List<Phase>> result) {
+  private static PartitionGroupPhase singlePhase(final Either<Exception, List<Phase>> result) {
     assertThat(result).isRight();
     Assertions.assertThat(result.get()).hasSize(1);
-    return (PartitionGroupParallelPhase) result.get().get(0);
+    return (PartitionGroupPhase) result.get().get(0);
   }
 
   private static List<PartitionBootstrapOperation> bootstraps(
-      final PartitionGroupParallelPhase phase, final String groupId) {
+      final PartitionGroupPhase phase, final String groupId) {
     return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
         .filter(PartitionBootstrapOperation.class::isInstance)
         .map(PartitionBootstrapOperation.class::cast)
+        .toList();
+  }
+
+  private static List<PartitionJoinOperation> joins(
+      final PartitionGroupPhase phase, final String groupId) {
+    return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
+        .filter(PartitionJoinOperation.class::isInstance)
+        .map(PartitionJoinOperation.class::cast)
         .toList();
   }
 
@@ -630,5 +654,92 @@ final class ClusterScaleRequestTransformerTest {
 
     // then
     assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
+  }
+
+  // -- cluster-wide replication factor (phases()) --
+
+  private ClusterScaleRequestTransformer replicationFactorTransformer(
+      final int newReplicationFactor, final Optional<String> zone) {
+    return new ClusterScaleRequestTransformer(
+        Optional.empty(), Optional.empty(), Optional.of(newReplicationFactor), zone);
+  }
+
+  @Test
+  void shouldApplyReplicationFactorToEveryPhysicalTenant() {
+    // given — every partition of both tenants is currently held by a single broker
+    final var transformer = replicationFactorTransformer(2, Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then — every partition of every tenant gains a second replica, rather than only the default
+    // tenant's, which is what planning against the default group's projection alone produced
+    final var phase = singlePhase(result);
+    Assertions.assertThat(phase.groupOperations()).containsOnlyKeys(DEFAULT_GROUP, TENANT_B);
+    Assertions.assertThat(joins(phase, DEFAULT_GROUP))
+        .extracting(PartitionJoinOperation::partitionId)
+        .containsExactlyInAnyOrder(1, 2);
+    Assertions.assertThat(joins(phase, TENANT_B))
+        .extracting(PartitionJoinOperation::partitionId)
+        .containsExactly(1);
+  }
+
+  @Test
+  void shouldRejectReplicationFactorAboveTheNumberOfBrokers() {
+    // given — three brokers cannot hold four replicas of a partition
+    final var transformer = replicationFactorTransformer(4, Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("Number of brokers [3] is less than the replication factor [4]");
+  }
+
+  @Test
+  void shouldRedistributeEveryPhysicalTenantWhenChangingTheBrokerCount() {
+    // given — the cluster shrinks from three brokers to two. Only broker id2 holds anything that
+    // has to move, and what it holds belongs to tenant-b, so the whole partition half of this plan
+    // is work the default-group projection could never have produced.
+    final var transformer =
+        new ClusterScaleRequestTransformer(
+            Optional.of(2), Optional.empty(), Optional.empty(), Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get()).hasSize(3);
+    final var partitionPhase = (PartitionGroupPhase) result.get().get(1);
+    Assertions.assertThat(partitionPhase.groupOperations()).containsOnlyKeys(TENANT_B);
+    Assertions.assertThat(joins(partitionPhase, TENANT_B))
+        .describedAs("tenant-b's partition is placed on a retained broker")
+        .extracting(PartitionJoinOperation::memberId)
+        .containsExactly(id0);
+    Assertions.assertThat(partitionPhase.groupOperations().get(TENANT_B))
+        .describedAs("tenant-b gives up the partition on the departing broker")
+        .contains(new PartitionLeaveOperation(id2, 1, 1));
+    Assertions.assertThat(((GlobalPhase) result.get().get(2)).operations())
+        .describedAs("the broker leaves only after the partition work")
+        .contains(new MemberLeaveOperation(id2));
+  }
+
+  @Test
+  void shouldRejectReplicationFactorWithZone() {
+    // given — the replication factor of a zone-aware cluster follows from its zone specs
+    final var transformer = replicationFactorTransformer(2, Optional.of(ZONE_A));
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("/partition-distribution");
   }
 }

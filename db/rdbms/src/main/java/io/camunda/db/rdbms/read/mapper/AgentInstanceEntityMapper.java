@@ -33,10 +33,13 @@ public class AgentInstanceEntityMapper {
         new AgentInstanceDefinition(
             nullToEmpty(dbModel.model()),
             nullToEmpty(dbModel.provider()),
-            nullToEmpty(dbModel.systemPrompt())),
+            dbModel.systemPromptItems()),
         new AgentInstanceMetrics(
             dbModel.inputTokens(),
             dbModel.outputTokens(),
+            dbModel.reasoningTokenCount(),
+            dbModel.cacheCreationTokenCount(),
+            dbModel.cacheReadTokenCount(),
             dbModel.modelCalls(),
             dbModel.toolCalls()),
         new AgentInstanceLimits(
@@ -48,7 +51,7 @@ public class AgentInstanceEntityMapper {
         dbModel.processDefinitionKey(),
         nullToEmpty(dbModel.processDefinitionId()),
         dbModel.processDefinitionVersion(),
-        dbModel.versionTag(),
+        dbModel.processDefinitionVersionTag(),
         nullToEmpty(dbModel.tenantId()),
         dbModel.creationDate(),
         dbModel.lastUpdatedDate(),

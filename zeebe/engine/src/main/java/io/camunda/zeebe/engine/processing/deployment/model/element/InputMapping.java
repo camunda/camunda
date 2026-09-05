@@ -14,7 +14,8 @@ import org.jspecify.annotations.NullMarked;
 /**
  * A single transformed input mapping: the parsed source expression and the target path it is stored
  * under, split into its {@code '.'}-separated segments (e.g. target {@code a.b.c} becomes {@code
- * [a, b, c]}). Input mappings are evaluated one by one in modeling order at runtime.
+ * [a, b, c]}). Input mappings are evaluated one by one in modeling order at runtime, and a nested
+ * target shadows a same-named variable from a higher scope only for the keys it defines.
  */
 @NullMarked
 public record InputMapping(Expression source, List<String> targetPath) {}

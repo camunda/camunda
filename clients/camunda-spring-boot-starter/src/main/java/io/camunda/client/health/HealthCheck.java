@@ -16,26 +16,28 @@
 package io.camunda.client.health;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.Topology;
+import io.camunda.client.api.response.StatusResponse;
 
 public class HealthCheck {
+
   private final CamundaClient camundaClient;
 
   public HealthCheck(final CamundaClient camundaClient) {
     this.camundaClient = camundaClient;
   }
 
-  public CheckResult health() {
-    final Topology topology = camundaClient.newTopologyRequest().send().join();
-    if (topology.getBrokers().isEmpty()) {
-      return CheckResult.DOWN;
-    } else {
-      return CheckResult.UP;
-    }
-  }
-
-  public enum CheckResult {
-    UP,
-    DOWN
+  /**
+   * Does not catch failures itself: on connectivity issues or timeouts, {@code
+   * newStatusRequest().execute()} throws (e.g. {@code ClientException}/{@code
+   * ClientStatusException}), and this method lets that propagate. This relies on the caller mapping
+   * the failure to a degraded status instead of surfacing it as-is — e.g. Spring Boot's {@code
+   * AbstractHealthIndicator.health()} catches any exception from {@code doHealthCheck} and reports
+   * {@code DOWN} with the exception recorded as the {@code error} detail. Callers that do not offer
+   * that safety net must handle the exception themselves.
+   *
+   * @throws RuntimeException if the status request fails
+   */
+  public StatusResponse.Status health() {
+    return camundaClient.newStatusRequest().execute().getStatus();
   }
 }

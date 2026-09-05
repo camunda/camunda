@@ -8,6 +8,7 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/type';
+import {Link} from '@carbon/react';
 import {Error as BaseError} from '@carbon/react/icons';
 import {PanelHeader as BasePanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 
@@ -53,4 +54,33 @@ const DescriptionData = styled.dd`
 	white-space: nowrap;
 `;
 
-export {IndentedGroup, CanceledIcon, Section, PanelHeader, Description, DescriptionTitle, DescriptionData};
+const InstancesTableContainer = styled.section`
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+`;
+
+const ProcessName = styled.div`
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-04);
+`;
+
+const InstanceLink = styled(Link)`
+	&& {
+		text-decoration: underline;
+	}
+`;
+
+export {
+	IndentedGroup,
+	CanceledIcon,
+	Section,
+	PanelHeader,
+	Description,
+	DescriptionTitle,
+	DescriptionData,
+	InstancesTableContainer,
+	ProcessName,
+	InstanceLink,
+};

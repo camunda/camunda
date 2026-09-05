@@ -10,7 +10,6 @@ package io.camunda.webapps.schema.entities.agenthistory;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
-import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -82,6 +81,15 @@ public final class AgentHistoryEntity
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private Long outputTokens;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Long reasoningTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Long cacheCreationTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Long cacheReadTokenCount;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private Long durationMs;
@@ -285,6 +293,33 @@ public final class AgentHistoryEntity
     return this;
   }
 
+  public Long getReasoningTokenCount() {
+    return reasoningTokenCount;
+  }
+
+  public AgentHistoryEntity setReasoningTokenCount(final Long reasoningTokenCount) {
+    this.reasoningTokenCount = reasoningTokenCount;
+    return this;
+  }
+
+  public Long getCacheCreationTokenCount() {
+    return cacheCreationTokenCount;
+  }
+
+  public AgentHistoryEntity setCacheCreationTokenCount(final Long cacheCreationTokenCount) {
+    this.cacheCreationTokenCount = cacheCreationTokenCount;
+    return this;
+  }
+
+  public Long getCacheReadTokenCount() {
+    return cacheReadTokenCount;
+  }
+
+  public AgentHistoryEntity setCacheReadTokenCount(final Long cacheReadTokenCount) {
+    this.cacheReadTokenCount = cacheReadTokenCount;
+    return this;
+  }
+
   public Long getDurationMs() {
     return durationMs;
   }
@@ -387,9 +422,18 @@ public final class AgentHistoryEntity
         producedAt,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         durationMs,
         content,
-        toolCalls);
+        toolCalls,
+        historyItemId,
+        tools,
+        model,
+        provider,
+        limits,
+        systemPrompt);
   }
 
   @Override
@@ -419,9 +463,18 @@ public final class AgentHistoryEntity
         && Objects.equals(producedAt, that.producedAt)
         && Objects.equals(inputTokens, that.inputTokens)
         && Objects.equals(outputTokens, that.outputTokens)
+        && Objects.equals(reasoningTokenCount, that.reasoningTokenCount)
+        && Objects.equals(cacheCreationTokenCount, that.cacheCreationTokenCount)
+        && Objects.equals(cacheReadTokenCount, that.cacheReadTokenCount)
         && Objects.equals(durationMs, that.durationMs)
         && Objects.equals(content, that.content)
-        && Objects.equals(toolCalls, that.toolCalls);
+        && Objects.equals(toolCalls, that.toolCalls)
+        && Objects.equals(historyItemId, that.historyItemId)
+        && Objects.equals(tools, that.tools)
+        && Objects.equals(model, that.model)
+        && Objects.equals(provider, that.provider)
+        && Objects.equals(limits, that.limits)
+        && Objects.equals(systemPrompt, that.systemPrompt);
   }
 
   @Override
@@ -467,38 +520,34 @@ public final class AgentHistoryEntity
         + inputTokens
         + ", outputTokens="
         + outputTokens
+        + ", reasoningTokenCount="
+        + reasoningTokenCount
+        + ", cacheCreationTokenCount="
+        + cacheCreationTokenCount
+        + ", cacheReadTokenCount="
+        + cacheReadTokenCount
         + ", durationMs="
         + durationMs
         + ", content="
         + content
         + ", toolCalls="
         + toolCalls
+        + ", historyItemId='"
+        + historyItemId
+        + '\''
+        + ", tools="
+        + tools
+        + ", model='"
+        + model
+        + '\''
+        + ", provider='"
+        + provider
+        + '\''
+        + ", limits="
+        + limits
+        + ", systemPrompt="
+        + systemPrompt
         + '}';
-  }
-
-  /**
-   * A single content block in a history entry message. {@code text}, {@code documentReference}, and
-   * {@code object} are mutually exclusive based on {@code contentType}.
-   */
-  public record AgentHistoryContentValue(
-      AgentHistoryContentType contentType,
-      String text,
-      DocumentReferenceEntity documentReference,
-      Object object) {
-
-    public static AgentHistoryContentValue text(final String text) {
-      return new AgentHistoryContentValue(AgentHistoryContentType.TEXT, text, null, null);
-    }
-
-    public static AgentHistoryContentValue document(
-        final DocumentReferenceEntity documentReference) {
-      return new AgentHistoryContentValue(
-          AgentHistoryContentType.DOCUMENT, null, documentReference, null);
-    }
-
-    public static AgentHistoryContentValue object(final Object object) {
-      return new AgentHistoryContentValue(AgentHistoryContentType.OBJECT, null, null, object);
-    }
   }
 
   /** A tool call embedded in a history entry. */

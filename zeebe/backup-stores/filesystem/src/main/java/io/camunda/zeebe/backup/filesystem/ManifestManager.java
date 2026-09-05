@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.filesystem;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,17 +23,23 @@ import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +82,7 @@ public final class ManifestManager {
     final var path = manifestPath(manifest);
 
     try {
-      FileUtil.ensureDirectoryExists(path.getParent());
+      FileUtil.ensureDirectoryExists(requireNonNull(path.getParent()));
     } catch (final IOException e) {
       throw new UncheckedIOException(
           "Unable to create directories for manifest: " + path.getParent(), e);
@@ -162,7 +169,7 @@ public final class ManifestManager {
       final var path = manifestPath(manifest);
       Files.delete(path);
       final var dirLimit = manifestsPath.resolve(String.valueOf(manifest.id().partitionId()));
-      FilesystemBackupStore.backtrackDeleteEmptyParents(path.getParent(), dirLimit);
+      FilesystemBackupStore.backtrackDeleteEmptyParents(requireNonNull(path.getParent()), dirLimit);
     } catch (final NoSuchFileException e) {
       LOGGER.warn("Try to remove unknown manifest with id {}", manifest.id());
     } catch (final IOException e) {
@@ -170,30 +177,29 @@ public final class ManifestManager {
     }
   }
 
-  Manifest getManifest(final BackupIdentifier id) {
+  @Nullable Manifest getManifest(final BackupIdentifier id) {
     return getManifestWithPath(getManifestPath(id));
   }
 
   Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
-    try (final Stream<Path> files = Files.walk(manifestsPath)) {
-      return files
-          .filter(filePath -> filterBlobsByWildcard(wildcard, filePath.toString()))
-          .map(this::getManifestWithPath)
-          .filter(Objects::nonNull)
-          .filter(m -> wildcard.matches(m.id()))
-          .toList();
+    final var collector = new ManifestCollector(wildcard);
+    try {
+      Files.walkFileTree(manifestsPath, collector);
     } catch (final IOException e) {
       throw new UncheckedIOException("Unable to list manifests from " + manifestsPath, e);
     }
+    return collector.manifests();
   }
 
-  private Manifest getManifestWithPath(final Path path) {
+  private @Nullable Manifest getManifestWithPath(final Path path) {
     if (!Files.exists(path)) {
       return null;
     }
 
     try {
       return MAPPER.readValue(path.toFile(), Manifest.class);
+    } catch (final FileNotFoundException | NoSuchFileException e) {
+      return null;
     } catch (final IOException e) {
       throw new UncheckedIOException("Unable to read manifest from path " + path, e);
     }
@@ -229,5 +235,62 @@ public final class ManifestManager {
         .resolve(checkpointId)
         .resolve(nodeId)
         .resolve(MANIFEST_FILENAME);
+  }
+
+  /**
+   * Collects every manifest matching the wildcard, continuing past entries that a concurrent
+   * deletion removes while the traversal is running: an entry gone mid-walk is the same listing the
+   * caller would have seen after the delete, so it is skipped rather than failing the caller. The
+   * traversal keeps its position and everything collected so far — nothing is re-walked.
+   */
+  @VisibleForTesting
+  final class ManifestCollector extends SimpleFileVisitor<Path> {
+
+    private final BackupIdentifierWildcard wildcard;
+    private final List<Manifest> manifests = new ArrayList<>();
+
+    @VisibleForTesting
+    ManifestCollector(final BackupIdentifierWildcard wildcard) {
+      this.wildcard = wildcard;
+    }
+
+    @Override
+    public @NonNull FileVisitResult visitFile(
+        final Path file, final @NonNull BasicFileAttributes attributes) {
+      if (filterBlobsByWildcard(wildcard, file.toString())) {
+        final var manifest = getManifestWithPath(file);
+        if (manifest != null && wildcard.matches(manifest.id())) {
+          manifests.add(manifest);
+        }
+      }
+      return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public @NonNull FileVisitResult visitFileFailed(
+        final @NonNull Path file, final @NonNull IOException failure) throws IOException {
+      return continueIfDeletedConcurrently(file, failure);
+    }
+
+    @Override
+    public @NonNull FileVisitResult postVisitDirectory(
+        final @NonNull Path directory, final @Nullable IOException failure) throws IOException {
+      return failure == null
+          ? FileVisitResult.CONTINUE
+          : continueIfDeletedConcurrently(directory, failure);
+    }
+
+    private FileVisitResult continueIfDeletedConcurrently(
+        final Path path, final IOException failure) throws IOException {
+      if (failure instanceof NoSuchFileException && !path.equals(manifestsPath)) {
+        return FileVisitResult.CONTINUE;
+      }
+      throw failure;
+    }
+
+    @VisibleForTesting
+    List<Manifest> manifests() {
+      return manifests;
+    }
   }
 }

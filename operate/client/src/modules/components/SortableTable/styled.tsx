@@ -16,6 +16,7 @@ import {
   TableRow as BaseTableHeadRow,
   TableExpandedRow as BaseTableExpandedRow,
 } from '@carbon/react';
+import {ColumnHeader as BaseColumnHeader} from './ColumnHeader';
 
 type ContainerProps = {
   $isScrollable: boolean;
@@ -180,10 +181,33 @@ const TableContainer = styled(BaseTableContainer)<TableContainerProps>`
 
 type TableCellProps = {
   $hideCellPadding?: boolean;
+  $stickyRight?: boolean;
 };
 
+// mirrors the background tokens Carbon's own data-table SCSS applies to the
+// row (`tr`) for each state, since a sticky cell paints its own opaque
+// background and can no longer rely on the row's background showing through
+const stickyRightCellStyles = css`
+  position: sticky;
+  inset-inline-end: 0;
+  background-color: var(--cds-layer);
+  border-inline-start: 1px solid var(--cds-border-subtle);
+
+  tr:hover & {
+    background-color: var(--cds-layer-hover);
+  }
+
+  tr.cds--data-table--selected & {
+    background-color: var(--cds-layer-selected);
+  }
+
+  tr.cds--data-table--selected:hover & {
+    background-color: var(--cds-layer-selected-hover);
+  }
+`;
+
 const TableCell = styled(BaseTableCell)<TableCellProps>`
-  ${({$hideCellPadding}) => {
+  ${({$hideCellPadding, $stickyRight}) => {
     return css`
       white-space: nowrap;
       ${
@@ -194,6 +218,7 @@ const TableCell = styled(BaseTableCell)<TableCellProps>`
           padding-bottom: 0 !important;
         `
       }
+      ${$stickyRight && stickyRightCellStyles}
     `;
   }}
 `;
@@ -240,6 +265,22 @@ const TableHeadRow = styled(BaseTableHeadRow)<{$isClickable?: boolean}>`
   }}
 `;
 
+const ColumnHeader = styled(BaseColumnHeader)<{$stickyRight?: boolean}>`
+  ${({$stickyRight}) =>
+    $stickyRight &&
+    css`
+      position: sticky;
+
+      &&:last-of-type {
+        position: sticky;
+      }
+
+      inset-inline-end: 0;
+      background-color: var(--cds-layer-accent);
+      border-inline-start: 1px solid var(--cds-border-subtle);
+    `}
+`;
+
 export {
   Container,
   TableContainer,
@@ -250,4 +291,5 @@ export {
   TableHeadRow,
   TableExpandRow,
   TableExpandedRow,
+  ColumnHeader,
 };

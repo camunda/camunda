@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableAgentHistoryState;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -16,13 +17,20 @@ public final class AgentInstanceCompletedApplier
     implements TypedEventApplier<AgentInstanceIntent, AgentInstanceRecord> {
 
   private final MutableAgentInstanceState agentInstanceState;
+  private final MutableAgentHistoryState agentHistoryState;
 
-  public AgentInstanceCompletedApplier(final MutableAgentInstanceState agentInstanceState) {
+  public AgentInstanceCompletedApplier(
+      final MutableAgentInstanceState agentInstanceState,
+      final MutableAgentHistoryState agentHistoryState) {
     this.agentInstanceState = agentInstanceState;
+    this.agentHistoryState = agentHistoryState;
   }
 
   @Override
   public void applyState(final long key, final AgentInstanceRecord value) {
     agentInstanceState.delete(key, value);
+    // Only removal path for an agent instance; any new one needs this same cleanup call.
+    agentHistoryState.deleteCommittedHistoryItemKeys(key);
+    agentHistoryState.deleteMetricsAccumulatedIds(key);
   }
 }

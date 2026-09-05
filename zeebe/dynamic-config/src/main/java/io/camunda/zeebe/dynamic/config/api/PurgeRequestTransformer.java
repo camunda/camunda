@@ -11,18 +11,18 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -59,14 +59,6 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
   }
 
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    throw new UnsupportedOperationException(
-        "PurgeRequestTransformer builds its change plan via phases(CurrentClusterConfiguration); "
-            + "the new-model coordinator path never calls operations(ClusterConfiguration)");
-  }
-
-  @Override
   public Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration clusterConfiguration) {
     if (physicalTenantId.isPresent()
@@ -94,7 +86,7 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
     if (groupOperations.isEmpty()) {
       return Either.right(List.of());
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(groupOperations)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(groupOperations)));
   }
 
   /**
@@ -123,24 +115,50 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
     final SortedMap<Integer, PartitionBootstrapOperation> primaries =
         createBootstrapOperations(group.members());
 
-    final Map<Integer, List<PartitionJoinOperation>> followers =
+    final Map<Integer, List<PartitionGroupOperation>> followers =
         new TreeMap<>(Comparator.naturalOrder());
+
+    // Every leave except a partition's last is preceded by a demotion, so the removal commits
+    // without the departing member. The last replica must not be demoted - a non-empty replication
+    // group without a voting member could neither elect a leader nor commit - and keeps the
+    // one-shot leave, which as the only remaining member it can drive to the empty configuration.
+    final Map<Integer, Long> remainingActiveReplicas = new TreeMap<>();
+    for (final var member : group.members().values()) {
+      member
+          .partitions()
+          .forEach(
+              (partitionId, partition) -> {
+                if (partition.state() == PartitionState.State.ACTIVE) {
+                  remainingActiveReplicas.merge(partitionId, 1L, Long::sum);
+                }
+              });
+    }
 
     final List<PartitionGroupOperation> operations = new ArrayList<>();
     for (final var member : group.members().entrySet()) {
       final var memberId = member.getKey();
       for (final var partitions : member.getValue().partitions().entrySet()) {
         final var partitionId = partitions.getKey();
+        final var isActive = partitions.getValue().state() == PartitionState.State.ACTIVE;
+        final var otherActiveReplicas =
+            remainingActiveReplicas.getOrDefault(partitionId, 0L) - (isActive ? 1 : 0);
+        if (otherActiveReplicas > 0) {
+          operations.add(new PartitionDemoteOperation(memberId, partitionId));
+        }
         operations.add(new PartitionLeaveOperation(memberId, partitionId, 0));
+        if (isActive) {
+          remainingActiveReplicas.merge(partitionId, -1L, Long::sum);
+        }
 
         final var primaryForPartition = primaries.get(partitionId);
 
         if (!primaryForPartition.memberId().equals(memberId)) {
-          followers
-              .computeIfAbsent(partitionId, key -> new ArrayList<>())
-              .add(
-                  new PartitionJoinOperation(
-                      memberId, partitionId, partitions.getValue().priority()));
+          final var partitionFollowers =
+              followers.computeIfAbsent(partitionId, key -> new ArrayList<>());
+          partitionFollowers.add(
+              new PartitionJoinOperation(
+                  memberId, partitionId, partitions.getValue().priority(), true));
+          partitionFollowers.add(new PartitionPromoteOperation(memberId, partitionId));
         }
       }
     }

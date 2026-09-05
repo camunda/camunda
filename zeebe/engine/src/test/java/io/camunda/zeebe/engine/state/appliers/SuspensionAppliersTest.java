@@ -13,11 +13,11 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,8 +33,8 @@ public class SuspensionAppliersTest {
   private ProcessInstanceSuspendedApplier suspendedApplier;
   private ProcessInstanceResumingApplier resumingApplier;
   private ProcessInstanceResumedApplier resumedApplier;
-  private ProcessInstanceBufferedCommandBufferedApplier bufferedApplier;
-  private ProcessInstanceBufferedCommandDrainedApplier drainedApplier;
+  private BufferedCommandBufferedApplier bufferedApplier;
+  private BufferedCommandDrainedApplier drainedApplier;
 
   @BeforeEach
   public void setup() {
@@ -42,8 +42,8 @@ public class SuspensionAppliersTest {
     suspendedApplier = new ProcessInstanceSuspendedApplier(suspensionState);
     resumingApplier = new ProcessInstanceResumingApplier(suspensionState);
     resumedApplier = new ProcessInstanceResumedApplier(suspensionState);
-    bufferedApplier = new ProcessInstanceBufferedCommandBufferedApplier(suspensionState);
-    drainedApplier = new ProcessInstanceBufferedCommandDrainedApplier(suspensionState);
+    bufferedApplier = new BufferedCommandBufferedApplier(suspensionState);
+    drainedApplier = new BufferedCommandDrainedApplier(suspensionState);
   }
 
   @Test
@@ -69,9 +69,7 @@ public class SuspensionAppliersTest {
     suspensionState.setSuspensionState(processInstanceKey, SuspensionState.State.SUSPENDED);
     bufferedApplier.applyState(
         bufferedCommandKey,
-        new ProcessInstanceBufferedCommandRecord()
-            .setProcessInstanceKey(processInstanceKey)
-            .setCommandKey(51L));
+        new BufferedCommandRecord().setProcessInstanceKey(processInstanceKey).setCommandKey(51L));
 
     // when
     resumingApplier.applyState(processInstanceKey, new ProcessInstanceRecord());
@@ -95,9 +93,7 @@ public class SuspensionAppliersTest {
     final long bufferedCommandKey = 20L;
     suspensionState.setSuspensionState(processInstanceKey, SuspensionState.State.SUSPENDED);
     final var bufferedRecord =
-        new ProcessInstanceBufferedCommandRecord()
-            .setProcessInstanceKey(processInstanceKey)
-            .setCommandKey(21L);
+        new BufferedCommandRecord().setProcessInstanceKey(processInstanceKey).setCommandKey(21L);
     bufferedApplier.applyState(bufferedCommandKey, bufferedRecord);
 
     // when
@@ -120,18 +116,18 @@ public class SuspensionAppliersTest {
     final long bufferedCommandKey = 30L;
     final long commandRecordKey = 31L;
     final var bufferedRecord =
-        new ProcessInstanceBufferedCommandRecord()
+        new BufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setCommandKey(commandRecordKey)
             .setValueType(ValueType.PROCESS_INSTANCE)
-            .setIntent(ProcessInstanceBufferedCommandIntent.BUFFER);
+            .setIntent(BufferedCommandIntent.BUFFER);
 
     // when
     bufferedApplier.applyState(bufferedCommandKey, bufferedRecord);
 
     // then
     final List<Long> visitedKeys = new ArrayList<>();
-    final List<ProcessInstanceBufferedCommandRecordValue> visitedCommands = new ArrayList<>();
+    final List<BufferedCommandRecordValue> visitedCommands = new ArrayList<>();
     suspensionState.visitBufferedCommands(
         processInstanceKey,
         (key, command) -> {
@@ -157,19 +153,19 @@ public class SuspensionAppliersTest {
 
     bufferedApplier.applyState(
         firstBufferedCommandKey,
-        new ProcessInstanceBufferedCommandRecord()
+        new BufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setCommandKey(firstCommandRecordKey));
     bufferedApplier.applyState(
         secondBufferedCommandKey,
-        new ProcessInstanceBufferedCommandRecord()
+        new BufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setCommandKey(secondCommandRecordKey));
 
     // when
     drainedApplier.applyState(
         firstBufferedCommandKey,
-        new ProcessInstanceBufferedCommandRecord()
+        new BufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setCommandKey(firstCommandRecordKey));
 

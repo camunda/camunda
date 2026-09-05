@@ -10,7 +10,7 @@ import type {AgentInstanceHistoryRole} from '@camunda/camunda-api-zod-schemas/8.
 import styled from 'styled-components';
 import {ContentSwitcher} from '@carbon/react';
 
-type ActorType = AgentInstanceHistoryRole | 'SYSTEM';
+type ActorType = Exclude<AgentInstanceHistoryRole, 'CONFIGURATION'> | 'SYSTEM';
 
 const accentColorByActor: Record<ActorType, string> = {
   SYSTEM: 'var(--cds-status-gray)',

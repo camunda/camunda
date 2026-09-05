@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.api;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import org.jspecify.annotations.Nullable;
 
 /** A client command was rejected by the broker. */
 public class BrokerRejectionException extends BrokerClientException {
@@ -19,7 +20,8 @@ public class BrokerRejectionException extends BrokerClientException {
     this(rejection, null);
   }
 
-  public BrokerRejectionException(final BrokerRejection rejection, final Throwable cause) {
+  public BrokerRejectionException(
+      final BrokerRejection rejection, final @Nullable Throwable cause) {
     super(
         String.format(
             ERROR_MESSAGE_FORMAT,

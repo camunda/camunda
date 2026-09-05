@@ -18,10 +18,10 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -74,15 +74,14 @@ public final class SuspensionGateTest {
     // then - the command is buffered instead of being handed to BpmnStreamProcessor
     final Record<RecordValue> buffered =
         RecordingExporter.records()
-            .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-            .withIntent(ProcessInstanceBufferedCommandIntent.BUFFERED)
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.BUFFERED)
             .filter(
                 r ->
-                    ((ProcessInstanceBufferedCommandRecordValue) r.getValue())
-                            .getProcessInstanceKey()
+                    ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
                         == processInstanceKey)
             .getFirst();
-    final var bufferedValue = (ProcessInstanceBufferedCommandRecordValue) buffered.getValue();
+    final var bufferedValue = (BufferedCommandRecordValue) buffered.getValue();
     assertThat(bufferedValue.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(bufferedValue.getCommandKey()).isEqualTo(taskActivated.getKey());
     assertThat(bufferedValue.getIntent()).isEqualTo(ProcessInstanceIntent.COMPLETE_ELEMENT);

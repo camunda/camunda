@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import feign.Feign;
 import feign.Headers;
+import feign.Param;
 import feign.RequestLine;
 import feign.Retryer;
 import feign.Target.HardCodedTarget;
@@ -48,23 +49,59 @@ public interface FlowControlActuator {
   }
 
   public default Map<Integer, JsonNode> setFlowControlConfiguration(final String request) {
-    final FlowControlCfg flowControlCfg;
+    return setFlowControlConfiguration(deserialize(request));
+  }
+
+  public default Map<Integer, JsonNode> setFlowControlConfiguration(
+      final String request, final String physicalTenant) {
+    return setFlowControlConfiguration(deserialize(request), physicalTenant);
+  }
+
+  public default Map<String, Map<Integer, JsonNode>> setFlowControlConfigurationByPhysicalTenant(
+      final String request) {
+    return setFlowControlConfigurationByPhysicalTenant(deserialize(request));
+  }
+
+  private static FlowControlCfg deserialize(final String request) {
     try {
-      flowControlCfg = FlowControlCfg.deserialize(request);
+      return FlowControlCfg.deserialize(request);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-    return setFlowControlConfiguration(flowControlCfg);
   }
 
   /**
-   * Sets the flow control configuration.
+   * Sets the flow control configuration of every known physical tenant.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("POST")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, JsonNode> setFlowControlConfiguration(@RequestBody FlowControlCfg flowControlCfg);
+
+  /**
+   * Same as {@link #setFlowControlConfiguration(FlowControlCfg)}, but decodes the response as the
+   * shape returned when more than one physical tenant is known: a map keyed by physical tenant id,
+   * whose values are the usual per-partition configuration map. Use this from a multi-tenant test —
+   * the flat method would apply the configuration and only then fail to decode the tenant ids as
+   * partition ids.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<String, Map<Integer, JsonNode>> setFlowControlConfigurationByPhysicalTenant(
+      @RequestBody FlowControlCfg flowControlCfg);
+
+  /**
+   * Sets the flow control configuration of the given physical tenant only.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST ?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<Integer, JsonNode> setFlowControlConfiguration(
+      @RequestBody FlowControlCfg flowControlCfg, @Param String physicalTenant);
 
   /**
    * Gets the flow control configuration.
@@ -74,4 +111,24 @@ public interface FlowControlActuator {
   @RequestLine("GET")
   @Headers({"Content-Type: application/json"})
   Map<Integer, JsonNode> getFlowControlConfiguration();
+
+  /**
+   * Same as {@link #getFlowControlConfiguration()}, but decodes the response as the shape returned
+   * when more than one physical tenant is known: a map keyed by physical tenant id, whose values
+   * are the usual per-partition configuration map.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("GET")
+  @Headers({"Content-Type: application/json"})
+  Map<String, Map<Integer, JsonNode>> getFlowControlConfigurationByPhysicalTenant();
+
+  /**
+   * Gets the flow control configuration of the given physical tenant only.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("GET ?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json"})
+  Map<Integer, JsonNode> getFlowControlConfiguration(@Param String physicalTenant);
 }

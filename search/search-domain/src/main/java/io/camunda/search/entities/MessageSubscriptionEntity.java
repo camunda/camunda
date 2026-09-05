@@ -35,7 +35,8 @@ public record MessageSubscriptionEntity(
     @Nullable Integer processDefinitionVersion,
     Map<String, String> toolProperties,
     @Nullable String toolName,
-    @Nullable String inboundConnectorType)
+    @Nullable String inboundConnectorType,
+    @Nullable String businessId)
     implements TenantOwnedEntity {
 
   public MessageSubscriptionEntity {
@@ -79,6 +80,7 @@ public record MessageSubscriptionEntity(
     private @Nullable Map<String, String> toolProperties;
     private @Nullable String toolName;
     private @Nullable String inboundConnectorType;
+    private @Nullable String businessId;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -151,6 +153,11 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    public Builder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -191,7 +198,8 @@ public record MessageSubscriptionEntity(
           processDefinitionVersion,
           toolProperties,
           toolName,
-          inboundConnectorType);
+          inboundConnectorType,
+          businessId);
     }
   }
 

@@ -10,7 +10,6 @@ package io.camunda.authentication.config;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.pt.PhysicalTenantOidcProviders;
-import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -107,12 +106,6 @@ public class OidcOverrideBeansConfiguration {
       throw new IllegalStateException(
           "Creation of initial users is not supported with `OIDC` authentication method");
     }
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  public MembershipResolutionContextPropagator membershipResolutionContextPropagator() {
-    return new PhysicalTenantMembershipContextPropagator();
   }
 
   @Bean

@@ -22,11 +22,11 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
-import io.camunda.zeebe.dynamic.config.changes.AwaitModeChangeApplier;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitModeChangeApplier;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
@@ -131,11 +131,11 @@ final class PartitionModeHandlerAwaitModeChangeApplierTest {
     givenPartitionHealth(Map.of(1, PartitionHealthStatus.HEALTHY, 2, PartitionHealthStatus.DEAD));
 
     final var partitionConfig = DynamicPartitionConfig.init();
-    final var clusterConfiguration =
-        ClusterConfiguration.init()
+    final var partitionGroup =
+        PartitionGroupConfiguration.empty(1)
             .addMember(
                 LOCAL_MEMBER,
-                MemberState.initializeAsActive(
+                BrokerPartitionState.initialize(
                     Map.of(
                         1, PartitionState.active(1, partitionConfig),
                         2, PartitionState.active(1, partitionConfig))));
@@ -148,7 +148,7 @@ final class PartitionModeHandlerAwaitModeChangeApplierTest {
     // then - only the confirmed, healthy partition (1) is written as RECOVERING; the dead
     // partition (2) keeps its prior state instead of being silently marked as recovered
     assertThat(result.isCompletedExceptionally()).isFalse();
-    final var updated = result.join().apply(clusterConfiguration);
+    final var updated = result.join().apply(partitionGroup);
     assertThat(updated.getMember(LOCAL_MEMBER).getPartition(1).state())
         .isEqualTo(PartitionState.State.RECOVERING);
     assertThat(updated.getMember(LOCAL_MEMBER).getPartition(2).state())

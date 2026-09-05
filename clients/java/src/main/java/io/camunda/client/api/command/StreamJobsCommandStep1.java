@@ -102,5 +102,25 @@ public interface StreamJobsCommandStep1 {
      *     it to the broker.
      */
     StreamJobsCommandStep3 fetchVariables(String... fetchVariables);
+
+    /**
+     * Stream the jobs with a lease. When enabled, each activated job is assigned a distinct lease
+     * token, returned as {@link io.camunda.client.api.response.ActivatedJob#getLeaseToken()
+     * ActivatedJob#getLeaseToken()}. The lease token fences the complete, fail, and throw-error
+     * commands against a superseded activation of the same job: a command carrying a stale or
+     * missing token is rejected. An update-job command honors a supplied lease token the same way,
+     * but an update without one always applies, so operator and bulk updates of leased jobs remain
+     * possible.
+     *
+     * <p>Once a job has been activated with a lease, it is served only to leasing streams of that
+     * job type; a homogeneous fleet of leasing streams per job type is recommended.
+     *
+     * <p>If not set, jobs are streamed without a lease.
+     *
+     * @param withLease whether to stream the jobs with a lease
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    StreamJobsCommandStep3 withLease(boolean withLease);
   }
 }

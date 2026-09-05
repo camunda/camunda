@@ -26,6 +26,8 @@ import java.util.List;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Full-stack integration tests for the cluster-admin Basic-auth chain ({@code /cluster/v2/**}),
@@ -41,6 +43,12 @@ public class ClusterAdminBasicAuthenticationIT {
   public static final String PATH_CLUSTER_TOPOLOGY = "cluster/v2/topology";
   public static final String PATH_CLUSTER_MODE = "cluster/v2/mode?mode=RECOVERING&dryRun=true";
   public static final String PATH_CLUSTER_STATUS = "cluster/v2/status";
+  public static final String PATH_CLUSTER_HISTORY_BACKUPS = "cluster/v2/backups/history";
+  public static final String PATH_CLUSTER_HISTORY_BACKUP = "cluster/v2/backups/history/1";
+  public static final String PATH_CLUSTER_RUNTIME_BACKUPS = "cluster/v2/backups/runtime";
+  public static final String PATH_CLUSTER_RUNTIME_BACKUP = "cluster/v2/backups/runtime/1";
+  public static final String PATH_CLUSTER_RUNTIME_BACKUP_STATE = "cluster/v2/backups/runtime/state";
+  public static final String PATH_CLUSTER_REBALANCE = "cluster/v2/rebalance";
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";
 
   private static final String CLUSTER_ADMIN_USER = "cluster-operator";
@@ -121,6 +129,16 @@ public class ClusterAdminBasicAuthenticationIT {
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"GET", "POST", "DELETE"})
+  void shouldRejectRebalanceWithoutCredentials(final String method) throws Exception {
+    // when
+    final HttpResponse<String> response = send(method, clusterUri(PATH_CLUSTER_REBALANCE), null);
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
   @Test
   void shouldRejectModeChangeWithoutCredentials() throws Exception {
     // when — the mode change is a state-changing cluster-admin endpoint, so it must sit inside the
@@ -186,9 +204,51 @@ public class ClusterAdminBasicAuthenticationIT {
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
+  /**
+   * The history backup endpoints sit behind the same chain as the rest of the cluster-admin API,
+   * and the chain answers before the storage gate does — so this holds on every secondary storage.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {PATH_CLUSTER_HISTORY_BACKUPS, PATH_CLUSTER_HISTORY_BACKUP})
+  void shouldRejectClusterHistoryBackupEndpointWithoutCredentials(final String path)
+      throws Exception {
+    // when
+    final HttpResponse<String> response = send(clusterUri(path), null);
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  /**
+   * The runtime backup endpoints need no secondary storage, so unlike the history ones they have no
+   * storage gate that could answer before the chain does — the chain is the only thing standing
+   * between an unauthenticated caller and a cluster-wide backup.
+   */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        PATH_CLUSTER_RUNTIME_BACKUPS,
+        PATH_CLUSTER_RUNTIME_BACKUP,
+        PATH_CLUSTER_RUNTIME_BACKUP_STATE
+      })
+  void shouldRejectClusterRuntimeBackupEndpointWithoutCredentials(final String path)
+      throws Exception {
+    // when
+    final HttpResponse<String> response = send(clusterUri(path), null);
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
   private HttpResponse<String> send(final URI uri, final String authorizationHeader)
       throws Exception {
-    final HttpRequest.Builder builder = HttpRequest.newBuilder().uri(uri);
+    return send("GET", uri, authorizationHeader);
+  }
+
+  private HttpResponse<String> send(
+      final String method, final URI uri, final String authorizationHeader) throws Exception {
+    final HttpRequest.Builder builder =
+        HttpRequest.newBuilder(uri).method(method, HttpRequest.BodyPublishers.noBody());
     if (authorizationHeader != null) {
       builder.header("Authorization", authorizationHeader);
     }

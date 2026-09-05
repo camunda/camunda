@@ -7,13 +7,12 @@
  */
 
 import { FC } from "react";
-import { searchGroups } from "src/utility/api/groups";
-import { searchMappingRule } from "src/utility/api/mapping-rules";
-import { searchRoles } from "src/utility/api/roles";
 import useTranslate from "src/utility/localization";
-import OwnerSelection from "./OwnerSelection";
-import OwnerSelectionSearch from "./OwnerSelectionSearch";
 import TextField from "src/components/form/TextField";
+import { UserSingleSelect } from "src/components/form/entitySelection/UserSelection";
+import { GroupSingleSelect } from "src/components/form/entitySelection/GroupSelection";
+import { RoleSingleSelect } from "src/components/form/entitySelection/RoleSelection";
+import { MappingRuleSingleSelect } from "src/components/form/entitySelection/MappingRuleSelection";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
@@ -41,6 +40,12 @@ const Selection: FC<SelectionProps> = ({
   isCamundaGroupsEnabled,
 }) => {
   const { t, Translate } = useTranslate("authorizations");
+
+  const labels = {
+    label: t("owner"),
+    placeholder: t("searchByOwnerId"),
+    requiredText: t("ownerRequired"),
+  };
 
   switch (type) {
     case "USER":
@@ -81,9 +86,10 @@ const Selection: FC<SelectionProps> = ({
       }
       return (
         <div onBlur={onBlur}>
-          <OwnerSelectionSearch
+          <UserSingleSelect
+            {...labels}
             onChange={onChange}
-            ownerId={ownerId}
+            value={ownerId}
             isEmpty={isEmpty}
           />
         </div>
@@ -91,15 +97,14 @@ const Selection: FC<SelectionProps> = ({
     case "GROUP":
       if (isCamundaGroupsEnabled) {
         return (
-          <OwnerSelection
-            id="groupSelection"
-            onChange={onChange}
-            onBlur={onBlur}
-            searchFn={searchGroups}
-            getId={(group) => group.groupId}
-            itemToString={(group) => group.name || group.groupId}
-            isEmpty={isEmpty}
-          />
+          <div onBlur={onBlur}>
+            <GroupSingleSelect
+              {...labels}
+              onChange={onChange}
+              value={ownerId}
+              isEmpty={isEmpty}
+            />
+          </div>
         );
       }
       return (
@@ -123,29 +128,25 @@ const Selection: FC<SelectionProps> = ({
       );
     case "MAPPING_RULE":
       return (
-        <OwnerSelection
-          id="mappingRuleSelection"
-          onChange={onChange}
-          onBlur={onBlur}
-          searchFn={searchMappingRule}
-          getId={(mappingRule) => mappingRule.mappingRuleId}
-          itemToString={(mappingRule) =>
-            mappingRule.name || mappingRule.mappingRuleId
-          }
-          isEmpty={isEmpty}
-        />
+        <div onBlur={onBlur}>
+          <MappingRuleSingleSelect
+            {...labels}
+            onChange={onChange}
+            value={ownerId}
+            isEmpty={isEmpty}
+          />
+        </div>
       );
     case "ROLE":
       return (
-        <OwnerSelection
-          id="roleSelection"
-          onChange={onChange}
-          onBlur={onBlur}
-          searchFn={searchRoles}
-          getId={(role) => role.roleId}
-          itemToString={(role) => role.name || role.roleId}
-          isEmpty={isEmpty}
-        />
+        <div onBlur={onBlur}>
+          <RoleSingleSelect
+            {...labels}
+            onChange={onChange}
+            value={ownerId}
+            isEmpty={isEmpty}
+          />
+        </div>
       );
     case "CLIENT":
       return (

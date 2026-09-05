@@ -17,6 +17,7 @@ public final class ConfigurationServiceConstants {
   public static final String USERS = "$.users";
   public static final String CONFIGURED_ENGINES = "$.engines";
   public static final String CONFIGURED_ZEEBE = "$.zeebe";
+  public static final String JOB_REGISTRY_DISPATCHER = "$.jobRegistry.dispatcher";
 
   public static final String QUARTZ_JOB_STORE_CLASS = "$.alerting.quartz.jobStore";
 
@@ -160,6 +161,8 @@ public final class ConfigurationServiceConstants {
       "$.container.maxResponseHeaderSizeInBytes";
 
   public static final String ENTITY_CONFIGURATION = "$.entity";
+
+  public static final String BUSINESS_VALUE_CONFIGURATION = "$.businessValue";
 
   public static final String CSV_CONFIGURATION = "$.export.csv";
 

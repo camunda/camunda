@@ -8,9 +8,16 @@
 
 import {queryOptions} from '@tanstack/react-query';
 import type {QueryDecisionDefinitionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import {ForbiddenError} from '#/shared/errors';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
+import {queries} from '#/shared/http/queries';
+
+type DecisionDefinitionSelectionOptions = {
+	decisionDefinitionId?: string;
+	decisionDefinitionVersion?: number;
+	tenantId?: string;
+};
 
 function decisionDefinitionsOptions(tenantId?: string) {
 	return queryOptions({
@@ -20,14 +27,30 @@ function decisionDefinitionsOptions(tenantId?: string) {
 				endpoints.queryDecisionDefinitions({page: {limit: 1000}, filter: tenantId ? {tenantId} : undefined}),
 			);
 			if (error !== null) {
-				if (error.variant === 'failed-response' && error.response.status === 403) {
-					throw new ForbiddenError();
-				}
-				throw error;
+				throw mapQueryError(error);
 			}
 			return response.json();
 		},
 	});
 }
 
-export {decisionDefinitionsOptions};
+function decisionDefinitionSelectionOptions({
+	decisionDefinitionId,
+	decisionDefinitionVersion,
+	tenantId,
+}: DecisionDefinitionSelectionOptions) {
+	return {
+		...queries.queryDecisionDefinitions({
+			filter: {
+				decisionDefinitionId,
+				version: decisionDefinitionVersion,
+				tenantId,
+			},
+			page: {limit: decisionDefinitionVersion === undefined ? 1 : 2},
+			sort: [{field: 'version', order: 'desc'}],
+		}),
+		staleTime: 5000,
+	};
+}
+
+export {decisionDefinitionsOptions, decisionDefinitionSelectionOptions};

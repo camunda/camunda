@@ -147,6 +147,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         jobBehavior.createNewTaskListenerJob(
             context,
             cancelingUserTask.get(),
+            element,
             firstCancelingListener.get(),
             Collections.emptyList());
         return TransitionOutcome.AWAIT;
@@ -203,7 +204,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
             .findFirst();
     if (firstCreatingListener.isPresent()) {
       jobBehavior.createNewTaskListenerJob(
-          context, userTaskRecord, firstCreatingListener.get(), Collections.emptyList());
+          context, userTaskRecord, element, firstCreatingListener.get(), Collections.emptyList());
       lifecycleState = LifecycleState.CREATING;
     } else {
       userTaskRecord.unsetAssignee();
@@ -228,7 +229,11 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .ifPresentOrElse(
             listener ->
                 jobBehavior.createNewTaskListenerJob(
-                    context, userTaskRecord, listener, userTaskRecord.getChangedAttributes()),
+                    context,
+                    userTaskRecord,
+                    element,
+                    listener,
+                    userTaskRecord.getChangedAttributes()),
             () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
   }
 

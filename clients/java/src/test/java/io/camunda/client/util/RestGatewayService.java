@@ -21,8 +21,9 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.protocol.rest.AgentDefinitionResult;
+import io.camunda.client.protocol.rest.AgentDefinitionSearchQueryResult;
 import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
-import io.camunda.client.protocol.rest.AgentInstanceHistoryItemCreationResult;
 import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQueryResult;
 import io.camunda.client.protocol.rest.AgentInstanceResult;
 import io.camunda.client.protocol.rest.AgentInstanceSearchQueryResult;
@@ -405,13 +406,17 @@ public class RestGatewayService {
     registerGet(RestGatewayPaths.getBatchOperationUrl(batchOperationKey), response);
   }
 
-  public void onCreateAgentInstanceRequest(final AgentInstanceCreationResult response) {
-    registerPost(RestGatewayPaths.getAgentInstancesUrl(), response);
+  public void onAgentDefinitionGetRequest(
+      final long agentDefinitionKey, final AgentDefinitionResult response) {
+    registerGet(RestGatewayPaths.getAgentDefinitionUrl(agentDefinitionKey), response);
   }
 
-  public void onCreateAgentHistoryItemRequest(
-      final long agentInstanceKey, final AgentInstanceHistoryItemCreationResult response) {
-    registerPost(RestGatewayPaths.getAgentHistoryItemUrl(agentInstanceKey), response);
+  public void onAgentDefinitionSearchRequest(final AgentDefinitionSearchQueryResult response) {
+    registerPost(RestGatewayPaths.getAgentDefinitionsSearchUrl(), response);
+  }
+
+  public void onCreateAgentInstanceRequest(final AgentInstanceCreationResult response) {
+    registerPost(RestGatewayPaths.getAgentInstancesUrl(), response);
   }
 
   public void onAgentInstanceHistorySearchRequest(

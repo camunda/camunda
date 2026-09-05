@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
@@ -40,6 +41,7 @@ final class BulkIndexRequest {
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(StorageOrdinalKeyRelated.class, StorageOrdinalKeyMixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
@@ -53,6 +55,7 @@ final class BulkIndexRequest {
           .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
           .addMixIn(ClusterVariableRecordValue.class, ClusterVariableMixin.class)
           .addMixIn(StorageOrdinalKeyRelated.class, StorageOrdinalKeyMixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -73,6 +76,7 @@ final class BulkIndexRequest {
   private static final String METADATA_PROPERTY = "metadata";
   private static final String KIND_PROPERTY = "kind";
   private static final String STORAGE_ORDINAL_KEY_PROPERTY = "storageOrdinalKey";
+  private static final String RESUME_FROM_JOB_KEY_PROPERTY = "resumeFromJobKey";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -221,4 +225,13 @@ final class BulkIndexRequest {
    */
   @JsonIgnoreProperties({STORAGE_ORDINAL_KEY_PROPERTY})
   private static final class StorageOrdinalKeyMixin {}
+
+  /**
+   * The resume-from cursor is a transient value carried on RESUME_JOBS commands to drive the resume
+   * walk; it must not be stored in the exported document. This mix-in is the most specific one for
+   * a process-instance value, so it shadows {@link StorageOrdinalKeyMixin} and must also repeat the
+   * {@code storageOrdinalKey} ignoral it would otherwise inherit.
+   */
+  @JsonIgnoreProperties({STORAGE_ORDINAL_KEY_PROPERTY, RESUME_FROM_JOB_KEY_PROPERTY})
+  private static final class ProcessInstanceMixin {}
 }

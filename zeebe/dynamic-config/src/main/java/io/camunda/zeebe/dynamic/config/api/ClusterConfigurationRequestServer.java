@@ -39,7 +39,6 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerRemoveMemberRequestsHandler();
     registerJoinPartitionRequestsHandler();
     registerLeavePartitionRequestsHandler();
-    registerReassignPartitionRequestHandler();
     registerScaleRequestHandler();
     registerGetTopologyQueryHandler();
     registerTopologyCancelHandler();
@@ -54,7 +53,9 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerZoneMigrationHandler();
     registerForceRemoveBrokersRequestHandler();
     registerPurgeRequestHandler();
+    registerRemovePhysicalTenantRequestHandler();
     registerModeChangeHandler();
+    registerExportingStateChangeHandler();
     registerRestoreHandler();
     registerClusterRestoreHandler();
     registerForceRemoveZoneHandler();
@@ -115,14 +116,6 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.LEAVE_PARTITION.topic(),
         serializer::decodeLeavePartitionRequest,
         request -> mapResponse(clusterConfigurationManagementApi.leavePartition(request)),
-        this::encodeResponse);
-  }
-
-  private void registerReassignPartitionRequestHandler() {
-    communicationService.replyTo(
-        ClusterConfigurationRequestTopics.REASSIGN_PARTITIONS.topic(),
-        serializer::decodeReassignPartitionsRequest,
-        request -> mapResponse(clusterConfigurationManagementApi.reassignPartitions(request)),
         this::encodeResponse);
   }
 
@@ -190,6 +183,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         this::encodeResponse);
   }
 
+  private void registerRemovePhysicalTenantRequestHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.REMOVE_PHYSICAL_TENANT.topic(),
+        serializer::decodeRemovePhysicalTenantRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.removePhysicalTenant(request)),
+        this::encodeResponse);
+  }
+
   private void registerPurgeRequestHandler() {
     communicationService.replyTo(
         ClusterConfigurationRequestTopics.PURGE.topic(),
@@ -244,6 +245,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
         serializer::decodeModeChangeRequest,
         request -> mapResponse(clusterConfigurationManagementApi.modeChange(request)),
+        this::encodeResponse);
+  }
+
+  private void registerExportingStateChangeHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.EXPORTING_STATE_CHANGE.topic(),
+        serializer::decodeExportingStateChangeRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.changeExportingState(request)),
         this::encodeResponse);
   }
 

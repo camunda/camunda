@@ -211,6 +211,11 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                       .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(2),
                   new Operation()
+                      .operation(OperationEnum.PARTITION_PROMOTE)
+                      .brokerId(brokerId(2))
+                      .partitionId(1)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID),
+                  new Operation()
                       .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
                       .brokerId(brokerId(0))
                       .partitionId(1)
@@ -223,6 +228,11 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                       .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(2),
                   new Operation()
+                      .operation(OperationEnum.PARTITION_PROMOTE)
+                      .brokerId(brokerId(0))
+                      .partitionId(2)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID),
+                  new Operation()
                       .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
                       .brokerId(brokerId(2))
                       .partitionId(2)
@@ -234,6 +244,11 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                       .partitionId(3)
                       .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(2),
+                  new Operation()
+                      .operation(OperationEnum.PARTITION_PROMOTE)
+                      .brokerId(brokerId(2))
+                      .partitionId(3)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID),
                   new Operation()
                       .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
                       .brokerId(brokerId(0))
@@ -329,8 +344,10 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
             new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of(brokerId(0)));
         final var addZoneResponse = actuator.addZone(ZONE_A, addZoneRequest, false);
 
-        // then - the cluster recovers: zoneA is back in the distribution and hosts partitions
+        // then - the cluster recovers: zoneA is back in the distribution and hosts partitions.
+        // wait more than 10s to allow for partition join to be retried
         Awaitility.await()
+            .atMost(Duration.ofMinutes(1))
             .untilAsserted(
                 () ->
                     ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(addZoneResponse));
@@ -485,12 +502,12 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     void shouldRejectAddZoneWithMismatchedBrokers() {
       // given - zoneA has already been force-removed from the shared cluster
 
-      // when - then - empty brokers[] is rejected
+      // when - then - a request naming no brokers at all is rejected
       final var emptyBrokersRequest =
           new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of());
       assertThatCode(() -> actuatorAfterZoneRemoval.addZone(ZONE_A, emptyBrokersRequest, false))
           .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("at least one broker");
+          .hasMessageContaining("Exactly one of brokers and numberOfBrokers must be set.");
 
       // when - then - fewer brokers than numberOfReplicas is rejected
       final var tooFewBrokersRequest =

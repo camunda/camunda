@@ -89,7 +89,8 @@ public class ExpressionControllerTest extends RestControllerTest {
             {
                 "expression": "=x + y",
                 "result": "10",
-                "warnings": []
+                "warnings": [],
+                "referencedSecrets": []
             }""",
             JsonCompareMode.STRICT);
 
@@ -138,7 +139,8 @@ public class ExpressionControllerTest extends RestControllerTest {
             {
                 "expression": "=x + y",
                 "result": "10",
-                "warnings": []
+                "warnings": [],
+                "referencedSecrets": []
             }""",
             JsonCompareMode.STRICT);
 
@@ -188,7 +190,8 @@ public class ExpressionControllerTest extends RestControllerTest {
                     {
                         "message": "No function found with name 'invalid_function' and 0 parameters"
                     }
-                ]
+                ],
+                "referencedSecrets": []
             }""",
             JsonCompareMode.STRICT);
   }

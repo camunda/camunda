@@ -34,6 +34,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
+import {mapQueryError} from './mapQueryError';
 
 const DEFAULT_MAX_ITEM_PER_PAGE = 50;
 
@@ -75,7 +76,7 @@ const queries = {
 			queryFn: async (): Promise<CurrentUser> => {
 				const {response, error} = await request(endpoints.getCurrentUser());
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -89,7 +90,7 @@ const queries = {
 			queryFn: async (): Promise<GetSystemConfigurationResponseBody> => {
 				const {response, error} = await request(endpoints.getSystemConfiguration());
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -102,7 +103,7 @@ const queries = {
 			queryFn: async (): Promise<License> => {
 				const {response, error} = await request(endpoints.getLicense());
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -132,7 +133,7 @@ const queries = {
 					}),
 				);
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -164,7 +165,7 @@ const queries = {
 			queryFn: async (): Promise<UserTask> => {
 				const {response, error} = await request(endpoints.getUserTask({userTaskKey}));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -176,7 +177,7 @@ const queries = {
 			queryFn: async (): Promise<Form> => {
 				const {response, error} = await request(endpoints.getUserTaskForm({userTaskKey}));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -198,9 +199,8 @@ const queries = {
 					}),
 				);
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
-
 				return response.json();
 			},
 		}),
@@ -216,9 +216,8 @@ const queries = {
 					}),
 				);
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
-
 				return response.json();
 			},
 			initialPageParam: 0,
@@ -234,9 +233,8 @@ const queries = {
 			queryFn: async (): Promise<Variable> => {
 				const {response, error} = await request(endpoints.getVariable({variableKey}));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
-
 				return response.json();
 			},
 			retry: false,
@@ -266,7 +264,7 @@ const queries = {
 					}),
 				);
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -298,7 +296,7 @@ const queries = {
 			queryFn: async (): Promise<GetAuditLogResponseBody> => {
 				const {response, error} = await request(endpoints.getAuditLog({auditLogKey}));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -310,7 +308,7 @@ const queries = {
 			queryFn: async (): Promise<string> => {
 				const {response, error} = await request(endpoints.getProcessDefinitionXml({processDefinitionKey}));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.text();
 			},
@@ -323,7 +321,7 @@ const queries = {
 			queryFn: async (): Promise<GetProcessDefinitionInstanceStatisticsResponseBody> => {
 				const {response, error} = await request(endpoints.getProcessDefinitionInstanceStatistics(body));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -335,7 +333,7 @@ const queries = {
 			queryFn: async (): Promise<QueryProcessDefinitionsResponseBody> => {
 				const {response, error} = await request(endpoints.queryProcessDefinitions(body));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -347,7 +345,7 @@ const queries = {
 			queryFn: async (): Promise<GetProcessDefinitionResponseBody> => {
 				const {response, error} = await request(endpoints.getProcessDefinition({processDefinitionKey}));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -359,7 +357,7 @@ const queries = {
 			queryFn: async (): Promise<ProcessStartFormResponse> => {
 				const {response, error} = await request(endpoints.getProcessStartForm({processDefinitionKey}));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -379,7 +377,7 @@ const queries = {
 					}),
 				);
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -393,7 +391,7 @@ const queries = {
 			queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByErrorResponseBody> => {
 				const {response, error} = await request(endpoints.getIncidentProcessInstanceStatisticsByError(body));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},
@@ -405,7 +403,7 @@ const queries = {
 			queryFn: async (): Promise<QueryDecisionDefinitionsResponseBody> => {
 				const {response, error} = await request(endpoints.queryDecisionDefinitions(body));
 				if (error !== null) {
-					throw error;
+					throw mapQueryError(error);
 				}
 				return response.json();
 			},

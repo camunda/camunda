@@ -10,6 +10,7 @@ package io.camunda.application.commons.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,8 +41,10 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -415,6 +418,8 @@ class CamundaServicesConfigurationTest {
         new GatewayRestConfiguration(),
         mock(BrokerTopologyManager.class),
         mock(ClusterConfigurationManagementRequestSender.class),
+        mock(RebalanceRequestSender.class),
+        mock(ExportingStateController.class, RETURNS_DEEP_STUBS),
         new SimpleMeterRegistry(),
         new MockEnvironment(),
         new ManagementServices(new CamundaLicense(null)),

@@ -25,9 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class SnapshotTransferServiceClient implements SnapshotTransferService {
 
   private final BrokerClient client;
+  private final String partitionGroup;
 
-  public SnapshotTransferServiceClient(final BrokerClient client) {
+  public SnapshotTransferServiceClient(final BrokerClient client, final String partitionGroup) {
     this.client = client;
+    this.partitionGroup = partitionGroup;
   }
 
   @Override
@@ -53,6 +55,7 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
       final UUID transferId) {
     final var request = new GetSnapshotChunk(partition, transferId, snapshotId, previousChunkName);
     final var brokerRequest = new SnapshotBrokerRequest(request);
+    brokerRequest.setPartitionGroup(partitionGroup);
     final var future = new CompletableActorFuture<@Nullable SnapshotChunk>();
     client
         .sendRequestWithRetry(brokerRequest, Duration.ofSeconds(30))

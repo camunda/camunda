@@ -33,7 +33,8 @@ public record MessageSubscriptionFilter(
     List<Operation<String>> processDefinitionNameOperations,
     List<Operation<Integer>> processDefinitionVersionOperations,
     List<Operation<String>> toolNameOperations,
-    List<Operation<String>> inboundConnectorTypeOperations)
+    List<Operation<String>> inboundConnectorTypeOperations,
+    List<Operation<String>> businessIdOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<MessageSubscriptionFilter> {
@@ -54,6 +55,7 @@ public record MessageSubscriptionFilter(
     private List<Operation<Integer>> processDefinitionVersionOperations;
     private List<Operation<String>> toolNameOperations;
     private List<Operation<String>> inboundConnectorTypeOperations;
+    private List<Operation<String>> businessIdOperations;
 
     public Builder messageSubscriptionKeys(final Long value, final Long... values) {
       return messageSubscriptionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
@@ -299,6 +301,21 @@ public record MessageSubscriptionFilter(
       return this;
     }
 
+    public Builder businessIds(final String value, final String... values) {
+      return businessIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder businessIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return businessIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder businessIdOperations(final List<Operation<String>> operations) {
+      businessIdOperations = addValuesToList(businessIdOperations, operations);
+      return this;
+    }
+
     @Override
     public MessageSubscriptionFilter build() {
       return new MessageSubscriptionFilter(
@@ -317,7 +334,8 @@ public record MessageSubscriptionFilter(
           Objects.requireNonNullElse(processDefinitionNameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()),
           Objects.requireNonNullElse(toolNameOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(inboundConnectorTypeOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(inboundConnectorTypeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(businessIdOperations, Collections.emptyList()));
     }
   }
 }

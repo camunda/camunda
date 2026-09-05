@@ -26,10 +26,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -44,6 +46,8 @@ import org.springframework.context.annotation.Configuration;
 @Tag("rdbms")
 class PhysicalTenantWebSessionIsolationIT {
 
+  private static final String URL_DEFAULT =
+      "jdbc:h2:mem:ws-isol-default;DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
   private static final String URL_TENANTA =
       "jdbc:h2:mem:ws-isol-tenanta;DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
   private static final String TENANT_A = "tenanta";
@@ -75,6 +79,7 @@ class PhysicalTenantWebSessionIsolationIT {
     return new CamundaRdbmsTestApplication(
             RdbmsTestConfiguration.class, SessionStoreConfiguration.class)
         .withH2()
+        .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setUrl(URL_DEFAULT))
         .withProperty(
             "camunda.physical-tenants." + TENANT_A + ".data.secondary-storage.rdbms.url",
             URL_TENANTA)
@@ -114,6 +119,7 @@ class PhysicalTenantWebSessionIsolationIT {
   }
 
   @Test
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
   void shouldSurviveRestartInCorrectPhysicalTenantStore() {
     // given — write via app1's tenant A store
     final String id = UUID.randomUUID().toString();

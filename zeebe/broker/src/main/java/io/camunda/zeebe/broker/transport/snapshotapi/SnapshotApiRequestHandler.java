@@ -17,82 +17,89 @@ import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
 import io.camunda.zeebe.scheduler.AsyncClosable;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.transfer.SnapshotSenderService;
-import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
+/**
+ * Serves the {@link RequestType#SNAPSHOT} API for a single partition. One handler exists per leader
+ * partition and subscribes on its partition's group-scoped topic, so partitions sharing the same
+ * number in different partition groups (physical tenants) can never serve each other's snapshot
+ * transfer requests.
+ */
 public class SnapshotApiRequestHandler
     extends AsyncApiRequestHandler<SnapshotApiRequestReader, SnapshotApiResponseWriter> {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotApiRequestHandler.class);
-  private final ConcurrentMap<Integer, Registration> transferServices = new ConcurrentHashMap<>();
+  private final PartitionId partitionId;
   private final ServerTransport serverTransport;
   private final BrokerClient brokerClient;
+  private final Function<ConcurrencyControl, SnapshotSenderService> transferServiceFactory;
+  private SnapshotSenderService transferService;
 
   public SnapshotApiRequestHandler(
-      final ServerTransport serverTransport, final BrokerClient brokerClient) {
-    super("SnapshotApi", null, SnapshotApiRequestReader::new, SnapshotApiResponseWriter::new);
+      final PartitionId partitionId,
+      final ServerTransport serverTransport,
+      final BrokerClient brokerClient,
+      final Function<ConcurrencyControl, SnapshotSenderService> transferServiceFactory) {
+    super(
+        "SnapshotApi", partitionId, SnapshotApiRequestReader::new, SnapshotApiResponseWriter::new);
+    this.partitionId = partitionId;
     this.serverTransport = serverTransport;
     this.brokerClient = brokerClient;
+    this.transferServiceFactory = transferServiceFactory;
   }
 
-  public void addTransferService(
-      final PartitionId partitionId, final SnapshotSenderService transferService) {
+  @Override
+  public void onActorStarted() {
+    transferService = transferServiceFactory.apply(actor);
     serverTransport.subscribe(partitionId, RequestType.SNAPSHOT, this);
-    transferServices.put(partitionId.number(), new Registration(partitionId, transferService));
-    LOG.debug("Added SnapshotTransferService for partition {}.", partitionId);
+    LOG.debug("Serving snapshot transfer requests for partition {}.", partitionId);
   }
 
-  public void removeTransferService(final PartitionId partitionId) {
+  @Override
+  public void onActorClosing() {
+    AsyncClosable.closeHelper(transferService);
+    transferService = null;
+    LOG.debug("Stopped serving snapshot transfer requests for partition {}.", partitionId);
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
     serverTransport.unsubscribe(partitionId, RequestType.SNAPSHOT);
-    final var registration = transferServices.remove(partitionId.number());
-    LOG.debug("Removed SnapshotTransferService for partition {}.", partitionId);
-    if (registration != null) {
-      AsyncClosable.closeHelper(registration.service());
-    }
+    return super.closeAsync();
   }
 
   @Override
   protected ActorFuture<Either<ErrorResponseWriter, SnapshotApiResponseWriter>> handleAsync(
-      final int partitionId,
+      final int requestStreamId,
       final long requestId,
       final SnapshotApiRequestReader requestReader,
       final SnapshotApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
-    final var registration = transferServices.get(partitionId);
-    if (registration == null) {
-      return CompletableActorFuture.completed(
-          Either.left(errorWriter.partitionUnavailable(partitionId)));
-    } else {
-      final var service = registration.service();
-      final var request = requestReader.getRequest();
-      return switch (request) {
-        case final GetSnapshotChunk snapshotChunkRequest ->
-            handleGet(snapshotChunkRequest, partitionId, responseWriter, errorWriter, service);
-        case final DeleteSnapshotForBootstrapRequest deleteRequest ->
-            handleDelete(partitionId, responseWriter, errorWriter, service);
-      };
-    }
+    return switch (requestReader.getRequest()) {
+      case final GetSnapshotChunk snapshotChunkRequest ->
+          handleGet(snapshotChunkRequest, responseWriter, errorWriter);
+      case final DeleteSnapshotForBootstrapRequest deleteRequest ->
+          handleDelete(responseWriter, errorWriter);
+    };
   }
 
   private ActorFuture<Either<ErrorResponseWriter, SnapshotApiResponseWriter>> handleDelete(
-      final int partitionId,
-      final SnapshotApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter,
-      final SnapshotSenderService service) {
-    return service
-        .deleteSnapshots(partitionId)
+      final SnapshotApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
+    final int partitionNumber = partitionId.number();
+    return transferService
+        .deleteSnapshots(partitionNumber)
         .andThen(
             (response, error) -> {
               final Either<ErrorResponseWriter, SnapshotApiResponseWriter> result;
@@ -100,7 +107,7 @@ public class SnapshotApiRequestHandler
                 LOG.warn("Failed to delete snapshots for partition {}", partitionId, error);
                 result = Either.left(errorWriter.internalError(error.getMessage()));
               } else {
-                responseWriter.setResponse(new DeleteSnapshotForBootstrapResponse(partitionId));
+                responseWriter.setResponse(new DeleteSnapshotForBootstrapResponse(partitionNumber));
                 result = Either.right(responseWriter);
               }
               return CompletableActorFuture.completed(result);
@@ -110,14 +117,13 @@ public class SnapshotApiRequestHandler
 
   private ActorFuture<Either<ErrorResponseWriter, SnapshotApiResponseWriter>> handleGet(
       final GetSnapshotChunk request,
-      final int partitionId,
       final SnapshotApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter,
-      final SnapshotTransferService service) {
+      final ErrorResponseWriter errorWriter) {
+    final int partitionNumber = partitionId.number();
     if (request.lastChunkName().isPresent() && request.snapshotId().isPresent()) {
-      return service
+      return transferService
           .getNextChunk(
-              partitionId,
+              partitionNumber,
               request.snapshotId().get(),
               request.lastChunkName().get(),
               request.transferId())
@@ -137,8 +143,8 @@ public class SnapshotApiRequestHandler
                 LOG.atLevel(Level.DEBUG)
                     .addKeyValue("transferId", request.transferId())
                     .log("Last processed position is {}", lastProcessedPosition);
-                return service.getLatestSnapshot(
-                    partitionId, lastProcessedPosition, request.transferId());
+                return transferService.getLatestSnapshot(
+                    partitionNumber, lastProcessedPosition, request.transferId());
               },
               actor)
           .andThen(
@@ -160,20 +166,12 @@ public class SnapshotApiRequestHandler
     }
   }
 
-  @Override
-  public void close() {
-    LOG.debug(
-        "Closing SnapshotApiRequestHandler. Removing transfer services. Registered partitions {}",
-        transferServices.keySet());
-    transferServices.forEach(
-        (partitionId, registration) -> removeTransferService(registration.partitionId()));
-    super.close();
-  }
-
   private ActorFuture<Long> getLastProcessedPositionRequired(final UUID transferId) {
     final ActorFuture<Long> lastProcessedPosition = actor.createFuture();
+    final var request = new GetScaleUpProgress();
+    request.setPartitionGroup(partitionId.group());
     brokerClient
-        .sendRequestWithRetry(new GetScaleUpProgress())
+        .sendRequestWithRetry(request)
         .thenApplyAsync(
             r -> {
               final var response = r.getResponseOrThrow();
@@ -187,6 +185,4 @@ public class SnapshotApiRequestHandler
         .whenCompleteAsync(lastProcessedPosition, actor);
     return lastProcessedPosition;
   }
-
-  private record Registration(PartitionId partitionId, SnapshotSenderService service) {}
 }

@@ -245,7 +245,7 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render the model provider and name', () => {
+  it('should render the model provider, name and agent definition key', () => {
     render(
       <AgentDetails
         agentInstances={[agentInstance]}
@@ -264,6 +264,12 @@ describe('<AgentDetails />', () => {
     expect(within(section).getByText('openai')).toBeInTheDocument();
     expect(within(section).getByText('Model:')).toBeInTheDocument();
     expect(within(section).getByText('gpt-4')).toBeInTheDocument();
+    expect(
+      within(section).getByText('Agent definition key:'),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByText(agentInstance.agentDefinitionKey),
+    ).toBeInTheDocument();
   });
 
   it('should render tools available for the agent instance', () => {
@@ -318,6 +324,56 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
     expect(
       within(section).getByRole('button', {name: 'Expand'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should render document references in the system prompt', () => {
+    render(
+      <AgentDetails
+        agentInstances={[
+          mockAgentInstance({
+            definition: {
+              model: 'gpt-4',
+              provider: 'openai',
+              systemPrompt: [
+                {contentType: 'TEXT', text: 'You are a helpful assistant.'},
+                {
+                  contentType: 'DOCUMENT',
+                  documentReference: {
+                    'camunda.document.type': 'camunda',
+                    contentHash: 'abc123',
+                    documentId: 'doc-1',
+                    storeId: 'default',
+                    metadata: {
+                      contentType: 'text/plain',
+                      fileName: 'guidelines.txt',
+                      size: 1234,
+                      expiresAt: null,
+                      processDefinitionId: null,
+                      processInstanceKey: null,
+                      customProperties: {},
+                    },
+                  },
+                },
+              ],
+            },
+          }),
+        ]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    const section = screen.getByTestId('agent-system-prompt-section');
+
+    expect(
+      within(section).getByText('You are a helpful assistant.'),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByRole('listitem', {name: 'guidelines.txt'}),
     ).toBeInTheDocument();
   });
 

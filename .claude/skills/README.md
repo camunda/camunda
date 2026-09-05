@@ -36,6 +36,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 |--------------------------------|-----------------------------------------------------------------------------------------------|
 | `analytics-exporter`           | Add a new event handler or metric to the analytics exporter (`zeebe/exporters/analytics-exporter/`) |
 | `babysit-pr`                   | Self-driving loop to shepherd one or more PRs (incl. backports) to merged: rerun flaky CI, enqueue, re-enqueue |
+| `bug-investigation`            | Investigate a triaged bug issue end to end: reproduce, root-cause, validate a fix, report on the issue |
 | `ci-flood-triage`              | Orient fast when a flood of CI incidents opens at once — find the shared pattern, flag outliers |
 | `ci-push-workflow-health`      | Analyze CI failure patterns for push-triggered workflow jobs on main and stable/* branches    |
 | `ci-runner-utilization`        | Detect CI runner underutilization and give downsizing recommendations for cost savings        |
@@ -46,7 +47,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-feature`             | Build new pages, components, or features in the orchestration cluster webapp                  |
 | `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp |
 | `frontend-migrator`            | Migrate or port frontend code from `operate/client/` or `tasklist/client/` to the OC webapp   |
-| `frontend-operate-migrator`    | Operate-specific overrides, migration loop protocol, and per-page context for OC webapp ports |
+| `frontend-operate-migrator`    | End-to-end ticket-driven Operate migration, fidelity review, draft PR, and CI convergence      |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp             |
 | `operate-frontend`             | Fix bugs or make changes in the Operate legacy frontend at `operate/client/`                  |
 | `tasklist-frontend`            | Build or change Tasklist pod features in the OC webapp at `src/tasklist/`                      |

@@ -64,7 +64,11 @@ public final class ServiceRegistryArchTest {
           .because("tenant-scoped service accessors must be keyed by physicalTenantId");
 
   static final Set<String> CLUSTER_WIDE_SERVICES =
-      Set.of(ManagementServices.class.getName(), ClusterTopologyServices.class.getName());
+      Set.of(
+          ManagementServices.class.getName(),
+          ClusterTopologyServices.class.getName(),
+          ClusterExportingServices.class.getName(),
+          ClusterRebalanceServices.class.getName());
 
   // -- conditions --
 

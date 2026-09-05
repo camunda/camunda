@@ -116,6 +116,7 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
+    assertThat(job.getLeaseToken()).isNull();
 
     job = receivedJobs.get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
@@ -135,6 +136,24 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
     assertThat(job.getTenantId()).isEqualTo(activatedJob2.getTenantId());
+    assertThat(job.getLeaseToken()).isNull();
+  }
+
+  @Test
+  public void shouldSurfaceLeaseTokenOnStreamedJob() {
+    // given - a leased job pushed over the stream, as a gateway would send when the stream was
+    // opened with withLease(true)
+    final List<io.camunda.client.api.response.ActivatedJob> receivedJobs = new ArrayList<>();
+    final ActivatedJob activatedJob =
+        ActivatedJob.newBuilder().setKey(12).setType("foo").setLeaseToken("lease-token-1").build();
+    gatewayService.onStreamJobsRequest(activatedJob);
+
+    // when
+    client.newStreamJobsCommand().jobType("foo").consumer(receivedJobs::add).send().join();
+
+    // then
+    assertThat(receivedJobs).hasSize(1);
+    assertThat(receivedJobs.get(0).getLeaseToken()).isEqualTo("lease-token-1");
   }
 
   @Test
@@ -332,6 +351,32 @@ public final class StreamJobsTest extends ClientTest {
 
     // then
     assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
+  }
+
+  @Test
+  public void shouldSetWithLease() {
+    // when
+    client
+        .newStreamJobsCommand()
+        .jobType("foo")
+        .consumer(ignored -> {})
+        .withLease(true)
+        .send()
+        .join();
+
+    // then
+    final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWithLease()).isTrue();
+  }
+
+  @Test
+  public void shouldNotSetWithLeaseByDefault() {
+    // when
+    client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {}).send().join();
+
+    // then
+    final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWithLease()).isFalse();
   }
 
   @Test

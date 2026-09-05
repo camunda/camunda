@@ -12,6 +12,7 @@ import {Outlet, useMatch} from 'react-router-dom';
 import {Header} from './Header';
 import {AuthenticationCheck} from 'modules/auth/AuthenticationCheck';
 import {AuthorizationCheck} from 'modules/auth/AuthorizationCheck';
+import {SessionHeartbeat} from 'modules/auth/SessionHeartbeat';
 import {pages} from 'modules/routing';
 import {OSNotifications} from './OSNotifications';
 import {C3Provider} from './C3Provider';
@@ -23,6 +24,7 @@ const Layout: React.FC = () => {
   return (
     <C3Provider>
       <AuthenticationCheck redirectPath={pages.login}>
+        <SessionHeartbeat />
         <AuthorizationCheck>
           <OSNotifications />
           <Header hideNavLinks={isForbiddenRoute} />

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ColumnFamilyMetrics;
@@ -28,10 +29,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
@@ -141,12 +142,12 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public ValueType get(final KeyType key) {
+  public @Nullable ValueType get(final KeyType key) {
     try (final var timer = metrics.measureGetLatency()) {
       ensureInOpenTransaction(
           transaction -> {
             columnFamilyContext.writeKey(key);
-            final byte[] value =
+            final var value =
                 transaction.get(
                     transactionDb.getDefaultNativeHandle(),
                     transactionDb.getReadOptionsNativeHandle(),
@@ -164,13 +165,13 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public ValueType get(final KeyType key, final Supplier<ValueType> valueSupplier) {
+  public @Nullable ValueType get(final KeyType key, final Supplier<ValueType> valueSupplier) {
     final var result = new MutableReference<ValueType>();
     try (final var timer = metrics.measureGetLatency()) {
       ensureInOpenTransaction(
           transaction -> {
             columnFamilyContext.writeKey(key);
-            final byte[] valueBytes =
+            final var valueBytes =
                 transaction.get(
                     transactionDb.getDefaultNativeHandle(),
                     transactionDb.getReadOptionsNativeHandle(),
@@ -212,7 +213,7 @@ class TransactionalColumnFamily<
 
   @Override
   public void whileTrue(
-      final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+      final @Nullable KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     ensureInOpenTransaction(transaction -> forEachInPrefix(startAtKey, new DbNullKey(), visitor));
   }
 
@@ -243,7 +244,7 @@ class TransactionalColumnFamily<
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix,
-      final KeyType startAtKey,
+      final @Nullable KeyType startAtKey,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     ensureInOpenTransaction(transaction -> forEachInPrefix(startAtKey, keyPrefix, visitor));
   }
@@ -344,7 +345,7 @@ class TransactionalColumnFamily<
       ensureInOpenTransaction(
           transaction -> {
             columnFamilyContext.writeKey(key);
-            final byte[] value =
+            final var value =
                 transaction.get(
                     transactionDb.getDefaultNativeHandle(),
                     transactionDb.getReadOptionsNativeHandle(),
@@ -462,13 +463,13 @@ class TransactionalColumnFamily<
    *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
    */
   private void forEachInPrefix(
-      final DbKey startAt,
+      final @Nullable DbKey startAt,
       final DbKey prefix,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
       final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
-      Objects.requireNonNull(prefix);
-      Objects.requireNonNull(visitor);
+      requireNonNull(prefix);
+      requireNonNull(visitor);
 
       /*
        * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
@@ -516,9 +517,9 @@ class TransactionalColumnFamily<
       final DbKey prefix,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
-      Objects.requireNonNull(startAt);
-      Objects.requireNonNull(prefix);
-      Objects.requireNonNull(visitor);
+      requireNonNull(startAt);
+      requireNonNull(prefix);
+      requireNonNull(visitor);
 
       columnFamilyContext.withPrefixKey(
           prefix,
@@ -556,7 +557,7 @@ class TransactionalColumnFamily<
    *     the given startAt.
    */
   private long countEachInPrefix(final DbKey prefix) {
-    final var seekTarget = Objects.requireNonNull(prefix);
+    final var seekTarget = requireNonNull(prefix);
 
     final var count = new MutableLong(0);
 
@@ -617,8 +618,8 @@ class TransactionalColumnFamily<
       final DbKey startAt, final DbKey prefix, final KeyVisitor<KeyType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
       final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
-      Objects.requireNonNull(prefix);
-      Objects.requireNonNull(visitor);
+      requireNonNull(prefix);
+      requireNonNull(visitor);
 
       columnFamilyContext.withPrefixKey(
           prefix,
@@ -655,9 +656,9 @@ class TransactionalColumnFamily<
   private void forEachKeyInPrefixReverse(
       final DbKey startAt, final DbKey prefix, final KeyVisitor<KeyType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
-      Objects.requireNonNull(startAt);
-      Objects.requireNonNull(prefix);
-      Objects.requireNonNull(visitor);
+      requireNonNull(startAt);
+      requireNonNull(prefix);
+      requireNonNull(visitor);
 
       columnFamilyContext.withPrefixKey(
           prefix,
@@ -688,7 +689,7 @@ class TransactionalColumnFamily<
       final KeyType keyInstance, final KeyVisitor<KeyType> visitor, final byte[] keyBytes) {
     columnFamilyContext.wrapKeyView(keyBytes);
 
-    final DirectBuffer keyViewBuffer = columnFamilyContext.getKeyView();
+    final var keyViewBuffer = requireNonNull(columnFamilyContext.getKeyView());
     keyInstance.wrap(keyViewBuffer, 0, keyViewBuffer.capacity());
 
     return visitor.visit(keyInstance);
@@ -704,9 +705,9 @@ class TransactionalColumnFamily<
     columnFamilyContext.wrapKeyView(keyBytes);
     columnFamilyContext.wrapValueView(iterator.value());
 
-    final DirectBuffer keyViewBuffer = columnFamilyContext.getKeyView();
+    final var keyViewBuffer = requireNonNull(columnFamilyContext.getKeyView());
     keyInstance.wrap(keyViewBuffer, 0, keyViewBuffer.capacity());
-    final DirectBuffer valueViewBuffer = columnFamilyContext.getValueView();
+    final var valueViewBuffer = requireNonNull(columnFamilyContext.getValueView());
     valueInstance.wrap(valueViewBuffer, 0, valueViewBuffer.capacity());
 
     return iteratorConsumer.visit(keyInstance, valueInstance);

@@ -8,15 +8,12 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
@@ -31,13 +28,12 @@ import java.util.Optional;
  * <p>{@link #phases(CurrentClusterConfiguration)} is the entry point the new-model coordinator
  * actually drives: each named physical tenant is restored from its own {@link
  * PartitionGroupConfiguration}, exactly like the same restore submitted through that tenant's own
- * API, and the resulting plans are combined into one {@link PartitionGroupParallelPhase} so every
- * named tenant restores in parallel. A cluster-wide request — one naming every physical tenant of
- * the cluster — restores them all this way in a single change.
+ * API, and the resulting plans are combined into one {@link PartitionGroupPhase} so every named
+ * tenant restores in parallel. A cluster-wide request — one naming every physical tenant of the
+ * cluster — restores them all this way in a single change.
  *
- * <p>{@link #operations(ClusterConfiguration)} is the legacy single-group entry point predating
- * multi-tenant support; it only has a single, ungrouped {@link ClusterConfiguration} to work with,
- * so it continues to support a request naming exactly one physical tenant and rejects the rest.
+ * <p>A request naming no physical tenant at all plans nothing, rather than being rejected: there is
+ * no tenant whose partitions it could restore.
  */
 public final class ClusterRestoreRequestTransformer implements ConfigurationChangeRequest {
 
@@ -51,17 +47,9 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
   }
 
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    return singleTenantRestore()
-        .map(restore -> restore.operations(clusterConfiguration))
-        .orElseGet(() -> Either.left(clusterWideNotSupported()));
-  }
-
-  @Override
   public Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration clusterConfiguration) {
-    final Map<String, List<PartitionGroupOperation>> operationsPerTenant = new LinkedHashMap<>();
+    final Map<String, OperationGraph> graphsPerTenant = new LinkedHashMap<>();
     for (final var physicalTenantId : request.tenantArguments().keySet()) {
       final var partitionGroup = clusterConfiguration.partitionGroup(physicalTenantId);
       if (partitionGroup == null) {
@@ -72,18 +60,18 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
       }
       final var transformer =
           new RestoreRequestTransformer(request.toRestoreRequest(physicalTenantId), registry);
-      final var result = transformer.groupOperations(partitionGroup);
+      final var result = transformer.groupGraph(partitionGroup);
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
-      if (!result.get().isEmpty()) {
-        operationsPerTenant.put(physicalTenantId, result.get());
-      }
+      graphsPerTenant.put(physicalTenantId, result.get());
     }
-    if (operationsPerTenant.isEmpty()) {
+    if (graphsPerTenant.isEmpty()) {
       return Either.right(List.of());
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(operationsPerTenant)));
+    // Each tenant keeps its own graph, so the tenants restore in parallel exactly as before while
+    // each one's brokers and partitions now also proceed concurrently within it.
+    return Either.right(List.of(new PartitionGroupPhase(graphsPerTenant)));
   }
 
   private Optional<RestoreRequestTransformer> singleTenantRestore() {
@@ -94,11 +82,5 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
     final var physicalTenantId = tenantArguments.keySet().iterator().next();
     return Optional.of(
         new RestoreRequestTransformer(request.toRestoreRequest(physicalTenantId), registry));
-  }
-
-  private static InvalidRequest clusterWideNotSupported() {
-    return new InvalidRequest(
-        "Restoring every physical tenant of the cluster in one request is not supported yet; "
-            + "provide a physicalTenantId to restore a single physical tenant.");
   }
 }

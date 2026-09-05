@@ -11,6 +11,18 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.BackupInfo;
 import io.camunda.gateway.protocol.model.BackupType;
 import io.camunda.gateway.protocol.model.CheckpointType;
+import io.camunda.gateway.protocol.model.ClusterHistoryBackupInfo;
+import io.camunda.gateway.protocol.model.ClusterHistoryBackupTakeResult;
+import io.camunda.gateway.protocol.model.ClusterHistoryBackupTenantInfo;
+import io.camunda.gateway.protocol.model.ClusterHistoryBackupTenantState;
+import io.camunda.gateway.protocol.model.ClusterRuntimeBackupInfo;
+import io.camunda.gateway.protocol.model.ClusterRuntimeBackupState;
+import io.camunda.gateway.protocol.model.ClusterRuntimeBackupTakeOutcome;
+import io.camunda.gateway.protocol.model.ClusterRuntimeBackupTakeResult;
+import io.camunda.gateway.protocol.model.ClusterRuntimeBackupTenantInfo;
+import io.camunda.gateway.protocol.model.ClusterRuntimeBackupTenantState;
+import io.camunda.gateway.protocol.model.ClusterTakeHistoryBackupResponse;
+import io.camunda.gateway.protocol.model.ClusterTakeRuntimeBackupResponse;
 import io.camunda.gateway.protocol.model.HistoryBackupInfo;
 import io.camunda.gateway.protocol.model.HistoryBackupSnapshotInfo;
 import io.camunda.gateway.protocol.model.HistoryBackupStateCode;
@@ -22,6 +34,17 @@ import io.camunda.gateway.protocol.model.RuntimeBackupState;
 import io.camunda.gateway.protocol.model.StateCode;
 import io.camunda.gateway.protocol.model.TakeHistoryBackupResponse;
 import io.camunda.gateway.protocol.model.TakeRuntimeBackupResponse;
+import io.camunda.service.ClusterHistoryBackupServices.ClusterHistoryBackup;
+import io.camunda.service.ClusterHistoryBackupServices.ClusterHistoryBackupTaken;
+import io.camunda.service.ClusterHistoryBackupServices.PhysicalTenantBackupState;
+import io.camunda.service.ClusterHistoryBackupServices.PhysicalTenantBackupTaken;
+import io.camunda.service.ClusterHistoryBackupServices.TenantBackupStateCode;
+import io.camunda.service.ClusterRuntimeBackupServices.ClusterRuntimeBackup;
+import io.camunda.service.ClusterRuntimeBackupServices.ClusterRuntimeBackupStates;
+import io.camunda.service.ClusterRuntimeBackupServices.ClusterRuntimeBackupTaken;
+import io.camunda.service.ClusterRuntimeBackupServices.PhysicalTenantRuntimeBackup;
+import io.camunda.service.ClusterRuntimeBackupServices.PhysicalTenantRuntimeBackupTaken;
+import io.camunda.service.ClusterRuntimeBackupServices.TakeOutcome;
 import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.backup.HistoryBackupSnapshot;
 import io.camunda.service.backup.HistoryBackupState;
@@ -261,6 +284,137 @@ public final class BackupResponseMapper {
       case FAILED -> HistoryBackupStateCode.FAILED;
       case INCOMPLETE -> HistoryBackupStateCode.INCOMPLETE;
       case INCOMPATIBLE -> HistoryBackupStateCode.INCOMPATIBLE;
+    };
+  }
+
+  public static ClusterTakeRuntimeBackupResponse toClusterTakeRuntimeBackupResponse(
+      final ClusterRuntimeBackupTaken taken) {
+    return ClusterTakeRuntimeBackupResponse.Builder.create()
+        .physicalTenants(
+            taken.physicalTenants().stream()
+                .map(BackupResponseMapper::toClusterRuntimeBackupTakeResult)
+                .toList())
+        .build();
+  }
+
+  private static ClusterRuntimeBackupTakeResult toClusterRuntimeBackupTakeResult(
+      final PhysicalTenantRuntimeBackupTaken taken) {
+    return ClusterRuntimeBackupTakeResult.Builder.create()
+        .physicalTenantId(taken.physicalTenantId())
+        .backupId(taken.backupId())
+        .outcome(toClusterRuntimeBackupTakeOutcome(taken.outcome()))
+        .reason(taken.reason())
+        .build();
+  }
+
+  private static ClusterRuntimeBackupTakeOutcome toClusterRuntimeBackupTakeOutcome(
+      final TakeOutcome outcome) {
+    return switch (outcome) {
+      case TRIGGERED -> ClusterRuntimeBackupTakeOutcome.TRIGGERED;
+      case FAILED -> ClusterRuntimeBackupTakeOutcome.FAILED;
+      case UNKNOWN -> ClusterRuntimeBackupTakeOutcome.UNKNOWN;
+    };
+  }
+
+  public static ClusterRuntimeBackupInfo toClusterRuntimeBackupInfo(
+      final ClusterRuntimeBackup backup) {
+    return ClusterRuntimeBackupInfo.Builder.create()
+        .backupId(backup.backupId())
+        .state(toStateCode(backup.state()))
+        .failureReason(backup.failureReason())
+        .physicalTenants(
+            backup.physicalTenants().stream()
+                .map(BackupResponseMapper::toClusterRuntimeBackupTenantInfo)
+                .toList())
+        .build();
+  }
+
+  public static List<ClusterRuntimeBackupInfo> toClusterRuntimeBackupInfoList(
+      final List<ClusterRuntimeBackup> backups) {
+    return backups.stream().map(BackupResponseMapper::toClusterRuntimeBackupInfo).toList();
+  }
+
+  private static ClusterRuntimeBackupTenantInfo toClusterRuntimeBackupTenantInfo(
+      final PhysicalTenantRuntimeBackup backup) {
+    final var status = backup.backup();
+    return ClusterRuntimeBackupTenantInfo.Builder.create()
+        .physicalTenantId(backup.physicalTenantId())
+        .state(toStateCode(status.status()))
+        .failureReason(status.failureReason().orElse(null))
+        .details(
+            status.partitions().stream().map(BackupResponseMapper::toPartitionBackupInfo).toList())
+        .build();
+  }
+
+  public static ClusterRuntimeBackupState toClusterRuntimeBackupState(
+      final ClusterRuntimeBackupStates states) {
+    return ClusterRuntimeBackupState.Builder.create()
+        .physicalTenants(
+            states.physicalTenants().stream()
+                .map(
+                    state ->
+                        ClusterRuntimeBackupTenantState.Builder.create()
+                            .physicalTenantId(state.physicalTenantId())
+                            .state(toRuntimeBackupState(state.state()))
+                            .build())
+                .toList())
+        .build();
+  }
+
+  public static ClusterTakeHistoryBackupResponse toClusterTakeHistoryBackupResponse(
+      final ClusterHistoryBackupTaken taken) {
+    return ClusterTakeHistoryBackupResponse.Builder.create()
+        .backupId(taken.backupId())
+        .physicalTenants(
+            taken.physicalTenants().stream()
+                .map(BackupResponseMapper::toClusterHistoryBackupTakeResult)
+                .toList())
+        .build();
+  }
+
+  private static ClusterHistoryBackupTakeResult toClusterHistoryBackupTakeResult(
+      final PhysicalTenantBackupTaken taken) {
+    return ClusterHistoryBackupTakeResult.Builder.create()
+        .physicalTenantId(taken.physicalTenantId())
+        .scheduledSnapshots(taken.scheduledSnapshots())
+        .build();
+  }
+
+  public static ClusterHistoryBackupInfo toClusterHistoryBackupInfo(
+      final ClusterHistoryBackup backup) {
+    return ClusterHistoryBackupInfo.Builder.create()
+        .backupId(backup.backupId())
+        .physicalTenants(
+            backup.physicalTenants().stream()
+                .map(BackupResponseMapper::toClusterHistoryBackupTenantInfo)
+                .toList())
+        .build();
+  }
+
+  public static List<ClusterHistoryBackupInfo> toClusterHistoryBackupInfoList(
+      final List<ClusterHistoryBackup> backups) {
+    return backups.stream().map(BackupResponseMapper::toClusterHistoryBackupInfo).toList();
+  }
+
+  private static ClusterHistoryBackupTenantInfo toClusterHistoryBackupTenantInfo(
+      final PhysicalTenantBackupState state) {
+    return ClusterHistoryBackupTenantInfo.Builder.create()
+        .physicalTenantId(state.physicalTenantId())
+        .state(toClusterHistoryBackupTenantState(state.state()))
+        .failureReason(state.failureReason())
+        .details(state.snapshots().stream().map(BackupResponseMapper::toSnapshotInfo).toList())
+        .build();
+  }
+
+  private static ClusterHistoryBackupTenantState toClusterHistoryBackupTenantState(
+      final TenantBackupStateCode state) {
+    return switch (state) {
+      case IN_PROGRESS -> ClusterHistoryBackupTenantState.IN_PROGRESS;
+      case COMPLETED -> ClusterHistoryBackupTenantState.COMPLETED;
+      case FAILED -> ClusterHistoryBackupTenantState.FAILED;
+      case INCOMPLETE -> ClusterHistoryBackupTenantState.INCOMPLETE;
+      case INCOMPATIBLE -> ClusterHistoryBackupTenantState.INCOMPATIBLE;
+      case NOT_FOUND -> ClusterHistoryBackupTenantState.NOT_FOUND;
     };
   }
 }

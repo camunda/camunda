@@ -28,7 +28,6 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
-import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,12 +54,10 @@ public class SchemaManager implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
-  private final Collection<IndexDescriptor> indexOnlyDescriptors;
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final SearchEngineConfiguration config;
   private final IndexSchemaValidator schemaValidator;
   private final ExecutorService virtualThreadExecutor;
-  private final RetryDecorator retryDecorator;
   private final SchemaManagerMetrics schemaManagerMetrics;
   private final SchemaMetadataStore schemaMetadataStore;
   private final String currentVersion;
@@ -76,9 +73,25 @@ public class SchemaManager implements CloseableSilently {
         indexOnlyDescriptors,
         indexTemplateDescriptors,
         config,
+        objectMapper,
+        null);
+  }
+
+  public SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final ObjectMapper objectMapper,
+      final SchemaManagerMetrics schemaManagerMetrics) {
+    this(
+        searchEngineClient,
+        indexOnlyDescriptors,
+        indexTemplateDescriptors,
+        config,
         new IndexSchemaValidator(objectMapper),
         VersionUtil.getVersion(),
-        null);
+        schemaManagerMetrics);
   }
 
   @VisibleForTesting
@@ -92,15 +105,11 @@ public class SchemaManager implements CloseableSilently {
       final SchemaManagerMetrics schemaManagerMetrics) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
-    this.indexOnlyDescriptors = indexOnlyDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
     allIndexDescriptors =
         Stream.concat(indexOnlyDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
     this.config = config;
     this.schemaValidator = schemaValidator;
-    retryDecorator =
-        new RetryDecorator(config.schemaManager().getRetry())
-            .withRetryOnException(e -> !(e instanceof IncompatibleVersionException));
     this.schemaManagerMetrics = schemaManagerMetrics;
     schemaMetadataStore =
         new SchemaMetadataStore(
@@ -112,39 +121,41 @@ public class SchemaManager implements CloseableSilently {
     this.currentVersion = currentVersion;
   }
 
-  public SchemaManager withMetrics(final SchemaManagerMetrics schemaManagerMetrics) {
-    return new SchemaManager(
-        searchEngineClient,
-        indexOnlyDescriptors,
-        indexTemplateDescriptors,
-        config,
-        schemaValidator,
-        currentVersion,
-        schemaManagerMetrics);
-  }
-
   /**
-   * This method will retry with exponential backoff until the schema is successfully initialized.
-   * By default, retries are effectively unlimited to prevent pods from crashing when Elasticsearch
-   * is temporarily unavailable during startup.
+   * Applies the schema in a single attempt, propagating any failure to the caller. Retrying is the
+   * caller's decision, so that a caller managing several independent schemas can retry, classify
+   * and report each of them on its own — see {@code PerTenantSchemaInitialization} in the
+   * distribution for the production caller that owns that loop.
+   *
+   * <p>Bounded retries that belong to one attempt stay inside it; only the unbounded outer loop
+   * moves out.
    */
-  public void startup() {
-    if (!config.schemaManager().isCreateSchema()) {
-      LOG.info(
-          "Will not make any changes to indices and index templates as [createSchema] is false");
+  public void startupOnce() {
+    if (skipSchemaCreation()) {
       return;
     }
 
-    startSchemaCleanup();
+    timed(this::initializeSchema);
 
+    // Cleaning up after the schema is in place rather than before keeps a caller that retries a
+    // failing attempt from re-running the cleanup on every one of them.
+    startSchemaCleanup();
+  }
+
+  private boolean skipSchemaCreation() {
+    if (config.schemaManager().isCreateSchema()) {
+      return false;
+    }
+    LOG.info("Will not make any changes to indices and index templates as [createSchema] is false");
+    return true;
+  }
+
+  private void timed(final Runnable initialization) {
     final var timer =
         ofNullable(schemaManagerMetrics)
             .map(SchemaManagerMetrics::startSchemaInitTimer)
             .orElse(() -> {});
-    // even that initializeSchema does not declare throwing any exception, it may still do sneaky
-    // throws (see #joinOnFutures) which are retried only by
-    // io.github.resilience4j.retry.Retry.decorateCheckedRunnable
-    retryDecorator.decorateCheckedRunnable("init schema", this::initializeSchema);
+    initialization.run();
     // record the time taken to initialize schema only if it was successful
     timer.close();
   }

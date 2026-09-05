@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -150,17 +151,18 @@ final class ContainerSecretResolver implements GcpSecretResolver {
     return names;
   }
 
-  private String fetchRawSecret() {
-    final var response =
-        client.accessSecretVersion(SecretVersionName.of(projectId, containerId, LATEST_VERSION));
-    return response.getPayload().getData().toStringUtf8();
-  }
-
   @Override
   public void validateConnectivity() {
     // container mode reads exactly one secret at runtime, so accessSecretVersion on it is both the
     // minimal probe and the one that matches this mode's IAM footprint.
     fetchRawSecret();
+  }
+
+  private String fetchRawSecret() {
+    final var projectId = Objects.requireNonNull(this.projectId, "projectId must be non-null");
+    final var response =
+        client.accessSecretVersion(SecretVersionName.of(projectId, containerId, LATEST_VERSION));
+    return response.getPayload().getData().toStringUtf8();
   }
 
   private SecretResolutionResult extractKey(final JsonNode container, final String key) {

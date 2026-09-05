@@ -10,19 +10,7 @@ package io.camunda.authentication.pt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-import com.sun.net.httpserver.HttpServer;
-import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
-import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityConfiguration;
 import io.camunda.security.spring.handler.AuthFailureHandlerConfiguration;
 import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
@@ -33,13 +21,6 @@ import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilder;
 import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilderConfiguration;
 import io.camunda.security.spring.security.BaseSecurityConfiguration;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -136,7 +117,8 @@ class PhysicalTenantApiChainIsolationIT {
               final var proxy = new FilterChainProxy(chains);
 
               final var request = new MockHttpServletRequest("GET", PATH_PT_A);
-              final var tokenForA = signForIssuer(serverA, serverA.issuerUri(), List.of());
+              final var tokenForA =
+                  JwksTestServer.signForIssuer(serverA, serverA.issuerUri(), List.of());
               request.addHeader("Authorization", "Bearer " + tokenForA);
               final var response = new MockHttpServletResponse();
               final var downstream = new MockFilterChain();
@@ -171,7 +153,8 @@ class PhysicalTenantApiChainIsolationIT {
 
               final var request = new MockHttpServletRequest("GET", PATH_PT_A);
               // Token from PT-B's issuer (different key and issuer) presented on PT-A's path
-              final var tokenFromB = signForIssuer(serverB, serverB.issuerUri(), List.of());
+              final var tokenFromB =
+                  JwksTestServer.signForIssuer(serverB, serverB.issuerUri(), List.of());
               request.addHeader("Authorization", "Bearer " + tokenFromB);
               final var response = new MockHttpServletResponse();
 
@@ -206,7 +189,8 @@ class PhysicalTenantApiChainIsolationIT {
               final var request = new MockHttpServletRequest("GET", PATH_PT_B);
               // Token carrying PT-A's audience (aud-pta) — only PT-A's chain should accept it
               final var tokenWithAudA =
-                  signForIssuer(serverShared, serverShared.issuerUri(), List.of("aud-pta"));
+                  JwksTestServer.signForIssuer(
+                      serverShared, serverShared.issuerUri(), List.of("aud-pta"));
               request.addHeader("Authorization", "Bearer " + tokenWithAudA);
               final var response = new MockHttpServletResponse();
 
@@ -303,7 +287,8 @@ class PhysicalTenantApiChainIsolationIT {
               final var chains = buildChainsFromProvider(ctx, assignedNarrowingEnv());
               final var proxy = new FilterChainProxy(chains);
 
-              final var ptbToken = signForIssuer(serverB, serverB.issuerUri(), List.of());
+              final var ptbToken =
+                  JwksTestServer.signForIssuer(serverB, serverB.issuerUri(), List.of());
 
               // ptb is a configured cluster provider, but PT-A is assigned [pta] only → 401 on
               // PT-A.
@@ -349,7 +334,8 @@ class PhysicalTenantApiChainIsolationIT {
               final var proxy = new FilterChainProxy(chains);
 
               // default-slot issuer (serverB) — dropped because `oidc` is not assigned → 401.
-              final var defaultSlotToken = signForIssuer(serverB, serverB.issuerUri(), List.of());
+              final var defaultSlotToken =
+                  JwksTestServer.signForIssuer(serverB, serverB.issuerUri(), List.of());
               final var reqDefault = new MockHttpServletRequest("GET", PATH_PT_A);
               reqDefault.addHeader("Authorization", "Bearer " + defaultSlotToken);
               final var respDefault = new MockHttpServletResponse();
@@ -360,7 +346,8 @@ class PhysicalTenantApiChainIsolationIT {
                   .isEqualTo(401);
 
               // Control: the assigned named provider `pta` (serverA) is still accepted → 200.
-              final var ptaToken = signForIssuer(serverA, serverA.issuerUri(), List.of());
+              final var ptaToken =
+                  JwksTestServer.signForIssuer(serverA, serverA.issuerUri(), List.of());
               final var reqPta = new MockHttpServletRequest("GET", PATH_PT_A);
               reqPta.addHeader("Authorization", "Bearer " + ptaToken);
               final var respPta = new MockHttpServletResponse();
@@ -384,7 +371,8 @@ class PhysicalTenantApiChainIsolationIT {
               final var chains = buildChainsFromProvider(ctx, reservedOidcEnv("oidc", "pta"));
               final var proxy = new FilterChainProxy(chains);
 
-              final var defaultSlotToken = signForIssuer(serverB, serverB.issuerUri(), List.of());
+              final var defaultSlotToken =
+                  JwksTestServer.signForIssuer(serverB, serverB.issuerUri(), List.of());
               final var req = new MockHttpServletRequest("GET", PATH_PT_A);
               req.addHeader("Authorization", "Bearer " + defaultSlotToken);
               final var resp = new MockHttpServletResponse();
@@ -666,124 +654,6 @@ class PhysicalTenantApiChainIsolationIT {
   }
 
   // =========================================================================
-  // JWT signing helper
-  // =========================================================================
-
-  private static String signForIssuer(
-      final JwksTestServer server, final String issuer, final List<String> audiences)
-      throws Exception {
-    final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
-    final var builder =
-        new JWTClaimsSet.Builder()
-            .subject("alice")
-            .issuer(issuer)
-            .issueTime(Date.from(Instant.now()))
-            .expirationTime(Date.from(Instant.now().plusSeconds(60)));
-    if (!audiences.isEmpty()) {
-      builder.audience(audiences);
-    }
-    final var jwt = new SignedJWT(header, builder.build());
-    jwt.sign(server.signer());
-    return jwt.serialize();
-  }
-
-  // =========================================================================
-  // In-JVM JWKS + OIDC discovery server
-  // =========================================================================
-
-  /**
-   * Minimal JWKS + OIDC discovery HTTP server backed by a freshly generated RSA key pair. Serves:
-   *
-   * <ul>
-   *   <li>{@code /jwks} — the public JWK set (for token verification)
-   *   <li>{@code /.well-known/openid-configuration} — a discovery document pointing back to this
-   *       server
-   * </ul>
-   *
-   * <p>Mirrors the {@code JwksTestServer} pattern from CSL's {@code ScopedJwtDecoderFactoryTest}.
-   */
-  private static final class JwksTestServer {
-
-    private final HttpServer server;
-    private final String kid;
-    private final JWSSigner signer;
-
-    private JwksTestServer(final HttpServer server, final String kid, final JWSSigner signer) {
-      this.server = server;
-      this.kid = kid;
-      this.signer = signer;
-    }
-
-    static JwksTestServer start(final String kid) throws Exception {
-      final var generator = KeyPairGenerator.getInstance("RSA");
-      generator.initialize(2048);
-      final var pair = generator.generateKeyPair();
-      final var jwk =
-          new RSAKey.Builder((RSAPublicKey) pair.getPublic())
-              .privateKey((RSAPrivateKey) pair.getPrivate())
-              .keyUse(KeyUse.SIGNATURE)
-              .algorithm(JWSAlgorithm.RS256)
-              .keyID(kid)
-              .build();
-      final var jwkSetJson = new JWKSet(jwk).toPublicJWKSet().toString();
-      final var httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-      final var base = "http://127.0.0.1:" + httpServer.getAddress().getPort();
-      final var discoveryDoc =
-          """
-          {
-            "issuer": "%s",
-            "authorization_endpoint": "%s/auth",
-            "token_endpoint": "%s/token",
-            "jwks_uri": "%s/jwks",
-            "response_types_supported": ["code"],
-            "subject_types_supported": ["public"],
-            "id_token_signing_alg_values_supported": ["RS256"]
-          }
-          """
-              .formatted(base, base, base, base);
-
-      httpServer.createContext(
-          "/jwks",
-          exchange -> {
-            final var body = jwkSetJson.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, body.length);
-            try (exchange) {
-              exchange.getResponseBody().write(body);
-            }
-          });
-      httpServer.createContext(
-          "/.well-known/openid-configuration",
-          exchange -> {
-            final var body = discoveryDoc.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, body.length);
-            try (exchange) {
-              exchange.getResponseBody().write(body);
-            }
-          });
-      httpServer.start();
-      return new JwksTestServer(httpServer, kid, new RSASSASigner(jwk));
-    }
-
-    String kid() {
-      return kid;
-    }
-
-    JWSSigner signer() {
-      return signer;
-    }
-
-    String issuerUri() {
-      return "http://127.0.0.1:" + server.getAddress().getPort();
-    }
-
-    void stop() {
-      server.stop(0);
-    }
-  }
-
-  // =========================================================================
   // Spring configuration fragments for the WebApplicationContextRunner
   // =========================================================================
 
@@ -794,19 +664,6 @@ class PhysicalTenantApiChainIsolationIT {
     @Bean
     ObjectMapper objectMapper() {
       return new ObjectMapper();
-    }
-  }
-
-  /**
-   * Provides the OC host's {@link SecurityPathPort} so CSL's chain builder knows which paths to
-   * protect ({@code /v2/**} among others).
-   */
-  @Configuration
-  static class OcPathsConfig {
-
-    @Bean
-    SecurityPathPort securityPathPort() {
-      return new SecurityPathAdapter();
     }
   }
 }

@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceToolDb
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.Builder;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.exporter.rdbms.utils.AgentContentMapper;
 import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.exporter.rdbms.utils.ExportUtil;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
@@ -73,18 +74,23 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .processDefinitionId(value.getBpmnProcessId())
             .processDefinitionKey(value.getProcessDefinitionKey())
             .processDefinitionVersion(value.getProcessDefinitionVersion())
-            .versionTag(ExportUtil.emptyToNull(value.getVersionTag()))
+            .processDefinitionVersionTag(
+                ExportUtil.emptyToNull(value.getProcessDefinitionVersionTag()))
             .tenantId(value.getTenantId())
             .partitionId(record.getPartitionId())
             .status(mapStatus(value.getStatus()))
             .model(value.getDefinition().getModel())
             .provider(value.getDefinition().getProvider())
-            .systemPrompt(value.getDefinition().getSystemPrompt())
+            .systemPromptItems(
+                AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()))
             .maxTokens(value.getLimits().getMaxTokens())
             .maxModelCalls(value.getLimits().getMaxModelCalls())
             .maxToolCalls(value.getLimits().getMaxToolCalls())
             .inputTokens(value.getMetrics().getInputTokens())
             .outputTokens(value.getMetrics().getOutputTokens())
+            .reasoningTokenCount(value.getMetrics().getReasoningTokenCount())
+            .cacheCreationTokenCount(value.getMetrics().getCacheCreationTokenCount())
+            .cacheReadTokenCount(value.getMetrics().getCacheReadTokenCount())
             .modelCalls(value.getMetrics().getModelCalls())
             .toolCalls(value.getMetrics().getToolCalls())
             .toolValues(toToolDbValues(value.getTools()))

@@ -7,54 +7,22 @@
  */
 package io.camunda.authentication.config.spi;
 
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.core.port.out.SecurityPathPort;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.core.env.Environment;
 
 /**
  * Host-supplied {@link SecurityPathPort} declaring the path patterns OC's filter chains operate on.
- * These values were previously inlined in {@code WebSecurityConfig}; they are lifted here so the
- * central library-owned chains can consume them.
+ * The configuration-independent sets live in {@link SecurityPaths}; the ones kept here are either
+ * gated on configuration or read only through this port.
+ *
+ * <p>Construct only via {@link #fromEnvironment(Environment)}, so {@link #webappPaths()} always
+ * reports the gate as configuration resolves it rather than as a caller asserts it.
  */
-public class SecurityPathAdapter implements SecurityPathPort {
-
-  public static final SecurityPathAdapter INSTANCE = new SecurityPathAdapter();
-
-  // Tenant-prefixed paths (/physical-tenants/<id>/...) are deliberately NOT listed here. They are
-  // owned exclusively by the per-tenant scoped security chains that PhysicalTenantScopeProvider
-  // contributes (CSL derives each scope's matcher as basePath + these apiPaths, e.g.
-  // /physical-tenants/<id>/v2/**). The cluster chain and a scoped chain share ORDER_API, so
-  // listing the tenant prefix here would let the cluster chain also match a tenant request and, if
-  // it wins the same-order tie-break, validate the token against the cluster's providers instead of
-  // the tenant's — breaking per-tenant audience isolation. Keep this list cluster-only.
-  private static final Set<String> API_PATHS =
-      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
-
-  private static final Set<String> UNPROTECTED_API_PATHS =
-      Set.of(
-          "/v2/license",
-          "/v2/setup/user",
-          "/v2/status",
-          "/v1/external/process/**",
-          "/.well-known/oauth-protected-resource/**");
-
-  // Served by CSL's unprotected-paths chain, which sits ahead of every authenticated chain and
-  // installs no authentication filter at all. That is what /cluster/v2/status needs and what
-  // listing it in UNPROTECTED_API_PATHS could not give it: a `permitAll` inside an authenticated
-  // chain still lets the Basic or bearer filter reject a credential it does not recognise, and the
-  // cluster-admin chain recognises only cluster-admin credentials — so a client migrating here from
-  // /v2/status, which sends its ordinary API credentials on every request, would be answered 401 by
-  // a health endpoint. Here the Authorization header is never inspected. The exact path is listed,
-  // so the rest of /cluster/v2/** stays with the cluster-admin chains.
-  private static final Set<String> UNPROTECTED_PATHS =
-      Set.of(
-          "/error",
-          "/actuator/**",
-          "/ready",
-          "/health",
-          "/startup",
-          "/favicon.ico",
-          "/cluster/v2/status");
+public final class SecurityPathAdapter implements SecurityPathPort {
 
   private static final Set<String> WEBAPP_PATHS =
       Set.of(
@@ -118,24 +86,53 @@ public class SecurityPathAdapter implements SecurityPathPort {
           // pre-CSL host AdminUserCheckFilter carried.
           "/admin/assets");
 
+  private final boolean webappEnabled;
+
+  private SecurityPathAdapter(final boolean webappEnabled) {
+    this.webappEnabled = webappEnabled;
+  }
+
+  /**
+   * Reads {@code webapp-enabled} with CSL's own property key and default, so this gate cannot drift
+   * from the cluster webapp chains' conditions, which read the same key from the same {@link
+   * Environment}.
+   *
+   * <p>The only way to build the adapter, so the gate is always resolved from configuration rather
+   * than asserted by the caller. Note an {@link Environment} without the property resolves CSL's
+   * default of enabled — a test that means to exercise a webapp-disabled cluster must set the
+   * property, not merely pass a bare environment.
+   */
+  public static SecurityPathAdapter fromEnvironment(final Environment environment) {
+    return new SecurityPathAdapter(
+        environment.getProperty(
+            CamundaSecurityFilterChainConstants.WEBAPP_ENABLED_PROPERTY,
+            Boolean.class,
+            AuthenticationConfiguration.DEFAULT_WEBAPP_ENABLED));
+  }
+
   @Override
   public Set<String> apiPaths() {
-    return API_PATHS;
+    return SecurityPaths.API_PATHS;
   }
 
   @Override
   public Set<String> unprotectedApiPaths() {
-    return UNPROTECTED_API_PATHS;
+    return SecurityPaths.UNPROTECTED_API_PATHS;
   }
 
   @Override
   public Set<String> unprotectedPaths() {
-    return UNPROTECTED_PATHS;
+    return SecurityPaths.UNPROTECTED_PATHS;
   }
 
+  /**
+   * The webapp path patterns, or an empty set when the webapp is disabled — how a host tells CSL it
+   * serves no webapp, so it builds an inert chain instead. The scoped per-tenant chains need this
+   * because, unlike the cluster chains, they are not gated on {@code webapp-enabled} themselves.
+   */
   @Override
   public Set<String> webappPaths() {
-    return WEBAPP_PATHS;
+    return webappEnabled ? WEBAPP_PATHS : Set.of();
   }
 
   @Override

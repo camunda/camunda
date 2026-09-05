@@ -17,11 +17,13 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReferen
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.job.JobSecretInjectionIncident;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -47,6 +49,7 @@ import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +70,7 @@ public class BpmnJobActivationBehavior {
   private static final Logger LOGGER = LoggerFactory.getLogger(BpmnJobActivationBehavior.class);
 
   private final JobStreamer jobStreamer;
+  private final SecretResolutionScheduler secretResolutionScheduler;
   private final JobVariablesCollector jobVariablesCollector;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
@@ -89,8 +93,10 @@ public class BpmnJobActivationBehavior {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry,
-      final BpmnIncidentBehavior incidentBehavior) {
+      final BpmnIncidentBehavior incidentBehavior,
+      final SecretResolutionScheduler secretResolutionScheduler) {
     this.jobStreamer = jobStreamer;
+    this.secretResolutionScheduler = secretResolutionScheduler;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
     jobVariablesCollector = new JobVariablesCollector(state);
@@ -99,7 +105,7 @@ public class BpmnJobActivationBehavior {
     this.clock = clock;
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
-    this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
+    jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
     secretLookup = new JobSecretLookup(secretStoreRegistry);
     this.incidentBehavior = incidentBehavior;
   }
@@ -154,12 +160,24 @@ public class BpmnJobActivationBehavior {
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
+    final var leaseAwarePredicate = new LeaseAwarePredicate(wrappedJobRecord);
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(
             wrappedJobRecord.getTypeBuffer(),
-            jobActivationProperties -> isAuthorized(jobActivationProperties, wrappedJobRecord));
+            jobActivationProperties ->
+                isAuthorized(jobActivationProperties, wrappedJobRecord)
+                    && leaseAwarePredicate.test(jobActivationProperties));
 
     if (optionalJobStream.isEmpty()) {
+      if (leaseAwarePredicate.isLeasedJobSkipped()) {
+        // push-side counterpart of the skip JobBatchCollector counts when a poll request without
+        // withLease encounters an already-leased job: here, a stream matched the type but not the
+        // lease, so the job is demoted to waiting for a poller instead
+        sideEffectWriter.appendSideEffect(
+            () -> {
+              jobMetrics.countJobEvent(JobAction.SKIPPED_LEASED, jobKind, jobType);
+            });
+      }
       // the job stays activatable; a long poll checks its secret references when it collects it
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
       return true;
@@ -211,7 +229,6 @@ public class BpmnJobActivationBehavior {
         () -> {
           jobStream.push(activatedJob);
           jobMetrics.countJobEvent(JobAction.PUSHED, jobKind, jobType);
-          return true;
         });
     return true;
   }
@@ -260,6 +277,9 @@ public class BpmnJobActivationBehavior {
       parked = true;
     }
     if (parked) {
+      // once per activation rather than per reference: the flag it sets is consumed by whichever
+      // cycle runs next, so setting it more than once per activation adds nothing
+      secretResolutionScheduler.stayAwake();
       jobMetrics.countJobEvent(JobAction.SKIPPED_UNCACHED_SECRET, jobKind, jobType);
     } else {
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
@@ -282,7 +302,8 @@ public class BpmnJobActivationBehavior {
    * belongs. Raising that incident also takes the job out of the activation until an operator
    * resolves it, so a failing injection cannot be retried on every activation (see {@code
    * IncidentCreatedV2Applier}). The failure details are only logged, since the exception may quote
-   * the variables document.
+   * the variables document; the incident itself carries the message that {@link
+   * JobSecretInjectionIncident} gives both activation paths.
    */
   private boolean injectSecretValues(
       final long jobKey, final JobRecord pushableJobRecord, final SecretCheckResult secrets) {
@@ -307,7 +328,7 @@ public class BpmnJobActivationBehavior {
           jobKey,
           pushableJobRecord,
           ErrorType.SECRET_RESOLUTION_ERROR,
-          BpmnIncidentBehavior.SECRET_INJECTION_FAILED_MESSAGE.formatted(jobKey));
+          JobSecretInjectionIncident.messageFor(jobKey, e));
       return false;
     }
   }
@@ -321,7 +342,6 @@ public class BpmnJobActivationBehavior {
         () -> {
           jobStreamer.notifyWorkAvailable(jobType);
           jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobKind, jobType);
-          return true;
         });
   }
 
@@ -412,5 +432,35 @@ public class BpmnJobActivationBehavior {
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
     return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
         || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
+  }
+
+  /**
+   * Matches streams that are lease-compatible for the given job, tracking whether an already-leased
+   * job was skipped because an otherwise-authorized candidate does not request leases. That
+   * distinction is what {@link #publishWork} needs to decide whether falling back to a notification
+   * is a plain "no stream registered" case or a skip due to lease incompatibility. Authorization is
+   * a separate concern with no state to track, so it stays a plain method composed alongside this
+   * predicate at the call site rather than folded into it.
+   */
+  private static final class LeaseAwarePredicate implements Predicate<JobActivationProperties> {
+    private final JobRecord jobRecord;
+    private boolean leasedJobSkipped;
+
+    private LeaseAwarePredicate(final JobRecord jobRecord) {
+      this.jobRecord = jobRecord;
+    }
+
+    @Override
+    public boolean test(final JobActivationProperties jobActivationProperties) {
+      if (jobActivationProperties.withLease() || !jobRecord.hasLeaseToken()) {
+        return true;
+      }
+      leasedJobSkipped = true;
+      return false;
+    }
+
+    private boolean isLeasedJobSkipped() {
+      return leasedJobSkipped;
+    }
   }
 }

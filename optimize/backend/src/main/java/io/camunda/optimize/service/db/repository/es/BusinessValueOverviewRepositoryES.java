@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.repository.es;
 import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_OVERVIEW_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -27,6 +28,7 @@ import io.camunda.optimize.service.db.schema.index.BusinessValueOverviewIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -103,20 +105,40 @@ public class BusinessValueOverviewRepositoryES implements BusinessValueOverviewR
   }
 
   @Override
-  public List<BusinessValueOverviewDto> readByRange(final MetricRange metricRange) {
+  public List<BusinessValueOverviewDto> readByRange(
+      final MetricRange metricRange, final Collection<String> tenantIds) {
     if (metricRange == null) {
       throw new IllegalArgumentException("metricRange must not be null");
     }
+    if (tenantIds != null && tenantIds.isEmpty()) {
+      return List.of();
+    }
+    final List<FieldValue> tenantFieldValues =
+        tenantIds == null ? null : tenantIds.stream().map(FieldValue::of).toList();
     final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, BUSINESS_VALUE_OVERVIEW_INDEX_NAME)
                     .query(
                         q ->
-                            q.term(
-                                t ->
-                                    t.field(BusinessValueOverviewIndex.METRIC_RANGE)
-                                        .value(metricRange.getId())))
+                            q.bool(
+                                bool -> {
+                                  bool.must(
+                                      m ->
+                                          m.term(
+                                              t ->
+                                                  t.field(BusinessValueOverviewIndex.METRIC_RANGE)
+                                                      .value(metricRange.getId())));
+                                  if (tenantFieldValues != null) {
+                                    bool.must(
+                                        m ->
+                                            m.terms(
+                                                t ->
+                                                    t.field(BusinessValueOverviewIndex.TENANT_ID)
+                                                        .terms(tt -> tt.value(tenantFieldValues))));
+                                  }
+                                  return bool;
+                                }))
                     .size(LIST_FETCH_LIMIT));
     final SearchResponse<BusinessValueOverviewDto> response;
     try {

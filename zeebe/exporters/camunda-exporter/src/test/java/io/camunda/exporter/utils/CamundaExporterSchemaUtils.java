@@ -33,7 +33,7 @@ public final class CamundaExporterSchemaUtils {
                           .index(config.getIndex())
                           .retention(config.getHistory().getRetention())),
               clientAdapter.objectMapper())
-          .startup();
+          .startupOnce();
     }
   }
 }

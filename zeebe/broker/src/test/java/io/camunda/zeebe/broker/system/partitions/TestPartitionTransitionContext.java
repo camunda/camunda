@@ -18,10 +18,10 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -84,6 +84,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private AtomixServerTransport gatewayBrokerTransport;
   private BackupApiRequestHandler backupApiRequestHandler;
+  private SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private BrokerClient brokerClient;
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
@@ -93,6 +95,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private MeterRegistry transitionMeterRegistry;
   private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
   private boolean migrationsPerformed;
+  private boolean migrationSnapshotTaken;
   private final ComponentTreeListener healthMetrics;
   private SnapshotCopy snapshotCopy;
   private ClusterConfigurationService clusterConfigurationService;
@@ -209,7 +212,22 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
-    return null;
+    return snapshotApiRequestHandler;
+  }
+
+  @Override
+  public void setSnapshotApiRequestHandler(
+      final SnapshotApiRequestHandler snapshotApiRequestHandler) {
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+  }
+
+  @Override
+  public BrokerClient getBrokerClient() {
+    return brokerClient;
+  }
+
+  public void setBrokerClient(final BrokerClient brokerClient) {
+    this.brokerClient = brokerClient;
   }
 
   @Override
@@ -268,11 +286,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public void setPartitionCommandSender(final InterPartitionCommandSenderService sender) {}
-
-  @Override
-  public ExporterPhase getExporterPhase() {
-    return ExporterPhase.EXPORTING;
-  }
 
   @Override
   public Collection<ExporterDescriptor> getExportedDescriptors() {
@@ -387,6 +400,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public boolean areMigrationsPerformed() {
     return migrationsPerformed;
+  }
+
+  @Override
+  public void markMigrationSnapshotTaken() {
+    migrationSnapshotTaken = true;
+  }
+
+  @Override
+  public void resetMigrationSnapshotTaken() {
+    migrationSnapshotTaken = false;
+  }
+
+  @Override
+  public boolean isMigrationSnapshotTaken() {
+    return migrationSnapshotTaken;
   }
 
   @Override

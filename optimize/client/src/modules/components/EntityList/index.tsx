@@ -6,4 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {default as EntityList} from './EntityList';
+import {lazy, Suspense, type ComponentProps} from 'react';
+
+import {IS_NAV_V2_ENABLED} from 'feature-flags';
+
+import LegacyEntityList from './EntityList';
+
+const EntityListV2 = lazy(() => import('./EntityListV2'));
+
+export function EntityList(props: ComponentProps<typeof LegacyEntityList>) {
+  if (!IS_NAV_V2_ENABLED) {
+    return <LegacyEntityList {...props} />;
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <EntityListV2 {...props} />
+    </Suspense>
+  );
+}
+
+export type {Action} from './EntityList';

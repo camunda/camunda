@@ -1,0 +1,130 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC } from "react";
+import { Trash2 } from "lucide-react";
+import useTranslate from "src/utility/localization";
+import { getMembersByRole } from "src/utility/api/membership";
+import EntityList from "src/components/entityListV2";
+import { useEntityModal } from "src/components/modalV2";
+import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
+import AssignMembersModal from "src/pages/roles/detailV2/members/AssignMembersModal";
+import AssignMemberModal from "src/pages/roles/detailV2/members/AssignMemberModal";
+import DeleteModal from "src/pages/roles/detailV2/members/DeleteModal";
+import { UserKeys } from "src/utility/api/users";
+import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
+import TabEmptyState from "src/components/layoutV2/TabEmptyState";
+import { useListPollingReload } from "src/utility/hooks/useListPollingReload";
+
+type MembersProps = {
+  roleId: string;
+  isOIDC: boolean;
+};
+
+const Members: FC<MembersProps> = ({ roleId, isOIDC }) => {
+  const { t } = useTranslate("roles");
+
+  const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
+    "roles",
+    getMembersByRole,
+    {
+      roleId,
+    },
+    isOIDC,
+  );
+  const { startPolling } = useListPollingReload(
+    reload,
+    users,
+    "username",
+    paginationProps.page.totalItems,
+  );
+
+  const isUsersListEmpty = !users || users?.length === 0;
+  const [assignUsers, assignUsersModal] = useEntityModal(
+    isOIDC ? AssignMemberModal : AssignMembersModal,
+    () => {},
+    { assignedUsers: users, onItemsAssigned: startPolling },
+  );
+  const openAssignModal = () => assignUsers({ roleId });
+  const [unassignMember, unassignMemberModal] = useEntityModal(
+    DeleteModal,
+    () => startPolling(-1),
+    {
+      roleId,
+    },
+  );
+
+  if (!loading && !success)
+    return (
+      <ErrorInlineNotification
+        title={t("somethingsWrong")}
+        subtitle={t("unableToLoadResource", {
+          resourceType: t("user").toLowerCase(),
+        })}
+        actionButton={{
+          label: t("retry"),
+          onClick: () => {
+            void reload();
+          },
+        }}
+      />
+    );
+
+  if (success && isUsersListEmpty)
+    return (
+      <>
+        <TabEmptyState
+          childResourceTypeTranslationKey={"user"}
+          parentResourceTypeTranslationKey={"role"}
+          handleClick={openAssignModal}
+          docsLinkPath="/components/admin/user/"
+        />
+        {assignUsersModal}
+      </>
+    );
+
+  type MembersListHeaders = {
+    header: string;
+    key: UserKeys;
+    isSortable?: boolean;
+  }[];
+
+  const membersListHeaders: MembersListHeaders = isOIDC
+    ? [{ header: t("username"), key: "username", isSortable: true }]
+    : [
+        { header: t("username"), key: "username", isSortable: true },
+        { header: t("name"), key: "name" },
+        { header: t("email"), key: "email" },
+      ];
+
+  return (
+    <>
+      <EntityList
+        data={users}
+        headers={membersListHeaders}
+        loading={loading}
+        addEntityLabel={t("assignUser")}
+        onAddEntity={openAssignModal}
+        searchPlaceholder={t("searchByUsername")}
+        menuItems={[
+          {
+            label: t("remove"),
+            icon: Trash2,
+            isDangerous: true,
+            onClick: unassignMember,
+          },
+        ]}
+        {...paginationProps}
+      />
+      {assignUsersModal}
+      {unassignMemberModal}
+    </>
+  );
+};
+
+export default Members;

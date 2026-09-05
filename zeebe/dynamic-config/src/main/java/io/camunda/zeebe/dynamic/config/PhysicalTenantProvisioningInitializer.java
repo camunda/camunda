@@ -10,8 +10,8 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.AdditivePartitionReassigner;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.PartitionReassignmentOperationsGenerator;
+import io.camunda.zeebe.dynamic.config.util.ZoneAwareAdditivePartitionReassigner;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.HashMap;
@@ -35,14 +36,15 @@ import org.slf4j.LoggerFactory;
  * lists a physical tenant (a {@link PartitionId#group()}) that has no corresponding entry in {@link
  * CurrentClusterConfiguration#partitionGroups()}, this adds an empty {@link
  * PartitionGroupConfiguration} for it and starts a configuration change directly on that group —
- * using {@link AdditivePartitionReassigner} to place its partitions and {@link
+ * using {@link AdditivePartitionReassigner} (or, on a zone-aware cluster, {@link
+ * ZoneAwareAdditivePartitionReassigner}) to place its partitions and {@link
  * PartitionReassignmentOperationsGenerator} to turn that placement into operations.
  *
  * <p>The change is started directly on the new group via {@link
- * PartitionGroupConfiguration#startConfigurationChange(List)}, bypassing the top-level {@link
- * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan} entirely: a phased change may already be
- * in progress for other groups when this runs, and this group is guaranteed to have no pending
- * change of its own yet since it doesn't exist before this modifier creates it.
+ * PartitionGroupConfiguration#startGraphConfigurationChange(OperationGraph)}, bypassing the
+ * top-level {@link io.camunda.zeebe.dynamic.config.state.PhasedChangePlan} entirely: a phased
+ * change may already be in progress for other groups when this runs, and this group is guaranteed
+ * to have no pending change of its own yet since it doesn't exist before this modifier creates it.
  *
  * <p>A physical tenant whose group already exists is left completely untouched, even if it's since
  * been removed from the static configuration — this modifier only ever adds a group, never removes
@@ -57,8 +59,9 @@ import org.slf4j.LoggerFactory;
  * brand-new tenants onto the same least-loaded brokers instead of spreading them out.
  *
  * <p>If placing this batch fails outright (e.g. the live cluster currently has fewer members than
- * the configured replication factor), the whole batch is skipped with a warning and retried on the
- * next configuration initialization; if the reassignment itself succeeds but a particular tenant's
+ * the configured replication factor, or — on a zone-aware cluster — a target member has not yet
+ * completed its zone migration), the whole batch is skipped with a warning and retried on the next
+ * configuration initialization; if the reassignment itself succeeds but a particular tenant's
  * target distribution ends up unchanged (e.g. it has no partitions configured at all), that one
  * tenant alone is skipped while the rest are still provisioned.
  */
@@ -154,26 +157,19 @@ public class PhysicalTenantProvisioningInitializer
       final Set<MemberId> targetMembers,
       final List<PartitionId> targetPartitionIds) {
 
-    final boolean isZoneAwareConfig =
+    final var zoneAwareConfig =
         configuration
             .globalConfiguration()
             .partitionDistributorConfig()
             .filter(ZoneAwareConfig.class::isInstance)
-            .isPresent();
+            .map(ZoneAwareConfig.class::cast);
 
-    if (isZoneAwareConfig) {
-      // AdditiveReassigner does not support zone-aware distribution, so we delegate to the
-      // configured distributor instead. ZoneAwareDistribution uses round robin assignment that
-      // means the existing tenants are also moved. Additive zone aware reassignment will be a
-      // followup.
-      final var sortedPartitionIds =
-          targetPartitionIds.stream().sorted(PartitionId::compareTo).toList();
-      return configuration
-          .globalConfiguration()
-          .partitionDistributorConfig()
-          .get()
-          .toDistributor()
-          .distributePartitions(targetMembers, sortedPartitionIds, replicationFactor);
+    if (zoneAwareConfig.isPresent()) {
+      // Built fresh per call, unlike the cached `reassigner` field above: the zone spec comes from
+      // gossiped state that can change (zone add/remove, reprioritization) between calls, so
+      // caching an instance risks reassigning against a stale zone configuration.
+      return new ZoneAwareAdditivePartitionReassigner(zoneAwareConfig.get().zones())
+          .reassignPartitions(configuration, targetMembers, targetPartitionIds, replicationFactor);
     }
 
     return reassigner.reassignPartitions(
@@ -198,8 +194,11 @@ public class PhysicalTenantProvisioningInitializer
             updatedGroups,
             configuration.phasedChangeState());
 
-    final List<ClusterConfigurationChangeOperation> operations = List.copyOf(tenantOperations);
+    // Sequential, not the free graph a phase could express: these operations place a brand-new
+    // tenant's partitions, and provisioning has never claimed the independence between them that
+    // would let two run at once.
+    final var graph = OperationGraph.sequential(tenantOperations);
     return withEmptyGroup.updatePartitionGroupConfig(
-        newTenantId, group -> group.startConfigurationChange(operations));
+        newTenantId, group -> group.startGraphConfigurationChange(graph));
   }
 }

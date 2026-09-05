@@ -16,6 +16,7 @@
 package io.camunda.zeebe.exporter.api;
 
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -56,4 +57,37 @@ public interface ExporterConfigMerger {
    * @return the merged args map
    */
   Map<String, Object> merge(Map<String, Object> rootArgs, Map<String, Object> tenantArgs);
+
+  /**
+   * The resources an exporter with the given resolved {@code args} would exclusively occupy, so the
+   * platform can reject two configurations that would collide on the same resource (e.g. two
+   * writing into the same indices, or managing the same cluster-global lifecycle policy). An
+   * exporter typically emits one claim per kind of resource it occupies.
+   *
+   * <p>Returns an empty set by default: an exporter that declares no claims is simply not
+   * isolation-checked — the same "no merger, no special handling" fallback {@link #merge} has for
+   * whole-map replace. Derive the claims purely from {@code args} (applying the exporter's own
+   * defaults for keys the map omits) and, like {@link #merge}, do not mutate the input.
+   *
+   * @param args the exporter's resolved args (never {@code null}, possibly empty; must not be
+   *     mutated)
+   * @return the resources this exporter would occupy, or an empty set if it declares none
+   */
+  default Set<ExporterIsolationClaim> isolationClaims(final Map<String, Object> args) {
+    return Set.of();
+  }
+
+  /**
+   * A resource an exporter would exclusively occupy. Two claims collide when their {@code domain}
+   * and {@code identity} are equal.
+   *
+   * @param domain groups comparable resources so unrelated ones never collide (e.g. {@code
+   *     "index-write-target"}, {@code "lifecycle-policy"})
+   * @param identity the already-normalized fields that identify the resource within its {@code
+   *     domain} — build it so that any two configurations occupying the same resource produce an
+   *     equal map (normalize away incidental differences such as url casing or ordering)
+   * @param description a human-readable rendering shown when a collision is reported; not part of
+   *     the collision identity
+   */
+  record ExporterIsolationClaim(String domain, Map<String, Object> identity, String description) {}
 }

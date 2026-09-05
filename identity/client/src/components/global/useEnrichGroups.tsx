@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryObserverBaseResult } from "@tanstack/react-query";
 import { ApiDefinition, unwrap } from "src/utility/api/request";
 import { searchGroups } from "src/utility/api/groups";
 import { usePagination } from "src/utility/api";
@@ -19,11 +19,15 @@ import type {
   Group,
 } from "@camunda/camunda-api-zod-schemas/8.10";
 
+type GroupWithId = Group & { id: string };
+
 type UseEnrichedGroupsResult = {
-  groups: Group[];
+  groups: GroupWithId[];
   loading: boolean;
   success: boolean;
-  reload: () => void;
+  reload: QueryObserverBaseResult<
+    QueryGroupsResponseBody | QueryGroupsByRoleResponseBody
+  >["refetch"];
   paginationProps: {
     page: { pageNumber: number; pageSize: number; totalItems?: number };
     setPageNumber: (page: number) => void;
@@ -69,11 +73,12 @@ export function useEnrichedGroups<P>(
     enabled: isCamundaGroupsEnabled && groupIds.length > 0,
   });
 
-  const groups = useMemo<Group[]>(() => {
+  const groups = useMemo<GroupWithId[]>(() => {
     const items = membersQuery.data?.items ?? [];
     if (items.length === 0) return [];
     if (!isCamundaGroupsEnabled) {
       return items.map(({ groupId }) => ({
+        id: groupId,
         groupId,
         name: "",
         description: "",
@@ -83,6 +88,7 @@ export function useEnrichedGroups<P>(
     return items.map((member) => {
       const group = fullGroups.find((g) => g.groupId === member.groupId);
       return {
+        id: member.groupId,
         groupId: member.groupId,
         name: group?.name || "",
         description: group?.description || "",
@@ -102,9 +108,7 @@ export function useEnrichedGroups<P>(
     groups,
     loading,
     success,
-    reload: () => {
-      void membersQuery.refetch();
-    },
+    reload: membersQuery.refetch,
     paginationProps: {
       page: { ...page, ...membersQuery.data?.page },
       setPageNumber,

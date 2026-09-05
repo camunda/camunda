@@ -31,4 +31,18 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 public record RebalanceConfiguration(
-    long replicationLagThreshold, Duration replicationTimeout, int maxTransferAttempts) {}
+    long replicationLagThreshold, Duration replicationTimeout, int maxTransferAttempts) {
+
+  /**
+   * Headroom on top of the transfer's own budget. A leader's pause watchdog is a backstop against a
+   * transfer getting stuck, so this should be sized to be unreachable during a healthy transfer.
+   */
+  private static final Duration PAUSE_BUDGET_SLACK = Duration.ofSeconds(5);
+
+  /** How long the partition may stay frozen before the watchdog treats the transfer as stuck. */
+  public Duration pauseBudget(final Duration heartbeatInterval) {
+    return replicationTimeout
+        .plus(heartbeatInterval.multipliedBy(maxTransferAttempts))
+        .plus(PAUSE_BUDGET_SLACK);
+  }
+}

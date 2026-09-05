@@ -158,7 +158,7 @@ zeebe:
   # The max page size for importing Zeebe data
   maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:200}
   # Determines whether Optimize should convert and store object variables from Zeebe
-  includeObjectVariableValue: ${CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE:true}
+  includeObjectVariableValue: ${CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE:false}
   # Indicates whether variable import is enabled
   variableImportEnabled: ${CAMUNDA_OPTIMIZE_ZEEBE_VARIABLE_IMPORT_ENABLED:true}
   importConfig:
@@ -167,6 +167,19 @@ zeebe:
     # The number of empty pages to fetch before checking whether new data is available to import that cannot be reached
     # using the sequence query
     maxEmptyPagesToImport: ${CAMUNDA_OPTIMIZE_ZEEBE_IMPORT_MAX_EMPTY_PAGES_TO_IMPORT:10}
+
+jobRegistry:
+  dispatcher:
+    # Toggles whether this Optimize instance dispatches queued job registry entries. Only one
+    # instance per cluster should have this enabled.
+    enabled: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_ENABLED:false}
+    # Delay, in seconds, before the dispatcher polls again for queued job registry entries,
+    # counted from the completion of the previous poll
+    intervalSeconds: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_INTERVAL_SECONDS:30}
+    # The maximum number of queued entries read and dispatched per poll cycle
+    batchSize: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_BATCH_SIZE:4}
+    # The number of threads used to dispatch entries of a batch to their handlers concurrently
+    threadCount: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_THREAD_COUNT:2}
 
 import:
   data:
@@ -578,6 +591,26 @@ entity:
   # character takes up to 3 bytes in UTF-8. Existing longer names remain readable.
   nameMaxLength: ${CAMUNDA_OPTIMIZE_ENTITY_NAME_MAX_LENGTH:32768}
 
+businessValue:
+  # How often the business-value overview index is refreshed, for every range preset (7d, 30d, 3m,
+  # 6m). The given number is the interval in seconds. Default: 1h. Only definitions that carry a
+  # target are measured, so the cost tracks how many targets are set rather than the size of the
+  # process catalogue — a definition nobody targeted is never measured at all. Saving a target
+  # measures that definition straight away, so this interval bounds how long an already-targeted
+  # definition waits to be re-measured, not how long a new target waits to show a value. The
+  # stale-read threshold derives from it at twice its value.
+  overviewRefreshInterval: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_REFRESH_INTERVAL:3600}
+  # Kill switch for the background overview computation. Set to false to stop the sweep without
+  # taking the dashboard down: existing rows stay readable and the endpoint keeps serving, the
+  # numbers simply stop advancing until it is re-enabled. Requires an Optimize restart to take
+  # effect, as configuration is read once at startup. The whole sweep is skipped, not just the
+  # measuring: no rows are written either, so a process definition imported while this is off gets
+  # no overview row at all until it is re-enabled. Request paths are unaffected — the overview and
+  # target endpoints keep serving, as do the dashboard tiles, which are evaluated per request.
+  # Saving a target still applies it to whatever rows already exist, so verdicts stay coherent and
+  # only the numbers behind them freeze; a definition with no rows yet gets nothing.
+  overviewComputeEnabled: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_COMPUTE_ENABLED:true}
+
 export:
   csv:
     # which users are authorized to download CSVs. Available options: 'all', 'none'
@@ -709,6 +742,14 @@ caches:
     # This cache is used to hold users in a CCSM environment
     maxSize: ${CAMUNDA_OPTIMIZE_CACHES_USERS_MAX_SIZE:10000}
     defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_USERS_DEFAULT_TTL_MILLIS:600000}
+  # This cache tracks process definitions that have a pending or completed delete job, so Zeebe
+  # import can suppress writes for them without a database round trip per import batch. maxSize
+  # caps the newest-first job registry fetch used to populate the cache; job registry entries are
+  # never cleaned up, so if the number of deleted process definitions ever exceeds maxSize, the
+  # oldest ones silently drop out of suppression and their data can be reimported.
+  deletedProcessDefinitions:
+    maxSize: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_MAX_SIZE:10000}
+    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_DEFAULT_TTL_MILLIS:300000}
 
 externalVariable:
   import:

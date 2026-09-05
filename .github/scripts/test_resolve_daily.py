@@ -215,7 +215,7 @@ class TestResolve:
         assert result is not None
         namespace, anchor = result
         assert anchor == "2026-07-01T03:30:00Z"
-        assert namespace == f"c8-{self._BENCHMARK}"
+        assert namespace == f"c8-{self._BENCHMARK}-grpc"
 
     def test_returns_none_when_no_run_found_for_any_candidate(self):
         # given: no completed run exists for any candidate date

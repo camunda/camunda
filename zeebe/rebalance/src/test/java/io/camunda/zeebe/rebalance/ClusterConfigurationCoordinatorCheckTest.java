@@ -11,9 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
-import java.util.Map;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import org.junit.jupiter.api.Test;
 
 final class ClusterConfigurationCoordinatorCheckTest {
@@ -28,23 +27,8 @@ final class ClusterConfigurationCoordinatorCheckTest {
     final var check = new ClusterConfigurationCoordinatorCheck(() -> configuration);
 
     // when
-    final var rejection = check.validate(COORDINATOR, configuration.version());
-
-    // then
-    assertThat(rejection).isEmpty();
-  }
-
-  @Test
-  void shouldAcceptACoordinatorThatDoesNotReplicateThisPartition() {
-    // given
-    final var configuration =
-        ClusterConfiguration.init()
-            .addMember(COORDINATOR, MemberState.initializeAsActive(Map.of()))
-            .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()));
-    final var check = new ClusterConfigurationCoordinatorCheck(() -> configuration);
-
-    // when
-    final var rejection = check.validate(COORDINATOR, configuration.version());
+    final var rejection =
+        check.validate(COORDINATOR, configuration.globalConfiguration().version());
 
     // then
     assertThat(rejection)
@@ -59,7 +43,8 @@ final class ClusterConfigurationCoordinatorCheckTest {
     final var check = new ClusterConfigurationCoordinatorCheck(() -> configuration);
 
     // when
-    final var rejection = check.validate(OTHER_MEMBER, configuration.version());
+    final var rejection =
+        check.validate(OTHER_MEMBER, configuration.globalConfiguration().version());
 
     // then
     assertThat(rejection).contains(LeadershipTransferResult.NOT_COORDINATOR);
@@ -72,7 +57,8 @@ final class ClusterConfigurationCoordinatorCheckTest {
     final var check = new ClusterConfigurationCoordinatorCheck(() -> configuration);
 
     // when
-    final var rejection = check.validate(COORDINATOR, configuration.version() - 1);
+    final var rejection =
+        check.validate(COORDINATOR, configuration.globalConfiguration().version() - 1);
 
     // then
     assertThat(rejection).contains(LeadershipTransferResult.STALE_CONFIGURATION);
@@ -85,7 +71,8 @@ final class ClusterConfigurationCoordinatorCheckTest {
     final var check = new ClusterConfigurationCoordinatorCheck(() -> configuration);
 
     // when
-    final var rejection = check.validate(COORDINATOR, configuration.version() + 1);
+    final var rejection =
+        check.validate(COORDINATOR, configuration.globalConfiguration().version() + 1);
 
     // then
     assertThat(rejection)
@@ -98,7 +85,8 @@ final class ClusterConfigurationCoordinatorCheckTest {
   @Test
   void shouldRefuseEveryRequesterWithoutAConfigurationToCheckAgainst() {
     // given
-    final var check = new ClusterConfigurationCoordinatorCheck(ClusterConfiguration::uninitialized);
+    final var check =
+        new ClusterConfigurationCoordinatorCheck(CurrentClusterConfiguration::uninitialized);
 
     // when
     final var rejection = check.validate(COORDINATOR, 1);
@@ -107,10 +95,12 @@ final class ClusterConfigurationCoordinatorCheckTest {
     assertThat(rejection).contains(LeadershipTransferResult.STALE_CONFIGURATION);
   }
 
-  private static ClusterConfiguration configurationOf(final MemberId... members) {
-    var configuration = ClusterConfiguration.init();
+  private static CurrentClusterConfiguration configurationOf(final MemberId... members) {
+    var configuration = CurrentClusterConfiguration.init();
     for (final var member : members) {
-      configuration = configuration.addMember(member, MemberState.initializeAsActive(Map.of()));
+      configuration =
+          configuration.updateGlobalConfiguration(
+              global -> global.addMember(member, BrokerState.initializeAsActive()));
     }
     return configuration;
   }

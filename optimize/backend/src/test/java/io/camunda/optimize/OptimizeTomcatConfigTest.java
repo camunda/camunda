@@ -132,7 +132,7 @@ public class OptimizeTomcatConfigTest {
   /** customize() reads the CSL flag to decide on the readiness rewrite valve. */
   private void givenCslDisabled() {
     lenient()
-        .when(environment.getProperty("optimize.security.csl.enabled", Boolean.class, false))
+        .when(environment.getProperty("optimize.security.csl.enabled", Boolean.class, true))
         .thenReturn(false);
   }
 }

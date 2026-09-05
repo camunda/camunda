@@ -20,6 +20,7 @@ type: kubernetes.io/basic-auth
 data:
   username: "a2V5Y2xvYWs="
   password: "U2lrZE5hamFadXJiOFs="
+
 ---
 # Source: load-test-setup/templates/keycloak/postgresql-keycloak-user.yaml
 apiVersion: v1

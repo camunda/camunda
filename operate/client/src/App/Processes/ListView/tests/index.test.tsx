@@ -272,7 +272,7 @@ describe('Instances', () => {
     const dialog = screen.getByRole('dialog', {name: 'Apply operation'});
     expect(
       within(dialog).getByText(
-        /3 instances selected for suspend operation.*only active root process instances will be suspended/i,
+        /3 instances selected for suspend operation.*only active process instances will be suspended/i,
       ),
     ).toBeInTheDocument();
 
@@ -281,7 +281,7 @@ describe('Instances', () => {
     await waitFor(() => {
       expect(requestBodyResolver).toHaveBeenCalledOnce();
       expect(requestBody?.filter).toMatchObject({
-        processInstanceKey: {$in: ['active-instance']},
+        processInstanceKey: {$in: ['active-instance', 'active-child-instance']},
       });
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -370,7 +370,7 @@ describe('Instances', () => {
     const dialog = screen.getByRole('dialog', {name: 'Apply operation'});
     expect(
       within(dialog).getByText(
-        /3 instances selected for resume operation.*only suspended root process instances will be resumed/i,
+        /3 instances selected for resume operation.*only suspended process instances will be resumed/i,
       ),
     ).toBeInTheDocument();
 
@@ -379,7 +379,9 @@ describe('Instances', () => {
     await waitFor(() => {
       expect(requestBodyResolver).toHaveBeenCalledOnce();
       expect(requestBody?.filter).toMatchObject({
-        processInstanceKey: {$in: ['suspended-instance']},
+        processInstanceKey: {
+          $in: ['suspended-instance', 'suspended-child-instance'],
+        },
       });
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -463,7 +465,7 @@ describe('Instances', () => {
     });
   });
 
-  it('should allow canceling active child instances without offering suspend', async () => {
+  it('should offer suspend and resume for child instances in a parent-filtered view', async () => {
     const activeChildInstance = createProcessInstance({
       processInstanceKey: 'active-child-instance',
       processDefinitionName: 'Active Child Process',
@@ -503,18 +505,8 @@ describe('Instances', () => {
         .getAllByRole('button', {name: 'Cancel'})
         .some((button) => !button.hasAttribute('disabled')),
     ).toBe(true);
-    expect(
-      screen.getByRole('button', {
-        name: 'Suspend',
-        description: /no active root process instances selected/i,
-      }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole('button', {
-        name: 'Resume',
-        description: /no suspended root process instances selected/i,
-      }),
-    ).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Suspend'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Resume'})).toBeEnabled();
   });
 
   it('should render title and document title', async () => {

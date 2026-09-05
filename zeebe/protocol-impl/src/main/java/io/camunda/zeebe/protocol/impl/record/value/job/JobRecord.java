@@ -719,8 +719,17 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  /**
+   * @deprecated This job-type-prefix check now only backs the 8.9 compatibility half of audit
+   *     attribution (jobs deployed on 8.9 with this job type and no resolved agent definition still
+   *     need attribution). Every other agentic decision uses whether the job's element has a
+   *     resolved agent definition instead. Remove once no supported version relies on this prefix
+   *     rule anymore, and affected processes have been redeployed with changed content. Tracked in
+   *     https://github.com/camunda/camunda/issues/60860.
+   */
+  @Deprecated
   @JsonIgnore
-  public boolean isAgentic() {
+  public boolean hasAgenticPrefix() {
     return getType().startsWith(IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
   }
 }

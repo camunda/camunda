@@ -7,7 +7,12 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.atomix.raft.RebalanceConfiguration;
+import io.atomix.raft.partition.impl.LeadershipTransferClient;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionLeaders;
+import io.camunda.zeebe.rebalance.ClusterRebalanceMetrics;
+import io.camunda.zeebe.rebalance.PartitionBalanceMetrics;
+import io.camunda.zeebe.rebalance.PartitionBalancePlanner;
 import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceCoordinator;
 import io.camunda.zeebe.rebalance.RebalanceRequestServer;
@@ -34,6 +39,8 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
   private @Nullable Actor rebalanceCoordinatorActor;
   private @Nullable RebalanceCoordinator rebalanceCoordinator;
   private @Nullable RebalanceRequestServer rebalanceRequestServer;
+  private @Nullable LeadershipTransferClient leadershipTransferClient;
+  private @Nullable PartitionBalanceMetrics partitionBalanceMetrics;
 
   @Override
   public String getName() {
@@ -48,6 +55,20 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
 
     final var localMember =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
+    final var partitionLeaders =
+        new TopologyPartitionLeaders(brokerStartupContext.getBrokerClient().getTopologyManager());
+    final var newLeadershipTransferClient =
+        new LeadershipTransferClient(
+            brokerStartupContext.getClusterServices().getCommunicationService(),
+            brokerStartupContext
+                .getBrokerConfiguration()
+                .getExperimental()
+                .getRaft()
+                .getRequestTimeout());
+    final var rebalanceMetrics =
+        new ClusterRebalanceMetrics(brokerStartupContext.getMeterRegistry());
+    final var newPartitionBalanceMetrics =
+        new PartitionBalanceMetrics(brokerStartupContext.getMeterRegistry(), partitionLeaders);
     rebalanceCoordinatorActor = Actor.newActor().name("RebalanceCoordinator").build();
 
     brokerStartupContext
@@ -60,16 +81,36 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
                 started.completeExceptionally(error);
                 return;
               }
+              leadershipTransferClient = newLeadershipTransferClient;
+              partitionBalanceMetrics = newPartitionBalanceMetrics;
+              brokerStartupContext
+                  .getClusterConfigurationService()
+                  .addUpdateListener(partitionBalanceMetrics);
+              final var raftCfg =
+                  brokerStartupContext.getBrokerConfiguration().getCluster().getRaft();
               rebalanceCoordinator =
                   new RebalanceCoordinator(
                       localMember,
                       rebalanceCoordinatorActor,
                       new SequentialRebalanceRunner(
+                          localMember,
                           rebalanceCoordinatorActor,
-                          new TopologyPartitionLeaders(
-                              brokerStartupContext.getBrokerClient().getTopologyManager())),
+                          partitionLeaders,
+                          leadershipTransferClient,
+                          rebalanceMetrics,
+                          raftCfg.getRebalanceLeaderWaitTimeout(),
+                          new RebalanceConfiguration(
+                              raftCfg.getRebalanceReplicationLagThreshold().toBytes(),
+                              raftCfg.getRebalanceReplicationTimeout(),
+                              raftCfg.getRebalanceMaxTransferAttempts()),
+                          brokerStartupContext
+                              .getBrokerConfiguration()
+                              .getCluster()
+                              .getHeartbeatInterval()),
+                      new PartitionBalancePlanner(partitionLeaders),
                       () -> brokerStartupContext.getRequestIdGenerator().nextId(),
-                      Clock.systemUTC());
+                      Clock.systemUTC(),
+                      rebalanceMetrics);
               rebalanceRequestServer =
                   new RebalanceRequestServer(
                       brokerStartupContext.getClusterServices().getCommunicationService(),
@@ -100,12 +141,21 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
           .getClusterConfigurationService()
           .removeUpdateListener(rebalanceCoordinator);
     }
-
+    if (partitionBalanceMetrics != null) {
+      brokerStartupContext
+          .getClusterConfigurationService()
+          .removeUpdateListener(partitionBalanceMetrics);
+      partitionBalanceMetrics = null;
+    }
     closeRebalanceCoordinator()
         .onComplete(
             (ok, error) -> {
               rebalanceCoordinator = null;
               rebalanceCoordinatorActor = null;
+              if (leadershipTransferClient != null) {
+                leadershipTransferClient.close();
+                leadershipTransferClient = null;
+              }
               if (error != null) {
                 stopped.completeExceptionally(error);
               } else {

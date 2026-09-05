@@ -25,15 +25,24 @@ public class ExpressionBehavior {
 
   private final ExpressionProcessor clusterExpressionProcessor;
   private final VariableState variableState;
+  private final ReferencedSecretCollector referencedSecretCollector;
 
   public ExpressionBehavior(
       final NamespacedEvaluationContext namespaceFullClusterContext,
       final ExpressionLanguage expressionLanguage,
       final Duration expressionEvaluationTimeout,
-      final VariableState variableState) {
+      final VariableState variableState,
+      final ReferencedSecretCollector referencedSecretCollector) {
+    this.referencedSecretCollector = referencedSecretCollector;
+    // Resolve camunda.secrets.<name> references to their own placeholder string (as the engine
+    // does for input mappings), so callers of the expression endpoint — e.g. inbound connectors,
+    // which have no job to trigger job-activation resolution — receive the reference text instead
+    // of null. Only that path is affected; camunda.vars.* and every other lookup forward unchanged.
+    // The collector records references resolved from trusted sources so they can be reported.
     clusterExpressionProcessor =
         new ExpressionProcessor(
-            expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout);
+                expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout)
+            .withSecretReferenceContext(referencedSecretCollector);
     this.variableState = variableState;
   }
 
@@ -50,6 +59,11 @@ public class ExpressionBehavior {
    */
   public Either<Rejection, ExpressionRecord> resolveExpression(
       final Expression expression, final ExpressionRecord expressionRecord) {
+    // A single collector instance is reused across evaluations (stream processing is
+    // single-threaded per partition). Only the endpoint's contexts hold a collector — the BPMN
+    // path uses collector-free contexts — so a fresh reset here is enough to isolate this
+    // evaluation's references.
+    referencedSecretCollector.reset();
     final long scopeKey = expressionRecord.getScopeKey();
     final var variables = expressionRecord.getVariables();
     final var bodyContext =
@@ -90,13 +104,20 @@ public class ExpressionBehavior {
 
   private ExpressionRecord mapSuccess(
       final EvaluationResult evaluationResult, final ExpressionRecord expressionRecord) {
-    return new ExpressionRecord()
-        .setTenantId(expressionRecord.getTenantId())
-        .setExpression(expressionRecord.getExpression())
-        .setVariables(expressionRecord.getVariablesBuffer())
-        .setScopeKey(expressionRecord.getScopeKey())
-        .setWarnings(
-            evaluationResult.getWarnings().stream().map(EvaluationWarning::getMessage).toList())
-        .setResultValue(evaluationResult.toBuffer());
+    final var mapped =
+        new ExpressionRecord()
+            .setTenantId(expressionRecord.getTenantId())
+            .setExpression(expressionRecord.getExpression())
+            .setVariables(expressionRecord.getVariablesBuffer())
+            .setScopeKey(expressionRecord.getScopeKey())
+            .setWarnings(
+                evaluationResult.getWarnings().stream().map(EvaluationWarning::getMessage).toList())
+            .setResultValue(evaluationResult.toBuffer());
+    referencedSecretCollector
+        .drain()
+        .forEach(
+            reference ->
+                mapped.addReferencedSecret(reference.storeId(), reference.secretReference()));
+    return mapped;
   }
 }

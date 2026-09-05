@@ -12,7 +12,6 @@ import ListBox from "@carbon/react/es/components/ListBox";
 import useDebounce from "react-debounced";
 import { SecondaryText } from "src/components/form/Text";
 import styled from "styled-components";
-import Fuse from "fuse.js";
 
 type DropdownSearchProps<Item extends Record<string, unknown>> = {
   items: Item[];
@@ -62,67 +61,31 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
   placeholder,
   onChange = () => {},
   keyAttribute = "title",
-  items: rawItems,
+  items,
   itemTitle,
   itemSubTitle,
   onSelect,
-  filter = () => true, // We require a filter to allow the parent to remove items with accumulated state. See comment below for details.
+  filter = () => true,
   autoFocus = false,
   invalid = false,
 }: DropdownSearchProps<Item>) => {
   const debounce = useDebounce();
   const [search, setSearch] = useState("");
   const [selectedResult, setSelectedResult] = useState<number>(-1);
-  const [filteredItems, setFilteredItems] = useState<
-    ItemWithTitleAndSubTitle<Item>[]
-  >([]);
 
-  const [allItems, setAllItems] = useState<ItemWithTitleAndSubTitle<Item>[]>(
-    [],
-  );
-
-  // We are accumulating all itemsm even if the `items` prop changes.
-  // This allows the parent component to pass new items into the dropdown, e.g.
-  // when the user types in the search field.
-  //
-  // === THIS IS A WORKAROUND ===
-  // Ideally, we can use the response from the server directly and don't need to
-  // keep state here. However, as some endpoints only allow for exact matches,
-  // this would invalidate the use case of a dropdown search.
-  // We should refactor this component to use the server response directly.
-  //
-  // Related to https://github.com/camunda/camunda/issues/36493
-  useEffect(() => {
-    setAllItems((prevItems) => {
-      const allKeys = prevItems.map((item) => item[keyAttribute] as string);
-
-      const newItems = rawItems
+  // `items` is already the server's search result for the current `search`
+  // text, so it's rendered directly rather than accumulated/re-filtered here.
+  const filteredItems: ItemWithTitleAndSubTitle<Item>[] = useMemo(
+    () =>
+      items
         .map((item) => ({
           ...item,
           title: itemTitle(item),
           subTitle: itemSubTitle ? itemSubTitle(item) : undefined,
         }))
-        .filter((item) => !allKeys.includes(item[keyAttribute] as string));
-      return [...prevItems, ...newItems];
-    });
-  }, [rawItems, itemTitle, itemSubTitle, keyAttribute]);
-
-  const fuse = useMemo(
-    () =>
-      new Fuse(allItems, {
-        keys: ["title", "subTitle"],
-        threshold: 0.3,
-      }),
-    [allItems],
+        .filter(filter),
+    [items, itemTitle, itemSubTitle, filter],
   );
-
-  useEffect(() => {
-    if (search) {
-      setFilteredItems(fuse.search(search).map((result) => result.item));
-    } else {
-      setFilteredItems(allItems);
-    }
-  }, [search, allItems, fuse]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;

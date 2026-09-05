@@ -10,25 +10,29 @@ package io.camunda.zeebe.dynamic.config.util;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -79,7 +83,10 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     final var arbitraryCompletedChange =
         Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
     final var arbitraryChangePlan =
-        Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+        Arbitraries.forType(ClusterChangePlan.class)
+            .enableRecursion()
+            .<ChangePlan>map(plan -> plan)
+            .optional();
     final var arbitraryRoutingState = routingStates().optional();
     final var arbitraryClusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
     final var arbitraryIncarnationNumber = Arbitraries.longs().greaterOrEqual(0);
@@ -228,8 +235,9 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     // clusterId must be non-empty: the serializer treats the empty string as "absent".
     final var clusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
     final var members = Arbitraries.maps(memberIds(), brokerStates()).ofMaxSize(6);
-    final var pendingChanges =
-        Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+    // Cluster-wide changes run as graphs too, so this is the only plan shape generated here.
+    final Arbitrary<Optional<DependencyChangePlan>> pendingChanges =
+        globalDependencyChangePlans().optional();
     final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
     return Combinators.combine(
             version, clusterId, members, partitionDistributorConfigs(), pendingChanges, lastChange)
@@ -244,8 +252,9 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     final var incarnationNumber = Arbitraries.longs().greaterOrEqual(0);
     final var members = Arbitraries.maps(memberIds(), brokerPartitionStates()).ofMaxSize(6);
     final var routingState = routingStates().optional();
-    final var pendingChanges =
-        Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+    // A group's change is always a dependency graph, so this is the only plan shape generated here.
+    final Arbitrary<Optional<DependencyChangePlan>> pendingChanges =
+        dependencyChangePlans().optional();
     final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
     final var availability = tenantAvailabilities();
     return Combinators.combine(
@@ -265,8 +274,8 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   @Provide
   Arbitrary<TenantAvailability> tenantAvailabilities() {
     final var version = Arbitraries.longs().greaterOrEqual(0);
-    final var disabled = Arbitraries.of(true, false);
-    return Combinators.combine(version, disabled).as(TenantAvailability::new);
+    final var state = Arbitraries.of(TenantAvailability.State.values());
+    return Combinators.combine(version, state).as(TenantAvailability::new);
   }
 
   @Provide
@@ -328,11 +337,136 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   Arbitrary<Phase> phases() {
     final Arbitrary<Phase> globalPhases =
         globalChangeOperations().list().ofMaxSize(3).<Phase>map(GlobalPhase::new);
-    final Arbitrary<Phase> parallelPhases =
-        Arbitraries.maps(partitionGroupIds(), partitionGroupChangeOperations().list().ofMaxSize(3))
+    // Each group's own operation list must be non-empty: PartitionGroupPhase.sequential builds an
+    // OperationGraph per group, and OperationGraph.of rejects an empty one -- the same invariant
+    // operationGraphs() below already respects.
+    final Arbitrary<Phase> sequentialGroupPhases =
+        Arbitraries.maps(
+                partitionGroupIds(),
+                partitionGroupChangeOperations().list().ofMinSize(1).ofMaxSize(3))
             .ofMaxSize(3)
-            .<Phase>map(PartitionGroupParallelPhase::new);
-    return Arbitraries.oneOf(globalPhases, parallelPhases);
+            .<Phase>map(PartitionGroupPhase::sequential);
+    final Arbitrary<Phase> graphGroupPhases =
+        Arbitraries.maps(partitionGroupIds(), operationGraphs())
+            .ofMaxSize(3)
+            .<Phase>map(PartitionGroupPhase::new);
+    return Arbitraries.oneOf(globalPhases, sequentialGroupPhases, graphGroupPhases);
+  }
+
+  /**
+   * A graph over 1–4 operations, each depending on an arbitrary subset of the operations before it
+   * in generation order. Ids are assigned by that same order ({@link OperationId#of(int)} matching
+   * list index), so a dependency can only ever point to an earlier id — the result is acyclic by
+   * construction, with no rejection sampling needed to keep {@link OperationGraph#of} from
+   * throwing.
+   */
+  @Provide
+  Arbitrary<OperationGraph> operationGraphs() {
+    return partitionGroupChangeOperations()
+        .list()
+        .ofMinSize(1)
+        .ofMaxSize(4)
+        .flatMap(ClusterTopologyDomain::operationGraphOf);
+  }
+
+  /**
+   * Graphs of cluster-wide operations, which is what {@link GlobalConfiguration} runs. Generated
+   * separately from {@link #operationGraphs()} because the two operation kinds are encoded through
+   * different arms of {@code PlannedOperation}'s oneof, and a round-trip property fed only
+   * partition-group operations would never exercise the other one.
+   */
+  @Provide
+  Arbitrary<OperationGraph> globalOperationGraphs() {
+    return globalChangeOperations()
+        .list()
+        .ofMinSize(1)
+        .ofMaxSize(4)
+        .flatMap(ClusterTopologyDomain::operationGraphOf);
+  }
+
+  private static Arbitrary<OperationGraph> operationGraphOf(
+      final List<? extends ClusterConfigurationChangeOperation> operations) {
+    final List<Arbitrary<Set<Integer>>> dependsOnPerIndex = new ArrayList<>();
+    for (int i = 0; i < operations.size(); i++) {
+      dependsOnPerIndex.add(
+          i == 0
+              ? Arbitraries.just(Set.of())
+              : Arbitraries.integers().between(0, i - 1).set().ofMaxSize(i));
+    }
+    return Combinators.combine(dependsOnPerIndex)
+        .as(
+            dependsOnByIndex -> {
+              final SortedMap<OperationId, OperationGraph.PlannedOperation> planned =
+                  new TreeMap<>();
+              for (int i = 0; i < operations.size(); i++) {
+                final SortedSet<OperationId> dependsOn = new TreeSet<>();
+                for (final var index : dependsOnByIndex.get(i)) {
+                  dependsOn.add(OperationId.of(index));
+                }
+                planned.put(
+                    OperationId.of(i),
+                    new OperationGraph.PlannedOperation(operations.get(i), dependsOn));
+              }
+              return OperationGraph.of(planned);
+            });
+  }
+
+  /**
+   * A {@link DependencyChangePlan} over an arbitrary {@link #operationGraphs()} graph, with an
+   * arbitrary subset of that graph's own operation ids marked completed — never an id outside the
+   * graph, which is the shape every real plan has and the one round-trip/merge/decode tests need to
+   * see exercised.
+   */
+  @Provide
+  Arbitrary<DependencyChangePlan> dependencyChangePlans() {
+    return dependencyChangePlansOver(operationGraphs());
+  }
+
+  @Provide
+  Arbitrary<DependencyChangePlan> globalDependencyChangePlans() {
+    return dependencyChangePlansOver(globalOperationGraphs());
+  }
+
+  private Arbitrary<DependencyChangePlan> dependencyChangePlansOver(
+      final Arbitrary<OperationGraph> graphs) {
+    final var id = Arbitraries.longs().between(0, 500);
+    final var status = Arbitraries.of(ClusterChangePlan.Status.values());
+    return Combinators.combine(id, status, nanoPrecisionInstants(), graphs)
+        .as(PartialDependencyChangePlan::new)
+        .flatMap(ClusterTopologyDomain::withCompletedOperations);
+  }
+
+  private static Arbitrary<DependencyChangePlan> withCompletedOperations(
+      final PartialDependencyChangePlan partial) {
+    final var ids = new ArrayList<>(partial.graph().operations().keySet());
+    return Arbitraries.of(ids)
+        .set()
+        .ofMaxSize(ids.size())
+        .map(
+            pickedIds -> {
+              // An operation counts as complete only once everything it depends on is: no
+              // execution can produce any other combination, and DependencyChangePlan rejects
+              // one outright. Ids ascend with dependency order (see operationGraphs()), so a
+              // single ascending pass suffices -- a picked operation whose dependencies were not
+              // themselves picked is simply not reached yet, and is dropped.
+              //
+              // Each completion gets its own instant, derived from the operation id so it stays
+              // reproducible. Reusing startedAt for all of them would make every generated plan
+              // share the shape an encoder bug produces -- writing startedAt in place of each
+              // operation's real completion instant -- and the round-trip property could then
+              // never tell the bug from the fixture.
+              final SortedMap<OperationId, Instant> completed = new TreeMap<>();
+              for (final var operationId : ids) {
+                final var planned = partial.graph().operations().get(operationId);
+                if (pickedIds.contains(operationId)
+                    && completed.keySet().containsAll(planned.dependsOn())) {
+                  completed.put(
+                      operationId, partial.startedAt().plusMillis(1L + operationId.value()));
+                }
+              }
+              return new DependencyChangePlan(
+                  partial.id(), partial.status(), partial.startedAt(), partial.graph(), completed);
+            });
   }
 
   @Provide
@@ -414,4 +548,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
           .collect(CollectorsSupport.toLinkedHashSet());
     }
   }
+
+  private record PartialDependencyChangePlan(
+      long id, ClusterChangePlan.Status status, Instant startedAt, OperationGraph graph) {}
 }

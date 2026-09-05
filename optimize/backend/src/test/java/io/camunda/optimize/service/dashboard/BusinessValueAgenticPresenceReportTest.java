@@ -66,8 +66,8 @@ public class BusinessValueAgenticPresenceReportTest {
     final ProcessReportDataDto data =
         captureReportData(
             BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
-            BusinessValueDashboardService.KPI_AGENTIC_PRESENCE_NAME,
-            BusinessValueDashboardService.KPI_AGENTIC_PRESENCE_DESCRIPTION);
+            BusinessValueDashboardService.KPI_AGENTIC_PROCESSES_NAME,
+            BusinessValueDashboardService.KPI_AGENTIC_PROCESSES_DESCRIPTION);
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_INSTANCE);
     assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.TOTAL_TOKENS);

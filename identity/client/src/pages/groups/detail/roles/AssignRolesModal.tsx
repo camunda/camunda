@@ -6,23 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useCallback, useEffect, useState } from "react";
-import { Tag } from "@carbon/react";
+import { FC, useEffect, useState } from "react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { roleQueries } from "src/utility/api/roles/queries";
 import { groupMutations } from "src/utility/api/groups/mutations";
-import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import styled from "styled-components";
-import DropdownSearch from "src/components/form/DropdownSearch";
+import { RoleMultiSelect } from "src/components/form/entitySelection/RoleSelection";
 import FormModal from "src/components/modal/FormModal";
 import { useNotifications } from "src/components/notifications";
 import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.10";
-
-const SelectedRoles = styled.div`
-  margin-top: 0;
-`;
 
 const AssignRolesModal: FC<
   UseEntityModalCustomProps<{ id: Group["groupId"] }, { assignedRoles: Role[] }>
@@ -32,44 +24,10 @@ const AssignRolesModal: FC<
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
   const [loadingAssignRole, setLoadingAssignRole] = useState(false);
 
-  const [search, setSearch] = useState<Record<string, unknown>>({});
-  const handleSearchChange = (search: string) => {
-    if (search === "") {
-      setSearch({});
-      return;
-    }
-
-    setSearch({ filter: { name: search } });
-  };
-
-  const {
-    data: roleSearchResults,
-    isLoading: loading,
-    refetch: reload,
-    error,
-  } = useQuery(roleQueries.search(search));
-
-  const unassignedFilter = useCallback(
-    ({ roleId }: Role) =>
-      !assignedRoles.some((role) => role.roleId === roleId) &&
-      !selectedRoles.some((role) => role.roleId === roleId),
-    [assignedRoles, selectedRoles],
-  );
-
   const qc = useQueryClient();
   const { mutateAsync: callAssignRole } = useMutation(
     groupMutations.assignRole(qc),
   );
-
-  const onSelectRole = (role: Role) => {
-    setSelectedRoles([...selectedRoles, role]);
-  };
-
-  const onUnselectRole =
-    ({ roleId }: Role) =>
-    () => {
-      setSelectedRoles(selectedRoles.filter((role) => role.roleId !== roleId));
-    };
 
   const canSubmit = group && selectedRoles.length;
 
@@ -127,42 +85,12 @@ const AssignRolesModal: FC<
           Search and assign role to group
         </Translate>
       </p>
-      {selectedRoles.length > 0 && (
-        <SelectedRoles>
-          {selectedRoles.map((role) => (
-            <Tag
-              key={role.roleId}
-              onClose={onUnselectRole(role)}
-              size="md"
-              type="blue"
-              filter
-            >
-              {role.roleId}
-            </Tag>
-          ))}
-        </SelectedRoles>
-      )}
-      <DropdownSearch
+      <RoleMultiSelect
+        value={selectedRoles}
+        onChange={setSelectedRoles}
+        excluded={assignedRoles}
         autoFocus
-        items={roleSearchResults?.items || []}
-        itemTitle={({ roleId }) => roleId}
-        itemSubTitle={({ name }) => name}
-        placeholder={t("searchByRoleId")}
-        onSelect={onSelectRole}
-        onChange={handleSearchChange}
-        filter={unassignedFilter}
       />
-      {!loading && error && (
-        <TranslatedErrorInlineNotification
-          title={t("rolesCouldNotLoad")}
-          actionButton={{
-            label: t("retry"),
-            onClick: () => {
-              void reload();
-            },
-          }}
-        />
-      )}
     </FormModal>
   );
 };

@@ -32,7 +32,6 @@ import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -89,7 +88,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private ClusterConfigurationService clusterConfigurationService;
-  private SnapshotApiRequestHandler snapshotApiRequestHandler;
   private CheckpointSchedulingService checkpointSchedulingService;
 
   public BrokerStartupContextImpl(
@@ -387,17 +385,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
     return oidcClaimsProviderFactory;
-  }
-
-  @Override
-  public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
-    return snapshotApiRequestHandler;
-  }
-
-  @Override
-  public void setSnapshotApiRequestHandler(
-      final SnapshotApiRequestHandler snapshotApiRequestHandler) {
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
   }
 
   @Override

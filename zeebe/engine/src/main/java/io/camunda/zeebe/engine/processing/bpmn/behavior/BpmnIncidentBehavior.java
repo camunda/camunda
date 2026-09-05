@@ -27,18 +27,6 @@ import io.camunda.zeebe.util.collection.Tuple;
 
 public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware {
 
-  /**
-   * Message of the incident both activation paths raise when a job's secret value injection fails.
-   * Shared because the cause is the same on either path: the value the placeholder was baked in for
-   * changed before the job was handed out. It carries no failure detail, since the exception may
-   * quote the variables document and with it secret data that must stay out of persisted records.
-   */
-  public static final String SECRET_INJECTION_FAILED_MESSAGE =
-      "The job with key '%s' can not be activated, because its secret reference no longer "
-          + "matches the job's variables. Correct the mismatched variable and resolve the "
-          + "incident, or use process instance modification to reactivate the element and "
-          + "create a fresh job.";
-
   private final IncidentRecord incidentRecord = new IncidentRecord();
 
   private final IncidentState incidentState;

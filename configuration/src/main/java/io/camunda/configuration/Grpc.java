@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 public class Grpc implements Cloneable {
   private static final String PREFIX = "camunda.api.grpc";
@@ -56,6 +57,21 @@ public class Grpc implements Cloneable {
 
   /** Sets the number of threads the gateway will use to communicate with the broker cluster */
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
+
+  /**
+   * Sets the maximum age of a gRPC connection before the gateway proactively closes it (via
+   * GOAWAY), forcing the client to reconnect. Defaults to 5 minutes. Set to unset to disable,
+   * keeping grpc-java's own default of an unbounded connection age.
+   */
+  private @Nullable Duration maxConnectionAge = Duration.ofMinutes(5);
+
+  /**
+   * Sets the grace period, after the maximum connection age elapses, during which existing calls on
+   * the connection may finish before it is forcibly terminated. Only takes effect when the maximum
+   * connection age is set. Defaults to 1 minute. Set to unset to disable, keeping grpc-java's own
+   * default of an infinite grace period.
+   */
+  private @Nullable Duration maxConnectionAgeGrace = Duration.ofMinutes(1);
 
   public String getAddress() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -115,6 +131,22 @@ public class Grpc implements Cloneable {
 
   public void setManagementThreads(final int managementThreads) {
     this.managementThreads = managementThreads;
+  }
+
+  public @Nullable Duration getMaxConnectionAge() {
+    return maxConnectionAge;
+  }
+
+  public void setMaxConnectionAge(final @Nullable Duration maxConnectionAge) {
+    this.maxConnectionAge = maxConnectionAge;
+  }
+
+  public @Nullable Duration getMaxConnectionAgeGrace() {
+    return maxConnectionAgeGrace;
+  }
+
+  public void setMaxConnectionAgeGrace(final @Nullable Duration maxConnectionAgeGrace) {
+    this.maxConnectionAgeGrace = maxConnectionAgeGrace;
   }
 
   public List<Interceptor> getInterceptors() {

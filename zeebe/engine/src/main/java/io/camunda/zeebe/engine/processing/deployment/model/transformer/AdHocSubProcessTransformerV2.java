@@ -82,7 +82,7 @@ public final class AdHocSubProcessTransformerV2
     setImplementationType(executableAdHocSubProcess, element);
     setInnerInstance(executableAdHocSubProcess, childElements, process);
     setJobWorkerProperties(executableAdHocSubProcess, context, element);
-    setAgentDefinitionType(executableAdHocSubProcess, element);
+    setAgentDefinitionType(executableAdHocSubProcess, element, process);
     setAdHocActivitiesMetadata(executableAdHocSubProcess);
     setOutputCollectionAndElement(executableAdHocSubProcess, element, context);
   }
@@ -160,10 +160,14 @@ public final class AdHocSubProcessTransformerV2
   }
 
   private void setAgentDefinitionType(
-      final ExecutableAdHocSubProcess executableAdHocSubProcess, final AdHocSubProcess element) {
+      final ExecutableAdHocSubProcess executableAdHocSubProcess,
+      final AdHocSubProcess element,
+      final ExecutableProcess process) {
     final var agentDefinition = element.getSingleExtensionElement(ZeebeAgentDefinition.class);
-    agentElementTypeTransformer.transform(
-        executableAdHocSubProcess, agentDefinition, element.getModelerTemplate());
+    agentElementTypeTransformer.transform(executableAdHocSubProcess, agentDefinition);
+    if (executableAdHocSubProcess.isAgentDefinition()) {
+      process.markAgentic();
+    }
   }
 
   private void setAdHocActivitiesMetadata(

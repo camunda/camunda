@@ -8,6 +8,8 @@
 package io.camunda.exporter.index;
 
 public sealed interface TargetIndex permits MainIndex, OrdinalIndex {
+  String ORDINAL_SUFFIX_START = "ord";
+
   String name();
 
   /*

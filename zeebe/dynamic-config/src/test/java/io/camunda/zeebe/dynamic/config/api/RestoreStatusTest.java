@@ -11,13 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.PartitionRestoreState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -28,7 +28,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 
 final class RestoreStatusTest {
@@ -42,7 +44,7 @@ final class RestoreStatusTest {
   @Test
   void shouldReturnEmptyWhenNoChange() {
     // given
-    final var configuration = ClusterConfiguration.init();
+    final var configuration = PartitionGroupConfiguration.empty(1);
 
     // when / then
     assertThat(RestoreStatus.of(configuration)).isEmpty();
@@ -56,7 +58,9 @@ final class RestoreStatusTest {
     final var lastChange =
         new CompletedChange(
             RESTORE_CHANGE_ID, Status.COMPLETED, STARTED_AT, STARTED_AT.plusSeconds(60));
-    final var configuration = configurationWith(Optional.of(lastChange), Optional.empty());
+    final var configuration =
+        new PartitionGroupConfiguration(
+            0, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.of(lastChange));
 
     // when / then
     assertThat(RestoreStatus.of(configuration)).isEmpty();
@@ -66,16 +70,11 @@ final class RestoreStatusTest {
   void shouldReturnEmptyForUnrelatedPendingChange() {
     // given
     // an ordinary partition join, not part of a restore, must not be misdetected.
-    final var plan =
-        new ClusterChangePlan(
-            42L,
-            1,
-            Status.IN_PROGRESS,
-            STARTED_AT,
-            List.of(),
-            List.<ClusterConfigurationChangeOperation>of(
-                new PartitionJoinOperation(BROKER_1, 1, 1)));
-    final var configuration = configurationWith(Optional.empty(), Optional.of(plan));
+    final var configuration =
+        PartitionGroupConfiguration.empty(0)
+            .startGraphConfigurationChange(
+                OperationGraph.sequential(
+                    List.of(new PartitionJoinOperation(BROKER_1, 1, 1, true))));
 
     // when / then
     assertThat(RestoreStatus.of(configuration)).isEmpty();
@@ -85,16 +84,11 @@ final class RestoreStatusTest {
   void shouldReturnEmptyForPendingModeTransitionWithoutRestoreOps() {
     // given
     // a plain mode transition to PROCESSING that never involved a restore operation.
-    final var plan =
-        new ClusterChangePlan(
-            42L,
-            1,
-            Status.IN_PROGRESS,
-            STARTED_AT,
-            List.of(),
-            List.<ClusterConfigurationChangeOperation>of(
-                new ModeChangeOperation(BROKER_1, Mode.PROCESSING)));
-    final var configuration = configurationWith(Optional.empty(), Optional.of(plan));
+    final var configuration =
+        PartitionGroupConfiguration.empty(0)
+            .startGraphConfigurationChange(
+                OperationGraph.sequential(
+                    List.of(new ModeChangeOperation(BROKER_1, Mode.PROCESSING))));
 
     // when / then
     assertThat(RestoreStatus.of(configuration)).isEmpty();
@@ -104,24 +98,33 @@ final class RestoreStatusTest {
   void shouldMapInProgressRestoreWithPerPartitionDetail() {
     // given
     // broker 1: partition 1 fully restored, partition 2 pre-restored but restore still pending
-    final var pre1 = new PartitionPreRestoreOperation(BROKER_1, 1);
-    final var restore1 = new PartitionRestoreOperation(BROKER_1, 1, backups(10L, 11L));
-    final var pre2 = new PartitionPreRestoreOperation(BROKER_1, 2);
-    final var restore2 = new PartitionRestoreOperation(BROKER_1, 2, backups(20L));
-    final var modeChange = new ModeChangeOperation(BROKER_1, Mode.PROCESSING);
-
-    final var plan =
-        new ClusterChangePlan(
-            RESTORE_CHANGE_ID,
-            5,
-            Status.IN_PROGRESS,
-            STARTED_AT,
-            List.of(
-                new CompletedOperation(pre1, STARTED_AT.plusSeconds(1)),
-                new CompletedOperation(restore1, STARTED_AT.plusSeconds(2)),
-                new CompletedOperation(pre2, STARTED_AT.plusSeconds(3))),
-            List.<ClusterConfigurationChangeOperation>of(restore2, modeChange));
-    final var configuration = configurationWith(Optional.empty(), Optional.of(plan));
+    final var configuration =
+        new PartitionGroupConfiguration(
+            0,
+            PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER,
+            Map.of(),
+            Optional.empty(),
+            Optional.of(
+                new DependencyChangePlan(
+                    RESTORE_CHANGE_ID,
+                    Status.IN_PROGRESS,
+                    STARTED_AT,
+                    OperationGraph.sequential(
+                        List.of(
+                            new PartitionPreRestoreOperation(BROKER_1, 1),
+                            new PartitionRestoreOperation(BROKER_1, 1, backups(10L, 11L)),
+                            new PartitionPreRestoreOperation(BROKER_1, 2),
+                            new PartitionRestoreOperation(BROKER_1, 2, backups(20L)),
+                            new ModeChangeOperation(BROKER_1, Mode.PROCESSING))),
+                    new TreeMap<>(
+                        Map.of(
+                            new OperationId(0),
+                            STARTED_AT.plusSeconds(1),
+                            new OperationId(1),
+                            STARTED_AT.plusSeconds(2),
+                            new OperationId(2),
+                            STARTED_AT.plusSeconds(3))))),
+            Optional.empty());
 
     // when
     final var status = RestoreStatus.of(configuration).orElseThrow();
@@ -156,15 +159,9 @@ final class RestoreStatusTest {
     // given
     final var pre1 = new PartitionPreRestoreOperation(BROKER_1, 1);
     final var restore1 = new PartitionRestoreOperation(BROKER_1, 1, backups(10L));
-    final var plan =
-        new ClusterChangePlan(
-            RESTORE_CHANGE_ID,
-            1,
-            Status.IN_PROGRESS,
-            STARTED_AT,
-            List.of(),
-            List.<ClusterConfigurationChangeOperation>of(pre1, restore1));
-    final var configuration = configurationWith(Optional.empty(), Optional.of(plan));
+    final var configuration =
+        PartitionGroupConfiguration.empty(0)
+            .startGraphConfigurationChange(OperationGraph.sequential(List.of(pre1, restore1)));
 
     // when
     final var status = RestoreStatus.of(configuration).orElseThrow();
@@ -181,21 +178,17 @@ final class RestoreStatusTest {
     // given
     // all restore operations completed; only the trailing mode-transition-to-PROCESSING remains
     // pending. This must still be reported as an in-progress restore.
-    final var pre1 = new PartitionPreRestoreOperation(BROKER_1, 1);
-    final var restore1 = new PartitionRestoreOperation(BROKER_1, 1, backups(10L));
-    final var plan =
-        new ClusterChangePlan(
-            RESTORE_CHANGE_ID,
-            3,
-            Status.IN_PROGRESS,
-            STARTED_AT,
-            List.of(
-                new CompletedOperation(pre1, STARTED_AT.plusSeconds(1)),
-                new CompletedOperation(restore1, STARTED_AT.plusSeconds(2))),
-            List.<ClusterConfigurationChangeOperation>of(
-                new ModeChangeOperation(BROKER_1, Mode.PROCESSING),
-                new AwaitModeChangeOperation(BROKER_1, Mode.PROCESSING)));
-    final var configuration = configurationWith(Optional.empty(), Optional.of(plan));
+    final var configuration =
+        PartitionGroupConfiguration.empty(0)
+            .startGraphConfigurationChange(
+                OperationGraph.sequential(
+                    List.of(
+                        new PartitionPreRestoreOperation(BROKER_1, 1),
+                        new PartitionRestoreOperation(BROKER_1, 1, backups(10L)),
+                        new ModeChangeOperation(BROKER_1, Mode.PROCESSING),
+                        new AwaitModeChangeOperation(BROKER_1, Mode.PROCESSING))))
+            .completeOperation(new OperationId(0), UnaryOperator.identity())
+            .completeOperation(new OperationId(1), UnaryOperator.identity());
 
     // when
     final var status = RestoreStatus.of(configuration).orElseThrow();
@@ -212,24 +205,21 @@ final class RestoreStatusTest {
     // all restore and mode-transition operations completed; only the trailing
     // UpdateIncarnationNumberOperation remains pending. This must still be reported as an
     // in-progress restore.
-    final var pre1 = new PartitionPreRestoreOperation(BROKER_1, 1);
-    final var restore1 = new PartitionRestoreOperation(BROKER_1, 1, backups(10L));
-    final var modeChange = new ModeChangeOperation(BROKER_1, Mode.PROCESSING);
-    final var awaitModeChange = new AwaitModeChangeOperation(BROKER_1, Mode.PROCESSING);
-    final var plan =
-        new ClusterChangePlan(
-            RESTORE_CHANGE_ID,
-            5,
-            Status.IN_PROGRESS,
-            STARTED_AT,
-            List.of(
-                new CompletedOperation(pre1, STARTED_AT.plusSeconds(1)),
-                new CompletedOperation(restore1, STARTED_AT.plusSeconds(2)),
-                new CompletedOperation(modeChange, STARTED_AT.plusSeconds(3)),
-                new CompletedOperation(awaitModeChange, STARTED_AT.plusSeconds(4))),
-            List.<ClusterConfigurationChangeOperation>of(
-                new UpdateIncarnationNumberOperation(BROKER_1)));
-    final var configuration = configurationWith(Optional.empty(), Optional.of(plan));
+    final var configuration =
+        new PartitionGroupConfiguration(
+                0, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty())
+            .startGraphConfigurationChange(
+                OperationGraph.sequential(
+                    List.of(
+                        new PartitionPreRestoreOperation(BROKER_1, 1),
+                        new PartitionRestoreOperation(BROKER_1, 1, backups(10L)),
+                        new ModeChangeOperation(BROKER_1, Mode.PROCESSING),
+                        new AwaitModeChangeOperation(BROKER_1, Mode.PROCESSING),
+                        new UpdateIncarnationNumberOperation(BROKER_1))))
+            .completeOperation(new OperationId(0), UnaryOperator.identity())
+            .completeOperation(new OperationId(1), UnaryOperator.identity())
+            .completeOperation(new OperationId(2), UnaryOperator.identity())
+            .completeOperation(new OperationId(3), UnaryOperator.identity());
 
     // when
     final var status = RestoreStatus.of(configuration).orElseThrow();
@@ -242,19 +232,5 @@ final class RestoreStatusTest {
 
   private static TreeSet<Long> backups(final Long... ids) {
     return new TreeSet<>(List.of(ids));
-  }
-
-  private static ClusterConfiguration configurationWith(
-      final Optional<CompletedChange> lastChange,
-      final Optional<ClusterChangePlan> pendingChanges) {
-    return new ClusterConfiguration(
-        2,
-        Map.of(),
-        lastChange,
-        pendingChanges,
-        Optional.empty(),
-        Optional.empty(),
-        0,
-        Optional.empty());
   }
 }

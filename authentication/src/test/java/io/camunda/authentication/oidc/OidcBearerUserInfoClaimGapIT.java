@@ -62,8 +62,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
       "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com",
-      "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
-      "camunda.security.authentication.oidc.token-uri=token.example.com",
+      "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+      "camunda.security.authentication.oidc.token-uri=https://token.example.com",
       "camunda.security.authentication.oidc.groups-claim=groups",
       "camunda.security.authentication.oidc.user-info-augmentation.enabled=true",
     })

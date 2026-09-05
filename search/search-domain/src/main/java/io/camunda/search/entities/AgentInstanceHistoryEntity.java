@@ -83,60 +83,6 @@ public record AgentInstanceHistoryEntity(
     DISCARDED
   }
 
-  /**
-   * A single content block within a history item. The {@code text}, {@code documentReference}, and
-   * {@code object} fields are mutually exclusive based on {@code contentType}.
-   */
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  public record ContentItem(
-      ContentType contentType,
-      @Nullable String text,
-      @Nullable DocumentReference documentReference,
-      @Nullable Object object) {
-
-    public ContentItem {
-      Objects.requireNonNull(contentType, "contentType");
-    }
-
-    public enum ContentType {
-      TEXT,
-      DOCUMENT,
-      OBJECT
-    }
-  }
-
-  /** A document reference embedded in a {@link ContentItem}. */
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  public record DocumentReference(
-      String storeId, String documentId, @Nullable String contentHash, DocumentMetadata metadata) {
-
-    public DocumentReference {
-      Objects.requireNonNull(storeId, "storeId");
-      Objects.requireNonNull(documentId, "documentId");
-      Objects.requireNonNull(metadata, "metadata");
-    }
-  }
-
-  /** Metadata for a {@link DocumentReference}. */
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  public record DocumentMetadata(
-      String contentType,
-      String fileName,
-      @Nullable OffsetDateTime expiresAt,
-      Long size,
-      @Nullable String processDefinitionId,
-      @Nullable Long processInstanceKey,
-      Map<String, Object> customProperties) {
-
-    public DocumentMetadata {
-      Objects.requireNonNull(contentType, "contentType");
-      Objects.requireNonNull(fileName, "fileName");
-      Objects.requireNonNull(size, "size");
-      customProperties =
-          customProperties != null ? new HashMap<>(customProperties) : new HashMap<>();
-    }
-  }
-
   /** A tool call embedded in a history item. */
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record ToolCall(
@@ -155,7 +101,12 @@ public record AgentInstanceHistoryEntity(
   /** Per-call token and latency metrics. Null when metrics were not provided at creation time. */
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Metrics(
-      @Nullable Long inputTokens, @Nullable Long outputTokens, @Nullable Long durationMs) {}
+      @Nullable Long inputTokens,
+      @Nullable Long outputTokens,
+      @Nullable Long reasoningTokenCount,
+      @Nullable Long cacheCreationTokenCount,
+      @Nullable Long cacheReadTokenCount,
+      @Nullable Long durationMs) {}
 
   /** A tool made available to the agent by a CONFIGURATION item. */
   @JsonIgnoreProperties(ignoreUnknown = true)

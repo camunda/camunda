@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReferen
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.CachedSecret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretPointerMismatchException;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +44,10 @@ import org.slf4j.LoggerFactory;
  *       registered via {@link #registerForInjection}.
  *   <li>{@link #injectSecretValues} replaces the placeholder text {@code camunda.secrets.<name>} of
  *       the registered jobs with the cached value on a response-only copy of the batch, at the JSON
- *       pointer recorded for each reference. Jobs whose values would grow the response beyond the
+ *       pointer recorded for each reference (see {@link JobSecretLookup} for how a reference that
+ *       finds no placeholder is tolerated). Jobs whose values would grow the response beyond the
  *       max message size are dropped from the activation instead, and a job whose injection fails
- *       is dropped and reported for an incident.
+ *       is dropped and reported for an incident, naming the mismatched pointer when it is known.
  * </ol>
  *
  * <p>The cached values are read once at check time and reused for the injection, so a value evicted
@@ -52,7 +56,9 @@ import org.slf4j.LoggerFactory;
  * on the response only: state, records, and logs keep the placeholders.
  *
  * <p>The job-push path injects the same values into the job it streams, see {@code
- * BpmnJobActivationBehavior#publishWork}.
+ * BpmnJobActivationBehavior#publishWork}; it shares {@link JobSecretLookup}, so it tolerates the
+ * same shapes, and {@link JobSecretInjectionIncident}, so it reports a failed injection with the
+ * same message.
  */
 public final class JobSecretInjector {
 
@@ -146,21 +152,35 @@ public final class JobSecretInjector {
    * last reset (the engine processor is single-threaded, so the collection of a command always
    * completes before its injection) and resets this injector for the next activation command.
    *
-   * <p>The collector sized the batch against the max message size with {@link
-   * EngineConfiguration#BATCH_SIZE_CALCULATION_BUFFER} bytes of slack, which the injected values
-   * may consume. The first job whose values would grow the response further is dropped together
-   * with every job after it, from the response batch and the to-be-activated batch alike (both must
-   * still contain the same jobs), so the dropped jobs stay activatable and the next activation,
-   * with a fresh budget, picks them up right away. A job whose injection fails is dropped the same
-   * way; its failure details are only logged, so no secret-related data can end up in persisted
-   * records. Must run before the ACTIVATED event is appended. Returns the dropped job the caller
-   * must raise an incident for: a job whose injection failed, or a job whose values can never fit
-   * any batch.
+   * <p>The injected values ride the activation response only, which must stay under the max message
+   * size like the appended event. The collector already sized the appended event (with the
+   * placeholders) against that limit, keeping {@link
+   * EngineConfiguration#BATCH_SIZE_CALCULATION_BUFFER} bytes of slack as a margin for the framing
+   * metadata it cannot measure. Here each job's value growth is measured against the real remaining
+   * space up to that limit, not against the margin: {@code baseLength} is the size the batch
+   * already occupies, and {@code canWriteEventOfLength} is the same predicate the collector used. A
+   * job is kept only while {@code baseLength + accumulatedGrowth + growth + margin} still fits; the
+   * first job whose values would push the response past that is dropped together with every job
+   * after it, from the response batch and the to-be-activated batch alike (both must still contain
+   * the same jobs), so the dropped jobs stay activatable and the next activation, with a fresh
+   * batch, picks them up right away. A job whose injection fails is dropped the same way; the
+   * exception's own message is only logged, but its placeholder and JSON pointer (never its value)
+   * are carried out for the incident message. Must run before the ACTIVATED event is appended.
+   * Returns the dropped job the caller must raise an incident for: a job whose injection failed, or
+   * a job whose values can never fit any batch.
+   *
+   * @param baseLength the length the batch already occupies before any value is injected, i.e. the
+   *     length of the collected activation command; the injected growth is measured on top of it
+   * @param canWriteEventOfLength returns whether a record of the given length still fits the max
+   *     message size, the same proxy the collector uses to size the appended event
    */
   public Optional<DroppedJob> injectSecretValues(
-      final JobBatchRecord responseBatch, final JobBatchRecord activatedBatch) {
+      final JobBatchRecord responseBatch,
+      final JobBatchRecord activatedBatch,
+      final int baseLength,
+      final Predicate<Integer> canWriteEventOfLength) {
     try {
-      int remainingGrowth = EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
+      int accumulatedGrowth = 0;
       for (final JobWithCachedSecrets jobWithSecrets : jobsWithCachedSecrets) {
         final byte[] injected;
         try {
@@ -175,9 +195,11 @@ public final class JobSecretInjector {
           continue;
         }
         final int growth = injected.length - jobWithSecrets.job().getVariablesBuffer().capacity();
-        if (growth > remainingGrowth) {
+        final int occupiedLength = baseLength + accumulatedGrowth;
+        if (!canWriteEventOfLength.test(
+            occupiedLength + growth + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
           return dropJobsThatNoLongerFit(
-              responseBatch, activatedBatch, jobWithSecrets.index(), growth, remainingGrowth);
+              responseBatch, activatedBatch, jobWithSecrets.index(), growth, occupiedLength);
         }
         // the registered job belongs to the to-be-activated batch; the response element at the
         // same index carries the same variables until they are replaced here
@@ -185,7 +207,7 @@ public final class JobSecretInjector {
             .jobs()
             .get(jobWithSecrets.index())
             .setVariables(BufferUtil.wrapArray(injected));
-        remainingGrowth -= growth;
+        accumulatedGrowth += growth;
       }
       return Optional.empty();
     } finally {
@@ -196,7 +218,8 @@ public final class JobSecretInjector {
   /**
    * Drops the job whose injection failed and every job after it from both batches, and returns it
    * for an incident, so the job cannot loop through activation with a failing injection. The
-   * failure details are only logged, so no secret-related data can end up in persisted records.
+   * exception's own message is only logged; only its placeholder and JSON pointer are carried out
+   * for the incident message (see {@link JobSecretInjectionIncident}).
    */
   private static FailedInjectionJob dropJobsWhoseInjectionFailed(
       final JobBatchRecord responseBatch,
@@ -212,13 +235,17 @@ public final class JobSecretInjector {
         removed.jobKey(),
         removed.job().getType(),
         failure);
-    return new FailedInjectionJob(removed.jobKey(), removed.job());
+    if (failure instanceof final SecretPointerMismatchException mismatch) {
+      return new FailedInjectionJob(
+          removed.jobKey(), removed.job(), mismatch.path(), mismatch.placeholder());
+    }
+    return new FailedInjectionJob(removed.jobKey(), removed.job(), null, null);
   }
 
   /**
    * Drops the job at the given index and every job after it from both batches, so none of them are
    * activated and all stay activatable, and marks both batches as truncated so the client polls for
-   * the dropped jobs right away. A job dropped as the first of the batch had the full growth budget
+   * the dropped jobs right away. A job dropped as the first of the batch had the whole message size
    * to itself, so its values can never fit any batch: it is returned so the caller can raise an
    * incident for it, just like for a job that is too large to activate without secrets.
    */
@@ -227,17 +254,17 @@ public final class JobSecretInjector {
       final JobBatchRecord activatedBatch,
       final int index,
       final int growth,
-      final int remainingGrowth) {
+      final int occupiedLength) {
     final RemovedJob removed = dropJobsFromIndex(responseBatch, activatedBatch, index);
     LOGGER.warn(
         "Not activating the job with key {} of type '{}' and the jobs after it in the batch: "
-            + "injecting the job's secret values would grow the activation batch by {} bytes but "
-            + "only {} bytes remain before the response could exceed the max message size. The "
+            + "injecting the job's secret values would grow the activation batch by {} bytes on top "
+            + "of the {} bytes it already occupies, which would exceed the max message size. The "
             + "dropped jobs stay activatable",
         removed.jobKey(),
         removed.job().getType(),
         growth,
-        remainingGrowth);
+        occupiedLength);
     return index == 0
         ? Optional.of(new OversizedJob(removed.jobKey(), removed.job(), growth))
         : Optional.empty();
@@ -267,12 +294,18 @@ public final class JobSecretInjector {
 
   /**
    * A job dropped from the batch whose secret values can never fit: injecting them would grow the
-   * batch by {@code growth} bytes, more than the whole budget any activation batch has to spare.
+   * batch by {@code growth} bytes, past the max message size even in an otherwise empty batch.
    */
   public record OversizedJob(long jobKey, JobRecord job, int growth) implements DroppedJob {}
 
-  /** A job dropped from the batch because injecting its secret values failed. */
-  public record FailedInjectionJob(long jobKey, JobRecord job) implements DroppedJob {}
+  /**
+   * A job dropped from the batch because injecting its secret values failed. {@code path} and
+   * {@code placeholder} identify the secret whose pointer didn't match, or are both {@code null}
+   * for an unrelated failure (e.g. the job's variables are not valid msgpack).
+   */
+  public record FailedInjectionJob(
+      long jobKey, JobRecord job, @Nullable String path, @Nullable String placeholder)
+      implements DroppedJob {}
 
   /** A registered job: its index in the batch, the job, and its cached secrets. */
   record JobWithCachedSecrets(int index, JobRecord job, List<CachedSecret> cachedSecrets) {}

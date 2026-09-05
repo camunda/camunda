@@ -2,8 +2,7 @@
 #              routes through this workflow. Builds Docker images (or reuses existing ones),
 #              then deploys via newLoadTest.sh + `make install` to a GKE cluster.
 # called-by: camunda-daily-load-tests.yml, camunda-weekly-load-tests.yml,
-#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml,
-#            zeebe-update-long-running-migrating-benchmark.yaml
+#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml
 # also: triggerable manually via workflow_dispatch for ad-hoc load tests
 # monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
@@ -86,11 +85,11 @@ on:
         type: boolean
         required: false
         default: false
-      physical-tenants:
-        description: 'Deploy a second physical tenant (testfoo) with its own load tester. Requires an rdbms secondary-storage-type.'
-        type: boolean
+      physical-tenant-count:
+        description: 'Number of extra physical tenants (pt1..ptN) to deploy alongside the default tenant, each with its own load tester.'
+        type: number
         required: false
-        default: false
+        default: 0
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -201,11 +200,11 @@ on:
         type: boolean
         required: false
         default: false
-      physical-tenants:
-        description: 'Deploy a second physical tenant (testfoo) with its own load tester. Requires an rdbms secondary-storage-type.'
-        type: boolean
+      physical-tenant-count:
+        description: 'Number of extra physical tenants (pt1..ptN) to deploy alongside the default tenant, each with its own load tester.'
+        type: number
         required: false
-        default: false
+        default: 0
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -271,7 +270,7 @@ env:
   OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
   ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
   PERFORM_READ_BENCHMARKS: ${{ inputs.perform-read-benchmarks }}
-  PHYSICAL_TENANTS: ${{ inputs.physical-tenants }}
+  PHYSICAL_TENANT_COUNT: ${{ inputs.physical-tenant-count }}
   PLATFORM_HELM_VALUES: ${{ inputs.platform-helm-values }}
   REF: ${{ inputs.ref }}
   REUSE_TAG: ${{ inputs.reuse-tag}}
@@ -317,7 +316,7 @@ jobs:
           | Enable Optimize | \`${ENABLE_OPTIMIZE}\` |
           | Enable Optimize report metrics | \`${ENABLE_OPTIMIZE_METRICS}\` |
           | Enable chaos | \`${ENABLE_CHAOS}\` |
-          | Physical tenants | \`${PHYSICAL_TENANTS}\` |
+          | Physical tenant count | \`${PHYSICAL_TENANT_COUNT}\` |
           | Build frontend | \`${BUILD_FRONTEND}\` |
           | Perform read benchmarks | \`${PERFORM_READ_BENCHMARKS}\` |
           | Optimize tag | \`${OPTIMIZE_TAG:-—}\` |
@@ -473,10 +472,30 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
+      # registry.camunda.cloud intermittently stops answering the manifest PUT at the end of the
+      # push. jib's own retries all fall inside a ~5 minute window, so they re-hit the same bad
+      # spell and the job fails. Each attempt here is capped well above the ~15s a healthy push
+      # takes, so a hung one is abandoned quickly and the registry is sampled again a minute later.
+      #
+      # This is mitigation, not a fix — it makes a hanging registry survivable, it does not stop it
+      # hanging. Drop both wrappers once these images are published to GAR instead
+      # (camunda/team-infrastructure#992), which removes the dependency on this registry altogether.
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -509,7 +528,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Build and push image
         working-directory: ./load-tests/metrics-exporter
         run: make docker "IMAGE=registry.camunda.cloud/team-reliability-testing/metrics-exporter:${IMAGE_TAG}" DOCKER_PUSH=true
@@ -552,12 +571,8 @@ jobs:
           ref: ${{ inputs.ref }}
           persist-credentials: false
 
-      # camunda-platform-8.10 requires Helm CLI v4; runners ship v3.x.
       - name: Set up Helm
         uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
-        with:
-          tool_versions: |
-            helm 4.2.0
 
       # Authenticate with Teleport
       - name: Set up Teleport
@@ -609,7 +624,7 @@ jobs:
             "${ENABLE_OPTIMIZE_METRICS}" \
             "${METRICS_EXPORTER_BUILT}" \
             "${ENABLE_CHAOS}" \
-            "${PHYSICAL_TENANTS}" \
+            "${PHYSICAL_TENANT_COUNT}" \
             --optimize-tag "${OPTIMIZE_TAG}" \
             --orchestration-tag "${ORCHESTRATION_TAG}" \
             --identity-tag "${IDENTITY_TAG}" \

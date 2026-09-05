@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
@@ -21,6 +22,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -70,27 +72,51 @@ class GlobalConfigurationTest {
     }
 
     @Test
-    void shouldMergePendingChangesByPlanVersion() {
-      // given — same config version, two versions of the same plan
-      final var plan = ClusterChangePlan.init(1, List.of(new DeleteHistoryOperation(MEMBER_0)));
-      final var advancedPlan = plan.advance();
+    void shouldMergePendingChangesByUnioningCompletions() {
+      // given — same config version, the same plan as two brokers see it: each has completed a
+      // different operation of it
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(new DeleteHistoryOperation(MEMBER_0));
+      final var second = builder.add(new DeleteHistoryOperation(MEMBER_1));
+      final var plan =
+          new DependencyChangePlan(
+              1, Status.IN_PROGRESS, Instant.EPOCH, builder.build(), new TreeMap<>());
       final var left =
           new GlobalConfiguration(
-              1, Optional.empty(), Map.of(), Optional.empty(), Optional.of(plan), Optional.empty());
+              1,
+              Optional.empty(),
+              Map.of(),
+              Optional.empty(),
+              Optional.of(
+                  new DependencyChangePlan(
+                      plan.id(),
+                      plan.status(),
+                      plan.startedAt(),
+                      plan.graph(),
+                      new TreeMap<>(Map.of(first, Instant.EPOCH)))),
+              Optional.empty());
       final var right =
           new GlobalConfiguration(
               1,
               Optional.empty(),
               Map.of(),
               Optional.empty(),
-              Optional.of(advancedPlan),
+              Optional.of(
+                  new DependencyChangePlan(
+                      plan.id(),
+                      plan.status(),
+                      plan.startedAt(),
+                      plan.graph(),
+                      new TreeMap<>(Map.of(second, Instant.EPOCH)))),
               Optional.empty());
 
       // when
       final var merged = left.merge(right);
 
-      // then — the higher plan version wins
-      assertThat(merged.pendingChanges()).contains(advancedPlan);
+      // then — both completions survive. Merging by a plan version instead would keep one broker's
+      // progress and silently discard the other's, which is what a graph change makes possible:
+      // several brokers record against the same plan at the same config version.
+      assertThat(merged.pendingChanges().orElseThrow().completed()).containsOnlyKeys(first, second);
     }
 
     @Test
@@ -418,60 +444,85 @@ class GlobalConfigurationTest {
   class ConfigurationChangeNavigation {
 
     @Test
-    void shouldReturnPendingChangeForTargetMemberOnly() {
+    void shouldOfferAnOperationOnlyToTheMemberItNames() {
       // given
       final var config =
           config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE), MEMBER_1, broker(0, State.LEAVING)))
               .startConfigurationChange(List.of(new MemberLeaveOperation(MEMBER_1)));
 
       // when / then
-      assertThat(config.pendingChangesFor(MEMBER_1)).contains(new MemberLeaveOperation(MEMBER_1));
-      assertThat(config.pendingChangesFor(MEMBER_0)).isEmpty();
-      assertThat(config.nextPendingOperation()).isEqualTo(new MemberLeaveOperation(MEMBER_1));
+      assertThat(config.runnableFor(MEMBER_1).values())
+          .containsExactly(new MemberLeaveOperation(MEMBER_1));
+      assertThat(config.runnableFor(MEMBER_0)).isEmpty();
     }
 
     @Test
-    void shouldReturnEmptyPendingChangeWhenNoChangeInProgress() {
+    void shouldOfferNothingWhenNoChangeIsInProgress() {
       // given
       final var config = config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)));
 
       // when / then
-      assertThat(config.pendingChangesFor(MEMBER_0)).isEmpty();
+      assertThat(config.runnableFor(MEMBER_0)).isEmpty();
     }
 
     @Test
-    void shouldStepPlanWithoutBumpingVersionWhileOperationsRemain() {
+    void shouldOfferOnlyOneOperationAtATime() {
+      // given — two operations for the same member
+      final var config =
+          config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE), MEMBER_1, broker(0, State.ACTIVE)))
+              .startConfigurationChange(
+                  List.of(new MemberJoinOperation(MEMBER_1), new MemberLeaveOperation(MEMBER_1)));
+
+      // when / then — the second waits for the first, because a cluster-wide change is planned as a
+      // sequential graph. Offering both at once would run two broker lifecycle steps concurrently,
+      // which nothing here has established is safe.
+      assertThat(config.runnableFor(MEMBER_1).values())
+          .containsExactly(new MemberJoinOperation(MEMBER_1));
+
+      final var first = config.pendingChanges().orElseThrow().graph().operations().firstKey();
+      final var afterFirst = config.completeOperation(first, UnaryOperator.identity());
+      assertThat(afterFirst.runnableFor(MEMBER_1).values())
+          .containsExactly(new MemberLeaveOperation(MEMBER_1));
+    }
+
+    @Test
+    void shouldRecordAnOperationWithoutBumpingVersionWhileOperationsRemain() {
       // given — two operations pending
       final var config =
           config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)))
               .startConfigurationChange(
                   List.of(new MemberJoinOperation(MEMBER_1), new MemberLeaveOperation(MEMBER_0)));
       final long versionAfterStart = config.version();
+      final var first = config.pendingChanges().orElseThrow().graph().operations().firstKey();
 
-      // when — advance past the first operation with a no-op updater
-      final var advanced = config.advanceConfigurationChange(UnaryOperator.identity());
+      // when — record the first operation with a no-op updater
+      final var advanced = config.completeOperation(first, UnaryOperator.identity());
 
-      // then — one operation remains, the version is unchanged (still the start version)
+      // then — one operation remains, and the version has not moved: it must not, or a peer
+      // recording the other operation of the same plan would lose its progress on merge
       assertThat(advanced.hasPendingChanges()).isTrue();
-      assertThat(advanced.pendingChanges().get().pendingOperations())
+      assertThat(advanced.pendingChanges().orElseThrow().pendingOperations())
           .containsExactly(new MemberLeaveOperation(MEMBER_0));
       assertThat(advanced.version()).isEqualTo(versionAfterStart);
     }
 
     @Test
-    void shouldCompleteChangeAndRemoveLeftMembersOnLastOperation() {
+    void shouldCompleteChangeAndRemoveLeftMembersOnceDrained() {
       // given — MEMBER_1 is leaving; a single operation targets it
       final var config =
           config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE), MEMBER_1, broker(0, State.LEAVING)))
               .startConfigurationChange(List.of(new MemberLeaveOperation(MEMBER_1)));
+      final var only = config.pendingChanges().orElseThrow().graph().operations().firstKey();
 
       // when — the operation completes and marks MEMBER_1 as LEFT
       final var advanced =
-          config.advanceConfigurationChange(
-              c -> c.updateMember(MEMBER_1, b -> b.setState(State.LEFT)));
+          config
+              .completeOperation(only, c -> c.updateMember(MEMBER_1, b -> b.setState(State.LEFT)))
+              .completeGraphChangeIfDrained();
 
       // then — the change is completed, MEMBER_1 is removed, version is bumped, lastChange is set
       assertThat(advanced.hasPendingChanges()).isFalse();
+      assertThat(advanced.pendingChanges()).isEmpty();
       assertThat(advanced.hasMember(MEMBER_1)).isFalse();
       assertThat(advanced.hasMember(MEMBER_0)).isTrue();
       assertThat(advanced.version()).isEqualTo(6);
@@ -479,12 +530,68 @@ class GlobalConfigurationTest {
     }
 
     @Test
-    void shouldThrowWhenAdvancingWithoutPendingChange() {
+    void shouldConvergeWhenTwoBrokersFinishTheSameDrainedChange() {
+      // given — a change with two unordered operations, and a member on its way out. Built with the
+      // canonical constructor because startConfigurationChange only builds chains, and what is
+      // under test is what happens when two brokers each record a different operation.
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(new MemberLeaveOperation(MEMBER_1));
+      final var second = builder.add(new MemberJoinOperation(MEMBER_0));
+      final var config =
+          new GlobalConfiguration(
+              4,
+              Optional.empty(),
+              Map.of(MEMBER_0, broker(0, State.ACTIVE), MEMBER_1, broker(0, State.LEAVING)),
+              Optional.empty(),
+              Optional.of(
+                  new DependencyChangePlan(
+                      5, Status.IN_PROGRESS, Instant.EPOCH, builder.build(), new TreeMap<>())),
+              Optional.empty());
+
+      // when — each broker records one operation, and gossip unions the two
+      final var onOneBroker =
+          config.completeOperation(
+              first, c -> c.updateMember(MEMBER_1, b -> b.setState(State.LEFT)));
+      final var onTheOther = config.completeOperation(second, UnaryOperator.identity());
+      final var converged = onOneBroker.merge(onTheOther);
+
+      // and — both then observe it drained and finish it independently, with no coordinator
+      final var finishedHere = converged.completeGraphChangeIfDrained();
+      final var finishedThere = converged.completeGraphChangeIfDrained();
+
+      // then — the two results are identical, which is what makes moving completion off the
+      // last-operation broker safe: the record is stamped from the last operation's own completion
+      // time, not from each broker's clock, so there is nothing left to disagree about. The LEFT
+      // member is pruned on both.
+      assertThat(finishedHere).isEqualTo(finishedThere);
+      assertThat(finishedHere.hasMember(MEMBER_1)).isFalse();
+      assertThat(finishedHere.pendingChanges()).isEmpty();
+      assertThat(finishedHere.lastChange()).isPresent();
+    }
+
+    @Test
+    void shouldLeaveAnUndrainedChangeAlone() {
+      // given — two operations, one recorded
+      final var config =
+          config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE), MEMBER_1, broker(0, State.ACTIVE)))
+              .startConfigurationChange(
+                  List.of(new MemberJoinOperation(MEMBER_1), new MemberLeaveOperation(MEMBER_0)));
+      final var first = config.pendingChanges().orElseThrow().graph().operations().firstKey();
+      final var partial = config.completeOperation(first, UnaryOperator.identity());
+
+      // when / then — every broker calls this on every merge, so it must be a no-op until the
+      // change has actually drained
+      assertThat(partial.completeGraphChangeIfDrained()).isEqualTo(partial);
+    }
+
+    @Test
+    void shouldThrowWhenRecordingWithoutPendingChange() {
       // given
       final var config = config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)));
 
       // when / then
-      assertThatThrownBy(() -> config.advanceConfigurationChange(UnaryOperator.identity()))
+      assertThatThrownBy(
+              () -> config.completeOperation(OperationId.of(0), UnaryOperator.identity()))
           .isInstanceOf(IllegalStateException.class);
     }
 

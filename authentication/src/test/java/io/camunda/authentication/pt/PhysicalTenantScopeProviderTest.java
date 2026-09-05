@@ -7,13 +7,18 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.mock.env.MockEnvironment;
 
 /**
@@ -27,7 +32,9 @@ import org.springframework.mock.env.MockEnvironment;
 class PhysicalTenantScopeProviderTest {
 
   @Test
-  void shouldReturnEmptyListWhenNoPhysicalTenantsConfigured() {
+  void shouldEmitOnlyDefaultAliasWhenNoPhysicalTenantsConfigured() {
+    // Without a descriptor the route is registered but matches no scoped chain, so the catch-all
+    // answers 404.
     // given - no camunda.physical-tenants.* properties
     final var env = env(Map.of("camunda.security.authentication.method", "oidc"));
 
@@ -35,7 +42,9 @@ class PhysicalTenantScopeProviderTest {
     final var provider = new PhysicalTenantScopeProvider(env);
 
     // then
-    assertThat(provider.get()).isEmpty();
+    assertThat(provider.get())
+        .extracting(ScopedSecurityDescriptor::basePath)
+        .containsExactly("/physical-tenants/default");
   }
 
   @Test
@@ -178,11 +187,29 @@ class PhysicalTenantScopeProviderTest {
   }
 
   @Test
-  void shouldNotEmitDefaultAliasWhenNoPhysicalTenantsConfigured() {
-    // Without PT scoping the default alias must not appear — a non-PT deployment stays vanilla.
-    final var env = env(Map.of("camunda.security.authentication.method", "oidc"));
+  void shouldEmitDefaultAliasCarryingRootConfigWhenNoPhysicalTenantsConfigured() {
+    // Zero-tenant counterpart to shouldEmitDefaultAliasDescriptorFromRootConfigWhenPtModeActive:
+    // the alias must carry the root/cluster providers, not an empty config. Field-wise equality
+    // with the cluster bind is pinned in PhysicalTenantAuthConfigurationsTest.
+    // given
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.oidc.audiences[0]", "root-aud"));
 
-    assertThat(new PhysicalTenantScopeProvider(env).get()).isEmpty();
+    // when
+    final var descriptors = new PhysicalTenantScopeProvider(env).get();
+
+    // then
+    assertThat(descriptors).hasSize(1);
+    final var defaultAlias = descriptors.getFirst();
+    assertThat(defaultAlias.basePath()).isEqualTo("/physical-tenants/default");
+    assertThat(defaultAlias.authentication().getOidc()).isNotNull();
+    assertThat(defaultAlias.authentication().getOidc().getClientId()).isEqualTo("root-client");
+    assertThat(defaultAlias.authentication().getOidc().getAudiences()).containsExactly("root-aud");
   }
 
   @Test
@@ -221,6 +248,65 @@ class PhysicalTenantScopeProviderTest {
     assertThatThrownBy(() -> new PhysicalTenantScopeProvider(env))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("default");
+  }
+
+  static Stream<Arguments> clusterShapes() {
+    return Stream.of(
+        Arguments.of(
+            "no physical tenants",
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root")),
+        Arguments.of(
+            "one explicit tenant",
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.tenanta.client-id",
+                    "tenanta-client",
+                "camunda.security.authentication.providers.oidc.tenanta.issuer-uri",
+                    "http://idp/tenanta",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-id",
+                    "pt-tenanta-client")),
+        Arguments.of(
+            "explicit default alongside one tenant",
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.tenanta.client-id",
+                    "tenanta-client",
+                "camunda.security.authentication.providers.oidc.tenanta.issuer-uri",
+                    "http://idp/tenanta",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-id",
+                    "pt-tenanta-client",
+                "camunda.physical-tenants.default.security.authentication.method", "oidc")),
+        Arguments.of(
+            "basic auth, no tenants", Map.of("camunda.security.authentication.method", "basic")));
+  }
+
+  /**
+   * Every tenant the config layer knows about gets a descriptor, and nothing else does. The config
+   * layer always knows about {@code default}; this provider once did not.
+   *
+   * <p>Not circular: both start from {@code discoverExplicitTenantIds}, but only the config layer
+   * added {@code default} unconditionally.
+   */
+  @ParameterizedTest(name = "[{index}] {0}")
+  @MethodSource("clusterShapes")
+  void shouldEmitOneDescriptorPerKnownPhysicalTenant(
+      final String shape, final Map<String, String> properties) {
+    // given
+    final var env = env(properties);
+
+    // when
+    final var descriptors = new PhysicalTenantScopeProvider(env).get();
+
+    // then
+    assertThat(descriptors)
+        .extracting(ScopedSecurityDescriptor::basePath)
+        .containsExactlyInAnyOrderElementsOf(
+            PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env).keySet().stream()
+                .map(id -> PHYSICAL_TENANTS_PATH_SEGMENT + id)
+                .toList());
   }
 
   private static MockEnvironment env(final Map<String, String> properties) {

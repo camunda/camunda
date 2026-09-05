@@ -1,0 +1,76 @@
+---
+# Source: camunda-platform/templates/common/configmap-warnings.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: c8-golden-stable-810-rdbms-camunda-platform-warnings
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-810-rdbms
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+  annotations:
+    {}
+data:
+  warnings: |-
+    [camunda][warning] SECURITY: inlineSecret is set in: [orchestration]. This stores secrets as plain-text in the Helm values and is NOT suitable for production use. For production environments, please use Kubernetes Secrets with 'secret.existingSecret' instead.
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
+        
+    [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.minimumAge" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
+        
+    [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.policyName" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
+        
+    [camunda][warning] DEPRECATION: The Helm values file key "orchestration.retention.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
+        
+    [camunda][warning] DEPRECATION: The Helm values file key "orchestration.retention.minimumAge" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    [camunda][warning] DEPRECATION: The Helm values file key "orchestration.security.initialization.authorizations" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
+        
+    [camunda][warning] DEPRECATION: The Helm values file key "orchestration.exporters.camunda.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/

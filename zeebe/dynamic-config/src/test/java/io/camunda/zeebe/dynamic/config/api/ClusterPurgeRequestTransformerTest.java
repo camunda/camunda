@@ -23,11 +23,13 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -62,10 +64,13 @@ final class ClusterPurgeRequestTransformerTest {
     // when
     final var result = transformer.phases(clusterConfiguration);
 
-    // then
+    // then — every leave except a partition's last is preceded by a demotion; the last replica
+    // must keep its one-shot leave since demoting it would leave the group without a voting member
     assertThat(operationsOf(result, TENANT_A))
         .containsExactly(
+            new PartitionDemoteOperation(id0, 0),
             new PartitionLeaveOperation(id0, 0, 0),
+            new PartitionDemoteOperation(id0, 1),
             new PartitionLeaveOperation(id0, 1, 0),
             new PartitionLeaveOperation(id1, 0, 0),
             new PartitionLeaveOperation(id1, 1, 0),
@@ -73,8 +78,10 @@ final class ClusterPurgeRequestTransformerTest {
             new UpdateIncarnationNumberOperation(id0),
             new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig), false),
             new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig), false),
-            new PartitionJoinOperation(id1, 0, 1),
-            new PartitionJoinOperation(id0, 1, 1));
+            new PartitionJoinOperation(id1, 0, 1, true),
+            new PartitionPromoteOperation(id1, 0),
+            new PartitionJoinOperation(id0, 1, 1, true),
+            new PartitionPromoteOperation(id0, 1));
   }
 
   @Test
@@ -95,8 +102,11 @@ final class ClusterPurgeRequestTransformerTest {
     // then
     assertThat(operationsOf(result, TENANT_A))
         .containsExactly(
+            new PartitionDemoteOperation(id0, 0),
             new PartitionLeaveOperation(id0, 0, 0),
+            new PartitionDemoteOperation(id0, 1),
             new PartitionLeaveOperation(id0, 1, 0),
+            new PartitionDemoteOperation(id0, 2),
             new PartitionLeaveOperation(id0, 2, 0),
             new PartitionLeaveOperation(id1, 0, 0),
             new PartitionLeaveOperation(id1, 1, 0),
@@ -106,9 +116,12 @@ final class ClusterPurgeRequestTransformerTest {
             new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig), false),
             new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig), false),
             new PartitionBootstrapOperation(id0, 2, 2, Optional.of(partitionConfig), false),
-            new PartitionJoinOperation(id1, 0, 1),
-            new PartitionJoinOperation(id0, 1, 1),
-            new PartitionJoinOperation(id1, 2, 1));
+            new PartitionJoinOperation(id1, 0, 1, true),
+            new PartitionPromoteOperation(id1, 0),
+            new PartitionJoinOperation(id0, 1, 1, true),
+            new PartitionPromoteOperation(id0, 1),
+            new PartitionJoinOperation(id1, 2, 1, true),
+            new PartitionPromoteOperation(id1, 2));
   }
 
   @Test
@@ -126,7 +139,7 @@ final class ClusterPurgeRequestTransformerTest {
 
     // then — both tenants are purged, each within its own group
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations()).containsOnlyKeys(TENANT_A, TENANT_B);
     assertThat(phase.groupOperations().get(TENANT_A))
         .containsExactly(
@@ -157,7 +170,7 @@ final class ClusterPurgeRequestTransformerTest {
 
     // then — tenant B keeps its partitions and its history
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations()).containsOnlyKeys(TENANT_A);
   }
 
@@ -262,7 +275,7 @@ final class ClusterPurgeRequestTransformerTest {
   private List<PartitionGroupOperation> operationsOf(
       final Either<Exception, List<Phase>> result, final String groupId) {
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     return phase.groupOperations().get(groupId);
   }
 

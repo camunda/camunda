@@ -5,7 +5,7 @@
 # against a new camunda cluster with the specified version. This is started daily by the github
 # action zeebe-daily-qa.yml. Github workflows just start the process instance and do not monitor it.
 #  The results of these tests are posted to #zeebe-ci via Testbench workers once the test is completed.
-# called by: zeebe-e2e-testbench.yaml, zeebe-qa-testbench.yaml, zeebe-update-long-running-migrating-benchmark.yaml
+# called by: zeebe-e2e-testbench.yaml, zeebe-qa-testbench.yaml
 # type: CI
 # owner @camunda/core-features
 name: Start a Zeebe test in Testbench
@@ -54,7 +54,7 @@ jobs:
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
           service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Login to SaaS image registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:

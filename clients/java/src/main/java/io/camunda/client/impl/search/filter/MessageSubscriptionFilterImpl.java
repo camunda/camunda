@@ -46,6 +46,19 @@ public class MessageSubscriptionFilterImpl
   }
 
   @Override
+  public MessageSubscriptionFilter businessId(final String businessId) {
+    return businessId(f -> f.eq(businessId));
+  }
+
+  @Override
+  public MessageSubscriptionFilter businessId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBusinessId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public MessageSubscriptionFilter messageSubscriptionKey(final Long messageSubscriptionKey) {
     return messageSubscriptionKey(f -> f.eq(messageSubscriptionKey));
   }

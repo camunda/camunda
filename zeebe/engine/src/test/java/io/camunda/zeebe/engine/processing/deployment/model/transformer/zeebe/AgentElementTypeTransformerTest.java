@@ -25,11 +25,6 @@ import org.mockito.Mockito;
 
 class AgentElementTypeTransformerTest {
 
-  private static final String MODELER_TEMPLATE_AI_AGENT_SUB_PROCESS =
-      "io.camunda.connectors.agenticai.aiagent.jobworker.v1";
-  private static final String MODELER_TEMPLATE_AI_AGENT_TASK =
-      "io.camunda.connectors.agenticai.aiagent.v1";
-
   private final AgentElementTypeTransformer transformer = new AgentElementTypeTransformer();
 
   private static Stream<Arguments> elements() {
@@ -46,7 +41,7 @@ class AgentElementTypeTransformerTest {
     final var agentDefinition = agentDefinitionWithType(ZeebeAgentType.aiAgentSubProcess);
 
     // when
-    transformer.transform(element, agentDefinition, null);
+    transformer.transform(element, agentDefinition);
 
     // then
     assertThat(element.getAgentDefinitionType())
@@ -61,7 +56,7 @@ class AgentElementTypeTransformerTest {
     final var agentDefinition = agentDefinitionWithType(ZeebeAgentType.aiAgentTask);
 
     // when
-    transformer.transform(element, agentDefinition, null);
+    transformer.transform(element, agentDefinition);
 
     // then
     assertThat(element.getAgentDefinitionType())
@@ -77,7 +72,7 @@ class AgentElementTypeTransformerTest {
     final var agentDefinition = agentDefinitionWithType(ZeebeAgentType.external);
 
     // when
-    transformer.transform(element, agentDefinition, null);
+    transformer.transform(element, agentDefinition);
 
     // then
     assertThat(element.getAgentDefinitionType())
@@ -85,78 +80,15 @@ class AgentElementTypeTransformerTest {
         .isEqualTo(AgentDefinitionType.EXTERNAL_AGENT);
   }
 
-  @ParameterizedTest(
-      name =
-          "AgentDefinitionType for {0} prefers the explicit marker over a modelerTemplate fallback when both are present")
+  @ParameterizedTest(name = "AgentDefinitionType for {0} stays UNSPECIFIED without a marker")
   @MethodSource("elements")
-  void shouldPreferExplicitMarkerOverModelerTemplate(final ExecutableJobWorkerElement element) {
-    // given
-    final var agentDefinition = agentDefinitionWithType(ZeebeAgentType.external);
-
+  void shouldStayUnspecifiedWithoutMarker(final ExecutableJobWorkerElement element) {
     // when
-    transformer.transform(element, agentDefinition, MODELER_TEMPLATE_AI_AGENT_SUB_PROCESS);
+    transformer.transform(element, null);
 
     // then
     assertThat(element.getAgentDefinitionType())
-        .describedAs("Should prefer the explicit marker over the modelerTemplate fallback")
-        .isEqualTo(AgentDefinitionType.EXTERNAL_AGENT);
-  }
-
-  @Test
-  void shouldFallBackToModelerTemplateForAiAgentSubProcess() {
-    // given
-    final var element = new ExecutableAdHocSubProcess("adHocSubProcess");
-
-    // when
-    transformer.transform(element, null, MODELER_TEMPLATE_AI_AGENT_SUB_PROCESS);
-
-    // then
-    assertThat(element.getAgentDefinitionType())
-        .describedAs(
-            "Should fall back to AI_AGENT_SUB_PROCESS for the ad-hoc sub-process modelerTemplate")
-        .isEqualTo(AgentDefinitionType.AI_AGENT_SUB_PROCESS);
-  }
-
-  @Test
-  void shouldFallBackToModelerTemplateForAiAgentTask() {
-    // given
-    final var element = new ExecutableJobWorkerTask("serviceTask");
-
-    // when
-    transformer.transform(element, null, MODELER_TEMPLATE_AI_AGENT_TASK);
-
-    // then
-    assertThat(element.getAgentDefinitionType())
-        .describedAs("Should fall back to AI_AGENT_TASK for the service task modelerTemplate")
-        .isEqualTo(AgentDefinitionType.AI_AGENT_TASK);
-  }
-
-  @ParameterizedTest(
-      name = "AgentDefinitionType for {0} stays UNSPECIFIED for an unrecognized modelerTemplate")
-  @MethodSource("elements")
-  void shouldStayUnspecifiedForUnrecognizedModelerTemplate(
-      final ExecutableJobWorkerElement element) {
-    // when
-    transformer.transform(element, null, "some.other.connector.template.v3");
-
-    // then
-    assertThat(element.getAgentDefinitionType())
-        .describedAs("Should stay UNSPECIFIED for an unrecognized modelerTemplate")
-        .isEqualTo(AgentDefinitionType.UNSPECIFIED);
-  }
-
-  @ParameterizedTest(
-      name =
-          "AgentDefinitionType for {0} stays UNSPECIFIED when neither the marker nor a modelerTemplate is present")
-  @MethodSource("elements")
-  void shouldStayUnspecifiedWhenNeitherPresent(final ExecutableJobWorkerElement element) {
-    // when
-    transformer.transform(element, null, null);
-
-    // then
-    assertThat(element.getAgentDefinitionType())
-        .describedAs(
-            "Should stay UNSPECIFIED when neither the marker nor a modelerTemplate is present")
+        .describedAs("Should stay UNSPECIFIED when no explicit marker is present")
         .isEqualTo(AgentDefinitionType.UNSPECIFIED);
   }
 

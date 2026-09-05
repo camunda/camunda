@@ -29,22 +29,18 @@ import org.junit.Test;
 
 /**
  * Covers the core detection-to-emission story for {@code AgentDefinition:CREATED} at deploy time:
- * an element carrying a recognized agent marker (explicit {@code zeebe:agentDefinition}, or a
- * {@code zeebe:modelerTemplate} fallback) mints exactly one {@code AgentDefinition} per deployed
- * process version, while an unmarked element mints nothing. Also covers the deployment versioning
- * invariants also enforced for other deployed resources: a fully duplicate deployment must not mint
- * an additional {@code AgentDefinition}, while a mixed deployment that reassigns a duplicate BPMN
- * resource to a new process version must mint a new one for it.
+ * an element carrying an explicit {@code zeebe:agentDefinition} marker creates exactly one {@code
+ * AgentDefinition} per deployed process version, while an unmarked element creates nothing. Also
+ * covers the deployment versioning invariants also enforced for other deployed resources: a fully
+ * duplicate deployment must not create an additional {@code AgentDefinition}, while a mixed
+ * deployment that reassigns a duplicate BPMN resource to a new process version must create a new
+ * one for it.
  *
  * <p>Also covers a single BPMN resource containing more than one executable, agent-marked {@code
  * <process>} element, pinning down that {@code BpmnResourceTransformer} always finds the right
  * {@code ExecutableProcess} to scan for agent markers, for every process it emits metadata for.
  */
 public final class AgentDefinitionDeploymentTest {
-
-  /** {@code zeebe:modelerTemplate} id of the Agentic AI service task connector template. */
-  private static final String MODELER_TEMPLATE_AI_AGENT_TASK =
-      "io.camunda.connectors.agenticai.aiagent.v1";
 
   private static final String FORM_V1 = "/form/test-form-1.form";
   private static final String FORM_V2 = "/form/test-form-1_v2.form";
@@ -107,51 +103,10 @@ public final class AgentDefinitionDeploymentTest {
   }
 
   @Test
-  public void shouldCreateAgentDefinitionViaModelerTemplateFallback() {
-    // given
-    final var processId = "process-modeler-template-fallback";
-    final var elementId = "agent-task";
-
-    // when — no explicit zeebe:agentDefinition marker, only a recognized modelerTemplate
-    final var deployment =
-        engine
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .serviceTask(
-                        elementId,
-                        t ->
-                            t.name("AI Agent Task")
-                                .zeebeJobType("agent-task-job")
-                                .zeebeModelerTemplate(MODELER_TEMPLATE_AI_AGENT_TASK))
-                    .endEvent()
-                    .done())
-            .deploy();
-    final var processDefinitionKey =
-        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
-
-    // then
-    final var agentDefinitionRecord =
-        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
-            .withProcessDefinitionKey(processDefinitionKey)
-            .getFirst();
-
-    Assertions.assertThat(agentDefinitionRecord.getValue())
-        .describedAs(
-            "Should resolve AI_AGENT_TASK via the modelerTemplate fallback through the full"
-                + " deployment pipeline, not just the isolated transformer unit")
-        .hasAgentType(AgentDefinitionType.AI_AGENT_TASK)
-        .hasName("AI Agent Task")
-        .hasElementId(elementId)
-        .hasBpmnProcessId(processId)
-        .hasProcessDefinitionKey(processDefinitionKey);
-  }
-
-  @Test
   public void shouldNotCreateAgentDefinitionForElementWithoutAgentMarker() {
     // given — a plain service task, an ad-hoc sub-process with no marker, and a service task with
-    // an unrecognized modelerTemplate: none of these are agent definitions
+    // a modelerTemplate but no explicit marker: none of these are agent definitions, since a
+    // modelerTemplate alone no longer resolves to an agent type
     final var processId = "process-unmarked";
 
     // when
@@ -163,10 +118,10 @@ public final class AgentDefinitionDeploymentTest {
                     .startEvent()
                     .serviceTask("plain-task", t -> t.zeebeJobType("plain-task-job"))
                     .serviceTask(
-                        "unrecognized-template-task",
+                        "templated-task",
                         t ->
-                            t.zeebeJobType("unrecognized-template-task-job")
-                                .zeebeModelerTemplate("some.other.connector.template.v3"))
+                            t.zeebeJobType("templated-task-job")
+                                .zeebeModelerTemplate("some.connector.template.v3"))
                     .adHocSubProcess("plain-ad-hoc", ahsp -> ahsp.task("inner"))
                     .endEvent()
                     .done())
@@ -227,7 +182,7 @@ public final class AgentDefinitionDeploymentTest {
 
     Assertions.assertThat(firstAgentDefinition.getValue())
         .describedAs(
-            "Should mint an AgentDefinition for the first sibling process's own agent-marked"
+            "Should create an AgentDefinition for the first sibling process's own agent-marked"
                 + " element, correctly resolved among several processes sharing a resource")
         .hasElementId(firstElementId)
         .hasBpmnProcessId(firstProcessId)
@@ -235,7 +190,7 @@ public final class AgentDefinitionDeploymentTest {
 
     Assertions.assertThat(secondAgentDefinition.getValue())
         .describedAs(
-            "Should mint an AgentDefinition for the second sibling process's own agent-marked"
+            "Should create an AgentDefinition for the second sibling process's own agent-marked"
                 + " element, independently from the first")
         .hasElementId(secondElementId)
         .hasBpmnProcessId(secondProcessId)
@@ -243,7 +198,8 @@ public final class AgentDefinitionDeploymentTest {
 
     assertThat(secondAgentDefinition.getValue().getAgentDefinitionKey())
         .describedAs(
-            "Should mint a distinct agentDefinitionKey for each sibling process's AgentDefinition")
+            "Should generate a distinct agentDefinitionKey for each sibling process's"
+                + " AgentDefinition")
         .isNotEqualTo(firstAgentDefinition.getValue().getAgentDefinitionKey());
   }
 
@@ -301,7 +257,7 @@ public final class AgentDefinitionDeploymentTest {
             .getFirst();
 
     Assertions.assertThat(agentDefinitionRecordV2.getValue())
-        .describedAs("Should mint a new AgentDefinition for the new process version")
+        .describedAs("Should create a new AgentDefinition for the new process version")
         .hasBpmnProcessId(processId)
         .hasProcessDefinitionKey(processDefinitionKeyV2)
         .hasProcessDefinitionVersion(2)
@@ -312,7 +268,7 @@ public final class AgentDefinitionDeploymentTest {
 
     assertThat(agentDefinitionRecordV2.getValue().getAgentDefinitionKey())
         .describedAs(
-            "Should mint a distinct agentDefinitionKey for the redeployed process's"
+            "Should generate a distinct agentDefinitionKey for the redeployed process's"
                 + " AgentDefinition")
         .isNotEqualTo(agentDefinitionKeyV1);
   }
@@ -337,7 +293,7 @@ public final class AgentDefinitionDeploymentTest {
             RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
                 .withProcessDefinitionKey(processDefinitionKey)
                 .exists())
-        .describedAs("Should mint an AgentDefinition on the first deployment as a precondition")
+        .describedAs("Should create an AgentDefinition on the first deployment as a precondition")
         .isTrue();
 
     // when — redeploy the exact same, unchanged resource
@@ -362,7 +318,7 @@ public final class AgentDefinitionDeploymentTest {
                         .skip(1)
                         .exists()))
         .describedAs(
-            "Should not mint a second AgentDefinition for the duplicate process definition")
+            "Should not create a second AgentDefinition for the duplicate process definition")
         .isFalse();
   }
 
@@ -419,7 +375,7 @@ public final class AgentDefinitionDeploymentTest {
 
     Assertions.assertThat(agentDefinitionRecordV2.getValue())
         .describedAs(
-            "Should mint a new AgentDefinition for the reassigned process version, matching its"
+            "Should create a new AgentDefinition for the reassigned process version, matching its"
                 + " new processDefinitionVersion")
         .hasElementId(elementId)
         .hasBpmnProcessId(processId)
@@ -428,7 +384,7 @@ public final class AgentDefinitionDeploymentTest {
 
     assertThat(agentDefinitionRecordV2.getValue().getAgentDefinitionKey())
         .describedAs(
-            "Should mint a distinct agentDefinitionKey for the reassigned process version's"
+            "Should generate a distinct agentDefinitionKey for the reassigned process version's"
                 + " AgentDefinition")
         .isNotEqualTo(agentDefinitionKeyV1);
   }

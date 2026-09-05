@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -137,6 +138,7 @@ public final class JobCompleteProcessor
   private final JobProcessingMetrics jobMetrics;
   private final EventHandle eventHandle;
   private final ProcessingState processState;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
   private final VariableBehavior variableBehavior;
   private final ProcessInstanceBusinessIdAssignmentBehavior businessIdAssignmentBehavior;
 
@@ -154,10 +156,12 @@ public final class JobCompleteProcessor
       final EventHandle eventHandle,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
+      final AgentDefinitionBehavior agentDefinitionBehavior,
       final VariableBehavior variableBehavior,
       final boolean includeVariablesInJobCompletedEvent,
       final boolean businessIdUniquenessEnabled) {
     processState = state;
+    this.agentDefinitionBehavior = agentDefinitionBehavior;
     userTaskState = state.getUserTaskState();
     elementInstanceState = state.getElementInstanceState();
     commandWriter = writers.command();
@@ -214,7 +218,10 @@ public final class JobCompleteProcessor
   private void completeJob(
       final TypedRecord<JobRecord> command, final JobRecord job, final ProcessingSession session) {
 
-    preCompleteActions(job, session);
+    final boolean jobBelongsToAgent = agentDefinitionBehavior.belongsToAgent(job);
+    if (job.hasAgenticPrefix() || jobBelongsToAgent) {
+      session.appendAgentInfoToFollowUps(new AgentInfo().setElementId(job.getElementId()));
+    }
 
     // If job completed variables are disabled, emit the COMPLETED event without variables to avoid
     // ExceededBatchRecordSizeException. Variables are not needed in the COMPLETED event; exporters
@@ -228,7 +235,7 @@ public final class JobCompleteProcessor
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), JobIntent.COMPLETED, job, command);
 
-    if (job.isAgentic()) {
+    if (jobBelongsToAgent) {
       commandWriter.appendFollowUpCommand(
           command.getKey(),
           AgentHistoryIntent.COMMIT,
@@ -293,12 +300,6 @@ public final class JobCompleteProcessor
     }
 
     return businessIdAssignmentBehavior.validate(processInstance, businessIdToAssign).map(d -> job);
-  }
-
-  private void preCompleteActions(final JobRecord job, final ProcessingSession session) {
-    if (job.isAgentic()) {
-      session.appendAgentInfoToFollowUps(new AgentInfo().setElementId(job.getElementId()));
-    }
   }
 
   private void postCompleteActions(final JobRecord value) {

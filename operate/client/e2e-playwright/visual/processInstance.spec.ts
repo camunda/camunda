@@ -184,6 +184,43 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('variable modal overlays navigation at narrow desktop width', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.setViewportSize({width: 1200, height: 720});
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.addVariableButton.click();
+    await page.getByRole('button', {name: 'Open', exact: true}).last().click();
+
+    await expect(
+      page.getByRole('heading', {name: 'Edit a new Variable'}),
+    ).toBeVisible();
+    await processInstancePage.variablesEditor.hideCaret();
+    await page.addStyleTag({
+      content:
+        '.monaco-editor :is(.scrollbar, .decorationsOverviewRuler) {opacity: 0 !important;}',
+    });
+    await page.mouse.move(0, 0);
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('edit variable state', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,

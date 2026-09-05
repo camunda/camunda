@@ -242,6 +242,11 @@
           AND pi.TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+        <foreach collection="filter.businessIdOperations" item="operation">
+          AND pi.BUSINESS_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.hasIncident != null">
         <if test="filter.hasIncident == true">
           AND pi.NUM_INCIDENTS > 0
@@ -320,12 +325,27 @@
       <!-- Error message filters -->
       <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
         <foreach collection="filter.errorMessageOperations" item="operation">
-          AND EXISTS (
-          SELECT 1
-          FROM ${prefix}INCIDENT i
-          WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-          AND i.ERROR_MESSAGE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-          )
+          <choose>
+            <when test="operation.operator.name().equals('NOT_EXISTS')">
+              AND NOT EXISTS (
+              SELECT 1
+              FROM ${prefix}INCIDENT i
+              WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+              AND i.ERROR_MESSAGE IS NOT NULL
+              )
+            </when>
+            <otherwise>
+              AND EXISTS (
+              SELECT 1
+              FROM ${prefix}INCIDENT i
+              WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+              AND
+              <include refid="io.camunda.db.rdbms.sql.Commons.errorMessageOperationCondition">
+                <property name="column" value="i.ERROR_MESSAGE"/>
+              </include>
+              )
+            </otherwise>
+          </choose>
         </foreach>
       </if>
       <if test="filter.incidentErrorHashCodeOperations != null and !filter.incidentErrorHashCodeOperations.isEmpty()">

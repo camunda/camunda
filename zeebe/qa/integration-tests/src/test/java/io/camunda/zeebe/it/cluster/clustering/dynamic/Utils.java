@@ -64,7 +64,7 @@ public final class Utils {
         .isNotEqualTo(response.getCurrentTopology());
   }
 
-  static void assertThatAllJobsCanBeCompleted(
+  public static void assertThatAllJobsCanBeCompleted(
       final List<Long> processInstanceKeys,
       final CamundaClient camundaClient,
       final String jobType) {

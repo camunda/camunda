@@ -31,7 +31,7 @@ public record AgentInstanceEntity(
     Long processDefinitionKey,
     String processDefinitionId,
     Integer processDefinitionVersion,
-    @Nullable String versionTag,
+    @Nullable String processDefinitionVersionTag,
     String tenantId,
     OffsetDateTime creationDate,
     OffsetDateTime lastUpdatedDate,
@@ -61,11 +61,13 @@ public record AgentInstanceEntity(
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public record AgentInstanceDefinition(String model, String provider, String systemPrompt) {
+  public record AgentInstanceDefinition(
+      String model, String provider, List<ContentItem> systemPrompt) {
     public AgentInstanceDefinition {
       Objects.requireNonNull(model, "model");
       Objects.requireNonNull(provider, "provider");
-      Objects.requireNonNull(systemPrompt, "systemPrompt");
+      // Mutable list required: MyBatis hydrates by calling .add()
+      systemPrompt = systemPrompt != null ? new ArrayList<>(systemPrompt) : new ArrayList<>();
     }
   }
 
@@ -74,7 +76,13 @@ public record AgentInstanceEntity(
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record AgentInstanceMetrics(
-      long inputTokens, long outputTokens, int modelCalls, int toolCalls) {}
+      long inputTokens,
+      long outputTokens,
+      long reasoningTokenCount,
+      long cacheCreationTokenCount,
+      long cacheReadTokenCount,
+      int modelCalls,
+      int toolCalls) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record AgentInstanceTool(

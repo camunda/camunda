@@ -17,13 +17,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -38,6 +37,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartiti
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
@@ -50,14 +50,17 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingSt
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
@@ -66,7 +69,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRouti
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -250,7 +253,7 @@ final class ClusterApiUtilsTest {
     final List<Phase> phases =
         List.of(
             new GlobalPhase(List.of(globalOperation)),
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(
                     "tenant-a", List.of(tenantAOperation),
                     "tenant-b", List.of(tenantBOperation))));
@@ -1063,9 +1066,9 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Disabling Exporters",
             new ExporterConfigParam(
-                getConfigWithTwoPartitions(State.ENABLED)
-                    .startConfigurationChange(
-                        List.of(new PartitionDisableExporterOperation(member(1), 1, "exporter-1")))
+                withPendingChange(
+                        getConfigWithTwoPartitions(State.ENABLED),
+                        new PartitionDisableExporterOperation(member(1), 1, "exporter-1"))
                     .updateMember(
                         member(2),
                         m -> updateExporterState(m, e -> e.disableExporter("exporter-1"))),
@@ -1079,11 +1082,10 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Enabling Exporters",
             new ExporterConfigParam(
-                getConfigWithTwoPartitions(State.DISABLED)
-                    .startConfigurationChange(
-                        List.of(
-                            new PartitionEnableExporterOperation(
-                                member(1), 1, "exporter-1", Optional.empty())))
+                withPendingChange(
+                        getConfigWithTwoPartitions(State.DISABLED),
+                        new PartitionEnableExporterOperation(
+                            member(1), 1, "exporter-1", Optional.empty()))
                     .updateMember(
                         member(2),
                         m -> updateExporterState(m, e -> e.enableExporter("exporter-1", 2))),
@@ -1236,6 +1238,7 @@ final class ClusterApiUtilsTest {
         new DeleteHistoryOperation(memberId1),
         new UpdateRoutingState(memberId1, emptyRoutingState),
         new UpdateIncarnationNumberOperation(memberId1),
+        new RemovePhysicalTenantOperation(memberId1),
         new PreScalingOperation(memberId1, memberCollection),
         new PostScalingOperation(memberId1, memberCollection),
 
@@ -1245,7 +1248,9 @@ final class ClusterApiUtilsTest {
         new AwaitRelocationCompletion(memberId1, 8, partitionSet),
 
         // Partition change operations
-        new PartitionJoinOperation(memberId1, 1, 1),
+        new PartitionJoinOperation(memberId1, 1, 1, true),
+        new PartitionPromoteOperation(memberId1, 1),
+        new PartitionDemoteOperation(memberId1, 1),
         new PartitionLeaveOperation(memberId1, 1, 3),
         new PartitionReconfigurePriorityOperation(memberId1, 1, 2),
         new PartitionForceReconfigureOperation(memberId1, 1, memberCollection),
@@ -1335,8 +1340,8 @@ final class ClusterApiUtilsTest {
     final var memberId1 = member(1);
     final List<Phase> phases =
         List.of(
-            new PartitionGroupParallelPhase(
-                Map.of("default", List.of(new PartitionJoinOperation(memberId1, 1, 3)))),
+            PartitionGroupPhase.sequential(
+                Map.of("default", List.of(new PartitionJoinOperation(memberId1, 1, 3, true)))),
             new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
     final var config =
         configWithPhasedChangeState(
@@ -1359,27 +1364,25 @@ final class ClusterApiUtilsTest {
   }
 
   @Test
-  void shouldSplitActivePhaseOperationsUsingSubConfigProgress() {
-    // given: the active phase targets physical tenant "tenant-a" with two operations, but the
-    // tenant's own ClusterChangePlan shows the join already completed and only the leave pending
+  void shouldSplitActiveGraphPhaseUsingSubConfigProgress() {
+    // given: the active phase targets physical tenant "tenant-a" with two operations, and the
+    // tenant has run the join and not the leave -- which is what the API must report. A group's
+    // progress is a set of completed operations, with no queue index to read.
     final var memberId1 = member(1);
-    final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1);
-    final var leaveOperation = new PartitionLeaveOperation(memberId1, 3, 0);
-    final var tenantPlan =
-        new ClusterChangePlan(
-            1,
-            1,
-            Status.IN_PROGRESS,
-            Instant.now(),
-            List.of(new CompletedOperation(joinOperation, Instant.now())),
-            List.of(leaveOperation));
+    final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1, true);
+    final var leaveOperation = new PartitionLeaveOperation(memberId1, 4, 0);
+    final var graphBuilder = OperationGraph.builder();
+    final var joinId = graphBuilder.add(joinOperation);
+    graphBuilder.add(leaveOperation, Set.of(joinId));
     final var tenantGroup =
         new PartitionGroupConfiguration(
-            1, 0, Map.of(), Optional.empty(), Optional.of(tenantPlan), Optional.empty());
+                1, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty())
+            .startGraphConfigurationChange(graphBuilder.build())
+            .completeOperation(joinId, UnaryOperator.identity());
     final List<Phase> phases =
         List.of(
-            new PartitionGroupParallelPhase(
-                Map.of("tenant-a", List.of(joinOperation, leaveOperation))),
+            new PartitionGroupPhase(
+                Map.of("tenant-a", tenantGroup.pendingChanges().orElseThrow().graph())),
             new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
     final var config =
         new CurrentClusterConfiguration(
@@ -1446,6 +1449,21 @@ final class ClusterApiUtilsTest {
     final var body = (Error) response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getMessage()).contains("999");
+  }
+
+  /**
+   * A legacy configuration carrying a pending change, as a projection of a live sub-configuration
+   * would. Built here rather than started on the configuration: nothing executes a change through
+   * the legacy single-group type, so it has no method that would start one.
+   */
+  private static ClusterConfiguration withPendingChange(
+      final ClusterConfiguration config, final ClusterConfigurationChangeOperation... operations) {
+    return ClusterConfiguration.builder()
+        .from(config)
+        .version(config.version() + 1)
+        .pendingChanges(
+            Optional.of(DependencyChangePlan.sequential(config.version() + 1, List.of(operations))))
+        .build();
   }
 
   private record ExporterConfigParam(

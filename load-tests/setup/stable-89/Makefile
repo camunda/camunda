@@ -4,6 +4,6 @@ enable_optimize ?= __ENABLE_OPTIMIZE__
 
 # Overrides from common defaults:
 # - physical tenants are not supported for this version.
-physical_tenants_rdbms_values_file =
+physical_tenants_supported = false
 
 include ../common.mk

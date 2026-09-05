@@ -40,7 +40,8 @@ public class RaftJoinStep implements StartupStep<PartitionStartupContext> {
     context.raftPartition(partition);
 
     partition
-        .join(context.partitionManagementService(), context.snapshotStore())
+        .join(
+            context.joinMemberType(), context.partitionManagementService(), context.snapshotStore())
         .whenComplete(
             (raftPartition, throwable) -> {
               if (throwable == null) {

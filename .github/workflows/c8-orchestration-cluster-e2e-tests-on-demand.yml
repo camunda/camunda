@@ -50,9 +50,9 @@ jobs:
           BRANCH: ${{ github.event.inputs.branch }}
         run: |
           echo "Detecting base branch for input branch: $BRANCH"
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 main "$BRANCH"
+          git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 stable/8.10 main "$BRANCH"
           base="main"
-          for candidate in stable/8.6 stable/8.7 stable/8.8 stable/8.9 main; do
+          for candidate in stable/8.6 stable/8.7 stable/8.8 stable/8.9 stable/8.10 main; do
             if git merge-base --is-ancestor origin/$candidate "origin/$BRANCH"; then
               base="$candidate"
               break
@@ -272,14 +272,29 @@ jobs:
           CAMUNDA_MODE: ${{ matrix.camunda_mode }}
         run: |
           pip install trcli
+          log=$(mktemp)
+          set +e
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --timeout 180 \
             parse_junit --suite-id 17050 \
             --title "On Demand C8 Orchestration Cluster API Test Run Results - $BRANCH (Mode $CAMUNDA_MODE) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
-            -f "$JUNIT_RESULTS_FILE"
+            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
+          status=${PIPESTATUS[0]}
+          set -e
+          # trcli's --close-run is not idempotent: past its client timeout it retries
+          # silently and TestRail rejects the retry because the first close landed.
+          # Requiring the Done line means a mid-upload rejection still fails the step.
+          if [ "$status" -ne 0 ] &&
+            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
+            grep -qF 'The test run is already completed' "$log"; then
+            echo "::warning::TestRail close raced its own retry; all results were uploaded"
+            exit 0
+          fi
+          exit "$status"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
@@ -300,7 +315,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   c8-orchestration-cluster-api-tests-rdbms:
-    if: ${{ needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main' }}
+    if: ${{ contains(fromJSON('["stable/8.9","stable/8.10","main"]'), needs.validate-branch.outputs.base) }}
     name: C8 Orchestration Cluster API Tests (H2/RDBMS, Mode ${{ matrix.camunda_mode }})
     needs: validate-branch
     runs-on: ubuntu-latest
@@ -309,7 +324,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
+        camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main' || needs.validate-branch.outputs.base == 'stable/8.10') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     steps:
       - name: Print input and base branch
         shell: bash
@@ -506,7 +521,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-branch.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || (needs.validate-branch.outputs.base == 'stable/8.8' || needs.validate-branch.outputs.base == 'stable/8.9') && '["v1","v2"]' || '["v2"]' ) }}
         camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     needs: [validate-branch]
     runs-on: ubuntu-latest
@@ -778,14 +793,29 @@ jobs:
           TASKLIST_MODE: ${{ matrix.tasklist_mode }}
         run: |
           pip install trcli
+          log=$(mktemp)
+          set +e
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --timeout 180 \
             parse_junit --suite-id 17050 \
             --title "On Demand C8 Orchestration Cluster Test Run Results - $BRANCH (Mode $CAMUNDA_MODE, Tasklist $TASKLIST_MODE) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
-            -f "$JUNIT_RESULTS_FILE"
+            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
+          status=${PIPESTATUS[0]}
+          set -e
+          # trcli's --close-run is not idempotent: past its client timeout it retries
+          # silently and TestRail rejects the retry because the first close landed.
+          # Requiring the Done line means a mid-upload rejection still fails the step.
+          if [ "$status" -ne 0 ] &&
+            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
+            grep -qF 'The test run is already completed' "$log"; then
+            echo "::warning::TestRail close raced its own retry; all results were uploaded"
+            exit 0
+          fi
+          exit "$status"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()

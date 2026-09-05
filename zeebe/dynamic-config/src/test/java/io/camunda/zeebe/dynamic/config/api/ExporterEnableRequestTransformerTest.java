@@ -22,7 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
@@ -68,7 +68,7 @@ final class ExporterEnableRequestTransformerTest {
 
     // then
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations())
         .containsOnlyKeys(TENANT_A, TENANT_B)
         .allSatisfy(
@@ -92,7 +92,7 @@ final class ExporterEnableRequestTransformerTest {
 
     // then
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations()).containsOnlyKeys(TENANT_A);
   }
 
@@ -112,7 +112,7 @@ final class ExporterEnableRequestTransformerTest {
 
     // then
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations())
         .containsOnlyKeys(TENANT_A)
         .hasEntrySatisfying(

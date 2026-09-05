@@ -302,6 +302,14 @@ function mockResponses({
       });
     }
 
+    if (route.request().url().includes('/v2/process-definitions/search')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({items: [], page: {totalItems: 0}}),
+        headers: {'content-type': 'application/json'},
+      });
+    }
+
     if (
       route
         .request()

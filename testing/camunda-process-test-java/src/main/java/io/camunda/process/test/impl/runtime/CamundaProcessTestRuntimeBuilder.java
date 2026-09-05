@@ -20,6 +20,8 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
+import io.camunda.process.test.impl.cleanup.DefaultCleanupStrategyFactory;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
@@ -40,6 +42,8 @@ public class CamundaProcessTestRuntimeBuilder {
       LoggerFactory.getLogger(CamundaProcessTestRuntimeBuilder.class);
 
   private ContainerFactory containerFactory = new ContainerFactory();
+
+  private CleanupStrategyFactory cleanupStrategyFactory = new DefaultCleanupStrategyFactory();
 
   private String camundaDockerImageName =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
@@ -113,8 +117,15 @@ public class CamundaProcessTestRuntimeBuilder {
 
   // ============ For testing =================
 
-  CamundaProcessTestRuntimeBuilder withContainerFactory(final ContainerFactory containerFactory) {
+  public CamundaProcessTestRuntimeBuilder withContainerFactory(
+      final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCleanupStrategyFactory(
+      final CleanupStrategyFactory cleanupStrategyFactory) {
+    this.cleanupStrategyFactory = cleanupStrategyFactory;
     return this;
   }
 
@@ -480,5 +491,9 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public Optional<Duration> getAssertionInterval() {
     return assertionInterval;
+  }
+
+  public CleanupStrategyFactory getCleanupStrategyFactory() {
+    return cleanupStrategyFactory;
   }
 }

@@ -142,6 +142,9 @@ The `{total}` can vary across backups (e.g. from 5 to 7) depending on which opti
 active at backup time. Always use the `scheduledSnapshots` list returned by the take-backup response
 to determine how many parts were created for a specific backup.
 
+The name carries no physical-tenant id: tenants are separated by their snapshot repository, not by
+their snapshot names (see [§1.6](#16-physical-tenants)).
+
 ### 1.4 Backup States
 
 `BackupStateDto` represents the aggregate state of a backup:
@@ -172,7 +175,53 @@ returns an error if it is not found.
 
 The backup executor uses a single-core thread pool with a queue capacity of 4096.
 
-### 1.6 API / Actuator Endpoints
+### 1.6 Physical Tenants
+
+**Each physical tenant requires its own snapshot repository.** Snapshot names are identical across
+tenants, so the repository is the only boundary between one tenant's backups and another's. Sharing
+one would put every tenant's snapshots within reach of an `_all` listing, a
+`DELETE _snapshot/<repo>/*`, a repository delete, or an operator restoring the wrong repository.
+
+Set a distinct repository per tenant — the property already resolves per tenant, so no separate
+configuration surface exists:
+
+```yaml
+camunda:
+  data:
+    secondary-storage:
+      elasticsearch:
+        backup:
+          repository-name: camunda-backup-default
+  physical-tenants:
+    tenanta:
+      data:
+        secondary-storage:
+          elasticsearch:
+            backup:
+              repository-name: camunda-backup-tenanta
+```
+
+As in the single-tenant case, Camunda never creates a repository — the operator registers each one
+with ES/OS beforehand.
+
+`SnapshotRepositoryIsolationValidation` (in `configuration`, registered in
+`PhysicalTenantResolver.CROSS_TENANT_VALIDATIONS`) enforces this at boot: startup fails when two
+tenants resolve to the same `(type, connection, repository-name)`, with the colliding tenants named
+in one grouped error. Note what the identity leaves out — the index prefix. A repository is a
+cluster-global object (`_snapshot/<name>`), so the "shared cluster, distinct index prefix" setup
+that `SecondaryStorageIsolationValidation` allows for indices still collides here.
+
+The rule compares fully resolved configuration, so tenants that merely inherit a root
+`repository-name` without overriding it collide too — the case it mainly exists for. A tenant that
+configures no repository takes no snapshots and is skipped rather than rejected (its backup
+endpoints reject every request at runtime, and startup logs a warning). The `default` tenant
+participates like any other, and single-tenant deployments are a no-op.
+
+A repository may still hold foreign snapshots: Optimize writes its `camunda_optimize_` snapshots
+into the same repository (see [§3.2](#32-snapshot-naming-optimize)). That is a deployment decision
+this rule does not govern — it constrains the Orchestration Cluster's tenants only.
+
+### 1.7 API / Actuator Endpoints
 
 Backups are triggered, monitored, and deleted via Spring Boot actuator endpoints:
 
@@ -349,33 +398,34 @@ the secondary storage state (the exporter will simply re-process any gap after r
 
 ## 5. Key Classes and Locations
 
-|        Class / Interface        |      Module      |                                            Role                                            |
-|---------------------------------|------------------|--------------------------------------------------------------------------------------------|
-| `BackupPriority`                | `webapps-schema` | Marker interface for ES/OS index backup ordering                                           |
-| `Prio1Backup` – `Prio4Backup`   | `webapps-schema` | Priority marker sub-interfaces                                                             |
-| `BackupPriorities`              | `webapps-schema` | Record holding all 4 priority lists; produces ordered `SnapshotIndexCollection` list       |
-| `SnapshotIndexCollection`       | `webapps-schema` | Required + skippable index names for one snapshot part                                     |
-| `BackupPriorityConfiguration`   | `dist`           | Assembles `BackupPriorities` from descriptors; ES/OS only                                  |
-| `BackupService` (webapps)       | `webapps-backup` | Interface: `takeBackup`, `deleteBackup`, `getBackupState`, `getBackups`                    |
-| `BackupServiceImpl`             | `webapps-backup` | Single-threaded sequential snapshot executor                                               |
-| `BackupRepository`              | `webapps-backup` | Interface to ES/OS snapshot API                                                            |
-| `ElasticsearchBackupRepository` | `webapps-backup` | ES implementation                                                                          |
-| `OpensearchBackupRepository`    | `webapps-backup` | OS implementation                                                                          |
-| `WebappsSnapshotNameProvider`   | `webapps-backup` | `camunda_webapps_{id}_{ver}_part_{n}_of_{total}`                                           |
-| `Metadata`                      | `webapps-backup` | Record: `backupId`, `version`, `partNo`, `partCount`                                       |
-| `BackupStateDto`                | `webapps-backup` | `IN_PROGRESS`, `INCOMPLETE`, `COMPLETED`, `FAILED`, `INCOMPATIBLE`                         |
-| `BackupController`              | `dist`           | `@WebEndpoint(id = "backupHistory")` - combined deployment actuator                        |
-| `BackupControllerStandalone`    | `dist`           | `@WebEndpoint(id = "backups")` - standalone deployment actuator                            |
-| `HistoryBackupComponent`        | `dist`           | Wires `BackupServiceImpl`; conditional on ES/OS                                            |
-| `BackupConfig`                  | `dist`           | Configures repository props and executor thread pool                                       |
-| `BackupService` (Optimize)      | `optimize`       | Orchestrates Optimize's 2-snapshot backup                                                  |
-| `BackupWriter` (Optimize)       | `optimize`       | Triggers two snapshots back-to-back; sequential on ES (blocking), concurrent on OS (async) |
-| `BackupReader` (Optimize)       | `optimize`       | Interface: reads snapshot state (ES + OS impls)                                            |
-| `BackupRestService` (Optimize)  | `optimize`       | `@RestControllerEndpoint(id = "backups")` - Optimize actuator                              |
-| `SnapshotUtil` (Optimize)       | `optimize`       | `camunda_optimize_{id}_{ver}_part_{1\|2}_of_2`                                             |
-| `RestoreManager`                | `zeebe/restore`  | Restores Zeebe partition data; RDBMS-aware path included                                   |
-| `RestorePointResolver`          | `zeebe/restore`  | Selects optimal backup checkpoint per partition aligned to RDBMS position                  |
-| `ExporterPositionMapper`        | `db/rdbms`       | Reads per-partition exporter positions from RDBMS during restore                           |
+|            Class / Interface            |      Module      |                                            Role                                            |
+|-----------------------------------------|------------------|--------------------------------------------------------------------------------------------|
+| `BackupPriority`                        | `webapps-schema` | Marker interface for ES/OS index backup ordering                                           |
+| `Prio1Backup` – `Prio4Backup`           | `webapps-schema` | Priority marker sub-interfaces                                                             |
+| `BackupPriorities`                      | `webapps-schema` | Record holding all 4 priority lists; produces ordered `SnapshotIndexCollection` list       |
+| `SnapshotIndexCollection`               | `webapps-schema` | Required + skippable index names for one snapshot part                                     |
+| `BackupPriorityConfiguration`           | `dist`           | Assembles `BackupPriorities` from descriptors; ES/OS only                                  |
+| `BackupService` (webapps)               | `webapps-backup` | Interface: `takeBackup`, `deleteBackup`, `getBackupState`, `getBackups`                    |
+| `BackupServiceImpl`                     | `webapps-backup` | Single-threaded sequential snapshot executor                                               |
+| `BackupRepository`                      | `webapps-backup` | Interface to ES/OS snapshot API                                                            |
+| `ElasticsearchBackupRepository`         | `webapps-backup` | ES implementation                                                                          |
+| `OpensearchBackupRepository`            | `webapps-backup` | OS implementation                                                                          |
+| `WebappsSnapshotNameProvider`           | `webapps-backup` | `camunda_webapps_{id}_{ver}_part_{n}_of_{total}`                                           |
+| `Metadata`                              | `webapps-backup` | Record: `backupId`, `version`, `partNo`, `partCount`                                       |
+| `BackupStateDto`                        | `webapps-backup` | `IN_PROGRESS`, `INCOMPLETE`, `COMPLETED`, `FAILED`, `INCOMPATIBLE`                         |
+| `BackupController`                      | `dist`           | `@WebEndpoint(id = "backupHistory")` - combined deployment actuator                        |
+| `BackupControllerStandalone`            | `dist`           | `@WebEndpoint(id = "backups")` - standalone deployment actuator                            |
+| `HistoryBackupComponent`                | `dist`           | Wires `BackupServiceImpl`; conditional on ES/OS                                            |
+| `BackupConfig`                          | `dist`           | Configures repository props and executor thread pool                                       |
+| `SnapshotRepositoryIsolationValidation` | `configuration`  | Boot-time rule: one snapshot repository per physical tenant                                |
+| `BackupService` (Optimize)              | `optimize`       | Orchestrates Optimize's 2-snapshot backup                                                  |
+| `BackupWriter` (Optimize)               | `optimize`       | Triggers two snapshots back-to-back; sequential on ES (blocking), concurrent on OS (async) |
+| `BackupReader` (Optimize)               | `optimize`       | Interface: reads snapshot state (ES + OS impls)                                            |
+| `BackupRestService` (Optimize)          | `optimize`       | `@RestControllerEndpoint(id = "backups")` - Optimize actuator                              |
+| `SnapshotUtil` (Optimize)               | `optimize`       | `camunda_optimize_{id}_{ver}_part_{1\|2}_of_2`                                             |
+| `RestoreManager`                        | `zeebe/restore`  | Restores Zeebe partition data; RDBMS-aware path included                                   |
+| `RestorePointResolver`                  | `zeebe/restore`  | Selects optimal backup checkpoint per partition aligned to RDBMS position                  |
+| `ExporterPositionMapper`                | `db/rdbms`       | Reads per-partition exporter positions from RDBMS during restore                           |
 
 ## 6. References
 

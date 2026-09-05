@@ -16,7 +16,7 @@ import io.camunda.db.rdbms.write.domain.AgentHistoryDbModel;
 import io.camunda.db.rdbms.write.service.AgentHistoryWriter;
 import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
@@ -147,6 +147,12 @@ class AgentHistoryExportHandlerTest {
     // metrics
     assertThat(model.inputTokens()).isEqualTo(recordValue.getMetrics().getInputTokens());
     assertThat(model.outputTokens()).isEqualTo(recordValue.getMetrics().getOutputTokens());
+    assertThat(model.reasoningTokenCount())
+        .isEqualTo(recordValue.getMetrics().getReasoningTokenCount());
+    assertThat(model.cacheCreationTokenCount())
+        .isEqualTo(recordValue.getMetrics().getCacheCreationTokenCount());
+    assertThat(model.cacheReadTokenCount())
+        .isEqualTo(recordValue.getMetrics().getCacheReadTokenCount());
     assertThat(model.durationMs()).isEqualTo(recordValue.getMetrics().getDurationMs());
 
     // content and tool calls mapped
@@ -667,7 +673,7 @@ class AgentHistoryExportHandlerTest {
 
   @Test
   void shouldMapUnsetMetricsToNull() {
-    // given — -1L is the protocol sentinel meaning "metrics not provided"
+    // given — -1L is the protocol sentinel meaning "metrics not provided", for all six fields
     final var recordValue =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildRecordValue())
@@ -675,6 +681,9 @@ class AgentHistoryExportHandlerTest {
                 ImmutableAgentHistoryMetricsValue.builder()
                     .withInputTokens(-1L)
                     .withOutputTokens(-1L)
+                    .withReasoningTokenCount(-1L)
+                    .withCacheCreationTokenCount(-1L)
+                    .withCacheReadTokenCount(-1L)
                     .withDurationMs(-1L)
                     .build())
             .build();
@@ -691,6 +700,9 @@ class AgentHistoryExportHandlerTest {
     final var model = modelCaptor.getValue();
     assertThat(model.inputTokens()).isNull();
     assertThat(model.outputTokens()).isNull();
+    assertThat(model.reasoningTokenCount()).isNull();
+    assertThat(model.cacheCreationTokenCount()).isNull();
+    assertThat(model.cacheReadTokenCount()).isNull();
     assertThat(model.durationMs()).isNull();
   }
 
@@ -731,6 +743,9 @@ class AgentHistoryExportHandlerTest {
             ImmutableAgentHistoryMetricsValue.builder()
                 .withInputTokens(10L)
                 .withOutputTokens(5L)
+                .withReasoningTokenCount(7L)
+                .withCacheCreationTokenCount(3L)
+                .withCacheReadTokenCount(2L)
                 .withDurationMs(100L)
                 .build())
         .build();

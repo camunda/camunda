@@ -12,15 +12,15 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
-import org.jspecify.annotations.NonNull;
 
 public interface BrokerTopologyManager extends ClusterConfigurationUpdateListener {
 
   /**
-   * Returns live topology for the given physical tenant (partition group). May return {@code null}
-   * or an uninitialized topology if the group is not (yet) known; callers must handle both.
+   * Returns live topology for the given physical tenant (partition group). Never returns {@code
+   * null}: a group that is not (yet) known is represented by an uninitialized {@link
+   * BrokerClusterState}.
    */
-  BrokerClusterState getTopology(@NonNull String physicalTenantId);
+  BrokerClusterState getTopology(String physicalTenantId);
 
   /**
    * Returns live topology for the default partition group. Equivalent to {@code
@@ -50,7 +50,7 @@ public interface BrokerTopologyManager extends ClusterConfigurationUpdateListene
    * there either, so callers gating work on this method hold off and retry rather than act on a
    * tenant whose state they cannot see.
    */
-  default boolean isRecovering(@NonNull final String physicalTenantId) {
+  default boolean isRecovering(final String physicalTenantId) {
     final var partitionGroup = getClusterConfiguration().partitionGroup(physicalTenantId);
     return partitionGroup == null
         || partitionGroup.members().isEmpty()

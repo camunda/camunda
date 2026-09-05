@@ -103,7 +103,15 @@ public class GatewayErrorMapper {
     return problemDetail;
   }
 
-  protected static HttpStatus mapStatus(final Status status) {
+  /**
+   * The single source of truth for how a {@link Status} reaches the caller as an HTTP status.
+   *
+   * <p>Public because a cluster-wide response can carry an error status with a domain body instead
+   * of a problem detail — the cluster-wide backup trigger does, to name the physical tenants whose
+   * backups are running — and such a response must answer with the same status a problem detail
+   * would have.
+   */
+  public static HttpStatus mapStatus(final Status status) {
     return switch (status) {
       case ABORTED -> HttpStatus.BAD_GATEWAY;
       case UNAVAILABLE, RESOURCE_EXHAUSTED -> HttpStatus.SERVICE_UNAVAILABLE;

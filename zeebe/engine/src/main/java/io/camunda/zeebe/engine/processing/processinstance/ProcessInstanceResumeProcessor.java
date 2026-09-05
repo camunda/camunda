@@ -24,10 +24,10 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -161,11 +161,11 @@ public final class ProcessInstanceResumeProcessor
     }
     // restarting a RESUMING instance skips the event above (the marker is already there) and
     // just appends a fresh DRAIN, giving a drain halted by a since-fixed failure (see
-    // ProcessInstanceBufferedCommandDrainProcessor) a way back in without a duplicate audit event
+    // BufferedCommandDrainProcessor) a way back in without a duplicate audit event
     commandWriter.appendFollowUpCommand(
         command.getKey(),
-        ProcessInstanceBufferedCommandIntent.DRAIN,
-        new ProcessInstanceBufferedCommandRecord()
+        BufferedCommandIntent.DRAIN,
+        new BufferedCommandRecord()
             .setProcessInstanceKey(command.getKey())
             .setProcessDefinitionKey(value.getProcessDefinitionKey())
             .setTenantId(value.getTenantId()));

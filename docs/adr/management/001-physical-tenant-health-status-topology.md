@@ -106,6 +106,7 @@ The response contains the cluster-level fields (`clusterId`, broker list with ho
 
 - K8s never takes down a node because one physical tenant's database is broken.
 - Secondary storage schema initialization needs rework to not block startup when one physical tenant's database is uninitialized.
+  - How that rework behaves — what startup waits for and what "ready" asserts — is decided in [005](005-per-physical-tenant-schema-initialization.md), which keeps D2's single-tenant clause intact.
 - New `/cluster/v2/status` and `/cluster/v2/topology` endpoints.
 - `v2/status` semantics are changed slightly to only report status for the requested physical tenant.
   - Client libraries should be updated to use `/cluster/v2/status` instead, and to accept its 200-with-body response alongside today's 204/503.

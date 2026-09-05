@@ -13,6 +13,7 @@ import {
 	advancedStringFilterSchema,
 	API_VERSION,
 	getEnumFilterSchema,
+	getOrFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
@@ -74,32 +75,34 @@ const getUserTask = {
 
 const queryUserTasksRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['creationDate', 'completionDate', 'followUpDate', 'dueDate', 'priority', 'businessId'] as const,
-	filter: userTaskSchema
-		.pick({
-			state: true,
-			elementId: true,
-			tenantId: true,
-			processDefinitionId: true,
-			userTaskKey: true,
-			processDefinitionKey: true,
-			processInstanceKey: true,
-			elementInstanceKey: true,
-		})
-		.extend({
-			assignee: advancedStringFilterSchema,
-			businessId: advancedStringFilterSchema,
-			priority: advancedIntegerFilterSchema,
-			candidateGroup: advancedStringFilterSchema,
-			candidateUser: advancedStringFilterSchema,
-			creationDate: advancedDateTimeFilterSchema,
-			completionDate: advancedDateTimeFilterSchema,
-			followUpDate: advancedDateTimeFilterSchema,
-			dueDate: advancedDateTimeFilterSchema,
-			localVariables: z.array(userTaskVariableFilterSchema),
-			processInstanceVariables: z.array(userTaskVariableFilterSchema),
-			state: getEnumFilterSchema(userTaskStateSchema),
-		})
-		.partial(),
+	filter: getOrFilterSchema(
+		userTaskSchema
+			.pick({
+				state: true,
+				elementId: true,
+				tenantId: true,
+				processDefinitionId: true,
+				userTaskKey: true,
+				processDefinitionKey: true,
+				processInstanceKey: true,
+				elementInstanceKey: true,
+			})
+			.extend({
+				assignee: advancedStringFilterSchema,
+				businessId: advancedStringFilterSchema,
+				priority: advancedIntegerFilterSchema,
+				candidateGroup: advancedStringFilterSchema,
+				candidateUser: advancedStringFilterSchema,
+				creationDate: advancedDateTimeFilterSchema,
+				completionDate: advancedDateTimeFilterSchema,
+				followUpDate: advancedDateTimeFilterSchema,
+				dueDate: advancedDateTimeFilterSchema,
+				localVariables: z.array(userTaskVariableFilterSchema),
+				processInstanceVariables: z.array(userTaskVariableFilterSchema),
+				state: getEnumFilterSchema(userTaskStateSchema),
+			})
+			.partial(),
+	),
 });
 type QueryUserTasksRequestBody = z.infer<typeof queryUserTasksRequestBodySchema>;
 

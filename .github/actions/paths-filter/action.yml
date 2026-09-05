@@ -162,6 +162,15 @@ outputs:
         steps.filter-common.outputs.frontend-change == 'true' ||
         steps.filter-identity.outputs.frontend-identity == 'true'
       }}
+  process-test-coverage-frontend-changes:
+    description: Output whether the Camunda Process Test coverage report frontend should be built
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.process-test-coverage-frontend-change == 'true'
+      }}
   zeebe-changes:
     description: Output whether any Zeebe code has changed
     value: >-
@@ -209,6 +218,25 @@ outputs:
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
+      }}
+  async-replication-tests:
+    description: Output whether async-replication integration tests should be run based on code changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.async-replication-change == 'true'
+      }}
+  release-notes-action:
+    description: Output whether the release-notes action's tests and bundle-drift guards should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.release-notes-action-change == 'true'
       }}
   renovate-config-changes:
     description: Output whether renovate config validator needs to be run
@@ -293,6 +321,22 @@ runs:
           - '**/renovate.json5'
           - '.github/renovate/**.json5'
 
+        # The gate workflow is included so a change to it still runs the action's
+        # tests and the bundle-drift guard that back it.
+        #
+        # The first two globs overlap `ci-relevant` (which already covers
+        # .github/actions/** and .github/workflows/**) and are kept on purpose:
+        # ci-relevant additionally requires check.sh to judge the change
+        # CI-relevant, so an excluded path there would otherwise skip the
+        # action's own tests. The last two are not GitHub Actions files at all,
+        # so only this filter catches them — and both are drift-guarded by the
+        # action's CI, which is exactly what must run when they change.
+        release-notes-action-change:
+          - '.github/actions/release-notes/**'
+          - '.github/workflows/release-notes*'
+          - '.github/pull_request_template.md'
+          - 'commitlint.config.cjs'
+
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes
         #  * react on resource changes like bpmn, XML, etc.
@@ -334,6 +378,10 @@ runs:
           - 'identity/client/**'
           - 'optimize/client/**'
 
+        # Lives in a Maven module, not a client/ folder, so `frontend-change` misses it.
+        process-test-coverage-frontend-change:
+          - 'testing/camunda-process-test-coverage/**'
+
         protobuf-change:
           - '**/*.proto'
           - 'buf.yaml'
@@ -354,6 +402,12 @@ runs:
         - 'qa/acceptance-tests/**'
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'
+
+        async-replication-change:
+        - 'db/rdbms/**'
+        - 'zeebe/exporters/rdbms-exporter/**'
+        - 'qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/asyncreplication/**'
+        - 'qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/util/**'
 
   - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-github-actions
@@ -480,7 +534,16 @@ runs:
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
       filters: |
         docs-change:
+          # Keep in sync with the content roots compiled by the docs site in
+          # monorepo-docs-site/docusaurus.config.js. Each of these folders is a
+          # Docusaurus plugin/preset content root; a broken link in any of them
+          # fails the production build. Omitting one here means changes to it
+          # never trigger the docs-preview build, so a broken link stays latent
+          # until an unrelated docs change trips over it.
           - 'docs/monorepo-docs/**'
+          - 'docs/architecture/**'
+          - 'docs/adr/**'
+          - 'identity/docs/**'
           - 'monorepo-docs-site/!(node_modules)/**'
           - 'monorepo-docs-site/*'
           - '.github/workflows/docs-build-deploy.yml'

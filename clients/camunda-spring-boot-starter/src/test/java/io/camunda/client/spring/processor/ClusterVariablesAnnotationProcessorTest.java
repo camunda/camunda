@@ -255,45 +255,6 @@ public class ClusterVariablesAnnotationProcessorTest {
   }
 
   @Test
-  void shouldCreateGlobalVariablesFromProperties() {
-    // given
-    properties.setGlobal(Map.of("propVar1", "propValue1", "propVar2", 99));
-    mockGlobalCreateCommand();
-
-    // when
-    processor.start(client);
-
-    // then
-    verify(globalCreateStep).create("propVar1", "propValue1");
-    verify(globalCreateStep).create("propVar2", 99);
-  }
-
-  @Test
-  void shouldCreateTenantScopedVariablesFromProperties() {
-    // given
-    properties.setTenant(Map.of("my-tenant", Map.of("tenantPropVar", "tenantPropValue")));
-    mockTenantCreateCommand();
-
-    // when
-    processor.start(client);
-
-    // then
-    verify(client).newTenantScopedClusterVariableCreateRequest("my-tenant");
-    verify(tenantCreateStep).create("tenantPropVar", "tenantPropValue");
-  }
-
-  @Test
-  void shouldRejectBlankTenantIdFromProperties() {
-    // given
-    properties.setTenant(Map.of("", Map.of("var", "value")));
-
-    // when / then
-    assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(() -> processor.start(client))
-        .withMessageContaining("camunda.client.cluster-variables.tenant");
-  }
-
-  @Test
   void shouldRejectBlankEntryLevelTenantIdFromResource() throws IOException {
     // given
     final Resource resource =
@@ -325,24 +286,6 @@ public class ClusterVariablesAnnotationProcessorTest {
     // then
     verify(globalCreateStep).create("environment", "staging");
     verify(globalCreateStep).create("maxRetries", 5);
-  }
-
-  @Test
-  void shouldCreateGlobalVariablesFromPropertiesAndAnnotations() throws IOException {
-    // given
-    properties.setGlobal(Map.of("fromProp", "propValue"));
-    final Resource resource = mockJsonResource("{\"fromResource\": \"resourceValue\"}");
-    when(resourcePatternResolver.getResources("classpath:variables.json"))
-        .thenReturn(new Resource[] {resource});
-    mockGlobalCreateCommand();
-
-    // when
-    processor.configureFor(beanInfo(new WithSingleResource()));
-    processor.start(client);
-
-    // then
-    verify(globalCreateStep).create("fromProp", "propValue");
-    verify(globalCreateStep).create("fromResource", "resourceValue");
   }
 
   @Test
@@ -452,21 +395,6 @@ public class ClusterVariablesAnnotationProcessorTest {
     // then
     verify(client).newTenantScopedClusterVariableCreateRequest("my-tenant");
     verify(tenantCreateStep).create("tenantVar", "tenantValue");
-  }
-
-  @Test
-  void shouldPreferVariablesOverDeprecatedProperties() {
-    // given
-    properties.setVariables(List.of(entry("fromList", "listValue", null, null, null)));
-    properties.setGlobal(Map.of("fromGlobal", "globalValue"));
-    mockGlobalCreateCommand();
-
-    // when
-    processor.start(client);
-
-    // then
-    verify(globalCreateStep).create("fromList", "listValue");
-    verify(globalCreateStep, never()).create("fromGlobal", "globalValue");
   }
 
   @Test

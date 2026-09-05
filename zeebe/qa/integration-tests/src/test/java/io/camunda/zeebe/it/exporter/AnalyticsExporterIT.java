@@ -78,7 +78,7 @@ final class AnalyticsExporterIT {
   @AutoClose private CamundaClient client;
 
   @Test
-  void shouldExportProcessInstanceCreatedToOtelCollector() {
+  void shouldExportProcessInstanceActivatedToOtelCollector() {
     COLLECTOR_LOGS.clear();
 
     // given — broker with analytics exporter pointing at the collector
@@ -108,13 +108,14 @@ final class AnalyticsExporterIT {
     client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
 
     // then — collector received exactly the event with correct attributes
-    Awaitility.await("OTel Collector receives process_instance_created event")
+    Awaitility.await("OTel Collector receives camunda.process.instance.activated event")
         .atMost(Duration.ofSeconds(60))
         .untilAsserted(
             () -> {
               // event.name attribute with exact value
               assertThat(COLLECTOR_LOGS)
-                  .anyMatch(line -> line.contains("event.name: Str(process_instance_created)"));
+                  .anyMatch(
+                      line -> line.contains("event.name: Str(camunda.process.instance.activated)"));
 
               // bpmn process id matches the deployed process
               assertThat(COLLECTOR_LOGS)
@@ -127,16 +128,6 @@ final class AnalyticsExporterIT {
                   .anyMatch(line -> line.contains("camunda.cluster.id: Str(e2e-test-cluster)"));
               assertThat(COLLECTOR_LOGS)
                   .anyMatch(line -> line.contains("camunda.partition.id: Int(1)"));
-
-              // pre-aggregated metric counter
-              assertThat(COLLECTOR_LOGS)
-                  .anyMatch(line -> line.contains("Name: camunda.process_instance.created"));
-
-              // companion gauge with export window metadata
-              assertThat(COLLECTOR_LOGS)
-                  .anyMatch(line -> line.contains("Name: camunda.metric.export_window"));
-              assertThat(COLLECTOR_LOGS)
-                  .anyMatch(line -> line.contains("camunda.metric.sequence_number: Int("));
             });
   }
 }

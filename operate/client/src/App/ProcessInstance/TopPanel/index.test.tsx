@@ -12,7 +12,7 @@ import {
   screen,
   waitFor,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes, useLocation} from 'react-router-dom';
 import {TopPanel} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {searchResult} from 'modules/testUtils';
@@ -136,7 +136,18 @@ const mockElementInstance: ElementInstance = {
   tenantId: '<default>',
 };
 
-const getWrapper = (searchParams?: Record<string, string>) => {
+const LocationSpy: React.FC<{onLocationChange: (search: string) => void}> = ({
+  onLocationChange,
+}) => {
+  const location = useLocation();
+  onLocationChange(location.search);
+  return null;
+};
+
+const getWrapper = (
+  searchParams?: Record<string, string>,
+  onLocationChange?: (search: string) => void,
+) => {
   let initialPath = Paths.processInstance('1');
   if (searchParams) {
     const search = new URLSearchParams(searchParams).toString();
@@ -154,6 +165,9 @@ const getWrapper = (searchParams?: Record<string, string>) => {
                 element={
                   <>
                     <SearchParamsUpdater />
+                    {onLocationChange && (
+                      <LocationSpy onLocationChange={onLocationChange} />
+                    )}
                     {children}
                   </>
                 }
@@ -332,6 +346,189 @@ describe('TopPanel', () => {
         /Move selected instance in this element to another target/,
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should keep the clicked element selected and reset its instance selection', async () => {
+    const elementId = 'multi-instance-subprocess';
+    const elementInstanceKey = '2251799813699889';
+    let currentSearch = '';
+    const elementInstance = {
+      ...mockElementInstance,
+      elementId,
+      elementName: 'Multi Instance Subprocess',
+      type: 'MULTI_INSTANCE_BODY' as const,
+    };
+
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId,
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
+    mockFetchElementInstance(elementInstanceKey).withSuccess(elementInstance);
+
+    const {user} = render(<TopPanel />, {
+      wrapper: getWrapper(
+        {
+          elementId,
+          isMultiInstanceBody: 'true',
+        },
+        (search) => {
+          currentSearch = search;
+        },
+      ),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await user.click(await screen.findByTestId(elementId));
+
+    expect(currentSearch).toContain(`elementId=${elementId}`);
+    expect(currentSearch).not.toContain('elementInstanceKey=');
+    expect(currentSearch).toContain('isMultiInstanceBody=true');
+
+    updateSearchParams({
+      elementId,
+      elementInstanceKey,
+      isMultiInstanceBody: 'true',
+    });
+
+    await waitFor(() => {
+      expect(currentSearch).toContain(
+        `elementInstanceKey=${elementInstanceKey}`,
+      );
+    });
+
+    await user.click(screen.getByTestId('diagram-canvas'));
+
+    await waitFor(() => {
+      expect(currentSearch).toBe('');
+    });
+
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        elementInstance,
+        {...elementInstance, elementInstanceKey: '2251799813699890'},
+      ]),
+    );
+    updateSearchParams({
+      elementId,
+      elementInstanceKey,
+    });
+
+    await waitFor(() => {
+      expect(currentSearch).toContain(
+        `elementInstanceKey=${elementInstanceKey}`,
+      );
+    });
+    expect(currentSearch).toContain(`elementId=${elementId}`);
+    expect(currentSearch).not.toContain('isMultiInstanceBody=');
+
+    await user.click(await screen.findByTestId(elementId));
+
+    await waitFor(() => {
+      expect(currentSearch).not.toContain('elementInstanceKey=');
+    });
+    expect(currentSearch).toContain(`elementId=${elementId}`);
+    expect(currentSearch).toContain('isMultiInstanceBody=true');
+  });
+
+  it('should select the anchor element from an anchored instance selection', async () => {
+    const elementInstanceKey = '2251799813699889';
+    let currentSearch = '';
+
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: 'user-task-1',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
+    mockFetchElementInstance(elementInstanceKey).withSuccess({
+      ...mockElementInstance,
+      elementInstanceKey,
+      elementId: 'multi-instance-subprocess',
+      type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+    });
+
+    const {user} = render(<TopPanel />, {
+      wrapper: getWrapper(
+        {
+          elementId: 'multi-instance-subprocess',
+          elementInstanceKey,
+          anchorElementId: 'user-task-1',
+        },
+        (search) => {
+          currentSearch = search;
+        },
+      ),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+    await user.click(await screen.findByTestId('user-task-1'));
+
+    await waitFor(() => {
+      expect(currentSearch).toContain('elementId=user-task-1');
+    });
+    expect(currentSearch).not.toContain('elementInstanceKey=');
+    expect(currentSearch).not.toContain('anchorElementId=');
+    expect(currentSearch).not.toContain('isMultiInstanceBody=');
+  });
+
+  it('should preserve repeated-click behavior in modification mode', async () => {
+    const elementInstanceKey = '2251799813699889';
+    const elementId = 'multi-instance-subprocess';
+    let currentSearch = '';
+
+    mockFetchElementInstance(elementInstanceKey).withSuccess({
+      ...mockElementInstance,
+      elementId,
+      type: 'MULTI_INSTANCE_BODY',
+    });
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId,
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
+    modificationsStore.enableModificationMode();
+
+    const {user} = render(<TopPanel />, {
+      wrapper: getWrapper(
+        {
+          elementId,
+          elementInstanceKey,
+        },
+        (search) => {
+          currentSearch = search;
+        },
+      ),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+    await user.click(await screen.findByTestId(elementId));
+
+    expect(currentSearch).toBe('');
   });
 
   it('should display move token banner in moving mode', async () => {

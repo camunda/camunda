@@ -8,9 +8,11 @@
 package io.camunda.application.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -112,6 +114,23 @@ class PhysicalTenantSecurityPropertiesConfigurationTest {
                 .getAuthorizations()
                 .isEnabled())
         .isTrue();
+  }
+
+  @Test
+  void shouldFailResolutionWhenAuthorizationsEnabledTenantOmitsInitialization() {
+    // given a tenant with authorization enabled and no initialization block of its own
+    // (the tenant id is deliberately not passed to setProperties, so none is stamped)
+    setProperties(
+        Map.of(
+            "camunda.physical-tenants.tenanta.security.authorizations.enabled", "true",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"));
+
+    // when / then resolution fails rather than letting the tenant inherit the root's identity
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::resolve)
+        .withMessageContaining("camunda.physical-tenants.<id>.security.initialization")
+        .withMessageContaining("tenanta");
   }
 
   private PhysicalTenantSecurityProperties resolve() {

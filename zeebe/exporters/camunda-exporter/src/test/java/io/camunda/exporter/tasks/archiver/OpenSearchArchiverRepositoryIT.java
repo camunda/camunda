@@ -1186,11 +1186,14 @@ final class OpenSearchArchiverRepositoryIT {
     retention.setEnabled(true);
     // ensure all templates are created
     startupSchema();
-    // create indices for all templates with a date in the index name
+    // create indices for all templates with a date and ordinal in the index name
     final var searchClientAdapter = new SearchClientAdapter(testClient, MAPPER);
     final String date = "2026-01-10";
+    final String ordinalSuffix = "ord000001";
     for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
       searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
+      searchClientAdapter.createIndex(
+          indexTemplate.getIndexPattern().replace("*", ordinalSuffix), 0);
     }
     final var asyncClient = createOpenSearchAsyncClient();
     final var genericClientSpy =
@@ -1225,7 +1228,9 @@ final class OpenSearchArchiverRepositoryIT {
                   request.getEndpoint().substring("/_plugins/_ism/add/".length());
               final String[] split = indexPattern.split(",");
               assertThat(split)
-                  .hasSize(3); // 3 patterns (wildcard + runtime exclusion + alias exclusion)
+                  .hasSize(
+                      4); // 4 patterns (wildcard + runtime exclusion + alias exclusion + ordinal
+              // exclusion)
               final var matchingTemplate =
                   resourceProvider.getIndexTemplateDescriptors().stream()
                       .filter(
@@ -1237,7 +1242,8 @@ final class OpenSearchArchiverRepositoryIT {
                   .containsExactly(
                       matchingTemplate.get().getIndexPattern(),
                       "-" + matchingTemplate.get().getFullQualifiedName(),
-                      "-" + matchingTemplate.get().getAlias());
+                      "-" + matchingTemplate.get().getAlias(),
+                      "-" + matchingTemplate.get().getFullQualifiedName() + "ord*");
             });
     for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
       Awaitility.await()
@@ -1257,6 +1263,12 @@ final class OpenSearchArchiverRepositoryIT {
                 // Check runtime index (should not have ISM policy)
                 assertThat(
                         json.get(template.getFullQualifiedName())
+                            .get("index.plugins.index_state_management.policy_id")
+                            .isNull())
+                    .isTrue();
+                // Check ordinal index (should not have ISM policy)
+                assertThat(
+                        json.get(template.getIndexPattern().replace("*", ordinalSuffix))
                             .get("index.plugins.index_state_management.policy_id")
                             .isNull())
                     .isTrue();
@@ -1701,7 +1713,7 @@ final class OpenSearchArchiverRepositoryIT {
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
             MAPPER)
-        .startup();
+        .startupOnce();
   }
 
   private void createBatchOperationIndex() throws IOException {

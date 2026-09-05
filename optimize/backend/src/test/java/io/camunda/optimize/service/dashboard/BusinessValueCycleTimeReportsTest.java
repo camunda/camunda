@@ -67,8 +67,8 @@ public class BusinessValueCycleTimeReportsTest {
     final ProcessReportDataDto data =
         captureReportData(
             BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID,
-            BusinessValueDashboardService.KPI_CYCLE_TIME_BY_PROCESS_NAME,
-            BusinessValueDashboardService.KPI_CYCLE_TIME_BY_PROCESS_DESCRIPTION);
+            BusinessValueDashboardService.KPI_TOP_BY_CYCLE_TIME_NAME,
+            BusinessValueDashboardService.KPI_TOP_BY_CYCLE_TIME_DESCRIPTION);
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);

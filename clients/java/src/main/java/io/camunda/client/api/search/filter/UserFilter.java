@@ -16,10 +16,10 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.util.List;
 import java.util.function.Consumer;
 
-public interface UserFilter extends SearchRequestFilter {
+public interface UserFilter extends UserFilterBase {
 
   /**
    * Filter users by the specified username.
@@ -27,6 +27,7 @@ public interface UserFilter extends SearchRequestFilter {
    * @param username the username of the user
    * @return the updated filter
    */
+  @Override
   UserFilter username(final String username);
 
   /**
@@ -35,6 +36,7 @@ public interface UserFilter extends SearchRequestFilter {
    * @param fn the username {@link StringProperty} consumer of the user
    * @return the updated filter
    */
+  @Override
   UserFilter username(final Consumer<StringProperty> fn);
 
   /**
@@ -43,6 +45,7 @@ public interface UserFilter extends SearchRequestFilter {
    * @param name the name of the user
    * @return the updated filter
    */
+  @Override
   UserFilter name(final String name);
 
   /**
@@ -51,6 +54,7 @@ public interface UserFilter extends SearchRequestFilter {
    * @param fn the name {@link StringProperty} consumer of the user
    * @return the updated filter
    */
+  @Override
   UserFilter name(final Consumer<StringProperty> fn);
 
   /**
@@ -59,6 +63,7 @@ public interface UserFilter extends SearchRequestFilter {
    * @param email the email of the user
    * @return the updated filter
    */
+  @Override
   UserFilter email(final String email);
 
   /**
@@ -67,5 +72,14 @@ public interface UserFilter extends SearchRequestFilter {
    * @param fn the email {@link StringProperty} consumer of the user
    * @return the updated filter
    */
+  @Override
   UserFilter email(final Consumer<StringProperty> fn);
+
+  /**
+   * Combine this filter with a list of alternative filter groups using OR logic.
+   *
+   * @param filters the alternative filter groups
+   * @return the updated filter
+   */
+  UserFilterBase orFilters(List<Consumer<UserFilterBase>> filters);
 }

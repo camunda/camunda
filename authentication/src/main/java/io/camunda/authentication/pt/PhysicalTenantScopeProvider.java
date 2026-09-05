@@ -24,7 +24,7 @@ import org.springframework.core.env.Environment;
 /**
  * {@link CamundaSecurityScopeProvider} that emits one {@link ScopedSecurityDescriptor} per
  * explicitly configured physical tenant, plus an alias descriptor for the implicit {@code default}
- * tenant whenever any tenant is configured.
+ * tenant, which is always emitted.
  *
  * <p>Each descriptor carries:
  *
@@ -38,19 +38,10 @@ import org.springframework.core.env.Environment;
  *       one.
  * </ul>
  *
- * <p><b>Default alias:</b> when at least one physical tenant is configured, this provider also
- * emits a descriptor for the implicit {@code default} tenant at {@code /physical-tenants/default},
- * built from {@code forPhysicalTenant("default")} (root + any {@code physical-tenants.default}
- * overlay, narrowed by its {@code assigned}). The default (root) tenant is therefore addressable
- * both via the unprefixed cluster paths ({@code /v2/...}) and via {@code
- * /physical-tenants/default/v2/...} as an alias — and {@code PhysicalTenantSecurityConfiguration}
- * feeds that same resolved config to CSL's cluster chain, so the two surfaces are identical. This
- * mirrors {@code PhysicalTenantResolver}'s synthesis of a default entry.
- *
- * <p><b>Empty-list behaviour:</b> if no {@code camunda.physical-tenants.*} entries are present in
- * the {@link Environment}, this provider returns an empty list (the default alias is <em>not</em>
- * emitted). The cluster then behaves identically to a non-PT deployment — CSL's standard chains
- * serve all traffic.
+ * <p><b>Default alias:</b> a descriptor for the implicit {@code default} tenant is always emitted
+ * at {@code /physical-tenants/default}, built from {@code forPhysicalTenant("default")}, so the
+ * root tenant is addressable both unprefixed ({@code /v2/...}) and through the alias, and the
+ * descriptor list is never empty.
  */
 public final class PhysicalTenantScopeProvider implements CamundaSecurityScopeProvider {
 
@@ -71,34 +62,37 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
 
   /**
    * Whether any physical tenant is configured (any key under {@code
-   * camunda.physical-tenants.<id>.*} with a valid id). When {@code true}, PT-scoped chains and the
-   * {@code /physical-tenants/default} alias are active — and the cluster {@code /v2} chain must be
-   * unified with the default tenant's resolved config (see {@code
-   * PhysicalTenantSecurityConfiguration}).
+   * camunda.physical-tenants.<id>.*} with a valid id). When {@code true}, the cluster {@code /v2}
+   * chain must be unified with the default tenant's resolved config (see {@code
+   * PhysicalTenantSecurityConfiguration}), which is the only thing this gates.
+   *
+   * <p>It does <em>not</em> gate the {@code /physical-tenants/default} alias, which is always
+   * emitted. With no {@code camunda.physical-tenants.*} keys the overlay bind is a no-op, so the
+   * alias and the cluster chain resolve to equivalent config without the unification step.
    */
   public static boolean hasConfiguredPhysicalTenants(final Environment environment) {
     return !discoverExplicitTenantIds(environment).isEmpty();
   }
 
   private List<ScopedSecurityDescriptor> buildDescriptors() {
-    final Set<String> tenantIds = discoverExplicitTenantIds(environment);
-    if (tenantIds.isEmpty()) {
-      LOG.debug("No camunda.physical-tenants.* entries found; PT-scoped security chains disabled.");
-      return List.of();
-    }
-
-    // Expose the implicit default tenant as an alias for the root/cluster surface (the unprefixed
-    // /v2/... paths), addressable at /physical-tenants/default — mirroring PhysicalTenantResolver's
-    // synthesis of a default entry. A valid OIDC cluster always configures its root provider (the
-    // unprefixed /v2 surface needs it), so the alias is always buildable; idempotent if default is
-    // already configured explicitly.
-    tenantIds.add(DEFAULT_PHYSICAL_TENANT_ID);
-
+    final Set<String> tenantIds = descriptorTenantIds();
     final List<ScopedSecurityDescriptor> result = new ArrayList<>();
     for (final String tenantId : tenantIds) {
       addDescriptor(result, tenantId);
     }
     return List.copyOf(result);
+  }
+
+  /**
+   * Every explicitly configured tenant, plus {@code default} — added unconditionally, so never
+   * empty. The add is idempotent when {@code default} is also configured explicitly, and always
+   * buildable, because a cluster serving the unprefixed {@code /v2} surface necessarily configures
+   * its root provider.
+   */
+  private Set<String> descriptorTenantIds() {
+    final Set<String> tenantIds = discoverExplicitTenantIds(environment);
+    tenantIds.add(DEFAULT_PHYSICAL_TENANT_ID);
+    return tenantIds;
   }
 
   private void addDescriptor(final List<ScopedSecurityDescriptor> result, final String tenantId) {

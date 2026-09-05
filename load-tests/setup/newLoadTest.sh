@@ -7,7 +7,7 @@ ROOT_DIR="$SCRIPT_DIR"
 
 . "${SCRIPT_DIR}/utils.sh"
 
-AVAILABLE_VERSIONS=(main stable-87 stable-88 stable-89)
+AVAILABLE_VERSIONS=(main stable-87 stable-88 stable-89 stable-810)
 
 # Internal plumbing hook for the golden-file test harness: lets callers enumerate versions without
 # duplicating AVAILABLE_VERSIONS.
@@ -47,19 +47,25 @@ case "$target_version" in
     ;;
   stable-87)
     # renovate: version=camunda-platform-8.7
-    camunda_platform_helm_chart_version="12.13.2"
+    camunda_platform_helm_chart_version="12.13.3"
     allowed_storage=(elasticsearch)
     elasticsearch_version="8.17.4"
     ;;
   stable-88)
     # renovate: version=camunda-platform-8.8
-    camunda_platform_helm_chart_version="13.12.5"
+    camunda_platform_helm_chart_version="13.12.8"
     allowed_storage=(elasticsearch opensearch none)
     elasticsearch_version="8.18.0"
     ;;
   stable-89)
     # renovate: version=camunda-platform-8.9
-    camunda_platform_helm_chart_version="14.8.2"
+    camunda_platform_helm_chart_version="14.8.5"
+    allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
+    elasticsearch_version="8.18.0"
+    ;;
+  stable-810)
+    # renovate: version=camunda-platform-8.10
+    camunda_platform_helm_chart_version="15.0.0-alpha4"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     elasticsearch_version="8.18.0"
     ;;
@@ -170,7 +176,7 @@ mkdir -p "$TARGET_DIRECTORY"
 # camunda-platform-values-${secondary_storage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  "$VERSION_DIR/Makefile"                                                  "$TARGET_DIRECTORY/"
-cp -rv "$SCRIPT_DIR/charts/"                                                    "$TARGET_DIRECTORY/"
+cp -rv "$SCRIPT_DIR/charts"                                                     "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-override-values.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-defaults.yaml"                 "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 "$TARGET_DIRECTORY/"
@@ -203,11 +209,6 @@ case "$secondary_storage" in
 
     if [ "$secondary_storage" = "postgresql" ]; then
       postgresqlEnabled=true
-    fi
-
-    physical_tenants_rdbms_config_file="$VERSION_DIR/values/camunda-platform-two-physical-tenants-shared-rdbms.yaml"
-    if [[ -f "$physical_tenants_rdbms_config_file" ]]; then
-      cp -v "$physical_tenants_rdbms_config_file" "$TARGET_DIRECTORY/"
     fi
 
     secondary_storage_config_file="$VERSION_DIR/databases/${secondary_storage}.yaml"

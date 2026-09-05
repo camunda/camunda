@@ -7,17 +7,17 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.util.MemberIdArbitraries;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.Set;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
@@ -26,10 +26,13 @@ import org.junit.jupiter.api.Test;
 
 class RemoveMembersTransformerTest {
 
-  final ClusterConfiguration currentTopology =
-      ClusterConfiguration.init()
-          .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-          .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+  final CurrentClusterConfiguration currentTopology =
+      CurrentClusterConfiguration.init()
+          .updateGlobalConfiguration(
+              globalConfiguration ->
+                  globalConfiguration
+                      .addMember(MemberId.from("1"), BrokerState.initializeAsActive())
+                      .addMember(MemberId.from("2"), BrokerState.initializeAsActive()));
 
   @Test
   void shouldGenerateMemberJoinOperation() {
@@ -38,7 +41,7 @@ class RemoveMembersTransformerTest {
     final var removeRequest = new RemoveMembersTransformer(Set.of(memberToRemove));
 
     // when
-    final var result = removeRequest.operations(currentTopology);
+    final var result = plannedOperations(removeRequest, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -54,7 +57,7 @@ class RemoveMembersTransformerTest {
         new RemoveMembersTransformer(Set.of(memberToRemove, nonExistingMember));
 
     // when
-    final var result = removeRequest.operations(currentTopology);
+    final var result = plannedOperations(removeRequest, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -67,7 +70,7 @@ class RemoveMembersTransformerTest {
     final var removeRequest = new RemoveMembersTransformer(Set.of(nonExistingMember));
 
     // when
-    final var result = removeRequest.operations(currentTopology);
+    final var result = plannedOperations(removeRequest, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -82,7 +85,7 @@ class RemoveMembersTransformerTest {
     final var removeRequest = new RemoveMembersTransformer(candidateMembers);
 
     // when
-    final var result = removeRequest.operations(currentTopology);
+    final var result = plannedOperations(removeRequest, currentTopology);
 
     EitherAssert.assertThat(result)
         .isRight()

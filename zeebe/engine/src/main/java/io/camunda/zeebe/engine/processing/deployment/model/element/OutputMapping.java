@@ -16,7 +16,7 @@ import org.jspecify.annotations.NullMarked;
  * stored under, split into its {@code '.'}-separated segments (e.g. target {@code a.b.c} becomes
  * {@code [a, b, c]}). Output mappings are evaluated one by one in modeling order at runtime; a
  * nested target merges with the existing scope value at every path level (see {@code
- * MappingResultBuilder}).
+ * OutputMappingResultBuilder}).
  */
 @NullMarked
 public record OutputMapping(Expression source, List<String> targetPath) {}

@@ -15,9 +15,9 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
@@ -65,7 +65,7 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
           AgentInstanceHistoryRole.USER,
           List.of(new ContentItem(ContentType.TEXT, "Hello agent", null, null)),
           List.of(),
-          new Metrics(10L, 20L, 100L),
+          new Metrics(10L, 20L, 30L, 40L, 50L, 100L),
           null,
           null,
           null,
@@ -92,7 +92,7 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
             "role": "USER",
             "content": [{ "contentType": "TEXT", "text": "Hello agent" }],
             "toolCalls": [],
-            "metrics": { "inputTokens": 10, "outputTokens": 20, "durationMs": 100 },
+            "metrics": { "inputTokens": 10, "outputTokens": 20, "reasoningTokenCount": 30, "cacheCreationTokenCount": 40, "cacheReadTokenCount": 50, "durationMs": 100 },
             "tools": [],
             "model": null,
             "provider": null,
