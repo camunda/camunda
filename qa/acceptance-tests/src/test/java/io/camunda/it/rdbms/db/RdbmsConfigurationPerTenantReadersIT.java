@@ -5,11 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.rdbms;
+package io.camunda.it.rdbms.db;
 
 import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.rdbms.MyBatisConfiguration;
+import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
 import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.configuration.Camunda;
