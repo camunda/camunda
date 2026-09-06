@@ -48,7 +48,7 @@
     "@types/event-source-polyfill": "1.0.5",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.6",
+    "@types/react-dom": "19.2.7",
     "@types/react-transition-group": "4.4.12",
     "@typescript-eslint/eslint-plugin": "8.69.0",
     "@typescript-eslint/parser": "8.69.0",
