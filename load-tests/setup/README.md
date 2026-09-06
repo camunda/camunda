@@ -361,14 +361,6 @@ Pass `--use-pgbouncer` to `newLoadTest.sh` when scaffolding the namespace:
 
 ```sh
 ./newLoadTest.sh <namespace> postgresql 1 true --use-pgbouncer
-cd <namespace>
-make install
-```
-
-To preview the rendered manifests before installing:
-
-```sh
-make template-load-test-setup
 ```
 
 #### Optional physical tenants (pt1..ptN)
