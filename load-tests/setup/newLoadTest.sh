@@ -87,11 +87,17 @@ Arguments:
 Options:
   --target-version|-t <version>    Version-specific setup to use. Default: main.
                                     Available versions: ${AVAILABLE_VERSIONS[*]}
+  --use-pgbouncer                  Route Postgres traffic through a CNPG Pooler (PgBouncer,
+                                    transaction-pooling mode) instead of connecting straight
+                                    to the Cluster's \`-rw\` Service. Requires
+                                    secondary_storage=postgresql. See "Connection pooling
+                                    (PgBouncer)" in charts/load-test-setup/README.md.
   -h, --help                       Show this help message.
 
 Examples:
   ./newLoadTest.sh ${prefix}demo
   ./newLoadTest.sh ${prefix}perf elasticsearch 3 true
+  ./newLoadTest.sh ${prefix}perf postgresql 3 true --use-pgbouncer
 
 This script scaffolds the per-namespace folder (Makefile, values files). The
 cluster itself is unchanged by this script — the namespace and the
@@ -103,11 +109,16 @@ stays in sync with \`load-tester-values-defaults.yaml\`.
 EOF
 }
 
+use_pgbouncer=false
 remaining_args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target-version|-t)
       shift 2
+      ;;
+    --use-pgbouncer)
+      use_pgbouncer=true
+      shift
       ;;
     -h|--help)
       usage
@@ -153,6 +164,11 @@ namespace="$(parse_namespace "${remaining_args[0]}")"
 secondary_storage="$(parse_secondary_storage "${remaining_args[1]:-elasticsearch}" "${allowed_storage[@]}")"
 ttl_days="$(parse_ttl "${remaining_args[2]:-1}")"
 enable_optimize="$(parse_bool "${remaining_args[3]:-true}")"
+
+if [[ "$use_pgbouncer" == "true" && "$secondary_storage" != "postgresql" ]]; then
+  echo "Error: --use-pgbouncer requires secondary_storage=postgresql (got: $secondary_storage)." >&2
+  exit 1
+fi
 
 # `hashmod_zone` is deterministic, so the zone baked into namespace.yaml and
 # the values files matches any re-applied manifest after TTL deletion. Every
@@ -209,6 +225,15 @@ case "$secondary_storage" in
 
     if [ "$secondary_storage" = "postgresql" ]; then
       postgresqlEnabled=true
+
+      if [[ "$use_pgbouncer" == "true" ]]; then
+        # Point the JDBC URL at the CNPG Pooler's Service instead of the Cluster's
+        # `-rw` Service, with `prepareThreshold=0` — pgjdbc's server-side prepared
+        # statements (enabled by default after 5 uses of the same statement) don't
+        # survive PgBouncer's transaction-mode connection swapping.
+        sed_inplace 's#jdbc:postgresql://postgresql-rw:5432/camunda#jdbc:postgresql://postgresql-pooler:5432/camunda?prepareThreshold=0#' \
+          "$TARGET_DIRECTORY/camunda-platform-values-postgresql.yaml"
+      fi
     fi
 
     secondary_storage_config_file="$VERSION_DIR/databases/${secondary_storage}.yaml"
@@ -354,6 +379,12 @@ EOF
 postgresql:
   enabled: $postgresqlEnabled
 EOF
+  if [[ "$use_pgbouncer" == "true" ]]; then
+    cat <<EOF
+  pooler:
+    enabled: true
+EOF
+  fi
 } > load-test-setup-values.yaml
 
 # Add/update helm repositories. Skippable via LOAD_TEST_SKIP_REPO_UPDATE for
