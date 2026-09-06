@@ -82,7 +82,7 @@
 		"@types/lodash": "4.17.25",
 		"@types/node": "26.4.1",
 		"@types/react": "19.2.18",
-		"@types/react-dom": "19.2.5",
+		"@types/react-dom": "19.2.6",
 		"@types/react-transition-group": "4.4.12",
 		"@vitejs/plugin-react": "6.1.1",
 		"@vitest/browser-playwright": "4.1.11",
