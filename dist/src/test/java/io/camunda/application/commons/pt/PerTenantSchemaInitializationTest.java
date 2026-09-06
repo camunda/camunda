@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.time.Duration;
 import java.util.LinkedHashSet;
@@ -45,6 +46,13 @@ final class PerTenantSchemaInitializationTest {
 
   private static final String TENANT_A = "tenanta";
   private static final String TENANT_B = "tenantb";
+
+  /**
+   * Read by {@link PinsItsCarrier}'s static initializer. Lives on this already-initialized class
+   * rather than on {@link PinsItsCarrier} itself, so releasing it in a test's {@code finally} never
+   * has to touch - and therefore wait to initialize - {@link PinsItsCarrier}.
+   */
+  private static volatile CountDownLatch pinnedCarrierRelease;
 
   @Test
   void shouldHoldTheGateWhileTheOnlyTenantKeepsFailing() throws Exception {
@@ -634,6 +642,57 @@ final class PerTenantSchemaInitializationTest {
   }
 
   @Test
+  @RegressionTest("https://github.com/camunda/camunda/issues/61405")
+  void shouldOpenTheGateForAHealthyTenantWhenOtherTenantsPinEveryCarrier() throws Exception {
+    // given - more pinning tenants than the virtual-thread scheduler has carriers (default
+    // parallelism is availableProcessors()), plus one healthy tenant. This mirrors production:
+    // 16 tenants against 3 CPUs
+    final int pinnerCount = Runtime.getRuntime().availableProcessors() + 1;
+    pinnedCarrierRelease = new CountDownLatch(1);
+    final var pinnerIds = new LinkedHashSet<String>();
+    for (int i = 0; i < pinnerCount; i++) {
+      pinnerIds.add("pinner-" + i);
+    }
+    final var tenantIds = new LinkedHashSet<>(pinnerIds);
+    tenantIds.add(TENANT_A);
+
+    final var initialization =
+        initialization(
+            tenantIds,
+            tenantId -> {
+              // each pinning tenant's attempt blocks inside PinsItsCarrier's class initializer,
+              // which JEP 491 still pins even though the thread running it is virtual
+              if (pinnerIds.contains(tenantId)) {
+                PinsItsCarrier.touch();
+              }
+            });
+    try {
+      final var gateOpened = startInBackground(initialization);
+
+      // when / then - the healthy tenant is scheduled and settles on its own, even though every
+      // carrier ends up pinned by the other tenants' class-init blocking and none of them has
+      // settled yet (the gate itself cannot open until every tenant has, so it cannot be the
+      // signal here). Before the fix this never happens: no carrier is ever freed for the healthy
+      // tenant's virtual thread to run on, so it is never even scheduled
+      Awaitility.await("the healthy tenant is initialized despite every other tenant being stuck")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(initialization.isInitialized(TENANT_A)).isTrue());
+
+      // when - the pinning tenants are released too
+      pinnedCarrierRelease.countDown();
+
+      // then - every tenant can now settle, so the gate opens fully
+      assertThat(gateOpened.await(10, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      // releases PinsItsCarrier's <clinit>, freeing every pinned carrier - from this platform
+      // thread, so the release itself never depends on a virtual thread being schedulable. A
+      // no-op if the try block above already released it
+      pinnedCarrierRelease.countDown();
+      initialization.close();
+    }
+  }
+
+  @Test
   void shouldTolerateNoTenants() {
     // given - a deployment with no search-engine tenant must not hold startup: every tenant has
     // settled vacuously, and none is trying
@@ -737,6 +796,25 @@ final class PerTenantSchemaInitializationTest {
         Thread.currentThread().interrupt();
       }
     }
+  }
+
+  /**
+   * A class whose static initializer blocks - one of the two residual pinning cases JEP 491 leaves
+   * for virtual threads: the thread that runs this initializer pins its carrier on the blocking
+   * call, and every other thread that touches this class pins its own carrier waiting on the
+   * class-initialization monitor. A class initializes at most once per classloader, so this must
+   * not be shared with another test method.
+   */
+  private static final class PinsItsCarrier {
+    static {
+      try {
+        pinnedCarrierRelease.await();
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    static void touch() {}
   }
 
   /** A failure the orchestrator is told retrying cannot repair. */
