@@ -396,9 +396,8 @@ When `physical_tenant_count > 0`, the Makefile:
   that into the `Camunda-Physical-Tenant` gRPC header (so job streams register into the tenant's
   own partition group) and, via `prefixPhysicalTenantPath` (default `true`), the
   `/physical-tenants/pt<i>` REST path prefix — so both gRPC and REST route correctly with no
-  per-tenant secret or address override needed. These testers still pin
-  `--set global.preferRest.enabled=true` regardless of the namespace `prefer_rest` default;
-  dropping that now-redundant override is tracked in #61463.
+  per-tenant secret or address override needed. They honor the namespace's `prefer_rest`
+  default like every other tester, with no separate REST/gRPC pin.
 
 A second Helm release per tenant is not used because the `camunda-load-tests` subchart hardcodes the
 `starter`/`worker` resource names, which would collide in the same namespace. This also means each

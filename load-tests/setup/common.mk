@@ -283,9 +283,8 @@ generate-physical-tenant-values:
 # registers into the tenant's own partition group instead of leaking into "default") and, via
 # prefixPhysicalTenantPath (default true), the `/physical-tenants/<tenant>` REST path prefix —
 # so both gRPC and REST route correctly without a per-tenant secret or address override.
-#
-# Still pins --set global.preferRest.enabled=true regardless of the namespace prefer_rest
-# default (see prefer_rest above) — dropping that now-redundant override is tracked in #61463.
+# Honors the namespace's prefer_rest default via $(load_test_setup_flags) like every other
+# target — no separate preferRest override needed here.
 #
 # The extraEnvVars index below (4) is appended after the 4 entries already set in
 # global.extraEnvVars by scenarios/load-tester-values-defaults.yaml — currently
@@ -305,7 +304,6 @@ install-load-test-physical-tenants:
 	      -s charts/load-tester/templates/workers.yaml \
 	      $(load_test_setup_flags) \
 	      --set load-tester.enabled=true \
-	      --set global.preferRest.enabled=true \
 	      --set global.extraEnvVars[4].name=CAMUNDA_CLIENT_PHYSICAL_TENANT_ID \
 	      --set global.extraEnvVars[4].value=$$tenant \
 	    | sed -E "s/: starter$$/: starter-$$tenant/; s/: worker$$/: worker-$$tenant/" \
