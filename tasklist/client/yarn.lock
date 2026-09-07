@@ -5667,10 +5667,10 @@ rc@^1.0.1, rc@^1.1.6:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-react-dom@19.0.6:
-  version "19.0.6"
-  resolved "https://registry.yarnpkg.com/react-dom/-/react-dom-19.0.6.tgz#ea7e4ba5fdda127258c2c9602fa8cf0e4956cb08"
-  integrity sha512-0dbe9G8x3ewsAkbetkL7qEqQ0zQNbQWV7il9kVD0R2haq3DT/3/3ZZqRH8QeMqMejTCFOvl5n8pbwKGiKvZhFQ==
+react-dom@19.0.8:
+  version "19.0.8"
+  resolved "https://registry.yarnpkg.com/react-dom/-/react-dom-19.0.8.tgz#192efc346ae5c98e5409ff3c4a2659b24fc51f13"
+  integrity sha512-AZ38kyYRWwwY2gSC/8+nnvdaNUH00hPbfpLvDjNxCM7Oslu3wRr0+5ChQCvfABdcKaSIYPECDNEOytbCAU8DjQ==
   dependencies:
     scheduler "^0.25.0"
 
@@ -5788,10 +5788,10 @@ react-transition-group@4.4.5:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-react@19.0.6:
-  version "19.0.6"
-  resolved "https://registry.yarnpkg.com/react/-/react-19.0.6.tgz#4292db9bf6b82305b4328b644a36a72db8f4a169"
-  integrity sha512-EKJI4vnOExfYqMDExb7WYVHy3KIfMX9+9OVmywK59ijwdqSlF0UItR/d/GN1GPDkFVcrzx9mo6uICNEHu7FyRw==
+react@19.0.8:
+  version "19.0.8"
+  resolved "https://registry.yarnpkg.com/react/-/react-19.0.8.tgz#02fd0c18e5baf06c6c59ff663775729811255eb1"
+  integrity sha512-0AdV74MDFG2T5TolFNYvgSqhbH26yUAe2yUErKArC8ehNHb84bwXE0dS68EvEJNBt01eSVNdhL0U6N60JKrFjw==
 
 readable-stream@^3.6.0:
   version "3.6.2"
