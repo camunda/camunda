@@ -302,15 +302,17 @@ class OperateProcessesPage {
   }
 
   getRetryInstanceButton(processInstanceKey: string): Locator {
-    return this.page.getByRole('button', {
-      name: `Retry Instance ${processInstanceKey}`,
-    });
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).getByTestId('retry-operation');
   }
 
   getCancelInstanceButton(processInstanceKey: string): Locator {
-    return this.page.getByRole('button', {
-      name: `Cancel Instance ${processInstanceKey}`,
-    });
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).getByTestId('cancel-operation');
   }
 
   // The per-row operation spinner is a Carbon InlineLoading (no data-testid)
