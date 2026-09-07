@@ -11,8 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.logging.ThrottledLogger;
-import java.time.Duration;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -34,9 +32,6 @@ public final class ComparingMappingResolver<M> implements MappingResolver<M> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ComparingMappingResolver.class);
   private static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
-
-  // 1/s throttle per instance; one engine instance → one resolver → effective global rate limit
-  private final Logger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(1));
 
   private final MappingResolver<M> primary;
   private final MappingResolver<M> comparison;
@@ -61,7 +56,7 @@ public final class ComparingMappingResolver<M> implements MappingResolver<M> {
       final var comparisonResult = comparison.resolve(mappings, processor);
 
       if (!equivalent(snapshot, comparisonResult)) {
-        throttledLog.warn(
+        LOG.warn(
             "Mapping results differ between {} and {} resolvers [{}].",
             primary.getClass().getSimpleName(),
             comparison.getClass().getSimpleName(),

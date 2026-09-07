@@ -268,4 +268,17 @@ final class ComparingMappingResolverTest {
               assertThat(e.getMessage().getFormattedMessage()).contains("threw unexpectedly");
             });
   }
+
+  @Test
+  void shouldLogWarnForEachDivergence() {
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(msgPackOf("{\"a\":1}"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"a\":2}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
+
+    resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
+    resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
+
+    assertThat(recorder.getAppendedEvents()).hasSize(2);
+  }
 }
