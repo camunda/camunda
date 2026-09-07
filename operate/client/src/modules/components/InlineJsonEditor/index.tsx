@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useMemo} from 'react';
 import {observer} from 'mobx-react-lite';
 import {
   beautifyJSON,
@@ -14,37 +14,12 @@ import {
 } from 'modules/utils/editor/beautifyJSON';
 import {EditorWrapper, WriteModeEditor} from './styled';
 import {
-  EDITOR_DECORATION_WIDTH,
-  EDITOR_FONT_SIZE,
-  EDITOR_FONT_FAMILY,
   EDITOR_LINE_HEIGHT,
-  EDITOR_PADDING_BOTTOM,
-  EDITOR_PADDING_TOP,
   EDITOR_MIN_HEIGHT,
   EDITOR_MAX_LINES,
 } from './constants';
 import {ReadOnlyEditor} from './ReadOnlyEditor';
-
-const importRichTextEditor = async () => {
-  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
-    import('modules/loadMonaco'),
-    import('modules/components/RichTextEditor'),
-  ]);
-
-  loadMonaco();
-
-  return RichTextEditor;
-};
-
-let richTextEditorPromise: ReturnType<typeof importRichTextEditor> | undefined;
-
-const loadRichTextEditor = () => {
-  richTextEditorPromise ??= importRichTextEditor().catch((error: unknown) => {
-    richTextEditorPromise = undefined;
-    throw error;
-  });
-  return richTextEditorPromise;
-};
+import {CodeMirrorEditor} from './CodeMirrorEditor';
 
 type Props = {
   value: string;
@@ -99,87 +74,52 @@ const InlineJsonEditor: React.FC<Props> = observer(
         : beautifyJSON(value);
     }, [value, isTruncatedValue]);
 
-    const [editingValue, setEditingValue] = useState<string | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [LoadedRichTextEditor, setLoadedRichTextEditor] = useState<
-      Awaited<ReturnType<typeof loadRichTextEditor>> | undefined
-    >();
-    const [editorLoadError, setEditorLoadError] = useState<unknown>();
-    const shouldStartEditingRef = useRef(false);
-
-    const displayValue = useMemo(() => {
-      if (isEditing && editingValue !== null) {
-        return editingValue;
-      }
-      return formattedValue;
-    }, [isEditing, editingValue, formattedValue]);
+    const displayValue = isReadOnly ? formattedValue : value;
 
     const height = computeHeight(displayValue, maxLines);
 
-    const handleChange = (newValue: string) => {
-      onChange?.(newValue);
-      setEditingValue(newValue);
-      if (onValidate) {
-        try {
-          JSON.parse(newValue);
-          onValidate(true);
-        } catch {
-          onValidate(false);
+    const handleChange = useCallback(
+      (newValue: string) => {
+        onChange?.(newValue);
+        if (onValidate) {
+          try {
+            JSON.parse(newValue);
+            onValidate(true);
+          } catch {
+            onValidate(false);
+          }
         }
-      }
-    };
+      },
+      [onChange, onValidate],
+    );
 
-    const startEditing = useCallback(() => {
-      if (isReadOnly) {
-        return;
-      }
-      shouldStartEditingRef.current = true;
-      void loadRichTextEditor().then(
-        (RichTextEditor) => {
-          if (shouldStartEditingRef.current) {
-            setLoadedRichTextEditor(() => RichTextEditor);
-            setIsEditing(true);
-            setEditingValue(null);
-          }
-        },
-        (error: unknown) => {
-          if (shouldStartEditingRef.current) {
-            setEditorLoadError(error);
-          }
-        },
-      );
-    }, [isReadOnly]);
+    const handleFocus = useCallback(
+      (event: React.FocusEvent<HTMLDivElement>) => {
+        if (
+          event.relatedTarget instanceof Node &&
+          event.currentTarget.contains(event.relatedTarget)
+        ) {
+          return;
+        }
+        onFocus?.();
+      },
+      [onFocus],
+    );
 
-    const handleFocus = useCallback(() => {
-      startEditing();
-      onFocus?.();
-    }, [onFocus, startEditing]);
+    const handleBlur = useCallback(
+      (event: React.FocusEvent<HTMLDivElement>) => {
+        if (
+          event.relatedTarget instanceof Node &&
+          event.currentTarget.contains(event.relatedTarget)
+        ) {
+          return;
+        }
+        onBlur?.();
+      },
+      [onBlur],
+    );
 
-    const handleBlur = useCallback(() => {
-      shouldStartEditingRef.current = false;
-      onBlur?.();
-      // Monaco's FocusTracker debounces blur via setTimeout(0). Synchronously
-      // calling setIsEditing(false) would dispose the editor before that timer
-      // fires, leaving editorHasFocus=true and blocking keyboard input in other
-      // elements. Deferring here ensures Monaco cleans up first.
-      setTimeout(() => {
-        setIsEditing(false);
-        setEditingValue(null);
-      }, 0);
-    }, [onBlur]);
-
-    useEffect(() => {
-      if (autoFocus) {
-        handleFocus();
-      }
-      return () => {
-        shouldStartEditingRef.current = false;
-      };
-    }, [autoFocus, handleFocus]);
-
-    if (editorLoadError !== undefined) {
-      throw editorLoadError;
-    }
+    const editorId = id === undefined ? undefined : `${id}-editor`;
 
     return (
       <EditorWrapper
@@ -191,7 +131,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
         onFocus={handleFocus}
         $invalid={!!fieldError}
       >
-        {isReadOnly || !isEditing || LoadedRichTextEditor === undefined ? (
+        {isReadOnly ? (
           <ReadOnlyEditor
             data-testid={dataTestId}
             value={displayValue}
@@ -206,39 +146,18 @@ const InlineJsonEditor: React.FC<Props> = observer(
           />
         ) : (
           <>
-            <label htmlFor={id} className="cds--visually-hidden">
+            <label htmlFor={editorId} className="cds--visually-hidden">
               {label ?? 'Value'}
             </label>
-            <WriteModeEditor $invalid={!!fieldError}>
-              <LoadedRichTextEditor
-                loading={null}
+            <WriteModeEditor $height={height} $invalid={!!fieldError}>
+              <CodeMirrorEditor
                 value={displayValue}
-                onChange={isReadOnly ? undefined : handleChange}
-                readOnly={isReadOnly}
-                height={`${height}px`}
-                options={{
-                  formatOnType: false,
-                  lineNumbers: 'off',
-                  lineDecorationsWidth: isReadOnly
-                    ? 0
-                    : EDITOR_DECORATION_WIDTH,
-                  renderLineHighlight: 'none',
-                  overviewRulerLanes: 0,
-                  stickyScroll: {enabled: false},
-                  glyphMargin: false,
-                  folding: false,
-                  scrollbar: {useShadows: false},
-                  minimap: {enabled: false},
-                  tabFocusMode: true,
-                  fixedOverflowWidgets: true,
-                  fontSize: EDITOR_FONT_SIZE,
-                  lineHeight: EDITOR_LINE_HEIGHT,
-                  fontFamily: EDITOR_FONT_FAMILY,
-                  padding: {
-                    top: EDITOR_PADDING_TOP,
-                    bottom: EDITOR_PADDING_BOTTOM,
-                  },
-                }}
+                label={label ?? 'Value'}
+                placeholder={placeholder}
+                id={editorId}
+                autoFocus={autoFocus}
+                invalid={!!fieldError}
+                onChange={handleChange}
               />
             </WriteModeEditor>
           </>

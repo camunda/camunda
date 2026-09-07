@@ -162,13 +162,20 @@ const ReadOnlyEditorContent = styled.pre`
 `;
 
 const WriteModeEditor = styled.div<{
+  $height: number;
   $invalid?: boolean;
 }>`
-  .monaco-editor {
-    width: 100% !important;
-    --vscode-editor-background: var(--cds-field) !important;
-    --vscode-editorGutter-background: var(--cds-field) !important;
-    background-color: var(--cds-field) !important;
+  min-width: 0;
+
+  .cm-editor {
+    width: 100%;
+    height: ${({$height}) => $height}px;
+    min-height: ${EDITOR_MIN_HEIGHT}px;
+    color: var(--cds-text-primary);
+    background-color: var(--cds-field);
+    font-family: ${EDITOR_FONT_FAMILY};
+    font-size: ${EDITOR_FONT_SIZE}px;
+    line-height: ${EDITOR_LINE_HEIGHT}px;
 
     .operate-nav-v2 & {
       border: 1px solid var(--cds-border-subtle-01);
@@ -176,17 +183,48 @@ const WriteModeEditor = styled.div<{
       overflow: hidden;
     }
 
-    &:focus-within::after {
+    &.cm-focused::after {
       ${ring('var(--cds-focus)')}
     }
 
     ${({$invalid}) =>
       $invalid &&
       css`
-        &:focus-within::after {
+        &::after,
+        &.cm-focused::after {
           ${ring('var(--cds-support-error)')}
         }
       `}
+  }
+
+  .cm-scroller {
+    overflow: auto;
+    font-family: inherit;
+    line-height: inherit;
+  }
+
+  .cm-content {
+    min-width: 0;
+    padding: ${EDITOR_PADDING_TOP}px ${EDITOR_DECORATION_WIDTH}px
+      ${EDITOR_PADDING_BOTTOM}px;
+    caret-color: var(--cds-text-primary);
+  }
+
+  .cm-line {
+    padding: 0;
+  }
+
+  .cm-placeholder {
+    color: var(--cds-text-placeholder);
+    font-style: normal;
+  }
+
+  .cm-focused {
+    outline: none;
+  }
+
+  .cm-selectionBackground {
+    background-color: var(--cds-highlight) !important;
   }
 `;
 

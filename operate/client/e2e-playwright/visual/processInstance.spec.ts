@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect} from '@playwright/test';
+import {expect, type Locator} from '@playwright/test';
 import {test} from '@/visual-fixtures';
 import {
   compensationProcessInstance,
@@ -18,6 +18,37 @@ import {
 } from '@/mocks/processInstance';
 import {URL_API_PATTERN} from '@/constants';
 import {clientConfigMock} from '@/mocks/clientConfig';
+
+const expectInlineEditorToBeContained = async (inlineEditor: Locator) => {
+  const bounds = await inlineEditor.evaluate((wrapper) => {
+    const grid = wrapper.parentElement;
+    const editor = wrapper.querySelector('.cm-editor');
+    const content = wrapper.querySelector('.cm-content');
+
+    if (grid === null || editor === null || content === null) {
+      throw new Error('Inline editor grid structure was not found');
+    }
+
+    const gridRect = grid.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+
+    return {
+      gridLeft: gridRect.left,
+      gridRight: gridRect.right,
+      wrapperLeft: wrapperRect.left,
+      wrapperRight: wrapperRect.right,
+      editorRight: editorRect.right,
+      contentRight: contentRect.right,
+    };
+  });
+
+  expect(bounds.wrapperLeft).toBeGreaterThanOrEqual(bounds.gridLeft - 1);
+  expect(bounds.wrapperRight).toBeLessThanOrEqual(bounds.gridRight + 1);
+  expect(bounds.editorRight).toBeLessThanOrEqual(bounds.wrapperRight + 1);
+  expect(bounds.contentRight).toBeLessThanOrEqual(bounds.wrapperRight + 1);
+};
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -498,9 +529,6 @@ test.describe('process instance page', () => {
 
     await expect(page.getByText('Value has to be JSON')).toBeVisible();
 
-    await page.keyboard.press('Control+Space');
-    await expect(page.locator('.suggest-widget')).toBeVisible();
-
     await processInstancePage.variablesEditor.hideCaret();
 
     await expect(page).toHaveScreenshot();
@@ -510,24 +538,6 @@ test.describe('process instance page', () => {
     page,
     processInstancePage,
   }) => {
-    let notifyEditorChunkRequested: (() => void) | undefined;
-    const editorChunkRequested = new Promise<void>((resolve) => {
-      notifyEditorChunkRequested = resolve;
-    });
-    let releaseEditorChunk: (() => void) | undefined;
-    const editorChunkReleased = new Promise<void>((resolve) => {
-      releaseEditorChunk = resolve;
-    });
-
-    await page.route('**/assets/RichTextEditor-*.js', async (route) => {
-      if (notifyEditorChunkRequested === undefined) {
-        throw new Error('Rich text editor chunk request is not initialized');
-      }
-      notifyEditorChunkRequested();
-      await editorChunkReleased;
-      await route.continue();
-    });
-
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -553,9 +563,11 @@ test.describe('process instance page', () => {
     await processInstancePage.newVariableNameField.fill('newPayload');
 
     const inlineEditor = page.getByTestId('json-editor-wrapper');
-    const readOnlyEditor = inlineEditor.getByTestId('json-editor-readonly');
+    const codeMirrorEditor = inlineEditor.getByRole('textbox', {name: 'Value'});
 
-    await expect(readOnlyEditor).toBeVisible();
+    await expect(codeMirrorEditor).toBeVisible();
+    await expect(processInstancePage.newVariableNameField).toBeFocused();
+    await expectInlineEditorToBeContained(inlineEditor);
 
     await expect(page).toHaveScreenshot();
 
@@ -563,21 +575,20 @@ test.describe('process instance page', () => {
       (element) => element.getBoundingClientRect().width,
     );
 
-    await readOnlyEditor.click();
-    await editorChunkRequested;
-    await expect(readOnlyEditor).toBeVisible();
-    await expect(readOnlyEditor).toBeFocused();
-    if (releaseEditorChunk === undefined) {
-      throw new Error('Rich text editor chunk release is not initialized');
-    }
-    releaseEditorChunk();
-    await processInstancePage.variablesEditor.waitForEditorToLoad();
+    await codeMirrorEditor.click();
+    await expect(codeMirrorEditor).toBeFocused();
 
     const widthAfterFocus = await inlineEditor.evaluate(
       (element) => element.getBoundingClientRect().width,
     );
 
     expect(widthAfterFocus).toBeLessThanOrEqual(widthBeforeFocus + 1);
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill(
+      `"${'long-value-'.repeat(100)}"`,
+    );
+    await expectInlineEditorToBeContained(inlineEditor);
   });
 
   test('inline JSON edit - error state after blur', async ({
@@ -630,8 +641,9 @@ test.describe('process instance page', () => {
     await processInstancePage.variablesEditor.blur();
 
     await expect(
-      page.getByTestId('edit-variable-value-readonly'),
-    ).toBeVisible();
+      page.getByRole('textbox', {name: 'payload'}),
+    ).not.toBeFocused();
+    await expect(page.getByText('Value has to be JSON')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
