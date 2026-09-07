@@ -529,6 +529,11 @@ test.describe('process instance page', () => {
 
     await expect(page.getByText('Value has to be JSON')).toBeVisible();
 
+    await expect(page.locator('.cm-editor.cm-focused')).toHaveCSS(
+      'outline-style',
+      'none',
+    );
+
     await page.keyboard.press('Control+Space');
     await expect(page.getByRole('listbox')).toBeVisible();
 
@@ -580,6 +585,17 @@ test.describe('process instance page', () => {
 
     await codeMirrorEditor.click();
     await expect(codeMirrorEditor).toBeFocused();
+    await expect(inlineEditor.locator('.cm-editor')).toHaveCSS(
+      'outline-style',
+      'none',
+    );
+    expect(
+      await inlineEditor
+        .locator('.cm-editor')
+        .evaluate(
+          (element) => getComputedStyle(element, '::after').outlineWidth,
+        ),
+    ).toBe('2px');
 
     const widthAfterFocus = await inlineEditor.evaluate(
       (element) => element.getBoundingClientRect().width,
