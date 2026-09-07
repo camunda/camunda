@@ -219,7 +219,7 @@ const WriteModeEditor = styled.div<{
     font-style: normal;
   }
 
-  .cm-focused {
+  .cm-editor.cm-focused {
     outline: none;
   }
 
