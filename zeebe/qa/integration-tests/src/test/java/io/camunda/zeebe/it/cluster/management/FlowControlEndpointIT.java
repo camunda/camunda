@@ -14,6 +14,10 @@ import io.camunda.zeebe.qa.util.actuator.FlowControlActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -37,26 +41,28 @@ final class FlowControlEndpointIT {
   void shouldSetFLowControl() {
     // given
     final var actuator = FlowControlActuator.of(cluster.availableGateway());
-    actuator.setFlowControlConfiguration(
-        // language=JSON
-        """
-        {
-         "write": {
-           "rampUp": 0,
-           "enabled": true,
-           "limit": 999
-          },
-          "request": {
-            "useWindowed": false,
-            "algorithm": "VEGAS",
-            "vegas": {
-              "alpha": 3,
-              "beta": 6,
-              "initialLimit": 50
-            }
-          }
-        }""");
-    final var flowControlConfiguration = actuator.getFlowControlConfiguration();
+    executeWithRetry(
+        () ->
+            actuator.setFlowControlConfiguration(
+                // language=JSON
+                """
+                {
+                 "write": {
+                   "rampUp": 0,
+                   "enabled": true,
+                   "limit": 999
+                  },
+                  "request": {
+                    "useWindowed": false,
+                    "algorithm": "VEGAS",
+                    "vegas": {
+                      "alpha": 3,
+                      "beta": 6,
+                      "initialLimit": 50
+                    }
+                  }
+                }"""));
+    final var flowControlConfiguration = executeWithRetry(actuator::getFlowControlConfiguration);
 
     // then
     final var requestLimiter = flowControlConfiguration.get(1).get("requestLimiter");
@@ -77,34 +83,38 @@ final class FlowControlEndpointIT {
     // given
     final var actuator = FlowControlActuator.of(cluster.availableGateway());
     // to configure just one of the limits, we have to set the others to null
-    actuator.setFlowControlConfiguration(
-        // language=JSON
-        """
-        {
-          "request": null,
-          "write": {
-             "rampUp": 0,
-             "enabled": true,
-             "limit": 5000
-          }
-        }""");
-    actuator.setFlowControlConfiguration(
-        // language=JSON
-        """
-        {
-          "write": null,
-          "request": {
-            "enabled":true,
-            "useWindowed":false,
-            "legacyVegas": {
-              "maxConcurrency": 32768
-            },
-            "algorithm":"LEGACY_VEGAS"
-          }
-        }""");
+    executeWithRetry(
+        () ->
+            actuator.setFlowControlConfiguration(
+                // language=JSON
+                """
+                {
+                  "request": null,
+                  "write": {
+                     "rampUp": 0,
+                     "enabled": true,
+                     "limit": 5000
+                  }
+                }"""));
+    executeWithRetry(
+        () ->
+            actuator.setFlowControlConfiguration(
+                // language=JSON
+                """
+                {
+                  "write": null,
+                  "request": {
+                    "enabled":true,
+                    "useWindowed":false,
+                    "legacyVegas": {
+                      "maxConcurrency": 32768
+                    },
+                    "algorithm":"LEGACY_VEGAS"
+                  }
+                }"""));
 
     // then
-    final var flowControlConfiguration = actuator.getFlowControlConfiguration();
+    final var flowControlConfiguration = executeWithRetry(actuator::getFlowControlConfiguration);
     final var requestLimiter = flowControlConfiguration.get(1).get("requestLimiter");
     assertThat(requestLimiter.get("limit").asInt()).isEqualTo(1024);
     assertThat(requestLimiter.get("estimatedLimit").asDouble()).isEqualTo(1024.0);
@@ -121,27 +131,38 @@ final class FlowControlEndpointIT {
   void canDisableALimit() {
     // given
     final var actuator = FlowControlActuator.of(cluster.availableGateway());
-    actuator.setFlowControlConfiguration(
-        // language=JSON
-        """
-        {
-          "request": {
-            "enabled": false
-          },
-          "write": {
-            "enabled": false,
-            "rampUp": 0,
-            "limit": 1000
-          }
-        }
-        """);
+    executeWithRetry(
+        () ->
+            actuator.setFlowControlConfiguration(
+                // language=JSON
+                """
+                {
+                  "request": {
+                    "enabled": false
+                  },
+                  "write": {
+                    "enabled": false,
+                    "rampUp": 0,
+                    "limit": 1000
+                  }
+                }
+                """));
 
     // then
-    final var flowControlConfiguration = actuator.getFlowControlConfiguration();
+    final var flowControlConfiguration = executeWithRetry(actuator::getFlowControlConfiguration);
     assertThat(flowControlConfiguration.get(1).get("requestLimiter")).isInstanceOf(NullNode.class);
     final var writeRateLimit = flowControlConfiguration.get(1).get("writeRateLimit");
     assertThat(writeRateLimit.get("enabled").asBoolean()).isFalse();
     assertThat(writeRateLimit.get("limit").asInt()).isEqualTo(1000);
     assertThat(writeRateLimit.get("rampUp").asDouble()).isEqualTo(0.0);
+  }
+
+  private static <T> T executeWithRetry(final Supplier<T> request) {
+    final var result = new AtomicReference<T>();
+    Awaitility.await("HTTP actuator request")
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofMillis(200))
+        .untilAsserted(() -> result.set(request.get()));
+    return result.get();
   }
 }
