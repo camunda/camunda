@@ -129,6 +129,45 @@ describe('<LatestAgentMessage />', () => {
     expect(message.getByText('I will help you with that.')).toBeInTheDocument();
   });
 
+  it('should render reasoning content in the latest assistant message', async () => {
+    mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: 'msg-thinking',
+          role: 'ASSISTANT',
+          content: [
+            {
+              contentType: 'OBJECT',
+              object: {
+                provider: 'openai',
+                payload: {type: 'reasoning'},
+                text: 'Look up the policy first.',
+              },
+            },
+          ],
+        }),
+      ]),
+    );
+
+    render(
+      <LatestAgentMessage
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        agentInstanceStatus="COMPLETED"
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('latest-agent-message-skeleton'),
+    );
+
+    const message = within(
+      screen.getByTestId('conversation-message-msg-thinking'),
+    );
+    expect(message.getByText('Thinking')).toBeVisible();
+    expect(message.getByText('Look up the policy first.')).toBeVisible();
+  });
+
   it('should trigger a refetch when the agent instance status changes', async () => {
     mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
       searchResult([mockAgentInstanceHistoryItem({historyItemKey: 'msg-2'})]),

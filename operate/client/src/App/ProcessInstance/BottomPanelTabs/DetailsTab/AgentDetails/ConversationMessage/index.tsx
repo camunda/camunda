@@ -28,6 +28,7 @@ import {MessageDetailsModal} from './MessageDetailsModal';
 import {MessageMetrics} from './MessageMetrics';
 import {DocumentContent} from './MessageAttachments/DocumentContent';
 import {ToolCalls} from './MessageAttachments/ToolCalls';
+import {ReasoningNote} from './ReasoningNote';
 
 type Actor =
   Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT' | 'CONFIGURATION'> | 'SYSTEM';
@@ -84,6 +85,8 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           }
           case 'OBJECT': {
             const value = JSON.stringify(entry.object, null, 2);
+            const reasoningText =
+              actor === 'ASSISTANT' ? getReasoningText(entry.object) : null;
             return (
               <MessageContent
                 key={index}
@@ -92,7 +95,11 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
                   dispatch({type: 'show-object', actor, value})
                 }
               >
-                <ObjectContent>{value}</ObjectContent>
+                {reasoningText === null ? (
+                  <ObjectContent>{value}</ObjectContent>
+                ) : (
+                  <ReasoningNote reasoning={reasoningText} />
+                )}
               </MessageContent>
             );
           }
@@ -129,6 +136,30 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
     </Container>
   );
 };
+
+function getReasoningText(value: unknown): string | null {
+  if (
+    !isPlainObject(value) ||
+    typeof value['provider'] !== 'string' ||
+    value['provider'].trim() === '' ||
+    value['payload'] === null ||
+    value['payload'] === undefined ||
+    typeof value['text'] !== 'string'
+  ) {
+    return null;
+  }
+
+  return value['text'].trim() === '' ? null : value['text'];
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
 
 type MessageContentProps = {
   value: string;
