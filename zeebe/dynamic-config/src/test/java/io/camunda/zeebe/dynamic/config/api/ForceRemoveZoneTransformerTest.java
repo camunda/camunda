@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Nested;
@@ -48,16 +49,23 @@ final class ForceRemoveZoneTransformerTest {
   private static final Set<MemberId> DUAL_ZONE_MEMBERS = Set.of(ZONE_A_0, ZONE_B_0);
 
   private static final List<PartitionId> PARTITION_IDS =
-      IntStream.rangeClosed(1, 2).mapToObj(i -> new PartitionId("temp", i)).toList();
+      IntStream.rangeClosed(1, 2)
+          .mapToObj(i -> new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, i))
+          .toList();
 
-  private static ClusterConfiguration buildTopology(
+  private static CurrentClusterConfiguration buildTopology(
       final ZoneAwareConfig config, final Set<MemberId> members) {
     final var distribution =
         new ZoneAwarePartitionDistributor(config.zones())
             .distributePartitions(members, PARTITION_IDS, config.replicationFactor());
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
-    return topology.setPartitionDistributorConfig(config);
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            members,
+            distribution,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_CONFIG),
+            "c");
+    return topology.updateGlobalConfiguration(
+        globalConfiguration -> globalConfiguration.setPartitionDistributorConfig(config));
   }
 
   @Test
@@ -91,8 +99,14 @@ final class ForceRemoveZoneTransformerTest {
     final var distribution =
         new RoundRobinPartitionDistributor().distributePartitions(plainMembers, PARTITION_IDS, 2);
     final var roundRobinTopology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c")
-            .setPartitionDistributorConfig(new RoundRobinConfig());
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+                plainMembers,
+                distribution,
+                Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_CONFIG),
+                "c")
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration.setPartitionDistributorConfig(new RoundRobinConfig()));
 
     // when
     final var result =
@@ -128,7 +142,9 @@ final class ForceRemoveZoneTransformerTest {
         new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_B, 1, 500), new ZoneSpec(ZONE_A, 1, 1000)));
     final var currentTopology =
         buildTopology(singleZoneConfig, Set.of(ZONE_B_0))
-            .setPartitionDistributorConfig(ghostZoneConfig);
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration.setPartitionDistributorConfig(ghostZoneConfig));
 
     // when
     final var result = plannedOperations(new ForceRemoveZoneTransformer(ZONE_B), currentTopology);

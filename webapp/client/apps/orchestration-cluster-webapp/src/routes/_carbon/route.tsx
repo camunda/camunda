@@ -25,17 +25,15 @@ const Route = createFileRoute('/_carbon')({
 			<GenericErrorPage reset={reset} />
 		</ThemeProvider>
 	),
-	component: CarbonLayout,
+	component: function CarbonLayout() {
+		return (
+			<ThemeProvider>
+				<Notifications />
+				<NetworkStatusWatcher />
+				<Outlet />
+			</ThemeProvider>
+		);
+	},
 });
-
-function CarbonLayout() {
-	return (
-		<ThemeProvider>
-			<Notifications />
-			<NetworkStatusWatcher />
-			<Outlet />
-		</ThemeProvider>
-	);
-}
 
 export {Route};

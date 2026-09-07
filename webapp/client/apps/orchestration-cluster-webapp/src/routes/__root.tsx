@@ -15,8 +15,16 @@ import type {QueryClient} from '@tanstack/react-query';
 const Route = createRootRouteWithContext<{
 	queryClient: QueryClient;
 }>()({
-	notFoundComponent: RootNotFoundPage,
-	errorComponent: RootErrorPage,
+	notFoundComponent: () => (
+		<main>
+			<h1>Page not found</h1>
+		</main>
+	),
+	errorComponent: () => (
+		<main>
+			<h1>Something went wrong</h1>
+		</main>
+	),
 	head: () => ({
 		meta: [
 			{
@@ -31,11 +39,7 @@ const Route = createRootRouteWithContext<{
 			},
 		],
 	}),
-	component: RootDocument,
-});
-
-function RootDocument() {
-	return (
+	component: () => (
 		<>
 			<HeadContent />
 			<Outlet />
@@ -53,23 +57,7 @@ function RootDocument() {
 				]}
 			/>
 		</>
-	);
-}
-
-function RootNotFoundPage() {
-	return (
-		<main>
-			<h1>Page not found</h1>
-		</main>
-	);
-}
-
-function RootErrorPage() {
-	return (
-		<main>
-			<h1>Something went wrong</h1>
-		</main>
-	);
-}
+	),
+});
 
 export {Route};

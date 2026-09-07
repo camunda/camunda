@@ -234,27 +234,9 @@ jobs:
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.x"
 
       - name: Run API tests
         env:
@@ -277,41 +259,6 @@ jobs:
           npm run test -- --project=api-tests
 
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Publish test results to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-        run: |
-          pip install trcli==1.14.1
-          log=$(mktemp)
-          set +e
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            --timeout 180 \
-            parse_junit --suite-id 17050 \
-            --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
-          status=${PIPESTATUS[0]}
-          set -e
-          # trcli's --close-run is not idempotent: past its client timeout it retries
-          # silently and TestRail rejects the retry because the first close landed.
-          # Requiring the Done line means a mid-upload rejection still fails the step.
-          if [ "$status" -ne 0 ] &&
-            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
-            grep -qF 'The test run is already completed' "$log"; then
-            echo "::warning::TestRail close raced its own retry; all results were uploaded"
-            exit 0
-          fi
-          exit "$status"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()

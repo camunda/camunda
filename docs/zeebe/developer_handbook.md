@@ -69,7 +69,7 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 When introducing a new `RecordValue`, you must ensure it is properly supported in:
 
 - Elasticsearch and Opensearch exporters
-- Operate and Tasklist integration test setups
+- Operate and orchestration-cluster webapp integration test setups
 
 You'll always need to add support for new records in the exporters. Even if you don't yet want to export a new record,
 tests will fail if this support is missing. Note that in the exporter configuration (step 3), you can choose whether the record is exported by default.

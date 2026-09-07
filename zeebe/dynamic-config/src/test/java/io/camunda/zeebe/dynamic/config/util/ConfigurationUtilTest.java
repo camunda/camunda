@@ -14,6 +14,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -140,40 +141,53 @@ class ConfigurationUtilTest {
 
     final var expected = Set.of(partitionTwo, partitionOne);
 
-    final ClusterConfiguration topology =
-        ClusterConfiguration.init()
-            .addMember(
-                member(0),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, partitionConfig),
-                        2,
-                        PartitionState.active(3, partitionConfig),
-                        // A joining member should not be included in the partition distribution
-                        3,
-                        PartitionState.joining(4, partitionConfig))))
-            .addMember(
-                member(1),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(2, partitionConfig),
-                        // A leaving member should be included in the partition distribution
-                        2,
-                        PartitionState.active(2, partitionConfig).toLeaving())))
-            .addMember(
-                member(2),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(3, partitionConfig),
-                        2,
-                        PartitionState.active(1, partitionConfig))));
+    final var configuration =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(member(0), BrokerState.initializeAsActive())
+                        .addMember(member(1), BrokerState.initializeAsActive())
+                        .addMember(member(2), BrokerState.initializeAsActive()))
+            .initPartitionGroup(GROUP_NAME)
+            .updatePartitionGroupConfig(
+                GROUP_NAME,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            member(0),
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1,
+                                    PartitionState.active(1, partitionConfig),
+                                    2,
+                                    PartitionState.active(3, partitionConfig),
+                                    // A joining member should not be included in the partition
+                                    // distribution
+                                    3,
+                                    PartitionState.joining(4, partitionConfig))))
+                        .addMember(
+                            member(1),
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1,
+                                    PartitionState.active(2, partitionConfig),
+                                    // A leaving member should be included in the partition
+                                    // distribution
+                                    2,
+                                    PartitionState.active(2, partitionConfig).toLeaving())))
+                        .addMember(
+                            member(2),
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1,
+                                    PartitionState.active(3, partitionConfig),
+                                    2,
+                                    PartitionState.active(1, partitionConfig)))));
 
     // when
     final var partitionDistribution =
-        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+        ConfigurationUtil.getPartitionDistributionFrom(configuration, GROUP_NAME);
 
     // then
     assertThat(partitionDistribution).containsExactlyInAnyOrderElementsOf(expected);
@@ -199,30 +213,37 @@ class ConfigurationUtilTest {
             member(0));
 
     final var expected = Set.of(partitionTwo, partitionOne);
-
-    final ClusterConfiguration topology =
-        ClusterConfiguration.init()
-            .addMember(
-                member(0),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, partitionConfig),
-                        2,
-                        PartitionState.active(3, partitionConfig))))
-            .addMember(
-                member(1),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(2, partitionConfig),
-                        2,
-                        PartitionState.active(2, partitionConfig))))
-            .addMember(member(2), MemberState.initializeAsActive(Map.of()).toLeaving());
-
+    final var configuration =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(member(0), BrokerState.initializeAsActive())
+                        .addMember(member(1), BrokerState.initializeAsActive()))
+            .initPartitionGroup(GROUP_NAME)
+            .updatePartitionGroupConfig(
+                GROUP_NAME,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            member(0),
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1,
+                                    PartitionState.active(1, partitionConfig),
+                                    2,
+                                    PartitionState.active(3, partitionConfig))))
+                        .addMember(
+                            member(1),
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1,
+                                    PartitionState.active(2, partitionConfig),
+                                    2,
+                                    PartitionState.active(2, partitionConfig)))));
     // when
     final var partitionDistribution =
-        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+        ConfigurationUtil.getPartitionDistributionFrom(configuration, GROUP_NAME);
 
     // then
     assertThat(partitionDistribution).containsExactlyInAnyOrderElementsOf(expected);
@@ -268,12 +289,19 @@ class ConfigurationUtilTest {
         new PartitionMetadata(
             new PartitionId(GROUP_NAME, 1), Set.of(member(0)), Map.of(member(0), 1), 1, member(0));
 
-    final ClusterConfiguration topology =
-        ClusterConfiguration.init()
-            .addMember(
-                member(0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig).toRecovering())));
+    final var topology =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration.addMember(member(0), BrokerState.initializeAsActive()))
+            .initPartitionGroup(GROUP_NAME)
+            .updatePartitionGroupConfig(
+                GROUP_NAME,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration.addMember(
+                        member(0),
+                        BrokerPartitionState.initialize(
+                            Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))));
 
     // when
     final var partitionDistribution =
@@ -295,16 +323,27 @@ class ConfigurationUtilTest {
             2,
             member(0));
 
-    final ClusterConfiguration topology =
-        ClusterConfiguration.init()
-            .addMember(
-                member(0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, partitionConfig))))
-            .addMember(
-                member(1),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())));
+    final CurrentClusterConfiguration topology =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(member(0), BrokerState.initializeAsActive())
+                        .addMember(member(1), BrokerState.initializeAsActive()))
+            .initPartitionGroup(GROUP_NAME)
+            .updatePartitionGroupConfig(
+                GROUP_NAME,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            member(0),
+                            BrokerPartitionState.initialize(
+                                Map.of(1, PartitionState.active(2, partitionConfig))))
+                        .addMember(
+                            member(1),
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1, PartitionState.joining(1, partitionConfig).toLearner()))));
 
     // when
     final var partitionDistribution =

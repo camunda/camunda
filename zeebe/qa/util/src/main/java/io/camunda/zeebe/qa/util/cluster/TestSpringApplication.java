@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -39,8 +40,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.http.client.ReactorResourceFactory;
 
@@ -48,6 +52,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringApplication.class);
+  private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
 
   protected ConfigurableApplicationContext springContext;
   protected final Camunda unifiedConfig;
@@ -59,7 +64,14 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final Collection<ApplicationContextInitializer> additionalInitializers;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
   private final Set<String> refreshableKeys = new HashSet<>();
-  private final Map<String, Camunda> ptConfigs = new LinkedHashMap<>();
+
+  /**
+   * Physical-tenant overrides, kept as the modifiers themselves rather than as materialised {@link
+   * Camunda} instances: each tenant's configuration is only built at {@link #createSpringBuilder()}
+   * time, by copying the root configuration <em>as it stands then</em> and replaying these onto it
+   * (see {@link #physicalTenantProperties}).
+   */
+  private final Map<String, List<Consumer<Camunda>>> ptConfigModifiers = new LinkedHashMap<>();
 
   public TestSpringApplication(final Class<?>... springApplications) {
     this(new Camunda(), springApplications);
@@ -243,19 +255,34 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   /**
-   * Mutates the unified configuration for a single physical tenant. The per-tenant {@link Camunda}
-   * is flattened into {@code camunda.physical-tenants.<tenantId>.*} properties at {@link
-   * #createSpringBuilder()} time, mirroring how {@code
-   * io.camunda.configuration.physicaltenants.PhysicalTenantResolver} binds a physical tenant from
-   * those same keys. Use {@link #withUnifiedConfig(Consumer)} for the root ({@code default})
-   * tenant.
+   * Mutates the unified configuration for a single physical tenant. Use {@link
+   * #withUnifiedConfig(Consumer)} for the root ({@code default}) tenant.
+   *
+   * <p>{@code modifier} is <em>not</em> applied here. It is recorded and replayed at {@link
+   * #createSpringBuilder()} time onto a copy of the root configuration, which is then flattened
+   * into {@code camunda.physical-tenants.<tenantId>.*} properties. This mirrors how {@code
+   * io.camunda.configuration.physicaltenants.PhysicalTenantResolver} resolves a tenant — bind
+   * {@code camunda.*} into a fresh instance, then overlay the tenant's own keys — so only the
+   * fields a modifier actually changes relative to the root are emitted, and everything else is
+   * inherited at runtime.
+   *
+   * <p>Two consequences worth knowing:
+   *
+   * <ul>
+   *   <li>A modifier sees the <em>root's</em> values, not pristine defaults. A read-modify-write
+   *       modifier (e.g. appending to a list) therefore extends the root's value, which is what the
+   *       tenant would have inherited anyway.
+   *   <li>Because the root is copied at {@link #createSpringBuilder()} time, root configuration
+   *       applied after this call is still picked up. Ordering between {@link #withUnifiedConfig}
+   *       and this method does not matter.
+   * </ul>
    *
    * @param tenantId the physical tenant id
    * @param modifier a configuration function that accepts the tenant's Camunda configuration object
    * @return itself for chaining
    */
   public T withPtConfig(final String tenantId, final Consumer<Camunda> modifier) {
-    modifier.accept(ptConfigs.computeIfAbsent(tenantId, id -> new Camunda()));
+    ptConfigModifiers.computeIfAbsent(tenantId, id -> new ArrayList<>()).add(modifier);
     return self();
   }
 
@@ -276,8 +303,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
    * @return itself for chaining
    */
   public T removePtConfig(final String tenantId) {
-    ptConfigs.remove(tenantId);
-    final String prefix = "camunda.physical-tenants." + tenantId + ".";
+    ptConfigModifiers.remove(tenantId);
+    final String prefix = PHYSICAL_TENANTS_PREFIX + "." + tenantId + ".";
     propertyOverrides.keySet().removeIf(key -> key.startsWith(prefix));
     return self();
   }
@@ -378,16 +405,25 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
     // so every with*Config / withUnifiedConfig call made up to now is captured. Refreshable so that
     // fields cleared between stop/start (e.g. an exporter removed) don't remain.
-    final Map<String, Object> flatProperties =
-        new LinkedHashMap<>(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
+    final Map<String, Object> rootProperties =
+        ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig);
+    final Map<String, Object> flatProperties = new LinkedHashMap<>(rootProperties);
     // withRefreshableProperties replaces (not accumulates) the refreshable set, so the root config
     // and every physical tenant must be merged into a single map before registering them.
-    ptConfigs.forEach(
-        (tenantId, ptConfig) ->
-            flatProperties.putAll(
-                ExtendedConfigurationBuilder.flatPropertiesFor(
-                    ptConfig, "camunda.physical-tenants." + tenantId)));
+    if (!ptConfigModifiers.isEmpty()) {
+      final Map<String, Object> rootEnvironment = rootEnvironmentProperties(rootProperties);
+      final Camunda rootBaseline = rootSeededConfig(rootEnvironment);
+      ptConfigModifiers.forEach(
+          (tenantId, modifiers) ->
+              flatProperties.putAll(
+                  physicalTenantProperties(
+                      rootEnvironment,
+                      rootBaseline,
+                      modifiers,
+                      PHYSICAL_TENANTS_PREFIX + "." + tenantId)));
+    }
     withRefreshableProperties(flatProperties);
+    requireEveryPhysicalTenantDeclared();
     return MainSupport.createDefaultApplicationBuilder()
         .bannerMode(Mode.OFF)
         .registerShutdownHook(false)
@@ -399,6 +435,116 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   @Override
   public String toString() {
     return getClass().getSimpleName() + "{nodeId = " + nodeId() + "}";
+  }
+
+  /**
+   * The properties for one physical tenant, expressed under {@code prefix}.
+   *
+   * <p>A key is emitted when the modifiers moved it away from the root — the value the tenant would
+   * otherwise inherit — <em>or</em> when they moved it away from a pristine {@link Camunda}, which
+   * is as close as a value diff gets to "the modifiers set it at all". Neither rule alone is
+   * enough. Diffing only against the root drops a value the modifiers deliberately copied from it,
+   * and some subtrees must be <em>declared</em> rather than inherited: {@code
+   * PhysicalTenantRequiredOverrideValidation} rejects a tenant without its own {@code
+   * security.initialization.*}, which {@code CamundaMultiDBExtension} satisfies by copying the
+   * root's block verbatim. Diffing only against a pristine instance is the older, weaker rule that
+   * dropped any value equal to a pristine default. The union keeps both guarantees.
+   *
+   * <p>Values always come from the root-seeded build. The two builds can only disagree for a
+   * modifier that reads before it writes, and every key such a modifier touches differs from the
+   * root, so the root-seeded diff wins wherever it has an opinion.
+   *
+   * <p>The modifiers therefore run twice, once per build, and must not have side effects outside
+   * the {@link Camunda} they are handed.
+   */
+  private Map<String, Object> physicalTenantProperties(
+      final Map<String, Object> rootEnvironment,
+      final Camunda rootBaseline,
+      final List<Consumer<Camunda>> modifiers,
+      final String prefix) {
+    final Map<String, Object> setByModifiers =
+        ExtendedConfigurationBuilder.flatPropertiesFor(
+            applyModifiers(new Camunda(), modifiers), prefix);
+    final Map<String, Object> differsFromRoot =
+        ExtendedConfigurationBuilder.flatPropertiesFor(
+            applyModifiers(rootSeededConfig(rootEnvironment), modifiers), prefix, rootBaseline);
+    final Map<String, Object> properties = new LinkedHashMap<>(setByModifiers);
+    properties.putAll(differsFromRoot);
+    return properties;
+  }
+
+  /**
+   * A copy of the root configuration, reconstructed by binding its own flat properties into a fresh
+   * {@link Camunda} rather than by deep-copying the live instance — {@code rootEnvironment} is
+   * exactly "pristine plus everything the root changed", so binding it onto a pristine instance
+   * reproduces the root faithfully, through the same Spring binding the application itself performs
+   * on these properties. A copy is essential: the modifiers must not touch the root configuration
+   * object.
+   */
+  private Camunda rootSeededConfig(final Map<String, Object> rootEnvironment) {
+    // see withUnifiedConfig: unified-config getters validate against legacy properties read from a
+    // statically pinned Environment, which a previously booted test application may still own.
+    // Bindable.ofInstance reads current values through those getters, so re-pin before binding.
+    new UnifiedConfigurationHelper(new StandardEnvironment());
+    final var environment = new StandardEnvironment();
+    environment.getPropertySources().addFirst(new MapPropertySource("rootConfig", rootEnvironment));
+    final var config = new Camunda();
+    Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(config));
+    return config;
+  }
+
+  private Camunda applyModifiers(final Camunda config, final List<Consumer<Camunda>> modifiers) {
+    // as above: the modifiers read through the same validating getters
+    new UnifiedConfigurationHelper(new StandardEnvironment());
+    modifiers.forEach(modifier -> modifier.accept(config));
+    return config;
+  }
+
+  /**
+   * The properties a physical tenant inherits from: the flattened root configuration, plus any
+   * {@code camunda.*} key set directly through {@link #withProperty} — which has no {@link Camunda}
+   * field behind it and so cannot appear in the flattened form, yet still reaches the broker and is
+   * still what an omitted tenant key resolves to. Keys left over from a previous start are skipped;
+   * {@link #withRefreshableProperties} is about to replace them.
+   */
+  private Map<String, Object> rootEnvironmentProperties(final Map<String, Object> rootProperties) {
+    final Map<String, Object> rootEnvironment = new LinkedHashMap<>();
+    propertyOverrides.forEach(
+        (key, value) -> {
+          if (key.startsWith(Camunda.PREFIX + ".")
+              && !key.startsWith(PHYSICAL_TENANTS_PREFIX + ".")
+              && !refreshableKeys.contains(key)) {
+            rootEnvironment.put(key, value);
+          }
+        });
+    rootEnvironment.putAll(rootProperties);
+    return rootEnvironment;
+  }
+
+  /**
+   * Fails when a physical tenant declared through {@link #withPtConfig} ended up with no {@code
+   * camunda.physical-tenants.<id>.*} property at all.
+   *
+   * <p>{@code PhysicalTenantResolver} discovers tenants from exactly those keys, so a tenant that
+   * emits none does not exist and the broker simply boots without it — surfacing much later as a
+   * topology that never completes rather than as a configuration error. Since only values that
+   * differ from the root are emitted, this is what happens when every one of a tenant's overrides
+   * resolves to the root's own value. Declaring such a tenant is not expressible in production
+   * either, for the same reason, so the fix is to give it at least one differing value rather than
+   * to work around it here.
+   */
+  private void requireEveryPhysicalTenantDeclared() {
+    for (final String tenantId : ptConfigModifiers.keySet()) {
+      final String prefix = PHYSICAL_TENANTS_PREFIX + "." + tenantId + ".";
+      if (propertyOverrides.keySet().stream().noneMatch(key -> key.startsWith(prefix))) {
+        throw new IllegalStateException(
+            ("physical tenant '%s' declares no configuration that differs from the root, so it "
+                    + "would not be discovered by PhysicalTenantResolver and the broker would "
+                    + "start without it. Give it at least one value that differs from the root "
+                    + "configuration.")
+                .formatted(tenantId));
+      }
+    }
   }
 
   private void overridePropertyIfAbsent(final String key, final Object value) {

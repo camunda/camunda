@@ -57,7 +57,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.9.8
+    image: camunda/identity:8.9.9
     ports:
       - "8084:8080"
     volumes:
@@ -92,7 +92,7 @@ services:
       start_period: 30s
   camunda:
     container_name: camunda
-    image: camunda/camunda:8.9.17
+    image: camunda/camunda:8.9.18
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,dev-data
       - JAVA_TOOL_OPTIONS=-Xms512m -Xmx2g
@@ -111,7 +111,7 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-      - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
+      - CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_REPOSITORYNAME=test
       # Zeebe client credentials for internal importing
       - ZEEBE_CLIENT_ID=zeebe
       - ZEEBE_CLIENT_SECRET=zeebeSecret

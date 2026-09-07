@@ -40,7 +40,7 @@ use in webapp tests.
 
 ESLint and Prettier configuration shared across
 the Camunda frontends — also consumed outside this workspace by
-`operate/client`, `tasklist/client`, and `identity/client`. Consumers
+`operate/client` and `identity/client`. Consumers
 compose only the eslint variants they need (`base`, `typescript`,
 `react`, `testing`, `license`, `tanstack-query`).
 
@@ -60,7 +60,7 @@ contract, adoption steps, and publishing.
 
 ### `@camunda/orchestration-cluster-webapp`
 
-The unified React webapp that will replace the legacy Operate, Tasklist,
-and Admin frontends. See
+The unified React webapp that contains Tasklist and is replacing the legacy Operate and Admin
+frontends. See
 [Orchestration cluster webapp](./orchestration-cluster-webapp.md) for
 the full introduction.

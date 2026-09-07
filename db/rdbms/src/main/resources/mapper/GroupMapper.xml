@@ -14,7 +14,7 @@
     SELECT COUNT(*) FROM (
       SELECT 1 as col
       FROM ${prefix}GROUP_ g
-      <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchAndAuthFilter"/>
       ${count.limit}
     ) t
   </select>
@@ -37,7 +37,7 @@ SELECT
     g.NAME,
     g.DESCRIPTION
     FROM ${prefix}GROUP_ g
-    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchAndAuthFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -76,26 +76,44 @@ SELECT
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
-  <sql id="searchFilter">
-    WHERE 1 = 1
-    <!-- authorization filters -->
-    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-      AND g.GROUP_ID IN
-      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
-        close=")">
-        #{resourceId}
-      </foreach>
-    </if>
+  <sql id="searchAndAuthFilter">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND g.GROUP_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+      <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
+        AND (
+        <foreach collection="filter.orFilters" item="filter" separator=" OR ">
+          <trim prefix="(" suffix=")">
+            <trim prefixOverrides="AND">
+              <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+            </trim>
+          </trim>
+        </foreach>
+        )
+      </if>
+    </where>
+  </sql>
 
+  <sql id="searchFilter">
     <if test="filter.groupIdOperations != null and !filter.groupIdOperations.isEmpty()">
       <foreach collection="filter.groupIdOperations" item="operation">
         AND g.GROUP_ID
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
+    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+      <foreach collection="filter.nameOperations" item="operation">
+        AND g.NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.description != null">AND g.DESCRIPTION = #{filter.description}</if>
-
     <if
       test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">
       AND g.GROUP_ID IN ( SELECT gmf.GROUP_ID FROM ${prefix}GROUP_MEMBER gmf

@@ -26,7 +26,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
@@ -102,15 +101,10 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
         dryRun);
   }
 
-  public CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> restoreStatus(
+  public CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> restoreStatus(
       final CamundaAuthentication authentication) {
     return withAnyPermission(
-        RESTORE_AUTHORIZATIONS,
-        authentication,
-        () ->
-            clusterConfigurationRequestSender
-                .getTopology()
-                .thenApply(result -> result.map(CurrentClusterConfiguration::toLegacyDefault)));
+        RESTORE_AUTHORIZATIONS, authentication, clusterConfigurationRequestSender::getTopology);
   }
 
   private <T> CompletableFuture<T> withAnyPermission(

@@ -219,6 +219,19 @@ components:
       x-semantic-client-minted: true
       example: 1
 
+    HistoryItemId:
+      description: The client-supplied identifier this item was created with.
+      type: string
+      format: HistoryItemId
+      x-semantic-type: HistoryItemId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Opaque connector-generated content, not a Camunda-style id, so no `pattern`. Enforced
+      # at the REST layer (AgentInstanceRequestValidator), not via IdentifierValidator. 256
+      # matches the RDBMS secondary storage's varchar column size.
+      example: item-1
+
     ## Filters
 
     ElementIdFilterProperty:

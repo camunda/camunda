@@ -22,7 +22,16 @@ const itemToString = (group: Group) => group.name || group.groupId;
 const itemSubTitle = (group: Group) => group.name;
 const search = (search: string) =>
   groupQueries.search(
-    search === "" ? {} : { filter: { groupId: { $like: `*${search}*` } } },
+    search === ""
+      ? {}
+      : {
+          filter: {
+            $or: [
+              { name: { $like: `*${search}*` } },
+              { groupId: { $like: `*${search}*` } },
+            ],
+          },
+        },
   );
 
 export const GroupMultiSelect: FC<EntitySearchMultiSelectProps<Group>> = (

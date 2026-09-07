@@ -420,7 +420,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/AgentInstanceDefinitionResult'
         metrics:
-          description: Aggregated metrics across all loopIterations of this agent instance.
+          description: |
+            Aggregated metrics across all loopIterations of this agent instance. Includes
+            history items later discarded: metrics are counted when an item is accepted,
+            not when it's committed.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceMetrics'
         limits:
@@ -647,7 +650,10 @@ components:
             history, in request order. Each created item is echoed back in the
             response's createdHistory, positionally correlated. Must include a
             CONFIGURATION item establishing model, provider, and systemPrompt (and,
-            if needed, limits).
+            if needed, limits). Every item's role must be CONFIGURATION or USER, and
+            no item may carry non-zero usage-token metrics (inputTokens, outputTokens,
+            reasoningTokenCount, cacheCreationTokenCount, cacheReadTokenCount);
+            durationMs is exempt and may be non-zero.
           type: array
           minItems: 1
           items:
@@ -750,7 +756,8 @@ components:
           description: |
             The historyItemId of the corresponding item in the request, echoed back
             so callers can correlate response entries with request items by id.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         historyItemKey:
           description: |
             The system-generated key for the history item. When isDuplicate is true,
@@ -819,7 +826,8 @@ components:
             item. For example, when a retried job activation resubmits history items
             it already sent in an earlier attempt, those items are not rejected; they
             are flagged via isDuplicate in the response instead. Must be non-blank.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         loopIteration:
           description: The loop iteration this item belongs to.
           allOf:
@@ -997,8 +1005,12 @@ components:
         historyItemId:
           description: |
             The client-supplied identifier this item was created with. Empty for items that don't
-            carry one.
-          type: string
+            carry one. Not unique: a job can be re-activated under a superseded lease any number
+            of times before it completes, so one historyItemId can have zero or more DISCARDED
+            records and at most one COMMITTED record, since only historyItemKey is guaranteed
+            unique. Filter by commitStatus rather than assuming one record per historyItemId.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         agentInstanceKey:
           description: The key of the agent instance this item belongs to.
           allOf:

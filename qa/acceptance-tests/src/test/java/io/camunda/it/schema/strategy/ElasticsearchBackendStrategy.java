@@ -156,7 +156,6 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
         .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
         .withProperty(CREATE_SCHEMA_PROPERTY, "false")
         .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
-        .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
         .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
         .withUnifiedConfig(
             cfg -> {

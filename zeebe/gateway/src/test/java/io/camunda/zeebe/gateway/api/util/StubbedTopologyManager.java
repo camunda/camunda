@@ -66,6 +66,12 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
     throw new UnsupportedOperationException("Not yet implemented");
   }
 
+  @Override
+  public void onClusterConfigurationUpdated(
+      final CurrentClusterConfiguration clusterConfiguration) {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
   public void setPartitionHealthStatus(
       final BrokerMemberId nodeId,
       final int partitionId,

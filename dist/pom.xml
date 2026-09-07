@@ -324,16 +324,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-webapp</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-data-generator</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>webapp-server</artifactId>
     </dependency>
 
@@ -1030,10 +1020,6 @@
               <mainClass>io.camunda.application.StandaloneBackupManager</mainClass>
             </program>
             <program>
-              <id>tasklist</id>
-              <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
-            </program>
-            <program>
               <id>camunda</id>
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
@@ -1145,8 +1131,6 @@
 
             <dependency>io.camunda:operate-data-generator</dependency>
 
-            <dependency>io.camunda:tasklist-data-generator</dependency>
-
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
@@ -1255,7 +1239,7 @@
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>10.0.0</version>
+        <version>10.0.1</version>
         <configuration>
           <dotGitDirectory>${maven.multiModuleProjectDirectory}/.git</dotGitDirectory>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>

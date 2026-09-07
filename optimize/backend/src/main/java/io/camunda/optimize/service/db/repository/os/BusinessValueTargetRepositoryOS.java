@@ -10,14 +10,17 @@ package io.camunda.optimize.service.db.repository.os;
 import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_TARGET_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.stringTerms;
 import static java.lang.String.format;
 
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.optimize.service.db.schema.index.BusinessValueTargetIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -86,6 +89,32 @@ public class BusinessValueTargetRepositoryOS implements BusinessValueTargetRepos
     final GetResponse<BusinessValueTargetDto> response =
         osClient.get(requestBuilder, BusinessValueTargetDto.class, errorMessage);
     return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+  }
+
+  @Override
+  public List<BusinessValueTargetDto> readByTenants(final Collection<String> tenantIds) {
+    if (tenantIds != null && tenantIds.isEmpty()) {
+      return List.of();
+    }
+    final SearchRequest.Builder requestBuilder =
+        new SearchRequest.Builder()
+            .index(indexNameService.getOptimizeIndexAliasForIndex(BUSINESS_VALUE_TARGET_INDEX_NAME))
+            .query(
+                tenantIds == null
+                    ? matchAll()
+                    : stringTerms(BusinessValueTargetIndex.TENANT_ID, tenantIds))
+            .size(LIST_FETCH_LIMIT);
+    final List<BusinessValueTargetDto> targets =
+        osClient.searchValues(requestBuilder, BusinessValueTargetDto.class);
+    if (targets.size() >= LIST_FETCH_LIMIT) {
+      throw new OptimizeRuntimeException(
+          format(
+              "business-value target readByTenants returned %d rows, hitting the "
+                  + "LIST_FETCH_LIMIT cap. Pagination must be introduced before the read path can "
+                  + "rely on complete results.",
+              targets.size()));
+    }
+    return targets;
   }
 
   @Override

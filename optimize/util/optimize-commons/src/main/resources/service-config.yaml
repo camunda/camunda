@@ -592,14 +592,23 @@ entity:
   nameMaxLength: ${CAMUNDA_OPTIMIZE_ENTITY_NAME_MAX_LENGTH:32768}
 
 businessValue:
-  # How often the business-value overview index is refreshed for all definitions and all range
-  # presets (7d, 30d, 3m, 6m). The given number is the interval in seconds. Default: 24h.
-  overviewRefreshInterval: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_REFRESH_INTERVAL:86400}
+  # How often the business-value overview index is refreshed, for every range preset (7d, 30d, 3m,
+  # 6m). The given number is the interval in seconds. Default: 1h. Only definitions that carry a
+  # target are measured, so the cost tracks how many targets are set rather than the size of the
+  # process catalogue — a definition nobody targeted is never measured at all. Saving a target
+  # measures that definition straight away, so this interval bounds how long an already-targeted
+  # definition waits to be re-measured, not how long a new target waits to show a value. The
+  # stale-read threshold derives from it at twice its value.
+  overviewRefreshInterval: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_REFRESH_INTERVAL:3600}
   # Kill switch for the background overview computation. Set to false to stop the sweep without
   # taking the dashboard down: existing rows stay readable and the endpoint keeps serving, the
   # numbers simply stop advancing until it is re-enabled. Requires an Optimize restart to take
-  # effect, as configuration is read once at startup. Scoped to the sweep only — it does not affect
-  # the overview or target endpoints, nor the dashboard tiles, which are evaluated per request.
+  # effect, as configuration is read once at startup. The whole sweep is skipped, not just the
+  # measuring: no rows are written either, so a process definition imported while this is off gets
+  # no overview row at all until it is re-enabled. Request paths are unaffected — the overview and
+  # target endpoints keep serving, as do the dashboard tiles, which are evaluated per request.
+  # Saving a target still applies it to whatever rows already exist, so verdicts stay coherent and
+  # only the numbers behind them freeze; a definition with no rows yet gets nothing.
   overviewComputeEnabled: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_COMPUTE_ENABLED:true}
 
 export:

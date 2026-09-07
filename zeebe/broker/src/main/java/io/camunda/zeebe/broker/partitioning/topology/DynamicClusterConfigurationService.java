@@ -269,30 +269,17 @@ public class DynamicClusterConfigurationService
    */
   private InconsistentConfigurationListener inconsistentConfigurationListener(
       final BrokerStartupContext brokerStartupContext) {
-    final var memberId =
-        brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
     final var springBrokerBridge = brokerStartupContext.getSpringBrokerBridge();
 
-    return new InconsistentConfigurationListener() {
-      @Override
-      public void onInconsistentConfiguration(
-          final ClusterConfiguration newTopology, final ClusterConfiguration oldTopology) {
-        shutdownOnInconsistentTopology(memberId, springBrokerBridge, newTopology, oldTopology);
-      }
-
-      @Override
-      public void onInconsistentConfiguration(
-          final CurrentClusterConfiguration newConfiguration,
-          final CurrentClusterConfiguration oldConfiguration) {
-        LOGGER.warn(
-            "Received a newer cluster configuration which differs for this broker across partition groups. Shutting down broker. oldVersion={}, newVersion={}",
-            oldConfiguration.version(),
-            newConfiguration.version());
-        springBrokerBridge.initiateShutdown(
-            ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
-            "Inconsistent cluster topology detected - topology was changed while broker was"
-                + " unreachable or broker encountered data loss");
-      }
+    return (newConfiguration, oldConfiguration) -> {
+      LOGGER.warn(
+          "Received a newer cluster configuration which differs for this broker across partition groups. Shutting down broker. oldVersion={}, newVersion={}",
+          oldConfiguration.version(),
+          newConfiguration.version());
+      springBrokerBridge.initiateShutdown(
+          ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
+          "Inconsistent cluster topology detected - topology was changed while broker was"
+              + " unreachable or broker encountered data loss");
     };
   }
 

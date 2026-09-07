@@ -31,17 +31,15 @@ type AbstractEntitySearchSingleSelectProps<
 
 /**
  * Public props for a concrete per-entity single-select (e.g. UserSingleSelect):
- * everything technical (search, getId, itemToString, errorTitle) is bound by
- * the concrete implementation. itemSubTitle gets a concrete default but
- * remains overridable per call site, since some consumers need different copy.
+ * everything technical (search, getId, itemToString, itemSubTitle, errorTitle)
+ * is fixed by the concrete implementation and not overridable per call site.
  */
 export type EntitySearchSingleSelectProps<
   Entity extends Record<string, unknown>,
 > = Omit<
   AbstractEntitySearchSingleSelectProps<Entity>,
   "search" | "getId" | "itemToString" | "itemSubTitle" | "errorTitle"
-> &
-  Partial<Pick<AbstractEntitySearchSingleSelectProps<Entity>, "itemSubTitle">>;
+>;
 
 const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   search,
@@ -59,6 +57,13 @@ const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   const { t } = useTranslate();
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
 
+  // Only clears selectedEntity when value no longer matches it; it cannot
+  // resync to a new non-empty value set externally (e.g. a pre-filled owner
+  // in an edit flow), since there is no way to look up an Entity from just
+  // an id here. Safe today because every consumer is a create-only form
+  // where value only ever changes via this component's own onChange. If a
+  // future caller pre-fills value, pass the full Entity too so it can be
+  // set as the initial selectedEntity.
   useEffect(() => {
     setSelectedEntity((current) =>
       current && value && getId(current) === value ? current : null,

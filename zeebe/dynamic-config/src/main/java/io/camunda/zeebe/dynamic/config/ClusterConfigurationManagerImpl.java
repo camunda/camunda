@@ -181,15 +181,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
             () -> this.persistedCurrentConfiguration.getConfiguration());
   }
 
-  /** Legacy single-group projection of the multi-partition-group configuration. */
-  @Override
-  public ActorFuture<ClusterConfiguration> getClusterConfiguration() {
-    final var future = executor.<ClusterConfiguration>createFuture();
-    executor.run(
-        () -> future.complete(persistedCurrentConfiguration.getConfiguration().toLegacyDefault()));
-    return future;
-  }
-
   /**
    * Not supported on the multi-partition-group model — the legacy single-group configuration cannot
    * be mutated in isolation. Use {@link #updateMultiConfiguration} instead.

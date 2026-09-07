@@ -18,8 +18,9 @@ import io.camunda.zeebe.dynamic.config.api.RestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.BrokerRestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.PartitionRestoreStatus;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -101,12 +102,23 @@ public final class RecoveryController {
                 .recoveryServices(physicalTenantId)
                 .restoreStatus(authentication)
                 .thenApply(ClusterModeChangeMapper::unwrapOrThrow)
+                .thenApply(config -> partitionGroupConfigurationOrThrow(config, physicalTenantId))
                 .thenApply(RecoveryController::restoreStatus),
         RecoveryController::mapRestoreStatus,
         HttpStatus.OK);
   }
 
-  private static RestoreStatus restoreStatus(final ClusterConfiguration configuration) {
+  private static PartitionGroupConfiguration partitionGroupConfigurationOrThrow(
+      final CurrentClusterConfiguration configuration, final String physicalTenantId) {
+    if (!configuration.hasPartitionGroup(physicalTenantId)) {
+      throw new ServiceException(
+          "No configuration found for physical tenant '%s'".formatted(physicalTenantId),
+          Status.NOT_FOUND);
+    }
+    return configuration.partitionGroup(physicalTenantId);
+  }
+
+  private static RestoreStatus restoreStatus(final PartitionGroupConfiguration configuration) {
     return RestoreStatus.of(configuration)
         .orElseThrow(
             () -> new ServiceException("No restore is currently in progress", Status.NOT_FOUND));

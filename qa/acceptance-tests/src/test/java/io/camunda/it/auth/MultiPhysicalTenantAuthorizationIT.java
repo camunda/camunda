@@ -40,25 +40,15 @@ import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
  * Multi-physical-tenant authorization ITs converted to the {@link MultiDbTest} + {@link
- * MultiDbPhysicalTenants} framework. Validates cross-tenant isolation on RDBMS backends with a
- * single broker hosting {@code default}, {@code tenanta}, and {@code tenantb}, each isolated by its
- * own secondary storage: a dedicated in-memory database on H2, a dedicated schema or database on
- * PostgreSQL/Aurora, MySQL/MariaDB and SQL Server, or a per-tenant table prefix in the shared
- * schema on Oracle.
- *
- * <p>RDBMS only — test is disabled for ES/OS because per-PT secondary-storage schema init and
- * per-PT writer are not yet available for those backends.
+ * MultiDbPhysicalTenants} framework. Validates cross-tenant isolation a single broker hosting
+ * {@code default}, {@code tenanta}, and {@code tenantb}, each isolated by its own secondary
+ * storage.
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({"tenanta", "tenantb"})
-@EnabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class MultiPhysicalTenantAuthorizationIT {
 
   @MultiDbTestApplication

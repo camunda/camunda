@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior.LeaseMismatchHandling;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -104,7 +105,8 @@ public final class AgentHistoryCreateProcessor
             commandValue.getJobKey(),
             commandValue.getJobLease(),
             commandValue.getElementInstanceKey(),
-            List.of(commandValue));
+            List.of(commandValue),
+            LeaseMismatchHandling.REJECT);
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());

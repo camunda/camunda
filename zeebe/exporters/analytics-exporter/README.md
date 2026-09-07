@@ -61,7 +61,7 @@ camunda:
       analytics:
         class-name: io.camunda.exporter.analytics.AnalyticsExporter
         args:
-          endpoint: https://analytics.cloud.camunda.io
+          endpoint: https://telemetry.camunda.io
           push-interval: PT5M
           max-queue-size: 2048
           max-batch-size: 512
@@ -81,7 +81,7 @@ zeebe:
         className: io.camunda.exporter.analytics.AnalyticsExporter
         jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
         args:
-          endpoint: https://analytics.cloud.camunda.io
+          endpoint: https://telemetry.camunda.io
           pushInterval: PT5M
           maxQueueSize: 2048
           maxBatchSize: 512
@@ -99,7 +99,7 @@ The same settings can be provided via environment variables.
 
 ```sh
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
-CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.io
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://telemetry.camunda.io
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
@@ -111,7 +111,7 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 
 ```sh
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.io
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://telemetry.camunda.io
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
@@ -125,7 +125,7 @@ On broker startup, look for the following log line — it confirms the exporter 
 the expected endpoint, cluster ID, and partition ID:
 
 ```
-Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clusterId=<cluster-id>, partitionId=<partition-id>
+Analytics exporter configured: endpoint=https://telemetry.camunda.io, clusterId=<cluster-id>, partitionId=<partition-id>
 ```
 
 ## Configuration reference
@@ -133,15 +133,15 @@ Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clus
 All options live under `args`. Defaults are tuned for typical Self-Managed deployments and
 rarely need to be changed.
 
-|        Option        |   Type   |                                                                                                  Description                                                                                                  |               Default                |
-|----------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                                 | `https://analytics.cloud.camunda.io` |
-| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                               | `PT5M`                               |
-| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                                  | `PT10M`                              |
-| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                              | `2048`                               |
-| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                                      | `512`                                |
-| `sampling-rate`      | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                               | `1.0`                                |
-| `categories`         | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted or empty, all categories are enabled. | `[contractual, optional]`            |
+|        Option        |   Type   |                                                                                                  Description                                                                                                  |            Default             |
+|----------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|
+| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                                 | `https://telemetry.camunda.io` |
+| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                               | `PT5M`                         |
+| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                                  | `PT10M`                        |
+| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                              | `2048`                         |
+| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                                      | `512`                          |
+| `sampling-rate`      | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                               | `1.0`                          |
+| `categories`         | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted or empty, all categories are enabled. | `[contractual, optional]`      |
 
 ## What data is exported
 
@@ -156,7 +156,7 @@ variables, or any other end-user data.
 |   Source record    |       Intent        |              Event name               |                                               Notes                                                |
 |--------------------|---------------------|---------------------------------------|----------------------------------------------------------------------------------------------------|
 | `PROCESS_INSTANCE` | `ELEMENT_ACTIVATED` | `camunda.process.instance.activated`  | Emitted when a root process element is activated, so it covers every start type.                   |
-| `USER_TASK`        | `CREATED`           | `user_task_created`                   | Emitted for every new user task.                                                                   |
+| `USER_TASK`        | `CREATED`           | `camunda.user_task.created`           | Emitted for every new user task.                                                                   |
 | `USER_TASK`        | `ASSIGNED`          | `camunda.user_task.assigned`          | Emitted for every user task assignment with a non-empty assignee.                                  |
 | `TENANT`           | `CREATED`           | `camunda.tenant.created`              | Emitted for every new tenant.                                                                      |
 | `TENANT`           | `DELETED`           | `camunda.tenant.deleted`              | Emitted for every deleted tenant.                                                                  |
@@ -170,10 +170,11 @@ variables, or any other end-user data.
 | `FORM`             | `DELETED`           | `camunda.form.definition.deleted`     | Emitted once per deleted form definition.                                                          |
 | `AGENT_INSTANCE`   | `CREATED`           | `camunda.agent.instance.created`      | Emitted for every created agent instance.                                                          |
 | `AGENT_INSTANCE`   | `COMPLETED`         | `camunda.agent.instance.completed`    | Emitted for every completed agent instance.                                                        |
-| —                  | —                   | `heartbeat`                           | Emitted periodically by the partition leader (see `heartbeat-interval`).                           |
+| —                  | —                   | `camunda.telemetry.heartbeat`         | Emitted periodically by the partition leader (see `heartbeat-interval`).                           |
 
-`user_task_created` and `heartbeat` predate the analytics data contract and still carry flat
-snake_case names. Every other signal uses the canonical dotted contract name.
+Every signal uses the canonical `camunda.<namespace>.<action>` contract name. `user_task_created`
+and `heartbeat` carried flat pre-contract names until 8.10 and were renamed to
+`camunda.user_task.created` and `camunda.telemetry.heartbeat`.
 
 ### Common log record attributes
 
@@ -205,7 +206,7 @@ process instance passes through however it was started: the client API, or a mes
 or conditional start event. Process instances started by a call activity are excluded, so the event
 counts root instances only.
 
-**`user_task_created`**
+**`camunda.user_task.created`**
 
 |            Attribute             |  Type  |            Description            |
 |----------------------------------|--------|-----------------------------------|
@@ -329,14 +330,14 @@ two agree.
 
 ### Heartbeat attributes
 
-The `heartbeat` event carries static cluster metadata instead of the common log/sequence
+The `camunda.telemetry.heartbeat` event carries static cluster metadata instead of the common log/sequence
 attributes (heartbeats are not tied to the log stream):
 
-|              Attribute               |  Type  |                               Description                                |
-|--------------------------------------|--------|--------------------------------------------------------------------------|
-| `event.name`                         | string | Always `heartbeat`.                                                      |
-| `camunda.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
-| `camunda.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
+|                   Attribute                    |  Type  |                               Description                                |
+|------------------------------------------------|--------|--------------------------------------------------------------------------|
+| `event.name`                                   | string | Always `camunda.telemetry.heartbeat`.                                    |
+| `camunda.telemetry.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
+| `camunda.telemetry.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
 
 The analytics schema URL (`https://camunda.io/schemas/analytics/v1`) is delivered automatically via
 the OTel instrumentation scope on every record, not as a per-record attribute.

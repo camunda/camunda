@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.filesystem;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -100,7 +102,7 @@ public final class FilesystemBackupStore implements BackupStore {
             fileSetManager.save(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
             manifestManager.completeManifest(manifest);
           } catch (final Exception e) {
-            manifestManager.markAsFailed(manifest.id(), e.getMessage());
+            manifestManager.markAsFailed(manifest.id(), e.toString());
             throw e;
           }
         },
@@ -160,13 +162,14 @@ public final class FilesystemBackupStore implements BackupStore {
                     ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
+              final var descriptor = requireNonNull(manifest.descriptor());
               final var snapshot =
                   fileSetManager.restore(
                       id, SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
               final var segments =
                   fileSetManager.restore(
                       id, SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
-              yield new BackupImpl(id, manifest.descriptor(), snapshot, segments);
+              yield new BackupImpl(id, descriptor, snapshot, segments);
             }
           };
         },
@@ -189,7 +192,7 @@ public final class FilesystemBackupStore implements BackupStore {
     return CompletableFuture.supplyAsync(
         () -> {
           final var manifest = manifestManager.getManifest(id);
-          manifestManager.markAsDeleted(manifest);
+          manifestManager.markAsDeleted(requireNonNull(manifest));
           return BackupStatusCode.DELETED;
         },
         executor);
@@ -301,7 +304,7 @@ public final class FilesystemBackupStore implements BackupStore {
         }
       }
       Files.delete(traversePath);
-      traversePath = traversePath.getParent();
+      traversePath = requireNonNull(traversePath.getParent());
     }
     FileUtil.flushDirectory(traversePath);
   }

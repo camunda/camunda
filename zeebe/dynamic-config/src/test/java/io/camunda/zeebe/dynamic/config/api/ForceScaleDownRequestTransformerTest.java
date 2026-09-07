@@ -14,15 +14,18 @@ import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMi
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
 import java.util.Set;
@@ -37,16 +40,37 @@ class ForceScaleDownRequestTransformerTest {
 
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
-  private final ClusterConfiguration currentTopology =
-      ClusterConfiguration.init()
-          .addMember(id0, MemberState.initializeAsActive(Map.of()))
-          .addMember(id1, MemberState.initializeAsActive(Map.of()))
-          .addMember(id2, MemberState.initializeAsActive(Map.of()))
-          .addMember(id3, MemberState.initializeAsActive(Map.of()))
-          .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-          .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
-          .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
-          .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
+  private final CurrentClusterConfiguration currentTopology =
+      CurrentClusterConfiguration.init()
+          .updateGlobalConfiguration(
+              globalConfiguration ->
+                  globalConfiguration
+                      .addMember(id0, BrokerState.initializeAsActive())
+                      .addMember(id1, BrokerState.initializeAsActive())
+                      .addMember(id2, BrokerState.initializeAsActive())
+                      .addMember(id3, BrokerState.initializeAsActive()))
+          .initPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+          .updatePartitionGroupConfig(
+              PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+              partitionGroupConfiguration ->
+                  partitionGroupConfiguration
+                      .addMember(
+                          id0,
+                          BrokerPartitionState.initialize(
+                              Map.of(1, PartitionState.active(1, partitionConfig))))
+                      .addMember(
+                          id1,
+                          BrokerPartitionState.initialize(
+                              Map.of(1, PartitionState.active(2, partitionConfig))))
+                      .addMember(
+                          id2,
+                          BrokerPartitionState.initialize(
+                              Map.of(2, PartitionState.active(1, partitionConfig))))
+                      .addMember(
+                          id3,
+                          BrokerPartitionState.initialize(
+                              Map.of(2, PartitionState.active(2, partitionConfig))))
+                      .setRoutingState(RoutingState.initializeWithPartitionCount(2)));
 
   @Test
   void shouldGenerateForceConfigureOperations() {
@@ -178,18 +202,17 @@ class ForceScaleDownRequestTransformerTest {
                       .hasMessageContaining("{%s=[1]}".formatted(TENANT_A)));
     }
 
-    /** A cluster of the four members, where only the given brokers replicate partition 1. */
-    private ClusterConfiguration partitionOne(final MemberId... replicas) {
-      var topology = ClusterConfiguration.init();
-      for (final var member : Set.of(id0, id1, id2, id3)) {
-        topology = topology.addMember(member, MemberState.initializeAsActive(Map.of()));
-      }
+    /**
+     * A partition group of the four members, where only the given brokers replicate partition 1.
+     */
+    private PartitionGroupConfiguration partitionOne(final MemberId... replicas) {
+      var group = PartitionGroupConfiguration.empty(PartitionGroupConfiguration.INITIAL_VERSION);
       var priority = 1;
       for (final var replica : replicas) {
         final var partition = PartitionState.active(priority++, partitionConfig);
-        topology = topology.updateMember(replica, member -> member.addPartition(1, partition));
+        group = group.addMember(replica, BrokerPartitionState.initialize(Map.of(1, partition)));
       }
-      return topology;
+      return group.setRoutingState(RoutingState.initializeWithPartitionCount(1));
     }
 
     /**
@@ -198,18 +221,21 @@ class ForceScaleDownRequestTransformerTest {
      * tenant is judged on its own replicas.
      */
     private CurrentClusterConfiguration twoTenants(
-        final ClusterConfiguration defaultTenant, final ClusterConfiguration otherTenant) {
-      final var defaultGroup = CurrentClusterConfiguration.DEFAULT_GROUP;
-      final var base = CurrentClusterConfiguration.fromLegacy(defaultTenant);
-      return new CurrentClusterConfiguration(
-          base.version(),
-          base.globalConfiguration(),
-          Map.of(
-              defaultGroup,
-              base.partitionGroup(defaultGroup),
-              TENANT_A,
-              CurrentClusterConfiguration.fromLegacy(otherTenant).partitionGroup(defaultGroup)),
-          base.phasedChangeState());
+        final PartitionGroupConfiguration defaultTenant,
+        final PartitionGroupConfiguration otherTenant) {
+      return CurrentClusterConfiguration.init()
+          .updateGlobalConfiguration(
+              globalConfiguration ->
+                  globalConfiguration
+                      .addMember(id0, BrokerState.initializeAsActive())
+                      .addMember(id1, BrokerState.initializeAsActive())
+                      .addMember(id2, BrokerState.initializeAsActive())
+                      .addMember(id3, BrokerState.initializeAsActive()))
+          .initPartitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+          .updatePartitionGroupConfig(
+              CurrentClusterConfiguration.DEFAULT_GROUP, ignored -> defaultTenant)
+          .initPartitionGroup(TENANT_A)
+          .updatePartitionGroupConfig(TENANT_A, ignored -> otherTenant);
     }
   }
 }

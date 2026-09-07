@@ -153,15 +153,16 @@ jobs:
           }
 
           # Versions the compose must pin, keyed by .env KEY. The monorepo version drives
-          # camunda/zeebe/operate/tasklist (8.7 pins CAMUNDA_ZEEBE_VERSION, 8.8+ CAMUNDA_VERSION — only
-          # the key the minor actually pins is checked); connectors is always supplied; the rest only
+          # camunda/zeebe/operate (8.7 pins CAMUNDA_ZEEBE_VERSION, 8.8+ CAMUNDA_VERSION — only
+          # the key the minor actually pins is checked); Tasklist is separate on 8.7 and 8.8;
+          # connectors is always supplied; the rest only
           # when supplied. Checking every supplied component (not just the monorepo) prevents proceeding
           # while the compose is stale for connectors/console/etc.
           declare -A TARGET
           TARGET[CAMUNDA_VERSION]="${CAMUNDA_VERSION}"
           TARGET[CAMUNDA_ZEEBE_VERSION]="${CAMUNDA_VERSION}"
           TARGET[CAMUNDA_OPERATE_VERSION]="${CAMUNDA_VERSION}"
-          TARGET[CAMUNDA_TASKLIST_VERSION]="${CAMUNDA_VERSION}"
+          [[ "${COMPOSE_TAG}" =~ ^8\.[78]$ ]] && TARGET[CAMUNDA_TASKLIST_VERSION]="${CAMUNDA_VERSION}"
           TARGET[CAMUNDA_CONNECTORS_VERSION]="${CONNECTORS_VERSION}"
           [ -n "${OPTIMIZE_VERSION}" ]    && TARGET[CAMUNDA_OPTIMIZE_VERSION]="${OPTIMIZE_VERSION}"
           [ -n "${IDENTITY_VERSION}" ]    && TARGET[CAMUNDA_IDENTITY_VERSION]="${IDENTITY_VERSION}"
@@ -211,6 +212,7 @@ jobs:
           # depName -> version map for the force-bump, empties dropped (only present keys get written).
           component_versions="$(jq -nc \
             --arg mono "${CAMUNDA_VERSION}" \
+            --arg tasklist "$( [[ "${COMPOSE_TAG}" =~ ^8\.[78]$ ]] && printf '%s' "${CAMUNDA_VERSION}")" \
             --arg conn "${CONNECTORS_VERSION}" \
             --arg opt "${OPTIMIZE_VERSION}" \
             --arg ident "${IDENTITY_VERSION}" \
@@ -220,7 +222,7 @@ jobs:
               "camunda/camunda": $mono,
               "camunda/zeebe": $mono,
               "camunda/operate": $mono,
-              "camunda/tasklist": $mono,
+              "camunda/tasklist": $tasklist,
               "camunda/connectors-bundle": $conn,
               "camunda/optimize": $opt,
               "camunda/identity": $ident,

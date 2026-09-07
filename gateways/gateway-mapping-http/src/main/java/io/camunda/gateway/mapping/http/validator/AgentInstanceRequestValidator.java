@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
@@ -34,6 +35,9 @@ import org.springframework.http.ProblemDetail;
 
 @NullMarked
 public class AgentInstanceRequestValidator {
+
+  // Mirrors HistoryItemId#maxLength in identifiers.yaml.
+  private static final int MAX_HISTORY_ITEM_ID_LENGTH = 256;
 
   // Note: even if some properties are marked @NotNull in AgentInstanceCreationRequest,
   // no validation is performed during deserialization, so it is still necessary to validate it here
@@ -118,6 +122,10 @@ public class AgentInstanceRequestValidator {
     if (historyItem.getHistoryItemId() == null || historyItem.getHistoryItemId().isBlank()) {
       violations.add(
           ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].historyItemId"));
+    } else if (historyItem.getHistoryItemId().length() > MAX_HISTORY_ITEM_ID_LENGTH) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              "history[" + index + "].historyItemId", MAX_HISTORY_ITEM_ID_LENGTH));
     }
     if (historyItem.getLoopIteration() == null) {
       violations.add(

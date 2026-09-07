@@ -18,8 +18,8 @@ class OperateProcessesPage extends BasePage {
 		this.header = new Header(page, 'Camunda Operate');
 	}
 
-	async goto() {
-		return this.page.goto('/operate/processes');
+	async goto(search = '') {
+		return this.page.goto(`/operate/processes${search}`);
 	}
 
 	get filtersPanel() {
@@ -36,6 +36,14 @@ class OperateProcessesPage extends BasePage {
 
 	get instancesTable() {
 		return this.page.getByTestId('process-instances-table');
+	}
+
+	get operationStateColumn() {
+		return this.instancesTable.getByRole('columnheader', {name: 'Operation State'});
+	}
+
+	operationState(state: string) {
+		return this.instancesTable.getByRole('cell', {name: state});
 	}
 
 	instanceLink(processInstanceKey: string) {

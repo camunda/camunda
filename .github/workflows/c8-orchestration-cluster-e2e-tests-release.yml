@@ -317,28 +317,10 @@ jobs:
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-
       - name: Install Playwright Browsers
         shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.x"
 
       - name: Run API tests
         shell: bash
@@ -362,41 +344,6 @@ jobs:
           npm run test -- --project=api-tests
 
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Publish test results to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-        run: |
-          pip install trcli==1.14.1
-          log=$(mktemp)
-          set +e
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            --timeout 180 \
-            parse_junit --suite-id 17050 \
-            --title "Release C8 Orchestration Cluster API Test Run Results - v${{ needs.validate-release.outputs.release_version }} - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
-          status=${PIPESTATUS[0]}
-          set -e
-          # trcli's --close-run is not idempotent: past its client timeout it retries
-          # silently and TestRail rejects the retry because the first close landed.
-          # Requiring the Done line means a mid-upload rejection still fails the step.
-          if [ "$status" -ne 0 ] &&
-            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
-            grep -qF 'The test run is already completed' "$log"; then
-            echo "::warning::TestRail close raced its own retry; all results were uploaded"
-            exit 0
-          fi
-          exit "$status"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
@@ -848,16 +795,17 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   c8-orchestration-cluster-e2e-tests:
-    name: C8 Orchestration Cluster E2E Tests Release (Tasklist ${{ matrix.tasklist_mode }} mode)
+    name: C8 Orchestration Cluster E2E Tests Release${{ matrix.tasklist_mode && format(' (Tasklist {0} mode)', matrix.tasklist_mode) || '' }}
     strategy:
       fail-fast: false
       matrix:
         # Tasklist v1 exists only on 8.6-8.9; 8.10 removed it, as main did.
         # Named as an allow-list of the branches that HAVE v1, defaulting to
         # v2-only, so a new stable branch does not inherit a v1 leg: the old
-        # `|| '["v1","v2"]'` catch-all gave stable/8.10 one, and it failed with
-        # "No tests found" pointing at tests/tasklist/v1/ (run 32859395813).
-        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || (needs.validate-release.outputs.base == 'stable/8.8' || needs.validate-release.outputs.base == 'stable/8.9') && '["v1","v2"]' || '["v2"]' ) }}
+        # `|| '[{"tasklist_mode":"v1"},{"tasklist_mode":"v2"}]'` catch-all gave
+        # stable/8.10 a v1 leg, and it failed with "No tests found" pointing at
+        # tests/tasklist/v1/ (run 32859395813).
+        include: ${{ fromJSON( needs.validate-release.outputs.base == 'main' && '[{"compatibility":"current"}]' || (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '[{"tasklist_mode":"v1"}]' || (needs.validate-release.outputs.base == 'stable/8.8' || needs.validate-release.outputs.base == 'stable/8.9') && '[{"tasklist_mode":"v1"},{"tasklist_mode":"v2"}]' || '[{"tasklist_mode":"v2"}]' ) }}
     needs: validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -868,7 +816,9 @@ jobs:
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
           echo "Base branch (routing): ${{ needs.validate-release.outputs.base }}"
           echo "Source ref (checkout): ${{ needs.validate-release.outputs.ref }}"
-          echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
+          if [[ -n "${{ matrix.tasklist_mode }}" ]]; then
+            echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
+          fi
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -932,11 +882,10 @@ jobs:
               DATABASE=elasticsearch docker compose up -d zeebe operate tasklist
             else
               echo "Using standalone camunda container"
-              if [[ "${{ matrix.tasklist_mode }}" == "v1" ]]; then
+              if [[ ("${{ needs.validate-release.outputs.base }}" == "stable/8.8" || "${{ needs.validate-release.outputs.base }}" == "stable/8.9") && "${{ matrix.tasklist_mode }}" == "v1" ]]; then
                 echo "Starting with Tasklist V1 mode enabled"
                 CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
               else
-                echo "Starting with default Tasklist V2 mode"
                 DATABASE=elasticsearch docker compose up -d camunda
               fi
             fi
@@ -1027,28 +976,10 @@ jobs:
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-
       - name: Install Playwright Browsers
         shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.x"
 
       - name: Run tests
         shell: bash
@@ -1057,7 +988,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -1069,7 +999,11 @@ jobs:
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
             TEST_ARGS=(--project=chromium)
 
-            if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
+            if [[ "${{ needs.validate-release.outputs.base }}" == "main" ]]; then
+              echo "Running current-generation tests"
+              TEST_ARGS+=(tests/)
+            elif [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
+              export CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
               echo "Running V2 mode tests"
               if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
                 # stable/8.8: run all tests excluding @v1-only tagged tests
@@ -1085,6 +1019,9 @@ jobs:
                 TEST_ARGS+=(tests/)
               fi
             else
+              if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" || "${{ needs.validate-release.outputs.base }}" == "stable/8.9" ]]; then
+                export CAMUNDA_TASKLIST_V2_MODE_ENABLED=false
+              fi
               echo "Running V1 mode tests"
               if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
                 # stable/8.8: no v1/ directories, run regular directories for V1 mode
@@ -1099,45 +1036,10 @@ jobs:
           npm run test -- "${TEST_ARGS[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Publish test results to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-        run: |
-          pip install trcli==1.14.1
-          log=$(mktemp)
-          set +e
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            --timeout 180 \
-            parse_junit --suite-id 17050 \
-            --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
-          status=${PIPESTATUS[0]}
-          set -e
-          # trcli's --close-run is not idempotent: past its client timeout it retries
-          # silently and TestRail rejects the retry because the first close landed.
-          # Requiring the Done line means a mid-upload rejection still fails the step.
-          if [ "$status" -ne 0 ] &&
-            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
-            grep -qF 'The test run is already completed' "$log"; then
-            echo "::warning::TestRail close raced its own retry; all results were uploaded"
-            exit 0
-          fi
-          exit "$status"
-
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
-          name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)
+          name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }}${{ matrix.tasklist_mode && format(' (Tasklist {0} mode)', matrix.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 

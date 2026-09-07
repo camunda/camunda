@@ -16,11 +16,9 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -43,11 +41,14 @@ class UpdateRoutingStateTransformerTest {
   private final MemberId id1 = MemberId.from("1");
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
-  private final ClusterConfiguration currentTopology =
-      ClusterConfiguration.init()
-          .addMember(id1, MemberState.initializeAsActive(Map.of()))
-          .updateMember(
-              id1, member -> member.addPartition(1, PartitionState.active(1, partitionConfig)));
+  private final CurrentClusterConfiguration currentTopology =
+      CurrentClusterConfiguration.init()
+          .updateGlobalConfiguration(
+              globalConfiguration ->
+                  globalConfiguration.addMember(id1, BrokerState.initializeAsActive()))
+          .initPartitionGroup(DEFAULT_GROUP)
+          .updatePartitionGroupConfig(
+              DEFAULT_GROUP, group -> group.addMember(id1, hostingAPartition()));
 
   @Test
   void shouldGenerateUpdateRoutingStateOperationWhenEnabled() {

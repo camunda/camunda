@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -227,7 +228,8 @@ public record PartitionGroupConfiguration(
    * @throws IllegalStateException if the broker is not part of the group
    */
   public PartitionGroupConfiguration updateMember(
-      final MemberId memberId, final UnaryOperator<BrokerPartitionState> memberStateUpdater) {
+      final MemberId memberId,
+      final Function<BrokerPartitionState, @Nullable BrokerPartitionState> memberStateUpdater) {
     final BrokerPartitionState current = members.get(memberId);
     if (current == null) {
       throw new IllegalStateException(
@@ -235,11 +237,15 @@ public record PartitionGroupConfiguration(
               "Expected to update member %s, but it is not part of the group", memberId.id()));
     }
     final var updated = memberStateUpdater.apply(current);
-    if (updated.equals(current)) {
+    if (current.equals(updated)) {
       return this;
     }
     final var updatedMembers = new HashMap<>(members);
-    updatedMembers.put(memberId, updated);
+    if (updated != null) {
+      updatedMembers.put(memberId, updated);
+    } else {
+      updatedMembers.remove(memberId);
+    }
     return withMembers(updatedMembers);
   }
 

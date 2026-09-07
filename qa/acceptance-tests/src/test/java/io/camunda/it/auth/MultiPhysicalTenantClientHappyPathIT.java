@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
  * Multi-client happy path over a real runtime: two clients, each scoped to its own physical tenant,
@@ -35,16 +34,9 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * <p>Complements the client-side WireMock integration tests in {@code camunda-spring-boot-starter}
  * (per-client REST routing, base-URL modes, {@code @JobWorker} fan-out) with an end-to-end check
  * against a running broker.
- *
- * <p>RDBMS only — physical-tenant secondary storage is RDBMS-only, matching the other
- * physical-tenant acceptance tests.
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({"tenanta", "tenantb"})
-@EnabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class MultiPhysicalTenantClientHappyPathIT {
 
   @MultiDbTestApplication

@@ -9,7 +9,7 @@
 
 set -euxo pipefail
 
-#### Outputs a list of optimize, operate, tasklist, and zeebe modules that should be skipped in the general unit tests
+#### Outputs a list of optimize, operate, and zeebe modules that should be skipped in the general unit tests
 #### The skipped modules are run elsewhere. This script ensures that any new modules that are added will be run by general unit test
 
 ### Get list of all modules in monorepo
@@ -23,9 +23,9 @@ IFS=' ' read -ra items <<< "$rawModuleList"
 # Initialize an empty array for filtered items
 filtered_items=()
 
-# Loop through each item and construct list of Operate, Optimize, Tasklist, and Zeebe modules. These modules will be removed
+# Loop through each item and construct list of Operate, Optimize, and Zeebe modules. These modules will be removed
 for item in "${items[@]}"; do
-  if [[ $item == *optimize* || $item == tasklist* || $item == operate* || $item == zeebe* ]]; then
+  if [[ $item == *optimize* || $item == operate* || $item == zeebe* ]]; then
     filtered_items+=("$item")
   fi
 done
@@ -44,7 +44,7 @@ done
 # Join the filtered items back into a string
 IFS=' '; modules="${filtered_items[*]}"
 
-### Add Extra modules to skip, these are not Zeebe/Operate/Tasklist/Optimize modules
+### Add Extra modules to skip, these are not Zeebe/Operate/Optimize modules
 modules+=" $2"
 
 ### Format with '-:<moduleName>' This format is used by maven to skip modules with the -pl argument

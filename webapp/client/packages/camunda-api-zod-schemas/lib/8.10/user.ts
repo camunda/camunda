@@ -9,6 +9,7 @@
 import {z} from 'zod';
 import {
 	API_VERSION,
+	getOrFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	advancedStringFilterSchema,
@@ -52,11 +53,13 @@ type UpdateUserResponseBody = z.infer<typeof updateUserResponseBodySchema>;
 
 const queryUsersRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['username', 'name', 'email'] as const,
-	filter: z.object({
-		username: advancedStringFilterSchema.optional(),
-		name: advancedStringFilterSchema.optional(),
-		email: advancedStringFilterSchema.optional(),
-	}),
+	filter: getOrFilterSchema(
+		z.object({
+			username: advancedStringFilterSchema.optional(),
+			name: advancedStringFilterSchema.optional(),
+			email: advancedStringFilterSchema.optional(),
+		}),
+	),
 });
 type QueryUsersRequestBody = z.infer<typeof queryUsersRequestBodySchema>;
 

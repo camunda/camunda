@@ -56,7 +56,7 @@ const List: FC<ListProps> = ({
   const availableResourceTypes = isTenantsApiEnabled
     ? ALL_RESOURCE_TYPES
     : RESOURCE_TYPES_WITHOUT_TENANT;
-  const authorizationTypeOptions = useMemo(
+  const resourceTypeOptions = useMemo(
     () =>
       availableResourceTypes.map((resourceType) => ({
         label: t(resourceType),
@@ -146,14 +146,14 @@ const List: FC<ListProps> = ({
         sidebar={
           <Card>
             <CardHeader>
-              <CardTitle>{t("filters")}</CardTitle>
+              <CardTitle>{t("filter")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-1.5">
-              <Label htmlFor={comboboxId}>{t("authorizationType")}</Label>
+              <Label htmlFor={comboboxId}>{t("resourceType")}</Label>
               <Combobox
                 id={comboboxId}
                 className="w-full"
-                options={authorizationTypeOptions}
+                options={resourceTypeOptions}
                 value={selectedResourceType}
                 onValueChange={(value) => {
                   if (!value) {

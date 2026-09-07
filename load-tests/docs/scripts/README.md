@@ -10,8 +10,11 @@ Run executeProfiling.sh with a pod name, optional event type, and optional profi
 **Syntax:**
 
 ```
-./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
+./executeProfiling.sh [-p|--prefix PREFIX] <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
 ```
+
+**Options:**
+- `-p`, `--prefix` - Filename prefix for the generated report. Default: `flamegraph-`
 
 **Event Types:**
 - `cpu` - CPU profiling (default)
@@ -33,7 +36,7 @@ Example with CPU profiling (default):
 ...
 Profiling for 100 seconds
 Done
-+ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-cpu-2025-07-11_19-02-52.html release-8-8-0-alpha6-zeebe-2-flamegraph-cpu-2025-07-11_19-02-52.html
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-cpu.html release-8-8-0-alpha6-zeebe-2-flamegraph-cpu.html
 tar: Removing leading `/' from member names
 
 ```
@@ -45,7 +48,7 @@ Example with wall clock profiling:
 ...
 Profiling for 100 seconds
 Done
-+ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-wall-2025-07-11_19-05-23.html release-8-8-0-alpha6-zeebe-2-flamegraph-wall-2025-07-11_19-05-23.html
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-wall.html release-8-8-0-alpha6-zeebe-2-flamegraph-wall.html
 ```
 
 Example with additional profiler options:

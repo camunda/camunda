@@ -47,7 +47,7 @@
     <version.camunda>7.24.0</version.camunda>
     <version.camunda-license-check>2.11.2</version.camunda-license-check>
     <version.camunda-security-library>0.1.0-alpha67</version.camunda-security-library>
-    <version.checkstyle>14.0.0</version.checkstyle>
+    <version.checkstyle>14.1.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
     <version.commons-lang>3.20.0</version.commons-lang>
     <version.commons-logging>1.4.0</version.commons-logging>
@@ -59,13 +59,13 @@
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
-    <version.elasticsearch.client>8.19.20</version.elasticsearch.client>
+    <version.elasticsearch.client>8.19.21</version.elasticsearch.client>
     <version.elasticsearch-java-client>8.19.21</version.elasticsearch-java-client>
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.50.0</version.error-prone>
-    <version.nullaway>0.14.0</version.nullaway>
-    <version.grpc>1.83.1</version.grpc>
+    <version.nullaway>0.14.1</version.nullaway>
+    <version.grpc>1.84.0</version.grpc>
     <version.gson>2.14.0</version.gson>
     <version.guava>33.7.1-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
@@ -74,7 +74,7 @@
     <version.httpclient5>5.6.4</version.httpclient5>
     <version.httpcore5>5.4.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.10.0-alpha4.2</version.identity>
+    <version.identity>8.10.0-alpha5</version.identity>
     <version.instancio>6.0.0</version.instancio>
     <version.jackson>2.22.2</version.jackson>
     <version.jackson3>3.2.2</version.jackson3>
@@ -97,14 +97,14 @@
     <version.opensearch.container>2.19.6</version.opensearch.container>
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
     <version.prometheus>1.3.5</version.prometheus>
-    <version.protobuf>4.36.0</version.protobuf>
+    <version.protobuf>4.36.1</version.protobuf>
     <version.protobuf-common>2.75.0</version.protobuf-common>
     <version.micrometer>1.17.1</version.micrometer>
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
     <version.sbe>1.40.1</version.sbe>
     <version.scala>3.9.0</version.scala>
     <version.slf4j>2.0.18</version.slf4j>
-    <version.snakeyaml>2.6</version.snakeyaml>
+    <version.snakeyaml>2.7</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.2</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
@@ -132,7 +132,7 @@
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.6.0</version.json-smart>
-    <version.byte-buddy>1.18.12-jdk5</version.byte-buddy>
+    <version.byte-buddy>1.18.13-jdk5</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.4.0</version.resilience4j>
     <version.kotlin-stdlib>2.4.10</version.kotlin-stdlib>
@@ -155,7 +155,7 @@
          dependencyManagement for why this is pinned at all. -->
     <version.google-http-client>2.2.0</version.google-http-client>
     <version.azure-sdk>1.3.8</version.azure-sdk>
-    <version.awssdk>2.54.7</version.awssdk>
+    <version.awssdk>2.54.12</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.bind-api>4.0.5</version.bind-api>
@@ -163,9 +163,9 @@
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.22</version.jackson-annotations>
     <version.json-path>3.0.0</version.json-path>
-    <version.swagger-annotations>2.2.54</version.swagger-annotations>
-    <version.swagger-parser>2.1.47</version.swagger-parser>
-    <version.checker-qual>4.2.2</version.checker-qual>
+    <version.swagger-annotations>2.2.55</version.swagger-annotations>
+    <version.swagger-parser>2.1.48</version.swagger-parser>
+    <version.checker-qual>4.2.3</version.checker-qual>
     <version.java-jwt>4.6.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.13</version.postgresql>
@@ -207,7 +207,7 @@
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
-    <version.auth0>5.0.0</version.auth0>
+    <version.auth0>5.1.0</version.auth0>
     <version.auth0.commons>1.12.0</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.okio-jvm>3.18.1</version.okio-jvm>
@@ -215,7 +215,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.38.2</version.nimbus-sdk>
-    <version.keycloak>26.7.2</version.keycloak>
+    <version.keycloak>26.7.3</version.keycloak>
     <version.keycloak-client>26.0.12</version.keycloak-client>
     <version.jna>5.19.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
@@ -233,7 +233,7 @@
     <plugin.version.assembly>3.8.0</plugin.version.assembly>
     <plugin.version.build-helper>3.6.1</plugin.version.build-helper>
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
-    <plugin.version.compiler>3.15.0</plugin.version.compiler>
+    <plugin.version.compiler>3.16.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.17.1</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.11.0</plugin.version.dependency>
     <plugin.version.enforcer>3.6.3</plugin.version.enforcer>
@@ -778,79 +778,6 @@
         <groupId>io.camunda</groupId>
         <artifactId>microbenchmarks</artifactId>
         <version>${project.version}</version>
-      </dependency>
-
-      <!-- Tasklist Modules -->
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-webjar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-data-generator</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-it-tests</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-810</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-820</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-830</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-840</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-850</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
       </dependency>
 
       <dependency>

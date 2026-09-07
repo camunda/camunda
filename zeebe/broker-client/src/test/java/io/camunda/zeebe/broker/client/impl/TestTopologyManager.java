@@ -98,6 +98,12 @@ final class TestTopologyManager implements BrokerTopologyManager {
     throw new UnsupportedOperationException();
   }
 
+  @Override
+  public void onClusterConfigurationUpdated(
+      final CurrentClusterConfiguration clusterConfiguration) {
+    throw new UnsupportedOperationException();
+  }
+
   @NullMarked
   private static final class TestBrokerClusterState implements BrokerClusterState {
 

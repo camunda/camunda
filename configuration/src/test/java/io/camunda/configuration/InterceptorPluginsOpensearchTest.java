@@ -17,8 +17,6 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.plugin.PluginConfiguration;
-import io.camunda.tasklist.TasklistPropertiesOverride;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.nio.file.Path;
 import java.util.Map;
@@ -34,7 +32,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
   OperatePropertiesOverride.class,
-  TasklistPropertiesOverride.class,
   SearchEngineConnectPropertiesOverride.class,
   BrokerBasedPropertiesOverride.class
 })
@@ -58,17 +55,14 @@ public class InterceptorPluginsOpensearchTest {
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final BrokerBasedProperties brokerBasedProperties;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.brokerBasedProperties = brokerBasedProperties;
     }
@@ -76,14 +70,6 @@ public class InterceptorPluginsOpensearchTest {
     @Test
     void testCamundaDataSecondaryStorageOperateProperties() {
       assertThat(operateProperties.getOpensearch().getInterceptorPlugins())
-          .hasSize(2)
-          .usingRecursiveFieldByFieldElementComparator()
-          .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageTasklistProperties() {
-      assertThat(tasklistProperties.getOpenSearch().getInterceptorPlugins())
           .hasSize(2)
           .usingRecursiveFieldByFieldElementComparator()
           .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
@@ -125,13 +111,6 @@ public class InterceptorPluginsOpensearchTest {
         "camunda.operate.opensearch.interceptorPlugins.1.id=1Id",
         "camunda.operate.opensearch.interceptorPlugins.1.className=1ClassName",
         "camunda.operate.opensearch.interceptorPlugins.1.jarPath=1JarPath",
-        // legacy tasklist
-        "camunda.tasklist.opensearch.interceptorPlugins.0.id=0Id",
-        "camunda.tasklist.opensearch.interceptorPlugins.0.className=0ClassName",
-        "camunda.tasklist.opensearch.interceptorPlugins.0.jarPath=0JarPath",
-        "camunda.tasklist.opensearch.interceptorPlugins.1.id=1Id",
-        "camunda.tasklist.opensearch.interceptorPlugins.1.className=1ClassName",
-        "camunda.tasklist.opensearch.interceptorPlugins.1.jarPath=1JarPath",
         // legacy search engine database configuration
         "camunda.database.interceptorPlugins.0.id=0Id",
         "camunda.database.interceptorPlugins.0.className=0ClassName",
@@ -150,17 +129,14 @@ public class InterceptorPluginsOpensearchTest {
       })
   class WithOnlyLegacySet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final BrokerBasedProperties brokerBasedProperties;
 
     WithOnlyLegacySet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.brokerBasedProperties = brokerBasedProperties;
     }
@@ -168,14 +144,6 @@ public class InterceptorPluginsOpensearchTest {
     @Test
     void testCamundaDataSecondaryStorageOperateProperties() {
       assertThat(operateProperties.getOpensearch().getInterceptorPlugins())
-          .hasSize(2)
-          .usingRecursiveFieldByFieldElementComparator()
-          .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageTasklistProperties() {
-      assertThat(tasklistProperties.getOpenSearch().getInterceptorPlugins())
           .hasSize(2)
           .usingRecursiveFieldByFieldElementComparator()
           .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
@@ -224,13 +192,6 @@ public class InterceptorPluginsOpensearchTest {
         "camunda.operate.opensearch.interceptorPlugins.1.id=1IdOperate",
         "camunda.operate.opensearch.interceptorPlugins.1.className=1ClassNameOperate",
         "camunda.operate.opensearch.interceptorPlugins.1.jarPath=1JarPathOperate",
-        // legacy tasklist
-        "camunda.tasklist.opensearch.interceptorPlugins.0.id=0IdTasklist",
-        "camunda.tasklist.opensearch.interceptorPlugins.0.className=0ClassNameTasklist",
-        "camunda.tasklist.opensearch.interceptorPlugins.0.jarPath=0JarPathTasklist",
-        "camunda.tasklist.opensearch.interceptorPlugins.1.id=1IdTasklist",
-        "camunda.tasklist.opensearch.interceptorPlugins.1.className=1ClassNameTasklist",
-        "camunda.tasklist.opensearch.interceptorPlugins.1.jarPath=1JarPathTasklist",
         // legacy search engine database configuration
         "camunda.database.interceptorPlugins.0.id=0IdSearchEngine",
         "camunda.database.interceptorPlugins.0.className=0ClassNameSearchEngine",
@@ -249,17 +210,14 @@ public class InterceptorPluginsOpensearchTest {
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final BrokerBasedProperties brokerBasedProperties;
 
     WithNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.brokerBasedProperties = brokerBasedProperties;
     }
@@ -267,14 +225,6 @@ public class InterceptorPluginsOpensearchTest {
     @Test
     void testCamundaDataSecondaryStorageOperateProperties() {
       assertThat(operateProperties.getOpensearch().getInterceptorPlugins())
-          .hasSize(2)
-          .usingRecursiveFieldByFieldElementComparator()
-          .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageTasklistProperties() {
-      assertThat(tasklistProperties.getOpenSearch().getInterceptorPlugins())
           .hasSize(2)
           .usingRecursiveFieldByFieldElementComparator()
           .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);

@@ -11,17 +11,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -417,6 +422,218 @@ public class AgentHistoryCommitTest {
                 .map(Record::getKey))
         .as("the superseded activation's history item should be discarded")
         .containsExactly(supersededItemKey);
+  }
+
+  @Test
+  public void shouldKeepBothLeasesMetricsAfterDiscardingSupersededItemOnJobCompletion() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+
+    // Activation 1 (superseded): an AGENT_INSTANCE:UPDATE accumulates its item's metrics onto the
+    // agent instance immediately, before the job later fails and is re-activated.
+    final var job1 = activateJobForProcessInstanceWithLease(processInstanceKey);
+    final var supersededItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-superseded")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("first attempt"));
+    supersededItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(job1.key())
+            .withJobLease(job1.leaseToken())
+            .withHistory(List.of(supersededItem))
+            .update();
+    final long supersededItemKey = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withLeaseToken(job1.leaseToken())
+        .withRetries(1)
+        .fail();
+
+    // Activation 2 (winning): a second item's metrics are accumulated on top of the first's,
+    // then the job completes.
+    final var job2 = activateJobForProcessInstanceWithLease(processInstanceKey);
+    final var winningItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-winning")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("second attempt"));
+    winningItem.getMetrics().setInputTokens(50L).setOutputTokens(20L);
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(job2.key())
+            .withJobLease(job2.leaseToken())
+            .withHistory(List.of(winningItem))
+            .update();
+    final long winningItemKey = secondUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
+
+    // both items' deltas are already summed on the agent instance, before either item is
+    // committed or discarded: metrics apply at accept time, not at commit time.
+    assertThat(secondUpdate.getValue().getMetrics().getInputTokens())
+        .as("both activations' input tokens are summed on the agent instance")
+        .isEqualTo(100L + 50L);
+    assertThat(secondUpdate.getValue().getMetrics().getOutputTokens())
+        .as("both activations' output tokens are summed on the agent instance")
+        .isEqualTo(40L + 20L);
+    assertThat(secondUpdate.getValue().getMetrics().getModelCalls())
+        .as("both activations' model calls are counted on the agent instance")
+        .isEqualTo(2);
+
+    // when — the job completes under the winning lease
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withLeaseToken(job2.leaseToken())
+        .complete();
+
+    // JobCompleteProcessor emits AGENT_HISTORY:COMMIT; scope subsequent assertions to it.
+    final var firstCommitted =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
+            .withJobKey(job2.key())
+            .getFirst();
+    final long commitPosition = firstCommitted.getSourceRecordPosition();
+    final long clockResetKey = ENGINE.clock().reset().getKey();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.COMMITTED)
+                .filter(r -> r.getSourceRecordPosition() == commitPosition)
+                .map(Record::getKey))
+        .as("only the winning activation's history item should be committed")
+        .containsExactly(winningItemKey);
+    final var discarded =
+        RecordingExporter.records()
+            .limit(r -> r.getKey() == clockResetKey)
+            .withValueType(ValueType.AGENT_HISTORY)
+            .withIntent(AgentHistoryIntent.DISCARDED)
+            .filter(r -> r.getSourceRecordPosition() == commitPosition)
+            .getFirst();
+    assertThat(discarded.getKey())
+        .as("the superseded activation's history item should be discarded")
+        .isEqualTo(supersededItemKey);
+
+    // and — the agent instance completes right after (its only service task's job just
+    // completed), carrying the metrics it held at that point. The discard is confirmed to have
+    // already applied by then, so this is not a snapshot taken before the discard: if discarding
+    // the superseded item had subtracted the metrics it already contributed at accept time, this
+    // total would be missing them.
+    final var agentInstanceCompleted =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .getFirst();
+    assertThat(discarded.getPosition())
+        .as("the discard must already be applied when the agent instance completes")
+        .isLessThan(agentInstanceCompleted.getPosition());
+    assertThat(agentInstanceCompleted.getValue().getMetrics().getInputTokens())
+        .as("the discarded item's input tokens are still included after the job completed")
+        .isEqualTo(100L + 50L);
+    assertThat(agentInstanceCompleted.getValue().getMetrics().getOutputTokens())
+        .as("the discarded item's output tokens are still included after the job completed")
+        .isEqualTo(40L + 20L);
+    assertThat(agentInstanceCompleted.getValue().getMetrics().getModelCalls())
+        .as("the discarded item's model call is still counted after the job completed")
+        .isEqualTo(2);
+  }
+
+  @Test
+  public void shouldNotApplyConfigurationChangeFromDiscardedItemAfterJobCompletion() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+
+    // Activation 1 (superseded): an AGENT_INSTANCE:UPDATE queues a CONFIGURATION item that
+    // changes model/provider, but the job fails before the item is ever committed.
+    final var job1 = activateJobForProcessInstanceWithLease(processInstanceKey);
+    final var supersededConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config-superseded")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    supersededConfigItem.setModel("gpt-4o-mini").setProvider("azure-openai");
+    supersededConfigItem.setChangedAttributes(List.of("model", "provider"));
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(job1.key())
+            .withJobLease(job1.leaseToken())
+            .withHistory(List.of(supersededConfigItem))
+            .update();
+    final long supersededItemKey = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withLeaseToken(job1.leaseToken())
+        .withRetries(1)
+        .fail();
+
+    // Activation 2 (winning): re-activate and complete the job, without queuing any further item.
+    final var job2 = activateJobForProcessInstanceWithLease(processInstanceKey);
+
+    // when — the job completes under the winning lease
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withLeaseToken(job2.leaseToken())
+        .complete();
+
+    // then — the superseded CONFIGURATION item is discarded, never committed
+    final var discarded =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARDED)
+            .withRecordKey(supersededItemKey)
+            .getFirst();
+    assertThat(discarded.getKey())
+        .as("the superseded activation's CONFIGURATION item should be discarded")
+        .isEqualTo(supersededItemKey);
+
+    // and — applyConfigurationChanges only runs for COMMITTED items, so the discarded item's
+    // model/provider change must never reach the live agent instance, even after its job
+    // completed and the discard was applied. The position check proves this is not a snapshot
+    // taken before the discard: without it, COMPLETED could simply have been written first.
+    final var agentInstanceCompleted =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .getFirst();
+    assertThat(discarded.getPosition())
+        .as("the discard must already be applied when the agent instance completes")
+        .isLessThan(agentInstanceCompleted.getPosition());
+    assertThat(agentInstanceCompleted.getValue().getDefinition().getModel())
+        .as("the discarded item's model change must never be applied to the live agent instance")
+        .isEqualTo("gpt-4o");
+    assertThat(agentInstanceCompleted.getValue().getDefinition().getProvider())
+        .as(
+            "the discarded item's provider change must never be applied to the live agent"
+                + " instance")
+        .isEqualTo("openai");
   }
 
   // --- helpers ---

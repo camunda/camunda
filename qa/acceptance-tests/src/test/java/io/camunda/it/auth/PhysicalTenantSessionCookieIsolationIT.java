@@ -19,7 +19,6 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
  * Regression guard for per-physical-tenant session-cookie isolation with persistent web sessions.
@@ -30,19 +29,12 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * {@code camunda-session-physical-tenants-<id>} bound to {@code Path=/physical-tenants/<id>}, and
  * must not set the unscoped default {@code camunda-session} at {@code Path=/}. An unscoped cookie
  * would be sent across every tenant's path and collapse session isolation.
- *
- * <p>Physical-tenant secondary storage is RDBMS-only, so this test is gated to RDBMS backends. Each
- * tenant is provisioned with isolated storage and a seeded {@code <id>-admin} user.
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({
   PhysicalTenantSessionCookieIsolationIT.TENANT_A,
   PhysicalTenantSessionCookieIsolationIT.TENANT_B
 })
-@EnabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason = "Per-physical-tenant secondary storage is only supported on RDBMS backends")
 public class PhysicalTenantSessionCookieIsolationIT {
 
   static final String TENANT_A = "tenanta";

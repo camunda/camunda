@@ -87,6 +87,20 @@ const BarContainer = styled.div`
 	margin: var(--cds-spacing-03) 0;
 `;
 
+const RightControls = styled.div`
+	margin-left: auto;
+	padding-inline-start: var(--cds-spacing-05);
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-03);
+`;
+
+const DrainingIndicator = styled.div`
+	display: flex;
+	align-items: center;
+	color: var(--cds-support-error);
+`;
+
 const getBarHeight = ($size: Size) => css`
 	${
 		$size === 'small' &&
@@ -124,4 +138,14 @@ const IncidentsBar = styled.div<{$size: Size}>`
 	`}
 `;
 
-export {Wrapper, IncidentsCount, ActiveCount, Label, BarContainer, ActiveInstancesBar, IncidentsBar};
+export {
+	Wrapper,
+	IncidentsCount,
+	ActiveCount,
+	Label,
+	BarContainer,
+	RightControls,
+	ActiveInstancesBar,
+	IncidentsBar,
+	DrainingIndicator,
+};

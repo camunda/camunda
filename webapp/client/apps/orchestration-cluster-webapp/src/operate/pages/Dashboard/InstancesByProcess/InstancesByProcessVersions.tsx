@@ -10,17 +10,23 @@ import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
-import {instancesByProcessVersionsQuery} from './instancesByProcess.queries';
+import {instancesByProcessVersionsQuery, type DrainingLookup} from './instancesByProcess.queries';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {Li, LinkWrapper} from '../styled';
 
 type Props = {
 	processDefinitionId: string;
 	tenantId: string | null;
+	drainingDefinitionKeys?: DrainingLookup['byKey'];
 	tabIndex?: number;
 };
 
-const InstancesByProcessVersions: React.FC<Props> = ({processDefinitionId, tenantId, tabIndex}) => {
+const InstancesByProcessVersions: React.FC<Props> = ({
+	processDefinitionId,
+	tenantId,
+	drainingDefinitionKeys,
+	tabIndex,
+}) => {
 	const {t} = useTranslation();
 	const {data} = useSuspenseQuery(instancesByProcessVersionsQuery(processDefinitionId, tenantId));
 
@@ -47,6 +53,8 @@ const InstancesByProcessVersions: React.FC<Props> = ({processDefinitionId, tenan
 								label={{type: 'process', size: 'small', text: labelText}}
 								activeInstancesCount={version.activeInstancesWithoutIncidentCount}
 								incidentsCount={version.activeInstancesWithIncidentCount}
+								isDraining={!!drainingDefinitionKeys?.has(version.processDefinitionKey)}
+								drainingDescription={t('operate.dashboard.drainingDescriptionVersion')}
 								size="small"
 							/>
 						</LinkWrapper>

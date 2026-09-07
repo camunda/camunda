@@ -59,8 +59,6 @@ jobs:
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       operate-backend-changes: ${{ steps.filter.outputs.operate-backend-changes }}
       operate-frontend-changes: ${{ steps.filter.outputs.operate-frontend-changes }}
-      tasklist-frontend-changes: ${{ steps.filter.outputs.tasklist-frontend-changes }}
-      tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       optimize-dockerfile-changes: ${{ steps.filter.outputs.optimize-dockerfile-changes }}
@@ -115,7 +113,7 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint-1.0.2
+      - uses: camunda/infra-global-github-actions/actionlint@475528365f4010480dccff71ccac554cc3352e7c # actionlint-1.0.5
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |-
@@ -644,7 +642,7 @@ jobs:
       ZEEBE_CLIENT_MODULES: ${{ steps.set-constants.outputs.client }}
       # Extra modules for skipping in general-unit-tests, these modules are used in ZEEBE_EXPORTER_MODULES instead
       GENERAL_UT_EXTRA_SKIP_MODULES: ${{ steps.set-constants.outputs.general_ut_extra_skip }}
-      # Zeebe, Operate, Tasklist, Optimize modules that are required for a successful build
+      # Zeebe, Operate, and Optimize modules that are required for a successful build
       GENERAL_UT_DO_NOT_SKIP_MODULES: ${{ steps.set-constants.outputs.general_ut_do_not_skip }}
       # Integration test module constants (computed dynamically from UT constants)
       # IT Distributed = ZEEBE_DISTRIBUTED_MODULES + ZEEBE_BACKUP_MODULES
@@ -681,7 +679,7 @@ jobs:
 
           # General UT configuration
           GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter"
-          GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-data-generator operate-qa-it-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-test-coverage"
+          GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-data-generator operate-qa-it-tests"
 
           # ============================================================================
           # Integration Test Module Constants (computed from UT constants)
@@ -926,7 +924,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-  # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
+  # Runs unit tests for all modules that are not Operate, Optimize, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - Back End"
@@ -960,7 +958,7 @@ jobs:
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
       - name: Maven Test Build Unit
         shell: bash
-        # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
+        # Modules in zeebe, operate, and optimize are skipped as they have dedicated unit test jobs
         #
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
@@ -2355,22 +2353,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  tasklist-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
-    name: "Tasklist"
-    needs: [ detect-changes, build-distball ]
-    uses: ./.github/workflows/ci-tasklist.yml
-    secrets: inherit
-    permissions:
-      contents: read
-      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
-    with:
-      runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
-      runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
-      # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
-      # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
-      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
-
   operate-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Operate"
@@ -2648,7 +2630,7 @@ jobs:
     name: "Lint / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 22
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
@@ -2660,16 +2642,18 @@ jobs:
         with:
           node-version: 24
       # Retry to absorb transient npm-registry resolution failures when npx resolves
-      # renovate@latest and its transitive deps on a fresh run (see INC-6869).
+      # renovate@latest and its transitive deps on a fresh run (see INC-6869, INC-7810).
       - name: Validate Renovate config
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
           retry_wait_seconds: 15
-          # 2 min/attempt keeps all 3 attempts (~6.5 min worst case) within the
-          # 10-min job timeout; validation normally completes in well under a minute.
-          timeout_minutes: 2
+          # 6 min/attempt keeps all 3 attempts (~18.5 min worst case) within
+          # the 22-min job timeout; validation normally completes in well
+          # under a minute. Widened from 2min (10min job timeout) because a
+          # registry-wide slowdown (INC-7810) left no margin at that budget.
+          timeout_minutes: 6
           command: npx --yes --package "renovate@latest" -- renovate-config-validator --no-global .github/renovate.json* .github/renovate/*
       - name: Observe build status
         if: always()
@@ -2804,7 +2788,6 @@ jobs:
       - scripts-tests
       - setup-tests
       - shell-script-tests
-      - tasklist-ci
       - validate-pom-metadata
       - webapp-client
       - zeebe-ci
@@ -2882,9 +2865,9 @@ jobs:
     name: Deploy snapshot artifacts
     needs: [ check-results, build-platform-frontend, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: gcp-perf-core-8-default
-    # 30 min (the policy ceiling) covers the one-time checkout/setup/build overhead plus up to 2
-    # attempts of the deploy step below; the retry only re-runs that step, not this whole job.
-    timeout-minutes: 30
+    # Exceeds the 30min Unified CI ceiling (docs/monorepo-docs/ci.md); pending EngOps exception.
+    # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
+    timeout-minutes: 48
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2931,15 +2914,17 @@ jobs:
       # POM whose parent chain (zeebe-parent) must be resolved by external consumers to build the
       # effective model; the flattened POM is self-contained, exactly as published releases are.
       # Artifactory intermittently returns a transient 500 on artifact/metadata upload (INC-6737,
-      # INC-7541); a bare re-run of this exact command succeeded both times with no other change, so
-      # retrying automates that recovery. Deploying the same SNAPSHOT version twice is safe/idempotent.
+      # INC-7541); retrying automates recovery. Deploying the same SNAPSHOT twice is safe/idempotent.
+      # retry_on: any, not error — nick-fields/retry treats a timeout_minutes kill as a distinct event
+      # that retry_on: error does NOT retry. timeout_minutes needs real margin for this to be useful,
+      # else every run just hits the timeout wall on attempt 1 (see incident 2026-09-02).
       - name: Compile and deploy snapshot artifacts
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 2
-          retry_on: error
+          retry_on: any
           retry_wait_seconds: 15
-          timeout_minutes: 13
+          timeout_minutes: 20
           command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
