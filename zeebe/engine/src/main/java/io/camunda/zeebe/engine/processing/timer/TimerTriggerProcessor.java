@@ -216,7 +216,11 @@ public final class TimerTriggerProcessor
   @Override
   public void onResume(final TypedRecord<TimerRecord> record) {
     final var timer = record.getValue();
-    if (timerInstanceState.get(timer.getElementInstanceKey(), record.getKey()) != null) {
+    // BUFFER+PROCESS also lets through fresh due triggers while RESUMING. Only a previously
+    // buffered trigger has had its due-date index dropped by SUSPENDED.
+    if (timerInstanceState.get(timer.getElementInstanceKey(), record.getKey()) != null
+        && !timerInstanceState.hasDueDate(
+            timer.getElementInstanceKey(), record.getKey(), timer.getDueDate())) {
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.RESUMED, timer);
     }
   }

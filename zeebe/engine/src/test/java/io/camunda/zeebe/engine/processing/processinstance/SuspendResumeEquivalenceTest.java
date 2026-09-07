@@ -74,13 +74,9 @@ public final class SuspendResumeEquivalenceTest {
     RecordingExporter.timerRecords(TimerIntent.CREATED).withProcessInstanceKey(testKey).await();
     ENGINE.processInstance().withInstanceKey(testKey).suspend();
 
-    // when - await the checker's rejected TRIGGER so resume deterministically exercises the
-    // stranded-timer rescan, not a race with the checker's own regular polling
+    // when - await the buffered TRIGGER so resume drains it instead of racing the checker
     ENGINE.increaseTime(Duration.ofSeconds(2));
-    RecordingExporter.timerRecords(TimerIntent.TRIGGER)
-        .onlyCommandRejections()
-        .withProcessInstanceKey(testKey)
-        .await();
+    RecordingExporter.timerRecords(TimerIntent.SUSPENDED).withProcessInstanceKey(testKey).await();
     ENGINE.processInstance().withInstanceKey(testKey).resume();
     ENGINE.job().withType(jobType).ofInstance(testKey).complete();
 

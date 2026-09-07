@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -49,7 +50,6 @@ public final class TimerSuspensionGateTest {
     RecordingExporter.timerRecords(TimerIntent.SUSPENDED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
-    assertThat(bufferedTimerTriggerCount(processInstanceKey)).isEqualTo(1);
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
@@ -73,6 +73,7 @@ public final class TimerSuspensionGateTest {
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS)
         .await();
+    assertThat(bufferedTimerTriggerCount(processInstanceKey)).isEqualTo(1);
   }
 
   @Test
@@ -128,6 +129,52 @@ public final class TimerSuspensionGateTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     assertThat(duplicateRejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldNotEmitResumedForFreshTriggerWhileResuming() {
+    // given - suspend before the timer is due so the due-date index is still present
+    final long processInstanceKey = deployAndStartProcessWithTimer(Strings.newRandomValidBpmnId());
+    final var created =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when - RESUME then a fresh TRIGGER while the instance is still RESUMING
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.RESUME, process.getValue())
+            .key(processInstanceKey),
+        RecordToWrite.command()
+            .timer(TimerIntent.TRIGGER, created.getValue())
+            .key(created.getKey()));
+
+    // then
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .timerRecords()
+                .withIntent(TimerIntent.RESUMED)
+                .count())
+        .isZero();
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .timerRecords()
+                .withIntent(TimerIntent.TRIGGERED)
+                .filter(r -> r.getValue().getProcessInstanceKey() == processInstanceKey)
+                .count())
+        .isEqualTo(1);
   }
 
   @Test
@@ -191,7 +238,7 @@ public final class TimerSuspensionGateTest {
   }
 
   @Test
-  public void shouldNotCatchUpMissedCyclesAfterLongSuspend() {
+  public void shouldBufferRepeatingTimerOnceWhileSuspended() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE
@@ -216,11 +263,25 @@ public final class TimerSuspensionGateTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
+    // then - no fire before the first due trigger is buffered
+    assertThat(
+            RecordingExporter.records()
+                .limit(
+                    r ->
+                        r.getValueType() == ValueType.TIMER
+                            && r.getIntent() == TimerIntent.SUSPENDED
+                            && ((TimerRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .timerRecords()
+                .withIntent(TimerIntent.TRIGGERED)
+                .filter(r -> r.getValue().getProcessInstanceKey() == processInstanceKey)
+                .count())
+        .isZero();
+
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
     RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
         .withProcessInstanceKey(processInstanceKey)
-        .skip(1)
         .await();
     ENGINE.job().ofInstance(processInstanceKey).withType(processId).complete();
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
@@ -228,28 +289,13 @@ public final class TimerSuspensionGateTest {
         .withElementType(BpmnElementType.PROCESS)
         .await();
 
-    // then
-    assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .timerRecords()
-                .withIntent(TimerIntent.TRIGGERED)
-                .filter(r -> r.getValue().getProcessInstanceKey() == processInstanceKey)
-                .count())
-        .isGreaterThanOrEqualTo(2)
-        .isLessThan(5);
+    // then - later cycles are not buffered while suspended
+    assertThat(bufferedTimerTriggerCount(processInstanceKey)).isEqualTo(1);
   }
 
   private long bufferedTimerTriggerCount(final long processInstanceKey) {
     return RecordingExporter.records()
-        .limit(
-            r ->
-                r.getValueType() == ValueType.BUFFERED_COMMAND
-                    && r.getIntent() == BufferedCommandIntent.BUFFERED
-                    && ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
-                        == processInstanceKey
-                    && ((BufferedCommandRecordValue) r.getValue()).getIntent()
-                        == TimerIntent.TRIGGER)
+        .limitToProcessInstance(processInstanceKey)
         .filter(
             r ->
                 r.getValueType() == ValueType.BUFFERED_COMMAND
