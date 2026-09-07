@@ -6,7 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ChangeEvent, FC, FocusEvent, ReactNode, useState } from "react";
+import {
+  AriaAttributes,
+  ChangeEvent,
+  FC,
+  FocusEvent,
+  ReactNode,
+  useState,
+} from "react";
 import {
   Button,
   CharacterCount,
@@ -17,8 +24,17 @@ import { Eye, EyeOff } from "lucide-react";
 import useTranslate from "src/utility/localization";
 import FormField from "./FormField";
 
+type ActionButtonProps = {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  ariaHasPopup?: AriaAttributes["aria-haspopup"];
+  ariaExpanded?: boolean;
+};
+
 type TextInputProps = {
   type?: "text" | "email" | "time";
+  actionButton?: ActionButtonProps;
   cols?: never;
   counterMode?: never;
   enableCounter?: never;
@@ -27,6 +43,7 @@ type TextInputProps = {
 
 type TextAreaProps = {
   type?: never;
+  actionButton?: never;
   cols: number;
   counterMode?: "character" | "word";
   enableCounter?: boolean;
@@ -35,6 +52,7 @@ type TextAreaProps = {
 
 type PasswordInputProps = {
   type: "password";
+  actionButton?: never;
   cols?: never;
   counterMode?: never;
   enableCounter?: never;
@@ -51,6 +69,7 @@ export type TextFieldProps = {
   autoFocus?: boolean;
   onBlur?: (newValue: string) => void;
   readOnly?: boolean;
+  step?: number;
   onChange?: (newValue: string) => void;
   onClick?: () => void;
   validate?: (newValue: string) => boolean;
@@ -63,6 +82,7 @@ const TextField: FC<TextFieldProps> = ({
   onChange,
   onBlur,
   onClick,
+  actionButton,
   validate,
   errors = [],
   value,
@@ -74,6 +94,7 @@ const TextField: FC<TextFieldProps> = ({
   autoFocus = false,
   type = "text",
   readOnly,
+  step,
   maxCount = 255,
   enableCounter = false,
   counterMode = "character",
@@ -129,6 +150,7 @@ const TextField: FC<TextFieldProps> = ({
           value,
           placeholder,
           readOnly,
+          step,
           autoFocus,
           name,
           autoComplete,
@@ -149,7 +171,7 @@ const TextField: FC<TextFieldProps> = ({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="absolute inset-y-0 right-1 my-auto"
+                className="absolute inset-y-0 right-0.5 my-auto"
                 aria-label={
                   passwordVisible ? t("hidePassword") : t("showPassword")
                 }
@@ -180,6 +202,26 @@ const TextField: FC<TextFieldProps> = ({
                   : undefined
               }
             />
+          );
+        }
+
+        if (actionButton) {
+          return (
+            <div className="relative">
+              <Input {...commonProps} type={type} className="pr-9" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="absolute inset-y-0 right-0.5 my-auto"
+                aria-label={actionButton.label}
+                aria-haspopup={actionButton.ariaHasPopup}
+                aria-expanded={actionButton.ariaExpanded}
+                onClick={actionButton.onClick}
+              >
+                {actionButton.icon}
+              </Button>
+            </div>
           );
         }
 

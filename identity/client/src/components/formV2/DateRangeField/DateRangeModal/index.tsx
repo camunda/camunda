@@ -47,23 +47,8 @@ const DateRangeModal: React.FC<Props> = ({
   title,
   isModalOpen,
 }) => {
-  const handleApply = ({
-    fromDate,
-    fromTime,
-    toDate,
-    toTime,
-  }: {
-    fromDate?: string;
-    fromTime?: string;
-    toDate?: string;
-    toTime?: string;
-  }) => {
-    if (
-      fromDate !== undefined &&
-      fromTime !== undefined &&
-      toDate !== undefined &&
-      toTime !== undefined
-    ) {
+  const handleApply = ({ fromDate, fromTime, toDate, toTime }: FormValues) => {
+    if (fromDate && fromTime && toDate && toTime) {
       try {
         onApply({
           fromDateTime: new Date(`${fromDate} ${fromTime}`),
@@ -95,7 +80,11 @@ const DateRangeModal: React.FC<Props> = ({
       headline={title}
       size="sm"
       confirmLabel="Apply"
-      submitDisabled={!methods.formState.isValid}
+      submitDisabled={
+        !methods.formState.isValid ||
+        methods.getValues("fromDate") === "" ||
+        methods.getValues("toDate") === ""
+      }
       onClose={onCancel}
       onSubmit={methods.handleSubmit(handleApply)}
     >
@@ -128,26 +117,36 @@ const DateRangeModal: React.FC<Props> = ({
         <Controller
           name="fromTime"
           control={methods.control}
-          rules={{ validate: { range: validateTimeRange } }}
+          rules={{ required: true, validate: { range: validateTimeRange } }}
           render={({ field, fieldState }) => (
             <TextField
               {...field}
               type="time"
               label="From time"
+              step={1}
               errors={fieldState.error?.message}
+              onChange={(value) => {
+                field.onChange(value);
+                void methods.trigger("toTime");
+              }}
             />
           )}
         />
         <Controller
           name="toTime"
           control={methods.control}
-          rules={{ validate: { range: validateTimeRange } }}
+          rules={{ required: true, validate: { range: validateTimeRange } }}
           render={({ field, fieldState }) => (
             <TextField
               {...field}
               type="time"
               label="To time"
+              step={1}
               errors={fieldState.error?.message}
+              onChange={(value) => {
+                field.onChange(value);
+                void methods.trigger("fromTime");
+              }}
             />
           )}
         />

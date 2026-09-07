@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import { Calendar } from "lucide-react";
 import TextField from "src/components/formV2/TextField";
 import { formatDate, formatTime } from "./formatDate";
 import { DateRangeModal } from "./DateRangeModal";
@@ -63,6 +64,13 @@ const DateRangeField: React.FC<Props> = ({
         placeholder="Enter date range"
         readOnly
         onClick={handleClick}
+        actionButton={{
+          icon: <Calendar aria-hidden="true" />,
+          label: "Open date range modal",
+          onClick: handleClick,
+          ariaHasPopup: "dialog",
+          ariaExpanded: isModalOpen,
+        }}
       />
 
       {isModalOpen ? (
