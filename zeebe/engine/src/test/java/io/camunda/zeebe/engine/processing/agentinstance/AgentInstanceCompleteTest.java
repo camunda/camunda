@@ -11,15 +11,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +43,7 @@ public class AgentInstanceCompleteTest {
 
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_ID = "service-task";
+  private static final String JOB_TYPE = "agent";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -177,6 +184,71 @@ public class AgentInstanceCompleteTest {
     assertThat(rejectedBatchCommand.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
+  @Test
+  public void shouldCleanUpTrackedHistoryItemsThroughRealPipelineAfterCompletion() {
+    // given — one committed history item and one discard-only (metrics-accumulated but never
+    // committed) history item tracked for the agent instance, built through the actual
+    // AGENT_INSTANCE:UPDATE batch/history path — the standalone AGENT_HISTORY:CREATE command
+    // doesn't propagate historyItemId onto its CREATED event, so it can't be used to seed a
+    // history item id here (see AgentHistoryItemIdPersistenceTest for the path that does).
+    // Committing "lease-committed" also auto-discards "lease-discarded"'s still-pending item as
+    // superseded, which is how the discard-only id is produced.
+    final var fixture = deployAndCreateAgentInstance();
+    final var jobKey = activateJobForProcessInstance(fixture.processInstanceKey(), JOB_TYPE);
+
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(fixture.agentInstanceKey())
+        .withElementInstanceKey(fixture.elementInstanceKey())
+        .withJobKey(jobKey)
+        .withJobLease("lease-committed")
+        .withHistory(List.of(historyItem("committed-item")))
+        .update();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(fixture.agentInstanceKey())
+        .withElementInstanceKey(fixture.elementInstanceKey())
+        .withJobKey(jobKey)
+        .withJobLease("lease-discarded")
+        .withHistory(List.of(historyItem("discarded-item")))
+        .update();
+    ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-committed").commit();
+
+    // when — completing the agent instance drives the real, registered CLEAN_UP/CLEANED
+    // pipeline (AgentInstanceProcessors' wiring), not just AgentInstanceCleanUpProcessor tested
+    // in isolation
+    ENGINE.agentInstances().withProcessInstanceKey(fixture.processInstanceKey()).complete();
+
+    // then — both the committed and the discard-only, metrics-accumulated-only ids are actually
+    // reached and returned on the CLEANED event
+    final var cleaned =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.CLEANED)
+            .withAgentInstanceKey(fixture.agentInstanceKey())
+            .getFirst();
+    assertThat(cleaned.getValue().getHistoryItemIdsToDelete())
+        .containsExactlyInAnyOrder("discarded-item", "committed-item");
+  }
+
+  private static AgentHistoryRecord historyItem(final String historyItemId) {
+    return new AgentHistoryRecord()
+        .setHistoryItemId(historyItemId)
+        .setRole(AgentHistoryRole.USER)
+        .setLoopIteration(1)
+        .addContent(
+            new AgentHistoryMessageContent()
+                .setContentType(AgentHistoryContentType.TEXT)
+                .setText("hi"));
+  }
+
+  private static long activateJobForProcessInstance(
+      final long processInstanceKey, final String jobType) {
+    ENGINE.jobs().withType(jobType).activate();
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getKey();
+  }
+
   private AgentInstanceFixture deployAndCreateAgentInstance() {
     ENGINE
         .deployment()
@@ -184,7 +256,7 @@ public class AgentInstanceCompleteTest {
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask(
-                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                    SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -197,7 +269,8 @@ public class AgentInstanceCompleteTest {
             .create()
             .getValue()
             .getAgentInstanceKey();
-    return new AgentInstanceFixture(processInstanceKey, agentInstanceKey);
+    return new AgentInstanceFixture(
+        processInstanceKey, agentInstanceKey, serviceTaskInstance.getKey());
   }
 
   private static Record<ProcessInstanceRecordValue> awaitServiceTaskActivated(
@@ -209,5 +282,6 @@ public class AgentInstanceCompleteTest {
         .getFirst();
   }
 
-  private record AgentInstanceFixture(long processInstanceKey, long agentInstanceKey) {}
+  private record AgentInstanceFixture(
+      long processInstanceKey, long agentInstanceKey, long elementInstanceKey) {}
 }
