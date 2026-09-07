@@ -102,11 +102,13 @@ public final class SegmentFile {
   /** Creates a segment file for the given directory, log name, and segment ID. */
   static Path createSegmentFile(final String name, final Path directory, final long id) {
     return directory.resolve(
-        checkNotNull(name, "name cannot be null")
-            + PART_SEPARATOR
-            + id
-            + EXTENSION_SEPARATOR
-            + EXTENSION);
+        String.format(
+            "%s%c%d%c%s",
+            checkNotNull(name, "name cannot be null"),
+            PART_SEPARATOR,
+            id,
+            EXTENSION_SEPARATOR,
+            EXTENSION));
   }
 
   /**
@@ -116,10 +118,6 @@ public final class SegmentFile {
    */
   Path file() {
     return file;
-  }
-
-  String name() {
-    return file.getFileName().toString();
   }
 
   Path getFileMarkedForDeletion() {
