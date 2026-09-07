@@ -43,7 +43,7 @@ final class DeploymentErrorCollectorTest {
     final var message = collector.formatMessage();
 
     // then
-    assertThat(message.length()).isLessThan(maxSize + 100);
+    assertThat(message.length()).isLessThanOrEqualTo(maxSize);
     assertThat(message).contains("more errors omitted");
     // no error line is cut mid-string - every included line is a complete, well-formed entry
     assertThat(message.lines().filter(line -> line.contains("unknown resource type")))
@@ -51,11 +51,13 @@ final class DeploymentErrorCollectorTest {
   }
 
   @Test
-  void shouldAlwaysIncludeAtLeastOneErrorEvenIfItExceedsMaxSize() {
+  void shouldNeverExceedMaxOutputSizeEvenWhenFirstErrorAloneOverflows() {
     // given
-    // the prefix alone already exceeds this cap, so even a single (truncated) error forces the
-    // aggregate over budget - the collector must still emit it rather than an empty error list
-    final var collector = new DeploymentErrorCollector(10);
+    // the fixed prefix alone is 71 chars, so a cap of 90 leaves little room - the forced-in first
+    // error overflows the aggregate cap by itself. The hard truncation pass must still guarantee
+    // the configured bound rather than just approximating it.
+    final var maxOutputSize = 90;
+    final var collector = new DeploymentErrorCollector(maxOutputSize);
     collector.add("a single error message that is much longer than the configured cap");
     collector.add("a second error that should be omitted");
 
@@ -63,9 +65,12 @@ final class DeploymentErrorCollectorTest {
     final var message = collector.formatMessage();
 
     // then
-    assertThat(message)
-        .contains("1 more errors omitted")
-        .doesNotContain("a second error that should be omitted");
+    assertThat(message.length())
+        .as(
+            "the aggregate must never exceed the configured cap, even when the forced-in first"
+                + " error alone would overflow it")
+        .isLessThanOrEqualTo(maxOutputSize);
+    assertThat(message).isNotEmpty();
   }
 
   @Test
@@ -86,7 +91,23 @@ final class DeploymentErrorCollectorTest {
     // then
     assertThat(message.length())
         .as("a single oversized error must not blow past the configured cap")
-        .isLessThan(maxOutputSize + 100);
+        .isLessThanOrEqualTo(maxOutputSize);
+  }
+
+  @Test
+  void shouldNotThrowWhenMaxOutputSizeIsNegative() {
+    // given
+    // this codebase uses "-1 disables it" as a convention for other config values (see
+    // RocksdbCfg.maxMemoryFraction) - an operator following that convention here, unaware it
+    // doesn't apply to this field, must not crash deployment processing on the first error added
+    final var collector = new DeploymentErrorCollector(-1);
+
+    // when
+    collector.add("some error");
+    final var message = collector.formatMessage();
+
+    // then
+    assertThat(message).isEmpty();
   }
 
   @Test

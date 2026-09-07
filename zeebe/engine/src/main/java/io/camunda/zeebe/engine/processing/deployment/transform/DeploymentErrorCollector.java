@@ -18,12 +18,16 @@ public final class DeploymentErrorCollector {
 
   private static final String DEFAULT_PREFIX =
       "Expected to deploy new resources, but encountered the following errors:";
+  private static final String OMITTED_SUFFIX_FORMAT = "\n... (%d more errors omitted)";
 
   private final int maxOutputSize;
   private final List<String> errors = new ArrayList<>();
 
   public DeploymentErrorCollector(final int maxOutputSize) {
-    this.maxOutputSize = maxOutputSize;
+    // clamp defensively: a negative value (e.g. an operator using the "-1 disables it" convention
+    // seen elsewhere in this config, unaware it doesn't apply here) would otherwise crash the
+    // first call to add() via StringUtil.limitString's substring(0, negative)
+    this.maxOutputSize = Math.max(maxOutputSize, 0);
   }
 
   public void add(final String message) {
@@ -39,21 +43,24 @@ public final class DeploymentErrorCollector {
   }
 
   /**
-   * Formats the collected errors, capping the result at {@code maxOutputSize} characters. Each
-   * individual error is itself capped at {@code maxOutputSize} when added (so one oversized
-   * message, e.g. from an exception's message, can't alone blow the budget), and errors are then
-   * included whole (never cut mid-line) up to the aggregate cap; any remaining errors are counted
-   * and reported as omitted. The output is therefore always bounded, regardless of how many
-   * resources fail at once or how large any single error message is - see
-   * https://github.com/camunda/camunda/issues/61996.
+   * Formats the collected errors, hard-capping the result at {@code maxOutputSize} characters -
+   * this is an actual upper bound, never just approximate, since the caller relies on it to keep
+   * the gRPC rejection message under proxy/ingress header-buffer limits (see
+   * https://github.com/camunda/camunda/issues/61996). Errors are included whole (never cut
+   * mid-line) up to the cap where possible, and any remaining errors are counted and reported as
+   * omitted; the budget reserves room for that omitted-count suffix up front so it isn't itself
+   * truncated in the common case. A final truncation pass guarantees the bound even in the
+   * pathological case where a single forced-in error alone exceeds {@code maxOutputSize}.
    */
   public String formatMessage() {
     final var builder = new StringBuilder(DEFAULT_PREFIX);
-    var includedCount = 0;
+    final var worstCaseSuffixLength = String.format(OMITTED_SUFFIX_FORMAT, errors.size()).length();
+    final var budgetForErrors = maxOutputSize - worstCaseSuffixLength;
 
+    var includedCount = 0;
     for (final var error : errors) {
       final var withSeparator = "\n" + error;
-      if (builder.length() + withSeparator.length() > maxOutputSize && includedCount > 0) {
+      if (builder.length() + withSeparator.length() > budgetForErrors && includedCount > 0) {
         break;
       }
       builder.append(withSeparator);
@@ -62,10 +69,12 @@ public final class DeploymentErrorCollector {
 
     final var omittedCount = errors.size() - includedCount;
     if (omittedCount > 0) {
-      builder.append(String.format("\n... (%d more errors omitted)", omittedCount));
+      builder.append(String.format(OMITTED_SUFFIX_FORMAT, omittedCount));
     }
 
-    return builder.toString();
+    return builder.length() > maxOutputSize
+        ? builder.substring(0, maxOutputSize)
+        : builder.toString();
   }
 
   public <T> Either<Failure, T> toEither(final T value) {
