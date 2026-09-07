@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor.TransitionOutcome;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -72,7 +74,9 @@ public final class BpmnStreamProcessor
       final MutableProcessingState processingState,
       final Writers writers,
       final ProcessEngineMetrics processEngineMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final SuspensionState suspensionState,
+      final SuspensionMetrics suspensionMetrics) {
     processState = processingState.getProcessState();
 
     rejectionWriter = writers.rejection();
@@ -91,7 +95,12 @@ public final class BpmnStreamProcessor
             writers);
     processors =
         new BpmnElementProcessors(
-            bpmnBehaviors, stateTransitionBehavior, processingState.getAsyncRequestState(), config);
+            bpmnBehaviors,
+            stateTransitionBehavior,
+            processingState.getAsyncRequestState(),
+            config,
+            suspensionState,
+            suspensionMetrics);
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
