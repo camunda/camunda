@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
@@ -41,7 +42,7 @@ func ensureDirectory(path string) (string, error) {
 	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return "", fmt.Errorf("local secrets path %q must be a directory and not a reparse point", path)
 	}
-	if err := validateDirectoryAncestry(path); err != nil {
+	if err := validateDirectoryAncestry(filepath.Dir(path)); err != nil {
 		return "", err
 	}
 	owned, err := ownedByTrustedPrincipal(path)
@@ -94,6 +95,9 @@ func validateDirectoryAncestry(path string) error {
 		if !owned {
 			return fmt.Errorf("local secrets directory ancestor %q is not owned by a trusted Windows principal", current)
 		}
+		if err := rejectUntrustedDirectoryWriters(current); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -139,6 +143,64 @@ func ownedByTrustedPrincipal(path string) (bool, error) {
 
 func isTrustedPrincipal(owner, user, administrators, system *windows.SID) bool {
 	return owner != nil && (owner.Equals(user) || owner.Equals(administrators) || owner.Equals(system))
+}
+
+func rejectUntrustedDirectoryWriters(path string) error {
+	descriptor, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	if err != nil {
+		return fmt.Errorf("failed to inspect Windows directory permissions: %w", err)
+	}
+	dacl, _, err := descriptor.DACL()
+	if err != nil {
+		return fmt.Errorf("failed to inspect Windows directory permissions: %w", err)
+	}
+	if dacl == nil {
+		return fmt.Errorf("local secrets directory ancestor %q has unsafe Windows permissions", path)
+	}
+	user, err := windows.GetCurrentProcessToken().GetTokenUser()
+	if err != nil {
+		return fmt.Errorf("failed to identify current Windows user: %w", err)
+	}
+	administrators, err := windows.CreateWellKnownSid(windows.WinBuiltinAdministratorsSid)
+	if err != nil {
+		return err
+	}
+	system, err := windows.CreateWellKnownSid(windows.WinLocalSystemSid)
+	if err != nil {
+		return err
+	}
+	const fileDeleteChild = 0x40
+	const dangerous = windows.GENERIC_ALL | windows.GENERIC_WRITE | windows.DELETE | windows.WRITE_DAC | windows.WRITE_OWNER |
+		windows.FILE_WRITE_DATA | windows.FILE_APPEND_DATA | fileDeleteChild
+	for index := uint16(0); index < dacl.AceCount; index++ {
+		var ace *windows.ACCESS_ALLOWED_ACE
+		if err := windows.GetAce(dacl, uint32(index), &ace); err != nil {
+			return fmt.Errorf("failed to inspect Windows directory permissions: %w", err)
+		}
+		if ace.Header.AceFlags&windows.INHERIT_ONLY_ACE != 0 || ace.Mask&dangerous == 0 {
+			continue
+		}
+		if ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE {
+			if isAllowACEType(ace.Header.AceType) {
+				return fmt.Errorf("local secrets directory ancestor %q has an unsupported unsafe Windows access rule", path)
+			}
+			continue
+		}
+		sid := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
+		if !isTrustedPrincipal(sid, user.User.Sid, administrators, system) {
+			return fmt.Errorf("local secrets directory ancestor %q grants unsafe access to an untrusted Windows principal", path)
+		}
+	}
+	return nil
+}
+
+func isAllowACEType(aceType uint8) bool {
+	switch aceType {
+	case windows.ACCESS_ALLOWED_ACE_TYPE, 0x5, 0x9, 0xb:
+		return true
+	default:
+		return false
+	}
 }
 
 func atomicWrite(destination string, value []byte) (err error) {

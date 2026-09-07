@@ -22,9 +22,10 @@ import (
 
 func TestEnsureProtectsWindowsDirectoryAndSecretACLs(t *testing.T) {
 	baseDir := t.TempDir()
-	require.NoError(t, grantEveryoneFullControl(baseDir, true))
+	require.NoError(t, restrictAccess(baseDir, true))
 	directory := filepath.Join(baseDir, DirectoryName)
 	require.NoError(t, os.Mkdir(directory, 0o700))
+	require.NoError(t, grantEveryoneFullControl(directory, true))
 	secretPath := filepath.Join(directory, "tls.crt")
 	require.NoError(t, os.WriteFile(secretPath, []byte("value"), 0o600))
 
@@ -32,6 +33,17 @@ func TestEnsureProtectsWindowsDirectoryAndSecretACLs(t *testing.T) {
 
 	assertRestrictedACL(t, directory, true)
 	assertRestrictedACL(t, secretPath, false)
+}
+
+func TestEnsureRejectsWindowsAncestorWritableByEveryone(t *testing.T) {
+	baseDir := t.TempDir()
+	require.NoError(t, grantEveryoneFullControl(baseDir, true))
+
+	err := New(baseDir).Ensure()
+
+	assert.ErrorContains(t, err, "grants unsafe access to an untrusted Windows principal")
+	_, statErr := os.Stat(filepath.Join(baseDir, DirectoryName))
+	assert.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
 func TestEnsureRejectsWindowsAncestorReparsePoint(t *testing.T) {

@@ -119,7 +119,7 @@ func (c *secretsCommand) set(store *localsecrets.Store, args []string) error {
 		if err != nil {
 			return err
 		}
-		value, err := io.ReadAll(io.LimitReader(c.input, localsecrets.MaxSecretSize+1))
+		value, err := io.ReadAll(io.LimitReader(c.input, localsecrets.MaxSecretSize+3))
 		if err != nil {
 			return fmt.Errorf("failed to read secret value: %w", err)
 		}

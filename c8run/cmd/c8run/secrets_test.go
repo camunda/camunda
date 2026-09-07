@@ -10,6 +10,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -84,11 +85,15 @@ func TestSecretsSetRequiresStdinFlagWhenNotInteractive(t *testing.T) {
 }
 
 func TestSecretsSetRejectsOversizedStdin(t *testing.T) {
-	command, _, _ := testSecretsCommand(strings.Repeat("x", 1024*1024+1), false)
+	for _, suffix := range []string{"x", "\nextra", "\r\nextra"} {
+		t.Run(fmt.Sprintf("suffix %q", suffix), func(t *testing.T) {
+			command, _, _ := testSecretsCommand(strings.Repeat("x", localsecrets.MaxSecretSize)+suffix, false)
 
-	err := command.run(t.TempDir(), []string{"set", "API_KEY", "--stdin"})
+			err := command.run(t.TempDir(), []string{"set", "API_KEY", "--stdin"})
 
-	assert.ErrorContains(t, err, "must not exceed")
+			assert.ErrorContains(t, err, "must not exceed")
+		})
+	}
 }
 
 func TestSecretsSetAllowsMaximumSizeWithTrailingNewline(t *testing.T) {
