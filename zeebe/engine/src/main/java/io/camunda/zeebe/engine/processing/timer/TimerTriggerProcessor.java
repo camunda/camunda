@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -22,8 +23,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -48,16 +51,20 @@ public final class TimerTriggerProcessor
       "Expected to find a process definition with key '%d', but no such definition was found";
   private static final String NO_ACTIVE_TIMER_MESSAGE =
       "Expected to trigger a timer with key '%d', but the timer is not active anymore";
+  private static final String ALREADY_SUSPENDED_MESSAGE =
+      "Expected to trigger timer with key '%d', but it is already suspended";
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final CatchEventBehavior catchEventBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
-  private final MutableTimerInstanceState timerInstanceState;
+  private final TimerInstanceState timerInstanceState;
+  private final SuspensionState suspensionState;
   private final ExpressionProcessor expressionProcessor;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final CommandBufferingBehavior commandBufferingBehavior;
 
   private final EventHandle eventHandle;
 
@@ -69,10 +76,13 @@ public final class TimerTriggerProcessor
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    commandBufferingBehavior =
+        new CommandBufferingBehavior(processingState.getKeyGenerator(), writers);
 
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
     timerInstanceState = processingState.getTimerState();
+    suspensionState = processingState.getSuspensionState();
     keyGenerator = processingState.getKeyGenerator();
     eventHandle =
         new EventHandle(
@@ -106,6 +116,10 @@ public final class TimerTriggerProcessor
           record,
           RejectionType.NOT_FOUND,
           NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(processDefinitionKey));
+      return;
+    }
+
+    if (bufferIfInstanceSuspended(record, timerInstance)) {
       return;
     }
 
@@ -146,6 +160,31 @@ public final class TimerTriggerProcessor
     if (shouldReschedule(timer)) {
       rescheduleTimer(timer, catchEvent);
     }
+  }
+
+  private boolean bufferIfInstanceSuspended(
+      final TypedRecord<TimerRecord> record, final TimerInstance timerInstance) {
+    if (isStartEvent(timerInstance.getElementInstanceKey())) {
+      return false;
+    }
+    if (suspensionState.getSuspensionState(timerInstance.getProcessInstanceKey())
+        != SuspensionState.State.SUSPENDED) {
+      return false;
+    }
+
+    if (timerInstanceState.hasDueDate(
+        timerInstance.getElementInstanceKey(),
+        timerInstance.getKey(),
+        timerInstance.getDueDate())) {
+      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.SUSPENDED, record.getValue());
+      commandBufferingBehavior.bufferCommand(record, timerInstance.getProcessInstanceKey());
+    } else {
+      rejectionWriter.appendRejection(
+          record,
+          RejectionType.INVALID_STATE,
+          ALREADY_SUSPENDED_MESSAGE.formatted(record.getKey()));
+    }
+    return true;
   }
 
   private void rejectNoActiveTimer(final TypedRecord<TimerRecord> record) {
@@ -205,8 +244,6 @@ public final class TimerTriggerProcessor
 
   @Override
   public SuspensionBehavior suspensionBehavior(final TypedRecord<TimerRecord> record) {
-    // firing a timer advances the token, so reject while suspended. Rejecting does not remove the
-    // due timer, so it may strand or re-trigger until firing is suppressed and re-armed on resume.
-    return SuspensionBehavior.REJECT;
+    return SuspensionBehavior.PROCESS;
   }
 }
