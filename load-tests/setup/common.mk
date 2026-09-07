@@ -293,8 +293,8 @@ install-load-test-physical-tenants:
 	      -s charts/load-tester/templates/workers.yaml \
 	      $(load_test_setup_flags) \
 	      --set load-tester.enabled=true \
-	      --set global.extraEnvVars[4].name=CAMUNDA_CLIENT_PHYSICAL_TENANT_ID \
-	      --set global.extraEnvVars[4].value=$$tenant \
+	      --set-string 'global.extraEnvVars[4].name=CAMUNDA_CLIENT_PHYSICAL_TENANT_ID' \
+	      --set-string "global.extraEnvVars[4].value=$$tenant" \
 	    | sed -E "s/: starter$$/: starter-$$tenant/; s/: worker$$/: worker-$$tenant/" \
 	    | kubectl apply -n $(namespace) -f - ; \
 	done
