@@ -88,28 +88,35 @@ parse_epoch() {
   date -u -d "$value" +%s 2>/dev/null || return 1
 }
 
-# extract_metric_value <prometheus-query-response-json> <value-label>
+# extract_metric_value <prometheus-query-response-json> <value-label> <key>
 # Resolves one query's reported value from a Prometheus /api/v1/query
 # response: the deduplicated, comma-joined values of <value-label> across all
 # result series when it is set, otherwise the single numeric sample value.
-# Prints the resolved value on success. Prints nothing and returns non-zero
-# otherwise: 2 for a non-success API response, 3 for no matching label
-# sample, 4 for no numeric sample — the caller maps these to a message
-# logged to stderr.
+# Prints the resolved value on success. On failure, logs "<key>: <reason>" to
+# stderr and returns non-zero without printing anything.
 extract_metric_value() {
-  local resp="$1" label="$2" raw_value
+  local resp="$1" label="$2" key="$3" raw_value
 
-  [[ "$(jq -r '.status' <<<"$resp" 2>/dev/null || echo error)" == "success" ]] || return 2
+  if [[ "$(jq -r '.status' <<<"$resp" 2>/dev/null || echo error)" != "success" ]]; then
+    warn "$key: Prometheus returned non-success status"
+    return 1
+  fi
 
   if [[ -n "$label" ]]; then
     raw_value="$(jq -r --arg label "$label" '[.data.result[]?.metric[$label] // empty] | unique | join(", ")' <<<"$resp")"
-    [[ -n "$raw_value" ]] || return 3
+    if [[ -z "$raw_value" ]]; then
+      warn "$key: no label sample"
+      return 1
+    fi
     jq -n --arg v "$raw_value" '$v'
     return 0
   fi
 
   raw_value="$(jq -r '.data.result[0].value[1] // empty' <<<"$resp")"
-  [[ "$raw_value" =~ ^-?([0-9]+([.][0-9]+)?|[.][0-9]+)([eE][-+]?[0-9]+)?$ ]] || return 4
+  if ! [[ "$raw_value" =~ ^-?([0-9]+([.][0-9]+)?|[.][0-9]+)([eE][-+]?[0-9]+)?$ ]]; then
+    warn "$key: no numeric sample"
+    return 1
+  fi
   printf '%s\n' "$raw_value"
 }
 
@@ -342,15 +349,8 @@ while IFS=$'\x1f' read -r key header query label static_value; do
         "${ENDPOINT}/api/v1/query" \
         --data-urlencode "query=$query" \
         ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null)"; then
-      if extracted_value="$(extract_metric_value "$resp" "$label")"; then
+      if extracted_value="$(extract_metric_value "$resp" "$label" "$key")"; then
         value_json="$extracted_value"
-      else
-        case $? in
-          3) reason="no label sample" ;;
-          4) reason="no numeric sample" ;;
-          *) reason="Prometheus returned non-success status" ;;
-        esac
-        warn "$key: $reason"
       fi
     else
       warn "$key: query failed"
