@@ -430,6 +430,43 @@ describe('<ProcessOperations />', () => {
     ).toBeDisabled();
   });
 
+  it('should show draining tag instead of delete button when definition is draining', async () => {
+    mockSearchProcessDefinitions().withSuccess({
+      items: [
+        {
+          name: 'myProcess',
+          processDefinitionId: 'myProcess',
+          processDefinitionKey: '2251799813687094',
+          version: 2,
+          tenantId: '<default>',
+          hasStartForm: false,
+          state: 'DRAINING',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
+
+    render(
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(await screen.findByTestId('draining-tag')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /^delete process definition/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it('should enable delete button when process instances could not be fetched', async () => {
     mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
     mockFetchProcessInstances().withServerError();

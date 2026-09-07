@@ -293,6 +293,35 @@ describe('InstanceHeader', () => {
     });
   });
 
+  it('should show draining tag when process definition is draining', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess({
+      items: [
+        {
+          name: 'Order process',
+          processDefinitionId: 'orderProcess',
+          processDefinitionKey: '123',
+          version: 1,
+          tenantId: '<default>',
+          hasStartForm: false,
+          state: 'DRAINING',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(await screen.findByTestId('draining-tag')).toBeInTheDocument();
+  });
+
   it('should show spinner on process instance cancellation', async () => {
     // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess({
