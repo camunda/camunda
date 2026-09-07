@@ -524,6 +524,14 @@ test.describe('process instance page', () => {
 
     await processInstancePage.variablesEditor.waitForEditorToLoad();
 
+    await expect(page.locator('.cm-editor .cm-line')).toHaveText([
+      '{',
+      '"status": "active",',
+      '"count": 42',
+      '}',
+    ]);
+    await expect(page.locator('.cm-editor')).toHaveCSS('height', '80px');
+
     await processInstancePage.variablesEditor.clear();
     await processInstancePage.variablesEditor.fill('{invalid');
 
@@ -582,6 +590,13 @@ test.describe('process instance page', () => {
 
     await codeMirrorEditor.click();
     await expect(codeMirrorEditor).toBeFocused();
+    const textColor = await codeMirrorEditor.evaluate(
+      (element) => getComputedStyle(element).color,
+    );
+    await expect(inlineEditor.locator('.cm-cursor').first()).toHaveCSS(
+      'border-left-color',
+      textColor,
+    );
     await expect(inlineEditor.locator('.cm-editor')).toHaveCSS(
       'outline-style',
       'none',
