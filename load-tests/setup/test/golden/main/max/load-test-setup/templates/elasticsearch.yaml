@@ -8,7 +8,7 @@ metadata:
     camunda.io/created-by: "golden-test"
     camunda.io/purpose: load-test
 spec:
-  version: 8.18.0
+  version: 9.5.2
 
   nodeSets:
   - config:
