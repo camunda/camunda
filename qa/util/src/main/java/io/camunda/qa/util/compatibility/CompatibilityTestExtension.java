@@ -234,7 +234,7 @@ public class CompatibilityTestExtension
     final String databaseUrl = getDatabaseUrl();
     final CompatibilityTestDatabaseConfigurator dbConfigurator =
         new CompatibilityTestDatabaseConfigurator(
-            testPrefix, databaseType, databaseUrl, !version.endsWith("SNAPSHOT"));
+            testPrefix, databaseType, databaseUrl, !"SNAPSHOT".equals(version));
 
     dbConfigurator.configureCamundaContainer(camundaContainer);
 
