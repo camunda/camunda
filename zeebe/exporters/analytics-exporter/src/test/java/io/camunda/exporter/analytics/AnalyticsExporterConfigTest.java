@@ -16,6 +16,12 @@ import org.junit.jupiter.api.Test;
 class AnalyticsExporterConfigTest {
 
   @Test
+  void shouldUseTelemetryEndpointByDefault() {
+    assertThat(new AnalyticsExporterConfig().getEndpoint())
+        .isEqualTo("https://telemetry.camunda.io");
+  }
+
+  @Test
   void shouldRejectBlankEndpoint() {
     assertThatThrownBy(() -> new AnalyticsExporterConfig().setEndpoint("").validate())
         .isInstanceOf(IllegalArgumentException.class)

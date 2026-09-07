@@ -158,15 +158,15 @@ Hash-based deterministic sampling in `OtelSdkManager.logEvent()`. See `docs/samp
 
 ### Config Defaults
 
-|     Property      |               Default                |
-|-------------------|--------------------------------------|
-| endpoint          | `https://analytics.cloud.camunda.io` |
-| maxQueueSize      | 2048                                 |
-| maxBatchSize      | 512 (must be ≤ maxQueueSize)         |
-| pushInterval      | PT5M                                 |
-| heartbeatInterval | PT10M                                |
-| signing           | true                                 |
-| samplingRate      | 1.0 (no sampling)                    |
+|     Property      |            Default             |
+|-------------------|--------------------------------|
+| endpoint          | `https://telemetry.camunda.io` |
+| maxQueueSize      | 2048                           |
+| maxBatchSize      | 512 (must be ≤ maxQueueSize)   |
+| pushInterval      | PT5M                           |
+| heartbeatInterval | PT10M                          |
+| signing           | true                           |
+| samplingRate      | 1.0 (no sampling)              |
 
 ## Testing
 
