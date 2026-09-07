@@ -87,11 +87,21 @@ export class IdentityAuthorizationsPage {
         name: 'Delete authorization',
       },
     );
-    this.resourceTypeComboBox = page.getByRole('combobox', {
-      name: 'Resource type',
-    });
+    // The resource-type field inside the create modal shares the "Resource type"
+    // accessible name with the page-level filter (both use the design-system
+    // Label), so scope this one to the modal to keep it unambiguous while the
+    // dialog is open.
+    this.resourceTypeComboBox = this.createAuthorizationModal.getByRole(
+      'combobox',
+      {
+        name: 'Resource type',
+      },
+    );
+    // The list filter that selects the active resource type was migrated from a
+    // set of tabs to a single combobox and relabelled from "Authorization type"
+    // to "Resource type" (identity design-system migration).
     this.authorizationTypeFilterComboBox = page.getByRole('combobox', {
-      name: 'Authorization type',
+      name: 'Resource type',
     });
     this.getAuthorizationCell = (ownerId) =>
       this.authorizationsList.getByRole('cell', {

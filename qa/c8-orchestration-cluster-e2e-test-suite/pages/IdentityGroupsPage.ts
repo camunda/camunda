@@ -144,12 +144,12 @@ export class IdentityGroupsPage {
     this.emptyStateLocator = page.getByText('No groups created yet');
     this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
     this.assignUserModal = page.getByRole('dialog', {name: 'Assign user'});
-    // On the new design system the assign-user field is a cmdk combobox. The
-    // groups modal uses `UserMultiSelect`'s default placeholder, so the
-    // accessible name is "Search by username" -- not the "Search by Username
-    // or Name" the roles modal overrides it to.
+    // On the new design system the assign-user field is a cmdk combobox whose
+    // accessible name comes from its placeholder. `UserMultiSelect` now searches
+    // username, name and email, so its placeholder (and the combobox's
+    // accessible name) is "Search by name, email, or username".
     this.searchBox = this.assignUserModal.getByRole('combobox', {
-      name: 'Search by username',
+      name: 'Search by name, email, or username',
     });
     // The results render in a Radix popover that portals as a *sibling* of the
     // dialog (DS #496), so the listbox is not a descendant of the modal --

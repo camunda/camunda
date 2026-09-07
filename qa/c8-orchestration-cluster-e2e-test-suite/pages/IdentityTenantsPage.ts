@@ -125,8 +125,11 @@ export class IdentityTenantsPage {
     this.assignUserModal = page.getByRole('dialog', {
       name: 'Assign user',
     });
+    // The assign-user field is a cmdk combobox whose accessible name comes from
+    // its placeholder. `UserMultiSelect` now searches username, name and email,
+    // so the accessible name is "Search by name, email, or username".
     this.assignUserSearchbox = this.assignUserModal.getByRole('combobox', {
-      name: 'Search by username',
+      name: 'Search by name, email, or username',
     });
     this.assignUserSearchboxResult = page.getByRole('listbox');
     this.assignUserOption = (username) =>
