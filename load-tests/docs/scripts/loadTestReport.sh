@@ -314,6 +314,16 @@ fi
 # instead of re-parsing it from disk for every field of every query.
 QUERIES_JSON="$(yq -o=json '.' "$QUERIES_FILE")" || die "failed to parse queries file $QUERIES_FILE."
 
+# Substitute template variables once across the whole document instead of
+# once per query. Safe as raw text substitution (not JSON-aware) because
+# every substituted value is already validated above to be free of
+# characters JSON would need escaped: NAMESPACE is a Kubernetes DNS label,
+# DURATION_S/RATE_INTERVAL_S/SAMPLE_STEP_S are digits plus a unit suffix.
+QUERIES_JSON="${QUERIES_JSON//\$NAMESPACE/$NAMESPACE}"
+QUERIES_JSON="${QUERIES_JSON//\$DURATION_S/$DURATION_S}"
+QUERIES_JSON="${QUERIES_JSON//\$RATE_INTERVAL/$RATE_INTERVAL_S}"
+QUERIES_JSON="${QUERIES_JSON//\$SAMPLE_STEP/$SAMPLE_STEP_S}"
+
 declare -a key_entries=()
 declare -a header_entries=()
 declare -a metric_entries=()
@@ -323,17 +333,11 @@ while IFS=$'\x1f' read -r key header query label static_value; do
   value_json="null"
 
   if [[ -n "$static_value" ]]; then
-    static_value="${static_value//\$NAMESPACE/$NAMESPACE}"
     value_json="$(jq -n --arg v "$static_value" '$v')"
   else
-    promql="${query//\$NAMESPACE/$NAMESPACE}"
-    promql="${promql//\$DURATION_S/$DURATION_S}"
-    promql="${promql//\$RATE_INTERVAL/$RATE_INTERVAL_S}"
-    promql="${promql//\$SAMPLE_STEP/$SAMPLE_STEP_S}"
-
     if resp="$(curl -sf -G ${EXTRA_OPTS_ARR[@]+"${EXTRA_OPTS_ARR[@]}"} \
         "${ENDPOINT}/api/v1/query" \
-        --data-urlencode "query=$promql" \
+        --data-urlencode "query=$query" \
         ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null)"; then
       if extracted_value="$(extract_metric_value "$resp" "$label")"; then
         value_json="$extracted_value"
