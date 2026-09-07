@@ -12,6 +12,7 @@ import io.camunda.zeebe.gateway.rest.config.WebappConfiguration.Cloud;
 import java.util.List;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -75,7 +76,9 @@ public class WebappPropertiesOverride {
   private void applyEnterpriseFallback(final WebappProperties target) {
     if (environment.getProperty("camunda.webapp.enterprise") == null
         && (legacyOperateProperties.isEnterprise()
-            || environment.getProperty("camunda.tasklist.enterprise", Boolean.class, false))) {
+            || Binder.get(environment)
+                .bind("camunda.tasklist.enterprise", Boolean.class)
+                .orElse(false))) {
       target.setEnterprise(true);
     }
   }
@@ -90,7 +93,8 @@ public class WebappPropertiesOverride {
   private void applyCloudFallbacks(final WebappProperties target) {
     final Cloud cloud = target.getCloud();
     if (cloud.getStage() == null) {
-      cloud.setStage(environment.getProperty("camunda.tasklist.cloud.stage"));
+      cloud.setStage(
+          Binder.get(environment).bind("camunda.tasklist.cloud.stage", String.class).orElse(null));
     }
   }
 }
