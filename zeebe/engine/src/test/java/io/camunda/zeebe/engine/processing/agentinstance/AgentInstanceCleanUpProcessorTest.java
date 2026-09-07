@@ -167,14 +167,15 @@ public class AgentInstanceCleanUpProcessorTest {
   }
 
   @Test
-  void shouldNotEmitCleanedEventWhenNothingToCleanUp() {
+  void shouldEmitCleanedEventWithEmptyListWhenNothingToCleanUp() {
     // given — no history items at all for this agent instance.
 
     // when
     processor.processRecord(cleanUpCommand());
 
-    // then — no CLEANED event, and no follow-up command.
-    verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
+    // then — a CLEANED event is still appended, with an empty list, so the command always leaves a
+    // durable trace; no follow-up command is scheduled since there's nothing left to defer.
+    assertThat(capturedCleanedEvent().getHistoryItemIdsToDelete()).isEmpty();
     verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any());
   }
 
