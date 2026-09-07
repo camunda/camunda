@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
 
@@ -55,12 +56,17 @@ public final class ProcessInstanceSuspensionJobBehavior {
     this.stateWriter = stateWriter;
   }
 
-  /** Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}. */
-  public void suspendJobs(final long processInstanceKey) {
+  /**
+   * Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}.
+   *
+   * @return the number of jobs suspended; the caller records the metric after all writes complete
+   */
+  public int suspendJobs(final long processInstanceKey) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     if (processInstance == null) {
-      return;
+      return 0;
     }
+    final var count = new AtomicInteger();
     walk(
         processInstance,
         elementInstance ->
@@ -69,8 +75,10 @@ public final class ProcessInstanceSuspensionJobBehavior {
                 SUSPENDABLE_STATES,
                 (jobKey, job) -> {
                   stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
+                  count.incrementAndGet();
                   return true;
                 }));
+    return count.get();
   }
 
   /**

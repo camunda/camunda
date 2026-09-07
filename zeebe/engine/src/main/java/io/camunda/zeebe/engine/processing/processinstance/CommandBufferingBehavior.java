@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
@@ -31,10 +32,15 @@ public final class CommandBufferingBehavior {
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
+  private final SuspensionMetrics suspensionMetrics;
 
-  public CommandBufferingBehavior(final KeyGenerator keyGenerator, final Writers writers) {
+  public CommandBufferingBehavior(
+      final KeyGenerator keyGenerator,
+      final Writers writers,
+      final SuspensionMetrics suspensionMetrics) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   /**
@@ -69,5 +75,6 @@ public final class CommandBufferingBehavior {
         .state()
         .appendFollowUpEvent(
             bufferedCommandKey, BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
+    suspensionMetrics.commandBuffered();
   }
 }
