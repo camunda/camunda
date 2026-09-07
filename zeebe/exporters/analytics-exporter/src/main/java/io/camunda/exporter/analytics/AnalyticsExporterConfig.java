@@ -23,7 +23,7 @@ public class AnalyticsExporterConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(AnalyticsExporterConfig.class);
 
-  private String endpoint = "https://analytics.cloud.camunda.io";
+  private String endpoint = "https://telemetry.camunda.io";
   private int maxQueueSize = 2048;
   private int maxBatchSize = 512;
   private String pushInterval = "PT5M";
