@@ -335,8 +335,8 @@ while IFS=$'\x1f' read -r key header query label static_value; do
         "${ENDPOINT}/api/v1/query" \
         --data-urlencode "query=$promql" \
         ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null)"; then
-      if value_json="$(extract_metric_value "$resp" "$label")"; then
-        :
+      if extracted_value="$(extract_metric_value "$resp" "$label")"; then
+        value_json="$extracted_value"
       else
         case $? in
           3) reason="no label sample" ;;
