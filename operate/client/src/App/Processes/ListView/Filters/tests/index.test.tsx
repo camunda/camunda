@@ -73,6 +73,71 @@ describe('Filters', () => {
     );
   });
 
+  it('should mark deleted process definitions in the version filter', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionId: 'deletedProcess',
+          processDefinitionKey: 'deletedProcess2',
+          name: 'Deleted process',
+          version: 2,
+          state: 'DELETED',
+        }),
+        createProcessDefinition({
+          processDefinitionId: 'deletedProcess',
+          processDefinitionKey: 'deletedProcess1',
+          name: 'Deleted process',
+          version: 1,
+          state: 'ACTIVE',
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionId: 'deletedProcess',
+          processDefinitionKey: 'deletedProcess2',
+          name: 'Deleted process',
+          version: 2,
+          state: 'DELETED',
+        }),
+      ]),
+    );
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        }),
+      ).toBeEnabled(),
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Name'}));
+
+    expect(
+      screen.getByRole('option', {name: 'Deleted process'}),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('option', {name: 'Deleted process'}));
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'}),
+      ).toHaveTextContent('2 (Deleted)'),
+    );
+
+    await user.click(screen.getByLabelText('Version', {selector: 'button'}));
+
+    expect(
+      screen.getByRole('option', {name: '2 (Deleted)'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('option', {name: '1'})).toBeInTheDocument();
+  });
+
   it.skip('should load values from the URL', async () => {
     const MOCK_PARAMS = {
       processDefinitionId: 'bigVarProcess',
