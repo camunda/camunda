@@ -27,6 +27,14 @@ const getWrapper = () => {
 };
 
 const PROCESS_INSTANCE_KEY = 'instance_1';
+const OPERATIONS_WITH_CONFIGURED_LABELS = [
+  {type: 'RESOLVE_INCIDENT', label: 'Retry selected instance'},
+  {type: 'CANCEL_PROCESS_INSTANCE', label: 'Cancel selected instance'},
+  {type: 'DELETE_PROCESS_INSTANCE', label: 'Delete selected instance'},
+  {type: 'SUSPEND_PROCESS_INSTANCE', label: 'Suspend selected instance'},
+  {type: 'RESUME_PROCESS_INSTANCE', label: 'Resume selected instance'},
+  {type: 'ENTER_MODIFICATION_MODE', label: 'Modify selected instance'},
+] as const;
 
 describe('OperationsPresentational', () => {
   beforeEach(() => {
@@ -63,32 +71,20 @@ describe('OperationsPresentational', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render configured labels for every operation type', () => {
-    const operations = [
-      {type: 'RESOLVE_INCIDENT', label: 'Retry selected instance'},
-      {type: 'CANCEL_PROCESS_INSTANCE', label: 'Cancel selected instance'},
-      {type: 'DELETE_PROCESS_INSTANCE', label: 'Delete selected instance'},
-      {type: 'SUSPEND_PROCESS_INSTANCE', label: 'Suspend selected instance'},
-      {type: 'RESUME_PROCESS_INSTANCE', label: 'Resume selected instance'},
-      {type: 'ENTER_MODIFICATION_MODE', label: 'Modify selected instance'},
-    ] as const;
+  it.for(OPERATIONS_WITH_CONFIGURED_LABELS)(
+    'should render the configured label "$label"',
+    ({type, label}) => {
+      render(
+        <Operations
+          operations={[{type, label, onExecute: vi.fn()}]}
+          processInstanceKey={PROCESS_INSTANCE_KEY}
+        />,
+        {wrapper: getWrapper()},
+      );
 
-    render(
-      <Operations
-        operations={operations.map(({type, label}) => ({
-          type,
-          label,
-          onExecute: vi.fn(),
-        }))}
-        processInstanceKey={PROCESS_INSTANCE_KEY}
-      />,
-      {wrapper: getWrapper()},
-    );
-
-    operations.forEach(({label}) => {
       expect(screen.getByRole('button', {name: label})).toBeInTheDocument();
-    });
-  });
+    },
+  );
 
   it('should render no buttons when operations array is empty', () => {
     render(
