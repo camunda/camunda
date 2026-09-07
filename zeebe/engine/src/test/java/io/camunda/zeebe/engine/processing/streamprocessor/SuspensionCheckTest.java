@@ -125,11 +125,10 @@ final class SuspensionCheckTest {
     markerIs(State.RESUMING);
 
     // when / then - buffered commands drain (pass through) while resuming
-    assertThat(
-            suspensionCheck
-                .resolve(command(), overridingProcessor(SuspensionBehavior.BUFFER))
-                .outcome())
-        .isEqualTo(SuspensionBehavior.PROCESS);
+    final var result =
+        suspensionCheck.resolve(command(), overridingProcessor(SuspensionBehavior.BUFFER));
+    assertThat(result.outcome()).isEqualTo(SuspensionBehavior.PROCESS);
+    assertThat(result.classification()).isEqualTo(SuspensionBehavior.BUFFER);
   }
 
   @Test

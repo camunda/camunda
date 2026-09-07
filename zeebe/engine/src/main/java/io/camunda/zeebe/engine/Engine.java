@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -195,8 +196,11 @@ public class Engine implements RecordProcessor {
       final var suspension = suspensionCheck.resolve(typedCommand, currentProcessor);
       if (suspension.outcome() != SuspensionBehavior.PROCESS) {
         // Reject or buffer commands for suspended process instances
-        handleSuspensionOutcome(typedCommand, suspension);
+        handleSuspensionOutcome(typedCommand, currentProcessor, suspension);
         return processingResultBuilder.build();
+      } else if (suspension.classification() == SuspensionBehavior.BUFFER) {
+        // Resume commands for process instances that are resuming from suspension
+        onResume(currentProcessor, typedCommand);
       }
 
       // regular case handling
@@ -288,15 +292,34 @@ public class Engine implements RecordProcessor {
   }
 
   private void handleSuspensionOutcome(
-      final TypedRecord<?> typedCommand, final SuspensionCheck.SuspensionResult suspension) {
+      final TypedRecord<?> typedCommand,
+      final TypedRecordProcessor<?> processor,
+      final SuspensionCheck.SuspensionResult suspension) {
     final var outcome = suspension.outcome();
     if (outcome == SuspensionBehavior.REJECT) {
       rejectSuspendedInstanceCommand(typedCommand, suspension.processInstanceKey());
     } else if (outcome == SuspensionBehavior.BUFFER) {
+      onBuffer(processor, typedCommand);
       bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
     } else {
       throw new IllegalStateException(
           String.format(ERROR_MESSAGE_UNEXPECTED_SUSPENSION_DECISION, outcome));
+    }
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static void onBuffer(
+      final TypedRecordProcessor<?> processor, final TypedRecord<?> command) {
+    if (processor instanceof final SuspensionAware suspensionAware) {
+      suspensionAware.onBuffer(command);
+    }
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static void onResume(
+      final TypedRecordProcessor<?> processor, final TypedRecord<?> command) {
+    if (processor instanceof final SuspensionAware suspensionAware) {
+      suspensionAware.onResume(command);
     }
   }
 

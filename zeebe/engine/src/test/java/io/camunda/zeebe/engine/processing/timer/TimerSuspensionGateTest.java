@@ -55,6 +55,10 @@ public final class TimerSuspensionGateTest {
     ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
 
     // then
+    final var timerResumed =
+        RecordingExporter.timerRecords(TimerIntent.RESUMED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
     final var triggered =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
             .withProcessInstanceKey(processInstanceKey)
@@ -63,6 +67,7 @@ public final class TimerSuspensionGateTest {
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
+    assertThat(timerResumed.getPosition()).isLessThan(triggered.getPosition());
     assertThat(triggered.getPosition()).isLessThan(resumed.getPosition());
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .withProcessInstanceKey(processInstanceKey)
@@ -71,7 +76,7 @@ public final class TimerSuspensionGateTest {
   }
 
   @Test
-  public void shouldRejectDuplicateTriggerWhileSuspended() {
+  public void shouldNotFireTwiceWhenDuplicateTriggerIsBufferedWhileSuspended() {
     // given
     final long processInstanceKey = deployAndStartProcessWithTimer(Strings.newRandomValidBpmnId());
     final var created =
@@ -84,20 +89,45 @@ public final class TimerSuspensionGateTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // when
+    // when - a second TRIGGER is also buffered; the due-date index is already gone
     ENGINE.writeRecords(
         RecordToWrite.command()
             .timer(TimerIntent.TRIGGER, created.getValue())
             .key(created.getKey()));
+    RecordingExporter.records()
+        .filter(
+            r ->
+                r.getValueType() == ValueType.BUFFERED_COMMAND
+                    && r.getIntent() == BufferedCommandIntent.BUFFERED
+                    && ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
+                        == processInstanceKey
+                    && ((BufferedCommandRecordValue) r.getValue()).getIntent()
+                        == TimerIntent.TRIGGER)
+        .skip(1)
+        .await();
 
-    // then
-    final var rejection =
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // then - only the first drained TRIGGER fires; the duplicate is NOT_FOUND
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .timerRecords()
+                .withIntent(TimerIntent.TRIGGERED)
+                .filter(r -> r.getValue().getProcessInstanceKey() == processInstanceKey)
+                .count())
+        .isEqualTo(1);
+    final var duplicateRejection =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER)
             .onlyCommandRejections()
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
-    assertThat(bufferedTimerTriggerCount(processInstanceKey)).isEqualTo(1);
+    assertThat(duplicateRejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -123,6 +153,13 @@ public final class TimerSuspensionGateTest {
                 .limitToProcessInstance(processInstanceKey)
                 .timerRecords()
                 .withIntent(TimerIntent.SUSPENDED)
+                .count())
+        .isZero();
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .timerRecords()
+                .withIntent(TimerIntent.RESUMED)
                 .count())
         .isZero();
   }

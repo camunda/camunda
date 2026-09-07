@@ -53,18 +53,18 @@ public final class SuspensionCheck {
     if (!(processor instanceof final SuspensionAware<?> suspensionAware)) {
       // processors that don't opt in via SuspensionAware are never gated; checked before resolving
       // the process instance key to keep the state lookups off the hot path for unrelated commands
-      return new SuspensionResult(SuspensionBehavior.PROCESS, -1);
+      return passThrough(-1);
     }
 
     final long processInstanceKey = resolveProcessInstanceKey(command);
     if (processInstanceKey <= 0) {
-      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
+      return passThrough(processInstanceKey);
     }
 
     final State marker =
         processingState.getSuspensionState().getSuspensionState(processInstanceKey);
     if (marker == null) {
-      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
+      return passThrough(processInstanceKey);
     }
 
     final SuspensionBehavior behavior = suspensionBehavior(suspensionAware, command);
@@ -74,7 +74,7 @@ public final class SuspensionCheck {
               + " command '{}'; processing it normally. Please report this as a bug.",
           processor.getClass().getName(),
           command.getValueType());
-      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
+      return passThrough(processInstanceKey);
     }
 
     final SuspensionBehavior decision =
@@ -87,7 +87,12 @@ public final class SuspensionCheck {
                   // RESUMING: pass through so drained commands can execute.
                   : SuspensionBehavior.PROCESS;
         };
-    return new SuspensionResult(decision, processInstanceKey);
+    return new SuspensionResult(decision, processInstanceKey, behavior);
+  }
+
+  private static SuspensionResult passThrough(final long processInstanceKey) {
+    return new SuspensionResult(
+        SuspensionBehavior.PROCESS, processInstanceKey, SuspensionBehavior.PROCESS);
   }
 
   /**
@@ -171,5 +176,13 @@ public final class SuspensionCheck {
   }
 
   /** The gate outcome for a command, with the resolved target process instance key. */
-  public record SuspensionResult(SuspensionBehavior outcome, long processInstanceKey) {}
+  /**
+   * @param outcome the gate action to take
+   * @param processInstanceKey the resolved target instance, or {@code -1}
+   * @param classification the processor's {@link SuspensionAware#suspensionBehavior} result. When
+   *     this is {@link SuspensionBehavior#BUFFER} and {@code outcome} is {@link
+   *     SuspensionBehavior#PROCESS}, the command is a drain and {@code onResume} should run.
+   */
+  public record SuspensionResult(
+      SuspensionBehavior outcome, long processInstanceKey, SuspensionBehavior classification) {}
 }

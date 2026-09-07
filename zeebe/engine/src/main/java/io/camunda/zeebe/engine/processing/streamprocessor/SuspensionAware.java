@@ -29,6 +29,24 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
    */
   SuspensionBehavior suspensionBehavior(final TypedRecord<T> record);
 
+  /**
+   * Called by the gate immediately before the command is buffered, while the target is {@code
+   * SUSPENDED}. Override to write events that must accompany buffering (for example dropping a
+   * due-date index) without processing the command itself.
+   *
+   * <p>Not invoked for {@link SuspensionBehavior#PROCESS} or {@link SuspensionBehavior#REJECT}.
+   */
+  default void onBuffer(final TypedRecord<T> record) {}
+
+  /**
+   * Called by the gate immediately before {@code processRecord}, when a {@link
+   * SuspensionBehavior#BUFFER} command is passed through because the target is {@code RESUMING}.
+   * Override to write events that pair with {@link #onBuffer} (for example {@code Timer.RESUMED}).
+   *
+   * <p>Not invoked for {@link SuspensionBehavior#PROCESS} or {@link SuspensionBehavior#REJECT}.
+   */
+  default void onResume(final TypedRecord<T> record) {}
+
   enum SuspensionBehavior {
     /** Process the command immediately, regardless of the suspension marker. */
     PROCESS,
@@ -36,7 +54,9 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
     REJECT,
     /**
      * Buffer the command while {@code SUSPENDED}; pass it through while {@code RESUMING} so that
-     * commands drained during resume can actually execute.
+     * commands drained during resume can actually execute. {@link #onBuffer} runs immediately
+     * before the command is written to the buffer; {@link #onResume} runs immediately before {@code
+     * processRecord} on drain.
      */
     BUFFER
   }
