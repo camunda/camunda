@@ -616,7 +616,11 @@ test.describe('process instance page', () => {
     await expect(suggestion).toBeInViewport();
     await page.keyboard.press('Enter');
     await expect(codeMirrorEditor).toHaveText('["alpha", "alpha"]');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Control+Space');
+    await expect(suggestion).toBeVisible();
     await page.keyboard.press('Escape');
+    await expect(suggestion).not.toBeVisible();
     await expect(codeMirrorEditor).not.toBeFocused();
 
     await codeMirrorEditor.focus();
