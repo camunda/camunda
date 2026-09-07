@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Overview | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/architecture/overview/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-architecture-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-architecture-current"><meta data-rh="true" property="og:title" content="Architecture Overview | Camunda Platform"><meta data-rh="true" name="description" content="What this repo is"><meta data-rh="true" property="og:description" content="What this repo is"><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/architecture/overview/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/architecture/overview/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/architecture/overview/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Overview","item":"https://camunda.github.io/camunda/architecture/overview"}]}</script><link rel="stylesheet" href="/camunda/assets/css/styles.44533d03.css">
-<script src="/camunda/assets/js/runtime~main.7da9ab0c.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.df84586b.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.6472c97d.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.b82cef2a.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -18,7 +18,9 @@ at scale, for both self-managed and SaaS deployments. The monorepo contains the 
 (process engine), Operate (process monitoring), Tasklist (human task management),
 Identity (authentication and authorization), and Optimize (process analytics), plus shared
 libraries, gateways, and supporting infrastructure. Java backend built with Maven; React/Carbon
-frontends. <code>dist/</code> wires the components into deployable Spring Boot application variants (e.g.
+frontends, with Tasklist living in
+<code>webapp/client/apps/orchestration-cluster-webapp/src/tasklist/</code>. <code>dist/</code> wires the components into
+deployable Spring Boot application variants (e.g.
 <code>StandaloneBroker</code>, <code>StandaloneCamunda</code>); components can also be deployed independently.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="runtime-topology">Runtime topology<a href="#runtime-topology" class="hash-link" aria-label="Direct link to Runtime topology" title="Direct link to Runtime topology" translate="no">​</a></h2>
 <p>Camunda follows a <strong>CQRS</strong> (Command Query Responsibility Segregation) pattern: writes flow from a
@@ -87,7 +89,8 @@ only through this contract; never read from RocksDB directly.</p>
 <!-- -->All templates use <code>&quot;dynamic&quot;: &quot;strict&quot;</code> — new fields must be explicitly added to the template
 definitions before the exporter writes them. Fields are additive-only; never change or remove a
 field once deployed — strict mapping will reject mistyped documents from the exporter, and any
-query in <code>search/</code> referencing the field breaks, surfacing in <code>operate/</code> and <code>tasklist/</code>. Never
+query in <code>search/</code> referencing the field breaks, surfacing in <code>operate/</code> and the Tasklist area of
+the orchestration-cluster webapp. Never
 query ES/OS indices directly from application code; always go through <code>search/</code>.</p>
 <p><strong>ES/OS exporter index templates</strong> (<code>zeebe/exporters/elasticsearch-exporter/src/main/resources</code>,
 <code>zeebe/exporters/opensearch-exporter/src/main/resources</code>)<br>
@@ -96,8 +99,8 @@ the impact on existing index mappings.</p>
 <p><strong><code>service/</code> as the REST-to-engine bridge</strong><br>
 <!-- -->All REST commands must flow through <code>service/</code> before reaching Zeebe. REST controllers in
 <code>zeebe/gateway-rest</code> must not call the Zeebe gRPC gateway directly. An interface change here breaks
-<code>zeebe/gateway-rest</code> at compile time; <code>operate/</code> and <code>tasklist/</code> are indirect consumers via the
-REST API and will break at runtime.</p>
+<code>zeebe/gateway-rest</code> at compile time; <code>operate/</code> and the orchestration-cluster webapp are indirect
+consumers via the REST API and will break at runtime.</p>
 <p><strong>RDBMS schema</strong> (<code>db/rdbms-schema</code>)<br>
 <!-- -->Schema changes are versioned Liquibase changesets and must be additive-only (new tables or columns).
 Never drop or alter existing columns; never modify tables outside a changeset.</p>
