@@ -9,7 +9,7 @@ headline set.
 Use `mcp__grafana__*` tools directly when running inside Claude Code. Confirm tools are active
 with `mcp__grafana__check_datasources_health` at session start.
 
-**Rule: always run `list_prometheus_metric_names` before writing any PromQL query.** Guessed
+**Rule: always run `mcp__grafana__list_prometheus_metric_names` before writing any PromQL query.** Guessed
 metric names return empty results silently — one discovery call eliminates all name-guess failures.
 
 **Session startup:**
