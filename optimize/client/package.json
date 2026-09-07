@@ -139,7 +139,9 @@
   "resolutions": {
     "react-is": "^19.0.0",
     "**/tmp": "^0.2.7",
-    "@types/minimatch": "5.1.2"
+    "@types/minimatch": "5.1.2",
+    "**/chrome-remote-interface/ws": "7.5.10",
+    "**/testcafe-hammerhead/ws": "7.5.10"
   },
   "jest": {
     "resetMocks": false,
