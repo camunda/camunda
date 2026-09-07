@@ -319,7 +319,7 @@ test.describe('Identity User Flows', () => {
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Group',
-        ownerId: TEST_GROUP.name,
+        ownerId: TEST_GROUP.groupId,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
@@ -385,7 +385,7 @@ test.describe('Identity User Flows', () => {
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Group',
-        ownerId: TEST_GROUP.name,
+        ownerId: TEST_GROUP.groupId,
         resourceType: 'Authorization',
         resourceId: '*',
         accessPermissions: ['Read'],
