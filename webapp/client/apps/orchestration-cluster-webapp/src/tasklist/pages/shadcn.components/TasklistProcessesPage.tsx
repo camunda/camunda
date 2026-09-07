@@ -84,7 +84,7 @@ const TasklistProcessesPage: React.FC<Props> = ({
 								}
 							/>
 						) : (
-							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							<div className="grid gap-4 max-[42rem]:grid-cols-1 min-[42rem]:grid-cols-2 min-[66rem]:grid-cols-3">
 								{processes.map((process) => {
 									const isSelected = selectedProcessDefinitionKey === process.processDefinitionKey;
 

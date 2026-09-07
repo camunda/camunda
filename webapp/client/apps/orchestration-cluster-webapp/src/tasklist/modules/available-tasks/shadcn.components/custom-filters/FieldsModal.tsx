@@ -35,6 +35,7 @@ import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
+import {cn} from '#/shared/cn';
 import {queries} from '#/shared/http/queries';
 import {
 	type NamedCustomFilters,
@@ -107,7 +108,7 @@ const TextField: React.FC<TextFieldProps> = ({
 	isInvalid,
 	invalidText,
 }) => (
-	<div className={className}>
+	<div className={cn('min-w-0', className)}>
 		<Label htmlFor={input.name}>{label}</Label>
 		<Input
 			{...input}
@@ -252,7 +253,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 								</DialogHeader>
 								<DialogBody>
 									<form
-										className="grid w-full grid-cols-2 items-end gap-x-3 gap-y-6"
+										className="grid w-full grid-cols-1 items-end gap-x-3 gap-y-6 sm:grid-cols-2"
 										onSubmit={handleSubmit}
 										tabIndex={-1}
 									>
@@ -262,7 +263,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 													<TextField
 														input={input}
 														label={t('tasklist.customFiltersModalFilterNameLabel')}
-														className="col-span-2"
+														className="col-span-1 sm:col-span-2"
 													/>
 												)}
 											</Field>
@@ -406,7 +407,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 
 										<Field name="areAdvancedFiltersEnabled">
 											{({input}) => (
-												<div className="col-span-2 flex items-center gap-2">
+												<div className="col-span-1 flex items-center gap-2 sm:col-span-2">
 													<Switch
 														id="toggle-advanced-filters"
 														size="sm"
@@ -425,7 +426,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 													<legend className="mb-2 text-sm font-medium">
 														{t('tasklist.customFiltersModalDueDateLabel')}
 													</legend>
-													<div className="flex gap-2">
+													<div className="flex flex-wrap gap-2">
 														<Field<Date | undefined> name="dueDateFrom">
 															{({input}) => (
 																<DateField
@@ -455,7 +456,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 													<legend className="mb-2 text-sm font-medium">
 														{t('tasklist.customFiltersModalFollowUpDateLabel')}
 													</legend>
-													<div className="flex gap-2">
+													<div className="flex flex-wrap gap-2">
 														<Field<Date | undefined> name="followUpDateFrom">
 															{({input}) => (
 																<DateField
@@ -493,11 +494,11 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 
 												<FieldArray name="variables">
 													{({fields, meta: arrayMeta}) => (
-														<fieldset className="col-span-2">
+														<fieldset className="col-span-1 sm:col-span-2">
 															<legend className="mb-3 text-sm font-medium">
 																{t('tasklist.customFiltersModalTaskVariableLabel')}
 															</legend>
-															<div className="grid grid-cols-[1fr_1fr_2.25rem] items-start gap-x-3 gap-y-4">
+															<div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-start gap-x-3 gap-y-4">
 																{fields.map((name, index) => (
 																	<Fragment key={name}>
 																		<Field<string | undefined> name={`${name}.name`}>

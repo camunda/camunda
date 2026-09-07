@@ -15,6 +15,7 @@ import {
 	toast,
 	TooltipProvider,
 	type NavBreadcrumbDescriptor,
+	useMediaQuery,
 } from '@camunda/design-system';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {Link} from '@tanstack/react-router';
@@ -41,6 +42,7 @@ const Header: React.FC<Props> = ({children}) => {
 	const {data: license} = useSuspenseQuery(queries.getLicense());
 	const {ariaLabel, homeRoute, items, product} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
+	const isBelowLg = useMediaQuery('(width < 64rem)');
 	const breadcrumbItems = useMemo<NavBreadcrumbDescriptor[]>(
 		() =>
 			product === undefined
@@ -96,7 +98,7 @@ const Header: React.FC<Props> = ({children}) => {
 								/>
 							)
 						}
-						trailing={<LicenseBadges license={license} />}
+						trailing={isBelowLg ? undefined : <LicenseBadges license={license} />}
 						actions={
 							<>
 								<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />

@@ -70,6 +70,14 @@ class ShadcnTaskDetailPage extends BasePage {
 		return this.page.getByRole('complementary', {name: 'Task details right panel'});
 	}
 
+	get detailsButton() {
+		return this.detailsHeader.getByRole('button', {name: 'Task details', exact: true});
+	}
+
+	get detailsSheet() {
+		return this.page.getByRole('dialog', {name: 'Details', exact: true});
+	}
+
 	get taskTabContent() {
 		return this.page.getByTestId('task-tab-content');
 	}

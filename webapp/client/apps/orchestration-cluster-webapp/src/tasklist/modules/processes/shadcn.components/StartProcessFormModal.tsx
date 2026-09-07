@@ -207,9 +207,9 @@ const StartProcessFormModalSkeleton: React.FC<CommonProps> = ({processDisplayNam
 				</DialogFooter>
 			}
 		>
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-testid="form-skeleton">
+			<div className="grid gap-4 max-[42rem]:grid-cols-1 min-[42rem]:grid-cols-2" data-testid="form-skeleton">
 				{Array.from({length: 6}, (_, index) => (
-					<Skeleton key={index} className={cn('h-9 w-full', index === 2 && 'sm:col-span-2')} />
+					<Skeleton key={index} className={cn('h-9 w-full', index === 2 && 'min-[42rem]:col-span-2')} />
 				))}
 			</div>
 		</StartProcessFormModalShell>
