@@ -7,6 +7,9 @@
  */
 
 import {render, screen} from 'modules/testing-library';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {DiagramHeader} from '.';
 
 vi.mock('modules/stores/processInstances', () => ({
@@ -17,7 +20,20 @@ vi.mock('modules/stores/processInstances', () => ({
   },
 }));
 
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+  <QueryClientProvider client={getMockQueryClient()}>
+    {children}
+  </QueryClientProvider>
+);
+
 describe('DiagramHeader', () => {
+  beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+  });
+
   it('should render header with full data', async () => {
     render(
       <DiagramHeader
@@ -29,6 +45,7 @@ describe('DiagramHeader', () => {
         }}
         processDefinitionId=""
       />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();
@@ -55,6 +72,7 @@ describe('DiagramHeader', () => {
         }}
         processDefinitionId=""
       />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();

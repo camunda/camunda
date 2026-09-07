@@ -17,9 +17,12 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {useEffect} from 'react';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {ProcessOperations} from '.';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import type {OperationEntity} from 'modules/types/operate';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -47,10 +50,21 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <QueryClientProvider client={getMockQueryClient()}>
+      {children}
+    </QueryClientProvider>
+  );
 };
 
 describe('<ProcessOperations />', () => {
+  beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+  });
+
   it('should open modal and show content', async () => {
     mockFetchProcessInstances().withSuccess({
       processInstances: [],

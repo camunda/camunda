@@ -20,9 +20,14 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
       totalCount: 0,

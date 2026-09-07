@@ -36,6 +36,7 @@ import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetc
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -47,6 +48,10 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchCallHierarchy().withSuccess([]);
     mockMe().withSuccess(createUser());
+    mockSearchProcessDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
   });
 
   it('should render process instance data', async () => {
