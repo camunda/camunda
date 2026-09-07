@@ -9,6 +9,9 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
+import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
@@ -35,8 +38,13 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
+import java.net.ConnectException;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 /** Forwards all requests to the coordinator. */
@@ -222,14 +230,53 @@ public final class ClusterConfigurationManagementRequestSender {
         TIMEOUT);
   }
 
+  /**
+   * Queries the topology from the default coordinator, falling back to another configured member
+   * when the selected member cannot be reached. Unlike configuration changes, a topology query is
+   * read-only and can be served by any member.
+   */
   public CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> getTopology() {
-    return communicationService.send(
-        ClusterConfigurationRequestTopics.QUERY_TOPOLOGY.topic(),
-        new byte[0],
-        Function.identity(),
-        serializer::decodeClusterConfigurationResponse,
-        coordinatorSupplier.getDefaultCoordinator(),
-        TIMEOUT);
+    return getTopology(coordinatorSupplier.getDefaultCoordinator(), Set.of());
+  }
+
+  private CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> getTopology(
+      final MemberId coordinator, final Set<MemberId> attemptedCoordinators) {
+    final var attempted = new HashSet<>(attemptedCoordinators);
+    attempted.add(coordinator);
+
+    return communicationService
+        .send(
+            ClusterConfigurationRequestTopics.QUERY_TOPOLOGY.topic(),
+            new byte[0],
+            Function.identity(),
+            serializer::decodeClusterConfigurationResponse,
+            coordinator,
+            TIMEOUT)
+        .exceptionallyCompose(
+            error -> {
+              if (!isRetryable(error)) {
+                return CompletableFuture.failedFuture(error);
+              }
+
+              final var nextCoordinator =
+                  coordinatorSupplier.getNextCoordinatorExcluding(attempted);
+              if (attempted.contains(nextCoordinator)) {
+                return CompletableFuture.failedFuture(error);
+              }
+
+              return getTopology(nextCoordinator, attempted);
+            });
+  }
+
+  private static boolean isRetryable(final Throwable error) {
+    return switch (FuturesUtil.unwrapCompletionException(error)) {
+      case final ConnectionClosed ignored -> true;
+      case final ConnectException ignored -> true;
+      case final NoRemoteHandler ignored -> true;
+      case final NoSuchMemberException ignored -> true;
+      case final TimeoutException ignored -> true;
+      default -> false;
+    };
   }
 
   public CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> cancelTopologyChange(

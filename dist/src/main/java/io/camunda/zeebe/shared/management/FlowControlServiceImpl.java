@@ -110,7 +110,7 @@ public class FlowControlServiceImpl implements FlowControlService {
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
                   return client
-                      .sendRequest(request)
+                      .sendRequestWithRetry(request)
                       .thenApply(response -> response.getResponseOrThrow());
                 })
             .toArray(CompletableFuture<?>[]::new);
@@ -133,7 +133,7 @@ public class FlowControlServiceImpl implements FlowControlService {
     request.getFLowControlConfiguration();
 
     return client
-        .sendRequest(request)
+        .sendRequestWithRetry(request)
         .thenApply(
             response -> {
               final var payload = response.getResponseOrThrow().getPayload();

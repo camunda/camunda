@@ -101,12 +101,12 @@ final class FlowControlServiceImplTest {
     when(response.getPayload()).thenReturn("{}".getBytes(StandardCharsets.UTF_8));
     doReturn(CompletableFuture.completedFuture(new BrokerResponse<>(response)))
         .when(client)
-        .sendRequest(any());
+        .sendRequestWithRetry(any());
   }
 
   private List<BrokerRequest> capturedRequests() {
     final ArgumentCaptor<BrokerRequest> captor = ArgumentCaptor.forClass(BrokerRequest.class);
-    verify(client, atLeastOnce()).sendRequest(captor.capture());
+    verify(client, atLeastOnce()).sendRequestWithRetry(captor.capture());
     return captor.getAllValues();
   }
 }
