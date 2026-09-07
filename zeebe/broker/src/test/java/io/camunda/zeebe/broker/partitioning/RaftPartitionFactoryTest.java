@@ -72,6 +72,19 @@ public final class RaftPartitionFactoryTest {
   }
 
   @Test
+  void shouldUseDefaultElectionTimeoutAsRequestTimeoutWhenNeitherIsConfigured() {
+    // given — neither requestTimeout nor electionTimeout is customized
+    final var brokerCfg = new BrokerCfg();
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then — request timeout falls back to the default election timeout (2500 ms)
+    assertThat(partition.getPartitionConfig().getRequestTimeout())
+        .isEqualTo(brokerCfg.getCluster().getElectionTimeout());
+  }
+
+  @Test
   void shouldUseElectionTimeoutAsRequestTimeoutWhenNotConfigured() {
     // given
     final Duration electionTimeout = Duration.ofMillis(500);
@@ -260,6 +273,7 @@ public final class RaftPartitionFactoryTest {
   }
 
   private RaftPartition buildRaftPartition(final BrokerCfg brokerCfg) {
+    brokerCfg.getExperimental().init(brokerCfg, "");
     return new RaftPartitionFactory(brokerCfg)
         .createRaftPartition(
             new PartitionMetadata(
