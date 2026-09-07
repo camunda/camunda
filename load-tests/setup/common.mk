@@ -273,32 +273,28 @@ ifeq ($(physical_tenants_supported),true)
 generate-physical-tenant-values:
 	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)"
 
-# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage.
-# The camunda-load-tests subchart hardcodes the starter/worker resource names, so a second
-# Helm release per tenant would collide. Instead we render only those two templates from the
-# same chart, values, scenario and image as the default tester, rename them to *-pt<i>, and
-# apply — looped over pt1..ptN. These testers are pinned to REST
-# (--set global.preferRest.enabled=true) regardless of the namespace default: per-tenant
-# isolation is wired solely through the tenant's REST base address (the credentials clone
-# below), and the load tester never sets a physical tenant id, so it emits no
-# Camunda-Physical-Tenant gRPC header — over gRPC the requests would fall back to the
-# default tenant.
+# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage. The
+# camunda-load-tests subchart hardcodes the starter/worker resource names, so a second Helm
+# release per tenant would collide — instead render only those two templates, rename to
+# *-pt<i>, and apply, looped over pt1..ptN. Each tenant gets its own
+# CAMUNDA_CLIENT_PHYSICAL_TENANT_ID env var, which routes both gRPC and REST to that tenant.
+#
+# extraEnvVars[4]: index 4 because scenarios/load-tester-values-defaults.yaml already sets
+# indices 0-3. Helm merges --set list indices positionally, so reusing one would silently
+# overwrite it instead of adding a new entry — bump this index if that file's list grows.
 .PHONY: install-load-test-physical-tenants
 install-load-test-physical-tenants:
 	@for i in $$(seq 1 $(physical_tenant_count)); do \
 	  tenant="pt$$i"; \
 	  echo "Deploying the $$tenant physical-tenant load tester for namespace $(namespace)..."; \
-	  kubectl get secret load-test-credentials -n $(namespace) -o json \
-	    | jq --arg tenant "$$tenant" '.data.zeebeRestAddress = ("http://camunda:8080/physical-tenants/" + $$tenant | @base64) | .metadata.name = ("load-test-credentials-" + $$tenant) | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.managedFields)' \
-	    | kubectl apply -n $(namespace) -f - ; \
 	  helm template load-test-setup $(helm_chart_load_test_setup) \
 	      --namespace $(namespace) \
 	      -s charts/load-tester/templates/starter.yaml \
 	      -s charts/load-tester/templates/workers.yaml \
 	      $(load_test_setup_flags) \
 	      --set load-tester.enabled=true \
-	      --set global.preferRest.enabled=true \
-	      --set load-tester.saas.credentials.existingSecret=load-test-credentials-$$tenant \
+	      --set-string 'global.extraEnvVars[4].name=CAMUNDA_CLIENT_PHYSICAL_TENANT_ID' \
+	      --set-string "global.extraEnvVars[4].value=$$tenant" \
 	    | sed -E "s/: starter$$/: starter-$$tenant/; s/: worker$$/: worker-$$tenant/" \
 	    | kubectl apply -n $(namespace) -f - ; \
 	done
