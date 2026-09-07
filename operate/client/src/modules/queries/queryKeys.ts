@@ -8,6 +8,7 @@
 
 import type {
   ProcessInstance,
+  QueryProcessDefinitionsRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
@@ -31,6 +32,10 @@ const queryKeys = {
     get: (processDefinitionKey?: string) => [
       'processDefinition',
       processDefinitionKey,
+    ],
+    search: (payload?: QueryProcessDefinitionsRequestBody) => [
+      'searchProcessDefinitions',
+      payload,
     ],
   },
 };
