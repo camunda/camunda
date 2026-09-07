@@ -49,7 +49,7 @@ export class IdentityRolesDetailsPage {
     // combobox ("Search by username or name") rather than Carbon's searchbox.
     this.assignUserModalSearchField = this.assignUserModal.getByRole(
       'combobox',
-      {name: 'Search by username or name'},
+      {name: 'Search by Username or Name'},
     );
     // The results render in a Radix popover that portals as a *sibling* of the
     // dialog (DS #496), so the listbox is not a descendant of the modal —
