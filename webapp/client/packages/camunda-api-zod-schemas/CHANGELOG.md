@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.93
+
+### 🩹 Fixes
+
+- Add `reasoningTokenCount`, `cacheCreationTokenCount`, and `cacheReadTokenCount` to the 8.10 agent instance metrics and history item metrics schemas [#59320](https://github.com/camunda/camunda/issues/59320)
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.92
 
 ### 🚀 Enhancements
