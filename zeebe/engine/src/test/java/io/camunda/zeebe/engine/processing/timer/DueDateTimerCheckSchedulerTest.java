@@ -238,5 +238,11 @@ class DueDateTimerCheckSchedulerTest {
     public TimerInstance get(final long elementInstanceKey, final long timerKey) {
       return null;
     }
+
+    @Override
+    public boolean hasDueDate(
+        final long elementInstanceKey, final long timerKey, final long dueDate) {
+      return false;
+    }
   }
 }

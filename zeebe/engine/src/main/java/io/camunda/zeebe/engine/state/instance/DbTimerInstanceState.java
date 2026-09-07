@@ -91,6 +91,37 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
+  public void removeDueDate(
+      final long elementInstanceKey, final long timerKey, final long dueDate) {
+    wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
+    dueDateColumnFamily.deleteIfExists(dueDateCompositeKey);
+  }
+
+  @Override
+  public void removeIgnoringMissingDueDate(final TimerInstance timer) {
+    elementInstanceKey.inner().wrapLong(timer.getElementInstanceKey());
+    timerKey.wrapLong(timer.getKey());
+    timerInstanceColumnFamily.deleteExisting(elementAndTimerKey);
+
+    dueDate.wrapLong(timer.getDueDate());
+    dueDateColumnFamily.deleteIfExists(dueDateCompositeKey);
+  }
+
+  @Override
+  public boolean hasDueDate(
+      final long elementInstanceKey, final long timerKey, final long dueDate) {
+    wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
+    return dueDateColumnFamily.exists(dueDateCompositeKey);
+  }
+
+  private void wrapDueDateKey(
+      final long elementInstanceKey, final long timerKey, final long dueDate) {
+    this.elementInstanceKey.inner().wrapLong(elementInstanceKey);
+    this.timerKey.wrapLong(timerKey);
+    this.dueDate.wrapLong(dueDate);
+  }
+
+  @Override
   public long processTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
     nextDueDate = -1L;
 
