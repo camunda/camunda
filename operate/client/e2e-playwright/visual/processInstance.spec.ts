@@ -529,6 +529,9 @@ test.describe('process instance page', () => {
 
     await expect(page.getByText('Value has to be JSON')).toBeVisible();
 
+    await page.keyboard.press('Control+Space');
+    await expect(page.getByRole('listbox')).toBeVisible();
+
     await processInstancePage.variablesEditor.hideCaret();
 
     await expect(page).toHaveScreenshot();

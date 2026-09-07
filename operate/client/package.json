@@ -12,6 +12,7 @@
     "@camunda/session-heartbeat": "0.0.1",
     "@carbon/elements": "11.96.0",
     "@carbon/react": "1.112.0",
+    "@codemirror/autocomplete": "6.20.3",
     "@codemirror/commands": "6.10.4",
     "@codemirror/lang-json": "6.0.2",
     "@codemirror/language": "6.12.4",
@@ -53,6 +54,8 @@
     "remark-gfm": "4.0.1",
     "styled-components": "6.5.0",
     "tiny-svg": "4.1.4",
+    "vscode-json-languageservice": "5.3.11",
+    "vscode-languageserver-textdocument": "1.0.11",
     "zod": "4.5.4"
   },
   "scripts": {
