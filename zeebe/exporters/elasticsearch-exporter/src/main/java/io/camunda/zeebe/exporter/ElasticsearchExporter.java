@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
+import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -164,11 +165,26 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void validate(final ElasticsearchExporterConfiguration configuration) {
-    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
+    final String prefix = configuration.index.prefix;
+    if (IndexPrefixValidation.hasInvalidCharacters(prefix)) {
       throw new ExporterException(
           String.format(
-              "Elasticsearch prefix must not contain underscore. Current value: %s",
-              configuration.index.prefix));
+              "Elasticsearch prefix must not contain invalid characters [\\ / * ? \" < > | space "
+                  + "_ , # :]. Current value: %s",
+              prefix));
+    }
+    if (IndexPrefixValidation.hasInvalidLeadingCharacter(prefix)) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not begin with invalid characters [. + - _]. Current value: %s",
+              prefix));
+    }
+    if (IndexPrefixValidation.exceedsMaxLength(prefix)) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not exceed %d characters, to keep generated index names "
+                  + "within Elasticsearch's 255-character limit. Current value: %s (%d characters)",
+              IndexPrefixValidation.MAX_PREFIX_LENGTH, prefix, prefix.length()));
     }
 
     if (configuration.bulk.memoryLimit > RECOMMENDED_MAX_BULK_MEMORY_LIMIT) {

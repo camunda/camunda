@@ -10,13 +10,11 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Exporter;
 import io.camunda.configuration.ExporterArgsMergers;
+import io.camunda.configuration.ExporterResourceCollisions;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,7 +83,8 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
 
     final List<ExporterConfigMerger> loadedMergers = mergers.get();
 
-    final Map<ResourceIdentity, ClaimedResource> tenantsByResource = new LinkedHashMap<>();
+    final ExporterResourceCollisions.Accumulator accumulator =
+        new ExporterResourceCollisions.Accumulator();
     resolvedByTenant.forEach(
         (tenantId, camunda) ->
             camunda
@@ -100,26 +99,10 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
                         return;
                       }
                       claimsOf(loadedMergers, tenantId, exporterId, exporter)
-                          .forEach(
-                              claim ->
-                                  tenantsByResource
-                                      .computeIfAbsent(
-                                          ResourceIdentity.of(claim),
-                                          k -> new ClaimedResource(claim.description()))
-                                      .tenants()
-                                      .add(tenantId));
+                          .forEach(claim -> accumulator.add(tenantId, claim));
                     }));
 
-    final List<String> collisions = new ArrayList<>();
-    tenantsByResource.forEach(
-        (identity, resource) -> {
-          if (resource.tenants().size() > 1) {
-            collisions.add(
-                String.format(
-                    "tenants %s share the same %s", resource.tenants(), resource.description()));
-          }
-        });
-
+    final List<String> collisions = accumulator.collisions();
     if (!collisions.isEmpty()) {
       throw new UnifiedConfigurationException(
           "Physical tenants must not share generic-exporter resources, or they would silently "
@@ -146,26 +129,5 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
       return Set.of();
     }
     return ExporterArgsMergers.isolationClaims(merger, exporter.getArgs(), context);
-  }
-
-  /** The collision identity of a claimed resource: exporters collide iff both fields are equal. */
-  private record ResourceIdentity(String domain, Map<String, Object> identity) {
-
-    /**
-     * Freezes the identity a merger returned: it becomes part of a map key here, and the SPI does
-     * not promise an immutable map, so a merger holding on to what it returned could otherwise
-     * change this key's {@code hashCode} out from under the grouping.
-     */
-    static ResourceIdentity of(final ExporterIsolationClaim claim) {
-      return new ResourceIdentity(
-          claim.domain(), ExporterArgsMergers.immutableCopy(claim.identity()));
-    }
-  }
-
-  /** The tenants claiming one resource, plus a human rendering of it for the error message. */
-  private record ClaimedResource(String description, Set<String> tenants) {
-    ClaimedResource(final String description) {
-      this(description, new LinkedHashSet<>());
-    }
   }
 }
