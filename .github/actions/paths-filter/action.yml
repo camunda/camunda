@@ -90,27 +90,6 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-operate.outputs.operate-frontend-change == 'true'
       }}
-  tasklist-frontend-changes:
-    description: Output whether Tasklist frontend tests should be run based on GitHub event and files changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
-        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
-        steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
-      }}
-  tasklist-backend-changes:
-    description: Output whether Tasklist backend build should be run based on GitHub event and files changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
-        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
-        steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
-        steps.filter-common.outputs.webapps-change == 'true' ||
-        steps.filter-common.outputs.maven-change == 'true' ||
-        steps.filter-common.outputs.dockerfile-change == 'true'
-      }}
   optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
     value: >-
@@ -374,7 +353,6 @@ runs:
 
         frontend-change:
           - 'operate/client/**'
-          - 'tasklist/client/**'
           - 'identity/client/**'
           - 'optimize/client/**'
 
@@ -473,18 +451,6 @@ runs:
 
         operate-frontend-change:
           - operate/client/**
-
-  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-    id: filter-tasklist
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        tasklist-backend-change:
-          - 'tasklist/!(client/**)/**'
-
-        tasklist-frontend-change:
-          - tasklist/client/**
 
   - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-optimize

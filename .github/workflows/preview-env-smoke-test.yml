@@ -350,7 +350,6 @@ jobs:
           DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
           DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: admin
           DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: admin
-          TASKLIST_VERSION: v2
         run: |
           npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
             --project=chromium \
@@ -538,4 +537,3 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-

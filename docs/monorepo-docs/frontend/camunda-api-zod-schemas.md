@@ -10,8 +10,7 @@ Official Camunda 8 REST API reference:
 
 Inside this monorepo, the package is consumed directly via the npm
 workspace by `@camunda/orchestration-cluster-webapp`, and via published
-versions by the legacy `operate/client`, `tasklist/client`, and
-`identity/client` frontends.
+versions by the legacy `operate/client` and `identity/client` frontends.
 
 ## Installation
 
@@ -47,8 +46,8 @@ under `packages/camunda-api-zod-schemas/lib/` — for example
    GitHub Action.
    - The dry-run option is enabled by default. Uncheck it to publish
      the new version.
-3. Update the `@camunda/camunda-api-zod-schemas` dependency version in
-   Operate, Admin, and Tasklist.
+3. Update the `@camunda/camunda-api-zod-schemas` dependency version in the legacy Operate and Admin
+   frontends. Tasklist consumes the workspace package through the orchestration-cluster webapp.
 
 ### When the schema update is part of a new feature
 
@@ -57,6 +56,6 @@ under `packages/camunda-api-zod-schemas/lib/` — for example
 2. Merge the PR to `main`.
 3. Immediately publish the new version from `main` using the GitHub
    Action above.
-4. Open follow-up PRs in Operate, Tasklist, and Admin bumping
+4. Open follow-up PRs in the legacy Operate and Admin frontends bumping
    `@camunda/camunda-api-zod-schemas` to the new version.
 5. Use the updated schema in the feature PR.

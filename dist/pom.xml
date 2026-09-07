@@ -324,16 +324,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-webapp</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-data-generator</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>webapp-server</artifactId>
     </dependency>
 
@@ -1030,10 +1020,6 @@
               <mainClass>io.camunda.application.StandaloneBackupManager</mainClass>
             </program>
             <program>
-              <id>tasklist</id>
-              <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
-            </program>
-            <program>
               <id>camunda</id>
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
@@ -1144,8 +1130,6 @@
             <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
-
-            <dependency>io.camunda:tasklist-data-generator</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
