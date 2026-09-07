@@ -14,7 +14,7 @@ Options:
   --duration-seconds <sec>  Query window duration. Default: 600.
   --rate-interval <dur>     Short rate interval for dashboard-style rollups. Default: 5m.
   --sample-step <dur>       Subquery sample resolution for window summaries. Default: 1m.
-  --template <name>         Report template: camunda or zeebe-gateway. Default: camunda.
+  --template <name>         Report template: camunda or stable-87. Default: camunda.
   --at <time>               Prometheus query time anchor, RFC3339 or Unix timestamp.
                             Queries cover (--duration-seconds) ending at this time.
   --start <time>            Start of the reporting window, RFC3339 or Unix timestamp.
@@ -232,11 +232,11 @@ if [[ -z "$QUERIES_FILE" ]]; then
     camunda)
       QUERIES_FILE="$SCRIPT_DIR/report-queries.json"
       ;;
-    zeebe-gateway)
-      QUERIES_FILE="$SCRIPT_DIR/report-queries-zeebe-gateway.json"
+    stable-87)
+      QUERIES_FILE="$SCRIPT_DIR/report-queries-stable-87.json"
       ;;
     *)
-      die "Unsupported --template '$REPORT_TEMPLATE'. Expected camunda or zeebe-gateway."
+      die "Unsupported --template '$REPORT_TEMPLATE'. Expected camunda or stable-87."
       ;;
   esac
 fi
