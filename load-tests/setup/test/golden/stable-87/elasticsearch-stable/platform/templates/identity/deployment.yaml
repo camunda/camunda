@@ -51,7 +51,7 @@ spec:
         []
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.7.23
+          image: camunda/identity:8.7.24
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
