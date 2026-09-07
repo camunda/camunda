@@ -76,6 +76,31 @@ describe('<InlineJsonEditor />', () => {
     expect(mockOnChange).toHaveBeenCalledWith('"updated"');
   });
 
+  it.each(['{"key":"value"}', '[1,2]'])(
+    'should format an unmodified editable value without changing the form value: %s',
+    (value) => {
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <InlineJsonEditor value={value} onChange={onChange} />,
+      );
+      const editor = screen.getByRole('textbox', {name: 'Value'});
+      expect(
+        Array.from(
+          editor.querySelectorAll('.cm-line'),
+          (line) => line.textContent,
+        ),
+      ).toEqual(JSON.stringify(JSON.parse(value), null, '\t').split('\n'));
+      expect(onChange).not.toHaveBeenCalled();
+
+      rerender(
+        <InlineJsonEditor value={value} onChange={onChange} isModified />,
+      );
+      expect(editor.querySelectorAll('.cm-line')).toHaveLength(1);
+      expect(editor).toHaveTextContent(value);
+      expect(onChange).not.toHaveBeenCalled();
+    },
+  );
+
   it('should call onValidate(false) for invalid JSON', async () => {
     const mockOnValidate = vi.fn();
 

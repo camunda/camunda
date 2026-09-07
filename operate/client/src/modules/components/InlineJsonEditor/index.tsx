@@ -76,6 +76,7 @@ type Props = {
   onBlur?: () => void;
   onFocus?: () => void;
   readOnly?: boolean;
+  isModified?: boolean;
   maxLines?: number;
   fieldError?: string;
   id?: string;
@@ -100,6 +101,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
     onBlur,
     onFocus,
     readOnly,
+    isModified = false,
     placeholder = 'Value',
     isTruncatedValue = false,
     maxLines = EDITOR_MAX_LINES,
@@ -113,13 +115,13 @@ const InlineJsonEditor: React.FC<Props> = observer(
     const isReadOnly = readOnly === true || onChange === undefined;
 
     const displayValue = useMemo(() => {
-      if (!isReadOnly) {
+      if (!isReadOnly && isModified) {
         return value;
       }
       return isTruncatedValue
         ? beautifyTruncatedJSON(value)
         : beautifyJSON(value);
-    }, [value, isTruncatedValue, isReadOnly]);
+    }, [value, isTruncatedValue, isReadOnly, isModified]);
 
     const height = computeHeight(displayValue, maxLines);
 

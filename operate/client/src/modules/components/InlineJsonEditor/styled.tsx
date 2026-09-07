@@ -210,6 +210,11 @@ const WriteModeEditor = styled.div<{
     caret-color: var(--cds-text-primary);
   }
 
+  .cm-cursor,
+  .cm-dropCursor {
+    border-left-color: var(--cds-text-primary);
+  }
+
   .cm-line {
     padding: 0;
   }
