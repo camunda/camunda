@@ -50,7 +50,10 @@ jobs:
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
         vault-url: ${{ secrets.VAULT_ADDR }}
 
-    - uses: camunda/infra-global-github-actions/preview-env/clean@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
+    # DEBUG ONLY - do not merge: pinned to infra-global-github-actions#808 (draft) to
+    # surface the raw API response on the jq parse-error that's been failing this job
+    # on every scheduled run since 2026-08-31. Revert to the tagged SHA before merging.
+    - uses: camunda/infra-global-github-actions/preview-env/clean@ba8e9e0fd3826b182831533984b7186fdd5644e9 # debug: preview-env-clean-jq-parse-error
       with:
         labels: deploy-preview
         pull-request: ${{ inputs.pull-request }}
