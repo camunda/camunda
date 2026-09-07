@@ -12,6 +12,7 @@ import {ListTodo, Workflow} from 'lucide-react';
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {hasComponentAccess} from '#/shared/componentAccess';
+import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
@@ -34,14 +35,15 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	const matchRoute = useMatchRoute();
 	const {authorizedComponents} = currentUser;
 	const isProcessesRoute = matchRoute({to: tabRoutes['tasklistProcesses'], fuzzy: true}) !== false;
-	const isTasklistRoute = matchRoute({to: tabRoutes['tasklistIndex'], fuzzy: true}) !== false;
+	const activeComponentHomeRoute = useActiveComponentHomeRoute();
+	const isTasklistRoute = activeComponentHomeRoute === tabRoutes['tasklistIndex'];
 
 	if (isTasklistRoute) {
 		const hasTasklistAccess = hasComponentAccess('tasklist', authorizedComponents);
 
 		return {
 			ariaLabel: t('tasklist.taskPanelNavAria'),
-			homeRoute: tabRoutes['tasklistIndex'],
+			homeRoute: activeComponentHomeRoute,
 			product: {
 				icon: camundaAppIcons.tasklist,
 				label: 'Tasklist',

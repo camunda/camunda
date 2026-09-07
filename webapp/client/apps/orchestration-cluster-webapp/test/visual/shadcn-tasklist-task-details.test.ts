@@ -351,3 +351,47 @@ test('should match the task details snapshot with an active transition', async (
 
 	await expect(page).toHaveScreenshot();
 });
+
+test('should match the task details 404 page snapshot', async ({network, shadcnTaskDetailPage, notFoundPage, page}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: new HttpResponse(null, {status: 404}),
+		}),
+	);
+
+	await shadcnTaskDetailPage.goto(USER_TASK_KEY);
+	await expect(notFoundPage.heading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the task details forbidden page snapshot', async ({
+	network,
+	shadcnTaskDetailPage,
+	forbiddenPage,
+	page,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: new HttpResponse(null, {status: 403}),
+		}),
+	);
+
+	await shadcnTaskDetailPage.goto(USER_TASK_KEY);
+	await expect(forbiddenPage.heading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the task details generic error page snapshot', async ({network, shadcnTaskDetailPage, page}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: new HttpResponse(null, {status: 500}),
+		}),
+	);
+
+	await shadcnTaskDetailPage.goto(USER_TASK_KEY);
+	await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});

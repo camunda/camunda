@@ -205,3 +205,30 @@ test('should match the multi-tenant processes page snapshot', async ({network, s
 
 	await expect(page).toHaveScreenshot();
 });
+
+test('should match the forbidden processes page snapshot', async ({
+	network,
+	shadcnTasklistProcessesPage: tasklistProcessesPage,
+	forbiddenPage,
+	page,
+}) => {
+	network.use(mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 403})}));
+
+	await tasklistProcessesPage.goto();
+	await expect(forbiddenPage.heading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the generic processes error page snapshot', async ({
+	network,
+	shadcnTasklistProcessesPage: tasklistProcessesPage,
+	page,
+}) => {
+	network.use(mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+
+	await tasklistProcessesPage.goto();
+	await expect(tasklistProcessesPage.genericErrorHeading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
