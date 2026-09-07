@@ -137,12 +137,14 @@ public class Engine implements RecordProcessor {
             recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
-    bufferingBehavior = new CommandBufferingBehavior(processingState.getKeyGenerator(), writers);
     suspensionCheck = new SuspensionCheck(processingState);
+    final var suspensionMetrics = typedProcessorContext.getSuspensionMetrics();
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
+    bufferingBehavior =
+        new CommandBufferingBehavior(processingState.getKeyGenerator(), writers, suspensionMetrics);
 
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();

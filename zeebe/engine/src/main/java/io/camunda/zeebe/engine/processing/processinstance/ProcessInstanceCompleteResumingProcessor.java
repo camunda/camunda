@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
@@ -58,18 +59,21 @@ public final class ProcessInstanceCompleteResumingProcessor
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
   private final DueDateTimerCheckScheduler timerChecker;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceCompleteResumingProcessor(
       final ElementInstanceState elementInstanceState,
       final SuspensionState suspensionState,
       final Writers writers,
-      final DueDateTimerCheckScheduler timerChecker) {
+      final DueDateTimerCheckScheduler timerChecker,
+      final SuspensionMetrics suspensionMetrics) {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.suspensionState = suspensionState;
     this.timerChecker = timerChecker;
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -102,6 +106,8 @@ public final class ProcessInstanceCompleteResumingProcessor
         () -> {
           timerChecker.scheduleTimer(-1);
         });
+    suspensionMetrics.stopResumeDuration(processInstanceKey);
+    suspensionMetrics.instanceResumed();
   }
 
   @Override
