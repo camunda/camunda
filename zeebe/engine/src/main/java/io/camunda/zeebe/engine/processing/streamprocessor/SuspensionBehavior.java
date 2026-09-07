@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionAction;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -27,17 +27,18 @@ import org.slf4j.Logger;
  * instance carries a suspension marker.
  *
  * <p>Only processors that implement {@link SuspensionAware} are gated; every other command is
- * processed normally. An implementing processor's {@link SuspensionAware#suspensionBehavior}
- * classifies the command as {@code PROCESS}, {@code REJECT}, or {@code BUFFER}.
+ * processed normally. An implementing processor's {@link SuspensionAware#onSuspended} classifies
+ * the command as {@code PROCESS}, {@code REJECT}, or {@code BUFFER} while {@code SUSPENDED}. While
+ * {@code RESUMING}, {@link SuspensionAware#onResuming} classifies instead.
  */
 @NullMarked
-public final class SuspensionCheck {
+public final class SuspensionBehavior {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private final ProcessingState processingState;
 
-  public SuspensionCheck(final ProcessingState processingState) {
+  public SuspensionBehavior(final ProcessingState processingState) {
     this.processingState = processingState;
   }
 
@@ -48,46 +49,49 @@ public final class SuspensionCheck {
    * {@code JOB}/{@code INCIDENT}/{@code USER_TASK}/{@code AD_HOC_SUB_PROCESS_INSTRUCTION} commands
    * don't carry it on the wire).
    */
-  public SuspensionResult resolve(
+  public SuspensionResult process(
       final TypedRecord<?> command, final TypedRecordProcessor<?> processor) {
     if (!(processor instanceof final SuspensionAware<?> suspensionAware)) {
       // processors that don't opt in via SuspensionAware are never gated; checked before resolving
       // the process instance key to keep the state lookups off the hot path for unrelated commands
-      return new SuspensionResult(SuspensionBehavior.PROCESS, -1);
+      return passThrough(-1);
     }
 
     final long processInstanceKey = resolveProcessInstanceKey(command);
     if (processInstanceKey <= 0) {
-      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
+      return passThrough(processInstanceKey);
     }
 
     final State marker =
         processingState.getSuspensionState().getSuspensionState(processInstanceKey);
-    if (marker == null) {
-      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
-    }
 
-    final SuspensionBehavior behavior = suspensionBehavior(suspensionAware, command);
-    if (behavior == null) {
+    final SuspensionAction action =
+        switch (marker) {
+          case SUSPENDED -> onSuspended(suspensionAware, command);
+          case RESUMING -> onResuming(suspensionAware, command);
+          case null -> SuspensionAction.PROCESS;
+        };
+
+    if (action == null) {
       LOG.error(
           "Processor '{}' implements SuspensionAware but returned a null suspension behavior for"
               + " command '{}'; processing it normally. Please report this as a bug.",
           processor.getClass().getName(),
           command.getValueType());
-      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
+      return passThrough(processInstanceKey);
     }
 
-    final SuspensionBehavior decision =
-        switch (behavior) {
-          case PROCESS -> SuspensionBehavior.PROCESS;
-          case REJECT -> SuspensionBehavior.REJECT;
-          case BUFFER ->
-              marker == State.SUSPENDED
-                  ? SuspensionBehavior.BUFFER
-                  // RESUMING: pass through so drained commands can execute.
-                  : SuspensionBehavior.PROCESS;
-        };
-    return new SuspensionResult(decision, processInstanceKey);
+    if (marker == State.RESUMING && action == SuspensionAction.BUFFER) {
+      throw new IllegalStateException(
+          "Expected PROCESS or REJECT from onResuming, but got BUFFER from processor '%s' for command '%s'."
+              .formatted(processor.getClass().getName(), command.getValueType()));
+    }
+
+    return new SuspensionResult(action, processInstanceKey);
+  }
+
+  private static SuspensionResult passThrough(final long processInstanceKey) {
+    return new SuspensionResult(SuspensionAction.PROCESS, processInstanceKey);
   }
 
   /**
@@ -165,11 +169,22 @@ public final class SuspensionCheck {
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private static @Nullable SuspensionBehavior suspensionBehavior(
+  private static SuspensionAware.@Nullable SuspensionAction onSuspended(
       final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
-    return ((SuspensionAware) suspensionAware).suspensionBehavior(command);
+    return ((SuspensionAware) suspensionAware).onSuspended(command);
   }
 
-  /** The gate outcome for a command, with the resolved target process instance key. */
-  public record SuspensionResult(SuspensionBehavior outcome, long processInstanceKey) {}
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static SuspensionAware.@Nullable SuspensionAction onResuming(
+      final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
+    return ((SuspensionAware) suspensionAware).onResuming(command);
+  }
+
+  /**
+   * The gate outcome for a command, with the resolved target process instance key.
+   *
+   * @param outcome the gate action to take
+   * @param processInstanceKey the resolved target instance, or {@code -1}
+   */
+  public record SuspensionResult(SuspensionAction outcome, long processInstanceKey) {}
 }

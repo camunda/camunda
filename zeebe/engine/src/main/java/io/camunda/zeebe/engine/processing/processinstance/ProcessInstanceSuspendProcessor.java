@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -186,9 +185,14 @@ public final class ProcessInstanceSuspendProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
     // reject: a repeated suspend while a marker is present must fail like the processor's own
     // "already suspended" rejection; buffering would silently swallow it.
-    return SuspensionBehavior.REJECT;
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.REJECT;
   }
 }

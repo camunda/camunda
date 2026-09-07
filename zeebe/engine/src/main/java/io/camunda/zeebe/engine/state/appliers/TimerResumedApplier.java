@@ -8,13 +8,20 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 
 final class TimerResumedApplier implements TypedEventApplier<TimerIntent, TimerRecord> {
 
+  private final MutableTimerInstanceState timerInstanceState;
+
+  TimerResumedApplier(final MutableTimerInstanceState timerInstanceState) {
+    this.timerInstanceState = timerInstanceState;
+  }
+
   @Override
   public void applyState(final long key, final TimerRecord value) {
-    // Resume does not restore the due-date index. Firing is the drained TRIGGER command.
+    timerInstanceState.restoreDueDate(value.getElementInstanceKey(), key, value.getDueDate());
   }
 }
