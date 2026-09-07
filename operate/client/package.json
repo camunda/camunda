@@ -113,7 +113,7 @@
     "vite": "8.2.1",
     "vite-plugin-svgr": "5.2.0",
     "vitest": "4.1.11",
-    "vitest-browser-react": "2.2.0"
+    "vitest-browser-react": "2.3.0"
   },
   "scarfSettings": {
     "enabled": false
