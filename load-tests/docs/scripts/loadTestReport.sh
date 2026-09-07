@@ -21,11 +21,12 @@ Options:
   --end <time>              End of the reporting window, RFC3339 or Unix timestamp.
                             When --start/--end are set, duration is derived from them.
   --endpoint <url>          Prometheus base URL. Default: http://localhost:9090.
-  --curl-opts <opts>        Extra curl options string, e.g. '--user "u:p"'.
+  --curl-opts <opts>        Extra curl options, word-split on spaces (no nested
+                            quoting), e.g. '--user u:p'.
   --format <format>         Output format: json, csv, or tsv. Default: json.
   --no-header               Omit the CSV/TSV header row.
   --missing-value <value>   CSV/TSV placeholder for missing metrics. Default: NaN.
-  --queries-file <path>     Query definition file. Overrides --template.
+  --queries-file <path>     Query definition file (YAML or JSON). Overrides --template.
   --output <path>           Write output to a file instead of stdout.
   -h, --help                Show this help message.
 
@@ -81,6 +82,31 @@ parse_epoch() {
   fi
 
   date -u -d "$value" +%s 2>/dev/null || return 1
+}
+
+# extract_metric_value <prometheus-query-response-json> <value-label>
+# Resolves one query's reported value from a Prometheus /api/v1/query
+# response: the deduplicated, comma-joined values of <value-label> across all
+# result series when it is set, otherwise the single numeric sample value.
+# Prints the resolved value on success. Prints nothing and returns non-zero
+# otherwise: 2 for a non-success API response, 3 for no matching label
+# sample, 4 for no numeric sample — the caller maps these to a "missing"
+# reason.
+extract_metric_value() {
+  local resp="$1" label="$2" raw_value
+
+  [[ "$(jq -r '.status' <<<"$resp" 2>/dev/null || echo error)" == "success" ]] || return 2
+
+  if [[ -n "$label" ]]; then
+    raw_value="$(jq -r --arg label "$label" '[.data.result[]?.metric[$label] // empty] | unique | join(", ")' <<<"$resp")"
+    [[ -n "$raw_value" ]] || return 3
+    jq -n --arg v "$raw_value" '$v'
+    return 0
+  fi
+
+  raw_value="$(jq -r '.data.result[0].value[1] // empty' <<<"$resp")"
+  [[ "$raw_value" =~ ^-?([0-9]+([.][0-9]+)?|[.][0-9]+)([eE][-+]?[0-9]+)?$ ]] || return 4
+  printf '%s\n' "$raw_value"
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -230,10 +256,10 @@ esac
 if [[ -z "$QUERIES_FILE" ]]; then
   case "$REPORT_TEMPLATE" in
     camunda)
-      QUERIES_FILE="$SCRIPT_DIR/report-queries.json"
+      QUERIES_FILE="$SCRIPT_DIR/report-queries.yaml"
       ;;
     stable-87)
-      QUERIES_FILE="$SCRIPT_DIR/report-queries-stable-87.json"
+      QUERIES_FILE="$SCRIPT_DIR/report-queries-stable-87.yaml"
       ;;
     *)
       die "Unsupported --template '$REPORT_TEMPLATE'. Expected camunda or stable-87."
@@ -243,7 +269,7 @@ fi
 
 [[ -f "$QUERIES_FILE" ]] || die "queries file not found at $QUERIES_FILE."
 
-for cmd in jq curl; do
+for cmd in jq yq curl; do
   command -v "$cmd" >/dev/null 2>&1 || die "'$cmd' not in PATH."
 done
 
@@ -284,19 +310,16 @@ EOF
 )"
 fi
 
-count="$(jq '.queries | length' "$QUERIES_FILE")"
+# Read and normalize the queries file once — YAML or JSON, both accepted —
+# instead of re-parsing it from disk for every field of every query.
+QUERIES_JSON="$(yq -o=json '.' "$QUERIES_FILE")" || die "failed to parse queries file $QUERIES_FILE."
+
 declare -a key_entries=()
 declare -a header_entries=()
 declare -a metric_entries=()
 declare -a missing_entries=()
 
-for i in $(seq 0 $((count - 1))); do
-  key="$(jq -r ".queries[$i].key" "$QUERIES_FILE")"
-  header="$(jq -r ".queries[$i].header // .queries[$i].key" "$QUERIES_FILE")"
-  query="$(jq -r ".queries[$i].query // empty" "$QUERIES_FILE")"
-  label="$(jq -r ".queries[$i].valueLabel // empty" "$QUERIES_FILE")"
-  static_value="$(jq -r ".queries[$i].value // empty" "$QUERIES_FILE")"
-
+while IFS=$'\x1f' read -r key header query label static_value; do
   value_json="null"
 
   if [[ -n "$static_value" ]]; then
@@ -312,24 +335,15 @@ for i in $(seq 0 $((count - 1))); do
         "${ENDPOINT}/api/v1/query" \
         --data-urlencode "query=$promql" \
         ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null)"; then
-      if [[ "$(jq -r '.status' <<<"$resp" 2>/dev/null || echo error)" == "success" ]]; then
-        if [[ -n "$label" ]]; then
-          raw_value="$(jq -r --arg label "$label" '[.data.result[]?.metric[$label] // empty] | unique | join(", ")' <<<"$resp")"
-          if [[ -n "$raw_value" ]]; then
-            value_json="$(jq -n --arg v "$raw_value" '$v')"
-          else
-            missing_entries+=("$(jq -n --arg key "$key" --arg reason "no label sample" '{key: $key, reason: $reason}')")
-          fi
-        else
-          raw_value="$(jq -r '.data.result[0].value[1] // empty' <<<"$resp")"
-          if [[ "$raw_value" =~ ^-?([0-9]+([.][0-9]+)?|[.][0-9]+)([eE][-+]?[0-9]+)?$ ]]; then
-            value_json="$raw_value"
-          else
-            missing_entries+=("$(jq -n --arg key "$key" --arg reason "no numeric sample" '{key: $key, reason: $reason}')")
-          fi
-        fi
+      if value_json="$(extract_metric_value "$resp" "$label")"; then
+        :
       else
-        missing_entries+=("$(jq -n --arg key "$key" --arg reason "Prometheus returned non-success status" '{key: $key, reason: $reason}')")
+        case $? in
+          3) reason="no label sample" ;;
+          4) reason="no numeric sample" ;;
+          *) reason="Prometheus returned non-success status" ;;
+        esac
+        missing_entries+=("$(jq -n --arg key "$key" --arg reason "$reason" '{key: $key, reason: $reason}')")
       fi
     else
       missing_entries+=("$(jq -n --arg key "$key" --arg reason "query failed" '{key: $key, reason: $reason}')")
@@ -339,7 +353,7 @@ for i in $(seq 0 $((count - 1))); do
   key_entries+=("$(jq -n --arg v "$key" '$v')")
   header_entries+=("$(jq -n --arg v "$header" '$v')")
   metric_entries+=("$(jq -n --arg k "$key" --argjson v "$value_json" '{($k): $v}')")
-done
+done < <(jq -r '.queries[] | [.key, (.header // .key), (.query // ""), (.valueLabel // ""), (.value // "")] | join("")' <<<"$QUERIES_JSON")
 
 keys_json="$(printf '%s\n' "${key_entries[@]}" | jq -s '.')"
 headers_json="$(printf '%s\n' "${header_entries[@]}" | jq -s '.')"

@@ -100,7 +100,8 @@ zsh users: quote regex-looking arguments to avoid `no matches found` glob errors
 
 **Usage:**
 Builds a wider report for one load-test namespace and emits the values as JSON, CSV, or TSV. The
-CSV/TSV column order follows `report-queries.json`, which is laid out for spreadsheet imports:
+CSV/TSV column order follows the query file for the selected `--template` (see
+[Query file schema](#query-file-schema) below), which is laid out for spreadsheet imports:
 namespace and Docker image, cluster size, Camunda and secondary-storage resources, throughput,
 latency, and backlog metrics.
 Metrics that Prometheus does not return are kept as `null` in JSON and `NaN` in CSV/TSV by
@@ -115,6 +116,33 @@ the requested window using `--sample-step`, so long reports do not flatten p50/p
 throughput into one coarse counter rate.
 Throughput rates, CPU throttling, backpressure, and backlog values are averages over the requested
 window; backpressure and backlog first take the highest partition value at each sample.
+Columns computed from a seconds-denominated histogram but labeled `... ms` (e.g. `ProcLat p50 ms`)
+multiply the query by 1000 to convert seconds to milliseconds.
+
+#### Query file schema
+
+The `--template` flag selects a query file under this folder: `camunda` →
+[`report-queries.yaml`](report-queries.yaml), `stable-87` →
+[`report-queries-stable-87.yaml`](report-queries-stable-87.yaml). Pass `--queries-file <path>` to
+use a custom one instead — YAML or JSON are both accepted (the script converts either to JSON via
+`yq` before reading it), so an ad-hoc JSON file works too.
+
+Each file is a `queries:` list. Each entry is one report column, in emission order (JSON key order
+and CSV/TSV column order), with these fields:
+
+|    Field     |                                                                            Meaning                                                                             |
+|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `key`        | machine key — the JSON `metrics` object key and the CSV/TSV column identifier.                                                                                 |
+| `header`     | human column label — the CSV/TSV header cell.                                                                                                                  |
+| `value`      | a literal value (only `$NAMESPACE` is substituted); mutually exclusive with `query`. Used for the namespace column, which isn't a Prometheus query.            |
+| `query`      | a single-line PromQL string evaluated against Prometheus.                                                                                                      |
+| `valueLabel` | when set, the query result is read from this Prometheus label (deduplicated, joined with `, `) instead of the sample value — used for the Docker image column. |
+
+Template variables, substituted before each query is sent: `$NAMESPACE` (the exact load-test
+namespace), `$DURATION_S` (the report window duration with an `s` suffix, e.g. `600s`),
+`$RATE_INTERVAL` (the short `--rate-interval` used for dashboard-style rate samples), and
+`$SAMPLE_STEP` (the `--sample-step` subquery resolution used to summarize a window of those samples
+into one value, e.g. `quantile_over_time`, `avg_over_time`).
 
 **Syntax:**
 
@@ -134,7 +162,7 @@ deployments. Default: `camunda`.
 - `--at <time>`: Prometheus query time anchor; the window ends at this RFC3339 or Unix timestamp.
 - `--start <time> --end <time>`: exact reporting window; duration is derived automatically.
 - `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
-- `--curl-opts <opts>`: free-form curl options string, e.g. `--user "u:p"`.
+- `--curl-opts <opts>`: curl options, word-split on spaces (no nested quoting), e.g. `--user u:p`.
 - `--format json|csv|tsv`: output format. Default: `json`.
 - `--no-header`: omit the CSV/TSV header row for direct spreadsheet row pasting.
 - `--missing-value <value>`: placeholder for missing CSV/TSV metrics. Default: `NaN`.
