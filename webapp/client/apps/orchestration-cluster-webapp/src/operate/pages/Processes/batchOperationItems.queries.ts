@@ -16,7 +16,6 @@ import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
-const PAGE_LIMIT = 100;
 const ACTIVE_ITEMS_REFETCH_INTERVAL_MS = 5000;
 
 async function queryBatchOperationItems(
@@ -29,41 +28,20 @@ async function queryBatchOperationItems(
 	return response.json();
 }
 
-/**
- * Fetches all batch-operation items for the currently loaded process-instance rows, so the list
- * can report every item produced by operations such as resolving multiple incidents in one
- * process instance.
- */
 function useOperationItemsForInstances(batchOperationKey: string | undefined, processInstanceKeys: string[]) {
-	const filter = {
-		batchOperationKey: batchOperationKey === undefined ? undefined : {$eq: batchOperationKey},
-		processInstanceKey: {$in: processInstanceKeys},
-	} satisfies QueryBatchOperationItemsRequestBody['filter'];
+	const requestBody = {
+		filter: {
+			batchOperationKey: batchOperationKey === undefined ? undefined : {$eq: batchOperationKey},
+			processInstanceKey: {$in: processInstanceKeys},
+		},
+		page: {limit: processInstanceKeys.length},
+	} satisfies QueryBatchOperationItemsRequestBody;
 
 	return useQuery({
-		queryKey: ['batchOperationItems', filter] as const,
+		queryKey: ['batchOperationItems', requestBody] as const,
 		queryFn: async (): Promise<BatchOperationItem[]> => {
-			const items: BatchOperationItem[] = [];
-			let after: string | undefined;
-
-			do {
-				const result = await queryBatchOperationItems({
-					filter,
-					page: {limit: PAGE_LIMIT, ...(after === undefined ? {} : {after})},
-				});
-				items.push(...result.items);
-
-				if (
-					result.items.length === 0 ||
-					result.page.endCursor === null ||
-					(!result.page.hasMoreTotalItems && items.length >= result.page.totalItems)
-				) {
-					break;
-				}
-				after = result.page.endCursor;
-			} while (after !== undefined);
-
-			return items;
+			const result = await queryBatchOperationItems(requestBody);
+			return result.items;
 		},
 		enabled: batchOperationKey !== undefined && processInstanceKeys.length > 0,
 		refetchInterval: (query) => {

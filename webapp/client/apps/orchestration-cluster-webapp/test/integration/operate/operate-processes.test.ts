@@ -13,6 +13,7 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -28,6 +29,10 @@ import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
+import {
+	createBatchOperationItem,
+	createQueryBatchOperationItemsResponse,
+} from '#/shared-test-modules/api-mocks/batch-operations';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.beforeEach(({network}) => {
@@ -89,5 +94,22 @@ test.describe('Operate processes page', () => {
 		await expect(operateProcessesPage.instancesTable).toBeVisible();
 		await expect(operateProcessesPage.instanceLink('1001')).toHaveAttribute('href', '/operate/processes/1001');
 		await expect(operateProcessesPage.instanceLink('1002')).toHaveAttribute('href', '/operate/processes/1002');
+	});
+
+	test('should show operation states when filtering by a batch operation', async ({network, operateProcessesPage}) => {
+		network.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1001', state: 'ACTIVE'})],
+					}),
+				),
+			}),
+		);
+
+		await operateProcessesPage.goto('?batchOperationKey=2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee');
+
+		await expect(operateProcessesPage.operationStateColumn).toBeVisible();
+		await expect(operateProcessesPage.operationState('ACTIVE')).toBeVisible();
 	});
 });
