@@ -144,25 +144,26 @@ final class MigrationStatusAggregatorTest {
   }
 
   @Test
-  void shouldNeverRegressAConfirmedMigratedConditionWhenAProviderThrowsOnALaterPoll() {
+  void shouldReportUnknownOnANewPollWhenAPreviouslyMigratedProviderStartsThrowing() {
     // given - a provider that reports MIGRATED once, then throws entirely afterwards (e.g. a
     // later distributed fan-out breaking)
     final var flakyProvider = new FlakyProvider("a", migrated("done"));
     final var aggregator = new MigrationStatusAggregator(List.of(flakyProvider));
 
-    // when - first poll confirms MIGRATED, second poll would otherwise lose the entry entirely
+    // when - first poll confirms MIGRATED, second poll's provider call fails entirely
     final var firstResponse = aggregator.aggregate();
     final var secondResponse = aggregator.aggregate();
 
-    // then - monotonicity is preserved via the backfill, even under total provider failure
+    // then - each poll reflects only what it itself observed; a failure is reported as UNKNOWN
+    // rather than silently reusing the earlier MIGRATED result, since that could go stale
     assertThat(firstResponse.physicalTenants().get("default").get("a").state())
         .isEqualTo(MigrationState.MIGRATED);
     assertThat(secondResponse.physicalTenants().get("default").get("a").state())
-        .isEqualTo(MigrationState.MIGRATED);
+        .isEqualTo(MigrationState.UNKNOWN);
   }
 
   @Test
-  void shouldNotCacheANonMigratedStatus() {
+  void shouldReportUnknownOnANewPollWhenAProviderStopsRespondingAfterANonMigratedStatus() {
     // given - a provider that never reaches MIGRATED, then throws
     final var flakyProvider = new FlakyProvider("a", inProgress("not yet"));
     final var aggregator = new MigrationStatusAggregator(List.of(flakyProvider));
@@ -171,7 +172,7 @@ final class MigrationStatusAggregatorTest {
     aggregator.aggregate();
     final var secondResponse = aggregator.aggregate();
 
-    // then - nothing was ever confirmed MIGRATED, so the backfill falls back to UNKNOWN
+    // then - nothing from the first poll carries over; the backfill defaults to UNKNOWN
     assertThat(secondResponse.physicalTenants().get("default").get("a").state())
         .isEqualTo(MigrationState.UNKNOWN);
   }
