@@ -24,8 +24,6 @@ import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
-import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
-import {DRAINING_MESSAGES} from 'modules/utils/draining';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
@@ -33,7 +31,6 @@ const InstancesByProcess: React.FC = observer(() => {
     hasNoInstances,
   } = processInstancesByNameStore;
   const {data: currentUser} = useCurrentUser();
-  const {data: draining} = useDrainingProcessDefinitions();
 
   const modelerLink = Array.isArray(currentUser?.c8Links)
     ? currentUser?.c8Links.find((link) => link.name === 'modeler')?.link
@@ -158,8 +155,6 @@ const InstancesByProcess: React.FC = observer(() => {
                 }}
                 incidentsCount={instancesWithActiveIncidentsCount}
                 activeInstancesCount={activeInstancesCount}
-                isDraining={!!draining?.byId.has(bpmnProcessId)}
-                drainingDescription={DRAINING_MESSAGES.allVersions}
                 size="medium"
               />
             </LinkWrapper>

@@ -20,15 +20,10 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
-import {
-  createUser,
-  createProcess,
-  createInstanceByProcess,
-} from 'modules/testUtils';
+import {createUser} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 
@@ -61,10 +56,6 @@ describe('InstancesByProcess', () => {
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
     mockMe().withSuccess(createUser());
-    mockSearchProcessDefinitions().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
   });
 
   it('should display skeleton when loading', async () => {
@@ -300,10 +291,6 @@ describe('InstancesByProcess', () => {
     mockFetchProcessInstancesByName().withSuccess([
       {...mockWithSingleVersion[0]!, activeInstancesCount: 142},
     ]);
-    mockSearchProcessDefinitions().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
 
     vi.runOnlyPendingTimers();
 
@@ -351,70 +338,6 @@ describe('InstancesByProcess', () => {
 
     expect(
       screen.queryByRole('button', {name: 'Go to Modeler'}),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should show draining indicator for the aggregate row and a draining version', async () => {
-    mockSearchProcessDefinitions().withSuccess({
-      items: [
-        {
-          name: 'Order process',
-          processDefinitionId: 'orderProcess',
-          processDefinitionKey: 'version-1-key',
-          version: 1,
-          tenantId: '<default>',
-          hasStartForm: false,
-          state: 'DRAINING',
-        },
-      ],
-      page: {totalItems: 1},
-    });
-
-    mockFetchProcessInstancesByName().withSuccess([
-      createInstanceByProcess({
-        processName: 'Order process',
-        bpmnProcessId: 'orderProcess',
-        processes: [
-          createProcess({
-            processId: 'version-1-key',
-            name: 'First Version',
-            version: 1,
-          }),
-          createProcess({
-            processId: 'version-2-key',
-            name: 'Second Version',
-            version: 2,
-          }),
-        ],
-      }),
-    ]);
-    processInstancesByNameStore.getProcessInstancesByName();
-
-    const {user} = render(<InstancesByProcess />, {
-      wrapper: createWrapper(),
-    });
-
-    const row = await screen.findByTestId('instances-by-process-0');
-    expect(
-      await within(row).findByTestId('draining-indicator'),
-    ).toBeInTheDocument();
-
-    await user.click(
-      within(row).getByRole('button', {name: 'Expand current row'}),
-    );
-
-    const firstVersion = await screen.findByRole('link', {
-      description: /View \d+ Instances in Version 1 of Process First Version/,
-    });
-    const secondVersion = screen.getByRole('link', {
-      description: /View \d+ Instances in Version 2 of Process Second Version/,
-    });
-
-    expect(
-      await within(firstVersion).findByTestId('draining-indicator'),
-    ).toBeInTheDocument();
-    expect(
-      within(secondVersion).queryByTestId('draining-indicator'),
     ).not.toBeInTheDocument();
   });
 });

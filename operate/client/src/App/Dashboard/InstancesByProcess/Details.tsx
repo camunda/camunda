@@ -16,8 +16,6 @@ import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {observer} from 'mobx-react';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
-import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
-import {DRAINING_MESSAGES} from 'modules/utils/draining';
 
 type Props = {
   processName: string;
@@ -29,7 +27,6 @@ const Details: React.FC<Props> = observer(
   ({processName, processes, tabIndex}) => {
     const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
     const tenantsById = useAvailableTenants();
-    const {data: draining} = useDrainingProcessDefinitions();
 
     return (
       <ul>
@@ -95,8 +92,6 @@ const Details: React.FC<Props> = observer(
                   }}
                   incidentsCount={process.instancesWithActiveIncidentsCount}
                   activeInstancesCount={process.activeInstancesCount}
-                  isDraining={!!draining?.byKey.has(process.processId)}
-                  drainingDescription={DRAINING_MESSAGES.version}
                   size="small"
                 />
               </LinkWrapper>
