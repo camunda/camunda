@@ -80,7 +80,7 @@
     "@typescript-eslint/parser": "8.67.0",
     "@vitejs/plugin-react": "6.0.4",
     "@vitest/coverage-istanbul": "4.1.10",
-    "@vitest/eslint-plugin": "1.6.24",
+    "@vitest/eslint-plugin": "1.6.27",
     "@vitest/ui": "4.1.10",
     "axe-core": "4.13.0",
     "diagram-js": "15.18.1",
