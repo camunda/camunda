@@ -16,11 +16,11 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum AgentHistoryIntent implements Intent {
-  CREATED((short) 1, true),
-  COMMIT((short) 2, false),
-  COMMITTED((short) 3, true),
-  DISCARD((short) 4, false),
-  DISCARDED((short) 5, true);
+  CREATED((short) 0, true),
+  COMMIT((short) 1, false),
+  COMMITTED((short) 2, true),
+  DISCARD((short) 3, false),
+  DISCARDED((short) 4, true);
 
   private final short value;
   private final boolean isEvent;
@@ -42,15 +42,15 @@ public enum AgentHistoryIntent implements Intent {
 
   public static Intent from(final short value) {
     switch (value) {
-      case 1:
+      case 0:
         return CREATED;
-      case 2:
+      case 1:
         return COMMIT;
-      case 3:
+      case 2:
         return COMMITTED;
-      case 4:
+      case 3:
         return DISCARD;
-      case 5:
+      case 4:
         return DISCARDED;
       default:
         return Intent.UNKNOWN;
