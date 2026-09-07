@@ -25,9 +25,15 @@ import java.time.Instant;
  * component tree across mode transitions, overwriting any stale placeholder the processing-mode
  * bootstrap registration may have left behind.
  *
- * <p>The reported status is fixed at construction: a recovery partition either started (healthy for
- * the duration of recovery mode) or failed to start (unhealthy). Failure listeners are therefore
- * never invoked.
+ * <p>One is registered for every local partition as soon as recovery mode starts, before the
+ * partitions have begun recovering, and replaced by {@link #failed(PartitionId)} only for the ones
+ * that fail. The health monitor derives the broker's status from the components it holds, so a
+ * partition with no component at all leaves the broker unhealthy - registering only after recovery
+ * settled would report the broker unhealthy for the whole recovery it is supposed to survive.
+ *
+ * <p>The reported status is fixed at construction: an instance is either recovering (healthy for
+ * the duration of recovery mode) or failed to start (unhealthy), and the manager swaps the instance
+ * rather than mutating it. Failure listeners are therefore never invoked.
  *
  * <p>A failed recovery is reported {@link HealthStatus#UNHEALTHY} rather than {@link
  * HealthStatus#DEAD}: the steps that can fail here start metrics, the backup service and the backup
@@ -46,7 +52,7 @@ final class RecoveringPartitionHealth implements HealthMonitorable {
     this.healthReport = healthReport;
   }
 
-  static RecoveringPartitionHealth recovered(final PartitionId partitionId) {
+  static RecoveringPartitionHealth recovering(final PartitionId partitionId) {
     final var componentName = ZeebePartition.componentName(partitionId);
     return new RecoveringPartitionHealth(
         componentName,

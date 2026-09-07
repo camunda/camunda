@@ -392,6 +392,52 @@ final class RecoveryPartitionManagerTest {
   }
 
   @Test
+  void shouldReportBrokerHealthyWhilePartitionsAreStillRecovering() {
+    // given - partition 2 never finishes starting, so the start future stays pending and the
+    // callback that reports the recovery outcome never runs
+    partitionManager =
+        buildManager(
+            new BrokerCfg(), new HangingActorSchedulingService(actorScheduler, PARTITION_ID_2));
+
+    // when
+    final var startResult = partitionManager.start();
+
+    // then - the broker is ready and healthy for the whole of the recovery, not only once it
+    // settles: the health monitor derives the broker's status from the components it holds, so a
+    // partition with no component at all would report the broker unhealthy exactly while it is
+    // recovering
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(healthCheckService.isBrokerReady()).isTrue();
+              assertThat(healthCheckService.isBrokerHealthy()).isTrue();
+            });
+    // and - the recovery really is still in flight, so the assertions above cover the window
+    // between entering recovery mode and the partitions having recovered
+    assertThat(startResult.isDone()).isFalse();
+  }
+
+  @Test
+  void shouldReportBrokerUnhealthyWhenTheBackupStoreCannotBeCreated() {
+    // given - a filesystem backup store with no base path configured cannot be created
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+    partitionManager = buildManager(brokerCfg, actorScheduler);
+
+    // when
+    assertThat(partitionManager.start()).failsWithin(Duration.ofSeconds(10));
+
+    // then - the broker stays ready so the configuration can be fixed and the restore retried,
+    // but without a backup store no partition can recover, so it must not claim to be healthy
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(healthCheckService.isBrokerReady()).isTrue();
+              assertThat(healthCheckService.isBrokerHealthy()).isFalse();
+            });
+  }
+
+  @Test
   void shouldResetReadinessAndHealthOnStop() {
     // given - the broker reports ready and healthy while recovering
     assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
@@ -451,6 +497,36 @@ final class RecoveryPartitionManagerTest {
                               .containsEntry(PARTITION_ID, PartitionHealthStatus.UNHEALTHY)
                               .containsEntry(PARTITION_ID_2, PartitionHealthStatus.UNHEALTHY));
             });
+  }
+
+  /**
+   * Leaves the submitted actor's future pending forever, so the partition never finishes starting.
+   */
+  private static final class HangingActorSchedulingService implements ActorSchedulingService {
+    private final ActorSchedulingService delegate;
+    private final Set<Integer> hangingPartitionIds;
+
+    private HangingActorSchedulingService(
+        final ActorSchedulingService delegate, final Integer... hangingPartitionIds) {
+      this.delegate = delegate;
+      this.hangingPartitionIds = Set.of(hangingPartitionIds);
+    }
+
+    @Override
+    public ActorFuture<Void> submitActor(final Actor actor) {
+      return shouldHang(actor) ? new CompletableActorFuture<>() : delegate.submitActor(actor);
+    }
+
+    @Override
+    public ActorFuture<Void> submitActor(final Actor actor, final SchedulingHints schedulingHints) {
+      return shouldHang(actor)
+          ? new CompletableActorFuture<>()
+          : delegate.submitActor(actor, schedulingHints);
+    }
+
+    private boolean shouldHang(final Actor actor) {
+      return hangingPartitionIds.stream().anyMatch(id -> actor.getName().endsWith("-" + id));
+    }
   }
 
   private static final class FailingActorSchedulingService implements ActorSchedulingService {
