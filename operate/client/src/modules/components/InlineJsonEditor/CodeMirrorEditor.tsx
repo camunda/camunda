@@ -14,21 +14,31 @@ import {
   useRef,
 } from 'react';
 import {defaultKeymap, history, historyKeymap} from '@codemirror/commands';
+import {
+  autocompletion,
+  clearSnippet,
+  closeCompletion,
+  snippetKeymap,
+} from '@codemirror/autocomplete';
 import {json} from '@codemirror/lang-json';
 import {HighlightStyle, syntaxHighlighting} from '@codemirror/language';
 import {
   Annotation,
   Compartment,
   EditorState,
+  Prec,
   Transaction,
 } from '@codemirror/state';
 import {
   EditorView,
   keymap,
   placeholder as showPlaceholder,
+  tooltips,
   type ViewUpdate,
 } from '@codemirror/view';
 import {tags} from '@lezer/highlight';
+import {jsonCompletionSource} from './jsonCompletion';
+import {CompletionStyles} from './styled';
 
 const externalUpdate = Annotation.define<boolean>();
 const editorConfiguration = new Compartment();
@@ -49,17 +59,27 @@ const jsonHighlightStyle = HighlightStyle.define([
 const extensions = [
   json(),
   history(),
-  keymap.of([
-    {
-      key: 'Escape',
-      run: (view) => {
-        view.contentDOM.blur();
-        return true;
+  snippetKeymap.of([]),
+  Prec.highest(
+    keymap.of([
+      {
+        key: 'Escape',
+        run: (view) => {
+          closeCompletion(view);
+          clearSnippet(view);
+          view.contentDOM.blur();
+          return true;
+        },
       },
-    },
-    ...defaultKeymap,
-    ...historyKeymap,
-  ]),
+    ]),
+  ),
+  autocompletion({
+    override: [jsonCompletionSource],
+    activateOnTypingDelay: 10,
+    interactionDelay: 0,
+    tooltipClass: () => 'inline-json-completions',
+  }),
+  keymap.of([...defaultKeymap, ...historyKeymap]),
   syntaxHighlighting(jsonHighlightStyle),
   EditorState.tabSize.of(2),
   EditorView.lineWrapping,
@@ -121,6 +141,7 @@ const CodeMirrorEditor: React.FC<Props> = ({
         doc: value,
         extensions: [
           ...extensions,
+          tooltips({parent: containerRef.current.ownerDocument.body}),
           editorConfiguration.of(configuration),
           EditorView.updateListener.of((update) => handleUpdate(update)),
         ],
@@ -162,7 +183,12 @@ const CodeMirrorEditor: React.FC<Props> = ({
     [],
   );
 
-  return <div ref={containerRef} data-testid="code-mirror-editor" />;
+  return (
+    <>
+      <CompletionStyles />
+      <div ref={containerRef} data-testid="code-mirror-editor" />
+    </>
+  );
 };
 
 export {CodeMirrorEditor};

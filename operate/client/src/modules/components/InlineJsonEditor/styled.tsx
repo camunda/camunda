@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {createGlobalStyle, css} from 'styled-components';
 import {
   EDITOR_DECORATION_WIDTH,
   EDITOR_FONT_FAMILY,
@@ -228,7 +228,24 @@ const WriteModeEditor = styled.div<{
   }
 `;
 
+const CompletionStyles = createGlobalStyle`
+  .cm-tooltip.inline-json-completions,
+  .inline-json-completions .cm-completionInfo {
+    background-color: var(--cds-layer);
+    color: var(--cds-text-primary);
+    border: 1px solid var(--cds-border-subtle);
+    font-family: ${EDITOR_FONT_FAMILY};
+    font-size: ${EDITOR_FONT_SIZE}px;
+  }
+
+  .cm-tooltip.inline-json-completions > ul > li[aria-selected] {
+    background-color: var(--cds-layer-selected);
+    color: var(--cds-text-primary);
+  }
+`;
+
 export {
+  CompletionStyles,
   EditorWrapper,
   ReadOnlyEditorContainer,
   ReadOnlyEditorWrapper,
