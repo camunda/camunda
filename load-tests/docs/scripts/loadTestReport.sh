@@ -54,6 +54,10 @@ die() {
   exit 1
 }
 
+warn() {
+  echo "Error: $*" >&2
+}
+
 prometheus_endpoint_help() {
   cat <<EOF
 Could not reach Prometheus endpoint '$ENDPOINT'.
@@ -90,8 +94,8 @@ parse_epoch() {
 # result series when it is set, otherwise the single numeric sample value.
 # Prints the resolved value on success. Prints nothing and returns non-zero
 # otherwise: 2 for a non-success API response, 3 for no matching label
-# sample, 4 for no numeric sample — the caller maps these to a "missing"
-# reason.
+# sample, 4 for no numeric sample — the caller maps these to a message
+# logged to stderr.
 extract_metric_value() {
   local resp="$1" label="$2" raw_value
 
@@ -327,7 +331,6 @@ QUERIES_JSON="${QUERIES_JSON//\$SAMPLE_STEP/$SAMPLE_STEP_S}"
 declare -a key_entries=()
 declare -a header_entries=()
 declare -a metric_entries=()
-declare -a missing_entries=()
 
 while IFS=$'\x1f' read -r key header query label static_value; do
   value_json="null"
@@ -347,10 +350,10 @@ while IFS=$'\x1f' read -r key header query label static_value; do
           4) reason="no numeric sample" ;;
           *) reason="Prometheus returned non-success status" ;;
         esac
-        missing_entries+=("$(jq -n --arg key "$key" --arg reason "$reason" '{key: $key, reason: $reason}')")
+        warn "$key: $reason"
       fi
     else
-      missing_entries+=("$(jq -n --arg key "$key" --arg reason "query failed" '{key: $key, reason: $reason}')")
+      warn "$key: query failed"
     fi
   fi
 
@@ -362,10 +365,6 @@ done < <(jq -r '.queries[] | [.key, (.header // .key), (.query // ""), (.valueLa
 keys_json="$(printf '%s\n' "${key_entries[@]}" | jq -s '.')"
 headers_json="$(printf '%s\n' "${header_entries[@]}" | jq -s '.')"
 metrics_json="$(printf '%s\n' "${metric_entries[@]}" | jq -s 'add')"
-missing_json="[]"
-if [[ ${#missing_entries[@]} -gt 0 ]]; then
-  missing_json="$(printf '%s\n' "${missing_entries[@]}" | jq -s '.')"
-fi
 
 report_json="$(jq -n \
   --arg namespace "$NAMESPACE" \
@@ -377,7 +376,6 @@ report_json="$(jq -n \
   --argjson keys "$keys_json" \
   --argjson headers "$headers_json" \
   --argjson metrics "$metrics_json" \
-  --argjson missing "$missing_json" \
   '{
     namespace: $namespace,
     durationSeconds: ($durationSeconds | tonumber),
@@ -387,8 +385,7 @@ report_json="$(jq -n \
     generatedAt: $generatedAt,
     columns: $keys,
     headers: $headers,
-    metrics: $metrics,
-    missing: $missing
+    metrics: $metrics
   }')"
 
 rendered="$(
