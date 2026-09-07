@@ -515,6 +515,8 @@
 					"tenant": "Tenant",
 					"startDate": "Start Date",
 					"endDate": "End Date",
+					"operationState": "Operation State",
+					"operationStateLoading": "Loading...",
 					"parentProcessInstanceKey": "Parent Process Instance Key",
 					"viewInstance": "View instance {{key}}",
 					"viewParentInstance": "View parent instance {{key}}",
