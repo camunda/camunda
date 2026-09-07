@@ -8,12 +8,15 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.Test;
 
 class ClusterUpgradeStatusServicesTest {
@@ -103,7 +106,10 @@ class ClusterUpgradeStatusServicesTest {
   }
 
   private static ClusterUpgradeStatusServices services(final MigrationStatusProvider... providers) {
-    return new ClusterUpgradeStatusServices(new MigrationStatusAggregator(List.of(providers)));
+    final var executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+    return new ClusterUpgradeStatusServices(
+        new MigrationStatusAggregator(List.of(providers)), executorProvider);
   }
 
   private static MigrationState statusOf(final ClusterUpgradeStatusServices services) {
