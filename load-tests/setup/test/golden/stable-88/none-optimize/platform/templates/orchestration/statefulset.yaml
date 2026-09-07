@@ -51,7 +51,7 @@ spec:
       initContainers:
       containers:
         - name: orchestration
-          image: docker.io/camunda/camunda:8.8.36
+          image: docker.io/camunda/camunda:8.8.37
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true
