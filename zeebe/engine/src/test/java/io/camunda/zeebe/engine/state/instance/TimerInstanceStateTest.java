@@ -171,6 +171,45 @@ public final class TimerInstanceStateTest {
   }
 
   @Test
+  public void shouldRemoveDueDateWithoutRemovingTimer() {
+    // given
+    createTimerInstance(1, 2, 1000L);
+
+    // when
+    state.removeDueDate(1L, 2L, 1000L);
+
+    // then
+    assertThat(state.get(1L, 2L)).isNotNull();
+    assertThat(state.hasDueDate(1L, 2L, 1000L)).isFalse();
+    final List<TimerInstance> timers = new ArrayList<>();
+    state.processTimersWithDueDateBefore(1000L, timers::add);
+    assertThat(timers).isEmpty();
+  }
+
+  @Test
+  public void shouldRemoveTimerWhenDueDateAlreadyGone() {
+    // given
+    final TimerInstance timer = createTimerInstance(1, 2, 1000L);
+    state.removeDueDate(1L, 2L, 1000L);
+
+    // when
+    state.removeIgnoringMissingDueDate(timer);
+
+    // then
+    assertThat(state.get(1L, 2L)).isNull();
+  }
+
+  @Test
+  public void shouldReportWhetherDueDateExists() {
+    // given
+    createTimerInstance(1, 2, 1000L);
+
+    // then
+    assertThat(state.hasDueDate(1L, 2L, 1000L)).isTrue();
+    assertThat(state.hasDueDate(1L, 2L, 2000L)).isFalse();
+  }
+
+  @Test
   public void shouldListAllTimersByElementInstanceKey() {
     // given
     createElementInstance(1);
