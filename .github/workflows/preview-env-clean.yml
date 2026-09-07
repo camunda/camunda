@@ -53,7 +53,7 @@ jobs:
     # DEBUG ONLY - do not merge: pinned to infra-global-github-actions#808 (draft) to
     # surface the raw API response on the jq parse-error that's been failing this job
     # on every scheduled run since 2026-08-31. Revert to the tagged SHA before merging.
-    - uses: camunda/infra-global-github-actions/preview-env/clean@ba8e9e0fd3826b182831533984b7186fdd5644e9 # debug: preview-env-clean-jq-parse-error
+    - uses: camunda/infra-global-github-actions/preview-env/clean@c7b8b6a7039baf65d7bbd3a0234c1b506f04d737 # debug: preview-env-clean-jq-parse-error (v2, all call sites)
       with:
         labels: deploy-preview
         pull-request: ${{ inputs.pull-request }}
