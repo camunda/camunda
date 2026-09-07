@@ -96,16 +96,20 @@ func TestSecretsSetRejectsOversizedStdin(t *testing.T) {
 	}
 }
 
-func TestSecretsSetAllowsMaximumSizeWithTrailingNewline(t *testing.T) {
-	command, _, _ := testSecretsCommand(strings.Repeat("x", localsecrets.MaxSecretSize)+"\n", false)
-	baseDir := t.TempDir()
+func TestSecretsSetAllowsMaximumSizeWithTrailingLineEnding(t *testing.T) {
+	for _, lineEnding := range []string{"\n", "\r\n"} {
+		t.Run(fmt.Sprintf("line ending %q", lineEnding), func(t *testing.T) {
+			command, _, _ := testSecretsCommand(strings.Repeat("x", localsecrets.MaxSecretSize)+lineEnding, false)
+			baseDir := t.TempDir()
 
-	err := command.run(baseDir, []string{"set", "API_KEY", "--stdin"})
+			err := command.run(baseDir, []string{"set", "API_KEY", "--stdin"})
 
-	require.NoError(t, err)
-	value, err := os.ReadFile(filepath.Join(baseDir, "secrets", "API_KEY"))
-	require.NoError(t, err)
-	assert.Len(t, value, localsecrets.MaxSecretSize)
+			require.NoError(t, err)
+			value, err := os.ReadFile(filepath.Join(baseDir, "secrets", "API_KEY"))
+			require.NoError(t, err)
+			assert.Len(t, value, localsecrets.MaxSecretSize)
+		})
+	}
 }
 
 func TestSecretsSetReportsStdinReadFailure(t *testing.T) {
