@@ -223,11 +223,12 @@ public final class EventAppliers implements EventApplier {
             state.getAgentInstanceState(), state.getElementInstanceState()));
     register(
         AgentInstanceIntent.COMPLETED,
-        new AgentInstanceCompletedApplier(
-            state.getAgentInstanceState(), state.getAgentHistoryState()));
+        new AgentInstanceCompletedApplier(state.getAgentInstanceState()));
     register(
         AgentInstanceIntent.MIGRATED,
         new AgentInstanceMigratedApplier(state.getAgentInstanceState()));
+    register(
+        AgentInstanceIntent.CLEANED, new AgentInstanceCleanedApplier(state.getAgentHistoryState()));
   }
 
   private void registerJobMetricsBatchEventAppliers(final MutableProcessingState state) {
