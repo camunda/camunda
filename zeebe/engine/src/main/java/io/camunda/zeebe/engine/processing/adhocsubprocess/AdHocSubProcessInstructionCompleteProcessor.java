@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -72,9 +71,13 @@ public class AdHocSubProcessInstructionCompleteProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<AdHocSubProcessInstructionRecord> record) {
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
+    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
+    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
   }
 
   private BpmnElementContext createBpmnElementContext(final ElementInstance elementInstance) {

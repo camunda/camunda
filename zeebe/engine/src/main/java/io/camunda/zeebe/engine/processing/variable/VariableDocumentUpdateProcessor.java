@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -274,11 +273,16 @@ public final class VariableDocumentUpdateProcessor
    * path can start an {@code UPDATING} task listener, which cannot complete while suspended.
    */
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<VariableDocumentRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<VariableDocumentRecord> record) {
     final var scope = elementInstanceState.getInstance(record.getValue().getScopeKey());
     return scope != null && isCamundaUserTask(scope)
-        ? SuspensionBehavior.REJECT
-        : SuspensionBehavior.PROCESS;
+        ? SuspensionAction.REJECT
+        : SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<VariableDocumentRecord> record) {
+    return onSuspended(record);
   }
 
   public static void mergeVariables(

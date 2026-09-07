@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;

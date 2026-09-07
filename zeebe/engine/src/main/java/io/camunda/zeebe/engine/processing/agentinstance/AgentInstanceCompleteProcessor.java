@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.agentinstance;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -85,7 +84,12 @@ public final class AgentInstanceCompleteProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

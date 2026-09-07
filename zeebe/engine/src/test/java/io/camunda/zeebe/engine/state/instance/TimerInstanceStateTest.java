@@ -180,7 +180,7 @@ public final class TimerInstanceStateTest {
 
     // then
     assertThat(state.get(1L, 2L)).isNotNull();
-    assertThat(state.hasDueDate(1L, 2L, 1000L)).isFalse();
+    assertThat(state.hasDueDateEntry(1L, 2L)).isFalse();
     final List<TimerInstance> timers = new ArrayList<>();
     state.processTimersWithDueDateBefore(1000L, timers::add);
     assertThat(timers).isEmpty();
@@ -193,7 +193,7 @@ public final class TimerInstanceStateTest {
     state.removeDueDate(1L, 2L, 1000L);
 
     // when
-    state.removeIgnoringMissingDueDate(timer);
+    state.remove(timer);
 
     // then
     assertThat(state.get(1L, 2L)).isNull();
@@ -205,8 +205,8 @@ public final class TimerInstanceStateTest {
     createTimerInstance(1, 2, 1000L);
 
     // then
-    assertThat(state.hasDueDate(1L, 2L, 1000L)).isTrue();
-    assertThat(state.hasDueDate(1L, 2L, 2000L)).isFalse();
+    assertThat(state.hasDueDateEntry(1L, 2L)).isTrue();
+    assertThat(state.hasDueDateEntry(2L, 2L)).isFalse();
   }
 
   @Test
