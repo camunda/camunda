@@ -2570,6 +2570,8 @@ jobs:
         run: bats .github/scripts/validate-flattened-poms.bats
       - name: Run release merge-back script tests
         run: bats .github/scripts/mergeback/mergeback.bats
+      - name: Run load test report script tests
+        run: bats load-tests/docs/scripts/loadTestReport.bats
       - name: Observe build status
         if: always()
         continue-on-error: true

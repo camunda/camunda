@@ -120,198 +120,203 @@ extract_metric_value() {
   printf '%s\n' "$raw_value"
 }
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-NAMESPACE=""
-DURATION_SECONDS="600"
-RATE_INTERVAL="5m"
-SAMPLE_STEP="1m"
-REPORT_TEMPLATE="camunda"
-ENDPOINT="http://localhost:9090"
-EXTRA_OPTS=""
-TIME_ANCHOR=""
-START_TIME=""
-END_TIME=""
-FORMAT="json"
-INCLUDE_HEADER="true"
-MISSING_VALUE="NaN"
-QUERIES_FILE=""
-OUTPUT_FILE=""
+# main <args...>
+# Everything below is wrapped in a function (rather than run at file scope)
+# so bats can `source` this file to unit-test the functions above without
+# also running the CLI — see loadTestReport.bats.
+main() {
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  NAMESPACE=""
+  DURATION_SECONDS="600"
+  RATE_INTERVAL="5m"
+  SAMPLE_STEP="1m"
+  REPORT_TEMPLATE="camunda"
+  ENDPOINT="http://localhost:9090"
+  EXTRA_OPTS=""
+  TIME_ANCHOR=""
+  START_TIME=""
+  END_TIME=""
+  FORMAT="json"
+  INCLUDE_HEADER="true"
+  MISSING_VALUE="NaN"
+  QUERIES_FILE=""
+  OUTPUT_FILE=""
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  usage
-  exit 0
-fi
+  if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    usage
+    exit 0
+  fi
 
-if [[ $# -gt 0 && "${1:-}" != --* ]]; then
-  NAMESPACE="$1"
-  shift
-fi
+  if [[ $# -gt 0 && "${1:-}" != --* ]]; then
+    NAMESPACE="$1"
+    shift
+  fi
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --namespace)
-      [[ $# -ge 2 ]] || die "Missing value for --namespace."
-      NAMESPACE="$2"
-      shift 2
-      ;;
-    --duration-seconds)
-      [[ $# -ge 2 ]] || die "Missing value for --duration-seconds."
-      DURATION_SECONDS="$2"
-      shift 2
-      ;;
-    --rate-interval)
-      [[ $# -ge 2 ]] || die "Missing value for --rate-interval."
-      RATE_INTERVAL="$2"
-      shift 2
-      ;;
-    --sample-step)
-      [[ $# -ge 2 ]] || die "Missing value for --sample-step."
-      SAMPLE_STEP="$2"
-      shift 2
-      ;;
-    --template)
-      [[ $# -ge 2 ]] || die "Missing value for --template."
-      REPORT_TEMPLATE="$2"
-      shift 2
-      ;;
-    --at)
-      [[ $# -ge 2 ]] || die "Missing value for --at."
-      TIME_ANCHOR="$2"
-      shift 2
-      ;;
-    --start)
-      [[ $# -ge 2 ]] || die "Missing value for --start."
-      START_TIME="$2"
-      shift 2
-      ;;
-    --end)
-      [[ $# -ge 2 ]] || die "Missing value for --end."
-      END_TIME="$2"
-      shift 2
-      ;;
-    --endpoint)
-      [[ $# -ge 2 ]] || die "Missing value for --endpoint."
-      ENDPOINT="$2"
-      shift 2
-      ;;
-    --curl-opts)
-      [[ $# -ge 2 ]] || die "Missing value for --curl-opts."
-      EXTRA_OPTS="$2"
-      shift 2
-      ;;
-    --format)
-      [[ $# -ge 2 ]] || die "Missing value for --format."
-      FORMAT="$2"
-      shift 2
-      ;;
-    --no-header)
-      INCLUDE_HEADER="false"
-      shift
-      ;;
-    --missing-value)
-      [[ $# -ge 2 ]] || die "Missing value for --missing-value."
-      MISSING_VALUE="$2"
-      shift 2
-      ;;
-    --queries-file)
-      [[ $# -ge 2 ]] || die "Missing value for --queries-file."
-      QUERIES_FILE="$2"
-      shift 2
-      ;;
-    --output)
-      [[ $# -ge 2 ]] || die "Missing value for --output."
-      OUTPUT_FILE="$2"
-      shift 2
-      ;;
-    *)
-      die "Unknown argument '$1'. Run with --help for usage."
-      ;;
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --namespace)
+        [[ $# -ge 2 ]] || die "Missing value for --namespace."
+        NAMESPACE="$2"
+        shift 2
+        ;;
+      --duration-seconds)
+        [[ $# -ge 2 ]] || die "Missing value for --duration-seconds."
+        DURATION_SECONDS="$2"
+        shift 2
+        ;;
+      --rate-interval)
+        [[ $# -ge 2 ]] || die "Missing value for --rate-interval."
+        RATE_INTERVAL="$2"
+        shift 2
+        ;;
+      --sample-step)
+        [[ $# -ge 2 ]] || die "Missing value for --sample-step."
+        SAMPLE_STEP="$2"
+        shift 2
+        ;;
+      --template)
+        [[ $# -ge 2 ]] || die "Missing value for --template."
+        REPORT_TEMPLATE="$2"
+        shift 2
+        ;;
+      --at)
+        [[ $# -ge 2 ]] || die "Missing value for --at."
+        TIME_ANCHOR="$2"
+        shift 2
+        ;;
+      --start)
+        [[ $# -ge 2 ]] || die "Missing value for --start."
+        START_TIME="$2"
+        shift 2
+        ;;
+      --end)
+        [[ $# -ge 2 ]] || die "Missing value for --end."
+        END_TIME="$2"
+        shift 2
+        ;;
+      --endpoint)
+        [[ $# -ge 2 ]] || die "Missing value for --endpoint."
+        ENDPOINT="$2"
+        shift 2
+        ;;
+      --curl-opts)
+        [[ $# -ge 2 ]] || die "Missing value for --curl-opts."
+        EXTRA_OPTS="$2"
+        shift 2
+        ;;
+      --format)
+        [[ $# -ge 2 ]] || die "Missing value for --format."
+        FORMAT="$2"
+        shift 2
+        ;;
+      --no-header)
+        INCLUDE_HEADER="false"
+        shift
+        ;;
+      --missing-value)
+        [[ $# -ge 2 ]] || die "Missing value for --missing-value."
+        MISSING_VALUE="$2"
+        shift 2
+        ;;
+      --queries-file)
+        [[ $# -ge 2 ]] || die "Missing value for --queries-file."
+        QUERIES_FILE="$2"
+        shift 2
+        ;;
+      --output)
+        [[ $# -ge 2 ]] || die "Missing value for --output."
+        OUTPUT_FILE="$2"
+        shift 2
+        ;;
+      *)
+        die "Unknown argument '$1'. Run with --help for usage."
+        ;;
+    esac
+  done
+
+  [[ -n "$NAMESPACE" ]] || die "Missing <namespace>."
+
+  if (( ${#NAMESPACE} > 63 )) || ! [[ "$NAMESPACE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+    die "namespace '$NAMESPACE' must be a valid Kubernetes DNS label (max 63 characters; lowercase alphanumeric or '-', and must start and end with an alphanumeric character)."
+  fi
+
+  if ! [[ "$DURATION_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
+    die "duration-seconds '$DURATION_SECONDS' must be a positive integer."
+  fi
+
+  if ! [[ "$RATE_INTERVAL" =~ ^[1-9][0-9]*(ms|s|m|h|d|w|y)$ ]]; then
+    die "rate-interval '$RATE_INTERVAL' must be a Prometheus duration like 30s, 5m, or 1h."
+  fi
+
+  if ! [[ "$SAMPLE_STEP" =~ ^[1-9][0-9]*(ms|s|m|h|d|w|y)$ ]]; then
+    die "sample-step '$SAMPLE_STEP' must be a Prometheus duration like 30s, 1m, or 5m."
+  fi
+
+  if [[ -n "$START_TIME" || -n "$END_TIME" ]]; then
+    [[ -n "$START_TIME" && -n "$END_TIME" ]] || die "--start and --end must be provided together."
+    [[ -z "$TIME_ANCHOR" ]] || die "--at cannot be combined with --start/--end."
+
+    START_EPOCH="$(parse_epoch "$START_TIME")" || die "Could not parse --start '$START_TIME'."
+    END_EPOCH="$(parse_epoch "$END_TIME")" || die "Could not parse --end '$END_TIME'."
+    (( END_EPOCH > START_EPOCH )) || die "--end must be after --start."
+
+    DURATION_SECONDS="$((END_EPOCH - START_EPOCH))"
+    TIME_ANCHOR="$END_TIME"
+  fi
+
+  case "$FORMAT" in
+    json|csv|tsv) ;;
+    *) die "Unsupported --format '$FORMAT'. Expected json, csv, or tsv." ;;
   esac
-done
 
-[[ -n "$NAMESPACE" ]] || die "Missing <namespace>."
+  if [[ -z "$QUERIES_FILE" ]]; then
+    case "$REPORT_TEMPLATE" in
+      camunda)
+        QUERIES_FILE="$SCRIPT_DIR/report-queries.yaml"
+        ;;
+      stable-87)
+        QUERIES_FILE="$SCRIPT_DIR/report-queries-stable-87.yaml"
+        ;;
+      *)
+        die "Unsupported --template '$REPORT_TEMPLATE'. Expected camunda or stable-87."
+        ;;
+    esac
+  fi
 
-if (( ${#NAMESPACE} > 63 )) || ! [[ "$NAMESPACE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
-  die "namespace '$NAMESPACE' must be a valid Kubernetes DNS label (max 63 characters; lowercase alphanumeric or '-', and must start and end with an alphanumeric character)."
-fi
+  [[ -f "$QUERIES_FILE" ]] || die "queries file not found at $QUERIES_FILE."
 
-if ! [[ "$DURATION_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
-  die "duration-seconds '$DURATION_SECONDS' must be a positive integer."
-fi
+  for cmd in jq yq curl; do
+    command -v "$cmd" >/dev/null 2>&1 || die "'$cmd' not in PATH."
+  done
 
-if ! [[ "$RATE_INTERVAL" =~ ^[1-9][0-9]*(ms|s|m|h|d|w|y)$ ]]; then
-  die "rate-interval '$RATE_INTERVAL' must be a Prometheus duration like 30s, 5m, or 1h."
-fi
+  DURATION_S="${DURATION_SECONDS}s"
+  RATE_INTERVAL_S="$RATE_INTERVAL"
+  SAMPLE_STEP_S="$SAMPLE_STEP"
+  GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  START_LABEL=""
+  END_LABEL=""
 
-if ! [[ "$SAMPLE_STEP" =~ ^[1-9][0-9]*(ms|s|m|h|d|w|y)$ ]]; then
-  die "sample-step '$SAMPLE_STEP' must be a Prometheus duration like 30s, 1m, or 5m."
-fi
+  if [[ -n "$TIME_ANCHOR" ]]; then
+    anchor_epoch="$(parse_epoch "$TIME_ANCHOR")" || die "Could not parse --at '$TIME_ANCHOR'."
+    START_LABEL="$(date -u -d "@$((anchor_epoch - DURATION_SECONDS))" +"%Y-%m-%dT%H:%M:%SZ")"
+    END_LABEL="$(date -u -d "@$anchor_epoch" +"%Y-%m-%dT%H:%M:%SZ")"
+  fi
 
-if [[ -n "$START_TIME" || -n "$END_TIME" ]]; then
-  [[ -n "$START_TIME" && -n "$END_TIME" ]] || die "--start and --end must be provided together."
-  [[ -z "$TIME_ANCHOR" ]] || die "--at cannot be combined with --start/--end."
+  read -ra EXTRA_OPTS_ARR <<<"$EXTRA_OPTS"
 
-  START_EPOCH="$(parse_epoch "$START_TIME")" || die "Could not parse --start '$START_TIME'."
-  END_EPOCH="$(parse_epoch "$END_TIME")" || die "Could not parse --end '$END_TIME'."
-  (( END_EPOCH > START_EPOCH )) || die "--end must be after --start."
+  declare -a TIME_ARGS=()
+  if [[ -n "$TIME_ANCHOR" ]]; then
+    TIME_ARGS=(--data-urlencode "time=$TIME_ANCHOR")
+  fi
 
-  DURATION_SECONDS="$((END_EPOCH - START_EPOCH))"
-  TIME_ANCHOR="$END_TIME"
-fi
+  if ! endpoint_resp="$(curl -sf --connect-timeout 5 --max-time 15 \
+      ${EXTRA_OPTS_ARR[@]+"${EXTRA_OPTS_ARR[@]}"} \
+      "${ENDPOINT}/api/v1/status/runtimeinfo" 2>/dev/null)"; then
+    die "$(prometheus_endpoint_help)"
+  fi
 
-case "$FORMAT" in
-  json|csv|tsv) ;;
-  *) die "Unsupported --format '$FORMAT'. Expected json, csv, or tsv." ;;
-esac
-
-if [[ -z "$QUERIES_FILE" ]]; then
-  case "$REPORT_TEMPLATE" in
-    camunda)
-      QUERIES_FILE="$SCRIPT_DIR/report-queries.yaml"
-      ;;
-    stable-87)
-      QUERIES_FILE="$SCRIPT_DIR/report-queries-stable-87.yaml"
-      ;;
-    *)
-      die "Unsupported --template '$REPORT_TEMPLATE'. Expected camunda or stable-87."
-      ;;
-  esac
-fi
-
-[[ -f "$QUERIES_FILE" ]] || die "queries file not found at $QUERIES_FILE."
-
-for cmd in jq yq curl; do
-  command -v "$cmd" >/dev/null 2>&1 || die "'$cmd' not in PATH."
-done
-
-DURATION_S="${DURATION_SECONDS}s"
-RATE_INTERVAL_S="$RATE_INTERVAL"
-SAMPLE_STEP_S="$SAMPLE_STEP"
-GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-START_LABEL=""
-END_LABEL=""
-
-if [[ -n "$TIME_ANCHOR" ]]; then
-  anchor_epoch="$(parse_epoch "$TIME_ANCHOR")" || die "Could not parse --at '$TIME_ANCHOR'."
-  START_LABEL="$(date -u -d "@$((anchor_epoch - DURATION_SECONDS))" +"%Y-%m-%dT%H:%M:%SZ")"
-  END_LABEL="$(date -u -d "@$anchor_epoch" +"%Y-%m-%dT%H:%M:%SZ")"
-fi
-
-read -ra EXTRA_OPTS_ARR <<<"$EXTRA_OPTS"
-
-declare -a TIME_ARGS=()
-if [[ -n "$TIME_ANCHOR" ]]; then
-  TIME_ARGS=(--data-urlencode "time=$TIME_ANCHOR")
-fi
-
-if ! endpoint_resp="$(curl -sf --connect-timeout 5 --max-time 15 \
-    ${EXTRA_OPTS_ARR[@]+"${EXTRA_OPTS_ARR[@]}"} \
-    "${ENDPOINT}/api/v1/status/runtimeinfo" 2>/dev/null)"; then
-  die "$(prometheus_endpoint_help)"
-fi
-
-if [[ "$(jq -r '.status' <<<"$endpoint_resp" 2>/dev/null || echo error)" != "success" ]]; then
-  die "$(cat <<EOF
+  if [[ "$(jq -r '.status' <<<"$endpoint_resp" 2>/dev/null || echo error)" != "success" ]]; then
+    die "$(cat <<EOF
 Endpoint '$ENDPOINT' is reachable, but it did not return a Prometheus API success response.
 
 If you are running locally, make sure the port-forward points at Prometheus:
@@ -319,100 +324,105 @@ If you are running locally, make sure the port-forward points at Prometheus:
   kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
 EOF
 )"
-fi
-
-# Read and normalize the queries file once — YAML or JSON, both accepted —
-# instead of re-parsing it from disk for every field of every query.
-QUERIES_JSON="$(yq -o=json '.' "$QUERIES_FILE")" || die "failed to parse queries file $QUERIES_FILE."
-
-# Substitute template variables once across the whole document instead of
-# once per query. Safe as raw text substitution (not JSON-aware) because
-# every substituted value is already validated above to be free of
-# characters JSON would need escaped: NAMESPACE is a Kubernetes DNS label,
-# DURATION_S/RATE_INTERVAL_S/SAMPLE_STEP_S are digits plus a unit suffix.
-QUERIES_JSON="${QUERIES_JSON//\$NAMESPACE/$NAMESPACE}"
-QUERIES_JSON="${QUERIES_JSON//\$DURATION_S/$DURATION_S}"
-QUERIES_JSON="${QUERIES_JSON//\$RATE_INTERVAL/$RATE_INTERVAL_S}"
-QUERIES_JSON="${QUERIES_JSON//\$SAMPLE_STEP/$SAMPLE_STEP_S}"
-
-declare -a key_entries=()
-declare -a header_entries=()
-declare -a metric_entries=()
-
-while IFS=$'\x1f' read -r key header query label static_value; do
-  value_json="null"
-
-  if [[ -n "$static_value" ]]; then
-    value_json="$(jq -n --arg v "$static_value" '$v')"
-  else
-    if resp="$(curl -sf -G ${EXTRA_OPTS_ARR[@]+"${EXTRA_OPTS_ARR[@]}"} \
-        "${ENDPOINT}/api/v1/query" \
-        --data-urlencode "query=$query" \
-        ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null)"; then
-      if extracted_value="$(extract_metric_value "$resp" "$label" "$key")"; then
-        value_json="$extracted_value"
-      fi
-    else
-      warn "$key: query failed"
-    fi
   fi
 
-  key_entries+=("$(jq -n --arg v "$key" '$v')")
-  header_entries+=("$(jq -n --arg v "$header" '$v')")
-  metric_entries+=("$(jq -n --arg k "$key" --argjson v "$value_json" '{($k): $v}')")
-done < <(jq -r '.queries[] | [.key, (.header // .key), (.query // ""), (.valueLabel // ""), (.value // "")] | join("")' <<<"$QUERIES_JSON")
+  # Read and normalize the queries file once — YAML or JSON, both accepted —
+  # instead of re-parsing it from disk for every field of every query.
+  QUERIES_JSON="$(yq -o=json '.' "$QUERIES_FILE")" || die "failed to parse queries file $QUERIES_FILE."
 
-keys_json="$(printf '%s\n' "${key_entries[@]}" | jq -s '.')"
-headers_json="$(printf '%s\n' "${header_entries[@]}" | jq -s '.')"
-metrics_json="$(printf '%s\n' "${metric_entries[@]}" | jq -s 'add')"
+  # Substitute template variables once across the whole document instead of
+  # once per query. Safe as raw text substitution (not JSON-aware) because
+  # every substituted value is already validated above to be free of
+  # characters JSON would need escaped: NAMESPACE is a Kubernetes DNS label,
+  # DURATION_S/RATE_INTERVAL_S/SAMPLE_STEP_S are digits plus a unit suffix.
+  QUERIES_JSON="${QUERIES_JSON//\$NAMESPACE/$NAMESPACE}"
+  QUERIES_JSON="${QUERIES_JSON//\$DURATION_S/$DURATION_S}"
+  QUERIES_JSON="${QUERIES_JSON//\$RATE_INTERVAL/$RATE_INTERVAL_S}"
+  QUERIES_JSON="${QUERIES_JSON//\$SAMPLE_STEP/$SAMPLE_STEP_S}"
 
-report_json="$(jq -n \
-  --arg namespace "$NAMESPACE" \
-  --arg durationSeconds "$DURATION_SECONDS" \
-  --arg endpoint "$ENDPOINT" \
-  --arg generatedAt "$GENERATED_AT" \
-  --arg start "$START_LABEL" \
-  --arg end "$END_LABEL" \
-  --argjson keys "$keys_json" \
-  --argjson headers "$headers_json" \
-  --argjson metrics "$metrics_json" \
-  '{
-    namespace: $namespace,
-    durationSeconds: ($durationSeconds | tonumber),
-    start: (if $start == "" then null else $start end),
-    end: (if $end == "" then null else $end end),
-    endpoint: $endpoint,
-    generatedAt: $generatedAt,
-    columns: $keys,
-    headers: $headers,
-    metrics: $metrics
-  }')"
+  declare -a key_entries=()
+  declare -a header_entries=()
+  declare -a metric_entries=()
 
-rendered="$(
-  jq -r \
-    --arg format "$FORMAT" \
-    --arg missingValue "$MISSING_VALUE" \
-    --argjson includeHeader "$INCLUDE_HEADER" \
-    --argjson report "$report_json" '
-      def row($values):
-        if $format == "csv" then $values | @csv else $values | @tsv end;
+  while IFS=$'\x1f' read -r key header query label static_value; do
+    value_json="null"
 
-      if $format == "json" then
-        $report
+    if [[ -n "$static_value" ]]; then
+      value_json="$(jq -n --arg v "$static_value" '$v')"
+    else
+      if resp="$(curl -sf -G ${EXTRA_OPTS_ARR[@]+"${EXTRA_OPTS_ARR[@]}"} \
+          "${ENDPOINT}/api/v1/query" \
+          --data-urlencode "query=$query" \
+          ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null)"; then
+        if extracted_value="$(extract_metric_value "$resp" "$label" "$key")"; then
+          value_json="$extracted_value"
+        fi
       else
-        ($report.headers) as $headers |
-        ($report.columns | map(if $report.metrics[.] == null then $missingValue else $report.metrics[.] end)) as $values |
-        if $includeHeader then
-          row($headers), row($values)
-        else
-          row($values)
-        end
-      end
-    ' <<< '{}'
-)"
+        warn "$key: query failed"
+      fi
+    fi
 
-if [[ -n "$OUTPUT_FILE" ]]; then
-  printf '%s\n' "$rendered" > "$OUTPUT_FILE"
-else
-  printf '%s\n' "$rendered"
+    key_entries+=("$(jq -n --arg v "$key" '$v')")
+    header_entries+=("$(jq -n --arg v "$header" '$v')")
+    metric_entries+=("$(jq -n --arg k "$key" --argjson v "$value_json" '{($k): $v}')")
+  done < <(jq -r '.queries[] | [.key, (.header // .key), (.query // ""), (.valueLabel // ""), (.value // "")] | join("")' <<<"$QUERIES_JSON")
+
+  keys_json="$(printf '%s\n' "${key_entries[@]}" | jq -s '.')"
+  headers_json="$(printf '%s\n' "${header_entries[@]}" | jq -s '.')"
+  metrics_json="$(printf '%s\n' "${metric_entries[@]}" | jq -s 'add')"
+
+  report_json="$(jq -n \
+    --arg namespace "$NAMESPACE" \
+    --arg durationSeconds "$DURATION_SECONDS" \
+    --arg endpoint "$ENDPOINT" \
+    --arg generatedAt "$GENERATED_AT" \
+    --arg start "$START_LABEL" \
+    --arg end "$END_LABEL" \
+    --argjson keys "$keys_json" \
+    --argjson headers "$headers_json" \
+    --argjson metrics "$metrics_json" \
+    '{
+      namespace: $namespace,
+      durationSeconds: ($durationSeconds | tonumber),
+      start: (if $start == "" then null else $start end),
+      end: (if $end == "" then null else $end end),
+      endpoint: $endpoint,
+      generatedAt: $generatedAt,
+      columns: $keys,
+      headers: $headers,
+      metrics: $metrics
+    }')"
+
+  rendered="$(
+    jq -r \
+      --arg format "$FORMAT" \
+      --arg missingValue "$MISSING_VALUE" \
+      --argjson includeHeader "$INCLUDE_HEADER" \
+      --argjson report "$report_json" '
+        def row($values):
+          if $format == "csv" then $values | @csv else $values | @tsv end;
+
+        if $format == "json" then
+          $report
+        else
+          ($report.headers) as $headers |
+          ($report.columns | map(if $report.metrics[.] == null then $missingValue else $report.metrics[.] end)) as $values |
+          if $includeHeader then
+            row($headers), row($values)
+          else
+            row($values)
+          end
+        end
+      ' <<< '{}'
+  )"
+
+  if [[ -n "$OUTPUT_FILE" ]]; then
+    printf '%s\n' "$rendered" > "$OUTPUT_FILE"
+  else
+    printf '%s\n' "$rendered"
+  fi
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
 fi
