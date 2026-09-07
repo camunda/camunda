@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -63,6 +64,7 @@ public class HttpMessageConverterConfiguration {
   @Bean
   @Order(2)
   @Profile("operate")
+  @ConditionalOnSecondaryStorageEnabled
   public MappingJackson2HttpMessageConverter operateV1MappingJackson2HttpMessageConverter(
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     final PackageSpecificJackson2HttpMessageConverter messageConverter =
@@ -74,6 +76,7 @@ public class HttpMessageConverterConfiguration {
   @Bean
   @Order(3)
   @Profile("tasklist")
+  @ConditionalOnSecondaryStorageEnabled
   public MappingJackson2HttpMessageConverter tasklistV1MappingJackson2HttpMessageConverter(
       @Qualifier("tasklistObjectMapper") final ObjectMapper objectMapper) {
     final PackageSpecificJackson2HttpMessageConverter messageConverter =
