@@ -590,7 +590,7 @@ public class CamundaServicesConfiguration {
             topologyServicesByTenant,
             physicalTenantId -> secondaryStorageReadiness.getObject().isReady(physicalTenantId)));
     builder.clusterUpgradeStatusServices(
-        new ClusterUpgradeStatusServices(migrationStatusAggregator));
+        new ClusterUpgradeStatusServices(migrationStatusAggregator, executor));
     builder.clusterTopologyServices(new ClusterTopologyServices(topologyServicesByTenant));
 
     builder.clusterRecoveryServices(

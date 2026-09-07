@@ -11,6 +11,7 @@ import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -23,13 +24,16 @@ import org.jspecify.annotations.NullMarked;
 public final class ClusterUpgradeStatusServices {
 
   private final MigrationStatusAggregator aggregator;
+  private final Executor executor;
 
-  public ClusterUpgradeStatusServices(final MigrationStatusAggregator aggregator) {
+  public ClusterUpgradeStatusServices(
+      final MigrationStatusAggregator aggregator, final ApiServicesExecutorProvider executor) {
     this.aggregator = aggregator;
+    this.executor = executor.getExecutor();
   }
 
   public CompletableFuture<MigrationState> getStatus() {
-    return CompletableFuture.completedFuture(fold(aggregator.aggregate()));
+    return CompletableFuture.supplyAsync(() -> fold(aggregator.aggregate()), executor);
   }
 
   private static MigrationState fold(
