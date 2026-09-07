@@ -783,10 +783,88 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final var updatedActiveIncident =
               getFromIndex(incidentTemplate, client, activeIncidentEntity);
           assertThat(updatedActiveIncident.getState()).isEqualTo(IncidentState.ACTIVE);
+          assertThat(updatedActiveIncident.getTreePath()).isNotNull();
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyNoInteractions(incidentNotifier);
 
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(1);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
+        });
+  }
+
+  @TestTemplate
+  void shouldResolveIncidentButNotChangeTreePath(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resources) -> {
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
+          final var treePath = String.format("PI_%d", processInstanceKey);
+          final ProcessInstanceForListViewEntity processInstance =
+              new ProcessInstanceForListViewEntity()
+                  .setId(String.valueOf(processInstanceKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(processInstanceKey)
+                  .setProcessDefinitionKey(9999L)
+                  .setBpmnProcessId("process-1")
+                  .setTreePath(treePath);
+          store(listViewTemplate, client, processInstance);
+
+          client.refresh(listViewTemplate.getFullQualifiedName());
+
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final var incidentKey = ID_GENERATOR.getAndIncrement();
+          final IncidentEntity incidentEntity =
+              new IncidentEntity()
+                  .setId(String.valueOf(incidentKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(incidentKey)
+                  .setErrorMessage("An error happened")
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setFlowNodeInstanceKey(processInstanceKey)
+                  .setTreePath(treePath);
+
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity =
+              new PostImporterQueueEntity()
+                  .setId("queue-1")
+                  .setPartitionId(PARTITION_ID)
+                  .setActionType(PostImporterActionType.INCIDENT)
+                  .setIntent("RESOLVED")
+                  .setKey(incidentKey)
+                  .setPosition(1L);
+
+          store(postImporterTemplate, client, queueEntity);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          // when
+          final var updated = job.execute();
+
+          // then
+          assertThat(updated).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+
+          client.refresh(testPrefix);
+
+          final var updatedProcessInstance =
+              getFromIndex(listViewTemplate, client, processInstance);
+          assertThat(updatedProcessInstance.isIncident()).isFalse();
+
+          final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
+          assertThat(updatedIncident.getState()).isEqualTo(IncidentState.RESOLVED);
+          assertThat(updatedIncident.getTreePath())
+              .isEqualTo(treePath); // tree path is not changed by RESOLVED update
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
           verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(1);
           verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
