@@ -34,7 +34,9 @@ public class PersistentWebSessionPropertiesPostProcessor implements EnvironmentP
       List.of(
           "camunda.persistent.sessions.enabled",
           "camunda.operate.persistent.sessions.enabled",
-          "camunda.operate.persistentSessionsEnabled");
+          "camunda.operate.persistentSessionsEnabled",
+          "camunda.tasklist.persistent.sessions.enabled",
+          "camunda.tasklist.persistentSessionsEnabled");
 
   private static final Logger LOG =
       LoggerFactory.getLogger(PersistentWebSessionPropertiesPostProcessor.class);
