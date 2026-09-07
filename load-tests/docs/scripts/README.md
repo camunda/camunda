@@ -130,13 +130,14 @@ use a custom one instead — YAML or JSON are both accepted (the script converts
 Each file is a `queries:` list. Each entry is one report column, in emission order (JSON key order
 and CSV/TSV column order), with these fields:
 
-|    Field     |                                                                            Meaning                                                                             |
-|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `key`        | machine key — the JSON `metrics` object key and the CSV/TSV column identifier.                                                                                 |
-| `header`     | human column label — the CSV/TSV header cell.                                                                                                                  |
-| `value`      | a literal value (only `$NAMESPACE` is substituted); mutually exclusive with `query`. Used for the namespace column, which isn't a Prometheus query.            |
-| `query`      | a single-line PromQL string evaluated against Prometheus.                                                                                                      |
-| `valueLabel` | when set, the query result is read from this Prometheus label (deduplicated, joined with `, `) instead of the sample value — used for the Docker image column. |
+|     Field     |                                                                            Meaning                                                                             |
+|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `key`         | machine key — the JSON `metrics` object key and the CSV/TSV column identifier.                                                                                 |
+| `header`      | human column label — the CSV/TSV header cell.                                                                                                                  |
+| `description` | human-readable explanation of what the column measures, sourced from [`docs/metrics.md`](../metrics.md).                                                       |
+| `value`       | a literal value (only `$NAMESPACE` is substituted); mutually exclusive with `query`. Used for the namespace column, which isn't a Prometheus query.            |
+| `query`       | a single-line PromQL string evaluated against Prometheus.                                                                                                      |
+| `valueLabel`  | when set, the query result is read from this Prometheus label (deduplicated, joined with `, `) instead of the sample value — used for the Docker image column. |
 
 Template variables, substituted before each query is sent: `$NAMESPACE` (the exact load-test
 namespace), `$DURATION_S` (the report window duration with an `s` suffix, e.g. `600s`),
