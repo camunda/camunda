@@ -104,9 +104,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private final Set<String> registeredPhysicalTenants = ConcurrentHashMap.newKeySet();
   /* Tracks the install status of every bootstrap partition the broker is responsible for, keyed by
   its full PartitionId (partition group + id). Each physical tenant registers its own partitions, so
-  this map accumulates across all tenants. Stays null until the first registration so that an
-  install status update before any partition is known fails fast. */
-  private volatile Map<PartitionId, Boolean> partitionInstallStatus;
+  this map accumulates across all tenants. Concurrent by construction: physical tenants register
+  from their own threads (each tenant's partition manager starts on its own topology-manager actor,
+  a recovering tenant registers from the broker actor), and lazily creating the map instead would
+  let two such registrations race and drop one tenant's partitions. */
+  private final Map<PartitionId, Boolean> partitionInstallStatus = new ConcurrentHashMap<>();
   /* Guards against logging "broker is ready" more than once. Only touched on the actor thread. */
   private boolean readyLogged = false;
   private volatile boolean brokerStarted = false;
@@ -130,9 +132,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     // never started". Accumulate rather than replace so a later tenant's call does not drop the
     // partitions registered by previous tenants.
     registeredPhysicalTenants.add(physicalTenantId);
-    if (partitionInstallStatus == null) {
-      partitionInstallStatus = new ConcurrentHashMap<>();
-    }
     partitions.forEach(
         metadata -> {
           partitionInstallStatus.putIfAbsent(metadata.id(), false);
@@ -154,9 +153,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   public void registerRecoveringPartitions(
       final String physicalTenantId, final Collection<PartitionId> partitions) {
     registeredPhysicalTenants.add(physicalTenantId);
-    if (partitionInstallStatus == null) {
-      partitionInstallStatus = new ConcurrentHashMap<>();
-    }
     // Clear this tenant's previous entries first: its partition manager may have stopped for the
     // mode transition without unregistering (e.g. a processing-mode manager never does), leaving
     // a still-installing ("false") or now-stale partition behind. Left in place, that entry would
@@ -176,10 +172,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
    */
   public void unregisterPhysicalTenant(final String physicalTenantId) {
     registeredPhysicalTenants.remove(physicalTenantId);
-    final var status = partitionInstallStatus;
-    if (status != null) {
-      status.keySet().removeIf(partitionId -> partitionId.group().equals(physicalTenantId));
-    }
+    partitionInstallStatus.keySet().removeIf(id -> id.group().equals(physicalTenantId));
   }
 
   public boolean isBrokerReady() {
@@ -187,11 +180,9 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     // has been installed. Both conditions are evaluated live: requiring all tenants prevents a
     // missing tenant from being silently ignored, and reading the map directly lets partitions
     // registered by a later tenant still gate readiness even if an earlier tenant already finished.
-    final var status = partitionInstallStatus;
     return brokerStarted
         && registeredPhysicalTenants.containsAll(expectedPhysicalTenants)
-        && status != null
-        && !status.containsValue(false);
+        && !partitionInstallStatus.containsValue(false);
   }
 
   public String componentName() {
@@ -212,8 +203,10 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   private void checkState() {
-    if (partitionInstallStatus == null) {
-      throw new IllegalStateException("PartitionInstallStatus must not be null.");
+    if (registeredPhysicalTenants.isEmpty()) {
+      throw new IllegalStateException(
+          "No physical tenant has registered its partitions yet, so no install status can be"
+              + " updated.");
     }
   }
 
