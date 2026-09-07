@@ -42,6 +42,7 @@ Downsizing follows the same family: `gcp-perf-core-16-default` → `gcp-perf-cor
   - Verify: `bq query --use_legacy_sql=false 'SELECT 1'`
 - Data is in `ci-30-162810.prod_ci_analytics.build_status_v2` (90-day retention)
 - CPU/memory metrics were added on 2026-05-18 — data availability starts from that date
+- Always match `ci_url` exactly. A `LIKE "%camunda/camunda%"` also matches camunda-optimize, camunda-docs, camunda-platform-helm and others, mixing other repos' jobs into the results
 
 ## How to analyze
 
@@ -61,7 +62,7 @@ SELECT
   ROUND(MAX(memory_usage_ratio_p95), 3) AS max_mem_p95
 FROM `ci-30-162810.prod_ci_analytics.build_status_v2`
 WHERE cpu_usage_ratio_p95 IS NOT NULL
-  AND ci_url LIKE "%camunda/camunda%"
+  AND ci_url = "https://github.com/camunda/camunda"
   AND runner_type IS NOT NULL
   AND (runner_type LIKE "gcp-%" OR runner_type LIKE "aws-%")
 GROUP BY job_name, runner_type
@@ -86,7 +87,7 @@ SELECT
   ROUND(MAX(memory_usage_ratio_p95), 3) AS max_mem_p95
 FROM `ci-30-162810.prod_ci_analytics.build_status_v2`
 WHERE cpu_usage_ratio_p95 IS NOT NULL
-  AND ci_url LIKE "%camunda/camunda%"
+  AND ci_url = "https://github.com/camunda/camunda"
   AND runner_type IS NOT NULL
   AND (runner_type LIKE "gcp-%" OR runner_type LIKE "aws-%")
 GROUP BY job_name, runner_type
@@ -106,7 +107,7 @@ SELECT
   COUNT(*) AS total_runs,
   ROUND(AVG(cpu_usage_ratio_p95), 3) AS overall_avg_cpu_p95
 FROM `ci-30-162810.prod_ci_analytics.build_status_v2`
-WHERE ci_url LIKE "%camunda/camunda%"
+WHERE ci_url = "https://github.com/camunda/camunda"
   AND cpu_usage_ratio_p95 IS NOT NULL
   AND runner_type IS NOT NULL
 GROUP BY runner_type
@@ -128,7 +129,7 @@ SELECT
   ROUND(memory_usage_ratio_p95, 3) AS mem_p95,
   build_status
 FROM `ci-30-162810.prod_ci_analytics.build_status_v2`
-WHERE ci_url LIKE "%camunda/camunda%"
+WHERE ci_url = "https://github.com/camunda/camunda"
   AND job_name = "REPLACE_WITH_JOB_NAME"
   AND cpu_usage_ratio_p95 IS NOT NULL
 ORDER BY report_time DESC
