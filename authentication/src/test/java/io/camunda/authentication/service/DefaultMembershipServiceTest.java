@@ -8,14 +8,20 @@
 package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.service.MembershipService.PrincipalType;
+import io.camunda.authentication.utils.TransientRetry;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
@@ -24,6 +30,8 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -158,5 +166,138 @@ public class DefaultMembershipServiceTest {
     // group lookup runs against an ownerType map seeded only with the USER entry
     verify(mappingRuleServices, never()).getMatchingMappingRules(any());
     verify(groupServices).getGroupsByMemberTypeAndMemberIds(any());
+  }
+
+  @Test
+  void shouldDegradeMappingRulesToEmptyWhenTheSearchStoreStaysDown() {
+    // given
+    when(mappingRuleServices.getMatchingMappingRules(any()))
+        .thenThrow(translatedSearchFailure(Reason.SEARCH_CLIENT_FAILED, "all shards failed"));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when
+    assertThat(resolver.mappingRules()).isEmpty();
+
+    // then — degraded rather than propagated, so the outage does not escape the resolver. These
+    // lookups also run during session serialization, where a propagated failure surfaces as an
+    // opaque serialization crash at request commit instead of a reportable auth failure.
+    verify(mappingRuleServices, times(TransientRetry.MAX_ATTEMPTS)).getMatchingMappingRules(any());
+  }
+
+  @Test
+  void shouldDegradeGroupsToEmptyWhenTheSearchStoreStaysDown() {
+    // given
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any()))
+        .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when
+    assertThat(resolver.groups()).isEmpty();
+
+    // then
+    verify(groupServices, times(TransientRetry.MAX_ATTEMPTS))
+        .getGroupsByMemberTypeAndMemberIds(any());
+  }
+
+  @Test
+  void shouldDegradeRolesToEmptyWhenTheSearchStoreStaysDown() {
+    // given
+    when(roleServices.getRolesByMemberTypeAndMemberIds(any()))
+        .thenThrow(translatedSearchFailure(Reason.CONNECTION_FAILED, "connection refused"));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when
+    assertThat(resolver.roles()).isEmpty();
+
+    // then
+    verify(roleServices, times(TransientRetry.MAX_ATTEMPTS))
+        .getRolesByMemberTypeAndMemberIds(any());
+  }
+
+  @Test
+  void shouldDegradeTenantsToEmptyWhenTheSearchStoreStaysDown() {
+    // given
+    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any()))
+        .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when
+    assertThat(resolver.tenants()).isEmpty();
+
+    // then
+    verify(tenantServices, times(TransientRetry.MAX_ATTEMPTS))
+        .getTenantsByMemberTypeAndMemberIds(any());
+  }
+
+  @Test
+  void shouldResolveGroupsWhenTheStoreRecoversWithinTheRetryBudget() {
+    // given — a single blip, the shape a shard reallocation or a dropped connection actually has
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any()))
+        .thenThrow(translatedSearchFailure(Reason.CONNECTION_FAILED, "connection refused"))
+        .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when
+    assertThat(resolver.groups()).containsExactly("g1");
+
+    // then
+    verify(groupServices, times(2)).getGroupsByMemberTypeAndMemberIds(any());
+  }
+
+  @Test
+  void shouldPropagateNonTransientSearchFailureWithoutRetrying() {
+    // given
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any()))
+        .thenThrow(translatedSearchFailure(Reason.FORBIDDEN, "forbidden"));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when / then — degrading here would grant the caller a quietly reduced set of memberships for
+    // a failure a retry cannot fix; it needs an operator
+    assertThatThrownBy(resolver::groups).isInstanceOf(ServiceException.class);
+    verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any());
+  }
+
+  @Test
+  void shouldPropagateUnknownReasonFailureWithoutRetrying() {
+    // given — UNKNOWN is the reason a CamundaSearchException raised without one carries, which in
+    // practice means a deterministic wiring error. The search clients classify every real
+    // infrastructure failure explicitly, so UNKNOWN must not be swallowed as "no memberships".
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any()))
+        .thenThrow(translatedSearchFailure(Reason.UNKNOWN, "no matching controller found"));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when / then
+    assertThatThrownBy(resolver::groups).isInstanceOf(ServiceException.class);
+    verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any());
+  }
+
+  @Test
+  void shouldPropagatePlainRuntimeExceptionWithoutRetrying() {
+    // given — a programming error is not a search-layer failure
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any()))
+        .thenThrow(new IllegalStateException("programming error"));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when / then
+    assertThatThrownBy(resolver::groups).isInstanceOf(IllegalStateException.class);
+    verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any());
+  }
+
+  /**
+   * The exception a {@code *Services} lookup actually throws: every search failure is rewrapped by
+   * {@link ErrorMapper} on its way out, so stubbing a raw {@link CamundaSearchException} would test
+   * a shape the retry never meets in production.
+   */
+  private static ServiceException translatedSearchFailure(
+      final Reason reason, final String message) {
+    return ErrorMapper.mapSearchError(new CamundaSearchException(message, reason));
   }
 }
