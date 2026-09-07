@@ -16,12 +16,14 @@ type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
   onExecute: () => void;
   disabled?: boolean;
+  title?: string;
 };
 
 const Delete: React.FC<Props> = ({
   processInstanceKey,
   onExecute,
   disabled = false,
+  title = 'Delete Instance',
 }) => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   return (
@@ -29,8 +31,9 @@ const Delete: React.FC<Props> = ({
       <DangerButton
         type="DELETE"
         onClick={() => setIsDeleteModalVisible(true)}
-        title={`Delete Instance ${processInstanceKey}`}
+        title={title}
         disabled={disabled}
+        isIconOnly
         size="sm"
       />
       {isDeleteModalVisible &&
