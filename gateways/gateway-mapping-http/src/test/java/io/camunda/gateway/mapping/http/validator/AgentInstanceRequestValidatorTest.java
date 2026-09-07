@@ -77,9 +77,8 @@ class AgentInstanceRequestValidatorTest {
     }
 
     @Test
-    @DisplayName(
-        "Should accept a missing jobKey when no history is provided (enforcement deferred to #60864)")
-    void shouldAcceptMissingJobKeyOnUpdateForNow() {
+    @DisplayName("Should reject missing jobKey even when no history is provided")
+    void shouldRejectMissingJobKeyOnUpdate() {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
@@ -90,7 +89,42 @@ class AgentInstanceRequestValidatorTest {
       final Optional<ProblemDetail> result =
           validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
 
-      assertThat(result).isEmpty();
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No jobKey provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject missing (null) jobLease")
+    void shouldRejectNullJobLeaseOnUpdate() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(null)
+              .build();
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No jobLease provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject blank jobLease")
+    void shouldRejectBlankJobLeaseOnUpdate() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease("   ")
+              .build();
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No jobLease provided.");
     }
   }
 
@@ -1269,6 +1303,40 @@ class AgentInstanceRequestValidatorTest {
           .isEqualTo(
               "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
                   + " Did you pass an entity id instead of an entity key?.");
+    }
+
+    @Test
+    @DisplayName("Should reject missing (null) jobLease on create")
+    void shouldRejectNullJobLeaseOnCreate() {
+      final var request =
+          AgentInstanceCreationRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(null)
+              .history(validRequest(JOB_KEY).getHistory())
+              .build();
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No jobLease provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject blank jobLease on create")
+    void shouldRejectBlankJobLeaseOnCreate() {
+      final var request =
+          AgentInstanceCreationRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease("   ")
+              .history(validRequest(JOB_KEY).getHistory())
+              .build();
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No jobLease provided.");
     }
 
     @Test
