@@ -11,10 +11,10 @@ import {randomUUID} from 'crypto';
 import path from 'path';
 
 export async function captureScreenshot(page: Page, testInfo: TestInfo) {
-  // Capture only when the test did not pass. Screenshots are uploaded to TestRail via the
-  // testrail_attachment annotation below and add little value for passing tests. Skip
-  // explicitly on passed/skipped rather than gating on `=== 'failed'`, so a timed-out or
-  // interrupted test -- exactly the cases where a screenshot is most useful -- still gets one.
+  // Capture only when the test did not pass. Skip explicitly on
+  // passed/skipped rather than gating on `=== 'failed'`, so a timed-out or
+  // interrupted test -- exactly the cases where a screenshot is most useful --
+  // still gets one.
   if (testInfo.status === 'passed' || testInfo.status === 'skipped') {
     return;
   }
@@ -26,9 +26,9 @@ export async function captureScreenshot(page: Page, testInfo: TestInfo) {
     timeout: 200000,
   });
 
-  testInfo.annotations.push({
-    type: 'testrail_attachment',
-    description: screenshotPath,
+  await testInfo.attach(`screenshot-${testInfo.title}`, {
+    path: screenshotPath,
+    contentType: 'image/png',
   });
 }
 
@@ -36,14 +36,11 @@ export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
   // Same policy as captureScreenshot above: skip on passed/skipped rather
   // than requiring literally 'failed', so timed-out/interrupted tests keep
   // getting a video too, and the two attachment types stay in sync.
+  //
+  // No manual attach step needed: Playwright's `video: 'retain-on-failure'`
+  // config (playwright.config.ts) already captures and attaches the video
+  // to the HTML report on its own.
   if (testInfo.status === 'passed' || testInfo.status === 'skipped') {
     return;
-  }
-  const video = page.video();
-  if (video) {
-    testInfo.annotations.push({
-      type: 'testrail_attachment',
-      description: 'Video recorded for non-passing test',
-    });
   }
 }
