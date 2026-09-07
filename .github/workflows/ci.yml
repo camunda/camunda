@@ -2884,9 +2884,9 @@ jobs:
     name: Deploy snapshot artifacts
     needs: [ check-results, build-platform-frontend, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: gcp-perf-core-8-default
-    # 30 min (the policy ceiling) covers the one-time checkout/setup/build overhead plus up to 2
-    # attempts of the deploy step below; the retry only re-runs that step, not this whole job.
-    timeout-minutes: 30
+    # Exceeds the 30min Unified CI ceiling (docs/monorepo-docs/ci.md); pending EngOps exception.
+    # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
+    timeout-minutes: 48
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2933,15 +2933,17 @@ jobs:
       # POM whose parent chain (zeebe-parent) must be resolved by external consumers to build the
       # effective model; the flattened POM is self-contained, exactly as published releases are.
       # Artifactory intermittently returns a transient 500 on artifact/metadata upload (INC-6737,
-      # INC-7541); a bare re-run of this exact command succeeded both times with no other change, so
-      # retrying automates that recovery. Deploying the same SNAPSHOT version twice is safe/idempotent.
+      # INC-7541); retrying automates recovery. Deploying the same SNAPSHOT twice is safe/idempotent.
+      # retry_on: any, not error — nick-fields/retry treats a timeout_minutes kill as a distinct event
+      # that retry_on: error does NOT retry. timeout_minutes needs real margin for this to be useful,
+      # else every run just hits the timeout wall on attempt 1 (see incident 2026-09-02).
       - name: Compile and deploy snapshot artifacts
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 2
-          retry_on: error
+          retry_on: any
           retry_wait_seconds: 15
-          timeout_minutes: 13
+          timeout_minutes: 20
           command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
