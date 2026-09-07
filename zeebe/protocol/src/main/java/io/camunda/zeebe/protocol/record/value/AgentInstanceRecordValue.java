@@ -145,8 +145,8 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   /**
    * @return the history item ids to delete from the committed/metrics-accumulated dedup indexes
    *     during this cleanup cycle; carried on the {@code CLEANED} event so the applier can delete
-   *     deterministically without re-scanning state. Not populated on the {@code CLEAN_UP}
-   *     command, which is never applied.
+   *     deterministically without re-scanning state. Not populated on the {@code CLEAN_UP} command,
+   *     which is never applied.
    */
   List<String> getHistoryItemIdsToDelete();
 
