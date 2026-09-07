@@ -466,9 +466,9 @@ class InputMappingResolverComparisonTest {
   // @DisplayName(
   //    "Rule 8: types survive across input mappings within one resolver context, but not when"
   //        + " written through MsgPack (confirmed bug camunda/camunda#60011).
-  // OrderedMappingResolver"
+  // OrderedInputMappingResolver"
   //        + " is the broken party here: it loses the FEEL type at every mapping boundary via the"
-  //        + " MsgPack round-trip. CombinedMappingResolver evaluates all mappings in one FEEL"
+  //        + " MsgPack round-trip. CombinedInputMappingResolver evaluates all mappings in one FEEL"
   //        + " context expression, so the type survives. When input-comparison-mode=ORDERED is
   // used"
   //        + " with the COMBINED default, any mapping that reads a FEEL-typed value set by an"
