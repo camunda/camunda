@@ -106,7 +106,7 @@ const TaskDetailsHeader: React.FC<Props> = ({
 
 	return (
 		<header
-			className="flex w-full flex-wrap items-center justify-between gap-4 px-4 pb-4 max-lg:flex-col! max-lg:flex-nowrap max-lg:items-start! max-lg:justify-start!"
+			className="flex w-full gap-4 px-4 pb-4 max-lg:flex-col max-lg:flex-nowrap max-lg:items-start max-lg:justify-start lg:flex-row lg:flex-wrap lg:items-center lg:justify-between"
 			title={t('tasklist.taskDetailsHeader')}
 		>
 			{isBelowMd ? (
@@ -128,7 +128,7 @@ const TaskDetailsHeader: React.FC<Props> = ({
 					{processName}
 				</Text>
 			</div>
-			<div className="ml-auto flex shrink-0 items-center justify-end gap-4 max-lg:ml-0! max-lg:w-full max-lg:justify-start!">
+			<div className="flex shrink-0 items-center gap-4 max-lg:ml-0 max-lg:w-full max-lg:justify-start lg:ml-auto lg:w-auto lg:justify-end">
 				{detailsButton ? <span className="flex items-center max-lg:order-3">{detailsButton}</span> : null}
 				<RightPanel taskState={taskState} assignee={assignee} user={user} assignButton={assignButton} />
 			</div>
