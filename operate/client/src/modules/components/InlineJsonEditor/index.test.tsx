@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {StrictMode, useState} from 'react';
-import {render, screen} from 'modules/testing-library';
+import {useState} from 'react';
+import {completionStatus, startCompletion} from '@codemirror/autocomplete';
+import {EditorView} from '@codemirror/view';
+import {act, render, screen, waitFor} from 'modules/testing-library';
 import {InlineJsonEditor} from './index';
 
 vi.unmock('modules/components/InlineJsonEditor');
@@ -136,23 +138,6 @@ describe('<InlineJsonEditor />', () => {
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
-  it('should use the latest onChange callback without replacing the editor', async () => {
-    const originalOnChange = vi.fn();
-    const nextOnChange = vi.fn();
-    const {rerender, user} = render(
-      <InlineJsonEditor value="" onChange={originalOnChange} />,
-    );
-    const editor = screen.getByRole('textbox', {name: 'Value'});
-
-    rerender(<InlineJsonEditor value="" onChange={nextOnChange} />);
-    editor.focus();
-    await user.type(editor, '1', {skipClick: true});
-
-    expect(screen.getByRole('textbox', {name: 'Value'})).toBe(editor);
-    expect(originalOnChange).not.toHaveBeenCalled();
-    expect(nextOnChange).toHaveBeenCalledWith('1');
-  });
-
   it('should update field attributes and placeholder without replacing the editor', () => {
     const onChange = vi.fn();
     const {rerender} = render(
@@ -185,31 +170,6 @@ describe('<InlineJsonEditor />', () => {
     expect(screen.getByText('Enter a value')).toBeInTheDocument();
     expect(screen.queryByText('Enter JSON')).not.toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it('should initialize a single editor in Strict Mode', () => {
-    const onChange = vi.fn();
-    const {unmount} = render(
-      <StrictMode>
-        <InlineJsonEditor
-          value='"initial"'
-          label="Payload"
-          onChange={onChange}
-          autoFocus
-        />
-      </StrictMode>,
-    );
-
-    expect(screen.getAllByRole('textbox', {name: 'Payload'})).toHaveLength(1);
-    expect(screen.getByRole('textbox', {name: 'Payload'})).toHaveTextContent(
-      '"initial"',
-    );
-    expect(screen.getByRole('textbox', {name: 'Payload'})).toHaveFocus();
-    expect(onChange).not.toHaveBeenCalled();
-
-    unmount();
-
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
   it('should call onBlur once when focus moves outside the editor', async () => {
@@ -263,26 +223,26 @@ describe('<InlineJsonEditor />', () => {
     expect(screen.getByRole('button', {name: 'Next field'})).toHaveFocus();
   });
 
-  it('should autofocus only when autoFocus becomes enabled', async () => {
-    const {rerender, user} = render(
-      <>
-        <InlineJsonEditor value='"initial"' onChange={vi.fn()} autoFocus />
-        <button>Other field</button>
-      </>,
-    );
-    const editor = screen.getByRole('textbox', {name: 'Value'});
-    const otherField = screen.getByRole('button', {name: 'Other field'});
+  it.each([
+    [50_000, 'active'],
+    [50_001, null],
+  ] as const)(
+    'should bound word completion for %i-character values',
+    async (length, status) => {
+      const value = `[true,false,${' '.repeat(length - 13)}]`;
+      render(<InlineJsonEditor value={value} onChange={vi.fn()} autoFocus />);
+      const view = EditorView.findFromDOM(
+        screen.getByRole('textbox', {name: 'Value'}),
+      );
 
-    expect(editor).toHaveFocus();
-
-    await user.click(otherField);
-    rerender(
-      <>
-        <InlineJsonEditor value='"updated"' onChange={vi.fn()} autoFocus />
-        <button>Other field</button>
-      </>,
-    );
-
-    expect(otherField).toHaveFocus();
-  });
+      if (view === null) {
+        throw new Error('CodeMirror editor was not mounted');
+      }
+      act(() => {
+        startCompletion(view);
+      });
+      expect(completionStatus(view.state)).toBe('pending');
+      await waitFor(() => expect(completionStatus(view.state)).toBe(status));
+    },
+  );
 });

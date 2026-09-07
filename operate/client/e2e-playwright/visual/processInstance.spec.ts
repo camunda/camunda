@@ -534,9 +534,6 @@ test.describe('process instance page', () => {
       'none',
     );
 
-    await page.keyboard.press('Control+Space');
-    await expect(page.getByRole('listbox')).toBeVisible();
-
     await processInstancePage.variablesEditor.hideCaret();
 
     await expect(page).toHaveScreenshot();
@@ -608,6 +605,23 @@ test.describe('process instance page', () => {
       `"${'long-value-'.repeat(100)}"`,
     );
     await expectInlineEditorToBeContained(inlineEditor);
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('["alpha", "al"]');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Control+Space');
+    const suggestion = page.getByRole('option', {name: 'alpha', exact: true});
+    await expect(suggestion).toBeVisible();
+    await expect(suggestion).toBeInViewport();
+    await page.keyboard.press('Enter');
+    await expect(codeMirrorEditor).toHaveText('["alpha", "alpha"]');
+    await page.keyboard.press('Escape');
+    await expect(codeMirrorEditor).not.toBeFocused();
+
+    await codeMirrorEditor.focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(processInstancePage.newVariableNameField).toBeFocused();
   });
 
   test('inline JSON edit - error state after blur', async ({
