@@ -40,6 +40,7 @@ import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.Testcontainers;
@@ -59,16 +60,14 @@ public class CamundaProcessTestConnectorsIT {
 
   @RegisterExtension
   @Order(2)
+  private static final BindCamundaProcessTestExtension BIND_EXTENSION =
+      new BindCamundaProcessTestExtension();
+
+  @RegisterExtension
+  @Order(3)
   private static final CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension() {
-        @Override
-        public void beforeAll(final ExtensionContext context) {
-          final int wireMockPort = WIREMOCK.getRuntimeInfo().getHttpPort();
-          Testcontainers.exposeHostPorts(wireMockPort);
-          withConnectorsSecret("BASE_URL", "http://host.testcontainers.internal:" + wireMockPort);
-          super.beforeAll(context);
-        }
-      }.withConnectorsEnabled(true)
+      new CamundaProcessTestExtension()
+          .withConnectorsEnabled(true)
           .withConnectorsSecret(
               "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
 
@@ -159,5 +158,16 @@ public class CamundaProcessTestConnectorsIT {
         .hasVariable("status", "okay");
 
     verify(getRequestedFor(urlEqualTo("/test")));
+  }
+
+  private static final class BindCamundaProcessTestExtension implements BeforeAllCallback {
+
+    @Override
+    public void beforeAll(final ExtensionContext context) {
+      final int wireMockPort = WIREMOCK.getRuntimeInfo().getHttpPort();
+      Testcontainers.exposeHostPorts(wireMockPort);
+      EXTENSION.withConnectorsSecret(
+          "BASE_URL", "http://host.testcontainers.internal:" + wireMockPort);
+    }
   }
 }
