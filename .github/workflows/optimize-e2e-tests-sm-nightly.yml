@@ -104,21 +104,7 @@ jobs:
           yarn run start-backend ci &> ./build/backendLogs.log &
 
       - name: Wait for import to complete
-        run: |
-          case "${{ matrix.branch }}" in
-            stable/8.8) expected=49 ;;
-            stable/8.9) expected=60 ;;
-            *) expected=43 ;;
-          esac
-          while : ; do
-            count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
-            if [[ $count -eq $expected ]]; then
-              echo "Import Completed"
-              break
-            fi
-            echo "Index has $count entities. Waiting for $expected..."
-            sleep 10
-          done
+        run: ./.github/optimize/scripts/wait-for-import.sh
 
       - name: Wait for frontend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
