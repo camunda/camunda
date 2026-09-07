@@ -67,6 +67,11 @@
       "query": "max(max_over_time(kubelet_volume_stats_used_bytes{namespace=\"$NAMESPACE\", persistentvolumeclaim=~\".*(camunda|zeebe).*\"}[$DURATION_S])) / 1024 / 1024 / 1024"
     },
     {
+      "key": "camunda_write_iops",
+      "header": "Camunda Write IOPS",
+      "query": "avg_over_time((sum(rate(container_fs_writes_total{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container!=\"\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
       "key": "secondary_storage_cpu_limit",
       "header": "Secondary Storage CPU limit",
       "query": "max(max_over_time(kube_pod_container_resource_limits{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\", resource=\"cpu\", unit=\"core\"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_cpu_cores{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$DURATION_S]))"
@@ -110,6 +115,11 @@
       "key": "secondary_storage_disk_used_gib",
       "header": "Secondary Storage Disk used GiB",
       "query": "max(max_over_time(kubelet_volume_stats_used_bytes{namespace=\"$NAMESPACE\", persistentvolumeclaim=~\".*(elastic|opensearch).*\"}[$DURATION_S])) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "secondary_storage_write_iops",
+      "header": "Secondary Storage Write IOPS",
+      "query": "avg_over_time((sum(rate(container_fs_writes_total{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
     },
     {
       "key": "records_processed_per_second",
