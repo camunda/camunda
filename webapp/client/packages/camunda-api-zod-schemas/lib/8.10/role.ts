@@ -10,6 +10,7 @@ import {z} from 'zod';
 import {
 	API_VERSION,
 	advancedStringFilterSchema,
+	getOrFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
@@ -35,10 +36,12 @@ type UpdateRoleResponseBody = z.infer<typeof updateRoleResponseBodySchema>;
 
 const queryRolesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['name', 'roleId'] as const,
-	filter: z.object({
-		roleId: z.string().optional(),
-		name: advancedStringFilterSchema.optional(),
-	}),
+	filter: getOrFilterSchema(
+		z.object({
+			roleId: advancedStringFilterSchema.optional(),
+			name: advancedStringFilterSchema.optional(),
+		}),
+	),
 });
 type QueryRolesRequestBody = z.infer<typeof queryRolesRequestBodySchema>;
 

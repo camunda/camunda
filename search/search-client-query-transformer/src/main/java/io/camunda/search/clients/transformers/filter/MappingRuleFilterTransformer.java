@@ -32,6 +32,16 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
 
   @Override
   public SearchQuery toSearchQuery(final MappingRuleFilter filter) {
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
+    }
+
+    return and(queries);
+  }
+
+  private ArrayList<SearchQuery> toSearchQueryFields(final MappingRuleFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     queries.add(stringTerms(CLAIM_NAME, filter.claimNames()));
     if (filter.claimName() != null) {
@@ -43,8 +53,8 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
     if (filter.nameOperations() != null && !filter.nameOperations().isEmpty()) {
       queries.addAll(stringOperations(NAME, filter.nameOperations()));
     }
-    if (filter.mappingRuleId() != null) {
-      queries.add(term(MAPPING_RULE_ID, filter.mappingRuleId()));
+    if (filter.mappingRuleIdOperations() != null && !filter.mappingRuleIdOperations().isEmpty()) {
+      queries.addAll(stringOperations(MAPPING_RULE_ID, filter.mappingRuleIdOperations()));
     }
     if (filter.claims() != null) {
       queries.add(
@@ -61,8 +71,7 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
               ? matchNone()
               : stringTerms(MAPPING_RULE_ID, filter.mappingRuleIds().stream().sorted().toList()));
     }
-
-    return and(queries);
+    return queries;
   }
 
   @Override

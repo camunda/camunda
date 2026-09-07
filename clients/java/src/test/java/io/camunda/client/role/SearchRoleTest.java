@@ -23,11 +23,19 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.filter.ClientFilter;
+import io.camunda.client.api.search.filter.RoleFilterBase;
 import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.RoleFilter;
 import io.camunda.client.protocol.rest.RoleResult;
+import io.camunda.client.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.client.util.ClientRestTest;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -138,5 +146,68 @@ public class SearchRoleTest extends ClientRestTest {
     assertThatThrownBy(() -> client.newRoleGetRequest(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
+  }
+
+  @Test
+  void shouldSearchRolesWithOrFilters() {
+    // when
+    client
+        .newRolesSearchRequest()
+        .filter(
+            fn ->
+                fn.name("Admin")
+                    .orFilters(Arrays.asList(f1 -> f1.roleId("role-1"), f2 -> f2.roleId("role-2"))))
+        .send()
+        .join();
+
+    // then
+    final RoleSearchQueryRequest request =
+        gatewayService.getLastRequest(RoleSearchQueryRequest.class);
+    final RoleFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getName().get$Eq()).isEqualTo("Admin");
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getRoleId().get$Eq()).isEqualTo("role-1");
+    assertThat(filter.get$Or().get(1).getRoleId().get$Eq()).isEqualTo("role-2");
+  }
+
+  @Test
+  void shouldSearchRolesByRoleIdLike() {
+    // when
+    client.newRolesSearchRequest().filter(f -> f.roleId(b -> b.like("role*"))).send().join();
+
+    // then
+    final RoleSearchQueryRequest request =
+        gatewayService.getLastRequest(RoleSearchQueryRequest.class);
+    final RoleFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getRoleId().get$Like()).isEqualTo("role*");
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods = publicMethodSignatures(RoleFilterBase.class);
+    final Set<String> fullMethods =
+        publicMethodSignatures(io.camunda.client.api.search.filter.RoleFilter.class);
+
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
+
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
+
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
+  }
+
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }
