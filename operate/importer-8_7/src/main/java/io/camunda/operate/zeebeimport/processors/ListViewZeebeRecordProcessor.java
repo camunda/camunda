@@ -23,6 +23,7 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.OperationType;
@@ -90,6 +91,8 @@ public class ListViewZeebeRecordProcessor {
 
   @Autowired private MetricsStore metricsStore;
 
+  @Autowired private DatabaseInfo databaseInfo;
+
   // treePath by processInstanceKey cache
   private Map<String, String> treePathCache;
   // flowNodeId by flowNodeInstanceId cache for call activities
@@ -102,8 +105,7 @@ public class ListViewZeebeRecordProcessor {
       // node
       treePathCache =
           new SoftHashMap<>(
-              operateProperties.getElasticsearch().getBatchSize()
-                  * partitionHolder.getPartitionIds().size());
+              zeebeRecordsReaderBatchSize() * partitionHolder.getPartitionIds().size());
     }
     return treePathCache;
   }
@@ -112,10 +114,16 @@ public class ListViewZeebeRecordProcessor {
     if (callActivityIdCache == null) {
       callActivityIdCache =
           new SoftHashMap<>(
-              operateProperties.getElasticsearch().getBatchSize()
-                  * partitionHolder.getPartitionIds().size());
+              zeebeRecordsReaderBatchSize() * partitionHolder.getPartitionIds().size());
     }
     return callActivityIdCache;
+  }
+
+  private int zeebeRecordsReaderBatchSize() {
+    if (databaseInfo.isOpensearchDb()) {
+      return operateProperties.getZeebeOpensearch().getBatchSize();
+    }
+    return operateProperties.getZeebeElasticsearch().getBatchSize();
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
