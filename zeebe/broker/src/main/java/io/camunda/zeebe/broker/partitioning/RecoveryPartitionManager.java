@@ -62,6 +62,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -117,7 +118,7 @@ public final class RecoveryPartitionManager
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private final BrokerHealthCheckService healthCheckService;
-  private final List<HealthMonitorable> registeredHealthComponents = new ArrayList<>();
+  private final Map<Integer, HealthMonitorable> registeredHealthComponents = new LinkedHashMap<>();
   private @Nullable BackupStore backupStore;
   private @Nullable ExecutorService restoreExecutor;
 
@@ -199,6 +200,10 @@ public final class RecoveryPartitionManager
     // tenant is never mistaken for one that failed to start (see registerBootstrapPartitions).
     healthCheckService.registerRecoveringPartitions(
         partitionGroup, localPartitions.stream().map(PartitionMetadata::id).toList());
+    localPartitions.forEach(
+        metadata ->
+            registerHealthComponent(
+                metadata.id().number(), RecoveringPartitionHealth.recovering(metadata.id())));
     if (localPartitions.isEmpty()) {
       LOG.info("No local partitions to recover for partition group {}", partitionGroup);
       result.complete(null);
@@ -210,6 +215,10 @@ public final class RecoveryPartitionManager
       backupStore = BackupCfg.BackupStoreFactory.createStore(backupCfg);
     } catch (final Exception e) {
       LOG.error("Failed to create backup store for partition group {}", partitionGroup, e);
+      localPartitions.forEach(
+          metadata ->
+              registerHealthComponent(
+                  metadata.id().number(), RecoveringPartitionHealth.failed(metadata.id())));
       result.completeExceptionally(e);
       return;
     }
@@ -255,10 +264,9 @@ public final class RecoveryPartitionManager
                       topologyManager.onHealthChanged(
                           p.partitionId().number(), HealthStatus.HEALTHY);
                       p.healthMetrics().setRecovering();
-                      registerHealthComponent(
-                          p.partitionId().number(),
-                          RecoveringPartitionHealth.recovered(p.partitionId()));
                     });
+                // Only the failures need a new component; the rest keep the recovering one
+                // registered before the partitions started.
                 failedPartitionIds.forEach(
                     id -> {
                       topologyManager.onHealthChanged(id, HealthStatus.UNHEALTHY);
@@ -306,9 +314,16 @@ public final class RecoveryPartitionManager
         healthCheckService.componentName());
   }
 
+  /**
+   * Registers {@code healthComponent} as the partition's node in the broker health tree, replacing
+   * whatever this manager registered for the same partition before. Both instances share the {@link
+   * ZeebePartition#componentName(PartitionId)}, so the health monitor overwrites the slot by name;
+   * keying the bookkeeping by partition keeps {@link #stopInternal} from holding a superseded
+   * instance whose removal would take the live one's slot with it.
+   */
   private void registerHealthComponent(
       final int partitionId, final RecoveringPartitionHealth healthComponent) {
-    registeredHealthComponents.add(healthComponent);
+    registeredHealthComponents.put(partitionId, healthComponent);
     healthCheckService.registerMonitoredPartition(partitionId, healthComponent);
   }
 
@@ -316,7 +331,7 @@ public final class RecoveryPartitionManager
     // Unregister the readiness and health state this manager contributed, so the next manager's
     // registration starts from a clean slate: after exiting recovery, readiness must be gated on
     // the partitions genuinely rejoining Raft rather than on the recovery-mode "installed" marks.
-    registeredHealthComponents.forEach(healthCheckService::removeMonitoredPartition);
+    registeredHealthComponents.values().forEach(healthCheckService::removeMonitoredPartition);
     registeredHealthComponents.clear();
     healthCheckService.unregisterPhysicalTenant(partitionGroup);
     final var stopFutures =
