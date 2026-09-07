@@ -12,6 +12,7 @@ import type {
   ProcessInstanceByNameDto,
   CoreStatisticsDto,
 } from '@/types';
+import type {QueryProcessDefinitionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const mockStatistics = {
   running: 891,
@@ -1417,14 +1418,29 @@ const mockIncidentsByProcess = [
   },
 ];
 
+const mockDrainingProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] =
+  [
+    {
+      state: 'DRAINING',
+      processDefinitionKey: '2251799813687188',
+      name: 'Order process',
+      version: 2,
+      processDefinitionId: 'orderProcess',
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+  ];
+
 function mockResponses({
   statistics,
   incidentsByError,
   incidentsByProcess,
+  drainingProcessDefinitions,
 }: {
   statistics?: CoreStatisticsDto;
   incidentsByError?: IncidentByErrorDto[];
   incidentsByProcess?: ProcessInstanceByNameDto[];
+  drainingProcessDefinitions?: QueryProcessDefinitionsResponseBody['items'];
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -1476,6 +1492,20 @@ function mockResponses({
       });
     }
 
+    if (route.request().url().includes('/v2/process-definitions/search')) {
+      const items = drainingProcessDefinitions ?? [];
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          items,
+          page: {totalItems: items.length},
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
     route.continue();
   };
 }
@@ -1484,5 +1514,6 @@ export {
   mockStatistics,
   mockIncidentsByError,
   mockIncidentsByProcess,
+  mockDrainingProcessDefinitions,
   mockResponses,
 };

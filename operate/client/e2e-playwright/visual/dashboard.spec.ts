@@ -11,6 +11,7 @@ import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
   mockIncidentsByProcess,
+  mockDrainingProcessDefinitions,
   mockResponses,
   mockStatistics,
 } from '../mocks/dashboard.mocks';
@@ -114,6 +115,24 @@ test.describe('dashboard page', () => {
     await expandIncidentsByErrorRow.click();
 
     await expect(page.getByText(/complexprocess – version 2/i)).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('draining process definition badge', async ({page, dashboardPage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        statistics: mockStatistics,
+        incidentsByError: mockIncidentsByError,
+        incidentsByProcess: mockIncidentsByProcess,
+        drainingProcessDefinitions: mockDrainingProcessDefinitions,
+      }),
+    );
+
+    await dashboardPage.gotoDashboardPage();
+
+    await expect(page.getByTestId('draining-indicator').first()).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
