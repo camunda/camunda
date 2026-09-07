@@ -179,6 +179,29 @@ public class AgentInstanceCleanUpProcessorTest {
     verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any());
   }
 
+  @Test
+  void shouldNotTreatDuplicateIdAsNeedingNewBudgetSlot() {
+    // given — two committed items exactly filling the chunk of two, one of which (item-1) is also
+    // present in metrics-accumulated, plus a genuinely new metrics-accumulated-only item.
+    agentHistoryState.putCommittedHistoryItemKey(AGENT_INSTANCE_KEY, "item-1", 101L);
+    agentHistoryState.putCommittedHistoryItemKey(AGENT_INSTANCE_KEY, "item-2", 102L);
+    agentHistoryState.markMetricsAccumulated(AGENT_INSTANCE_KEY, "item-1");
+    agentHistoryState.markMetricsAccumulated(AGENT_INSTANCE_KEY, "item-3");
+
+    // when
+    processor.processRecord(cleanUpCommand());
+
+    // then — re-encountering item-1 in the metrics-accumulated scan doesn't consume a budget slot
+    // or falsely flag hasMore; the scan continues and still finds item-3 needs a follow-up cycle.
+    assertThat(capturedCleanedEvent().getHistoryItemIdsToDelete())
+        .containsExactlyInAnyOrder("item-1", "item-2");
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(AGENT_INSTANCE_KEY),
+            eq(AgentInstanceIntent.CLEAN_UP),
+            any(AgentInstanceRecord.class));
+  }
+
   private AgentInstanceRecord capturedCleanedEvent() {
     final var captor = ArgumentCaptor.forClass(AgentInstanceRecord.class);
     verify(stateWriter)

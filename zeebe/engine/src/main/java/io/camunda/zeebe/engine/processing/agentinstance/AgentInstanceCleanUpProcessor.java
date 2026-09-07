@@ -103,6 +103,12 @@ public final class AgentInstanceCleanUpProcessor
 
   private boolean collectUpToChunkSize(
       final HashSet<String> idsToDelete, final AtomicBoolean hasMore, final String id) {
+    // An id already collected from the other column family doesn't need a new budget slot: check
+    // for it before the chunk-full check below, so a duplicate never falsely triggers hasMore and
+    // never stops a scan that could still find a genuinely new id.
+    if (idsToDelete.contains(id)) {
+      return true;
+    }
     // Probe one id past the chunk boundary rather than stopping the instant the boundary is
     // reached: only being called again after filling the budget proves another id genuinely
     // exists, so an exact-chunkSize total correctly leaves hasMore false instead of scheduling a
