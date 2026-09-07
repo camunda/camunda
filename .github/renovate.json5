@@ -5,6 +5,8 @@
     "config:recommended",
     "github>camunda/infra-renovate-config:herodevs.json5",
     "github>camunda/infra-renovate-config:rebase.json5",
+    // Version-tracks camunda/infra-global-github-actions sub-action pins (`# <family>-X.Y.Z`).
+    "github>camunda/infra-global-github-actions:renovate-action-versions.json5",
     // Team-specific configuration
     "local>camunda/camunda//.github/renovate/team-reliability-testing.json5",
   ],
@@ -946,21 +948,6 @@
         "action:\\s+(?<depName>[\\w.-]+/[\\w.-]+)@(?<currentDigest>[a-f0-9]{40})\\s+#\\s*(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
       ],
       datasourceTemplate: "github-tags",
-    },
-    {
-      // Per-family extractVersion keeps each sub-action's tags from matching another family's release line.
-      description: "Track camunda/infra-global-github-actions sub-actions pinned to a per-action release tag (comment format '# <action>-X.Y.Z'), which the default github-actions manager cannot version-track because it drops the sub-action path from depName.",
-      customType: "regex",
-      managerFilePatterns: [
-        "/^\\.github/.+\\.ya?ml$/",
-      ],
-      matchStrings: [
-        "uses:\\s*camunda/infra-global-github-actions/[\\w./-]+@(?<currentDigest>[a-f0-9]{40})\\s+#\\s*(?<family>[a-z0-9-]+?)-(?<currentValue>\\d+\\.\\d+\\.\\d+)\\b",
-      ],
-      depNameTemplate: "camunda/infra-global-github-actions/{{{family}}}",
-      packageNameTemplate: "camunda/infra-global-github-actions",
-      datasourceTemplate: "github-tags",
-      extractVersionTemplate: "^{{{family}}}-(?<version>\\d+\\.\\d+\\.\\d+)$",
     },
   ],
 }
