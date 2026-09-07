@@ -125,4 +125,9 @@ public final class AgentInstanceCleanUpProcessor
   public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
     return SuspensionBehavior.PROCESS;
   }
+
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
+  }
 }
