@@ -30,7 +30,7 @@
     "mobx-react-lite": "5.0.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-error-boundary": "6.1.2",
+    "react-error-boundary": "6.1.4",
     "react-final-form": "7.0.1",
     "react-final-form-arrays": "4.0.0",
     "react-i18next": "17.0.11",
