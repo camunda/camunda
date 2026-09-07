@@ -57,16 +57,18 @@ public final class ComparingMappingResolver<M> implements MappingResolver<M> {
 
       if (!equivalent(snapshot, comparisonResult)) {
         LOG.warn(
-            "Mapping results differ between {} and {} resolvers [{}].",
+            "Mapping results differ between {} and {} resolvers [{}, {}].",
             primary.getClass().getSimpleName(),
             comparison.getClass().getSimpleName(),
-            processor.getMappingContext());
+            processor.getMappingContext(),
+            mappings);
       }
     } catch (final Exception e) {
       LOG.warn(
-          "Comparison resolver {} threw unexpectedly [{}]; primary {} result is applied.",
+          "Comparison resolver {} threw unexpectedly [{}, {}]; primary {} result is applied.",
           comparison.getClass().getSimpleName(),
           processor.getMappingContext(),
+          mappings,
           primaryResult.isRight() ? "success" : "failure",
           e);
     }
