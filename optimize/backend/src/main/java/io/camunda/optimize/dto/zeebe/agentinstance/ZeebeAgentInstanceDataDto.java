@@ -169,6 +169,13 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     return null;
   }
 
+  // Not tracked — Optimize's import only consumes CREATED/COMPLETED, so it never processes
+  // CLEAN_UP/CLEANED records and has nothing to populate this from.
+  @Override
+  public List<String> getHistoryItemIdsToDelete() {
+    return List.of();
+  }
+
   @Override
   public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
