@@ -590,11 +590,29 @@ public class AgentHistoryCommitTest {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
-    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
 
     // Activation 1 (superseded): an AGENT_INSTANCE:UPDATE queues a CONFIGURATION item that
     // changes model/provider, but the job fails before the item is ever committed.
     final var job1 = activateJobForProcessInstanceWithLease(processInstanceKey);
+
+    // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    baselineConfigItem.setModel("gpt-4o").setProvider("openai");
+    baselineConfigItem.setChangedAttributes(List.of("model", "provider"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(job1.key())
+            .withJobLease(job1.leaseToken())
+            .withHistory(List.of(baselineConfigItem))
+            .create()
+            .getKey();
+
     final var supersededConfigItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config-superseded")
