@@ -100,7 +100,9 @@ public class ProcessInstanceController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/{processInstanceKey}/incident-resolution")
+  @CamundaPostMapping(
+      path = "/{processInstanceKey}/incident-resolution",
+      consumes = {})
   public CompletableFuture<ResponseEntity<Object>> resolveProcessInstanceIncidents(
       @PathVariable final long processInstanceKey) {
     return RequestExecutor.executeServiceMethod(
