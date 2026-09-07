@@ -10,6 +10,7 @@ package io.camunda.exporter.config;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ public class ConfigValidatorTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", "_"})
+  @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", "_", ",", "#", ":"})
   void shouldNotAllowInvalidCharactersInIndexPrefix(final String testCharacter) {
     // given
     config.getConnect().setIndexPrefix("test-prefix" + testCharacter);
@@ -55,12 +56,12 @@ public class ConfigValidatorTest {
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
         .hasMessageContaining(
-            "CamundaExporter index.prefix must not contain invalid characters [\\ / * ? \" < > | space _].")
+            "CamundaExporter index.prefix must not contain invalid characters [\\ / * ? \" < > | space _ , # :].")
         .isInstanceOf(ExporterException.class);
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {".", "+"})
+  @ValueSource(strings = {".", "+", "-"}) // "_" is an invalid character in any position
   void shouldNotAllowInvalidCharactersAtStartOfIndexPrefix(final String testCharacter) {
     // given
     config.getConnect().setIndexPrefix(testCharacter + "test-prefix");
@@ -68,8 +69,33 @@ public class ConfigValidatorTest {
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
         .hasMessageContaining(
-            "CamundaExporter index.prefix must not begin with invalid characters [. +].")
+            "CamundaExporter index.prefix must not begin with invalid characters [. + - _].")
         .isInstanceOf(ExporterException.class);
+  }
+
+  @Test
+  void shouldNotAllowIndexPrefixExceedingMaxLength() {
+    // given
+    final String testPrefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH + 1);
+    config.getConnect().setIndexPrefix(testPrefix);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .hasMessageContaining(
+            String.format(
+                "CamundaExporter index.prefix must not exceed %d characters",
+                IndexPrefixValidation.MAX_PREFIX_LENGTH))
+        .isInstanceOf(ExporterException.class);
+  }
+
+  @Test
+  void shouldAllowIndexPrefixAtMaxLength() {
+    // given
+    final String testPrefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH);
+    config.getConnect().setIndexPrefix(testPrefix);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config)).doesNotThrowAnyException();
   }
 
   @ParameterizedTest(name = "{0}")

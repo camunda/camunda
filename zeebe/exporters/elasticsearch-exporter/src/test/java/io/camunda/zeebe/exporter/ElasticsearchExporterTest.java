@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
+import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -453,13 +454,62 @@ final class ElasticsearchExporterTest {
   @Nested
   final class ValidationTest {
 
-    @Test
-    void shouldNotAllowUnderscoreInIndexPrefix() {
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    void shouldNotAllowInvalidCharactersInIndexPrefix(final String testCharacter) {
       // given
-      config.index.prefix = "i_am_invalid";
+      config.index.prefix = "test-prefix" + testCharacter;
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    void shouldNotAllowInvalidCharactersAtBeginningOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = testCharacter + "test-prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    void shouldNotAllowInvalidCharactersInMiddleOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = "test" + testCharacter + "prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {".", "+", "-", "_"})
+    void shouldNotAllowInvalidCharactersAtStartOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = testCharacter + "test-prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowIndexPrefixExceedingMaxLength() {
+      // given
+      config.index.prefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH + 1);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldAllowIndexPrefixAtMaxLength() {
+      // given
+      config.index.prefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).doesNotThrowAnyException();
     }
 
     @ParameterizedTest(name = "{0}")
