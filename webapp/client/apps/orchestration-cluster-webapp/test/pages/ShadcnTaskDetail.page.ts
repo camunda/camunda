@@ -204,6 +204,10 @@ class ShadcnTaskDetailPage extends BasePage {
 		await this.jsonEditorInput('Edit Variable').pressSequentially(value);
 	}
 
+	get autoSelectNextTaskSwitch() {
+		return this.page.getByRole('switch', {name: 'Auto-select first available task'});
+	}
+
 	get assignee() {
 		return this.detailsHeader.getByTestId('assignee');
 	}
