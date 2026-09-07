@@ -137,6 +137,36 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
+  public void shouldNotRevertToActiveWhenResumeAndFinishLandInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    // given
+    final ProcessInstanceDbModel instance =
+        ProcessInstanceFixtures.createRandomized(
+            b -> b.state(ProcessInstanceState.ACTIVE).suspendedDate(null));
+    createAndSaveProcessInstance(rdbmsWriters, instance);
+
+    // when
+    rdbmsWriters.getProcessInstanceWriter().suspend(instance.processInstanceKey(), NOW);
+    rdbmsWriters.getProcessInstanceWriter().resume(instance.processInstanceKey());
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .finish(instance.processInstanceKey(), ProcessInstanceState.COMPLETED, NOW);
+    rdbmsWriters.flush();
+
+    // then
+    final var readInstance =
+        processInstanceReader.findOne(instance.processInstanceKey()).orElse(null);
+
+    assertThat(readInstance).isNotNull();
+    assertThat(readInstance.state()).isEqualTo(ProcessInstanceState.COMPLETED);
+    assertThat(readInstance.endDate()).isNotNull();
+  }
+
+  @TestTemplate
   public void shouldFindProcessInstanceByBpmnProcessId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
