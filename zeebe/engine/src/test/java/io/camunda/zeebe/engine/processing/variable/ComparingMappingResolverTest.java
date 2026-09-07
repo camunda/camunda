@@ -281,4 +281,26 @@ final class ComparingMappingResolverTest {
 
     assertThat(recorder.getAppendedEvents()).hasSize(2);
   }
+
+  @Test
+  void shouldIncludeMappingContextInWarnMessage() {
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(msgPackOf("{\"a\":1}"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"a\":2}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
+
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
+
+    assertThat(result.isRight()).isTrue();
+    assertThat(recorder.getAppendedEvents())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            e -> {
+              final String formattedMessage = e.getMessage().getFormattedMessage();
+              assertThat(formattedMessage)
+                  .contains(
+                      "MappingContext[elementId=element-1, scopeKey=100, processInstanceKey=200, processDefinitionKey=300, tenantId=default]");
+            });
+  }
 }
