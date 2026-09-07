@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 
@@ -26,23 +28,18 @@ class PersistentWebSessionPropertiesPostProcessorTest {
     return environment;
   }
 
-  @Test
-  void shouldMapCanonicalLegacyKeyToCanonicalProperty() {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "camunda.persistent.sessions.enabled",
+        "camunda.operate.persistent.sessions.enabled",
+        "camunda.operate.persistentSessionsEnabled",
+        "camunda.tasklist.persistent.sessions.enabled",
+        "camunda.tasklist.persistentSessionsEnabled"
+      })
+  void shouldMapLegacyKeyToCanonicalProperty(final String legacyKey) {
     // given
-    final var environment = environmentWith(Map.of("camunda.persistent.sessions.enabled", "true"));
-
-    // when
-    processor.postProcessEnvironment(environment, null);
-
-    // then
-    assertThat(environment.getProperty(CANONICAL_PROPERTY)).isEqualTo("true");
-  }
-
-  @Test
-  void shouldMapLegacyOperateCamelCaseKey() {
-    // given
-    final var environment =
-        environmentWith(Map.of("camunda.operate.persistentSessionsEnabled", "true"));
+    final var environment = environmentWith(Map.of(legacyKey, "true"));
 
     // when
     processor.postProcessEnvironment(environment, null);
