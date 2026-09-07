@@ -186,7 +186,7 @@ test.describe('Groups functionalities', () => {
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Group',
-        ownerId: TEST_GROUP.name,
+        ownerId: TEST_GROUP.groupId,
         resourceType: 'AUDIT_LOG',
         resourceId: '*',
         accessPermissions: ['Read'],
