@@ -437,4 +437,37 @@ final class AgentInstanceRecordTest {
         .extracting(AgentHistoryRecordValue::getProducedAt)
         .containsExactly(1L, 2L);
   }
+
+  @Test
+  void shouldDefaultHistoryItemIdsToDeleteToEmptyList() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getHistoryItemIdsToDelete()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripHistoryItemIdsToDeleteViaMsgPack() {
+    // given
+    final AgentInstanceRecord original =
+        new AgentInstanceRecord().setHistoryItemIdsToDelete(List.of("item-1", "item-2"));
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getHistoryItemIdsToDelete()).containsExactly("item-1", "item-2");
+  }
+
+  @Test
+  void shouldReplaceExistingHistoryItemIdsToDeleteOnSet() {
+    // given
+    final AgentInstanceRecord record =
+        new AgentInstanceRecord().setHistoryItemIdsToDelete(List.of("item-1"));
+
+    // when
+    record.setHistoryItemIdsToDelete(List.of("item-2", "item-3"));
+
+    // then
+    assertThat(record.getHistoryItemIdsToDelete()).containsExactly("item-2", "item-3");
+  }
 }

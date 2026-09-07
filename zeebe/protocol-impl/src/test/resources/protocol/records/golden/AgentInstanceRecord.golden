@@ -39,7 +39,9 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
   public static final String ATTR_MODEL = "model";
   public static final String ATTR_PROVIDER = "provider";
-  public static final String ATTR_LIMITS = "limits";
+  public static final String ATTR_MAX_TOKENS = "maxTokens";
+  public static final String ATTR_MAX_MODEL_CALLS = "maxModelCalls";
+  public static final String ATTR_MAX_TOOL_CALLS = "maxToolCalls";
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);
@@ -76,9 +78,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
   private final ArrayProperty<AgentHistoryRecord> historyProp =
       new ArrayProperty<>("history", AgentHistoryRecord::new);
+  private final ArrayProperty<StringValue> historyItemIdsToDeleteProp =
+      new ArrayProperty<>("historyItemIdsToDelete", StringValue::new);
 
   public AgentInstanceRecord() {
-    super(22);
+    super(23);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(agentDefinitionKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -100,7 +104,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(changedAttributesProp)
         .declareProperty(jobKeyProp)
         .declareProperty(jobLeaseProp)
-        .declareProperty(historyProp);
+        .declareProperty(historyProp)
+        .declareProperty(historyItemIdsToDeleteProp);
   }
 
   @Override
@@ -346,6 +351,23 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord addHistoryItem(final AgentHistoryRecord historyItem) {
     historyProp.add().copyFrom(historyItem);
+    return this;
+  }
+
+  @Override
+  public List<String> getHistoryItemIdsToDelete() {
+    return historyItemIdsToDeleteProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
+  }
+
+  public AgentInstanceRecord setHistoryItemIdsToDelete(final List<String> historyItemIdsToDelete) {
+    historyItemIdsToDeleteProp.reset();
+    if (historyItemIdsToDelete != null) {
+      historyItemIdsToDelete.forEach(
+          id -> historyItemIdsToDeleteProp.add().wrap(BufferUtil.wrapString(id)));
+    }
     return this;
   }
 }
