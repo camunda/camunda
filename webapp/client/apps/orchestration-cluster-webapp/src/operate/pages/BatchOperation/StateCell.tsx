@@ -17,7 +17,7 @@ type Props = {
 
 const StateCell: React.FC<Props> = ({item}) => {
 	const {t} = useTranslation();
-	const indicator = <BatchStateIndicator state={item.state} />;
+	const indicator = <BatchStateIndicator state={item.state} ariaLabelPrefix="Item status" />;
 
 	if (!item.errorMessage) {
 		return indicator;

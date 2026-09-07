@@ -18,6 +18,7 @@ describe('<StateCell />', () => {
 		const screen = await render(<StateCell item={createBatchOperationItem({state: 'COMPLETED'})} />);
 
 		await expect.element(screen.getByText('Completed')).toBeVisible();
+		await expect.element(screen.getByRole('status', {name: 'Item status: Completed'})).toBeVisible();
 	});
 
 	it('should show the failure reason in a tooltip on hover for a failed item', async () => {
