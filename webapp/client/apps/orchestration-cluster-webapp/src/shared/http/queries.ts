@@ -313,6 +313,7 @@ const queries = {
 				return response.text();
 			},
 			staleTime: 'static',
+			retry: false,
 		}),
 
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
