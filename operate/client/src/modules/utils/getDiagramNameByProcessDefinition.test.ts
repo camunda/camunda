@@ -18,6 +18,7 @@ describe('getDiagramNameByProcessDefinition', () => {
       tenantId: '<default>',
       processDefinitionKey: 'order-process-key',
       hasStartForm: false,
+      state: 'ACTIVE',
     } satisfies ProcessDefinition;
     expect(getDiagramNameByProcessDefinition(definition)).toBe(
       'order-process_v5',
@@ -32,6 +33,7 @@ describe('getDiagramNameByProcessDefinition', () => {
       tenantId: '<default>',
       processDefinitionKey: 'fallback-key',
       hasStartForm: false,
+      state: 'ACTIVE',
     } satisfies ProcessDefinition;
     expect(getDiagramNameByProcessDefinition(definition)).toBe(
       'fallback-id_v2',
