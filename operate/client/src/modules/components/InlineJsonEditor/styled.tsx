@@ -229,8 +229,7 @@ const WriteModeEditor = styled.div<{
 `;
 
 const CompletionStyles = createGlobalStyle`
-  .cm-tooltip.inline-json-completions,
-  .inline-json-completions .cm-completionInfo {
+  .cm-tooltip.inline-json-completions {
     background-color: var(--cds-layer);
     color: var(--cds-text-primary);
     border: 1px solid var(--cds-border-subtle);

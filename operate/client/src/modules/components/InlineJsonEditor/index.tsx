@@ -7,19 +7,79 @@
  */
 
 import {useCallback, useMemo} from 'react';
+import CodeMirror from '@uiw/react-codemirror';
+import {
+  autocompletion,
+  closeCompletion,
+  completeAnyWord,
+} from '@codemirror/autocomplete';
+import {json} from '@codemirror/lang-json';
+import {HighlightStyle, syntaxHighlighting} from '@codemirror/language';
+import {EditorState, Prec} from '@codemirror/state';
+import {EditorView, keymap, tooltips} from '@codemirror/view';
+import {tags} from '@lezer/highlight';
 import {observer} from 'mobx-react-lite';
 import {
   beautifyJSON,
   beautifyTruncatedJSON,
 } from 'modules/utils/editor/beautifyJSON';
-import {EditorWrapper, WriteModeEditor} from './styled';
+import {CompletionStyles, EditorWrapper, WriteModeEditor} from './styled';
 import {
   EDITOR_LINE_HEIGHT,
   EDITOR_MIN_HEIGHT,
   EDITOR_MAX_LINES,
 } from './constants';
 import {ReadOnlyEditor} from './ReadOnlyEditor';
-import {CodeMirrorEditor} from './CodeMirrorEditor';
+
+const MAX_COMPLETION_LENGTH = 50_000;
+const basicSetup = {
+  lineNumbers: false,
+  foldGutter: false,
+  highlightActiveLine: false,
+  highlightActiveLineGutter: false,
+  highlightSelectionMatches: false,
+};
+const baseExtensions = [
+  json(),
+  Prec.highest(
+    keymap.of([
+      {
+        key: 'Escape',
+        run: (view) => {
+          closeCompletion(view);
+          view.contentDOM.blur();
+          return true;
+        },
+      },
+    ]),
+  ),
+  autocompletion({
+    override: [
+      (context) =>
+        context.state.doc.length <= MAX_COMPLETION_LENGTH
+          ? completeAnyWord(context)
+          : null,
+    ],
+    interactionDelay: 0,
+    tooltipClass: () => 'inline-json-completions',
+  }),
+  tooltips({parent: document.body}),
+  syntaxHighlighting(
+    HighlightStyle.define([
+      {tag: tags.propertyName, color: 'var(--cds-text-secondary)'},
+      {
+        tag: [tags.string, tags.special(tags.string)],
+        color: 'var(--cds-support-success)',
+      },
+      {
+        tag: [tags.number, tags.bool, tags.null],
+        color: 'var(--cds-link-primary)',
+      },
+    ]),
+  ),
+  EditorState.tabSize.of(2),
+  EditorView.lineWrapping,
+];
 
 type Props = {
   value: string;
@@ -68,13 +128,14 @@ const InlineJsonEditor: React.FC<Props> = observer(
   }) => {
     const isReadOnly = readOnly === true || onChange === undefined;
 
-    const formattedValue = useMemo(() => {
+    const displayValue = useMemo(() => {
+      if (!isReadOnly) {
+        return value;
+      }
       return isTruncatedValue
         ? beautifyTruncatedJSON(value)
         : beautifyJSON(value);
-    }, [value, isTruncatedValue]);
-
-    const displayValue = isReadOnly ? formattedValue : value;
+    }, [value, isTruncatedValue, isReadOnly]);
 
     const height = computeHeight(displayValue, maxLines);
 
@@ -120,6 +181,17 @@ const InlineJsonEditor: React.FC<Props> = observer(
     );
 
     const editorId = id === undefined ? undefined : `${id}-editor`;
+    const extensions = useMemo(
+      () => [
+        ...baseExtensions,
+        EditorView.contentAttributes.of({
+          ...(editorId === undefined ? {} : {id: editorId}),
+          'aria-label': label ?? 'Value',
+          'aria-invalid': fieldError ? 'true' : 'false',
+        }),
+      ],
+      [editorId, fieldError, label],
+    );
 
     return (
       <EditorWrapper
@@ -150,14 +222,17 @@ const InlineJsonEditor: React.FC<Props> = observer(
               {label ?? 'Value'}
             </label>
             <WriteModeEditor $height={height} $invalid={!!fieldError}>
-              <CodeMirrorEditor
+              <CompletionStyles />
+              <CodeMirror
+                data-testid="code-mirror-editor"
                 value={displayValue}
-                label={label ?? 'Value'}
                 placeholder={placeholder}
-                id={editorId}
                 autoFocus={autoFocus}
-                invalid={!!fieldError}
                 onChange={handleChange}
+                extensions={extensions}
+                basicSetup={basicSetup}
+                indentWithTab={false}
+                theme="none"
               />
             </WriteModeEditor>
           </>
