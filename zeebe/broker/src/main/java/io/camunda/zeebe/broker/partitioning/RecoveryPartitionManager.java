@@ -119,6 +119,7 @@ public final class RecoveryPartitionManager
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private final BrokerHealthCheckService healthCheckService;
   private final Map<Integer, HealthMonitorable> registeredHealthComponents = new LinkedHashMap<>();
+  private boolean stopped = false;
   private @Nullable BackupStore backupStore;
   private @Nullable ExecutorService restoreExecutor;
 
@@ -191,6 +192,7 @@ public final class RecoveryPartitionManager
   }
 
   private void startInternal(final ActorFuture<Void> result) {
+    stopped = false;
     restoreExecutor =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
     final var localPartitions = localPartitions();
@@ -257,23 +259,7 @@ public final class RecoveryPartitionManager
           concurrencyControl.runOnCompletion(
               deactivateFutures,
               (ignoredDeactivate, deactivateError) -> {
-                // reported once the partition is registered as INACTIVE above, since
-                // onHealthChanged is a no-op for a partition the topology doesn't know about yet
-                recoveryPartitions.forEach(
-                    p -> {
-                      topologyManager.onHealthChanged(
-                          p.partitionId().number(), HealthStatus.HEALTHY);
-                      p.healthMetrics().setRecovering();
-                    });
-                // Only the failures need a new component; the rest keep the recovering one
-                // registered before the partitions started.
-                failedPartitionIds.forEach(
-                    id -> {
-                      topologyManager.onHealthChanged(id, HealthStatus.UNHEALTHY);
-                      registerHealthComponent(
-                          id,
-                          RecoveringPartitionHealth.failed(new PartitionId(partitionGroup, id)));
-                    });
+                reportRecoveryOutcome();
                 if (recoveryPartitions.isEmpty()) {
                   if (deactivateError != null) {
                     LOG.error(
@@ -314,6 +300,28 @@ public final class RecoveryPartitionManager
         healthCheckService.componentName());
   }
 
+  private void reportRecoveryOutcome() {
+    if (stopped) {
+      LOG.debug(
+          "Not reporting the recovery outcome for partition group {}, this manager has stopped",
+          partitionGroup);
+      return;
+    }
+    recoveryPartitions.forEach(
+        p -> {
+          topologyManager.onHealthChanged(p.partitionId().number(), HealthStatus.HEALTHY);
+          p.healthMetrics().setRecovering();
+        });
+    // Only the failures need a new component; the rest keep the recovering one registered before
+    // the partitions started.
+    failedPartitionIds.forEach(
+        id -> {
+          topologyManager.onHealthChanged(id, HealthStatus.UNHEALTHY);
+          registerHealthComponent(
+              id, RecoveringPartitionHealth.failed(new PartitionId(partitionGroup, id)));
+        });
+  }
+
   /**
    * Registers {@code healthComponent} as the partition's node in the broker health tree, replacing
    * whatever this manager registered for the same partition before. Both instances share the {@link
@@ -328,6 +336,7 @@ public final class RecoveryPartitionManager
   }
 
   private void stopInternal(final ActorFuture<Void> result) {
+    stopped = true;
     // Unregister the readiness and health state this manager contributed, so the next manager's
     // registration starts from a clean slate: after exiting recovery, readiness must be gated on
     // the partitions genuinely rejoining Raft rather than on the recovery-mode "installed" marks.
