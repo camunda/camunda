@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Text} from '@camunda/design-system';
+import {Button, Text, useIsMobile} from '@camunda/design-system';
 import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
-import {CircleCheck, LoaderCircle} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
+import {ArrowLeft, CircleCheck, LoaderCircle} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import {AssigneeBadge} from '#/tasklist/modules/available-tasks/shadcn.components/AssigneeBadge';
 
@@ -46,10 +47,10 @@ const RightPanel: React.FC<RightPanelProps> = ({taskState, assignee, user, assig
 		case 'FAILED':
 			return (
 				<>
-					<span className="order-2 flex items-center lg:order-none" data-testid="assignee">
+					<span className="flex items-center max-lg:order-2" data-testid="assignee">
 						<AssigneeBadge currentUser={user} assignee={assignee} isShortFormat={false} />
 					</span>
-					<span className="order-1 flex shrink-0 items-center lg:order-none">{assignButton}</span>
+					<span className="flex shrink-0 items-center max-lg:order-1">{assignButton}</span>
 				</>
 			);
 		case 'UPDATING':
@@ -87,17 +88,39 @@ type Props = {
 	taskState: UserTask['state'];
 	user: CurrentUser;
 	assignButton: React.ReactNode;
+	detailsButton?: React.ReactNode;
 };
 
-const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, taskState, user, assignButton}) => {
+const TaskDetailsHeader: React.FC<Props> = ({
+	taskName,
+	processName,
+	assignee,
+	taskState,
+	user,
+	assignButton,
+	detailsButton,
+}) => {
 	const {t} = useTranslation();
+	const navigate = useNavigate();
+	const isBelowMd = useIsMobile();
 
 	return (
 		<header
-			className="flex w-full flex-wrap items-center justify-between gap-4 px-4 pb-4"
+			className="flex w-full flex-wrap items-center justify-between gap-4 px-4 pb-4 max-lg:flex-col! max-lg:flex-nowrap max-lg:items-start! max-lg:justify-start!"
 			title={t('tasklist.taskDetailsHeader')}
 		>
-			<div className="flex min-w-40 flex-1 flex-col">
+			{isBelowMd ? (
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					onClick={() => navigate({to: '/shadcn/tasklist', search: true})}
+				>
+					<ArrowLeft aria-hidden />
+					{t('tasklist.taskDetailsBackToListLabel')}
+				</Button>
+			) : null}
+			<div className="flex min-w-40 flex-1 flex-col max-lg:w-full">
 				<Text variant="label-md-strong" className="truncate text-neutral-foreground-strong">
 					{taskName}
 				</Text>
@@ -105,7 +128,8 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 					{processName}
 				</Text>
 			</div>
-			<div className="ml-auto flex shrink-0 items-center justify-end gap-4">
+			<div className="ml-auto flex shrink-0 items-center justify-end gap-4 max-lg:ml-0! max-lg:w-full max-lg:justify-start!">
+				{detailsButton ? <span className="flex items-center max-lg:order-3">{detailsButton}</span> : null}
 				<RightPanel taskState={taskState} assignee={assignee} user={user} assignButton={assignButton} />
 			</div>
 		</header>

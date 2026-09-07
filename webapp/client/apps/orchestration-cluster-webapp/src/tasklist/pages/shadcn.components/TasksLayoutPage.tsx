@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Outlet} from '@tanstack/react-router';
+import {Outlet, useMatchRoute} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {cn} from '#/shared/cn';
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/shadcn.components/AvailableTasks';
 import {Filters} from '#/tasklist/modules/available-tasks/shadcn.components/Filters';
 import {AutoSelectNextTaskToggle} from '#/tasklist/modules/available-tasks/shadcn.components/AutoSelectNextTaskToggle';
@@ -37,11 +38,19 @@ const TasksLayoutPage: React.FC<Props> = ({
 	isFetchingPreviousPage,
 }) => {
 	const {t} = useTranslation();
+	const matchRoute = useMatchRoute();
+	const hasSelectedTask = matchRoute({to: '/shadcn/tasklist/$userTaskKey', fuzzy: true}) !== false;
 
 	return (
-		<main id="main-content" className="grid h-full grid-cols-[19.5rem_minmax(0,1fr)] overflow-hidden">
+		<main
+			id="main-content"
+			className="grid h-full grid-cols-[19.5rem_minmax(0,1fr)] overflow-hidden max-md:grid-cols-1!"
+		>
 			<section
-				className="grid grid-rows-[3rem_minmax(0,1fr)_auto] overflow-hidden"
+				className={cn(
+					'grid min-w-0 grid-rows-[3rem_minmax(0,1fr)_auto] overflow-hidden',
+					hasSelectedTask && 'max-md:hidden!',
+				)}
 				aria-label={t('tasklist.tasksPanelLabel')}
 			>
 				<header className="flex items-center border-b border-border px-2">
@@ -60,7 +69,12 @@ const TasksLayoutPage: React.FC<Props> = ({
 				/>
 				<AutoSelectNextTaskToggle />
 			</section>
-			<div className="overflow-auto border-l border-border">
+			<div
+				className={cn(
+					'min-w-0 overflow-auto border-l border-border max-md:border-l-0!',
+					!hasSelectedTask && 'max-md:hidden!',
+				)}
+			>
 				<Outlet />
 			</div>
 		</main>

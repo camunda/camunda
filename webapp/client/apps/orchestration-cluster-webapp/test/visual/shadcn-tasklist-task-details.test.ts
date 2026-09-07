@@ -46,46 +46,99 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should match the task details page snapshot', async ({network, shadcnTaskDetailPage, page}) => {
-	network.use(
-		mockGetUserTaskEndpoint({
-			successResponse: HttpResponse.json(
-				createUserTask({
-					userTaskKey: USER_TASK_KEY,
-					state: 'CREATED',
-					name: 'Review purchase order',
-					processName: 'Procurement process',
-					assignee: 'demo',
-					candidateUsers: ['alice', 'bob'],
-					candidateGroups: ['managers'],
-					priority: 60,
-					businessId: 'ORDER-2024-0042',
-					dueDate: '2024-06-15T17:00:00.000Z',
-					creationDate: '2024-01-10T09:30:00.000Z',
-				}),
-			),
-		}),
-		mockQueryVariablesByUserTaskEndpoint({
-			successResponse: HttpResponse.json(
-				createQueryVariablesByUserTaskResponse({
-					items: [
-						createVariable({name: 'orderTotal', value: '249.99'}),
-						createVariable({name: 'currency', value: '"EUR"', variableKey: '2251799813685284'}),
-					],
-				}),
-			),
-		}),
-	);
+test(
+	'should match the task details page snapshot',
+	{tag: '@desktop'},
+	async ({network, shadcnTaskDetailPage, page}) => {
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createUserTask({
+						userTaskKey: USER_TASK_KEY,
+						state: 'CREATED',
+						name: 'Review purchase order',
+						processName: 'Procurement process',
+						assignee: 'demo',
+						candidateUsers: ['alice', 'bob'],
+						candidateGroups: ['managers'],
+						priority: 60,
+						businessId: 'ORDER-2024-0042',
+						dueDate: '2024-06-15T17:00:00.000Z',
+						creationDate: '2024-01-10T09:30:00.000Z',
+					}),
+				),
+			}),
+			mockQueryVariablesByUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryVariablesByUserTaskResponse({
+						items: [
+							createVariable({name: 'orderTotal', value: '249.99'}),
+							createVariable({name: 'currency', value: '"EUR"', variableKey: '2251799813685284'}),
+						],
+					}),
+				),
+			}),
+		);
 
-	await shadcnTaskDetailPage.seedHideNotificationBanner();
-	await shadcnTaskDetailPage.goto(USER_TASK_KEY);
-	await expect(shadcnTaskDetailPage.detailsInfo).toBeVisible();
-	await expect(shadcnTaskDetailPage.taskName('Review purchase order')).toBeVisible();
-	await expect(shadcnTaskDetailPage.aside.getByText('ORDER-2024-0042')).toBeVisible();
-	await expect(shadcnTaskDetailPage.completeTaskButton).toBeEnabled();
+		await shadcnTaskDetailPage.seedHideNotificationBanner();
+		await shadcnTaskDetailPage.goto(USER_TASK_KEY);
+		await expect(shadcnTaskDetailPage.detailsInfo).toBeVisible();
+		await expect(shadcnTaskDetailPage.taskName('Review purchase order')).toBeVisible();
+		await expect(shadcnTaskDetailPage.aside.getByText('ORDER-2024-0042')).toBeVisible();
+		await expect(shadcnTaskDetailPage.completeTaskButton).toBeEnabled();
 
-	await expect(page).toHaveScreenshot();
-});
+		await expect(page).toHaveScreenshot();
+	},
+);
+
+test(
+	'should match the task details sheet snapshot',
+	{tag: '@tablet'},
+	async ({network, shadcnTaskDetailPage, page}) => {
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createUserTask({
+						userTaskKey: USER_TASK_KEY,
+						state: 'CREATED',
+						name: 'Review purchase order',
+						processName: 'Procurement process',
+						assignee: 'demo',
+						candidateUsers: ['alice', 'bob'],
+						candidateGroups: ['managers'],
+						priority: 60,
+						businessId: 'ORDER-2024-0042',
+						dueDate: '2024-06-15T17:00:00.000Z',
+						creationDate: '2024-01-10T09:30:00.000Z',
+					}),
+				),
+			}),
+			mockQueryVariablesByUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryVariablesByUserTaskResponse({
+						items: [
+							createVariable({name: 'orderTotal', value: '249.99'}),
+							createVariable({name: 'currency', value: '"EUR"', variableKey: '2251799813685284'}),
+						],
+					}),
+				),
+			}),
+		);
+		await shadcnTaskDetailPage.seedHideNotificationBanner();
+		await shadcnTaskDetailPage.goto(USER_TASK_KEY);
+		await expect(shadcnTaskDetailPage.taskName('Review purchase order')).toBeVisible();
+		await expect(shadcnTaskDetailPage.completeTaskButton).toBeEnabled();
+		await expect(shadcnTaskDetailPage.detailsButton).toBeVisible();
+		await expect(shadcnTaskDetailPage.detailsSheet).not.toBeVisible();
+		await expect(page).toHaveScreenshot();
+
+		await shadcnTaskDetailPage.detailsButton.click();
+		await expect(shadcnTaskDetailPage.detailsSheet).toBeVisible();
+		await expect(shadcnTaskDetailPage.aside.getByText('ORDER-2024-0042')).toBeVisible();
+
+		await expect(page).toHaveScreenshot();
+	},
+);
 
 test('should match the new variable row snapshot', async ({network, shadcnTaskDetailPage: taskDetailPage, page}) => {
 	network.use(
