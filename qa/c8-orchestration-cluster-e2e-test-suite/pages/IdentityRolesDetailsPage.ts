@@ -46,7 +46,7 @@ export class IdentityRolesDetailsPage {
       name: 'Close',
     });
     // On the new design system the assign-user modal's search field is a cmdk
-    // combobox ("Search by name, email, or username") rather than Carbon's searchbox.
+    // combobox ("Search by username or name") rather than Carbon's searchbox.
     this.assignUserModalSearchField = this.assignUserModal.getByRole(
       'combobox',
       {name: 'Search by username or name'},
