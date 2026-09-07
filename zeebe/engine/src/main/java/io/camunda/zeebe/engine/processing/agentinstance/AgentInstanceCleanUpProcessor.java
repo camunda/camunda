@@ -29,8 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * commonly present in both column families, so sharing one budget across them — rather than
  * splitting the budget in half up front — finds as many distinct ids per cycle as the chunk size
  * allows instead of wasting part of the budget on ids already found. Re-appends the same command as
- * a follow-up if either source was cut off before it was fully visited. Once nothing remains, no
- * {@code CLEANED} event is written and the chain stops.
+ * a follow-up if either source was cut off before it was fully visited. A {@code CLEANED} event is
+ * always appended, even with an empty {@code historyItemIdsToDelete} list, so the command always
+ * leaves a durable trace; the chain itself stops once nothing remains to defer.
  */
 @ExcludeAuthorizationCheck
 public final class AgentInstanceCleanUpProcessor
@@ -78,10 +79,6 @@ public final class AgentInstanceCleanUpProcessor
     if (!hasMore.get()) {
       agentHistoryState.visitMetricsAccumulatedHistoryItemIds(
           agentInstanceKey, id -> collectUpToChunkSize(idsToDelete, hasMore, id));
-    }
-
-    if (idsToDelete.isEmpty()) {
-      return;
     }
 
     stateWriter.appendFollowUpEvent(
