@@ -29,7 +29,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class CamundaExporterAuthenticationIT {
 
   private static final String ELASTIC_PASSWORD = "PASSWORD";
-  private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
@@ -37,15 +36,16 @@ public class CamundaExporterAuthenticationIT {
           .withPassword(ELASTIC_PASSWORD)
           .withEnv("xpack.security.enabled", "true");
 
+  private final ExporterConfiguration config = new ExporterConfiguration();
   private final ProtocolFactory factory = new ProtocolFactory();
   private final ExporterTestController controller = new ExporterTestController();
 
   @BeforeEach
   void beforeEach() throws IOException {
-    CONFIG.getConnect().setUsername("elastic");
-    CONFIG.getConnect().setPassword(ELASTIC_PASSWORD);
-    CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    createSchemas(CONFIG);
+    config.getConnect().setUsername("elastic");
+    config.getConnect().setPassword(ELASTIC_PASSWORD);
+    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+    createSchemas(config);
   }
 
   @Test
@@ -55,7 +55,7 @@ public class CamundaExporterAuthenticationIT {
 
     final var context =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
+            .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
 
     // when
     exporter.configure(context);
@@ -68,11 +68,11 @@ public class CamundaExporterAuthenticationIT {
   void shouldFailToAuthenticateForWrongCredentials() {
     // given
     final var exporter = new CamundaExporter();
-    CONFIG.getConnect().setPassword("123");
+    config.getConnect().setPassword("123");
 
     final var context =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
+            .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
 
     // when
     exporter.configure(context);
