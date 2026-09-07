@@ -50,10 +50,11 @@ jobs:
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
         vault-url: ${{ secrets.VAULT_ADDR }}
 
-    # DEBUG ONLY - do not merge: pinned to infra-global-github-actions#808 (draft) to
-    # surface the raw API response on the jq parse-error that's been failing this job
-    # on every scheduled run since 2026-08-31. Revert to the tagged SHA before merging.
-    - uses: camunda/infra-global-github-actions/preview-env/clean@c7b8b6a7039baf65d7bbd3a0234c1b506f04d737 # debug: preview-env-clean-jq-parse-error (v2, all call sites)
+    # TESTING - do not merge: pinned to the unreleased fix in
+    # infra-global-github-actions#808, which stops word splitting from shattering the
+    # PR JSON and breaking this job on every scheduled run since 2026-08-31.
+    # Revert to a released tag once that PR merges.
+    - uses: camunda/infra-global-github-actions/preview-env/clean@c12e33f1667fbc8c10137da08a88a561d8ab8a37 # test: preview-env-clean word-splitting fix
       with:
         labels: deploy-preview
         pull-request: ${{ inputs.pull-request }}
