@@ -63,8 +63,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Proves the full round trip through recovery mode with a partial failure: one partition fails to
- * recover (reported {@code DEAD}) while its sibling recovers cleanly, the group still confirms and
- * writes {@code RECOVERING} only for the healthy partition, and - crucially - exiting recovery
+ * recover (reported {@code UNHEALTHY}) while its sibling recovers cleanly, the group still confirms
+ * and writes {@code RECOVERING} only for the healthy partition, and - crucially - exiting recovery
  * afterward is not blocked or corrupted by that earlier partial failure. The exit path
  * (`PartitionModeHandler#exitRecovery`/`awaitModeApplied(PROCESSING)`) gates purely on Raft role,
  * not health, and starts a brand-new partition manager from scratch, so the group must converge
@@ -224,7 +224,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     assertThat(enterResult).succeedsWithin(AWAIT_TIMEOUT);
 
     // and - partition 1 recovers healthily, partition 2 reaches INACTIVE but never recovers so
-    // it is reported DEAD
+    // it is reported UNHEALTHY
     await()
         .untilAsserted(
             () -> {
@@ -237,7 +237,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
                             .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE);
                         assertThat(info.getPartitionHealthStatuses())
                             .containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY)
-                            .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD);
+                            .containsEntry(PARTITION_ID_2, PartitionHealthStatus.UNHEALTHY);
                       });
             });
 
@@ -278,7 +278,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     await().untilAsserted(() -> assertThat(healthCheckService.isBrokerReady()).isFalse());
 
     // and - the new manager brings both partitions to a processing role, including the one that
-    // was DEAD during recovery
+    // was UNHEALTHY during recovery
     await()
         .untilAsserted(
             () -> {
@@ -291,7 +291,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
                               .containsEntry(PARTITION_ID_2, PartitionRole.LEADER));
             });
 
-    // and - confirming exit is role-only: partition 2's earlier DEAD health status must not matter
+    // and - confirming exit is role-only: partition 2's earlier unhealthy status must not matter
     final var processingConfirmed = handler.awaitModeApplied(Mode.PROCESSING);
     assertThat(processingConfirmed).succeedsWithin(AWAIT_TIMEOUT);
     assertThat(processingConfirmed.join()).containsExactlyInAnyOrder(PARTITION_ID, PARTITION_ID_2);

@@ -26,8 +26,15 @@ import java.time.Instant;
  * bootstrap registration may have left behind.
  *
  * <p>The reported status is fixed at construction: a recovery partition either started (healthy for
- * the duration of recovery mode) or failed to start with nothing left running to bring it back
- * (dead). Failure listeners are therefore never invoked.
+ * the duration of recovery mode) or failed to start (unhealthy). Failure listeners are therefore
+ * never invoked.
+ *
+ * <p>A failed recovery is reported {@link HealthStatus#UNHEALTHY} rather than {@link
+ * HealthStatus#DEAD}: the steps that can fail here start metrics, the backup service and the backup
+ * API request handler, so a failure is a transient infrastructure problem (an actor that could not
+ * be scheduled, a transport subscription that was rejected) rather than the kind of unrecoverable
+ * damage - a corrupted journal, say - that DEAD is meant for. Retrying the restore, or restarting
+ * the broker, is expected to clear it.
  */
 final class RecoveringPartitionHealth implements HealthMonitorable {
 
@@ -50,9 +57,9 @@ final class RecoveringPartitionHealth implements HealthMonitorable {
     final var componentName = ZeebePartition.componentName(partitionId);
     return new RecoveringPartitionHealth(
         componentName,
-        new HealthReport(componentName, HealthStatus.DEAD, null, ImmutableMap.of())
+        new HealthReport(componentName, HealthStatus.UNHEALTHY, null, ImmutableMap.of())
             .withMessage(
-                "Partition %s failed to recover and will stay dead until the restore is retried"
+                "Partition %s failed to recover and stays unhealthy until the restore is retried"
                     .formatted(partitionId),
                 Instant.now()));
   }

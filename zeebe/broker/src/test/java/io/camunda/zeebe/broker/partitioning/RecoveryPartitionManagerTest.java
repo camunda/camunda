@@ -232,9 +232,8 @@ final class RecoveryPartitionManagerTest {
                               .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
             });
 
-    // and: only the partition that failed to start is reported as DEAD, since it never
-    // recovered and nothing is left running to ever bring it back; the one that succeeded is
-    // reported HEALTHY
+    // and: only the partition that failed to start is reported as UNHEALTHY, since it never
+    // recovered and needs the restore to be retried; the one that succeeded is reported HEALTHY
     await()
         .untilAsserted(
             () -> {
@@ -244,7 +243,7 @@ final class RecoveryPartitionManagerTest {
                       info ->
                           assertThat(info.getPartitionHealthStatuses())
                               .containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY)
-                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD));
+                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.UNHEALTHY));
             });
   }
 
@@ -383,7 +382,7 @@ final class RecoveryPartitionManagerTest {
     assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
 
     // then - the broker stays ready so the restore can be retried through the management API,
-    // but the dead partition must surface through the health status
+    // but the failed partition must surface through the health status
     await()
         .untilAsserted(
             () -> {
@@ -438,9 +437,9 @@ final class RecoveryPartitionManagerTest {
                               .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
             });
 
-    // and: both partitions are reported as DEAD, since neither recovered and nothing is left
-    // running to ever bring them back - this is the signal that the mode-change bookkeeping
-    // (which only checks the INACTIVE role above) otherwise misses
+    // and: both partitions are reported as UNHEALTHY, since neither recovered - this is the
+    // signal that the mode-change bookkeeping (which only checks the INACTIVE role above)
+    // otherwise misses
     await()
         .untilAsserted(
             () -> {
@@ -449,8 +448,8 @@ final class RecoveryPartitionManagerTest {
                   .anySatisfy(
                       info ->
                           assertThat(info.getPartitionHealthStatuses())
-                              .containsEntry(PARTITION_ID, PartitionHealthStatus.DEAD)
-                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD));
+                              .containsEntry(PARTITION_ID, PartitionHealthStatus.UNHEALTHY)
+                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.UNHEALTHY));
             });
   }
 

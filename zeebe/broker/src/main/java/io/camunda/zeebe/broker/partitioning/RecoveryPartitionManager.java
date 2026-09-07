@@ -261,7 +261,7 @@ public final class RecoveryPartitionManager
                     });
                 failedPartitionIds.forEach(
                     id -> {
-                      topologyManager.onHealthChanged(id, HealthStatus.DEAD);
+                      topologyManager.onHealthChanged(id, HealthStatus.UNHEALTHY);
                       registerHealthComponent(
                           id,
                           RecoveringPartitionHealth.failed(new PartitionId(partitionGroup, id)));
