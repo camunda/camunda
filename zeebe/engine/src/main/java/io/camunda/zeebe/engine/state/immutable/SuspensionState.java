@@ -56,6 +56,13 @@ public interface SuspensionState {
    */
   Optional<BufferedCommand> getOldestBufferedCommand(long processInstanceKey);
 
+  /**
+   * Counts the buffered commands for the given process instance without reading their values,
+   * unlike {@link #visitBufferedCommands} which deserializes every record. Use this when only the
+   * count is needed, e.g. for a dropped-commands metric on termination.
+   */
+  int countBufferedCommands(long processInstanceKey);
+
   @FunctionalInterface
   interface BufferedCommandVisitor {
     void visit(long bufferedCommandKey, BufferedCommandRecordValue command);
