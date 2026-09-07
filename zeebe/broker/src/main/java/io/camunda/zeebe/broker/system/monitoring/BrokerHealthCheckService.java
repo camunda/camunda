@@ -163,16 +163,27 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   /**
-   * Unregisters a physical tenant and all of its partitions' install status. Called when the
-   * tenant's partition manager stops as part of a mode transition, so that the next manager's
-   * registration starts from a clean slate: without this, the "installed" marks left behind by
-   * recovery mode would make {@link #isBrokerReady()} claim readiness after exiting recovery,
-   * before the partitions have actually rejoined Raft ({@link #registerBootstrapPartitions} only
-   * uses putIfAbsent).
+   * Unregisters a physical tenant, dropping both its partitions' install status and their nodes in
+   * the health tree. Called when the tenant's partition manager stops as part of a mode transition,
+   * so that the next manager's registration starts from a clean slate: without this, the
+   * "installed" marks left behind by recovery mode would make {@link #isBrokerReady()} claim
+   * readiness after exiting recovery, before the partitions have actually rejoined Raft ({@link
+   * #registerBootstrapPartitions} only uses putIfAbsent).
    */
   public void unregisterPhysicalTenant(final String physicalTenantId) {
     registeredPhysicalTenants.remove(physicalTenantId);
-    partitionInstallStatus.keySet().removeIf(id -> id.group().equals(physicalTenantId));
+    final var tenantPartitions =
+        partitionInstallStatus.keySet().stream()
+            .filter(partitionId -> partitionId.group().equals(physicalTenantId))
+            .toList();
+    tenantPartitions.forEach(partitionInstallStatus::remove);
+    // Take the health tree nodes with it, mirroring registerBootstrapPartitions. Its
+    // monitorComponent placeholders are the only entries nothing else removes - a partition that
+    // registers a real component has it removed when the component shuts down - and a placeholder
+    // left behind counts as unknown, which reads UNHEALTHY, so it would keep the broker unhealthy
+    // for the rest of its life.
+    tenantPartitions.forEach(
+        partitionId -> healthMonitor.removeComponent(ZeebePartition.componentName(partitionId)));
   }
 
   public boolean isBrokerReady() {

@@ -97,19 +97,32 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
   @Override
   public void removeComponent(final HealthMonitorable component) {
-    actor.run(
-        () -> {
-          final var componentName = component.componentName();
-          final var monitoredComponent = monitoredComponents.remove(componentName);
-          if (monitoredComponent != null) {
-            componentHealth.remove(componentName);
-            monitoredComponent.component.removeFailureListener(monitoredComponent);
-            graphListener.unregisterRelationship(componentName, name);
-            graphListener.unregisterNode(monitoredComponent.component);
-            log.trace("Unregistered edge {}:{}", name, componentName);
-            calculateHealth();
-          }
-        });
+    actor.run(() -> removeComponentByName(component.componentName()));
+  }
+
+  @Override
+  public void removeComponent(final String componentName) {
+    actor.run(() -> removeComponentByName(componentName));
+  }
+
+  /**
+   * Removes whatever is held under {@code componentName}. A component added by {@link
+   * #monitorComponent(String)} has only a health entry and no graph node or failure listener to
+   * undo, so both kinds are removed here and the graph teardown is conditional on there being a
+   * registered component.
+   */
+  private void removeComponentByName(final String componentName) {
+    final var monitoredComponent = monitoredComponents.remove(componentName);
+    final var hadHealthEntry = componentHealth.remove(componentName) != null;
+    if (monitoredComponent != null) {
+      monitoredComponent.component.removeFailureListener(monitoredComponent);
+      graphListener.unregisterRelationship(componentName, name);
+      graphListener.unregisterNode(monitoredComponent.component);
+      log.trace("Unregistered edge {}:{}", name, componentName);
+    }
+    if (monitoredComponent != null || hadHealthEntry) {
+      calculateHealth();
+    }
   }
 
   @Override
