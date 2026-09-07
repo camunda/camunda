@@ -391,13 +391,8 @@ When `physical_tenant_count > 0`, the Makefile:
   OIDC provider assignment — and layers it on top of the plain storage values.
 - Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
   tester, renames them to `starter-pt<i>`/`worker-pt<i>`, and applies them — looped over `pt1..ptN`.
-  Each tester shares the default tenant's `load-test-credentials` secret and gets a
-  `CAMUNDA_CLIENT_PHYSICAL_TENANT_ID=pt<i>` env var: the camunda-spring-boot-starter client turns
-  that into the `Camunda-Physical-Tenant` gRPC header (so job streams register into the tenant's
-  own partition group) and, via `prefixPhysicalTenantPath` (default `true`), the
-  `/physical-tenants/pt<i>` REST path prefix — so both gRPC and REST route correctly with no
-  per-tenant secret or address override needed. They honor the namespace's `prefer_rest`
-  default like every other tester, with no separate REST/gRPC pin.
+  Each tester gets a `CAMUNDA_CLIENT_PHYSICAL_TENANT_ID=pt<i>` env var, which routes both gRPC and
+  REST traffic to that tenant, so no per-tenant secret or address override is needed.
 
 A second Helm release per tenant is not used because the `camunda-load-tests` subchart hardcodes the
 `starter`/`worker` resource names, which would collide in the same namespace. This also means each

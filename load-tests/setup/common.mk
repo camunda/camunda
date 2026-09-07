@@ -273,26 +273,15 @@ ifeq ($(physical_tenants_supported),true)
 generate-physical-tenant-values:
 	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)"
 
-# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage and its
-# load-test-credentials secret. The camunda-load-tests subchart hardcodes the starter/worker
-# resource names, so a second Helm release per tenant would collide. Instead we render only
-# those two templates from the same chart, values, scenario and image as the default tester,
-# rename them to *-pt<i>, and apply — looped over pt1..ptN. Each tenant gets its own
-# CAMUNDA_CLIENT_PHYSICAL_TENANT_ID env var: the load-tester's camunda-spring-boot-starter client
-# turns that into both the `Camunda-Physical-Tenant` gRPC metadata header (so its job stream
-# registers into the tenant's own partition group instead of leaking into "default") and, via
-# prefixPhysicalTenantPath (default true), the `/physical-tenants/<tenant>` REST path prefix —
-# so both gRPC and REST route correctly without a per-tenant secret or address override.
-# Honors the namespace's prefer_rest default via $(load_test_setup_flags) like every other
-# target — no separate preferRest override needed here.
+# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage. The
+# camunda-load-tests subchart hardcodes the starter/worker resource names, so a second Helm
+# release per tenant would collide — instead render only those two templates, rename to
+# *-pt<i>, and apply, looped over pt1..ptN. Each tenant gets its own
+# CAMUNDA_CLIENT_PHYSICAL_TENANT_ID env var, which routes both gRPC and REST to that tenant.
 #
-# The extraEnvVars index below (4) is appended after the 4 entries already set in
-# global.extraEnvVars by scenarios/load-tester-values-defaults.yaml — currently
-# LOAD_TESTER_LOG_APPENDER (0), LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME (1),
-# LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION (2), OPTIMIZE_LOADTEST_CLIENT_SECRET (3).
-# Helm merges --set on a list index positionally, not by appending, so reusing an
-# already-used index (0-3) would silently overwrite one of those defaults instead of
-# adding a new entry. Bump this index if that file's global.extraEnvVars list grows.
+# extraEnvVars[4]: index 4 because scenarios/load-tester-values-defaults.yaml already sets
+# indices 0-3. Helm merges --set list indices positionally, so reusing one would silently
+# overwrite it instead of adding a new entry — bump this index if that file's list grows.
 .PHONY: install-load-test-physical-tenants
 install-load-test-physical-tenants:
 	@for i in $$(seq 1 $(physical_tenant_count)); do \
