@@ -39,12 +39,13 @@ const STATE_CONFIG: Record<BatchOperationState | BatchOperationItemState, Config
 
 type Props = {
 	state: BatchOperationState | BatchOperationItemState;
+	ariaLabelPrefix?: string;
 };
 
-const BatchStateIndicator: React.FC<Props> = ({state}) => {
+const BatchStateIndicator: React.FC<Props> = ({state, ariaLabelPrefix = 'Batch operation status'}) => {
 	const {Icon, color, label} = STATE_CONFIG[state];
 	return (
-		<Container role="status" aria-label={`Batch operation status: ${label}`}>
+		<Container role="status" aria-label={`${ariaLabelPrefix}: ${label}`}>
 			<Icon style={{color}} aria-hidden="true" focusable="false" />
 			{label}
 		</Container>

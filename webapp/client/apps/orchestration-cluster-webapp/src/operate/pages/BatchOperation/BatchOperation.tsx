@@ -141,7 +141,7 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 					<h3>{operationType}</h3>
 				</HeaderTitleContainer>
 			</Header>
-			{error && (
+			{error && !isNotFound && (
 				<InlineNotification
 					kind="error"
 					statusIconDescription="notification"

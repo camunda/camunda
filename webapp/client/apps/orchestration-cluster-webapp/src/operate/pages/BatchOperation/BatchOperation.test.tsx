@@ -110,12 +110,30 @@ describe('<BatchOperation />', () => {
 			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_ITEMS_RESPONSE}),
 		);
 
-		const screen = await renderPage();
+		const renderedErrors: string[] = [];
+		// Capture transient alerts that disappear before the redirect completes.
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				for (const node of mutation.addedNodes) {
+					if (node.textContent?.includes('Failed to load batch operation details')) {
+						renderedErrors.push(node.textContent);
+					}
+				}
+			}
+		});
+		observer.observe(document.body, {childList: true, subtree: true});
 
-		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/batch-operations');
-		await expect
-			.poll(() => notificationsStore.notifications.map((notification) => notification.title))
-			.toContain(`Batch operation ${BATCH_OPERATION_KEY} could not be found`);
+		try {
+			const screen = await renderPage();
+
+			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/batch-operations');
+			await expect
+				.poll(() => notificationsStore.notifications.map((notification) => notification.title))
+				.toContain(`Batch operation ${BATCH_OPERATION_KEY} could not be found`);
+			expect(renderedErrors).toEqual([]);
+		} finally {
+			observer.disconnect();
+		}
 	});
 });
 
