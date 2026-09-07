@@ -24,7 +24,7 @@ env:
 jobs:
   # Manages its own throwaway broker/collector stack via
   # utils/dockerComposeControl.ts — never touches a shared Elasticsearch
-  # container, so it needs none of the setup (ES/Vault/TestRail) the main
+  # container, so it needs none of the setup (ES/Vault) the main
   # api-tests job carries. Only called for main — not backporting, the
   # exporter's config differs too much on stable/8.7/8.8/8.9.
   analytics-exporter-tests:
