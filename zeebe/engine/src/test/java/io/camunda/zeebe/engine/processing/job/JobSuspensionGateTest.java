@@ -10,13 +10,21 @@ package io.camunda.zeebe.engine.processing.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,5 +54,182 @@ public final class JobSuspensionGateTest {
         .hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(rejection.getRejectionReason())
         .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobFailWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).withRetries(0).expectRejection().fail();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.FAIL)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobThrowErrorWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).withErrorCode("ERR").expectRejection().throwError();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.THROW_ERROR)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobUpdateWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).expectRejection().update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.UPDATE)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobUpdateRetriesWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).withRetries(5).expectRejection().updateRetries();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.UPDATE_RETRIES)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobUpdateTimeoutWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).withTimeout(60_000L).expectRejection().updateTimeout();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.UPDATE_TIMEOUT)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldBufferAndDrainJobYieldWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+
+    final Record<JobBatchRecordValue> batch = ENGINE.jobs().withType(jobType).activate();
+    final JobRecordValue activatedJob = batch.getValue().getJobs().getFirst();
+    final long jobKey = batch.getValue().getJobKeys().getFirst();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    ENGINE.writeRecords(RecordToWrite.command().job(JobIntent.YIELD, activatedJob).key(jobKey));
+
+    // then
+    assertThat(bufferedCommandIntent(processInstanceKey)).isEqualTo(JobIntent.YIELD);
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.YIELDED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBufferAndDrainJobRecurAfterBackoffWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+
+    ENGINE.job().withKey(job.getKey()).withRetries(3).withBackOff(Duration.ofSeconds(1)).fail();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    ENGINE.increaseTime(Duration.ofSeconds(2));
+
+    // then
+    assertThat(bufferedCommandIntent(processInstanceKey)).isEqualTo(JobIntent.RECUR_AFTER_BACKOFF);
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.RECURRED_AFTER_BACKOFF)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  private static JobIntent bufferedCommandIntent(final long processInstanceKey) {
+    return (JobIntent)
+        ((BufferedCommandRecordValue) bufferedCommand(processInstanceKey).getValue()).getIntent();
+  }
+
+  private static Record<RecordValue> bufferedCommand(final long processInstanceKey) {
+    return RecordingExporter.records()
+        .withValueType(ValueType.BUFFERED_COMMAND)
+        .withIntent(BufferedCommandIntent.BUFFERED)
+        .filter(
+            r ->
+                ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
+                    == processInstanceKey)
+        .getFirst();
   }
 }
