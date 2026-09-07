@@ -248,6 +248,12 @@ camunda: # Type: io.camunda.configuration.Camunda
       # The heartbeat interval for Raft. The leader sends a heartbeat to a follower every heartbeatInterval.
       # This is an advanced setting.
       heartbeat-interval: "250ms" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_HEARTBEATINTERVAL
+      # Sets how long a member joining a partition is given to catch up to the entry that admitted it. A
+      # join is only complete once the joiner has replicated that entry; until then it is a non-voting
+      # learner. If the joiner does not get there in time, the attempt fails and is retried from scratch, so
+      # a value below the time a joiner needs to replicate the backlog makes joins fail repeatedly. On slow
+      # networks or with large logs, raise it.
+      join-catch-up-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_JOINCATCHUPTIMEOUT
       # Sets the maximum batch size, which is send per append request to a follower.
       max-append-batch-size: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_RAFT_MAXAPPENDBATCHSIZE
       # Sets the maximum of appends which are send per follower.
@@ -280,8 +286,29 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Note that it is only a best-effort strategy. It is not guaranteed to be a strictly uniform
       # distribution.
       priority-election-enabled: true # Type: Boolean, Env: CAMUNDA_CLUSTER_RAFT_PRIORITYELECTIONENABLED
-      # Sets the timeout for all requests send by raft leaders and followers.When modifying the values for
+      # Sets the maximum replication lag, in bytes, a learner may have for the leader to promote it to a
+      # voting member. Promoting a learner that still lags would shrink the effective quorum, so the leader
+      # waits until the learner is within this threshold.
+      promotion-lag-threshold: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_RAFT_PROMOTIONLAGTHRESHOLD
+      rebalance: # Type: io.camunda.configuration.Raft$Rebalance
+        # How long the coordinator waits for a partition with no contactable leader to get one before giving
+        # up with `NO_LEADER`.
+        leader-wait-timeout: "1m" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_LEADERWAITTIMEOUT
+        # The maximum number of TimeoutNow requests the current leader sends (including the initial request)
+        # before reporting `TIMEOUT_NOW_EXHAUSTED`.
+        max-transfer-attempts: 3 # Type: Integer, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_MAXTRANSFERATTEMPTS
+        # The maximum replication lag a desired leader may have for the current leader to attempt a transfer.
+        # Above it the partition is skipped with `LAG_TOO_HIGH`. Lag is the remaining Raft entries to
+        # replicate plus any pending snapshot, in bytes.
+        replication-lag-threshold: "8MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_REPLICATIONLAGTHRESHOLD
+        # How long the current leader waits (paused, declining writes) for the desired leader to finish
+        # replicating. If exceeded, the transfer is cancelled with `REPLICATION_TIMED_OUT`.
+        replication-timeout: "10s" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_REPLICATIONTIMEOUT
+
+      # Sets the timeout for all requests sent by raft leaders and followers. When modifying the values for
       # requestTimeout, it might also be useful to update snapshotTimeout.
+      # When not set, the partition factory derives the value from the configured electionTimeout at
+      # startup.
       request-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REQUESTTIMEOUT
       # Defines the strategy to use to preallocate segment files when "preallocateSegmentFiles" is set to
       # true. Possible options are:  NOOP: does not preallocate files, same as setting
@@ -645,7 +672,34 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HEALTHCHECKENABLED
         history: # Type: io.camunda.configuration.DocumentBasedHistory
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_DATABASENAME
+          archive-by-id-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDENABLED
+          # Maximum number of retries for archive-by-id batch operations on retryable errors
+          archive-by-id-max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDMAXRETRYATTEMPTS
+          # Retry delay in millisecond interval when archive-by-id batch fails on retryable errors
+          archive-by-id-retry-delay-ms: 1000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDRETRYDELAYMS
+          # Millisecond interval between archiver runs
+          delay-between-runs: "2000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_DELAYBETWEENRUNS
+          # Date format for historical indices in Java DateTimeFormatter syntax
+          els-rollover-date-format: "date" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ELSROLLOVERDATEFORMAT
+          # Maximum millisecond interval between archiver runs due to failure backoffs
+          max-delay-between-runs: "60000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_MAXDELAYBETWEENRUNS
+          # Defines the name of the created and applied ILM policy.
+          policy-name: "camunda-retention-policy" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_POLICYNAME
+          process-instance-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_PROCESSINSTANCEENABLED
+          process-instance-retention-mode: "pi-hierarchy" # Type: io.camunda.exporter.config.ExporterConfiguration$HistoryConfiguration$ProcessInstanceRetentionMode, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_PROCESSINSTANCERETENTIONMODE
+          # Maximum number of docs reindexed/deleted in a batch
+          reindex-batch-size: 2500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_REINDEXBATCHSIZE
+          # Maximum number of process instances per archiving batch
+          rollover-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ROLLOVERBATCHSIZE
+          # Time range for creating dated indices (e.g., 1d creates daily indices).
+          rollover-interval: "1d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ROLLOVERINTERVAL
+          # Defines the name of the created and applied usage-metrics ILM policy.
+          usage-metrics-policy-name: "camunda-usage-metrics-retention-policy" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_USAGEMETRICSPOLICYNAME
+          # Time range for creating dated usage-metrics indices.
+          usage-metrics-rollover-interval: "1M" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_USAGEMETRICSROLLOVERINTERVAL
+          # Grace period before archiving completed processes. Processes finished within this window are not yet
+          # archived.
+          wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
 
         incident-notifier: # Type: io.camunda.configuration.IncidentNotifier
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_DATABASENAME
@@ -741,7 +795,34 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HEALTHCHECKENABLED
         history: # Type: io.camunda.configuration.DocumentBasedHistory
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_DATABASENAME
+          archive-by-id-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDENABLED
+          # Maximum number of retries for archive-by-id batch operations on retryable errors
+          archive-by-id-max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDMAXRETRYATTEMPTS
+          # Retry delay in millisecond interval when archive-by-id batch fails on retryable errors
+          archive-by-id-retry-delay-ms: 1000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDRETRYDELAYMS
+          # Millisecond interval between archiver runs
+          delay-between-runs: "2000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_DELAYBETWEENRUNS
+          # Date format for historical indices in Java DateTimeFormatter syntax
+          els-rollover-date-format: "date" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ELSROLLOVERDATEFORMAT
+          # Maximum millisecond interval between archiver runs due to failure backoffs
+          max-delay-between-runs: "60000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_MAXDELAYBETWEENRUNS
+          # Defines the name of the created and applied ILM policy.
+          policy-name: "camunda-retention-policy" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_POLICYNAME
+          process-instance-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_PROCESSINSTANCEENABLED
+          process-instance-retention-mode: "pi-hierarchy" # Type: io.camunda.exporter.config.ExporterConfiguration$HistoryConfiguration$ProcessInstanceRetentionMode, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_PROCESSINSTANCERETENTIONMODE
+          # Maximum number of docs reindexed/deleted in a batch
+          reindex-batch-size: 2500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_REINDEXBATCHSIZE
+          # Maximum number of process instances per archiving batch
+          rollover-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ROLLOVERBATCHSIZE
+          # Time range for creating dated indices (e.g., 1d creates daily indices).
+          rollover-interval: "1d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ROLLOVERINTERVAL
+          # Defines the name of the created and applied usage-metrics ILM policy.
+          usage-metrics-policy-name: "camunda-usage-metrics-retention-policy" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_USAGEMETRICSPOLICYNAME
+          # Time range for creating dated usage-metrics indices.
+          usage-metrics-rollover-interval: "1M" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_USAGEMETRICSROLLOVERINTERVAL
+          # Grace period before archiving completed processes. Processes finished within this window are not yet
+          # archived.
+          wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
 
         incident-notifier: # Type: io.camunda.configuration.IncidentNotifier
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_DATABASENAME
@@ -929,7 +1010,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The maximum size of the exporters execution queue before it is flushed to the database.
         queue-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUESIZE
         # If true, enables JDBC batch statement rewriting on the RDBMS connection so that same-statement
-        # batches collapse into a single multi-values round trip. Has no effect for database vendors other than MySQL/MariaDB.
+        # batches collapse into a single multi-values round trip instead of one round trip per statement. Has
+        # no effect for database vendors other than MySQL/MariaDB.
         rewrite-batched-statements: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_REWRITEBATCHEDSTATEMENTS
         # Endpoint for the database configured as secondary storage. Mutually exclusive with {@link #urls} -
         # configure only one.
@@ -940,8 +1022,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Username for the database configured as secondary storage.
         username: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME
 
-      # Configuration for retention behavior
-      retention: null # Type: io.camunda.configuration.Retention, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION
+      retention: # Type: io.camunda.configuration.Retention
+        # if true, the ILM Policy is created and applied to the index templates
+        enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_ENABLED
+        # defines how old the data must be, before the data is deleted as a duration
+        minimum-age: "30d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_MINIMUMAGE
+        # defines how old the usage-metrics data must be, before the data is deleted as a duration
+        usage-metrics-minimum-age: "730d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_USAGEMETRICSMINIMUMAGE
+
       # Determines the type of the secondary storage database.
       type: "elasticsearch" # Type: io.camunda.configuration.SecondaryStorage$SecondaryStorageType, Env: CAMUNDA_DATA_SECONDARYSTORAGE_TYPE
 
@@ -1044,8 +1132,8 @@ camunda: # Type: io.camunda.configuration.Camunda
 
       usage-metrics: # Type: io.camunda.configuration.UsageMetricsConfig
         # The interval at which usage metrics are exported.
-        #
-        # Defaults to {@link EngineConfiguration#DEFAULT_USAGE_METRICS_EXPORT_INTERVAL}.
+        # Defaults to {@link
+        # io.camunda.zeebe.engine.EngineConfiguration#DEFAULT_USAGE_METRICS_EXPORT_INTERVAL}.
         export-interval: null # Type: Duration, Env: CAMUNDA_MONITORING_METRICS_USAGEMETRICS_EXPORTINTERVAL
 
   operate: # Type: io.camunda.configuration.beanoverrides.LegacyOperateProperties
@@ -1110,6 +1198,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       retry-reading-parents: null # Type: Boolean, Env: CAMUNDA_OPERATE_IMPORTER_RETRYREADINGPARENTS
       variable-size-threshold: null # Type: Integer, Env: CAMUNDA_OPERATE_IMPORTER_VARIABLESIZETHRESHOLD
 
+    nav-v2-enabled: null # Type: Boolean, Env: CAMUNDA_OPERATE_NAVV2ENABLED
     opensearch: # Type: io.camunda.operate.property.OperateOpensearchProperties
       aws-enabled: null # Type: Boolean, Env: CAMUNDA_OPERATE_OPENSEARCH_AWSENABLED
       batch-size: null # Type: Integer, Env: CAMUNDA_OPERATE_OPENSEARCH_BATCHSIZE
@@ -1174,12 +1263,10 @@ camunda: # Type: io.camunda.configuration.Camunda
     # on the next tick.
     message-start-lock-release-poll-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSINSTANCECREATION_MESSAGESTARTLOCKRELEASEPOLLBATCHLIMIT
     # Base poll interval for the cross-partition correlation-key lock-release scheduler on `P_K`. `P_K`
-    # polls `P_B` for the completion of each remotely-created holder instance; this value drives the
-    # scheduler's tick frequency and the base interval before back-off applies.
+    # reconciles the completion of each remotely-created holder instance with `P_B`; this value drives the
+    # scheduler's tick frequency. It is only a slow-path backstop, since holder completion is normally
+    # pushed from `P_B` directly.
     message-start-lock-release-poll-interval: null # Type: Duration, Env: CAMUNDA_PROCESSINSTANCECREATION_MESSAGESTARTLOCKRELEASEPOLLINTERVAL
-    # Upper bound on the per-lock exponential back-off of the cross-partition correlation-key lock-release
-    # poll on `P_K`, so a long-running holder is not polled at the base rate indefinitely.
-    message-start-lock-release-poll-max-backoff: null # Type: Duration, Env: CAMUNDA_PROCESSINSTANCECREATION_MESSAGESTARTLOCKRELEASEPOLLMAXBACKOFF
 
   processing: # Type: io.camunda.configuration.Processing
     # While disabled, checking the Time-To-Live of buffered messages blocks all other executions that
@@ -1321,6 +1408,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Configures the interval at which jobs are checked for timeouts.
         timeout-checker-polling-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_JOB_TIMEOUTCHECKERPOLLINGINTERVAL
 
+      mappings: # Type: io.camunda.configuration.EngineMappings
+        input-comparison-mode: null # Type: io.camunda.configuration.EngineMappings$InputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
+        input-mode: "combined" # Type: io.camunda.configuration.EngineMappings$InputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTMODE
+        output-comparison-mode: null # Type: io.camunda.configuration.EngineMappings$OutputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTCOMPARISONMODE
+        output-mode: "combined" # Type: io.camunda.configuration.EngineMappings$OutputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTMODE
+
       # Configures the maximum depth of nested call activities allowed before an incident is raised, to
       # guard against unbounded process recursion.
       max-process-depth: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MAXPROCESSDEPTH
@@ -1330,43 +1423,32 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Configures the interval at which buffered messages are checked for expiry.
         ttl-checker-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERINTERVAL
 
+      secrets: # Type: io.camunda.configuration.EngineSecrets
+        batch-resolution-limit: 20 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_BATCHRESOLUTIONLIMIT
+        interval: "5s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_INTERVAL
+        retry-backoff-factor: 2 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYBACKOFFFACTOR
+        retry-initial-delay: "1s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYINITIALDELAY
+        retry-max-attempts: 3 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYMAXATTEMPTS
+        retry-max-delay: "30s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYMAXDELAY
+        wake-delay: "50ms" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_WAKEDELAY
+
+      storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals
+        # Controls whether the archiverless mode is enabled.
+        enable-archiverless: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
+        # Override default storage ordinal key with fixed value, mainly used during initial testing. The
+        # default value of -1 means no override is applied.
+        fixed-storage-ordinal-key: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINALKEY
+
       validators: # Type: io.camunda.configuration.EngineValidators
         # Configures the maximum size, in bytes, of the validation error output produced when deploying an
         # invalid BPMN or DMN resource.
         results-output-max-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
 
-      storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals
-        # Controls whether the archiverless mode is enabled.
-        enable-archiverless: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
-        # Override default storage ordinal key with fixed value, mainly used during initial testing
-        fixed-storage-ordinal-key: -1 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINALKEY
-
-      mappings: # Type: io.camunda.configuration.EngineMappings
-        # Experimental: controls the input-mapping resolver used during process
-        # instance execution:
-        # COMBINED (default) merges all input mappings into a single combined result,
-        # while ORDERED applies mappings in modeling order.
-        input-mode: COMBINED # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTMODE
-        # Experimental: when set, also evaluates input mappings with this second
-        # resolver and logs a warning
-        # if the results differ from the primary resolver. Intended for migration diagnostics
-        # only: each activation evaluates mappings with both resolvers and compares the
-        # result documents, which adds overhead for large mapping sets. Has no effect
-        # when null (default) or when set to the same value as input-mode.
-        input-comparison-mode: ~ # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
-        # Experimental: controls the output-mapping resolver used during process
-        # instance execution:
-        # COMBINED (default) merges all output mappings into a single combined result,
-        # while ORDERED applies mappings in modeling order.
-        output-mode: COMBINED # Type: OutputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTMODE
-        # Experimental: when set, also evaluates output mappings with this second
-        # resolver and logs a warning
-        # if the results differ from the primary resolver. Intended for migration diagnostics
-        # only: each completion evaluates mappings with both resolvers and compares the
-        # result documents, which adds overhead for large mapping sets. Has no effect
-        # when null (default) or when set to the same value as output-mode.
-        output-comparison-mode: ~ # Type: OutputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTCOMPARISONMODE
-
+    # Controls the scope used to evaluate the `correlationKey` expression of a message boundary event.
+    # When enabled (default), the expression is evaluated in the activity's own (element instance) scope,
+    # consistent with timer duration, message name, and signal name expressions. When disabled, restores
+    # the previous behavior where the expression is evaluated in the flow scope instead.
+    evaluate-boundary-event-correlation-key-in-activity-scope: true # Type: Boolean, Env: CAMUNDA_PROCESSING_EVALUATEBOUNDARYEVENTCORRELATIONKEYINACTIVITYSCOPE
     flow-control: # Type: io.camunda.configuration.FlowControl
       request: # Type: io.camunda.configuration.Limit
         aimd: # Type: io.camunda.configuration.Aimd
@@ -1596,6 +1678,117 @@ camunda: # Type: io.camunda.configuration.Camunda
       # snapshot or alpha versions. Default: True, means it is not allowed to migrate to incompatible
       # version like: SNAPSHOT or alpha.
       enable-version-check: null # Type: Boolean, Env: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
+
+  tasklist: # Type: io.camunda.configuration.beanoverrides.LegacyTasklistProperties
+    auth0: # Type: io.camunda.tasklist.property.Auth0Properties
+      claim-name: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_CLAIMNAME
+      client-id: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_CLIENTID
+      client-secret: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_CLIENTSECRET
+      domain: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_DOMAIN
+      email-key: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_EMAILKEY
+      name-key: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_NAMEKEY
+      organization: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_ORGANIZATION
+      organizations-key: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_ORGANIZATIONSKEY
+
+    backup: # Type: io.camunda.tasklist.property.BackupProperties
+      repository-name: null # Type: String, Env: CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME
+
+    client: # Type: io.camunda.tasklist.property.ClientProperties
+      audience: null # Type: String, Env: CAMUNDA_TASKLIST_CLIENT_AUDIENCE
+      cluster-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLIENT_CLUSTERID
+
+    cloud: # Type: io.camunda.tasklist.property.CloudProperties
+      cluster-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_CLUSTERID
+      console-url: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_CONSOLEURL
+      mixpanel-a-p-i-host: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST
+      mixpanel-token: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN
+      organization-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID
+      permission-audience: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_PERMISSIONAUDIENCE
+      permission-url: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_PERMISSIONURL
+      stage: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_STAGE
+
+    database: null # Type: String, Env: CAMUNDA_TASKLIST_DATABASE
+    documentation: # Type: io.camunda.tasklist.property.TasklistDocumentationProperties
+      api-migration-docs-url: null # Type: String, Env: CAMUNDA_TASKLIST_DOCUMENTATION_APIMIGRATIONDOCSURL
+
+    elasticsearch: # Type: io.camunda.tasklist.property.TasklistElasticsearchProperties
+      batch-size: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_BATCHSIZE
+      cluster-name: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_CLUSTERNAME
+      connect-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_CONNECTTIMEOUT
+      create-schema: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_CREATESCHEMA
+      date-format: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_DATEFORMAT
+      els-date-format: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_ELSDATEFORMAT
+      health-check-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_HEALTHCHECKENABLED
+      index-prefix: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX
+      interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_INTERCEPTORPLUGINS
+      max-terms-count: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_MAXTERMSCOUNT
+      password: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
+      proxy: # Type: io.camunda.tasklist.property.ProxyProperties
+        enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_ENABLED
+        host: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_HOST
+        password: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_PASSWORD
+        port: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_PORT
+        ssl-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_SSLENABLED
+        username: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_USERNAME
+
+      socket-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SOCKETTIMEOUT
+      ssl: # Type: io.camunda.tasklist.property.SslProperties
+        certificate-path: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SSL_CERTIFICATEPATH
+        self-signed: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SSL_SELFSIGNED
+        verify-hostname: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SSL_VERIFYHOSTNAME
+
+      url: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
+      urls: null # Type: List<String>, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_URLS
+      username: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
+
+    enterprise: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ENTERPRISE
+    feature-flag: # Type: io.camunda.tasklist.property.FeatureFlagProperties
+      allow-non-self-assignment: null # Type: Boolean, Env: CAMUNDA_TASKLIST_FEATUREFLAG_ALLOWNONSELFASSIGNMENT
+      process-public-endpoints: null # Type: Boolean, Env: CAMUNDA_TASKLIST_FEATUREFLAG_PROCESSPUBLICENDPOINTS
+
+    identity: # Type: io.camunda.tasklist.property.IdentityProperties
+      user-access-restrictions-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_IDENTITY_USERACCESSRESTRICTIONSENABLED
+
+    importer: # Type: io.camunda.tasklist.property.ImportProperties
+      variable-size-threshold: null # Type: Integer, Env: CAMUNDA_TASKLIST_IMPORTER_VARIABLESIZETHRESHOLD
+
+    open-search: # Type: io.camunda.tasklist.property.TasklistOpenSearchProperties
+      aws-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_AWSENABLED
+      batch-size: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_BATCHSIZE
+      cluster-name: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_CLUSTERNAME
+      connect-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_CONNECTTIMEOUT
+      create-schema: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_CREATESCHEMA
+      date-format: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_DATEFORMAT
+      els-date-format: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_ELSDATEFORMAT
+      health-check-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_HEALTHCHECKENABLED
+      index-prefix: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
+      interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_TASKLIST_OPENSEARCH_INTERCEPTORPLUGINS
+      max-terms-count: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_MAXTERMSCOUNT
+      password: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
+      proxy: # Type: io.camunda.tasklist.property.ProxyProperties
+        enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_ENABLED
+        host: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_HOST
+        password: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_PASSWORD
+        port: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_PORT
+        ssl-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_SSLENABLED
+        username: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_USERNAME
+
+      socket-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_SOCKETTIMEOUT
+      ssl: # Type: io.camunda.tasklist.property.SslProperties
+        certificate-path: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_SSL_CERTIFICATEPATH
+        self-signed: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_SSL_SELFSIGNED
+        verify-hostname: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_SSL_VERIFYHOSTNAME
+
+      url: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_URL
+      urls: null # Type: List<String>, Env: CAMUNDA_TASKLIST_OPENSEARCH_URLS
+      username: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
+
+    version: null # Type: String, Env: CAMUNDA_TASKLIST_VERSION
+    zeebe: # Type: io.camunda.tasklist.property.ZeebeProperties
+      certificate-path: null # Type: String, Env: CAMUNDA_TASKLIST_ZEEBE_CERTIFICATEPATH
+      gateway-address: null # Type: String, Env: CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS
+      rest-address: null # Type: String, Env: CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS
+      secure: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ZEEBE_SECURE
 
   webapp: # Type: io.camunda.configuration.beans.WebappProperties
     active-components: null # Type: List<String>, Env: CAMUNDA_WEBAPP_ACTIVECOMPONENTS

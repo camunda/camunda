@@ -26,7 +26,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Objects;
 import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
@@ -100,10 +99,7 @@ public final class RaftPartitionFactory {
         brokerCfg.getCluster().getRaft().isEnablePriorityElection());
     partitionConfig.setElectionTimeout(brokerCfg.getCluster().getElectionTimeout());
     partitionConfig.setHeartbeatInterval(brokerCfg.getCluster().getHeartbeatInterval());
-    partitionConfig.setRequestTimeout(
-        Objects.requireNonNullElse(
-            brokerCfg.getExperimental().getRaft().getRequestTimeout(),
-            brokerCfg.getCluster().getElectionTimeout()));
+    partitionConfig.setRequestTimeout(brokerCfg.getExperimental().getRaft().getRequestTimeout());
     partitionConfig.setSnapshotRequestTimeout(
         brokerCfg.getExperimental().getRaft().getSnapshotRequestTimeout());
     partitionConfig.setSnapshotChunkSize(
