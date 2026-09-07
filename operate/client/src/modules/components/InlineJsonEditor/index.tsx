@@ -8,15 +8,11 @@
 
 import {useCallback, useMemo} from 'react';
 import CodeMirror from '@uiw/react-codemirror';
-import {
-  autocompletion,
-  closeCompletion,
-  completeAnyWord,
-} from '@codemirror/autocomplete';
+import {autocompletion, completeAnyWord} from '@codemirror/autocomplete';
 import {json} from '@codemirror/lang-json';
 import {HighlightStyle, syntaxHighlighting} from '@codemirror/language';
-import {EditorState, Prec} from '@codemirror/state';
-import {EditorView, keymap, tooltips} from '@codemirror/view';
+import {EditorState} from '@codemirror/state';
+import {EditorView, tooltips} from '@codemirror/view';
 import {tags} from '@lezer/highlight';
 import {observer} from 'mobx-react-lite';
 import {
@@ -41,18 +37,6 @@ const basicSetup = {
 };
 const baseExtensions = [
   json(),
-  Prec.highest(
-    keymap.of([
-      {
-        key: 'Escape',
-        run: (view) => {
-          closeCompletion(view);
-          view.contentDOM.blur();
-          return true;
-        },
-      },
-    ]),
-  ),
   autocompletion({
     override: [
       (context) =>
@@ -229,6 +213,14 @@ const InlineJsonEditor: React.FC<Props> = observer(
                 placeholder={placeholder}
                 autoFocus={autoFocus}
                 onChange={handleChange}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === 'Escape' &&
+                    event.target instanceof HTMLElement
+                  ) {
+                    event.target.blur();
+                  }
+                }}
                 extensions={extensions}
                 basicSetup={basicSetup}
                 indentWithTab={false}
