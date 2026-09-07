@@ -11,6 +11,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -104,6 +105,35 @@ public class DeploymentRejectionTest {
     assertThat(rejectedDeployment.getRejectionReason())
         .contains("Element: flow2 > conditionExpression")
         .contains("ERROR: failed to parse expression");
+  }
+
+  @Test
+  public void shouldCapRejectionReasonWhenManyResourcesFail() {
+    // given
+    // https://github.com/camunda/camunda/issues/61996: many simultaneously-failing resources must
+    // not produce an unbounded rejection reason, since a large enough gRPC status message can
+    // exceed a proxy's header buffer and turn a normal validation rejection into an opaque 502.
+    final var maxOutputSize = EngineConfiguration.DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
+    final var deployment = ENGINE.deployment();
+    for (int i = 0; i < 200; i++) {
+      final var overlongName = "resource-" + i + "-" + "x".repeat(MAX_NAME_FIELD_LENGTH + 10);
+      deployment.withXmlResource("empty".getBytes(UTF_8), overlongName);
+    }
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment = deployment.expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    final var rejectionReason = rejectedDeployment.getRejectionReason();
+    assertThat(rejectionReason.length())
+        .as("rejection reason must be capped regardless of how many resources fail")
+        .isLessThan(maxOutputSize + 500);
+    assertThat(rejectionReason).contains("more errors omitted");
   }
 
   @Test
