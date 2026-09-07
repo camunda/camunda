@@ -504,6 +504,7 @@ jobs:
       - name: Start Camunda
         shell: bash
         env:
+          BASE_BRANCH: ${{ needs.validate-branch.outputs.base }}
           MATRIX_CAMUNDA_MODE: ${{ matrix.camunda_mode }}
           MATRIX_TASKLIST_MODE: ${{ matrix.tasklist_mode }}
         run: |
