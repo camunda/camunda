@@ -9,6 +9,7 @@
 import {Outlet, useMatchRoute} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useMediaQuery} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/shadcn.components/AvailableTasks';
 import {Filters} from '#/tasklist/modules/available-tasks/shadcn.components/Filters';
@@ -39,17 +40,18 @@ const TasksLayoutPage: React.FC<Props> = ({
 }) => {
 	const {t} = useTranslation();
 	const matchRoute = useMatchRoute();
+	const isBelowMd = useMediaQuery('(width < 48rem)');
 	const hasSelectedTask = matchRoute({to: '/shadcn/tasklist/$userTaskKey', fuzzy: true}) !== false;
 
 	return (
 		<main
 			id="main-content"
-			className="grid h-full grid-cols-[19.5rem_minmax(0,1fr)] overflow-hidden max-md:grid-cols-1!"
+			className={cn('grid h-full overflow-hidden', isBelowMd ? 'grid-cols-1' : 'grid-cols-[19.5rem_minmax(0,1fr)]')}
 		>
 			<section
 				className={cn(
 					'grid min-w-0 grid-rows-[3rem_minmax(0,1fr)_auto] overflow-hidden',
-					hasSelectedTask && 'max-md:hidden!',
+					isBelowMd && hasSelectedTask && 'hidden',
 				)}
 				aria-label={t('tasklist.tasksPanelLabel')}
 			>
@@ -71,8 +73,9 @@ const TasksLayoutPage: React.FC<Props> = ({
 			</section>
 			<div
 				className={cn(
-					'min-w-0 overflow-auto border-l border-border max-md:border-l-0!',
-					!hasSelectedTask && 'max-md:hidden!',
+					'min-w-0 overflow-auto',
+					!isBelowMd && 'border-l border-border',
+					isBelowMd && !hasSelectedTask && 'hidden',
 				)}
 			>
 				<Outlet />
