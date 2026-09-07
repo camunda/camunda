@@ -29,9 +29,11 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class CallActivityProcessor
     implements BpmnElementContainerProcessor<ExecutableCallActivity> {
@@ -57,6 +59,9 @@ public final class CallActivityProcessor
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnJobBehavior jobBehavior;
   private final int maxProcessDepth;
+
+  // Reused per activation; must not outlive the lookup in getCalledProcess.
+  private final DirectBuffer processIdView = new UnsafeBuffer();
 
   public CallActivityProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -273,7 +278,12 @@ public final class CallActivityProcessor
     if (result.getType() != ResultType.STRING) {
       return Either.left(nonStringProcessIdFailure(result, element, context));
     }
-    return Either.right(BufferUtil.wrapString(result.getString()));
+    return Either.right(wrapProcessId(result.getString()));
+  }
+
+  private DirectBuffer wrapProcessId(final String processId) {
+    processIdView.wrap(StringUtil.getBytes(processId));
+    return processIdView;
   }
 
   private Failure nonStringProcessIdFailure(
