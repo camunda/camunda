@@ -36,7 +36,10 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public final class AgentInstanceCreateProcessor
@@ -59,6 +62,21 @@ public final class AgentInstanceCreateProcessor
 
   private static final List<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       List.of(BpmnElementType.AD_HOC_SUB_PROCESS, BpmnElementType.SERVICE_TASK);
+
+  private static final String ERROR_MSG_CREATE_ROLE_NOT_ALLOWED =
+      "Expected to create agent instance with history item '%s', but its role is '%s'. Allowed "
+          + "roles are: %s.";
+  private static final String ERROR_MSG_CREATE_METRICS_NOT_ALLOWED =
+      "Expected to create agent instance with history item '%s', but it carries non-zero "
+          + "token-usage metrics. History items included when creating an agent instance must "
+          + "not carry non-zero token-usage metrics; durationMs is exempt.";
+
+  // AgentHistoryMetrics properties default to -1 to mean "not provided" — that sentinel, like 0,
+  // must not itself count as a non-zero metric.
+  private static final long METRIC_NOT_PROVIDED = -1L;
+
+  private static final Set<AgentHistoryRole> ALLOWED_CREATE_ROLES =
+      Set.of(AgentHistoryRole.CONFIGURATION, AgentHistoryRole.USER);
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -189,6 +207,13 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
+    final var isCreateHistoryValid = validateCreateHistoryItems(commandValue.getHistory());
+    if (isCreateHistoryValid.isLeft()) {
+      final var rejection = isCreateHistoryValid.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var deployedProcess =
         processState.getProcessByKeyAndTenant(
             elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
@@ -275,6 +300,67 @@ public final class AgentInstanceCreateProcessor
 
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);
+  }
+
+  /**
+   * Validates that every item in a CREATE batch has an allowed role ({@link
+   * AgentHistoryRole#CONFIGURATION} or {@link AgentHistoryRole#USER}) and carries no non-zero
+   * token-usage metrics ({@code inputTokens}, {@code outputTokens}, {@code reasoningTokenCount},
+   * {@code cacheCreationTokenCount}, {@code cacheReadTokenCount}); {@code durationMs} is exempt.
+   * UPDATE keeps accepting every role, metrics included, since a rejected UPDATE still has a live
+   * {@code AgentInstance} to apply metrics onto — a rejected CREATE does not, so this check is
+   * CREATE-only.
+   *
+   * @return the rejection for the first invalid item found, or {@link Either#rightVoid()} if every
+   *     item is a CONFIGURATION or USER item without non-zero token-usage metrics
+   */
+  private static Either<Rejection, Void> validateCreateHistoryItems(
+      final List<? extends AgentHistoryRecordValue> history) {
+    if (history == null || history.isEmpty()) {
+      return Either.rightVoid();
+    }
+
+    for (final var item : history) {
+      final var historyItemId = item.getHistoryItemId();
+
+      if (!ALLOWED_CREATE_ROLES.contains(item.getRole())) {
+        // sorted here, the only place the message's ordering matters: Set's own iteration order
+        // is seeded from a per-JVM salt, so its toString() would vary across JVM runs.
+        final var sortedAllowedRoles =
+            ALLOWED_CREATE_ROLES.stream().sorted(Comparator.comparing(Enum::name)).toList();
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                ERROR_MSG_CREATE_ROLE_NOT_ALLOWED.formatted(
+                    historyItemId, item.getRole(), sortedAllowedRoles)));
+      }
+
+      if (hasNonZeroMetrics(item.getMetrics())) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                ERROR_MSG_CREATE_METRICS_NOT_ALLOWED.formatted(historyItemId)));
+      }
+    }
+    return Either.rightVoid();
+  }
+
+  /**
+   * {@code durationMs} is deliberately excluded from this check: it isn't an accumulated
+   * conversation metric like the others, so it may be non-zero even on an otherwise-clean
+   * CONFIGURATION/USER item.
+   */
+  private static boolean hasNonZeroMetrics(
+      final AgentHistoryRecordValue.AgentHistoryMetricsValue metrics) {
+    return isNonZeroMetricValue(metrics.getInputTokens())
+        || isNonZeroMetricValue(metrics.getOutputTokens())
+        || isNonZeroMetricValue(metrics.getReasoningTokenCount())
+        || isNonZeroMetricValue(metrics.getCacheCreationTokenCount())
+        || isNonZeroMetricValue(metrics.getCacheReadTokenCount());
+  }
+
+  private static boolean isNonZeroMetricValue(final long value) {
+    return value != 0 && value != METRIC_NOT_PROVIDED;
   }
 
   private void writeRejection(
