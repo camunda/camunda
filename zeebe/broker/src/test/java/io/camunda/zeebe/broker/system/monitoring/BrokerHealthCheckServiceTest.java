@@ -14,8 +14,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.test.util.logging.RecordingAppender;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
@@ -231,6 +236,35 @@ public class BrokerHealthCheckServiceTest {
   }
 
   @Test
+  public void shouldRemovePartitionsFromTheHealthTreeWhenTheTenantUnregisters() {
+    // given a tenant with two bootstrap partitions, one of which registers a real health
+    // component while the other is left as the monitorComponent placeholder - counted as unknown,
+    // which reads unhealthy, and so drags the whole tree down
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+    final var registered = new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1);
+    final var placeholder = new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 2);
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID,
+        List.of(
+            partition(DEFAULT_PHYSICAL_TENANT_ID, 1), partition(DEFAULT_PHYSICAL_TENANT_ID, 2)));
+    healthCheckService.registerMonitoredPartition(
+        registered.number(), healthyComponent(ZeebePartition.componentName(registered)));
+    scheduler.workUntilDone();
+    assertThat(healthCheckService.getHealthReport().children())
+        .containsOnlyKeys(
+            ZeebePartition.componentName(registered), ZeebePartition.componentName(placeholder));
+    assertThat(healthCheckService.getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+
+    // when the tenant's partition manager stops as part of a mode transition
+    healthCheckService.unregisterPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID);
+    scheduler.workUntilDone();
+
+    // then both nodes go with it. The placeholder is the one entry nothing else ever removes, so
+    // without this it would keep the broker unhealthy for the rest of its life
+    assertThat(healthCheckService.getHealthReport().children()).isEmpty();
+  }
+
+  @Test
   public void shouldBeReadyWhenRecoveringPartitionsAreRegistered() {
     // given a broker whose only physical tenant starts in recovery mode. Recovery partitions never
     // join Raft, so readiness cannot come from onBecameRaftLeader/Follower; registering them as
@@ -351,6 +385,26 @@ public class BrokerHealthCheckServiceTest {
     healthCheckService.setBrokerStarted();
     scheduler.workUntilDone();
     return healthCheckService;
+  }
+
+  private static HealthMonitorable healthyComponent(final String componentName) {
+    return new HealthMonitorable() {
+      @Override
+      public String componentName() {
+        return componentName;
+      }
+
+      @Override
+      public HealthReport getHealthReport() {
+        return HealthReport.healthy(this);
+      }
+
+      @Override
+      public void addFailureListener(final FailureListener failureListener) {}
+
+      @Override
+      public void removeFailureListener(final FailureListener failureListener) {}
+    };
   }
 
   private static PartitionMetadata partition(final String partitionGroup, final int partitionId) {
