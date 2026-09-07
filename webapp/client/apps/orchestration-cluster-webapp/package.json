@@ -19,9 +19,16 @@
 	},
 	"dependencies": {
 		"@bpmn-io/element-template-icon-renderer": "1.0.0",
+<<<<<<< HEAD
 		"@bpmn-io/form-js-carbon-styles": "1.24.1",
 		"@bpmn-io/form-js-viewer": "1.24.1",
 		"@camunda/camunda-api-zod-schemas": "0.0.90",
+=======
+		"@bpmn-io/form-js-carbon-styles": "1.25.0",
+		"@bpmn-io/form-js-viewer": "1.25.0",
+		"@bpmn-io/shadcn-theme": "0.0.1",
+		"@camunda/camunda-api-zod-schemas": "0.0.93",
+>>>>>>> 6b40fcd5 (feat: prepare Zod API schemas release)
 		"@camunda/camunda-composite-components": "0.25.4",
 		"@camunda/design-system": "0.46.1",
 		"@camunda/session-heartbeat": "0.0.1",

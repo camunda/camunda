@@ -1,6 +1,10 @@
 {
 	"name": "@camunda/camunda-api-zod-schemas",
+<<<<<<< HEAD
 	"version": "0.0.90",
+=======
+	"version": "0.0.93",
+>>>>>>> 6b40fcd5 (feat: prepare Zod API schemas release)
 	"license": "LicenseRef-Camunda-1.0",
 	"description": "Zod schemas and TypeScript types for Camunda 8 unified API",
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",

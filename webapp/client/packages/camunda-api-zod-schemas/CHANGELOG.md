@@ -1,5 +1,38 @@
 # Changelog
 
+<<<<<<< HEAD
+=======
+## v0.0.93
+
+### 🩹 Fixes
+
+- Add `reasoningTokenCount`, `cacheCreationTokenCount`, and `cacheReadTokenCount` to the 8.10 agent instance metrics and history item metrics schemas [#59320](https://github.com/camunda/camunda/issues/59320)
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.92
+
+### 🚀 Enhancements
+
+- Add `state` field (`ACTIVE`, `DRAINING`, `DELETED`) to the 8.8 and 8.9 process-definition schemas, exposing and enabling filtering on the draining state ([#56988](https://github.com/camunda/camunda/issues/56988))
+
+### ❤️ Contributors
+
+- Ambrose Tan ([@tanjinyi](https://github.com/tanjinyi))
+
+## v0.0.91
+
+### 🚀 Enhancements
+
+- Accept a top-level `$or` clause in the 8.10 user task search filter, matching the other search endpoints ([#59998](https://github.com/camunda/camunda/issues/59998))
+
+### ❤️ Contributors
+
+- Aleksander Dytko ([@aleksander-dytko](https://github.com/aleksander-dytko))
+
+>>>>>>> 6b40fcd5 (feat: prepare Zod API schemas release)
 ## v0.0.90
 
 ### 🩹 Fixes

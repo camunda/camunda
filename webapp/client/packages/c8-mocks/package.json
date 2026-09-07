@@ -18,7 +18,11 @@
 		"typecheck": "tsc"
 	},
 	"devDependencies": {
+<<<<<<< HEAD
 		"@camunda/camunda-api-zod-schemas": "0.0.90",
+=======
+		"@camunda/camunda-api-zod-schemas": "0.0.93",
+>>>>>>> 6b40fcd5 (feat: prepare Zod API schemas release)
 		"typescript": "7.0.2"
 	}
 }
