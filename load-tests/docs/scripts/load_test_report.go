@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"maps"
@@ -215,116 +216,71 @@ func parseArgs(args []string, scriptDir string) (options, error) {
 		missingValue:    "NaN",
 	}
 
-	for index := 0; index < len(args); index++ {
-		arg := args[index]
-		switch arg {
-		case "-h", "--help":
+	namespaceArg := ""
+	flagArgs := args
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		namespaceArg = args[0]
+		flagArgs = args[1:]
+	}
+
+	durationSeconds := strconv.Itoa(opts.durationSeconds)
+	showHelp := false
+	showShortHelp := false
+	flagSet := flag.NewFlagSet("loadTestReport.sh", flag.ContinueOnError)
+	flagSet.SetOutput(io.Discard)
+	flagSet.StringVar(&opts.namespace, "namespace", "", "")
+	flagSet.StringVar(&durationSeconds, "duration-seconds", durationSeconds, "")
+	flagSet.StringVar(&opts.rateInterval, "rate-interval", opts.rateInterval, "")
+	flagSet.StringVar(&opts.sampleStep, "sample-step", opts.sampleStep, "")
+	flagSet.StringVar(&opts.reportTemplate, "template", opts.reportTemplate, "")
+	flagSet.StringVar(&opts.timeAnchor, "at", "", "")
+	flagSet.StringVar(&opts.startLabel, "start", "", "")
+	flagSet.StringVar(&opts.endLabel, "end", "", "")
+	flagSet.StringVar(&opts.endpoint, "endpoint", opts.endpoint, "")
+	flagSet.StringVar(&opts.curlOpts, "curl-opts", "", "")
+	flagSet.StringVar(&opts.outputFormat, "format", opts.outputFormat, "")
+	flagSet.BoolVar(&showHelp, "help", false, "")
+	flagSet.BoolVar(&showShortHelp, "h", false, "")
+	flagSet.BoolFunc("no-header", "", func(string) error {
+		opts.includeHeader = false
+		return nil
+	})
+	flagSet.StringVar(&opts.missingValue, "missing-value", opts.missingValue, "")
+	flagSet.StringVar(&opts.queriesFile, "queries-file", "", "")
+	flagSet.StringVar(&opts.outputFile, "output", "", "")
+
+	if err := flagSet.Parse(flagArgs); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
 			opts.showHelp = true
 			return opts, nil
-		case "--namespace":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.namespace = value
-		case "--duration-seconds":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			durationSeconds, err := parsePositiveInt(value, "duration-seconds")
-			if err != nil {
-				return opts, err
-			}
-			opts.durationSeconds = durationSeconds
-		case "--rate-interval":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.rateInterval = value
-		case "--sample-step":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.sampleStep = value
-		case "--template":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.reportTemplate = value
-		case "--at":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.timeAnchor = value
-		case "--start":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.startLabel = value
-		case "--end":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.endLabel = value
-		case "--endpoint":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.endpoint = value
-		case "--curl-opts":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.curlOpts = value
-		case "--format":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.outputFormat = value
-		case "--no-header":
-			opts.includeHeader = false
-		case "--missing-value":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.missingValue = value
-		case "--queries-file":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.queriesFile = value
-		case "--output":
-			value, err := nextArg(args, &index, arg)
-			if err != nil {
-				return opts, err
-			}
-			opts.outputFile = value
-		default:
-			if strings.HasPrefix(arg, "-") {
-				return opts, fmt.Errorf("Unknown argument '%s'. Run with --help for usage.", arg)
-			}
-			if opts.namespace != "" {
-				return opts, fmt.Errorf("Unknown argument '%s'. Run with --help for usage.", arg)
-			}
-			opts.namespace = arg
 		}
+		return opts, err
+	}
+	if showHelp || showShortHelp {
+		opts.showHelp = true
+		return opts, nil
+	}
+
+	positionalArgs := flagSet.Args()
+	if opts.namespace == "" {
+		opts.namespace = namespaceArg
+	}
+	if opts.namespace == "" && len(positionalArgs) > 0 {
+		opts.namespace = positionalArgs[0]
+		positionalArgs = positionalArgs[1:]
+	}
+	if len(positionalArgs) > 0 {
+		return opts, fmt.Errorf("Unknown argument '%s'. Run with --help for usage.", positionalArgs[0])
 	}
 
 	if opts.showHelp {
 		return opts, nil
 	}
+	parsedDurationSeconds, err := parsePositiveInt(durationSeconds, "duration-seconds")
+	if err != nil {
+		return opts, err
+	}
+	opts.durationSeconds = parsedDurationSeconds
 	if opts.namespace == "" {
 		return opts, errors.New("Missing <namespace>.")
 	}
@@ -358,14 +314,6 @@ func parseArgs(args []string, scriptDir string) (options, error) {
 	}
 
 	return opts, nil
-}
-
-func nextArg(args []string, index *int, flag string) (string, error) {
-	*index = *index + 1
-	if *index >= len(args) {
-		return "", fmt.Errorf("Missing value for %s.", flag)
-	}
-	return args[*index], nil
 }
 
 func parsePositiveInt(value string, name string) (int, error) {

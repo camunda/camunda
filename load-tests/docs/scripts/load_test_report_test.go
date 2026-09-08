@@ -460,6 +460,32 @@ func TestParseArgsShouldDeriveDurationFromStartAndEnd(t *testing.T) {
 	}
 }
 
+func TestParseArgsShouldSupportPositionalNamespaceBeforeFlags(t *testing.T) {
+	tempDir := t.TempDir()
+	queriesFile := filepath.Join(tempDir, "queries.json")
+	if err := os.WriteFile(queriesFile, []byte(`{"queries":[{"key":"namespace","value":"$NAMESPACE"}]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	opts, err := parseArgs([]string{"c8-ck-test", "--duration-seconds", "1800", "--format", "tsv", "--no-header", "--queries-file", queriesFile}, tempDir)
+
+	if err != nil {
+		t.Fatalf("expected options, got error %v", err)
+	}
+	if opts.namespace != "c8-ck-test" {
+		t.Fatalf("unexpected namespace: %s", opts.namespace)
+	}
+	if opts.durationSeconds != 1800 {
+		t.Fatalf("unexpected duration: %d", opts.durationSeconds)
+	}
+	if opts.outputFormat != "tsv" {
+		t.Fatalf("unexpected format: %s", opts.outputFormat)
+	}
+	if opts.includeHeader {
+		t.Fatal("expected header to be disabled")
+	}
+}
+
 func TestRenderReportShouldKeepMetricsInColumnOrderForJSON(t *testing.T) {
 	report := report{
 		Namespace:       "c8-ck-test",
