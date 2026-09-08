@@ -1474,6 +1474,63 @@ func TestStripGrpcNettyShadedNativeLibsErrorsWhenKeepTokenAbsent(t *testing.T) {
 	}
 }
 
+func TestStripGrpcNettyShadedNativeLibsErrorsWhenOnlyEpollMatches(t *testing.T) {
+	// given: JAR contains a matching Linux epoll entry but no matching tcnative entry —
+	// the epoll match must not be mistaken for proof that the required tcnative lib exists.
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "grpc-netty-shaded-1.81.0.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	entries := []string{
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_x86_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_x86_64.jnilib",
+	}
+	for _, name := range entries {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary-" + name)); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for linux/x86_64 — epoll_x86_64 matches, but no tcnative_linux_x86_64 entry exists.
+	err = stripGrpcNettyShadedNativeLibs(version, "linux", "x86_64")
+
+	// then
+	if err == nil {
+		t.Fatal("expected error when only epoll matches and tcnative entry is absent, got nil")
+	}
+}
+
 func TestVerifyClassFileVersionAcceptsJava21Class(t *testing.T) {
 	// given — minimal class file header with major version matching helperJavaRelease
 	dir := t.TempDir()
