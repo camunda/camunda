@@ -2718,14 +2718,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var createdForItem =
         RecordingExporter.records()
             .limit(r -> r.getKey() == clockResetKey)
-            .withValueType(ValueType.AGENT_HISTORY)
+            .agentHistoryRecords()
             .withIntent(AgentHistoryIntent.CREATED)
-            .filter(
-                r -> {
-                  final var value = (AgentHistoryRecordValue) r.getValue();
-                  return value.getAgentInstanceKey() == agentInstanceKey
-                      && value.getHistoryItemId().equals("item-user");
-                })
+            .withAgentInstanceKey(agentInstanceKey)
+            .withHistoryItemId("item-user")
             .toList();
     assertThat(createdForItem).hasSize(1);
   }
@@ -3253,10 +3249,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var createdEvents =
         RecordingExporter.records()
             .limit(r -> r.getKey() == clockResetKey)
-            .withValueType(ValueType.AGENT_HISTORY)
+            .agentHistoryRecords()
             .withIntent(AgentHistoryIntent.CREATED)
-            .filter(
-                r -> ((AgentHistoryRecordValue) r.getValue()).getHistoryItemId().equals("dup-id"))
+            .withHistoryItemId("dup-id")
             .toList();
     assertThat(createdEvents).isEmpty();
   }
@@ -3984,10 +3979,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var createdForItem =
         RecordingExporter.records()
             .limit(r -> r.getKey() == clockResetKey)
-            .withValueType(ValueType.AGENT_HISTORY)
+            .agentHistoryRecords()
             .withIntent(AgentHistoryIntent.CREATED)
-            .filter(
-                r -> ((AgentHistoryRecordValue) r.getValue()).getHistoryItemId().equals("item-x"))
+            .withHistoryItemId("item-x")
             .toList();
     assertThat(createdForItem).as("no second CREATED event was appended for item-x").hasSize(1);
   }
@@ -4377,13 +4371,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var createdForDiscardedItem =
         RecordingExporter.records()
             .limit(r -> r.getKey() == clockResetKey)
-            .withValueType(ValueType.AGENT_HISTORY)
+            .agentHistoryRecords()
             .withIntent(AgentHistoryIntent.CREATED)
-            .filter(
-                r ->
-                    ((AgentHistoryRecordValue) r.getValue())
-                        .getHistoryItemId()
-                        .equals("item-discarded"))
+            .withHistoryItemId("item-discarded")
             .toList();
     assertThat(createdForDiscardedItem)
         .as(
