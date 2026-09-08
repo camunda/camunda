@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -46,11 +47,20 @@ import org.junit.rules.TestName;
  * would not necessarily show in the other.
  *
  * <p>Regression tests for <a href="https://github.com/camunda/camunda/issues/60011">#60011</a>,
- * input-mapping rule 8.
+ * input-mapping rule 8. Type preservation across mappings is specific to evaluating them one by one
+ * in modeling order, so both mapping modes are pinned to {@code ORDERED} here — {@code COMBINED}
+ * evaluates every mapping as a single FEEL context literal and never round trips a value through
+ * this class's per-mapping boundary at all.
  */
 public final class MappingTypePreservationTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              c ->
+                  c.setInputMappingMode(EngineConfiguration.InputMappingMode.ORDERED)
+                      .setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
 
   private static final String MAPPED_ELEMENT_ID = "mapped";
   private static final String TASK_ELEMENT_ID = "task";

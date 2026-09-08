@@ -7,15 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.util.Either;
-import java.util.function.Function;
-import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Bundles an {@link ExpressionProcessor} with a pre-bound scope key and tenant, so {@link
@@ -72,10 +70,14 @@ public final class MappingExpressionProcessor {
   /**
    * Evaluates the given expression against this processor's pre-scoped context.
    *
+   * <p>The result is returned un-serialized so that a later mapping reading it (via a resolver's
+   * own {@link #prependContext}) sees it as the FEEL value it is, not as MessagePack.
+   *
    * @param source the expression to evaluate
-   * @return either the evaluation result as a MsgPack buffer, or a failure
+   * @return either the evaluation result, or a failure
    */
-  public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(final Expression source) {
+  public Either<Failure, EvaluationResult> evaluateVariableMappingExpression(
+      final Expression source) {
     // delegates scopeKey/tenantId to the underlying processor, which re-scopes its own context;
     // the pre-computed scopedContext field is only for direct getVariable lookups, not evaluation
     return processor.evaluateVariableMappingExpression(source, scopeKey, tenantId);
@@ -91,18 +93,5 @@ public final class MappingExpressionProcessor {
   public MappingExpressionProcessor prependContext(final ScopedEvaluationContext ctx) {
     return new MappingExpressionProcessor(
         processor.prependContext(ctx), mappingContext, scopeKey, tenantId);
-  }
-
-  /**
-   * Convenience overload: wraps {@code lookup} as a {@link ScopedEvaluationContext} (returning
-   * {@code Either.left(lookup.apply(name))} for every name, where a {@code null} result means
-   * absent) and prepends it.
-   *
-   * @param lookup maps a variable name to its value, or {@code null} if absent
-   * @return a new scoped processor with the lookup as the outermost context layer
-   */
-  public MappingExpressionProcessor prependContext(
-      final Function<String, @Nullable DirectBuffer> lookup) {
-    return prependContext((ScopedEvaluationContext) name -> Either.left(lookup.apply(name)));
   }
 }
