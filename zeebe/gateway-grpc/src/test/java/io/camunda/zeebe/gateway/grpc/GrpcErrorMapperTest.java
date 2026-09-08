@@ -93,6 +93,9 @@ final class GrpcErrorMapperTest {
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.UNAVAILABLE);
     assertThat(statusException.getStatus().getDescription()).contains("recovery mode");
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
+    final LogEvent event = recorder.getAppendedEvents().getFirst();
+    assertThat(event.getLevel()).isEqualTo(Level.TRACE);
   }
 
   @Test
