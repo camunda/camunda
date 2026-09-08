@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Frontend | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-61115/frontend/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Frontend | Camunda Platform"><meta data-rh="true" name="description" content="Source of truth for frontend development of the orchestration cluster components"><meta data-rh="true" property="og:description" content="Source of truth for frontend development of the orchestration cluster components"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-61115/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-61115/frontend/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61115/frontend/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61115/frontend/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Frontend","item":"https://camunda.github.io/camunda/pr-preview/pr-61115/frontend/"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-61115/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-61115/assets/js/runtime~main.a277baae.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-61115/assets/js/main.41437d0a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61115/assets/js/runtime~main.031fafcb.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61115/assets/js/main.dbdd9650.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -34,9 +34,9 @@
 <li class=""><strong><a class="" href="/camunda/pr-preview/pr-61115/frontend/legacy-components/">Legacy components</a></strong> — pointers to components still living outside <code>webapp/client</code>.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="status">Status<a href="#status" class="hash-link" aria-label="Direct link to Status" title="Direct link to Status" translate="no">​</a></h2>
-<p>No component lives in <code>webapp/client</code> yet — we&#x27;re currently laying the foundations.
-The legacy components still ship from <code>identity/client</code>, <code>tasklist/client</code>,
-<code>operate/client</code>, and <code>optimize/client</code>.</p>
+<p>Tasklist lives in the orchestration-cluster webapp at
+<code>webapp/client/apps/orchestration-cluster-webapp/src/tasklist/</code>. The remaining legacy frontends
+ship from <code>identity/client</code>, <code>operate/client</code>, and <code>optimize/client</code>.</p>
 <p>For the latest status, check the unification epic
 (<a href="https://github.com/camunda/camunda/issues/51305" target="_blank" rel="noopener noreferrer" class="">camunda/camunda#51305</a>) or the
 Slack channel <code>#prj-pdp-3456-frontend-application-unification</code>.</p>
@@ -52,7 +52,6 @@ Slack channel <code>#prj-pdp-3456-frontend-application-unification</code>.</p>
 <li class="">Per-app READMEs that still apply until folded in:<!-- -->
 <ul>
 <li class=""><a href="https://github.com/camunda/camunda/blob/main/operate/client/README.md" target="_blank" rel="noopener noreferrer" class=""><code>operate/client/README.md</code></a></li>
-<li class=""><a href="https://github.com/camunda/camunda/blob/main/tasklist/client/README.md" target="_blank" rel="noopener noreferrer" class=""><code>tasklist/client/README.md</code></a></li>
 <li class=""><a href="https://github.com/camunda/camunda/blob/main/identity/client/README.md" target="_blank" rel="noopener noreferrer" class=""><code>identity/client/README.md</code></a></li>
 </ul>
 </li>
