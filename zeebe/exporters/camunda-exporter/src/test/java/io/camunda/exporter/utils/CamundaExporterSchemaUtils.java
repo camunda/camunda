@@ -13,6 +13,8 @@ import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.io.IOException;
+import java.time.Duration;
+import org.awaitility.Awaitility;
 
 public final class CamundaExporterSchemaUtils {
   private CamundaExporterSchemaUtils() {}
@@ -22,18 +24,27 @@ public final class CamundaExporterSchemaUtils {
         new IndexDescriptors(
             config.getConnect().getIndexPrefix(),
             config.getConnect().getTypeEnum().isElasticSearch());
-    try (final ClientAdapter clientAdapter = ClientAdapter.of(config.getConnect())) {
-      new SchemaManager(
-              clientAdapter.getSearchEngineClient(),
-              indexDescriptors.indices(),
-              indexDescriptors.templates(),
-              SearchEngineConfiguration.of(
-                  b ->
-                      b.connect(config.getConnect())
-                          .index(config.getIndex())
-                          .retention(config.getHistory().getRetention())),
-              clientAdapter.objectMapper())
-          .startupOnce();
+    try (final var clientAdapter = ClientAdapter.of(config.getConnect());
+        final var schemaManager =
+            new SchemaManager(
+                clientAdapter.getSearchEngineClient(),
+                indexDescriptors.indices(),
+                indexDescriptors.templates(),
+                SearchEngineConfiguration.of(
+                    b ->
+                        b.connect(config.getConnect())
+                            .index(config.getIndex())
+                            .retention(config.getHistory().getRetention())),
+                clientAdapter.objectMapper())) {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .pollInterval(Duration.ofMillis(500))
+          .ignoreExceptions()
+          .until(
+              () -> {
+                schemaManager.startupOnce();
+                return schemaManager.isSchemaReadyForUse();
+              });
     }
   }
 }
