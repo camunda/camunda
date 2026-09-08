@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -18,7 +19,9 @@ import io.camunda.zeebe.util.VersionUtil;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Verifies {@link RdbmsSchemaVersionStore#tableExists} finds {@code RDBMS_SCHEMA_VERSION} on every
@@ -27,8 +30,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * missed.
  */
 @Tag("rdbms")
-@ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
+@Execution(ExecutionMode.SAME_THREAD)
 final class RdbmsSchemaVersionStoreIT {
+
+  private static final long PARTITION_ID = 0L;
+
+  @RegisterExtension
+  static final CamundaRdbmsInvocationContextProviderExtension TEST_APPLICATIONS =
+      CamundaRdbmsInvocationContextProviderExtension.isolated();
 
   @TestTemplate
   void shouldFindExistingSchemaVersionRegardlessOfVendorIdentifierCasing(
@@ -67,9 +76,35 @@ final class RdbmsSchemaVersionStoreIT {
       assertThatThrownBy(versionStore::checkCompatibility)
           .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class);
     } finally {
-      // Restore the version a real boot would have recorded, so any later test reusing this
-      // vendor's shared, cached test application observes a consistent, correctly-migrated state.
+      // Restore the version a real boot would have recorded so the next template invocation for
+      // this class observes a consistent, correctly migrated state.
       versionStore.recordCurrentVersion();
+    }
+  }
+
+  @TestTemplate
+  void shouldRestartAfterPurgingHistory(final CamundaRdbmsTestApplication testApplication)
+      throws Exception {
+    // given
+    final DataSource dataSource = testApplication.bean(DataSource.class);
+    final String schemaVersionBeforePurge = readSchemaVersion(dataSource);
+    testApplication.getRdbmsService().createWriter(PARTITION_ID).getRdbmsPurger().purgeRdbms();
+    assertThat(readSchemaVersion(dataSource)).isEqualTo(schemaVersionBeforePurge);
+
+    // when
+    testApplication.restart();
+
+    // then
+    assertThat(readSchemaVersion(testApplication.bean(DataSource.class)))
+        .isEqualTo(schemaVersionBeforePurge);
+  }
+
+  private String readSchemaVersion(final DataSource dataSource) throws Exception {
+    try (final var connection = dataSource.getConnection();
+        final var statement = connection.createStatement();
+        final var result = statement.executeQuery("SELECT VERSION FROM RDBMS_SCHEMA_VERSION")) {
+      assertThat(result.next()).isTrue();
+      return result.getString(1);
     }
   }
 }

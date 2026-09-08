@@ -17,6 +17,8 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Map;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
@@ -31,6 +33,7 @@ public final class CamundaRdbmsTestApplication
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaRdbmsTestApplication.class);
 
   private GenericContainer<?> databaseContainer;
+  private String isolatedH2Url;
 
   public CamundaRdbmsTestApplication(final Class<?>... springConfigurations) {
     super(springConfigurations);
@@ -50,9 +53,19 @@ public final class CamundaRdbmsTestApplication
   }
 
   public CamundaRdbmsTestApplication withH2() {
+    return configureH2("testdb");
+  }
+
+  public CamundaRdbmsTestApplication withIsolatedH2(final String databaseName) {
+    final var application = configureH2(databaseName);
+    isolatedH2Url = application.unifiedConfig.getData().getSecondaryStorage().getRdbms().getUrl();
+    return application;
+  }
+
+  private CamundaRdbmsTestApplication configureH2(final String databaseName) {
     setSecondaryStorageToRdbms();
     final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
-    rdbms.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    rdbms.setUrl("jdbc:h2:mem:" + databaseName + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
     rdbms.setUsername("sa");
     rdbms.setPassword("");
     return this;
@@ -88,11 +101,12 @@ public final class CamundaRdbmsTestApplication
       }
     }
 
-    LOGGER.info("Start spring application ...");
-    super.start();
-    Awaitility.await("until spring context is started").until(this::isStarted);
-    LOGGER.info("Spring application started");
-    return this;
+    return startSpringApplication();
+  }
+
+  public CamundaRdbmsTestApplication restart() {
+    super.stop();
+    return startSpringApplication();
   }
 
   @Override
@@ -107,10 +121,17 @@ public final class CamundaRdbmsTestApplication
   @Override
   public void close() {
     LOGGER.info("Resource closed - Stop spring application ...");
-    super.stop();
-    if (databaseContainer != null) {
-      LOGGER.info("Stop database container '{}'...", databaseContainer.getContainerInfo());
-      databaseContainer.close();
+    try {
+      super.stop();
+    } finally {
+      try {
+        shutdownIsolatedH2();
+      } finally {
+        if (databaseContainer != null) {
+          LOGGER.info("Stop database container '{}'...", databaseContainer.getContainerInfo());
+          databaseContainer.close();
+        }
+      }
     }
   }
 
@@ -140,6 +161,26 @@ public final class CamundaRdbmsTestApplication
     }
     return super.bean(RdbmsServiceFactory.class)
         .createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
+  }
+
+  private CamundaRdbmsTestApplication startSpringApplication() {
+    LOGGER.info("Start spring application ...");
+    super.start();
+    Awaitility.await("until spring context is started").until(this::isStarted);
+    LOGGER.info("Spring application started");
+    return this;
+  }
+
+  private void shutdownIsolatedH2() {
+    if (isolatedH2Url == null) {
+      return;
+    }
+    try (final var connection = DriverManager.getConnection(isolatedH2Url, "sa", "");
+        final var statement = connection.createStatement()) {
+      statement.execute("SHUTDOWN");
+    } catch (final SQLException e) {
+      throw new IllegalStateException("Failed to shut down isolated H2 database", e);
+    }
   }
 
   private void setSecondaryStorageToRdbms() {
