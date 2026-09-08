@@ -55,7 +55,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -522,33 +521,118 @@ public final class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldNotRetryExportingOnDeserializationException() {
-    // given
-    final var recordExporterRef = new AtomicReference<RecordExporter>();
+  public void shouldIsolateDeserializationExceptionToOneExporter() {
+    // given - two exporters, each on its own actor with its own RecordExporter
+    final List<RecordExporter> capturedRecordExporters =
+        Collections.synchronizedList(new ArrayList<>());
     rule.startExporterDirector(
         exporterDescriptors,
         ExporterPhase.EXPORTING,
-        recordExporter -> failingRecordExporter(recordExporter, recordExporterRef));
-    Awaitility.await("exporter director has started")
-        .untilAsserted(() -> assertThat(recordExporterRef.get()).isNotNull());
-    final var recordExporter = recordExporterRef.get();
-    doThrow(new RuntimeException("deserialization exception")).when(recordExporter).wrap(any());
+        recordExporter -> {
+          final var spied = spy(recordExporter);
+          capturedRecordExporters.add(spied);
+          return spied;
+        });
+    Awaitility.await("both exporter actors have started")
+        .untilAsserted(() -> assertThat(capturedRecordExporters).hasSize(2));
+
+    // one exporter's deserialization always fails (unrecoverable); the other is unaffected
+    final var failingRecordExporter = capturedRecordExporters.get(0);
+    doThrow(new RuntimeException("deserialization exception"))
+        .when(failingRecordExporter)
+        .wrap(any());
 
     // when
     final long eventPosition1 = writeEvent();
 
-    // then
-    verify(recordExporter, timeout(10000))
+    // then - the failing exporter's own actor dies, without retrying
+    verify(failingRecordExporter, timeout(10000))
         .wrap(argThat(evt -> evt.getPosition() == eventPosition1));
-    verifyNoMoreInteractions(recordExporter);
-    Awaitility.await("Until director is unhealthy")
+    verifyNoMoreInteractions(failingRecordExporter);
+
+    // the director aggregates health across exporters, so it still reports the failure...
+    Awaitility.await("Until director reports the failing exporter as dead")
         .untilAsserted(
             () ->
                 assertThat(rule.getDirector().getHealthReport().status())
                     .isEqualTo(HealthStatus.DEAD));
+    // ...but the director itself keeps running: only the failing exporter's actor is gone, not
+    // the whole partition's exporting.
     assertThat(rule.getDirector().getPhase())
         .succeedsWithin(Duration.ofSeconds(5))
-        .satisfies(phase -> assertThat(phase).isEqualTo(ExporterPhase.CLOSED));
+        .satisfies(phase -> assertThat(phase).isEqualTo(ExporterPhase.EXPORTING));
+
+    // the sibling exporter must keep exporting new records, completely unaffected
+    final long eventPosition2 = writeEvent();
+    Awaitility.await("the healthy exporter keeps exporting, the failing one exports nothing")
+        .untilAsserted(
+            () -> {
+              final int exporter0Count = exporters.get(0).getExportedRecords().size();
+              final int exporter1Count = exporters.get(1).getExportedRecords().size();
+              assertThat(List.of(exporter0Count, exporter1Count)).containsExactlyInAnyOrder(0, 2);
+            });
+    assertThat(
+            exporters.stream()
+                .flatMap(e -> e.getExportedRecords().stream())
+                .map(Record::getPosition))
+        .containsExactlyInAnyOrder(eventPosition1, eventPosition2);
+  }
+
+  @Test
+  public void shouldContinueExportingWithHealthyExporterWhileOtherIsStuckRetrying() {
+    // given - exporter-0's backing store can be toggled to simulate an outage (e.g. a stopped DB)
+    final AtomicBoolean exporter0ShouldFail = new AtomicBoolean(false);
+    exporters
+        .get(0)
+        .onExport(
+            e -> {
+              if (exporter0ShouldFail.get()) {
+                throw new RuntimeException("simulated database outage");
+              }
+            });
+
+    startExporterDirector(exporterDescriptors);
+
+    // when - both exporters are healthy: the first record reaches both
+    final long eventPosition1 = writeEvent();
+    Awaitility.await("both exporters export the first record while healthy")
+        .untilAsserted(
+            () -> {
+              assertThat(exporters.get(0).getExportedRecords()).hasSize(1);
+              assertThat(exporters.get(1).getExportedRecords()).hasSize(1);
+            });
+
+    // exporter-0's backing store goes down: every export attempt fails from now on
+    exporter0ShouldFail.set(true);
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    // then - exporter-1 keeps exporting the new records immediately, without waiting for
+    // exporter-0's retries or backoff
+    Awaitility.await("the healthy exporter exports all new records while its sibling is stuck")
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(1).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(
+                        eventPosition1, eventPosition2, eventPosition3, eventPosition4));
+
+    // exporter-0 made no further progress at all while its backing store was down
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition1);
+
+    // when - exporter-0's backing store recovers
+    exporter0ShouldFail.set(false);
+
+    // then - it catches up and exports everything it missed, in order, proving no records were
+    // lost while it was stuck
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until((r) -> exporters.get(0).getExportedRecords().size() >= 4);
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3, eventPosition4);
   }
 
   @Test
@@ -1121,10 +1205,5 @@ public final class ExporterDirectorTest {
     startExporterDirector(List.of(descriptor));
 
     return exporter;
-  }
-
-  private RecordExporter failingRecordExporter(
-      final RecordExporter recordExporter, final AtomicReference<RecordExporter> exporterRef) {
-    return exporterRef.updateAndGet(ignored -> spy(recordExporter));
   }
 }
