@@ -29,6 +29,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.PropertyDefaults;
 import net.jqwik.api.Provide;
 import net.jqwik.api.ShrinkingMode;
+import net.jqwik.api.Tag;
 import net.jqwik.api.lifecycle.AfterTry;
 import net.jqwik.api.lifecycle.BeforeProperty;
 import org.slf4j.Logger;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
  * RandomizedRaftJoinTest}, but with three bootstrapped ACTIVE members.
  */
 @PropertyDefaults(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+@Tag("randomized")
 public class RandomizedRaftScaleDownTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(RandomizedRaftScaleDownTest.class);
