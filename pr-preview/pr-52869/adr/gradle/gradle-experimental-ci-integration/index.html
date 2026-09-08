@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Experimental Gradle build integration in CI | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Experimental Gradle build integration in CI | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Carlo Sana"><meta data-rh="true" property="og:description" content="DRI: Carlo Sana"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-52869/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-52869/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-52869/assets/js/runtime~main.06293420.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-52869/assets/js/main.e312dd5e.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-52869/assets/js/runtime~main.6ba6678d.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-52869/assets/js/main.4023596d.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -14,30 +14,29 @@
 <script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-52869/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-52869/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-52869/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-52869/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Experimental Gradle build integration in CI</h1></header>
 <p><strong>DRI</strong>: Carlo Sana</p>
 <p><strong>Status</strong>: Proposed</p>
-<p><strong>Purpose</strong>: Defines the minimum CI integration for the experimental Gradle build while keeping
-Maven authoritative for application and Java changes. This ADR intentionally does not define the
-future nightly validation or automated Gradle repair loop.</p>
+<p><strong>Purpose</strong>: Defines the CI integration for the experimental Gradle build while keeping Maven
+authoritative for application and Java changes. Relevant pull requests, merge groups, and protected
+branch pushes must prove that Gradle can compile production and test sources. This ADR does not
+make the full Gradle test path the default build path.</p>
 <p><strong>Audience</strong>: Monorepo DevOps, and any engineer changing <code>pom.xml</code>, Gradle build files, or CI
 workflows.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
 <p>The monorepo builds with Maven. A parallel Gradle build exists and can already run most of CI, but
-it is not yet at parity and can drift whenever <code>pom.xml</code> files or Java sources change.</p>
-<p>We want engineers to try Gradle and surface regressions early, while preserving one non-negotiable
-rule: a pull request that changes Java or Maven build inputs must run the Maven tests. Gradle must
-not replace Maven for such a pull request, and a Gradle failure must not prevent Maven tests from
-running.</p>
-<p>The only exception is a pull request whose complete change set consists exclusively of Gradle build
-inputs. Such a pull request may use Gradle validation without running the Maven tests.</p>
-<p>Unified CI runs on pull requests, pushes to protected branches, and merge queue events. Failures in
-push and merge queue contexts are incident-tracked. The experimental Gradle path must therefore not
-be allowed to introduce a Gradle failure into those contexts.</p>
+it can drift whenever <code>pom.xml</code> files or Java sources change.</p>
+<p>We want to surface Gradle regressions during pull requests and protect the merge queue without
+replacing Maven&#x27;s authoritative application tests. The Gradle compilation check is additive and
+runs in Unified CI for pull requests, merge groups, and protected branch pushes. It compiles both
+production and test sources with <code>./gradlew testClasses</code>.</p>
+<p>The full Gradle test path is selected automatically for a pull request whose complete change set
+consists of Gradle build inputs. A mixed pull request must continue to use Maven for the application
+test path, even when it also contains Gradle changes.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
 <p><strong>D1. Maven remains authoritative for code and Maven-build changes.</strong></p>
-<p>For every pull request that changes Java sources or Maven build inputs, the Maven test jobs must
-run. This includes pull requests that also change Gradle files. The Gradle result must never replace
-those Maven tests, gate them, or be a prerequisite for them.</p>
-<p>The only exception is a pull request whose complete change set consists exclusively of Gradle build
-inputs. For this ADR, Gradle build inputs are:</p>
+<p>For every pull request that changes Java sources or Maven build inputs, Maven remains the
+authoritative application test path. The Gradle compilation check is additive and must not replace,
+skip, or gate those Maven tests.</p>
+<p>The Gradle compilation check also runs for pull requests that change Gradle build inputs. For this
+ADR, Gradle build inputs are:</p>
 <ul>
 <li class=""><code>*.gradle.kts</code> files;</li>
 <li class=""><code>gradle.properties</code>;</li>
@@ -45,73 +44,92 @@ inputs. For this ADR, Gradle build inputs are:</p>
 <li class="">files below <code>gradle/</code>; and</li>
 <li class="">files below <code>buildSrc/</code>.</li>
 </ul>
-<p>A pull request that mixes Gradle changes with Java, Maven, CI, documentation, or any other changes
-is not a Gradle-only pull request.</p>
-<p><strong>D2. Gradle full-test CI is an explicit PR-only opt-in.</strong></p>
-<p>The <code>gradle-build</code> label may select the full Gradle test path only for a Gradle-only pull request.
-On a pull request containing Java or Maven changes, the label must not switch CI away from Maven;
-Maven remains mandatory there. In all non-PR contexts, including <code>push</code>, <code>merge_group</code>, and
-<code>schedule</code>, the experimental Gradle full-test path is not selected by this ADR and Maven is used.</p>
-<p>The Gradle-only exception is limited to the build tool used for that pull request. It does not make
-Gradle a merge gate for other pull requests, and it does not change Maven&#x27;s role as the authoritative
-build for the repository.</p>
-<p><strong>D3. Add a separate, non-blocking Gradle parity job for pull requests.</strong></p>
-<p>A separate pull-request-only job runs <code>./gradlew testClasses</code> when a pull request changes Java
-sources or Maven build inputs. It provides early feedback about Gradle parity without becoming a
-prerequisite of any Maven job.</p>
-<p>The job is non-blocking and is not run from <code>push</code>, <code>merge_group</code>, or <code>schedule</code> events. A failure
-may be visible on the pull request, but it must not prevent the required Maven tests from executing
-or allow a mixed Java/Maven pull request to omit them.</p>
-<p><strong>D4. Build-tool selection defaults to Maven.</strong></p>
-<p>Maven is the default build tool. The <code>gradle-build</code> label is the only opt-in for the full Gradle path,
-and it is effective only when the pull request is Gradle-only. No nightly or dispatch-specific
-build-tool override is introduced as part of this change.</p>
-<p><strong>D5. Maven and Gradle jobs are independently gated.</strong></p>
-<p>Maven test jobs must depend only on the normal Maven CI conditions and their required setup jobs.
-They must not depend on the Gradle parity job or on a Gradle compile/cache-preparation job.</p>
-<p>When Maven is required by D1, a Gradle failure must not skip, cancel, or make the Maven tests
-unavailable. When a pull request is Gradle-only, the Maven-test exception applies; the full Gradle
-path remains an explicit opt-in, while this parity job is intentionally scoped to Java and Maven
-changes.</p>
+<p><strong>D2. Gradle full-test CI is selected for Gradle-only pull requests.</strong></p>
+<p>A pull request whose complete change set consists of the Gradle build inputs listed above selects the
+full Gradle test path. A pull request containing Java, Maven, CI, documentation, or any other
+non-Gradle change must use Maven for the application test path.</p>
+<p>The Gradle-only restriction is enforced by change classification.
+This prevents a mixed pull request from silently replacing Maven coverage with the experimental
+Gradle path.</p>
+<p>In non-PR contexts, including <code>push</code> and <code>merge_group</code>, the build tool remains Maven. The Gradle
+compilation check described in D3 is still run in those contexts.</p>
+<p><strong>D3. Add a relevant Gradle compilation check to Unified CI.</strong></p>
+<p>The <code>Gradle / Test Classes</code> job runs when the change set contains Java/resource sources, Maven build
+inputs, Gradle build inputs, or CI inputs that can change build behavior. It runs:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses</span><br></div></code></pre></div></div>
+<p>The <code>testClasses</code> task compiles production and test sources without running tests.</p>
+<p>The job is included in Unified CI&#x27;s <code>check-results</code> gate. It therefore blocks relevant pull
+requests and merge groups when Gradle compilation fails. Protected branch pushes run the same check
+to provide post-merge health feedback and warm the shared Gradle cache; a push failure cannot prevent
+the commit that triggered it from having already landed.</p>
+<p><strong>D4. Build-tool selection defaults to Maven outside pure Gradle pull requests.</strong></p>
+<p>Maven is the default build tool. A pull request with only Gradle build inputs selects Gradle.
+Pushes, merge groups, schedules, manually dispatched workflows, and mixed pull requests use Maven
+for the application test path.</p>
+<p><strong>D5. The Gradle compilation check and Maven jobs are independently gated.</strong></p>
+<p>The Gradle compilation job is a member of the Unified CI result gate, but Maven test jobs must not
+depend on it. A Gradle compilation failure may fail <code>check-results</code> and prevent a merge-group
+landing, but it must not skip, cancel, or make Maven tests unavailable.</p>
+<p><strong>D6. Configure per-test retries in the shared Gradle test convention.</strong></p>
+<p><code>buildlogic.java-conventions</code> applies the Gradle Test Retry plugin to every Gradle <code>Test</code> task. The
+plugin reads the Gradle property <code>test.max.retries</code>; when the property is absent, its default is
+<code>0</code>, so local Gradle runs do not retry tests implicitly.</p>
+<p>CI maps the existing <code>FLAKY_TEST_RERUN_COUNT</code> environment value to the Gradle property on each
+Gradle test invocation:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">-Ptest.max.retries=${FLAKY_TEST_RERUN_COUNT}</span><br></div></code></pre></div></div>
+<p>Gradle therefore uses the same retry budget as Maven without reading the CI environment directly.
+The retry plugin reruns individual failed test cases. CI must not wrap the complete Gradle task in
+an additional retry loop, since that would apply a different and potentially multiplied retry
+policy.</p>
+<p><strong>D7. Migrate the remaining Unified CI database suites to Gradle.</strong></p>
+<p>The standard database, history, identity, physical-tenant acceptance, physical-tenant identity,
+physical-tenant history, and RDBMS integration jobs use dedicated Gradle test tasks when the Gradle
+path is selected: <code>itMultiDb</code>, <code>itHistory</code>, <code>itIdentity</code>, <code>itPhysicalTenant</code>,
+<code>itPhysicalTenantIdentity</code>, <code>itPhysicalTenantHistory</code>, and <code>itRdbms</code>. Maven remains the default for
+all other contexts. Standalone database workflows outside Unified CI continue to use Maven until
+they are explicitly migrated.</p>
+<p>Unified CI keeps <code>build-distball</code> in the static dependency list for these jobs because Maven runs
+still consume the shared Maven artifacts. Gradle runs do not consume the distball; when the Gradle-only
+path is selected, the distball job is skipped and <code>always()</code> allows the Gradle job to proceed.
+Splitting the dependency graph into separate Maven and Gradle jobs is intentionally deferred to keep
+this workflow structure simple.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deferred-work">Deferred work<a href="#deferred-work" class="hash-link" aria-label="Direct link to Deferred work" title="Direct link to Deferred work" translate="no">​</a></h2>
-<p>The following work is intentionally excluded from this change and will be addressed after the
-experimental Gradle integration has landed and stabilized:</p>
+<p>The following work is intentionally excluded from this change:</p>
 <ul>
-<li class=""><strong>Dedicated nightly Maven validation.</strong> A separate, explicit nightly Maven job or workflow will
-be designed later. No new nightly workflow is added by this ADR&#x27;s implementation.</li>
-<li class=""><strong>Nightly or post-merge Gradle validation.</strong> This requires a confirmed alerting model for scheduled
-Gradle failures and is deferred for now.</li>
-<li class=""><strong>Automated Gradle repair.</strong> Slack notifications, PR comments for post-merge failures, a queued
-single-writer fix loop, and automatic repair PRs are deferred. There is no automatic fix loop in
-this change.</li>
-<li class=""><strong>Workflow-level build-tool overrides.</strong> Explicit <code>workflow_call</code> and dispatch inputs can be added
-when the deferred nightly workflows need them.</li>
+<li class=""><strong>Nightly Gradle validation.</strong> A scheduled Gradle test run requires a confirmed alerting model.</li>
+<li class=""><strong>Nightly Maven/Gradle artifact parity.</strong> A scheduled job will build the relevant distribution
+with both Maven and Gradle and compare packaged JAR inventories and versions.</li>
+<li class=""><strong>Automated Gradle repair.</strong> Repair automation will be designed after the CI signal is stable.</li>
+<li class=""><strong>Standalone database workflow migration.</strong> The dedicated RDBMS and search workflow callers remain
+Maven-only until their infrastructure and ownership are migrated separately.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives considered" title="Direct link to Alternatives considered" translate="no">​</a></h2>
 <ul>
-<li class=""><strong>Use Gradle as the replacement for Maven on any labeled PR.</strong> Rejected: a labeled PR may still
-change Java or Maven build inputs, in which case Maven tests are mandatory.</li>
-<li class=""><strong>Make Maven test jobs depend on a shared Gradle compile job.</strong> Rejected: a Gradle failure would
-be able to prevent Maven tests from running. The two paths must be independently gated.</li>
-<li class=""><strong>Run the experimental Gradle path on <code>push</code> or <code>merge_group</code>.</strong> Rejected: those contexts are
-incident-tracked, and Gradle is not yet reliable enough to add that failure surface.</li>
-<li class=""><strong>Add nightly and post-merge automation in the same change.</strong> Deferred: nightly validation and
-automated repair add operational complexity before the basic PR behavior is proven.</li>
-<li class=""><strong>Run only a nightly Gradle parity check.</strong> Rejected for the initial integration: it would leave
-Gradle regressions undetected until the next scheduled run. The PR-only parity job provides lower
-feedback latency without affecting Maven&#x27;s gate.</li>
+<li class=""><strong>Run Gradle compilation only in pull requests.</strong> Rejected: merge groups need the same direct
+production-and-test compilation signal, and protected pushes should warm the shared cache and
+provide post-merge health feedback.</li>
+<li class=""><strong>Use Gradle as the replacement for Maven on any labeled PR.</strong> Rejected: mixed PRs must retain
+Maven&#x27;s authoritative application test path.</li>
+<li class=""><strong>Run the Gradle compilation check only for Java changes.</strong> Rejected: Gradle-only and Maven-only
+build changes can independently break Gradle compilation and must also be covered.</li>
+<li class=""><strong>Make Maven test jobs depend on the Gradle compilation job.</strong> Rejected: a Gradle failure must
+not prevent Maven tests from running.</li>
+<li class=""><strong>Run the full experimental Gradle test path on push or merge-group events.</strong> Rejected: those
+contexts need a smaller, stable compilation signal rather than the larger experimental suite.</li>
+<li class=""><strong>Add nightly validation or post-merge Gradle repair automation now.</strong> Deferred until the PR and
+merge-group signals and their ownership model are stable.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
 <ul>
-<li class="">Maven tests are guaranteed for pull requests that change Java or Maven build inputs, including
-mixed Maven/Gradle pull requests.</li>
-<li class="">A Gradle-only pull request is the sole case where Maven tests may be omitted.</li>
-<li class="">The PR-only Gradle parity job can fail without blocking Maven tests or introducing Gradle failures
-into push and merge queue incident tracking.</li>
-<li class="">The Gradle-only path requires accurate change classification. A pull request must not be treated
-as Gradle-only when it contains any Java, Maven, CI, documentation, or other non-Gradle change.</li>
-<li class="">Gradle remains an experiment with deliberately limited operational automation. Nightly validation
-and automated repair will be separate follow-up work.</li>
+<li class="">Relevant pull requests receive direct Gradle production-and-test compilation feedback.</li>
+<li class="">Merge groups are blocked when relevant Gradle production or test sources do not compile.</li>
+<li class="">Protected pushes provide post-merge Gradle health feedback and warm the shared cache.</li>
+<li class="">Maven remains the authoritative application test path for Java and Maven changes.</li>
+<li class="">A mixed PR cannot select the full Gradle test path because non-Gradle changes force Maven.</li>
+<li class="">Maven jobs remain independently runnable when the Gradle compilation job fails.</li>
+<li class="">Gradle and Maven use the same CI retry budget, while local Gradle runs remain retry-disabled by
+default.</li>
+<li class="">Nightly parity and automated repair remain deliberate follow-up work.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="source">Source<a href="#source" class="hash-link" aria-label="Direct link to Source" title="Direct link to Source" translate="no">​</a></h2>
 <ul>
