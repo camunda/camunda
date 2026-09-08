@@ -55,7 +55,7 @@ die() {
 }
 
 warn() {
-  echo "Error: $*" >&2
+  echo "Warning: $*" >&2
 }
 
 prometheus_endpoint_help() {
