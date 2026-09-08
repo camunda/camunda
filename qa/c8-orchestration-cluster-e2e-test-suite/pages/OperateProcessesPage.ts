@@ -62,6 +62,7 @@ class OperateProcessesPage {
     rowIndex?: number,
     cellIndex?: number,
   ) => Locator;
+  readonly drainingTag: Locator;
   readonly batchOperationStartedMessage: (
     batchOperationType:
       | 'Resolve Incident'
@@ -189,6 +190,7 @@ class OperateProcessesPage {
         .nth(rowIndex)
         .getByRole('cell')
         .nth(cellIndex);
+    this.drainingTag = page.getByTestId('draining-tag');
     this.batchOperationStartedMessage = (
       batchOperationType:
         | 'Resolve Incident'

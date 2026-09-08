@@ -42,9 +42,28 @@ export const createUniqueUser = (customId?: string) => {
   };
 };
 
+// Default `page.limit` applied by the v2 search endpoints when a request does
+// not set one.
+export const DEFAULT_PAGE_LIMIT = 100;
+
 export const defaultAssertionOptions = {
   intervals: [5_000, 10_000, 15_000],
   timeout: 30_000,
+};
+
+// Use when an assertion polls on data that has to propagate through the
+// secondary-storage indexer on a loaded shared cluster (e.g. post-batch
+// user-task search, cross-view count reconciliation).
+export const extendedAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+  timeout: 90_000,
+};
+
+// Prefixed unique id for a resource a test deploys or creates — process
+// definition ids, message names, job types. Parallel workers share a cluster, so
+// a fixed id would let one test's deployment or subscription answer another's.
+export const uniquePrefixedId = (prefix: string): string => {
+  return `${prefix}-${generateUniqueId()}`;
 };
 
 // Create unique auth role with optional custom ID

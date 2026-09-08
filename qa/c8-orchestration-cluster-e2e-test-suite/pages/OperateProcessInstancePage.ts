@@ -21,6 +21,8 @@ class OperateProcessInstancePage {
   readonly messageVariable: Locator;
   readonly statusVariable: Locator;
   readonly instanceHeader: Locator;
+  readonly drainingTag: Locator;
+  readonly suspendedStateIcon: Locator;
   readonly instanceHistory: Locator;
   readonly rootProcessNode: Locator;
   readonly incidentsTable: Locator;
@@ -133,6 +135,8 @@ class OperateProcessInstancePage {
     });
     this.variableValueInput = page.getByTestId('edit-variable-value');
     this.instanceHeader = page.getByTestId('instance-header');
+    this.drainingTag = this.instanceHeader.getByTestId('draining-tag');
+    this.suspendedStateIcon = this.instanceHeader.getByTestId('SUSPENDED-icon');
     this.instanceHistory = page.getByTestId('instance-history');
     this.rootProcessNode = this.instanceHistory
       .locator('[data-testid^="node-details-"]')
