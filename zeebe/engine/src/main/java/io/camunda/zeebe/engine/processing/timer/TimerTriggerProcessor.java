@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -215,13 +214,12 @@ public final class TimerTriggerProcessor
 
   @Override
   public void onResume(final TypedRecord<TimerRecord> record) {
+    final long timerKey = record.getKey();
     final var timer = record.getValue();
     // BUFFER+PROCESS also lets through fresh due triggers while RESUMING. Only a previously
     // buffered trigger has had its due-date index dropped by SUSPENDED.
-    if (timerInstanceState.get(timer.getElementInstanceKey(), record.getKey()) != null
-        && !timerInstanceState.hasDueDate(
-            timer.getElementInstanceKey(), record.getKey(), timer.getDueDate())) {
-      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.RESUMED, timer);
+    if (!timerInstanceState.hasDueDateEntry(timer.getElementInstanceKey(), timerKey)) {
+      stateWriter.appendFollowUpEvent(timerKey, TimerIntent.RESUMED, timer);
     }
   }
 }

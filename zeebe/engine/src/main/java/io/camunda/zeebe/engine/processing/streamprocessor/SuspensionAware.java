@@ -41,7 +41,10 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
   /**
    * Called by the gate immediately before {@code processRecord}, when a {@link
    * SuspensionBehavior#BUFFER} command is passed through because the target is {@code RESUMING}.
-   * Override to write events that pair with {@link #onBuffer} (for example {@code Timer.RESUMED}).
+   * That includes drained commands and newly arriving {@code BUFFER} commands during {@code
+   * RESUMING}. This callback is not proof that {@link #onBuffer} ran; implementations that pair
+   * with buffering must distinguish those cases themselves (for example {@code Timer.RESUMED} only
+   * when the due-date index was already dropped).
    *
    * <p>Not invoked for {@link SuspensionBehavior#PROCESS} or {@link SuspensionBehavior#REJECT}.
    */
@@ -55,8 +58,9 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
     /**
      * Buffer the command while {@code SUSPENDED}; pass it through while {@code RESUMING} so that
      * commands drained during resume can actually execute. {@link #onBuffer} runs immediately
-     * before the command is written to the buffer; {@link #onResume} runs immediately before {@code
-     * processRecord} on drain.
+     * before the command is written to the buffer. {@link #onResume} runs immediately before {@code
+     * processRecord} for every {@code BUFFER} command passed through while {@code RESUMING},
+     * including drain and newly arriving commands.
      */
     BUFFER
   }

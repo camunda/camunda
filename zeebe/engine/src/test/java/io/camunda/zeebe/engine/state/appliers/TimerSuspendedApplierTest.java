@@ -36,7 +36,7 @@ public class TimerSuspendedApplierTest {
 
   private MutableTimerInstanceState timerState;
   private TimerSuspendedApplier suspendedApplier;
-  private TimerTriggeredV2Applier triggeredV2Applier;
+  private TimerTriggeredApplier triggeredApplier;
   private TimerCancelledApplier cancelledApplier;
   private TimerResumedApplier resumedApplier;
 
@@ -44,7 +44,7 @@ public class TimerSuspendedApplierTest {
   void setUp() {
     timerState = processingState.getTimerState();
     suspendedApplier = new TimerSuspendedApplier(timerState);
-    triggeredV2Applier = new TimerTriggeredV2Applier(timerState);
+    triggeredApplier = new TimerTriggeredApplier(timerState);
     cancelledApplier = new TimerCancelledApplier(timerState);
     resumedApplier = new TimerResumedApplier();
   }
@@ -59,7 +59,7 @@ public class TimerSuspendedApplierTest {
 
     // then
     assertThat(timerState.get(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isNotNull();
-    assertThat(timerState.hasDueDate(ELEMENT_INSTANCE_KEY, TIMER_KEY, DUE_DATE)).isFalse();
+    assertThat(timerState.hasDueDateEntry(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isFalse();
     assertThat(dueTimers()).isEmpty();
   }
 
@@ -70,7 +70,7 @@ public class TimerSuspendedApplierTest {
     suspendedApplier.applyState(TIMER_KEY, timerRecord());
 
     // when
-    triggeredV2Applier.applyState(TIMER_KEY, timerRecord());
+    triggeredApplier.applyState(TIMER_KEY, timerRecord());
 
     // then
     assertThat(timerState.get(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isNull();
@@ -100,7 +100,7 @@ public class TimerSuspendedApplierTest {
 
     // then
     assertThat(timerState.get(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isNotNull();
-    assertThat(timerState.hasDueDate(ELEMENT_INSTANCE_KEY, TIMER_KEY, DUE_DATE)).isFalse();
+    assertThat(timerState.hasDueDateEntry(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isFalse();
   }
 
   private void storeTimer() {

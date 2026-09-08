@@ -175,13 +175,17 @@ public final class SuspensionCheck {
     return ((SuspensionAware) suspensionAware).suspensionBehavior(command);
   }
 
-  /** The gate outcome for a command, with the resolved target process instance key. */
   /**
+   * The gate outcome for a command, with the resolved target process instance key.
+   *
    * @param outcome the gate action to take
    * @param processInstanceKey the resolved target instance, or {@code -1}
    * @param classification the processor's {@link SuspensionAware#suspensionBehavior} result. When
    *     this is {@link SuspensionBehavior#BUFFER} and {@code outcome} is {@link
-   *     SuspensionBehavior#PROCESS}, the command is a drain and {@code onResume} should run.
+   *     SuspensionBehavior#PROCESS}, {@code onResume} should run. That pairing is not limited to
+   *     drain: a newly arriving {@code BUFFER} command while the marker is {@code RESUMING}
+   *     receives the same result, so {@code onResume} must not assume {@code onBuffer} previously
+   *     ran.
    */
   public record SuspensionResult(
       SuspensionBehavior outcome, long processInstanceKey, SuspensionBehavior classification) {}
