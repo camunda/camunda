@@ -15,6 +15,7 @@
  */
 package io.atomix.raft;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -31,12 +32,14 @@ import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /**
  * Coverage for the paused-mode watchdog on the Raft thread (Coordinated Leadership Transfer). The
  * watchdog guarantees a partition is never left paused and unavailable: if it is not resumed in
  * time, the leader steps down so services restart and a new leader can be elected.
  */
+@Category(SlowTest.class)
 public class RaftLeadershipTransferPauseTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
