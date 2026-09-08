@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefiniti
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistorybatch.AgentHistoryBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -5445,6 +5446,33 @@ final class JsonSerializableToJsonTest {
           ],
           "historyItemIdsToDelete": [],
           "storageOrdinalKey": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentHistoryBatchRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentHistoryBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AgentHistoryBatchRecord()
+                    .setAgentInstanceKey(2251799813685251L)
+                    .setHistoryItemIds(List.of("item-config-1", "item-config-2")),
+        """
+        {
+          "agentInstanceKey": 2251799813685251,
+          "historyItemIds": ["item-config-1", "item-config-2"]
+        }
+        """
+      },
+      {
+        "Empty AgentHistoryBatchRecord",
+        (Supplier<UnifiedRecordValue>) AgentHistoryBatchRecord::new,
+        """
+        {
+          "agentInstanceKey": -1,
+          "historyItemIds": []
         }
         """
       },
