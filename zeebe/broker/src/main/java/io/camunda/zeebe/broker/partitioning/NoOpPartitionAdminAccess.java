@@ -69,6 +69,13 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
         new PartitionMigrationStatus(MigrationStatusCode.UNKNOWN, "no-op partition admin access"));
   }
 
+  @Override
+  public ActorFuture<PartitionMigrationStatus> getExportingMigrationStatus() {
+    logCall();
+    return CompletableActorFuture.completed(
+        new PartitionMigrationStatus(MigrationStatusCode.UNKNOWN, "no-op partition admin access"));
+  }
+
   private void logCall() {
     LOG.warn("Received call on NoOp implementation of PartitionAdminAccess");
   }

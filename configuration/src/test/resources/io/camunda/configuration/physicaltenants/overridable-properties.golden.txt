@@ -18,6 +18,7 @@ data.audit-log.unknown.excludes
 data.audit-log.user.categories
 data.audit-log.user.excludes
 data.export.distribution-interval
+data.export.migration-status-scan-max-records
 data.export.skip-records
 data.exporters
 data.extension-properties.inbound-connector-type-property

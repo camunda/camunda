@@ -18,7 +18,10 @@ import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -93,6 +96,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final String clusterId;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
+  private final int migrationStatusScanMaxRecords;
   private ExporterStateDistributionService exporterDistributionService;
   private ScheduledTimer exporterDistributionTimer;
   private final PartitionId partitionId;
@@ -157,6 +161,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
+    migrationStatusScanMaxRecords = context.getMigrationStatusScanMaxRecords();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
 
     // needs name to be initialized
@@ -833,6 +838,110 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
     }
     return actor.call(() -> state.getLowestPosition());
+  }
+
+  /**
+   * Whether every exporter on this replica has finished exporting and acknowledging every record
+   * written under a previous application version, for the upgrade-readiness endpoint.
+   */
+  public ActorFuture<PartitionMigrationStatus> getExportingMigrationStatus() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(
+          new PartitionMigrationStatus(
+              MigrationStatusCode.UNKNOWN,
+              "partition " + partitionId.number() + ": exporter director is closed"));
+    }
+    return actor.call(this::computeExportingMigrationStatus);
+  }
+
+  /**
+   * Gathers the two already-durable facts {@link ExportingMigrationStatusCalculator} needs, reading
+   * the lowest exported position and scanning the not-yet-exported records' versions within a
+   * single, uninterrupted actor job so a compaction pass can't invalidate the position in between.
+   * Reports a failure to read either fact as {@link MigrationStatusCode#UNKNOWN} rather than
+   * letting the exception reach {@link #handleFailure(Throwable)} -- this is a best-effort
+   * diagnostic read for an actuator endpoint, and must not be able to take down the exporter actor
+   * itself.
+   */
+  private PartitionMigrationStatus computeExportingMigrationStatus() {
+    try {
+      final var hasExporters = state.hasExporters();
+      if (!hasExporters) {
+        return ExportingMigrationStatusCalculator.compute(partitionId.number(), false, null);
+      }
+
+      final long lowestExportedPosition = state.getLowestPosition();
+      final var status = scanUnexportedRecordsForPreviousVersion(lowestExportedPosition);
+      return explainIfPaused(status);
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to determine partition {}'s exporting migration status", partitionId.number(), e);
+      return new PartitionMigrationStatus(
+          MigrationStatusCode.UNKNOWN,
+          "partition "
+              + partitionId.number()
+              + ": failed to read exporting migration status: "
+              + e.getMessage());
+    }
+  }
+
+  /**
+   * Names a pause as the reason exporting hasn't caught up yet, since the operator's fix for that
+   * ({@code resume exporting}) is different from the fix for a genuine backlog. Left as-is for
+   * MIGRATED/UNKNOWN -- the peek that produced {@code status} already reflects the log's true
+   * content regardless of pause, so a pause never turns an otherwise-safe MIGRATED into something
+   * unsafe, and only naming it when the result is MIGRATION_IN_PROGRESS avoids reporting "not
+   * ready" for a pause that isn't actually blocking anything (e.g. nothing written since is on an
+   * old version).
+   */
+  private PartitionMigrationStatus explainIfPaused(final PartitionMigrationStatus status) {
+    if (status.code() != MigrationStatusCode.MIGRATION_IN_PROGRESS
+        || (exporterPhase != ExporterPhase.PAUSED && exporterPhase != ExporterPhase.SOFT_PAUSED)) {
+      return status;
+    }
+    return new PartitionMigrationStatus(
+        MigrationStatusCode.MIGRATION_IN_PROGRESS,
+        status.detail() + "; exporting is " + exporterPhase + ", resume it to continue");
+  }
+
+  /**
+   * Scans not-yet-exported records after {@code lowestExportedPosition}, looking for one stamped
+   * with a previous application version. Stops the moment it finds a non-current-version record --
+   * already conclusive -- or reaches the log head, having verified every pending record.
+   *
+   * @return {@code null} if every record up to the log head has already been exported
+   */
+  private PartitionMigrationStatus scanUnexportedRecordsForPreviousVersion(
+      final long lowestExportedPosition) {
+    try (final LogStreamReader reader = logStream.newLogStreamReader()) {
+      if (!reader.seekToNextEvent(lowestExportedPosition)) {
+        throw new IllegalStateException(
+            "expected to find an event at or after position " + lowestExportedPosition);
+      }
+      final var metadata = new RecordMetadata();
+      int scanned = 0;
+      while (reader.hasNext()) {
+        if (scanned >= migrationStatusScanMaxRecords) {
+          return new PartitionMigrationStatus(
+              MigrationStatusCode.UNKNOWN,
+              "partition "
+                  + partitionId.number()
+                  + ": more than "
+                  + migrationStatusScanMaxRecords
+                  + " unexported records pending, cannot verify all of them are on the current"
+                  + " version");
+        }
+        reader.next().readMetadata(metadata);
+        scanned++;
+        final var status =
+            ExportingMigrationStatusCalculator.compute(
+                partitionId.number(), true, metadata.getBrokerVersion().toString());
+        if (status.code() != MigrationStatusCode.MIGRATED) {
+          return status;
+        }
+      }
+      return ExportingMigrationStatusCalculator.compute(partitionId.number(), true, null);
+    }
   }
 
   /**

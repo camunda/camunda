@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL;
+import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS;
 
 import java.time.Duration;
 import java.util.Map;
@@ -20,16 +21,22 @@ import java.util.Set;
  * <p><b> Backwards compatibility with the legacy `zeebe.broker.exporting.skip-records` is broken
  * deliberately as this configuration should only be used for recovery purposes</b>
  */
-public record ExportingCfg(Map<Integer, Set<Long>> skipRecords, Duration distributionInterval) {
+public record ExportingCfg(
+    Map<Integer, Set<Long>> skipRecords,
+    Duration distributionInterval,
+    int migrationStatusScanMaxRecords) {
 
   public ExportingCfg(
-      final Map<Integer, Set<Long>> skipRecords, final Duration distributionInterval) {
+      final Map<Integer, Set<Long>> skipRecords,
+      final Duration distributionInterval,
+      final int migrationStatusScanMaxRecords) {
     this.skipRecords = skipRecords == null ? Map.of() : skipRecords;
     this.distributionInterval =
         distributionInterval == null ? DEFAULT_DISTRIBUTION_INTERVAL : distributionInterval;
+    this.migrationStatusScanMaxRecords = migrationStatusScanMaxRecords;
   }
 
   public static ExportingCfg defaultExportingCfg() {
-    return new ExportingCfg(null, null);
+    return new ExportingCfg(null, null, DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS);
   }
 }
