@@ -50,6 +50,7 @@ directly:
 | `max` / stress    | 300         | 300          | Minimal process, stress ceiling              |
 | `latency`         | 1           | —            | No throughput SLO; focus on latency metrics  |
 | `rdbms-realistic` | 50          | 100          | Same as realistic, PostgreSQL backend        |
+| `agent-visibility` | *TBD*      | *TBD*        | Ad-hoc sub-process, fixed 4-round tool-calling schedule (8 flow-node completions per PI: 4 orchestrator rounds + 4 tool calls). Run once with the treatment env vars off (baseline) and once on (see `load-tests/README.md`) for A/B comparison — no throughput SLO of its own, used for relative-overhead measurement. PI/s left `TBD` deliberately: 20 PI/s is only a conservative starting dial for the first ad-hoc smoke run, not a pre-committed target — fill in the real number once that run confirms a sustainable rate. |
 
 Latency and health thresholds apply to all variants — see the sections below.
 
