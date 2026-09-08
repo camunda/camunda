@@ -96,7 +96,7 @@ public class AgentInstanceFetchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei1)
             .jobKey(activatedJob1.getKey())
-            .jobLease("test-job-lease")
+            .jobLease(activatedJob1.getLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -136,7 +136,7 @@ public class AgentInstanceFetchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei2)
             .jobKey(activatedJob2.getKey())
-            .jobLease("test-job-lease")
+            .jobLease(activatedJob2.getLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
