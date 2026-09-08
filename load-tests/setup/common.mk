@@ -64,7 +64,7 @@ additional_load_test_configuration ?=
 helm_chart_platform = charts/camunda-platform
 
 # Scenario: controls the workload profile for the load test.
-# Options: latency, realistic, typical, max, archiver
+# Options: latency, realistic, typical, max, archiver, agent-visibility
 # Use named targets (make max) or pass directly: make install scenario=max
 scenario ?=
 
@@ -85,6 +85,9 @@ _scenario_load_test_flags = --set load-tester.starter.rate=300
 _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
+_scenario_platform_flags =
+else ifeq ($(scenario),agent-visibility)
+_scenario_load_test_flags = -f load-tester-values-agent-visibility.yaml
 _scenario_platform_flags =
 else
 _scenario_load_test_flags =
@@ -386,7 +389,7 @@ install-stable-chaos:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max archiver
+.PHONY: latency realistic typical max archiver agent-visibility
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -397,6 +400,8 @@ max:
 	$(MAKE) install scenario=max
 archiver:
 	$(MAKE) install scenario=archiver
+agent-visibility:
+	$(MAKE) install scenario=agent-visibility
 
 .PHONY: clean
 clean:
