@@ -8,7 +8,8 @@
 
 import {queryOptions, useQuery} from '@tanstack/react-query';
 import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import {request} from '#/shared/http/request';
+import {request, requestErrorSchema} from '#/shared/http/request';
+import {ForbiddenError} from '#/shared/errors';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
@@ -26,7 +27,17 @@ function decisionInstanceQuery(decisionEvaluationInstanceKey: string) {
 }
 
 function useDecisionInstance(decisionEvaluationInstanceKey: string) {
-	return useQuery(decisionInstanceQuery(decisionEvaluationInstanceKey));
+	const query = useQuery(decisionInstanceQuery(decisionEvaluationInstanceKey));
+	const requestError = requestErrorSchema.safeParse(query.error);
+	const isUnauthorized = query.error instanceof ForbiddenError;
+	const isNotFound = requestError.success && requestError.data.response?.status === 404;
+
+	return {
+		query,
+		isUnauthorized,
+		isNotFound,
+		isGenericError: query.isError && !isUnauthorized && !isNotFound,
+	};
 }
 
 export {decisionInstanceQuery, useDecisionInstance};

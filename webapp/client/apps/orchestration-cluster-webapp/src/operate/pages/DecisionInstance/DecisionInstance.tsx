@@ -10,8 +10,7 @@ import {useEffect, useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {ForbiddenError} from '#/shared/errors';
-import {requestErrorSchema} from '#/shared/http/request';
+import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 import {InstanceDetail} from '#/operate/shared/InstanceDetail/InstanceDetail';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
@@ -28,11 +27,7 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const [drdPanelState, setDrdPanelState] = useState<'minimized' | 'closed'>('minimized');
-	const {error} = useDecisionInstance(decisionInstanceId);
-
-	const requestError = requestErrorSchema.safeParse(error);
-	const isUnauthorized = error instanceof ForbiddenError;
-	const isNotFound = requestError.success && requestError.data.response?.status === 404;
+	const {isUnauthorized, isNotFound, isGenericError, query} = useDecisionInstance(decisionInstanceId);
 
 	useEffect(() => {
 		if (isNotFound) {
@@ -57,6 +52,10 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 				}}
 			/>
 		);
+	}
+
+	if (isGenericError) {
+		return <GenericErrorPage reset={() => void query.refetch()} />;
 	}
 
 	return (
