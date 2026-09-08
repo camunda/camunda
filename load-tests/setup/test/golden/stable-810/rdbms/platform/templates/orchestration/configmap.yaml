@@ -189,6 +189,7 @@ data:
         zeebe:
           # Gateway address
           gatewayAddress: "camunda-gateway:26500"
+          secure: false
         archiver:
           ilmEnabled: true
           ilmMinAgeForDeleteArchivedIndices: 1d
@@ -206,6 +207,7 @@ data:
           # Gateway address
           gatewayAddress: "camunda-gateway:26500"
           restAddress: "http://camunda-gateway:8080"
+          secure: false
         archiver:
           ilmEnabled: true
           ilmMinAgeForDeleteArchivedIndices: 1d
@@ -238,7 +240,6 @@ data:
         cluster:
           clusterName: c8-golden-stable-810-rdbms-zeebe
     
-  log4j2.xml: |
   application.yml: |
     # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
     zeebe.broker.executionMetricsExporterEnabled: "true"
