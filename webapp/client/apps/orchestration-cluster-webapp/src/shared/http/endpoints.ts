@@ -420,12 +420,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstance.getUrl({processInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessInstance.method,
+			headers: {'Content-Type': 'application/json'},
 		}),
 
 	getProcessInstanceWaitStateStatistics: ({processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>) =>
 		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.getUrl({processInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.method,
+			headers: {'Content-Type': 'application/json'},
 		}),
 
 	queryProcessInstanceIncidents: (
