@@ -50,7 +50,7 @@ spec:
       initContainers:
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.9.8
+          image: camunda/connectors-bundle:8.9.9
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
