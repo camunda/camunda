@@ -464,6 +464,8 @@ jobs:
     env:
       TEST_TYPE: E2E
       TEST_OWNER: '@camunda/optimize-frontend'
+      CAMUNDA_IMAGE: camunda/camunda:current-test
+      CAMUNDA_PULL_POLICY: never
 
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
@@ -519,6 +521,7 @@ jobs:
         uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: optimize-e2e-smoke
+          minimus: true
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -529,6 +532,18 @@ jobs:
         with:
           directory: ./optimize/client
 
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
+
+      - name: Build Camunda image under test
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: camunda/camunda
+          version: current-test
+          distball: ${{ steps.build-camunda.outputs.distball }}
+
       - name: Start services (Camunda, Keycloak, Identity and Elasticsearch)
         uses: ./.github/actions/compose
         with:
@@ -537,11 +552,6 @@ jobs:
           additional_flags: "--profile self-managed"
         env:
           CAMUNDA_VERSION: ${{ steps.pom_info.outputs.x_camunda_docker_version }}
-
-      - uses: ./.github/actions/build-zeebe
-        id: build-camunda
-        with:
-          maven-extra-args: -PskipFrontendBuild -Dskip.docker
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
@@ -559,7 +569,7 @@ jobs:
         run: |
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
-            if [[ $count -eq 60 ]]; then
+            if [[ $count -eq 43 ]]; then
               echo "Process definitions imported ($count). Waiting for process instance import to stabilize..."
               prev="-1"
               stable=0
@@ -577,7 +587,7 @@ jobs:
               echo "Import stabilized at $cur process instances"
               break
             fi
-            echo "Index has $count entities. Waiting for 60..."
+            echo "Index has $count entities. Waiting for 43..."
             sleep 10
           done
 

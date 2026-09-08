@@ -22,11 +22,15 @@ public class CamundaDatabaseTestApplicationResolver
 
   private final String standaloneCamundaKey;
   private final CamundaRdbmsTestApplication testApplication;
+  private final boolean shared;
 
   public CamundaDatabaseTestApplicationResolver(
-      final String standaloneCamundaKey, final CamundaRdbmsTestApplication testApplication) {
+      final String standaloneCamundaKey,
+      final CamundaRdbmsTestApplication testApplication,
+      final boolean shared) {
     this.standaloneCamundaKey = standaloneCamundaKey;
     this.testApplication = testApplication;
+    this.shared = shared;
   }
 
   @Override
@@ -38,6 +42,9 @@ public class CamundaDatabaseTestApplicationResolver
   @Override
   public Object resolveParameter(
       final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
+    if (!shared) {
+      return testApplication;
+    }
     final ExtensionContext rootContext = extensionCtx.getRoot();
     final ExtensionContext.Store store = rootContext.getStore(Namespace.GLOBAL);
     final String key = CamundaRdbmsTestApplication.class.getName() + "_" + standaloneCamundaKey;
