@@ -245,9 +245,6 @@
                   "type": "boolean"
                 }
               }
-            },
-            "historyItemIdsToDelete": {
-              "type": "keyword"
             }
           }
         }

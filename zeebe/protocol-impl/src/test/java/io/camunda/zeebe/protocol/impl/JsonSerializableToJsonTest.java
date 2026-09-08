@@ -5315,7 +5315,6 @@ final class JsonSerializableToJsonTest {
           "jobKey": -1,
           "jobLease": "",
           "history": [],
-          "historyItemIdsToDelete": [],
           "storageOrdinalKey": 11
         }
         """
@@ -5346,7 +5345,6 @@ final class JsonSerializableToJsonTest {
           "jobKey": -1,
           "jobLease": "",
           "history": [],
-          "historyItemIdsToDelete": [],
           "storageOrdinalKey": 0
         }
         """
@@ -5444,7 +5442,6 @@ final class JsonSerializableToJsonTest {
               "storageOrdinalKey": 0
             }
           ],
-          "historyItemIdsToDelete": [],
           "storageOrdinalKey": 0
         }
         """
