@@ -120,7 +120,7 @@
 ## Identity  ##
 ###############
 
-/identity/        @camunda/identity-frontend
+/identity/        @camunda/operate-admin-pod
 /authentication/  @camunda/identity
 /security/        @camunda/identity
 
