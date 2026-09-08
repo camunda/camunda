@@ -37,8 +37,8 @@ previous stable version (e.g. `8.10`).
      allow-list (`contains(fromJSON('["stable/8.9","stable/8.10","main"]'), ...)`), not yet
      converted to an exclusion-list like the release workflow's equivalent (see below). Add the
      new version here, or, better, convert it to
-     `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), base)` so it stops needing
-     this edit on every future cut.
+     `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), needs.validate-branch.outputs.base)`
+     so it stops needing this edit on every future cut.
    - ES API-tests `camunda_mode` matrix (the job just above the RDBMS one): as of the 8.10 cut
      this still only lists `stable/8.9 || main`. It does not include `stable/8.10`, so 8.10's
      on-demand ES API tests only ever run in `profiles` mode, never `all-in-one`. This is a
@@ -56,8 +56,9 @@ previous stable version (e.g. `8.10`).
      release resolves `base="main"`, which drives test-directory routing and matrix gating.
      Sometimes that lands on the right behavior by coincidence, but always for the wrong reason.
    - RDBMS gate (`build-rdbms-dist` and the RDBMS API-tests job): already self-updating,
-     expressed as `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), base)`, an
-     exclusion of the branches that predate RDBMS. No edit needed unless a future branch
+     expressed as
+     `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), needs.validate-release.outputs.base)`,
+     an exclusion of the branches that predate RDBMS. No edit needed unless a future branch
      predates RDBMS, which it won't.
    - `tasklist_mode` matrix: same v1/v2 enumeration and same self-updating caveat as the
      on-demand workflow above.
