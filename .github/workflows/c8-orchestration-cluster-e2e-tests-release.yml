@@ -958,6 +958,7 @@ jobs:
 
       - name: Wait for services to be ready
         id: wait-for-services
+        shell: bash
         run: |
           echo "Checking if services are up..."
           if [[ "$NON_STANDALONE" == "true" ]]; then
@@ -1036,6 +1037,7 @@ jobs:
 
       - name: Print Docker logs before failing
         if: failure()
+        shell: bash
         # DATABASE must be set: docker-compose.yml interpolates it into the
         # camunda service's depends_on / env_file, so an unset value makes the
         # compose project invalid ("depends on undefined service") and this
