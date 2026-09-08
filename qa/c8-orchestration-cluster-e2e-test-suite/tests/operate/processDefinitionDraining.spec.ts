@@ -12,6 +12,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome, tooltipWithText} from '@pages/UtilitiesPage';
 import {
   activateSingleJob,
+  createInstanceOnceDeployed,
   deployUserTaskProcess,
   drainProcessDefinition,
   expectProcessDefinitionDeleted,
@@ -20,7 +21,6 @@ import {
 import {
   cancelProcessInstance,
   createInstances,
-  createSingleInstance,
   deployWithSubstitutions,
 } from 'utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from 'utils/http';
@@ -43,7 +43,7 @@ test.beforeAll(async ({request}) => {
   const {processDefinitionKey} =
     await deployUserTaskProcess(processDefinitionId);
 
-  const instance = await createSingleInstance(processDefinitionId, 1);
+  const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
   processInstanceKey = instance.processInstanceKey;
   await findUserTask(request, processInstanceKey, 'CREATED');
 
@@ -244,7 +244,10 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
     const {processDefinitionKey} = await deployUserTaskProcess(
       deletedProcessDefinitionId,
     );
-    const instance = await createSingleInstance(deletedProcessDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(
+      deletedProcessDefinitionId,
+      1,
+    );
     instancesToCancel.push(instance.processInstanceKey);
     await findUserTask(request, instance.processInstanceKey, 'CREATED');
 
@@ -361,7 +364,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
     const {processDefinitionKey} = await deployUserTaskProcess(
       suspendedProcessDefinitionId,
     );
-    const instance = await createSingleInstance(
+    const instance = await createInstanceOnceDeployed(
       suspendedProcessDefinitionId,
       1,
     );

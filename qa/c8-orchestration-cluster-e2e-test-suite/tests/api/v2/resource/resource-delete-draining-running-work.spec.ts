@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {randomUUID} from 'crypto';
 import {
   cancelProcessInstance,
-  createSingleInstance,
   deployWithSubstitutions,
   setVariables,
 } from '../../../../utils/zeebeClient';
@@ -19,6 +18,7 @@ import {
   activateSingleJob,
   completeJob,
   completeUserTask,
+  createInstanceOnceDeployed,
   deployUserTaskProcess,
   drainProcessDefinition,
   expectProcessDefinitionDeleted,
@@ -104,7 +104,7 @@ test.describe('Process Definition Draining Deletion — work already in flight',
       processDefinitionId,
       jobType,
     );
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
 
     const jobKey = await activateSingleJob(
@@ -171,7 +171,7 @@ test.describe('Process Definition Draining Deletion — work already in flight',
       messageName,
     );
 
-    const instance = await createSingleInstance(processDefinitionId, 1, {
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
       corrId: correlationKey,
     });
     instancesToCancel.push(instance.processInstanceKey);
@@ -202,7 +202,7 @@ test.describe('Process Definition Draining Deletion — work already in flight',
       processDefinitionId,
       jobType,
     );
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
     await activateSingleJob(request, jobType, instance.processInstanceKey);
 
@@ -227,7 +227,7 @@ test.describe('Process Definition Draining Deletion — work already in flight',
     const {processDefinitionKey} =
       await deployTimerProcess(processDefinitionId);
 
-    const instance = await createSingleInstance(processDefinitionId, 1, {
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
       duration: 'PT30S',
     });
     instancesToCancel.push(instance.processInstanceKey);
@@ -253,7 +253,7 @@ test.describe('Process Definition Draining Deletion — work already in flight',
     const processDefinitionId = uniquePrefixedId('draining-suspend');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
     const userTaskKey = await findUserTask(
       request,
