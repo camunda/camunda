@@ -177,11 +177,12 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     // SUSPENDED before it reaches a terminal state. A batch of only 30
     // instances can finish (reaching COMPLETED) between the accepted suspend
     // request and the SUSPENDED poll under nightly RDBMS contention, which
-    // makes this test flip on "expected SUSPENDED, received COMPLETED". This
-    // mirrors the proven suspension pattern used by the sibling
-    // 'Cancel suspended batch operation transitions to CANCELED' test.
+    // makes this test flip on "expected SUSPENDED, received COMPLETED". 500
+    // proved too tight under MSSQL contention (the batch still completed before
+    // the accepted suspend was applied), so widen the in-flight window to 1000
+    // to give the suspend command a larger margin to catch the batch ACTIVE.
     const key = await test.step('Create cancel batch operation', async () => {
-      return createCancellationBatch(request, 500, 'batch_suspension_process');
+      return createCancellationBatch(request, 1000, 'batch_suspension_process');
     });
 
     await test.step('Suspend batch operation', async () => {
