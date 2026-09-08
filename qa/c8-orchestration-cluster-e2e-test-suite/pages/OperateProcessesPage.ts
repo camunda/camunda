@@ -62,6 +62,7 @@ class OperateProcessesPage {
     cellIndex?: number,
   ) => Locator;
   readonly deleteButton: Locator;
+  readonly drainingTag: Locator;
   readonly deleteBatchOperationConfirmButton: Locator;
   readonly batchOperationStartedMessage: (
     batchOperationType:
@@ -191,6 +192,7 @@ class OperateProcessesPage {
         .getByRole('cell')
         .nth(cellIndex);
     this.deleteButton = page.getByTestId('delete-batch-operation');
+    this.drainingTag = page.getByTestId('draining-tag');
     this.deleteBatchOperationConfirmButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Delete'});

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, expect} from '@playwright/test';
+import {Locator, Page, expect} from '@playwright/test';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {sleep} from '../utils/sleep';
@@ -145,4 +145,13 @@ export async function completeTaskWithRetry(
       }
     }
   }
+}
+
+/**
+ * Carbon renders a tooltip's content as a page-level popover rather than inside
+ * the element it annotates, so it cannot be reached through that element's own
+ * locator tree.
+ */
+export function tooltipWithText(page: Page, text: string): Locator {
+  return page.getByRole('tooltip', {name: text});
 }
