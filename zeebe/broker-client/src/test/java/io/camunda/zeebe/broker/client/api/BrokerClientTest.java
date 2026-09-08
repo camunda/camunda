@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -497,6 +498,63 @@ public final class BrokerClientTest {
     assertThatCode(() -> client.sendRequest(request).join())
         .isInstanceOf(CompletionException.class)
         .hasMessageContaining("The partition " + partitionId + " is currently INACTIVE");
+  }
+
+  @Test
+  public void shouldRejectRequestWhenPartitionIsInRecoveryMode() {
+    // given -- the only replica of partition 1 is inactive and flagged as RECOVERING in the
+    // cluster configuration
+    final var partitionId = 1;
+    final var request = new TestCommand(1, (topologyManager, partitionGroup) -> partitionId);
+    makeBrokerRecoverForPartition(partitionId);
+
+    // then -- a request that is not recovery-routable fails fast with a dedicated error instead
+    // of timing out against a leaderless partition
+    assertThatCode(() -> client.sendRequest(request).join())
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(PartitionInRecoveryException.class)
+        .hasMessageContaining("recovery mode");
+  }
+
+  @Test
+  public void shouldRouteRecoveryRoutableRequestToRecoveringNode() {
+    // given
+    final var partitionId = 1;
+    final var request =
+        new TestCommand(1L) {
+          @Override
+          public boolean shouldRouteToRecovery() {
+            return true;
+          }
+        };
+    request.setPartitionId(partitionId);
+    registerSuccessResponse(broker);
+    makeBrokerRecoverForPartition(partitionId);
+
+    // when
+    final var response = client.sendRequest(request).join();
+
+    // then
+    assertThat(response.isResponse()).isTrue();
+  }
+
+  private void makeBrokerRecoverForPartition(final int partitionId) {
+    topologyManager.onClusterConfigurationUpdated(
+        topologyManager
+            .getClusterConfiguration()
+            .updatePartitionGroupConfig(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                group ->
+                    group.updateMember(
+                        broker.member().id(), member -> member.setMode(Mode.RECOVERING))));
+
+    broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
+    topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+    Awaitility.await("Partition is inactive.")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partitionId))
+                    .isNotEmpty());
   }
 
   @Test
