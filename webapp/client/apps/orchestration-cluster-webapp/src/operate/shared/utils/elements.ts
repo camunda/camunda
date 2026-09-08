@@ -15,6 +15,10 @@ function hasType({businessObject, types}: {businessObject: BusinessObject; types
 	return types.includes(businessObject.$type);
 }
 
+function hasCalledProcessInstances(businessObjects: BusinessObjects = {}) {
+	return Object.values(businessObjects).some((object) => object.$type === 'bpmn:CallActivity');
+}
+
 function isFlowNode(businessObject: BusinessObject) {
 	return businessObject.$instanceOf?.('bpmn:FlowNode') ?? false;
 }
@@ -69,6 +73,7 @@ function getSubprocessOverlayFromIncidentElements(
 
 export {
 	hasType,
+	hasCalledProcessInstances,
 	isFlowNode,
 	isProcessOrSubProcessEndEvent,
 	getFlowNodes,

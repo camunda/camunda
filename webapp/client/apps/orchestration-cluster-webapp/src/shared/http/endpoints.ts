@@ -416,6 +416,29 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	getProcessInstance: ({processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstance.method,
+		}),
+
+	getProcessInstanceWaitStateStatistics: ({processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.method,
+		}),
+
+	queryProcessInstanceIncidents: (
+		{processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>,
+		body: import('@camunda/camunda-api-zod-schemas/8.10').QueryProcessInstanceIncidentsRequestBody,
+	) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstanceIncidents.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessInstanceIncidents.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
 	getProcessInstanceCallHierarchy: ({processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>) =>
 		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceCallHierarchy.getUrl({processInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,

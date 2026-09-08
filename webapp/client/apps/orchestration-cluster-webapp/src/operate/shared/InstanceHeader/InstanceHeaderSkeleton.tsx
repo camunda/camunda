@@ -23,7 +23,9 @@ const InstanceHeaderSkeleton: React.FC<Props> = ({headerColumns}) => {
 				<thead>
 					<tr>
 						{headerColumns.map(({name}, index) => (
-							<Th key={index}>{name}</Th>
+							<Th key={index} scope="col">
+								{name}
+							</Th>
 						))}
 					</tr>
 				</thead>

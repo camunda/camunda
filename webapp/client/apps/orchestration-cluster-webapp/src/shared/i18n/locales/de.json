@@ -595,6 +595,38 @@
 					"forbiddenSubtitle": "Bitte kontaktieren Sie Ihren Administrator, wenn Sie Zugriff benötigen."
 				}
 			},
+			"processInstance": {
+				"title": "Operate-Prozessinstanz",
+				"pageTitle": "Operate: Prozessinstanz {{processInstanceId}} von {{name}}",
+				"notFound": "Instanz {{processInstanceId}} konnte nicht gefunden werden",
+				"retry": "Erneut versuchen",
+				"forbidden": {
+					"heading": "403 – Sie haben keine Berechtigung, diese Informationen anzuzeigen",
+					"description": "Wenden Sie sich an Ihren Administrator, um Zugriff zu erhalten.",
+					"learnMore": "Mehr über Berechtigungen erfahren"
+				},
+				"breadcrumb": {
+					"view": "Prozess {{name}} – Instanz {{key}} anzeigen",
+					"current": "Prozess {{name}} – Instanz {{key}}",
+					"more": "Mehr"
+				},
+				"header": {
+					"key": "Prozessinstanzschlüssel",
+					"version": "Version",
+					"versionTag": "Versions-Tag",
+					"versionTagDescription": "Benutzerdefinierte Bezeichnung zur Identifizierung einer Definition.",
+					"businessId": "Geschäfts-ID",
+					"tenant": "Mandant",
+					"startDate": "Startdatum",
+					"endDate": "Enddatum",
+					"calledInstances": "Aufgerufene Instanzen",
+					"versionLink": "Instanzen des Prozesses „{{name}} Version {{version}}“ anzeigen",
+					"viewAll": "Alle anzeigen",
+					"viewAllTitle": "Alle aufgerufenen Instanzen anzeigen",
+					"none": "Keine",
+					"draining": "Wird geleert"
+				}
+			},
 			"decisionInstance": {
 				"title": "Operate Entscheidungsinstanz",
 				"pageTitle": "Operate: Entscheidungsinstanz {{decisionInstanceId}} von {{name}}",
@@ -781,6 +813,8 @@
 					"selectOperator": "Operator auswählen"
 				},
 				"instanceHeader": {
+					"waiting_one": "Wartend",
+					"waiting_other": "{{count}} wartend",
 					"incidentsCount_one": "{{count}} Vorfall",
 					"incidentsCount_other": "{{count}} Vorfälle"
 				},

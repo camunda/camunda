@@ -595,6 +595,38 @@
 					"forbiddenSubtitle": "Póngase en contacto con su administrador si necesita acceso."
 				}
 			},
+			"processInstance": {
+				"title": "Instancia de proceso de Operate",
+				"pageTitle": "Operate: instancia de proceso {{processInstanceId}} de {{name}}",
+				"notFound": "No se pudo encontrar la instancia {{processInstanceId}}",
+				"retry": "Reintentar",
+				"forbidden": {
+					"heading": "403: No tiene permiso para ver esta información",
+					"description": "Póngase en contacto con su administrador para obtener acceso.",
+					"learnMore": "Más información sobre los permisos"
+				},
+				"breadcrumb": {
+					"view": "Ver proceso {{name}}: instancia {{key}}",
+					"current": "Proceso {{name}}: instancia {{key}}",
+					"more": "Más"
+				},
+				"header": {
+					"key": "Clave de instancia de proceso",
+					"version": "Versión",
+					"versionTag": "Etiqueta de versión",
+					"versionTagDescription": "Etiqueta definida por el usuario que identifica una definición.",
+					"businessId": "ID de negocio",
+					"tenant": "Inquilino",
+					"startDate": "Fecha de inicio",
+					"endDate": "Fecha de finalización",
+					"calledInstances": "Instancias llamadas",
+					"versionLink": "Ver instancias del proceso «{{name}} versión {{version}}»",
+					"viewAll": "Ver todas",
+					"viewAllTitle": "Ver todas las instancias llamadas",
+					"none": "Ninguna",
+					"draining": "En vaciado"
+				}
+			},
 			"decisionInstance": {
 				"title": "Instancia de decisión de Operate",
 				"pageTitle": "Operate: Instancia de decisión {{decisionInstanceId}} de {{name}}",
@@ -781,6 +813,8 @@
 					"selectOperator": "Seleccionar operador"
 				},
 				"instanceHeader": {
+					"waiting_one": "En espera",
+					"waiting_other": "{{count}} en espera",
 					"incidentsCount_one": "{{count}} incidente",
 					"incidentsCount_other": "{{count}} incidentes"
 				},

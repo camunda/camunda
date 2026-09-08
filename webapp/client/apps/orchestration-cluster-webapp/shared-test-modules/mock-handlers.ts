@@ -192,7 +192,25 @@ const mockGetProcessInstanceCallHierarchyEndpoint = createEndpointMock({
 	method: endpoints.getProcessInstanceCallHierarchy.method,
 });
 
+const mockGetProcessInstanceEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.getProcessInstance.method,
+});
+
+const mockGetProcessInstanceWaitStateStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessInstanceWaitStateStatistics.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.getProcessInstanceWaitStateStatistics.method,
+});
+
+const mockQueryProcessInstanceIncidentsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryProcessInstanceIncidents.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.queryProcessInstanceIncidents.method,
+});
+
 export {
+	mockGetProcessInstanceWaitStateStatisticsEndpoint,
+	mockGetProcessInstanceEndpoint,
+	mockQueryProcessInstanceIncidentsEndpoint,
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
 	mockLogoutEndpoint,

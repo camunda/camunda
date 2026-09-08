@@ -609,6 +609,38 @@
 					"forbiddenSubtitle": "Please contact the administrator if you need access."
 				}
 			},
+			"processInstance": {
+				"title": "Operate Process Instance",
+				"pageTitle": "Operate: Process Instance {{processInstanceId}} of {{name}}",
+				"notFound": "Instance {{processInstanceId}} could not be found",
+				"retry": "Retry",
+				"forbidden": {
+					"heading": "403 - You do not have permission to view this information",
+					"description": "Contact your administrator to get access.",
+					"learnMore": "Learn more about permissions"
+				},
+				"breadcrumb": {
+					"view": "View Process {{name}} - Instance {{key}}",
+					"current": "Process {{name}} - Instance {{key}}",
+					"more": "More"
+				},
+				"header": {
+					"key": "Process Instance Key",
+					"version": "Version",
+					"versionTag": "Version Tag",
+					"versionTagDescription": "User-defined label identifying a definition.",
+					"businessId": "Business ID",
+					"tenant": "Tenant",
+					"startDate": "Start Date",
+					"endDate": "End Date",
+					"calledInstances": "Called Instances",
+					"versionLink": "View process \"{{name}} version {{version}}\" instances",
+					"viewAll": "View All",
+					"viewAllTitle": "View all called instances",
+					"none": "None",
+					"draining": "Draining"
+				}
+			},
 			"decisionInstance": {
 				"title": "Operate Decision Instance",
 				"pageTitle": "Operate: Decision Instance {{decisionInstanceId}} of {{name}}",
@@ -795,6 +827,8 @@
 					"selectOperator": "Select operator"
 				},
 				"instanceHeader": {
+					"waiting_one": "Waiting",
+					"waiting_other": "{{count}} waiting",
 					"incidentsCount_one": "{{count}} incident",
 					"incidentsCount_other": "{{count}} incidents"
 				},

@@ -73,7 +73,9 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 				<thead>
 					<tr>
 						{headerColumns.map((column, index) => (
-							<Th key={index}>{column}</Th>
+							<Th key={index} scope="col">
+								{column}
+							</Th>
 						))}
 					</tr>
 				</thead>

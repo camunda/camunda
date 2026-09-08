@@ -598,6 +598,38 @@
 					"forbiddenSubtitle": "Veuillez contacter votre administrateur si vous avez besoin d'un accès."
 				}
 			},
+			"processInstance": {
+				"title": "Instance de processus Operate",
+				"pageTitle": "Operate : instance de processus {{processInstanceId}} de {{name}}",
+				"notFound": "L'instance {{processInstanceId}} est introuvable",
+				"retry": "Réessayer",
+				"forbidden": {
+					"heading": "403 – Vous n'avez pas l'autorisation de consulter ces informations",
+					"description": "Contactez votre administrateur pour obtenir l'accès.",
+					"learnMore": "En savoir plus sur les autorisations"
+				},
+				"breadcrumb": {
+					"view": "Afficher le processus {{name}} – Instance {{key}}",
+					"current": "Processus {{name}} – Instance {{key}}",
+					"more": "Plus"
+				},
+				"header": {
+					"key": "Clé de l'instance de processus",
+					"version": "Version",
+					"versionTag": "Étiquette de version",
+					"versionTagDescription": "Libellé défini par l'utilisateur identifiant une définition.",
+					"businessId": "Identifiant métier",
+					"tenant": "Locataire",
+					"startDate": "Date de début",
+					"endDate": "Date de fin",
+					"calledInstances": "Instances appelées",
+					"versionLink": "Afficher les instances du processus « {{name}} version {{version}} »",
+					"viewAll": "Tout afficher",
+					"viewAllTitle": "Afficher toutes les instances appelées",
+					"none": "Aucune",
+					"draining": "En cours de vidage"
+				}
+			},
 			"decisionInstance": {
 				"title": "Instance de décision Operate",
 				"pageTitle": "Operate : Instance de décision {{decisionInstanceId}} de {{name}}",
@@ -784,6 +816,8 @@
 					"selectOperator": "Sélectionner un opérateur"
 				},
 				"instanceHeader": {
+					"waiting_one": "En attente",
+					"waiting_other": "{{count}} en attente",
 					"incidentsCount_one": "{{count}} incident",
 					"incidentsCount_other": "{{count}} incidents"
 				},
