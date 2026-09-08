@@ -247,6 +247,20 @@ class ConcurrentSecretStoreTest {
             () -> new ConcurrentSecretStore(new FakeOneByOneStore(), pool, new Semaphore(0, true)));
   }
 
+  @Test
+  void shouldRejectADelegateReportingLessThanOneNamePerCall() {
+    // a namesPerCall below 1 cannot be split into chunks (chunk() would either loop forever on 0
+    // or throw on a negative subList bound), so a store reporting it is rejected outright instead
+    // of hanging or throwing an unrelated exception on the first resolution
+    final var names = namesUpTo(4);
+    final var delegate = new FakeOneByOneStore();
+    delegate.namesPerCall = 0;
+    final var store = new ConcurrentSecretStore(delegate, pool, new Semaphore(4, true));
+
+    // when / then
+    assertThatIllegalArgumentException().isThrownBy(() -> store.resolve(names));
+  }
+
   private static Set<String> namesUpTo(final int count) {
     final var names = new LinkedHashSet<String>();
     IntStream.range(0, count).forEach(i -> names.add("name-" + i));

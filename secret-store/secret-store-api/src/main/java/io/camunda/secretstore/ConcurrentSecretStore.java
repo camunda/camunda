@@ -80,6 +80,16 @@ public final class ConcurrentSecretStore implements SecretStore {
   @Override
   public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
     final int callSize = delegate.namesPerCall();
+    if (callSize < 1) {
+      // a store reporting less than one name per call cannot be chunked (chunk() would either
+      // loop forever on 0 or throw on a negative subList bound): this is a broken namesPerCall()
+      // implementation, not a request this store can serve at all
+      throw new IllegalArgumentException(
+          "A secret store's namesPerCall() must be at least 1, but "
+              + delegate.getClass().getSimpleName()
+              + " returned "
+              + callSize);
+    }
     if (maxConcurrency == 1 || callSize >= names.size()) {
       return delegate.resolve(names);
     }
