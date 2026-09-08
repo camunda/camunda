@@ -17,8 +17,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistorybatch.AgentHistoryBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -29,9 +31,9 @@ import java.util.List;
  * process instance identified by {@code processInstanceKey}, then re-appends the same command as a
  * follow-up so the next one is picked up on the next cycle. Once none remain, the command is
  * rejected {@code NOT_FOUND} — the rejection doubles as the signal that the process instance's
- * agent instances are fully cleaned up. At most two records are written per cycle (the {@code
- * COMPLETED} event and the re-issued {@code COMPLETE}), so this relies on the general
- * follow-up-command mechanism rather than a bespoke batch limit or cursor.
+ * agent instances are fully cleaned up. Each completed instance also gets a follow-up {@code
+ * AGENT_HISTORY_BATCH:CLEAN_UP} command, keyed by the agent instance, to bound the cleanup of its
+ * committed/metrics-accumulated history-item ids over subsequent cycles.
  */
 @ExcludeAuthorizationCheck
 public final class AgentInstanceCompleteProcessor
@@ -68,6 +70,13 @@ public final class AgentInstanceCompleteProcessor
     current.setStatus(AgentInstanceStatus.COMPLETED);
     current.setChangedAttributes(List.of(AgentInstanceRecord.ATTR_STATUS));
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.COMPLETED, current);
+
+    // bound cleanup of this instance's committed/metrics-accumulated history-item ids, chunked by
+    // AgentHistoryBatchCleanUpProcessor across as many follow-up cycles as it takes
+    commandWriter.appendFollowUpCommand(
+        agentInstanceKey,
+        AgentHistoryBatchIntent.CLEAN_UP,
+        new AgentHistoryBatchRecord().setAgentInstanceKey(agentInstanceKey));
 
     // re-chain: other agent instances may still be left for this process instance
     commandWriter.appendNewCommand(
