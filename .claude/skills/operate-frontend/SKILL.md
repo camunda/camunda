@@ -10,7 +10,7 @@ Operate's frontend lives in two codebases while the migration runs:
 - **Target** — `webapp/client/apps/orchestration-cluster-webapp/src/operate/` (~240 files). All new
   work goes here. React 19, TanStack Router + Query, Carbon, styled-components (temporary).
 - **Legacy** — `operate/client/` (~1200 files). Bug fixes, small adjustments and maintenance only.
-  React 18, React Router 7, TanStack Query 5, MobX 6, Carbon, styled-components, React Final Form.
+  React 19, React Router 7, TanStack Query 5, MobX 7, Carbon, styled-components, React Final Form.
   Winding down; don't add architecture.
 
 Both render BPMN/DMN with `bpmn-js` / `dmn-js` and edit JSON with Monaco (`@monaco-editor/react`).
