@@ -10,9 +10,13 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.beans.Introspector;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
@@ -125,7 +129,7 @@ class NumberOfShardsPerIndexTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage(
               "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.list-view"
-                  + " must be at least 1, but was 0");
+                  + " must be a positive value, but was 0");
     }
 
     @Test
@@ -214,35 +218,63 @@ class NumberOfShardsPerIndexTest {
   @Nested
   class Coverage {
 
+    private Set<String> declaredShardFields() {
+      return Arrays.stream(NumberOfShardsPerIndex.class.getDeclaredFields())
+          .filter(field -> field.getType() == Integer.class)
+          .map(Field::getName)
+          .collect(Collectors.toSet());
+    }
+
+    /** Every declared field set, so the projected map is everything the type can express. */
+    private NumberOfShardsPerIndex withEveryIndexSet() {
+      final var shards = new NumberOfShardsPerIndex();
+      final var fieldNames = declaredShardFields();
+      Arrays.stream(NumberOfShardsPerIndex.class.getMethods())
+          .filter(method -> method.getName().startsWith("set") && method.getParameterCount() == 1)
+          .filter(
+              method ->
+                  fieldNames.contains(Introspector.decapitalize(method.getName().substring(3))))
+          .forEach(
+              method -> {
+                try {
+                  method.invoke(shards, 2);
+                } catch (final ReflectiveOperationException e) {
+                  throw new AssertionError(e);
+                }
+              });
+      return shards;
+    }
+
     /**
      * Guards the field-name to index-name projection: a field whose {@code toIndexNameMap} entry is
      * missing would silently swallow that index's override.
      */
     @Test
     void shouldProjectEveryFieldOntoTheMap() {
-      // given
-      final var shards = new NumberOfShardsPerIndex();
-      final var fieldNames =
-          Arrays.stream(NumberOfShardsPerIndex.class.getDeclaredFields())
-              .filter(f -> f.getType() == Integer.class)
-              .map(java.lang.reflect.Field::getName)
-              .collect(Collectors.toSet());
-
-      // when — set every field through its setter
-      Arrays.stream(NumberOfShardsPerIndex.class.getMethods())
-          .filter(m -> m.getName().startsWith("set") && m.getParameterCount() == 1)
-          .filter(m -> fieldNames.contains(Introspector.decapitalize(m.getName().substring(3))))
-          .forEach(
-              m -> {
-                try {
-                  m.invoke(shards, 2);
-                } catch (final ReflectiveOperationException e) {
-                  throw new AssertionError(e);
-                }
-              });
+      // given / when
+      final var shards = withEveryIndexSet();
 
       // then
-      assertThat(shards.toIndexNameMap()).hasSize(fieldNames.size());
+      assertThat(shards.toIndexNameMap()).hasSize(declaredShardFields().size());
+    }
+
+    /**
+     * The descriptors are the source of truth for which indices exist. This class holds their names
+     * as literals to avoid a compile dependency, so nothing but this test keeps the two in step.
+     */
+    @Test
+    void shouldCoverExactlyTheIndicesTheDescriptorsDeclare() {
+      // given
+      final var descriptorIndexNames =
+          new IndexDescriptors("", true)
+              .all().stream().map(IndexDescriptor::getIndexName).collect(Collectors.toSet());
+
+      // when
+      final var configurableIndexNames = withEveryIndexSet().toIndexNameMap().keySet();
+
+      // then — a descriptor with no field cannot have its shard count overridden at all, and a
+      // field with no descriptor is a property that silently does nothing
+      assertThat(configurableIndexNames).containsExactlyInAnyOrderElementsOf(descriptorIndexNames);
     }
   }
 }
