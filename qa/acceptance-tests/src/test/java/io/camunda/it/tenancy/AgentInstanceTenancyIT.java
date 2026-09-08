@@ -404,6 +404,7 @@ public class AgentInstanceTenancyIT {
             .maxJobsToActivate(1)
             .tenantIds(tenantId)
             .timeout(Duration.ofMinutes(5))
+            .withLease(true)
             .send()
             .join()
             .getJobs();
