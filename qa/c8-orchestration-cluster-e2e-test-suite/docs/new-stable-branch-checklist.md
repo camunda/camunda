@@ -73,6 +73,13 @@ previous stable version (e.g. `8.10`).
    this is the one place a new branch needs registering — set it to `'true'` unless the new
    branch predates the typed `buildUrl` generator (it won't, going forward).
 
+6. **Route the new branch in the branch-scoped API on-demand workflow**
+   (`.github/workflows/c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml`): it has its
+   own, separate copy of the base-branch detection block (`git fetch origin ...` /
+   `for candidate in ...`), and it has not been updated since `stable/8.8` — both `stable/8.9`
+   and `stable/8.10` are still missing from it today. Add `stable/<X.Y>` here too, and back-fill
+   the still-missing versions at the same time rather than leaving them for a future cut.
+
 ## After merging
 
 - Confirm each new nightly workflow actually appears in the next day's metrics report (step 2
