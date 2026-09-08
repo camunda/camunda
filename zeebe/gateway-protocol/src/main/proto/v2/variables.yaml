@@ -108,6 +108,25 @@ paths:
 
 components:
   schemas:
+    RuntimeVariableScopeEnum:
+      description: The scope from which runtime variables are returned.
+      type: string
+      enum:
+        - EFFECTIVE
+        - LOCAL
+
+    RuntimeVariablesResult:
+      description: An authoritative snapshot of variables from primary runtime state.
+      type: object
+      additionalProperties: false
+      required:
+        - variables
+      properties:
+        variables:
+          description: The complete JSON variable document for the requested scope.
+          type: object
+          additionalProperties: true
+
     VariableSearchQuerySortRequest:
       type: object
       properties:

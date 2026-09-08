@@ -73,6 +73,7 @@ import io.camunda.gateway.protocol.model.ResolvedSecret;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.RoleCreateResult;
 import io.camunda.gateway.protocol.model.RoleUpdateResult;
+import io.camunda.gateway.protocol.model.RuntimeVariablesResult;
 import io.camunda.gateway.protocol.model.SecretErrorCode;
 import io.camunda.gateway.protocol.model.SecretListResult;
 import io.camunda.gateway.protocol.model.SecretResolutionError;
@@ -126,6 +127,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.runtimevariables.RuntimeVariablesRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -939,6 +941,13 @@ public final class ResponseMapper {
                             .secretName(reference.getSecretReference())
                             .build())
                 .toList())
+        .build();
+  }
+
+  public static RuntimeVariablesResult toRuntimeVariablesResult(
+      final RuntimeVariablesRecord runtimeVariablesRecord) {
+    return RuntimeVariablesResult.Builder.create()
+        .variables(runtimeVariablesRecord.getVariables())
         .build();
   }
 

@@ -116,6 +116,7 @@ public interface Intent {
     map.put(ValueType.RESOURCE_REEXPORT, ResourceReexportIntent.class);
     map.put(ValueType.ROLE, RoleIntent.class);
     map.put(ValueType.RUNTIME_INSTRUCTION, RuntimeInstructionIntent.class);
+    map.put(ValueType.RUNTIME_VARIABLES, RuntimeVariablesIntent.class);
     map.put(ValueType.SCALE, ScaleIntent.class);
     map.put(ValueType.SECRET_REFERENCE, SecretReferenceIntent.class);
     map.put(ValueType.SIGNAL, SignalIntent.class);

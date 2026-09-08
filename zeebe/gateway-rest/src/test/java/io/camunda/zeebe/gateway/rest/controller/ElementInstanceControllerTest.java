@@ -24,10 +24,14 @@ import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.runtimevariables.RuntimeVariablesRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.value.RuntimeVariableScope;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -158,6 +162,86 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         .thenReturn(elementInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @Test
+  void shouldGetEffectiveRuntimeVariablesByDefault() {
+    // given
+    final var response =
+        new RuntimeVariablesRecord()
+            .setVariables(
+                new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of("orderId", "A-42"))));
+    when(elementInstanceServices.fetchRuntimeVariables(any(Long.class), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when / then
+    webClient
+        .get()
+        .uri(ELEMENTS_BASE_URL + "/123/variables")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json("{\"variables\":{\"orderId\":\"A-42\"}}", JsonCompareMode.STRICT);
+
+    Mockito.verify(elementInstanceServices)
+        .fetchRuntimeVariables(
+            123L, RuntimeVariableScope.EFFECTIVE, AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @Test
+  void shouldGetLocalRuntimeVariables() {
+    // given
+    final var response =
+        new RuntimeVariablesRecord()
+            .setVariables(
+                new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of("local", true))));
+    when(elementInstanceServices.fetchRuntimeVariables(any(Long.class), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when / then
+    webClient
+        .get()
+        .uri(ELEMENTS_BASE_URL + "/123/variables?scope=LOCAL")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json("{\"variables\":{\"local\":true}}", JsonCompareMode.STRICT);
+
+    Mockito.verify(elementInstanceServices)
+        .fetchRuntimeVariables(
+            123L, RuntimeVariableScope.LOCAL, AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @Test
+  void shouldGetLocalRuntimeVariablesWithLowercaseScope() {
+    // given
+    final var response = new RuntimeVariablesRecord();
+    when(elementInstanceServices.fetchRuntimeVariables(any(Long.class), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when / then
+    webClient
+        .get()
+        .uri(ELEMENTS_BASE_URL + "/123/variables?scope=local")
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    Mockito.verify(elementInstanceServices)
+        .fetchRuntimeVariables(
+            123L, RuntimeVariableScope.LOCAL, AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @Test
+  void shouldRejectInvalidRuntimeVariableScope() {
+    webClient
+        .get()
+        .uri(ELEMENTS_BASE_URL + "/123/variables?scope=unknown")
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
   }
 
   @Test

@@ -20,13 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.response.RuntimeVariables;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
+import io.camunda.client.api.search.enums.RuntimeVariableScope;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.instancio.Instancio;
@@ -364,6 +367,42 @@ public class ElementInstanceTest extends ClientRestTest {
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/element-instances/" + elementInstanceKey);
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldGetEffectiveRuntimeVariablesByDefault() {
+    // given
+    final long scopeKey = 123L;
+    gatewayService.onRuntimeVariablesRequest(
+        scopeKey,
+        new RuntimeVariablesResult().variables(Collections.singletonMap("orderId", "A-42")));
+
+    // when
+    final RuntimeVariables result = client.newRuntimeVariablesGetRequest(scopeKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/element-instances/123/variables");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+    assertThat(result.getVariables()).containsOnlyKeys("orderId").containsEntry("orderId", "A-42");
+  }
+
+  @Test
+  void shouldGetLocalRuntimeVariables() {
+    // given
+    final long scopeKey = 123L;
+    gatewayService.onRuntimeVariablesRequest(
+        scopeKey,
+        new RuntimeVariablesResult()
+            .variables(Collections.<String, Object>singletonMap("local", true)));
+
+    // when
+    client.newRuntimeVariablesGetRequest(scopeKey).scope(RuntimeVariableScope.LOCAL).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/element-instances/123/variables?scope=LOCAL");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 }

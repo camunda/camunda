@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -240,6 +242,32 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
+  public Optional<DirectBuffer> getVariablesAsDocument(
+      final long scopeKey, final IntPredicate canWriteDocument) {
+    collectedVariables.clear();
+    writer.wrap(documentResultBuffer, 0);
+    writer.reserveMapHeader();
+
+    final boolean exceeded =
+        visitVariables(
+            scopeKey,
+            name -> !collectedVariables.contains(name.getBuffer()),
+            (name, value) -> {
+              writer.writeString(name.getBuffer());
+              writer.writeRaw(value.getValue());
+              collectedVariables.add(new UnsafeBuffer(name.getBuffer()));
+            },
+            () -> !canWriteDocument.test(writer.getOffset()));
+    if (exceeded) {
+      return Optional.empty();
+    }
+
+    writer.writeReservedMapHeader(0, collectedVariables.size());
+    resultView.wrap(documentResultBuffer, 0, writer.getOffset());
+    return Optional.of(resultView);
+  }
+
+  @Override
   public DirectBuffer getVariablesAsDocument(
       final long scopeKey, final Collection<DirectBuffer> names) {
 
@@ -290,6 +318,32 @@ public class DbVariableState implements MutableVariableState {
 
     resultView.wrap(documentResultBuffer, 0, writer.getOffset());
     return resultView;
+  }
+
+  @Override
+  public Optional<DirectBuffer> getVariablesLocalAsDocument(
+      final long scopeKey, final IntPredicate canWriteDocument) {
+    writer.wrap(documentResultBuffer, 0);
+    writer.reserveMapHeader();
+    final MutableInteger variableCount = new MutableInteger();
+
+    final boolean exceeded =
+        visitVariablesLocal(
+            scopeKey,
+            name -> true,
+            (name, value) -> {
+              writer.writeString(name.getBuffer());
+              writer.writeRaw(value.getValue());
+              variableCount.increment();
+            },
+            () -> !canWriteDocument.test(writer.getOffset()));
+    if (exceeded) {
+      return Optional.empty();
+    }
+
+    writer.writeReservedMapHeader(0, variableCount.get());
+    resultView.wrap(documentResultBuffer, 0, writer.getOffset());
+    return Optional.of(resultView);
   }
 
   @Override
@@ -359,7 +413,7 @@ public class DbVariableState implements MutableVariableState {
    * Like {@link #visitVariablesLocal(long, Predicate, BiConsumer, BooleanSupplier)} but walks up
    * the scope hierarchy.
    */
-  private void visitVariables(
+  private boolean visitVariables(
       final long scopeKey,
       final Predicate<DbString> filter,
       final BiConsumer<DbString, VariableInstance> variableConsumer,
@@ -373,6 +427,7 @@ public class DbVariableState implements MutableVariableState {
       currentScope = getParentScopeKey(currentScope);
 
     } while (!completed && currentScope >= 0);
+    return completed;
   }
 
   /**
@@ -391,6 +446,7 @@ public class DbVariableState implements MutableVariableState {
       final BooleanSupplier completionCondition) {
     this.scopeKey.wrapLong(scopeKey);
 
+    final var completed = new MutableBoolean(false);
     variablesColumnFamily.whileEqualPrefix(
         this.scopeKey,
         (compositeKey, variable) -> {
@@ -400,8 +456,9 @@ public class DbVariableState implements MutableVariableState {
             variableConsumer.accept(name, variable);
           }
 
-          return !completionCondition.getAsBoolean();
+          completed.set(completionCondition.getAsBoolean());
+          return !completed.get();
         });
-    return false;
+    return completed.get();
   }
 }

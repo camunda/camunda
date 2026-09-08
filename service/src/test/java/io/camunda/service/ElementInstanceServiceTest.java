@@ -26,6 +26,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -33,9 +34,12 @@ import io.camunda.service.cache.ProcessCacheResult;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerFetchRuntimeVariablesRequest;
+import io.camunda.zeebe.protocol.record.value.RuntimeVariableScope;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +54,7 @@ public final class ElementInstanceServiceTest {
   private FlowNodeInstanceSearchClient client;
   private WaitStateSearchClient waitStateSearchClient;
   private ProcessCache processCache;
+  private StubbedBrokerClient brokerClient;
   @Mock private IncidentServices incidentServices;
   @Mock private CamundaAuthentication authentication;
 
@@ -59,21 +64,40 @@ public final class ElementInstanceServiceTest {
     waitStateSearchClient = mock(WaitStateSearchClient.class);
     processCache = mock(ProcessCache.class);
     incidentServices = mock(IncidentServices.class);
+    brokerClient = new StubbedBrokerClient();
+    final var executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new ElementInstanceServices(
             PHYSICAL_TENANT_ID,
-            mock(BrokerClient.class),
+            brokerClient,
             mock(SecurityContextProvider.class),
             client,
             waitStateSearchClient,
             processCache,
             incidentServices,
-            mock(ApiServicesExecutorProvider.class),
-            null);
+            executorProvider,
+            mock(BrokerRequestAuthorizationConverter.class));
 
     when(client.withSecurityContext(any())).thenReturn(client);
     when(waitStateSearchClient.withSecurityContext(any())).thenReturn(waitStateSearchClient);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
+  }
+
+  @Nested
+  class RuntimeVariables {
+
+    @Test
+    void shouldFetchRuntimeVariablesFromRequestedScope() {
+      // when
+      services.fetchRuntimeVariables(123L, RuntimeVariableScope.LOCAL, authentication);
+
+      // then
+      final BrokerFetchRuntimeVariablesRequest request = brokerClient.getSingleBrokerRequest();
+      assertThat(request.getRequestWriter().getScopeKey()).isEqualTo(123L);
+      assertThat(request.getRequestWriter().getScope()).isEqualTo(RuntimeVariableScope.LOCAL);
+      assertThat(request.getPartitionGroup()).isEqualTo(PHYSICAL_TENANT_ID);
+    }
   }
 
   @Nested

@@ -75,6 +75,7 @@ import io.camunda.client.protocol.rest.ResourceResult;
 import io.camunda.client.protocol.rest.RoleCreateResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.client.protocol.rest.RoleUpdateResult;
+import io.camunda.client.protocol.rest.RuntimeVariablesResult;
 import io.camunda.client.protocol.rest.SearchQueryResponse;
 import io.camunda.client.protocol.rest.SecretListResult;
 import io.camunda.client.protocol.rest.SecretResolveResult;
@@ -471,6 +472,13 @@ public class RestGatewayService {
   public void onElementInstanceRequest(
       final long elementInstanceKey, final ElementInstanceResult response) {
     registerGet(RestGatewayPaths.getElementInstanceUrl(elementInstanceKey), response);
+  }
+
+  public void onRuntimeVariablesRequest(
+      final long scopeKey, final RuntimeVariablesResult response) {
+    register(
+        WireMock.get(WireMock.urlPathEqualTo(RestGatewayPaths.getRuntimeVariablesUrl(scopeKey))),
+        response);
   }
 
   public void onCreateClusterVariableRequest(final ClusterVariableResult response) {

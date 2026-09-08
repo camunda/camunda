@@ -61,6 +61,7 @@ public final class ValueTypes {
           ValueType.CONDITIONAL_SUBSCRIPTION,
           ValueType.CONDITIONAL_EVALUATION,
           ValueType.EXPRESSION,
+          ValueType.RUNTIME_VARIABLES,
           ValueType.GLOBAL_LISTENER,
           ValueType.AGENT_INSTANCE,
           ValueType.AGENT_HISTORY);

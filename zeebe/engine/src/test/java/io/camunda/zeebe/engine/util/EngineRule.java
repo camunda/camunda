@@ -54,6 +54,7 @@ import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
 import io.camunda.zeebe.engine.util.client.ResourceFetchClient;
 import io.camunda.zeebe.engine.util.client.RoleClient;
+import io.camunda.zeebe.engine.util.client.RuntimeVariablesClient;
 import io.camunda.zeebe.engine.util.client.ScaleClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.engine.util.client.TenantClient;
@@ -536,6 +537,10 @@ public final class EngineRule extends ExternalResource {
 
   public ExpressionClient expression() {
     return new ExpressionClient(environmentRule);
+  }
+
+  public RuntimeVariablesClient runtimeVariables() {
+    return new RuntimeVariablesClient(environmentRule, getCommandResponseWriter());
   }
 
   public JobActivationClient jobs() {
