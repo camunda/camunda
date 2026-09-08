@@ -8,12 +8,14 @@
 package io.camunda.zeebe.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,11 +25,15 @@ import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1.Complete
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.CreateAgentInstanceResponse;
 import io.camunda.client.api.response.PublishMessageResponse;
+import io.camunda.client.api.response.UpdateAgentInstanceResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
@@ -100,33 +106,106 @@ class WorkerTest {
     final var jobClient = mock(JobClient.class);
     final var worker = newWorker(mock(CamundaClient.class), zeroDelayProperties());
     final long processInstanceKey = 777L;
+    final long elementInstanceKey = 111L;
 
     // round 1 — one tool activated, completion condition not yet fulfilled
-    var round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    var round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 201L, "lease-1");
     assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
     assertThat(round.completionConditionFulfilled()).isFalse();
 
     // round 2 — two tools activated within the same job result (parallel tool calls)
-    round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 202L, "lease-2");
     assertThat(round.activatedElements())
         .containsExactly("tool-calculate-score", "tool-send-notification");
     assertThat(round.completionConditionFulfilled()).isFalse();
 
     // round 3 — one tool activated again, revisiting round 1's tool
-    round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 203L, "lease-3");
     assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
     assertThat(round.completionConditionFulfilled()).isFalse();
 
     // round 4 — no tools activated; the completion condition is fulfilled instead
-    round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 204L, "lease-4");
     assertThat(round.activatedElements()).isEmpty();
     assertThat(round.completionConditionFulfilled()).isTrue();
 
     // and — the round-counter entry for this process instance was evicted once round 4
     // completed: a further call restarts the schedule from round 1 rather than continuing
     // past the end of it
-    round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 205L, "lease-5");
     assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+  }
+
+  @Test
+  void shouldSimulateAgentInstanceOnlyWhenEnabledWithoutChangingToolActivations() {
+    // given — the same fixed schedule as the disabled case, but with agent-instance
+    // simulation turned on
+    final var jobClient = mock(JobClient.class);
+    final var client = mock(CamundaClient.class);
+    final var worker = newWorker(client, agentInstanceSimulationProperties());
+    final long processInstanceKey = 888L;
+    final long elementInstanceKey = 555L;
+    final long agentInstanceKey = 4242L;
+    final var createStep1 = mockCreateAgentInstanceCommand(client, agentInstanceKey);
+    final var updateStep1 = mockUpdateAgentInstanceCommand(client);
+
+    // round 1 — CREATE only, never UPDATE
+    var round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 301L, "lease-1");
+    assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+    verify(client, times(1)).newCreateAgentInstanceCommand();
+    verify(client, never()).newUpdateAgentInstanceCommand(anyLong());
+
+    // rounds 2-4 — UPDATE against the cached agent-instance key; tool activations are
+    // byte-identical to the disabled-simulation test above
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 302L, "lease-2");
+    assertThat(round.activatedElements())
+        .containsExactly("tool-calculate-score", "tool-send-notification");
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 303L, "lease-3");
+    assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 304L, "lease-4");
+    assertThat(round.activatedElements()).isEmpty();
+    assertThat(round.completionConditionFulfilled()).isTrue();
+
+    verify(client, times(1)).newCreateAgentInstanceCommand();
+    verify(client, times(3)).newUpdateAgentInstanceCommand(agentInstanceKey);
+
+    // and — every call (the one CREATE, all three UPDATEs) addressed the same element
+    // instance, since the ad-hoc sub process's own element instance never changes across
+    // rounds
+    final var createElementInstanceKeys = ArgumentCaptor.forClass(Long.class);
+    verify(createStep1).elementInstanceKey(createElementInstanceKeys.capture());
+    assertThat(createElementInstanceKeys.getValue()).isEqualTo(elementInstanceKey);
+
+    final var updateElementInstanceKeys = ArgumentCaptor.forClass(Long.class);
+    verify(updateStep1, times(3)).elementInstanceKey(updateElementInstanceKeys.capture());
+    assertThat(updateElementInstanceKeys.getAllValues()).containsOnly(elementInstanceKey);
+
+    // and — a further round restarts both the tool schedule and the agent-instance
+    // simulation from scratch, proving the cached agent-instance-key map entry was evicted
+    // alongside the round counter
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 305L, "lease-5");
+    assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+    verify(client, times(2)).newCreateAgentInstanceCommand();
   }
 
   @Test
@@ -162,10 +241,18 @@ class WorkerTest {
    */
   @SuppressWarnings("unchecked")
   private static AdHocSubProcessRoundResult driveAdHocSubProcessRound(
-      final Worker worker, final JobClient jobClient, final long processInstanceKey) {
+      final Worker worker,
+      final JobClient jobClient,
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final long jobKey,
+      final String leaseToken) {
     final var job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn(AD_HOC_SUB_PROCESS_JOB_TYPE);
     when(job.getProcessInstanceKey()).thenReturn(processInstanceKey);
+    when(job.getElementInstanceKey()).thenReturn(elementInstanceKey);
+    when(job.getKey()).thenReturn(jobKey);
+    when(job.getLeaseToken()).thenReturn(leaseToken);
 
     final var completeStep = mock(CompleteJobCommandStep1.class);
     final CamundaFuture<Object> future = mock(CamundaFuture.class);
@@ -199,6 +286,54 @@ class WorkerTest {
     final var props = new WorkerProperties();
     props.setCompletionDelay(Duration.ZERO);
     return props;
+  }
+
+  private static WorkerProperties agentInstanceSimulationProperties() {
+    final var props = zeroDelayProperties();
+    props.setAgentInstanceSimulationEnabled(true);
+    return props;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static CreateAgentInstanceCommandStep1 mockCreateAgentInstanceCommand(
+      final CamundaClient client, final long agentInstanceKey) {
+    final var step1 = mock(CreateAgentInstanceCommandStep1.class);
+    final var step2 = mock(CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep2.class);
+    final var step3 = mock(CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep3.class);
+    final var step4 = mock(CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep4.class);
+    final var step5 = mock(CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep5.class);
+    final CamundaFuture<CreateAgentInstanceResponse> future = mock(CamundaFuture.class);
+    final var response = mock(CreateAgentInstanceResponse.class);
+
+    when(client.newCreateAgentInstanceCommand()).thenReturn(step1);
+    when(step1.elementInstanceKey(anyLong())).thenReturn(step2);
+    when(step2.jobKey(anyLong())).thenReturn(step3);
+    when(step3.jobLease(anyString())).thenReturn(step4);
+    when(step4.history(any())).thenReturn(step5);
+    when(step5.send()).thenReturn(future);
+    when(future.join()).thenReturn(response);
+    when(response.getAgentInstanceKey()).thenReturn(agentInstanceKey);
+    return step1;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static UpdateAgentInstanceCommandStep1 mockUpdateAgentInstanceCommand(
+      final CamundaClient client) {
+    final var step1 = mock(UpdateAgentInstanceCommandStep1.class);
+    final var step2 = mock(UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep2.class);
+    final var step3 = mock(UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep3.class);
+    final var step4 = mock(UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep4.class);
+    final CamundaFuture<UpdateAgentInstanceResponse> future = mock(CamundaFuture.class);
+
+    when(client.newUpdateAgentInstanceCommand(anyLong())).thenReturn(step1);
+    when(step1.elementInstanceKey(anyLong())).thenReturn(step2);
+    when(step2.status(any())).thenReturn(step2);
+    when(step2.jobKey(anyLong())).thenReturn(step3);
+    when(step3.jobLease(anyString())).thenReturn(step4);
+    when(step4.history(any())).thenReturn(step4);
+    when(step4.send()).thenReturn(future);
+    when(future.join()).thenReturn(mock(UpdateAgentInstanceResponse.class));
+    return step1;
   }
 
   private static long timeHandleJob(
