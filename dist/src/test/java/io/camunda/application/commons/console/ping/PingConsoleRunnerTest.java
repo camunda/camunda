@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 
-public class PingConsoleRunnerIT {
+public class PingConsoleRunnerTest {
 
   private static final BrokerTopologyManager BROKER_TOPOLOGY_MANAGER =
       mock(BrokerTopologyManager.class);
