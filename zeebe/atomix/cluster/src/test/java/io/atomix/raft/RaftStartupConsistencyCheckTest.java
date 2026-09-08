@@ -7,6 +7,7 @@
  */
 package io.atomix.raft;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
@@ -23,7 +24,9 @@ import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftStartupConsistencyCheckTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

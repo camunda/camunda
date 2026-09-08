@@ -7,6 +7,7 @@
  */
 package io.atomix.raft;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -18,8 +19,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.Parameterized.Parameter;
 
+@Category(SlowTest.class)
 public class RaftServerDisconnectTest {
 
   @Rule @Parameter public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
