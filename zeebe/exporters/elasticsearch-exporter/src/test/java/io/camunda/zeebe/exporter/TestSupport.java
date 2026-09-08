@@ -150,7 +150,9 @@ final class TestSupport {
             ValueType.JOB_METRICS_BATCH,
             ValueType.RESOURCE_REEXPORT,
             ValueType.SECRET_REFERENCE,
-            ValueType.BUFFERED_COMMAND);
+            ValueType.BUFFERED_COMMAND,
+            // internal engine-to-engine record, never exported by design
+            ValueType.AGENT_HISTORY_BATCH);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 
