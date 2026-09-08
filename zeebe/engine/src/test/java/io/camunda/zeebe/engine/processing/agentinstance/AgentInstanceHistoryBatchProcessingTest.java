@@ -971,6 +971,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(999999999L)
+            .withJobLease(jobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -5221,6 +5222,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job1Key)
+            .withJobLease(job1Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
