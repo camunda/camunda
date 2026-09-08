@@ -92,11 +92,12 @@ public final class CamundaRdbmsTestApplication
       }
     }
 
-    LOGGER.info("Start spring application ...");
-    super.start();
-    Awaitility.await("until spring context is started").until(this::isStarted);
-    LOGGER.info("Spring application started");
-    return this;
+    return startSpringApplication();
+  }
+
+  public CamundaRdbmsTestApplication restart() {
+    super.stop();
+    return startSpringApplication();
   }
 
   @Override
@@ -147,6 +148,14 @@ public final class CamundaRdbmsTestApplication
     }
     return super.bean(RdbmsServiceFactory.class)
         .createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
+  }
+
+  private CamundaRdbmsTestApplication startSpringApplication() {
+    LOGGER.info("Start spring application ...");
+    super.start();
+    Awaitility.await("until spring context is started").until(this::isStarted);
+    LOGGER.info("Spring application started");
+    return this;
   }
 
   private void setSecondaryStorageToRdbms() {

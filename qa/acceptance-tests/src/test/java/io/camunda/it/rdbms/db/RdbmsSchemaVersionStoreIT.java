@@ -32,6 +32,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 @Execution(ExecutionMode.SAME_THREAD)
 final class RdbmsSchemaVersionStoreIT {
 
+  private static final long PARTITION_ID = 0L;
+
   @RegisterExtension
   static final CamundaRdbmsInvocationContextProviderExtension TEST_APPLICATIONS =
       CamundaRdbmsInvocationContextProviderExtension.isolated();
@@ -77,5 +79,17 @@ final class RdbmsSchemaVersionStoreIT {
       // this class observes a consistent, correctly migrated state.
       versionStore.recordCurrentVersion();
     }
+  }
+
+  @TestTemplate
+  void shouldRestartAfterPurgingHistory(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    testApplication.getRdbmsService().createWriter(PARTITION_ID).getRdbmsPurger().purgeRdbms();
+
+    // when
+    testApplication.restart();
+
+    // then
+    assertThatCode(() -> testApplication.bean(DataSource.class)).doesNotThrowAnyException();
   }
 }
