@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render} from 'vitest-browser-react';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -25,15 +25,19 @@ const baseProps = {
 
 describe('<TaskDetailsHeader />', () => {
 	it('should render task name and process name', async () => {
-		const screen = await render(<TaskDetailsHeader {...baseProps} />);
+		const screen = await renderWithRouter(() => <TaskDetailsHeader {...baseProps} />, {
+			path: '/shadcn/tasklist/$userTaskKey',
+			initialEntry: '/shadcn/tasklist/2251799813685281',
+		});
 
 		await expect.element(screen.getByText('Review invoice')).toBeVisible();
 		await expect.element(screen.getByText('Invoice process')).toBeVisible();
 	});
 
 	it('should render completion label with assignee for COMPLETED task', async () => {
-		const screen = await render(
-			<TaskDetailsHeader {...baseProps} taskState="COMPLETED" assignee={currentUser.username} />,
+		const screen = await renderWithRouter(
+			() => <TaskDetailsHeader {...baseProps} taskState="COMPLETED" assignee={currentUser.username} />,
+			{path: '/shadcn/tasklist/$userTaskKey', initialEntry: '/shadcn/tasklist/2251799813685281'},
 		);
 
 		await expect.element(screen.getByText(/Completed by/)).toBeVisible();
@@ -42,7 +46,10 @@ describe('<TaskDetailsHeader />', () => {
 	});
 
 	it('should render "Completed" without assignee for COMPLETED task', async () => {
-		const screen = await render(<TaskDetailsHeader {...baseProps} taskState="COMPLETED" assignee={null} />);
+		const screen = await renderWithRouter(
+			() => <TaskDetailsHeader {...baseProps} taskState="COMPLETED" assignee={null} />,
+			{path: '/shadcn/tasklist/$userTaskKey', initialEntry: '/shadcn/tasklist/2251799813685281'},
+		);
 
 		await expect.element(screen.getByText('Completed')).toBeVisible();
 		await expect.element(screen.getByTestId('completion-label')).toBeVisible();
@@ -51,7 +58,10 @@ describe('<TaskDetailsHeader />', () => {
 	it.for([{taskState: 'CREATED'}, {taskState: 'CANCELED'}, {taskState: 'FAILED'}] as const)(
 		'should render assignee tag and assign button for $taskState task',
 		async ({taskState}) => {
-			const screen = await render(<TaskDetailsHeader {...baseProps} taskState={taskState} assignee={null} />);
+			const screen = await renderWithRouter(
+				() => <TaskDetailsHeader {...baseProps} taskState={taskState} assignee={null} />,
+				{path: '/shadcn/tasklist/$userTaskKey', initialEntry: '/shadcn/tasklist/2251799813685281'},
+			);
 
 			await expect.element(screen.getByTestId('assignee')).toBeVisible();
 			await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
@@ -61,7 +71,10 @@ describe('<TaskDetailsHeader />', () => {
 	it.for([{taskState: 'UPDATING'}, {taskState: 'CANCELING'}] as const)(
 		'should render transition loading text and assignee for $taskState task',
 		async ({taskState}) => {
-			const screen = await render(<TaskDetailsHeader {...baseProps} taskState={taskState} assignee="john.doe" />);
+			const screen = await renderWithRouter(
+				() => <TaskDetailsHeader {...baseProps} taskState={taskState} assignee="john.doe" />,
+				{path: '/shadcn/tasklist/$userTaskKey', initialEntry: '/shadcn/tasklist/2251799813685281'},
+			);
 
 			await expect.element(screen.getByTestId('assignee')).toBeVisible();
 			await expect.element(screen.getByRole('button', {name: 'Assign to me'})).not.toBeInTheDocument();
@@ -69,8 +82,9 @@ describe('<TaskDetailsHeader />', () => {
 	);
 
 	it('should render only assignee for COMPLETING task', async () => {
-		const screen = await render(
-			<TaskDetailsHeader {...baseProps} taskState="COMPLETING" assignee={currentUser.username} />,
+		const screen = await renderWithRouter(
+			() => <TaskDetailsHeader {...baseProps} taskState="COMPLETING" assignee={currentUser.username} />,
+			{path: '/shadcn/tasklist/$userTaskKey', initialEntry: '/shadcn/tasklist/2251799813685281'},
 		);
 
 		await expect.element(screen.getByTestId('assignee')).toBeVisible();
@@ -78,13 +92,19 @@ describe('<TaskDetailsHeader />', () => {
 	});
 
 	it('should render only the assign button for ASSIGNING task', async () => {
-		const screen = await render(<TaskDetailsHeader {...baseProps} taskState="ASSIGNING" />);
+		const screen = await renderWithRouter(() => <TaskDetailsHeader {...baseProps} taskState="ASSIGNING" />, {
+			path: '/shadcn/tasklist/$userTaskKey',
+			initialEntry: '/shadcn/tasklist/2251799813685281',
+		});
 
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
 	});
 
 	it('should render only transition loading text for CREATING task', async () => {
-		const screen = await render(<TaskDetailsHeader {...baseProps} taskState="CREATING" />);
+		const screen = await renderWithRouter(() => <TaskDetailsHeader {...baseProps} taskState="CREATING" />, {
+			path: '/shadcn/tasklist/$userTaskKey',
+			initialEntry: '/shadcn/tasklist/2251799813685281',
+		});
 
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).not.toBeInTheDocument();
 	});
