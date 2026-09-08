@@ -29,8 +29,7 @@ import org.slf4j.Logger;
  * <p>Only processors that implement {@link SuspensionAware} are gated; every other command is
  * processed normally. An implementing processor's {@link SuspensionAware#onSuspended} classifies
  * the command as {@code PROCESS}, {@code REJECT}, or {@code BUFFER} while {@code SUSPENDED}. While
- * {@code RESUMING}, {@link SuspensionAware#onResuming} classifies instead (default {@code
- * PROCESS}).
+ * {@code RESUMING}, {@link SuspensionAware#onResuming} classifies instead.
  */
 @NullMarked
 public final class SuspensionBehavior {

@@ -165,4 +165,9 @@ public class ProcessInstanceBusinessIdAssignProcessor
   public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
     return SuspensionAction.PROCESS;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

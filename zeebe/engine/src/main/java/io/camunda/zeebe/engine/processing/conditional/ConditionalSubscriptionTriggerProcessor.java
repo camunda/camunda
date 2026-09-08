@@ -115,4 +115,9 @@ public class ConditionalSubscriptionTriggerProcessor
   public SuspensionAction onSuspended(final TypedRecord<ConditionalSubscriptionRecord> record) {
     return SuspensionAction.BUFFER;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ConditionalSubscriptionRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

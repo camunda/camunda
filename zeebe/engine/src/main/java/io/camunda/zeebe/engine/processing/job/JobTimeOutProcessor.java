@@ -106,4 +106,9 @@ public final class JobTimeOutProcessor
     // parked (Job.SUSPENDED) instead of looping on rejected TIME_OUT commands forever.
     return SuspensionAction.PROCESS;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

@@ -1523,16 +1523,6 @@ public final class ProcessInstanceModificationModifyProcessor
     }
   }
 
-  @Override
-  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceModificationRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
-  }
-
-  @Override
-  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceModificationRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
-  }
-
   /**
    * Exception that can be thrown when child instance is being modified. If all active element
    * instances of this process are being terminated this exception is thrown. The reason for this is

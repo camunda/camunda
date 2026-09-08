@@ -82,4 +82,9 @@ public final class JobCancelProcessor
     // cancellation should still work during suspension
     return SuspensionAction.PROCESS;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

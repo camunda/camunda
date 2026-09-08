@@ -144,6 +144,37 @@ final class SuspensionBehaviorTest {
         .isEqualTo(SuspensionAction.REJECT);
   }
 
+  @ParameterizedTest
+  @EnumSource(State.class)
+  void shouldApplyDefaultClassificationToInternalCommand(final State state) {
+    // given
+    markerIs(state);
+    final var command = command();
+    when(command.isInternalCommand()).thenReturn(true);
+
+    // when
+    final var result = suspensionBehavior.resolve(command, defaultProcessor());
+
+    // then
+    assertThat(result.outcome())
+        .isEqualTo(state == State.SUSPENDED ? SuspensionAction.BUFFER : SuspensionAction.PROCESS);
+  }
+
+  @ParameterizedTest
+  @EnumSource(State.class)
+  void shouldRejectExternalCommandByDefault(final State state) {
+    // given
+    markerIs(state);
+    final var command = command();
+    when(command.isInternalCommand()).thenReturn(false);
+
+    // when
+    final var result = suspensionBehavior.resolve(command, defaultProcessor());
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
+  }
+
   @Test
   void shouldReturnProcessInstanceKeyResolvedFromCommandValue() {
     // given
@@ -272,6 +303,10 @@ final class SuspensionBehaviorTest {
     return mock(TypedRecordProcessor.class);
   }
 
+  private static TypedRecordProcessor<?> defaultProcessor() {
+    return new DefaultSuspensionAwareProcessor();
+  }
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static TypedRecordProcessor<?> overridingProcessor(
       final SuspensionAware.@Nullable SuspensionAction behavior) {
@@ -289,4 +324,8 @@ final class SuspensionBehaviorTest {
     when(((SuspensionAware) processor).onResuming(any())).thenReturn(behavior);
     return processor;
   }
+
+  private static final class DefaultSuspensionAwareProcessor
+      implements TypedRecordProcessor<ProcessInstanceRecord>,
+          SuspensionAware<ProcessInstanceRecord> {}
 }

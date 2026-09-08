@@ -70,6 +70,11 @@ public final class ProcessInstanceBatchTerminateProcessor
     return SuspensionAction.PROCESS;
   }
 
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBatchRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
   private List<ElementInstance> getChildInstances(
       final ProcessInstanceBatchRecord recordValue, final int limit) {
     final CopyOnWriteArrayList<ElementInstance> elementInstances = new CopyOnWriteArrayList<>();

@@ -72,4 +72,9 @@ public final class JobYieldProcessor
     // of being lost to a rejection.
     return SuspensionAction.BUFFER;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

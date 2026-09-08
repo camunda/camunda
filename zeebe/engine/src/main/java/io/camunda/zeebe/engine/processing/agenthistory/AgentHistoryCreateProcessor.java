@@ -160,14 +160,4 @@ public final class AgentHistoryCreateProcessor
     rejectionWriter.appendRejection(command, rejectionType, reason);
     responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
   }
-
-  @Override
-  public SuspensionAction onSuspended(final TypedRecord<AgentHistoryRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
-  }
-
-  @Override
-  public SuspensionAction onResuming(final TypedRecord<AgentHistoryRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
-  }
 }

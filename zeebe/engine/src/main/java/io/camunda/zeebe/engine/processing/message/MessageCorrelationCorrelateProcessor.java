@@ -307,4 +307,9 @@ public final class MessageCorrelationCorrelateProcessor
   public SuspensionAction onSuspended(final TypedRecord<MessageCorrelationRecord> record) {
     return SuspensionAction.PROCESS;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<MessageCorrelationRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

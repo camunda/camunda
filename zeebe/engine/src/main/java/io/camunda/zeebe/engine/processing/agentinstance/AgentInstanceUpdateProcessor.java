@@ -468,14 +468,4 @@ public final class AgentInstanceUpdateProcessor
     rejectionWriter.appendRejection(command, rejectionType, reason);
     responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
   }
-
-  @Override
-  public SuspensionAction onSuspended(final TypedRecord<AgentInstanceRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
-  }
-
-  @Override
-  public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
-  }
 }

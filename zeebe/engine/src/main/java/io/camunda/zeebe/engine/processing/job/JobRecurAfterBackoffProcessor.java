@@ -96,4 +96,9 @@ public class JobRecurAfterBackoffProcessor
   public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
     return SuspensionAction.BUFFER;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

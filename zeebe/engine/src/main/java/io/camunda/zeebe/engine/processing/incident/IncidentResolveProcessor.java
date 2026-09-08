@@ -310,14 +310,4 @@ public final class IncidentResolveProcessor
   private static boolean isJobRelatedIncident(final long jobKey) {
     return jobKey > 0;
   }
-
-  @Override
-  public SuspensionAction onSuspended(final TypedRecord<IncidentRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
-  }
-
-  @Override
-  public SuspensionAction onResuming(final TypedRecord<IncidentRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
-  }
 }

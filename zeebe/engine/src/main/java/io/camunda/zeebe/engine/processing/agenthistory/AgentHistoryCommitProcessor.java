@@ -112,4 +112,9 @@ public final class AgentHistoryCommitProcessor
   public SuspensionAction onSuspended(final TypedRecord<AgentHistoryRecord> record) {
     return SuspensionAction.PROCESS;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AgentHistoryRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

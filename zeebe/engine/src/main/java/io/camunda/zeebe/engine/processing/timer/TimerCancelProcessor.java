@@ -56,4 +56,9 @@ public final class TimerCancelProcessor
   public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
     return SuspensionAction.PROCESS;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

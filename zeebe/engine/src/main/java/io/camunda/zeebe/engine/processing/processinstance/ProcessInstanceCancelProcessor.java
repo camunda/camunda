@@ -96,6 +96,11 @@ public final class ProcessInstanceCancelProcessor
     return SuspensionAction.PROCESS;
   }
 
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 

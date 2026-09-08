@@ -166,6 +166,11 @@ public final class BufferedCommandDrainProcessor
     return SuspensionAction.PROCESS;
   }
 
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<BufferedCommandRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
   private void appendBufferedCommand(final BufferedCommand buffered) {
     final var value = buffered.command();
     commandWriter.appendFollowUpCommand(

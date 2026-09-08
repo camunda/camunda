@@ -137,4 +137,9 @@ public final class ProcessInstanceBatchActivateProcessor
   public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceBatchRecord> record) {
     return SuspensionAction.BUFFER;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBatchRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

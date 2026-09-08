@@ -181,18 +181,6 @@ public class AdHocSubProcessInstructionActivateProcessor
         command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue(), command);
   }
 
-  @Override
-  public SuspensionAction onSuspended(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
-    // external commands are rejected, not buffered: buffering intercepts before authorize() runs,
-    // so a queued external command would replay as internal on drain and skip authorization
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
-  }
-
-  @Override
-  public SuspensionAction onResuming(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
-  }
-
   private void writeRejectionError(
       final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final RejectionType rejectionType,

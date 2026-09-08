@@ -70,16 +70,6 @@ public class AdHocSubProcessInstructionCompleteProcessor
                 rejectionWriter.appendRejection(record, rejection.type(), rejection.reason()));
   }
 
-  @Override
-  public SuspensionAction onSuspended(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
-  }
-
-  @Override
-  public SuspensionAction onResuming(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
-  }
-
   private BpmnElementContext createBpmnElementContext(final ElementInstance elementInstance) {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());

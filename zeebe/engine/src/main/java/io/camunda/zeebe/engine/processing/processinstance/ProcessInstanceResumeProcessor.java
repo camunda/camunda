@@ -97,6 +97,11 @@ public final class ProcessInstanceResumeProcessor
     return SuspensionAction.PROCESS;
   }
 
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
   private Either<Rejection, ElementInstance> validateNotFound(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
     if (elementInstance == null

@@ -179,6 +179,11 @@ public final class ProcessInstanceResumeJobsProcessor
     return SuspensionAction.PROCESS;
   }
 
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
   private void reject(final TypedRecord<ProcessInstanceRecord> command, final String reason) {
     rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
   }

@@ -280,4 +280,9 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     // can correlate a still-buffered message while later REOPEN commands are still draining.
     return SuspensionAction.PROCESS;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessMessageSubscriptionRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }

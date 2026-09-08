@@ -78,4 +78,9 @@ public final class AgentInstanceCompleteProcessor
   public SuspensionAction onSuspended(final TypedRecord<AgentInstanceRecord> record) {
     return SuspensionAction.PROCESS;
   }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
 }
