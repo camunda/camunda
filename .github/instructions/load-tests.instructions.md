@@ -59,6 +59,15 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    A plain `make -n <target>` dry run — or the golden file tests, which never set this variable on
    the command line — will not catch this class of regression.
 
+## Choosing a language for new tooling
+
+When adding or extending a load-test script (metrics, reporting, profiling, ops helpers), follow
+the language standard in
+[`load-tests/docs/scripts/README.md`](https://github.com/camunda/camunda/blob/main/load-tests/docs/scripts/README.md#choosing-a-language-for-new-tooling):
+Python is the default for non-trivial operational/reporting scripts; shell is for thin wrappers and
+glue only; Go is for a maintained binary, stronger compile-time guarantees, parallelism/performance
+work, or a real multi-command CLI.
+
 ## What gets backported
 
 **Never backport** (update the versioned folder on `main` instead):
