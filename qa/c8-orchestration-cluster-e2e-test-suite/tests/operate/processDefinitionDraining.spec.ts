@@ -7,7 +7,7 @@
  */
 
 import {test} from 'fixtures';
-import {expect} from '@playwright/test';
+import {expect, type Locator, type Page} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome, tooltipWithText} from '@pages/UtilitiesPage';
 import {
@@ -38,6 +38,28 @@ const UI_REFRESH_TIMEOUT = 15_000;
 const processDefinitionId = uniquePrefixedId('draining-ui');
 
 let processInstanceKey: string;
+
+/**
+ * Opens Operate and waits for its shell, retrying the navigation once: the app
+ * occasionally takes longer than the default expect timeout to come up on a
+ * loaded runner, which would fail a test before it asserts anything.
+ */
+async function openOperateHome(
+  page: Page,
+  operateHomePage: {operateBanner: Locator},
+) {
+  await navigateToAppHome(page, 'operate');
+  await waitForAssertion({
+    assertion: async () => {
+      await expect(operateHomePage.operateBanner).toBeVisible({
+        timeout: UI_REFRESH_TIMEOUT,
+      });
+    },
+    onFailure: async () => {
+      await navigateToAppHome(page, 'operate');
+    },
+  });
+}
 
 test.beforeAll(async ({request}) => {
   const {processDefinitionKey} =
@@ -71,8 +93,7 @@ test.describe('Operate Process Definition Draining', () => {
     operateHomePage,
     operateDashboardPage,
   }) => {
-    await navigateToAppHome(page, 'operate');
-    await expect(operateHomePage.operateBanner).toBeVisible();
+    await openOperateHome(page, operateHomePage);
 
     const item =
       operateDashboardPage.instancesByProcessItemByName(processDefinitionId);
@@ -95,8 +116,7 @@ test.describe('Operate Process Definition Draining', () => {
     operateProcessesPage,
     operateFiltersPanelPage,
   }) => {
-    await navigateToAppHome(page, 'operate');
-    await expect(operateHomePage.operateBanner).toBeVisible();
+    await openOperateHome(page, operateHomePage);
     await operateHomePage.clickProcessesTab();
 
     // The tag replaces the delete action in the diagram panel header, which only
@@ -148,8 +168,7 @@ test.describe('Operate Process Definition Draining', () => {
   }) => {
     // The per-view tests above only prove the marker renders; this one pins down
     // what it says, so a reworded or half-migrated view is caught.
-    await navigateToAppHome(page, 'operate');
-    await expect(operateHomePage.operateBanner).toBeVisible();
+    await openOperateHome(page, operateHomePage);
 
     const item =
       operateDashboardPage.instancesByProcessItemByName(processDefinitionId);
@@ -253,8 +272,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
 
     await drainProcessDefinition(request, processDefinitionKey);
 
-    await navigateToAppHome(page, 'operate');
-    await expect(operateHomePage.operateBanner).toBeVisible();
+    await openOperateHome(page, operateHomePage);
 
     const item = operateDashboardPage.instancesByProcessItemByName(
       deletedProcessDefinitionId,
@@ -327,8 +345,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
 
     await drainProcessDefinition(request, processDefinitionKey);
 
-    await navigateToAppHome(page, 'operate');
-    await expect(operateHomePage.operateBanner).toBeVisible();
+    await openOperateHome(page, operateHomePage);
 
     const item = operateDashboardPage.instancesByProcessItemByName(
       incidentProcessDefinitionId,
