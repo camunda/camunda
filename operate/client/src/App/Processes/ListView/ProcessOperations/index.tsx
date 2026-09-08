@@ -12,6 +12,7 @@ import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DrainingTag} from 'modules/components/DrainingTag';
+import {DeletedTag} from 'modules/components/DeletedTag';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
@@ -64,6 +65,7 @@ const ProcessOperations: React.FC<Props> = observer(
               align="top-left"
             />
           )}
+          {isDeleted && <DeletedTag align="top-left" />}
           {!isDraining && !isDeleted && (
             <OperationItems>
               <DangerButton

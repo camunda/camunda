@@ -506,7 +506,7 @@ describe('<ProcessOperations />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should hide delete button when definition is deleted', async () => {
+  it('should show deleted tag instead of delete button when definition is deleted', async () => {
     mockSearchProcessDefinitions().withSuccess({
       items: [
         {
@@ -535,13 +535,12 @@ describe('<ProcessOperations />', () => {
       {wrapper: Wrapper},
     );
 
-    await waitFor(() => {
-      expect(
-        screen.queryByRole('button', {
-          name: /^delete process definition/i,
-        }),
-      ).not.toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('deleted-tag')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /^delete process definition/i,
+      }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByTestId('draining-tag')).not.toBeInTheDocument();
   });
 
