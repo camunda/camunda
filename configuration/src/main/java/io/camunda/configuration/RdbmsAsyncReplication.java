@@ -10,6 +10,8 @@ package io.camunda.configuration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RdbmsAsyncReplication {
 
@@ -23,6 +25,7 @@ public class RdbmsAsyncReplication {
   private Duration delay;
   private Duration queueDebounceTime = ReplicationConfiguration.DEFAULT_QUEUE_DEBOUNCE_TIME;
   private int queueCapacity = ReplicationConfiguration.DEFAULT_QUEUE_CAPACITY;
+  private RegionAwareness regionAwareness = new RegionAwareness();
 
   public boolean isEnabled() {
     return enabled;
@@ -94,5 +97,80 @@ public class RdbmsAsyncReplication {
 
   public void setPauseOnMaxLagExceeded(final boolean pauseOnMaxLagExceeded) {
     this.pauseOnMaxLagExceeded = pauseOnMaxLagExceeded;
+  }
+
+  public RegionAwareness getRegionAwareness() {
+    return regionAwareness;
+  }
+
+  public void setRegionAwareness(final RegionAwareness regionAwareness) {
+    this.regionAwareness = regionAwareness;
+  }
+
+  /**
+   * Mirrors {@link ReplicationConfiguration.RegionAwarenessConfiguration}; see there for the design
+   * rationale.
+   */
+  public static class RegionAwareness {
+
+    private boolean enabled = false;
+    private String primaryRegion;
+    private List<Region> regions = new ArrayList<>();
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getPrimaryRegion() {
+      return primaryRegion;
+    }
+
+    public void setPrimaryRegion(final String primaryRegion) {
+      this.primaryRegion = primaryRegion;
+    }
+
+    public List<Region> getRegions() {
+      return regions;
+    }
+
+    public void setRegions(final List<Region> regions) {
+      this.regions = regions;
+    }
+  }
+
+  /** Mirrors {@link ReplicationConfiguration.RegionConfiguration}. */
+  public static class Region {
+
+    private String name;
+    private String pattern;
+    private int minReplicas;
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(final String name) {
+      this.name = name;
+    }
+
+    public String getPattern() {
+      return pattern;
+    }
+
+    public void setPattern(final String pattern) {
+      this.pattern = pattern;
+    }
+
+    public int getMinReplicas() {
+      return minReplicas;
+    }
+
+    public void setMinReplicas(final int minReplicas) {
+      this.minReplicas = minReplicas;
+    }
   }
 }
