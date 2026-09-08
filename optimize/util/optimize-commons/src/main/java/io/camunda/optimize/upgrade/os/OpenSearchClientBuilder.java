@@ -72,6 +72,7 @@ import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -396,6 +397,11 @@ public class OpenSearchClientBuilder {
       final ConfigurationService configurationService,
       final HttpRequestInterceptor... requestInterceptors) {
     httpAsyncClientBuilder.disableContentCompression();
+    // TCP keepalive is off by default in the Apache HttpAsyncClient, which lets a firewall or NAT
+    // device in front of OpenSearch silently drop its tracking entry for an idle pooled connection;
+    // the next request then blocks on that dead socket until the response timeout
+    httpAsyncClientBuilder.setIOReactorConfig(
+        IOReactorConfig.custom().setSoKeepAlive(true).build());
     setupAuthentication(httpAsyncClientBuilder, configurationService);
 
     for (final HttpRequestInterceptor interceptor : requestInterceptors) {

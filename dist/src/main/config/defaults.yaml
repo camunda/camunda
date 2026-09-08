@@ -684,6 +684,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_DATABASENAME
 
+        # Whether TCP keepalive is enabled on the ES and OS connector connections.
+        so-keep-alive: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SOKEEPALIVE
         # The socket timeout for ES and OS connector
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SOCKETTIMEOUT
         # Template priority for index templates.
@@ -780,6 +782,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_DATABASENAME
 
+        # Whether TCP keepalive is enabled on the ES and OS connector connections.
+        so-keep-alive: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SOKEEPALIVE
         # The socket timeout for ES and OS connector
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SOCKETTIMEOUT
         # Template priority for index templates.

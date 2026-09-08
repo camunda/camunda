@@ -18,6 +18,7 @@ public class ConnectConfiguration {
   private static final String DATE_FORMAT_FIELD = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
   private static final String FIELD_DATE_FORMAT_DEFAULT = "date_time";
   private static final String URL_DEFAULT = "http://localhost:9200";
+  private static final boolean SO_KEEP_ALIVE_DEFAULT = true;
   private String type = DATABASE_TYPE_DEFAULT.toString();
   private String clusterName = CLUSTER_NAME_DEFAULT;
   private String dateFormat = DATE_FORMAT_FIELD;
@@ -26,6 +27,7 @@ public class ConnectConfiguration {
   private Integer connectTimeout;
   private Integer maxConnections;
   private Integer maxConnectionsPerRoute;
+  private boolean soKeepAlive = SO_KEEP_ALIVE_DEFAULT;
   private String url = URL_DEFAULT;
   private List<String> urls = new ArrayList<>();
   private String username;
@@ -112,6 +114,21 @@ public class ConnectConfiguration {
 
   public void setMaxConnectionsPerRoute(final Integer maxConnectionsPerRoute) {
     this.maxConnectionsPerRoute = maxConnectionsPerRoute;
+  }
+
+  /**
+   * Whether TCP keepalive (SO_KEEPALIVE) is enabled on the pooled connections to the search
+   * database. Keepalive probes keep the connection visible to stateful firewalls and NAT devices,
+   * which would otherwise drop their tracking entry for an idle connection without sending a RST or
+   * FIN — leaving the client to reuse a socket that is silently dead until the socket timeout
+   * expires.
+   */
+  public boolean isSoKeepAlive() {
+    return soKeepAlive;
+  }
+
+  public void setSoKeepAlive(final boolean soKeepAlive) {
+    this.soKeepAlive = soKeepAlive;
   }
 
   public String getUrl() {

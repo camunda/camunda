@@ -140,6 +140,10 @@ public class SearchEngineConnectPropertiesOverride {
       if (maxConnectionsPerRoute != null) {
         override.setMaxConnectionsPerRoute(maxConnectionsPerRoute);
       }
+      final var soKeepAlive = database.getSoKeepAlive();
+      if (soKeepAlive != null) {
+        override.setSoKeepAlive(soKeepAlive);
+      }
       override.setIndexPrefix(database.getIndexPrefix());
       override.setProxy(database.getProxy());
     }

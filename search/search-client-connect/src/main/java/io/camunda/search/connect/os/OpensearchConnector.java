@@ -31,6 +31,7 @@ import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -194,6 +195,7 @@ public final class OpensearchConnector {
     }
 
     setupConnectionManager(httpAsyncClientBuilder, osConfig);
+    setupKeepAlive(httpAsyncClientBuilder, osConfig);
 
     final var proxyConfig = osConfig.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
@@ -303,6 +305,18 @@ public final class OpensearchConnector {
     }
 
     httpAsyncClientBuilder.setConnectionManager(connectionManagerBuilder.build());
+  }
+
+  /**
+   * Enables TCP keepalive on the NIO sockets, which the Apache HttpAsyncClient leaves off by
+   * default. Without it, a firewall or NAT device between this client and the search database drops
+   * its connection tracking entry for an idle connection without sending a RST or FIN, and the next
+   * request to reuse that pooled connection blocks until the socket timeout expires.
+   */
+  private void setupKeepAlive(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration osConfig) {
+    httpAsyncClientBuilder.setIOReactorConfig(
+        IOReactorConfig.custom().setSoKeepAlive(osConfig.isSoKeepAlive()).build());
   }
 
   private TlsStrategy buildTlsStrategy(final SecurityConfiguration configuration) {

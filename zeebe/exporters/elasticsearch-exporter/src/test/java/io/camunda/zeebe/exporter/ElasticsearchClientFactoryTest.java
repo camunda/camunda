@@ -8,6 +8,8 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -21,12 +23,15 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.protocol.BasicHttpContext;
 import org.elasticsearch.client.Node;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchClientFactoryTest {
@@ -115,6 +120,35 @@ final class ElasticsearchClientFactoryTest {
 
     // then
     assertThat(context.getAttribute("foo")).isEqualTo("baz");
+  }
+
+  @Test
+  void shouldEnableTcpKeepAliveByDefault() {
+    // given
+    final var builder = mock(HttpAsyncClientBuilder.class);
+
+    // when
+    ElasticsearchClientFactory.INSTANCE.configureHttpClient(config, builder);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    verify(builder).setDefaultIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().isSoKeepalive()).isTrue();
+  }
+
+  @Test
+  void shouldDisableTcpKeepAliveWhenTurnedOff() {
+    // given
+    config.soKeepAlive = false;
+    final var builder = mock(HttpAsyncClientBuilder.class);
+
+    // when
+    ElasticsearchClientFactory.INSTANCE.configureHttpClient(config, builder);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    verify(builder).setDefaultIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().isSoKeepalive()).isFalse();
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

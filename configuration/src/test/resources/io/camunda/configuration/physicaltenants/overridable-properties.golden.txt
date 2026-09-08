@@ -129,6 +129,7 @@ data.secondary-storage.elasticsearch.proxy.username
 data.secondary-storage.elasticsearch.refresh-interval
 data.secondary-storage.elasticsearch.refresh-interval-by-index-name
 data.secondary-storage.elasticsearch.security.database-name
+data.secondary-storage.elasticsearch.so-keep-alive
 data.secondary-storage.elasticsearch.socket-timeout
 data.secondary-storage.elasticsearch.template-priority
 data.secondary-storage.elasticsearch.url
@@ -188,6 +189,7 @@ data.secondary-storage.opensearch.proxy.username
 data.secondary-storage.opensearch.refresh-interval
 data.secondary-storage.opensearch.refresh-interval-by-index-name
 data.secondary-storage.opensearch.security.database-name
+data.secondary-storage.opensearch.so-keep-alive
 data.secondary-storage.opensearch.socket-timeout
 data.secondary-storage.opensearch.template-priority
 data.secondary-storage.opensearch.url
