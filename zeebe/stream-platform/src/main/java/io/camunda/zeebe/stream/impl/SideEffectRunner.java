@@ -180,7 +180,7 @@ final class SideEffectRunner implements CommittedPositionListener {
       // the records it stopped on are already appended, so no append notification is coming.
       // Signalling only on the full -> not-full transition keeps this to one job per stall
       // instead of one per side effect.
-      onCapacityAvailable.run();
+      actor.submit(onCapacityAvailable);
     }
   }
 
