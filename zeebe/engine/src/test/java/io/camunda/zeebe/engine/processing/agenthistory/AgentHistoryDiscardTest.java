@@ -65,7 +65,7 @@ public class AgentHistoryDiscardTest {
     assertThat(secondItemKey).isNotEqualTo(firstItemKey);
 
     // An item on an unrelated job must not be discarded.
-    createUnrelatedJobHistoryItem("");
+    createUnrelatedJobHistoryItem("lease-unrelated");
 
     final var firstDiscarded = ENGINE.agentHistories().withJobKey(jobKey).discard();
     final long discardPosition = firstDiscarded.getSourceRecordPosition();
@@ -126,7 +126,7 @@ public class AgentHistoryDiscardTest {
     final var jobKey = activatedJob.jobKey();
     final var agentInstanceKey =
         createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
-    final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "");
+    final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-x");
 
     final var discarded = ENGINE.agentHistories().withJobKey(jobKey).discard();
 
