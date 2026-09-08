@@ -9,8 +9,12 @@ package io.camunda.zeebe.worker;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
+import io.camunda.client.api.command.AgentInstanceUpdateStatus;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
@@ -20,6 +24,7 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -73,6 +78,13 @@ public class Worker {
   // that role is ever scaled beyond one replica. Entries are evicted once the final round
   // completes, to keep this bounded over long-running soak tests.
   private final ConcurrentHashMap<Long, AtomicInteger> adHocSubProcessRounds =
+      new ConcurrentHashMap<>();
+
+  // Caches the AgentInstance key returned by the round-1 CREATE, keyed by process instance key,
+  // so later rounds' UPDATE calls (Worker#simulateAgentInstance) can address the same agent
+  // instance. Only populated/consulted when WorkerProperties#agentInstanceSimulationEnabled is
+  // true; evicted alongside the round counter once the final round completes.
+  private final ConcurrentHashMap<Long, Long> adHocSubProcessAgentInstanceKeys =
       new ConcurrentHashMap<>();
 
   public Worker(
@@ -185,6 +197,10 @@ public class Worker {
       adHocSubProcessRounds.remove(processInstanceKey);
     }
 
+    if (workerCfg.isAgentInstanceSimulationEnabled()) {
+      simulateAgentInstance(job, round, isFinalRound);
+    }
+
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
 
     final var command =
@@ -202,6 +218,71 @@ public class Worker {
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
+    }
+  }
+
+  // Issues the AgentInstance CREATE (round 1) or UPDATE (later rounds) call a real Connector
+  // would issue for this round, using synthetic history content - see docs/testing or the
+  // agent-visibility scenario plan for why no real LLM/Connector is involved. Called before the
+  // job is completed, so the extra command latency is genuinely part of what gets measured.
+  private void simulateAgentInstance(
+      final ActivatedJob job, final int round, final boolean isFinalRound) {
+    final long processInstanceKey = job.getProcessInstanceKey();
+
+    if (round == 0) {
+      final var configurationItem =
+          new AgentInstanceHistoryItem()
+              .historyItemId("agent-visibility-configuration")
+              .loopIteration(1)
+              .role(AgentInstanceHistoryRole.CONFIGURATION)
+              .content(
+                  List.of(
+                      AgentInstanceHistoryContent.text(
+                          "Synthetic agent configuration for load testing.")))
+              .producedAt(OffsetDateTime.now())
+              .model("synthetic-load-test-model")
+              .provider("synthetic")
+              .systemPrompt(
+                  List.of(
+                      AgentInstanceHistoryContent.text("You are a synthetic load-test agent.")));
+
+      final var response =
+          client
+              .newCreateAgentInstanceCommand()
+              .elementInstanceKey(job.getElementInstanceKey())
+              .jobKey(job.getKey())
+              .jobLease(job.getLeaseToken())
+              .history(List.of(configurationItem))
+              .send()
+              .join();
+      adHocSubProcessAgentInstanceKeys.put(processInstanceKey, response.getAgentInstanceKey());
+    } else {
+      final long agentInstanceKey = adHocSubProcessAgentInstanceKeys.get(processInstanceKey);
+      final var assistantItem =
+          new AgentInstanceHistoryItem()
+              .historyItemId("agent-visibility-round-" + (round + 1))
+              .loopIteration(round + 1)
+              .role(AgentInstanceHistoryRole.ASSISTANT)
+              .content(
+                  List.of(
+                      AgentInstanceHistoryContent.text(
+                          "Synthetic assistant message for round " + (round + 1) + ".")))
+              .producedAt(OffsetDateTime.now());
+
+      client
+          .newUpdateAgentInstanceCommand(agentInstanceKey)
+          .elementInstanceKey(job.getElementInstanceKey())
+          .status(
+              isFinalRound ? AgentInstanceUpdateStatus.IDLE : AgentInstanceUpdateStatus.THINKING)
+          .jobKey(job.getKey())
+          .jobLease(job.getLeaseToken())
+          .history(List.of(assistantItem))
+          .send()
+          .join();
+    }
+
+    if (isFinalRound) {
+      adHocSubProcessAgentInstanceKeys.remove(processInstanceKey);
     }
   }
 
