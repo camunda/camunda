@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnStatus;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -188,6 +189,112 @@ class LsnReplicationSignalStrategyTest {
 
       // then
       assertThat(lag).isEqualTo(Duration.ZERO);
+    }
+  }
+
+  @Nested
+  class RegionAwareTest {
+
+    @BeforeEach
+    void setUpRegions() {
+      config.getRegionAwareness().setEnabled(true);
+      config.getRegionAwareness().setRegions(List.of(region("us-east", "us-east-.*", 1)));
+    }
+
+    @Test
+    void shouldReturnUnconfirmedWhenOneMandatoryRegionFallsShortEvenIfGlobalCountIsEnough() {
+      // given - two regions, each needs 1 replica; us-west has none even though us-east alone
+      // would already satisfy a flat minSyncReplicas=1
+      config
+          .getRegionAwareness()
+          .setRegions(
+              List.of(region("us-east", "us-east-.*", 1), region("us-west", "us-west-.*", 1)));
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLsnStatus(50L, "replica-1", 0L, null, "us-east-1"),
+              new ReplicationLsnStatus(60L, "replica-2", 0L, null, "us-east-2"));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+    }
+
+    @Test
+    void shouldConfirmLowestLsnAmongEachRegionsOwnTopNThenWorstAcrossRegions() {
+      // given - us-east needs 2, us-west needs 1
+      config
+          .getRegionAwareness()
+          .setRegions(
+              List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLsnStatus(10L, "replica-1", 0L, null, "us-east-1"),
+              new ReplicationLsnStatus(30L, "replica-2", 0L, null, "us-east-2"),
+              new ReplicationLsnStatus(90L, "replica-3", 0L, null, "us-west-1"));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then - us-east's own top 2 are 10 and 30, worst of those is 10; us-west's top 1 is 90;
+      // the worst across both mandatory regions is 10
+      assertThat(result).isEqualTo(10L);
+    }
+
+    @Test
+    void shouldIgnoreReplicasNotMatchingAnyConfiguredRegion() {
+      // given - only us-east is declared; an unrelated label must not count toward it
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(new ReplicationLsnStatus(80L, "replica-1", 0L, null, "eu-central-1"));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then - us-east still has 0 matching replicas against its minReplicas=1
+      assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+    }
+
+    @Test
+    void shouldCreditThePrimaryRegionSoOnlyRemainingSecondariesAreRequired() {
+      // given - us-east hosts the primary and wants 2 nodes total; with the primary's automatic
+      // credit, only 1 real secondary is needed to satisfy it
+      config.getRegionAwareness().setPrimaryRegion("us-east");
+      config.getRegionAwareness().setRegions(List.of(region("us-east", "us-east-.*", 2)));
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(new ReplicationLsnStatus(70L, "replica-1", 0L, null, "us-east-1"));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then - the primary's synthetic credit is always-best, so the real secondary's own lsn
+      // (the worse of the two) is what gets returned
+      assertThat(result).isEqualTo(70L);
+    }
+
+    @Test
+    void shouldPauseWhenAMandatoryRegionIsBelowItsOwnMinReplicasAndQueueIsEmpty() {
+      // given - us-east requires 1 replica but has none
+      final var strategy = createStrategy();
+
+      // when
+      final Duration lag = strategy.computePauseLag(List.of(), Optional.empty());
+
+      // then
+      assertThat(lag).isEqualTo(ReplicationSignalStrategy.PAUSE_WORST_CASE);
+    }
+
+    private RegionConfiguration region(
+        final String name, final String pattern, final int minReplicas) {
+      final var region = new RegionConfiguration();
+      region.setName(name);
+      region.setPattern(pattern);
+      region.setMinReplicas(minReplicas);
+      return region;
     }
   }
 }

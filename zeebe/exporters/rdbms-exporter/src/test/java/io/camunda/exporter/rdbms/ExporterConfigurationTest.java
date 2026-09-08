@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -564,6 +566,29 @@ class ExporterConfigurationTest {
     // then - no error, pollingInterval and maxLag are only validated when enabled
   }
 
+  @Test
+  public void shouldBeOkWithValidRegionAwarenessConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
+    replication.setType(ReplicationType.LOG_SEQ);
+    replication.setPollingInterval(Duration.ofSeconds(10));
+    replication.setMaxLag(Duration.ofMinutes(5));
+    replication.getRegionAwareness().setEnabled(true);
+    replication.getRegionAwareness().setPrimaryRegion("us-east");
+    replication
+        .getRegionAwareness()
+        .setRegions(
+            List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
+  }
+
   @ParameterizedTest
   @MethodSource("invalidReplicationConfigurations")
   public void shouldFailValidationForReplicationConfiguration(
@@ -738,6 +763,69 @@ class ExporterConfigurationTest {
                   r.setDelay(Duration.ofMinutes(10));
                   r.setMaxLag(Duration.ofMillis(-1000));
                 },
-            "asyncReplication.maxLag must be a positive duration"));
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.getRegionAwareness().setEnabled(true);
+                },
+            "asyncReplication.regionAwareness.regions must not be empty"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.getRegionAwareness().setEnabled(true);
+                  r.getRegionAwareness().setRegions(List.of(region("", "us-east-.*", 1)));
+                },
+            "asyncReplication.regionAwareness.regions[].name must not be blank"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.getRegionAwareness().setEnabled(true);
+                  r.getRegionAwareness()
+                      .setRegions(
+                          List.of(
+                              region("us-east", "us-east-.*", 1),
+                              region("us-east", "us-east-2.*", 1)));
+                },
+            "asyncReplication.regionAwareness.regions[].name 'us-east' is declared more than"
+                + " once"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.getRegionAwareness().setEnabled(true);
+                  r.getRegionAwareness().setRegions(List.of(region("us-east", "[", 1)));
+                },
+            "asyncReplication.regionAwareness.regions[us-east].pattern is not a valid regex"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.getRegionAwareness().setEnabled(true);
+                  r.getRegionAwareness().setRegions(List.of(region("us-east", "us-east-.*", 0)));
+                },
+            "asyncReplication.regionAwareness.regions[us-east].minReplicas must be at least 1"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.getRegionAwareness().setEnabled(true);
+                  r.getRegionAwareness().setPrimaryRegion("does-not-exist");
+                  r.getRegionAwareness().setRegions(List.of(region("us-east", "us-east-.*", 1)));
+                },
+            "asyncReplication.regionAwareness.primaryRegion 'does-not-exist' does not match any"
+                + " declared region"));
+  }
+
+  private static RegionConfiguration region(
+      final String name, final String pattern, final int minReplicas) {
+    final var region = new RegionConfiguration();
+    region.setName(name);
+    region.setPattern(pattern);
+    region.setMinReplicas(minReplicas);
+    return region;
   }
 }

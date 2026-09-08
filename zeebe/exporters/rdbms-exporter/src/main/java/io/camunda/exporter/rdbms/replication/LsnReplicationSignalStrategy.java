@@ -11,7 +11,6 @@ import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnStatus;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,11 +25,13 @@ public final class LsnReplicationSignalStrategy
 
   private final ReplicationLsnProvider lsnProvider;
   private final ReplicationConfiguration config;
+  private final ReplicaRegionResolver regionResolver;
 
   public LsnReplicationSignalStrategy(
       final ReplicationLsnProvider lsnProvider, final ReplicationConfiguration config) {
     this.lsnProvider = lsnProvider;
     this.config = config;
+    regionResolver = new ReplicaRegionResolver(config.getRegionAwareness());
   }
 
   @Override
@@ -44,20 +45,15 @@ public final class LsnReplicationSignalStrategy
   }
 
   /**
-   * Calculates the lowest LSN confirmed by at least the configured {@code minSyncReplicas}
-   * connected replicas. Returns {@link #UNCONFIRMED} if the provider itself reports an unhealthy
-   * position, or if quorum isn't met.
+   * Calculates the lowest LSN confirmed by at least the configured quorum of connected replicas -
+   * flat {@code minSyncReplicas}, or per-region {@code minReplicas} when region awareness is
+   * enabled (see {@link RegionAwareQuorum}). Returns {@link #UNCONFIRMED} if the provider itself
+   * reports an unhealthy position, or if quorum isn't met.
    */
   @Override
   public long computeConfirmedMarker(final List<ReplicationLsnStatus> statuses) {
-    if (statuses.size() < config.getMinSyncReplicas()) {
-      return UNCONFIRMED;
-    }
-    return statuses.stream()
-        .map(ReplicationLsnStatus::logStatus)
-        .sorted(Comparator.<Long>naturalOrder().reversed())
-        .limit(config.getMinSyncReplicas())
-        .min(Comparator.naturalOrder())
+    return RegionAwareQuorum.evaluate(
+            statuses, config, regionResolver, ReplicationLsnStatus::logStatus, true)
         .orElse(UNCONFIRMED);
   }
 
@@ -71,7 +67,7 @@ public final class LsnReplicationSignalStrategy
   public Duration computePauseLag(
       final List<ReplicationLsnStatus> statuses, final Optional<Duration> queueHeadAge) {
     final boolean quorumNotMet =
-        queueHeadAge.isEmpty() && statuses.size() < config.getMinSyncReplicas();
+        queueHeadAge.isEmpty() && !RegionAwareQuorum.quorumMet(statuses, config, regionResolver);
     if (quorumNotMet) {
       return PAUSE_WORST_CASE;
     }
