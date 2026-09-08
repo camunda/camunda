@@ -12,25 +12,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentHistoryState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistorybatch.AgentHistoryBatchRecord;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-public class AgentInstanceCleanedApplierTest {
+public class AgentHistoryBatchCleanedApplierTest {
 
   /** Injected by {@link ProcessingStateExtension} */
   private MutableProcessingState processingState;
 
   private MutableAgentHistoryState agentHistoryState;
-  private AgentInstanceCleanedApplier cleanedApplier;
+  private AgentHistoryBatchCleanedApplier cleanedApplier;
 
   @BeforeEach
   public void setup() {
     agentHistoryState = processingState.getAgentHistoryState();
-    cleanedApplier = new AgentInstanceCleanedApplier(agentHistoryState);
+    cleanedApplier = new AgentHistoryBatchCleanedApplier(agentHistoryState);
   }
 
   @Test
@@ -43,8 +43,8 @@ public class AgentInstanceCleanedApplierTest {
     // when — the CLEANED event lists both ids for deletion.
     cleanedApplier.applyState(
         agentInstanceKey,
-        new AgentInstanceRecord()
-            .setHistoryItemIdsToDelete(List.of("history-item-1", "history-item-2")));
+        new AgentHistoryBatchRecord()
+            .setHistoryItemIds(List.of("history-item-1", "history-item-2")));
 
     // then — both committed ids are gone.
     assertThat(agentHistoryState.getCommittedHistoryItemKey(agentInstanceKey, "history-item-1"))
@@ -63,8 +63,8 @@ public class AgentInstanceCleanedApplierTest {
     // when — the CLEANED event lists both ids for deletion.
     cleanedApplier.applyState(
         agentInstanceKey,
-        new AgentInstanceRecord()
-            .setHistoryItemIdsToDelete(List.of("history-item-1", "history-item-2")));
+        new AgentHistoryBatchRecord()
+            .setHistoryItemIds(List.of("history-item-1", "history-item-2")));
 
     // then — both metrics-accumulated ids are gone.
     assertThat(agentHistoryState.hasAccumulatedMetrics(agentInstanceKey, "history-item-1"))
@@ -83,8 +83,8 @@ public class AgentInstanceCleanedApplierTest {
     // when — the CLEANED event lists both ids for deletion.
     cleanedApplier.applyState(
         agentInstanceKey,
-        new AgentInstanceRecord()
-            .setHistoryItemIdsToDelete(List.of("history-item-1", "history-item-2")));
+        new AgentHistoryBatchRecord()
+            .setHistoryItemIds(List.of("history-item-1", "history-item-2")));
 
     // then — each id is gone from whichever index it was actually in, and deleting from the
     // index it was never in was a harmless no-op.
@@ -105,7 +105,7 @@ public class AgentInstanceCleanedApplierTest {
     // when — only the first agent instance is cleaned up.
     cleanedApplier.applyState(
         firstAgentInstanceKey,
-        new AgentInstanceRecord().setHistoryItemIdsToDelete(List.of("history-item-1")));
+        new AgentHistoryBatchRecord().setHistoryItemIds(List.of("history-item-1")));
 
     // then — the second agent instance's committed id is untouched.
     assertThat(

@@ -37,9 +37,5 @@ public final class AgentInstanceProcessors {
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.COMPLETE,
         new AgentInstanceCompleteProcessor(writers, processingState));
-    typedRecordProcessors.onCommand(
-        ValueType.AGENT_INSTANCE,
-        AgentInstanceIntent.CLEAN_UP,
-        new AgentInstanceCleanUpProcessor(writers, processingState));
   }
 }
