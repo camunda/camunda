@@ -24,14 +24,15 @@ import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
 const POLLING_STATES: UserTask['state'][] = ['CANCELING', 'UPDATING', 'COMPLETING', 'ASSIGNING'];
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/$userTaskKey')({
-	loader: async ({context: {queryClient}, params: {userTaskKey}}) => {
+	loaderDeps: ({search}) => ({search}),
+	loader: async ({context: {queryClient}, params: {userTaskKey}, deps: {search}}) => {
 		try {
 			const task = await queryClient.query(queries.getUserTask(userTaskKey));
 			if (task.state === 'CANCELED') {
 				toast.info(t('tasklist.processInstanceCancelledNotification'), {
 					description: `${task.processName ?? task.processDefinitionId} (${task.processInstanceKey})`,
 				});
-				throw redirect({to: '/shadcn/tasklist'});
+				throw redirect({to: '/shadcn/tasklist', search});
 			}
 		} catch (error) {
 			const result = requestErrorSchema.safeParse(error);
