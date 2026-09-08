@@ -123,6 +123,7 @@ paths:
                       active: ["operate", "tasklist"]
                     deployment:
                       isMultiTenancyEnabled: false
+                      isWaitStatesEnabled: true
                       maxRequestSize: 4194304
                     authentication:
                       canLogout: true
@@ -273,17 +274,27 @@ components:
       type: object
       required:
         - isMultiTenancyEnabled
+        - isWaitStatesEnabled
         - maxRequestSize
       properties:
         isMultiTenancyEnabled:
           description: Whether multi-tenancy is enabled.
           type: boolean
           example: false
+        isWaitStatesEnabled:
+          description: |
+            Whether wait-state tracking is enabled for the current physical tenant.
+            Reflects camunda.data.wait-states.enabled, which defaults to true.
+          type: boolean
+          example: true
         maxRequestSize:
           description: The maximum HTTP request size in bytes.
           type: integer
           format: int64
           example: 4194304
+      x-properties-added-in-version:
+        - propertyName: isWaitStatesEnabled
+          addedInVersion: "8.10"
 
     AuthenticationConfigurationResponse:
       description: Configuration for authentication and session management.
@@ -330,4 +341,3 @@ components:
         - dev
         - int
         - prod
-
