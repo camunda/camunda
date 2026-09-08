@@ -96,12 +96,13 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .expectRejection()
             .create();
 
-    // then
+    // then — jobKey defaults to -1 when unset, and validateJobContext rejects the missing jobKey
+    // outright rather than looking it up as a job reference.
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected a job to be provided for the embedded history batch, but no jobKey was "
-                + "set. A history batch must be attributed to the active job that produced it.");
+            "Expected to update agent instance, but no jobKey was provided. A command must always "
+                + "be attributed to the active job that produced it.");
   }
 
   @Test
@@ -221,13 +222,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var item =
         new AgentHistoryRecord()
             .setHistoryItemId("item-" + role)
@@ -244,6 +251,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(item))
             .expectRejection()
@@ -281,13 +289,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var item =
         new AgentHistoryRecord()
             .setHistoryItemId("item-unspecified")
@@ -304,6 +318,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(item))
             .expectRejection()
@@ -375,13 +390,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var userItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-user")
@@ -399,6 +420,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(userItem))
             .expectRejection()
@@ -436,13 +458,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var userItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-user")
@@ -460,6 +488,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(userItem))
             .create();
@@ -492,13 +521,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var configurationItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-configuration")
@@ -521,6 +556,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(configurationItem, userItem))
             .create();
@@ -552,14 +588,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var validItem =
         new AgentHistoryRecord()
@@ -579,6 +627,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(validItem, invalidItem))
             .expectRejection()
             .update();
@@ -616,14 +665,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var invalidItem = new AgentHistoryRecord().setHistoryItemId("item-1");
 
@@ -634,6 +695,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(invalidItem))
             .expectRejection()
             .update();
@@ -669,14 +731,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var invalidItem =
         new AgentHistoryRecord().setHistoryItemId("item-1").setRole(AgentHistoryRole.USER);
@@ -688,6 +762,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(invalidItem))
             .expectRejection()
             .update();
@@ -724,14 +799,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var invalidItem =
         new AgentHistoryRecord()
@@ -747,6 +834,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(invalidItem))
             .expectRejection()
             .update();
@@ -784,14 +872,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var invalidItem =
         new AgentHistoryRecord()
@@ -806,6 +906,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(invalidItem))
             .expectRejection()
             .update();
@@ -841,9 +942,27 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
+            .getKey();
 
     // when — a jobKey that was never activated
     final var rejection =
@@ -896,9 +1015,27 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
+            .getKey();
 
     // when — no withJobKey(...) call at all
     final var rejection =
@@ -919,12 +1056,13 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .expectRejection()
             .update();
 
-    // then
+    // then — jobKey defaults to -1 when unset, and validateJobContext rejects the missing jobKey
+    // outright rather than looking it up as a job reference.
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected a job to be provided for the embedded history batch, but no jobKey was "
-                + "set. A history batch must be attributed to the active job that produced it.");
+            "Expected to update agent instance, but no jobKey was provided. A command must always "
+                + "be attributed to the active job that produced it.");
   }
 
   @Test
@@ -1101,16 +1239,42 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var ei1 = children.get(0).getKey();
     final var ei2 = children.get(1).getKey();
 
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
-
-    ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
+    final var jobBatch =
+        ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).withLease().activate();
+    final var ei1JobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1)
+            .getFirst()
+            .getKey();
+    final var ei1JobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(ei1JobKey))
+            .getLeaseToken();
     final var ei2JobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .filter(r -> r.getValue().getElementInstanceKey() == ei2)
             .getFirst()
+            .getKey();
+    final var ei2JobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(ei2JobKey))
+            .getLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withJobKey(ei1JobKey)
+            .withJobLease(ei1JobLease)
+            .create()
             .getKey();
 
     // when — targets EI1 (the current writer, so the writer check passes), but supplies EI2's
@@ -1121,6 +1285,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei1)
             .withJobKey(ei2JobKey)
+            .withJobLease(ei2JobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -1170,14 +1335,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var userItem =
         new AgentHistoryRecord()
@@ -1215,6 +1392,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(userItem, assistantItem, toolResultItem))
             .update();
 
@@ -1272,14 +1450,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var firstAssistantItem =
         new AgentHistoryRecord()
@@ -1301,6 +1491,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(firstAssistantItem))
             .update();
 
@@ -1344,6 +1535,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(secondAssistantItem, thirdAssistantItem))
             .update();
 
@@ -1380,14 +1572,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var assistantItem =
         new AgentHistoryRecord()
@@ -1411,6 +1615,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(assistantItem))
             .update();
 
@@ -1443,14 +1648,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var toolResultItem =
         new AgentHistoryRecord()
@@ -1470,6 +1687,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(toolResultItem))
             .update();
 
@@ -1501,14 +1719,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var userItem =
         new AgentHistoryRecord()
@@ -1527,6 +1757,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(userItem))
             .update();
 
@@ -1557,13 +1788,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
     final var baselineConfigItem =
         new AgentHistoryRecord()
@@ -1581,6 +1818,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -1613,6 +1851,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem))
             .update();
 
@@ -1698,13 +1937,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
     final var baselineConfigItem =
         new AgentHistoryRecord()
@@ -1718,6 +1963,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -1736,6 +1982,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem))
             .update();
 
@@ -1784,13 +2031,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
     final var baselineConfigItem =
         new AgentHistoryRecord()
@@ -1804,6 +2057,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -1826,6 +2080,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(userItem))
             .update();
 
@@ -1857,14 +2112,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
 
     // when — old-style direct metrics delta combined with a history batch in the same request:
@@ -1876,6 +2143,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -1920,14 +2188,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
 
     // when — direct metrics delta, no history batch at all
@@ -1937,6 +2217,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withMetricsDelta(10L, 5L, 1, 0)
             .expectRejection()
             .update();
@@ -1971,14 +2252,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
 
     // when — old-style direct tools change combined with a history batch in the same request
@@ -1988,6 +2281,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -2032,14 +2326,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
 
     // when — direct tools change, no history batch at all
@@ -2049,6 +2355,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withTools(List.of(AgentInstanceClient.tool("calc", "a calculator", "calc-task")))
             .expectRejection()
             .update();
@@ -2083,13 +2390,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var userItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-user")
@@ -2106,6 +2419,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(userItem))
             .create();
 
@@ -2144,13 +2458,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var configItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config")
@@ -2170,6 +2490,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementInstanceKey(elementInstanceKey)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem))
             .create();
 
@@ -2214,13 +2535,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     // content/toolCalls are conversation-payload fields that a CONFIGURATION item should never
     // carry in practice, but setting them here proves the COMMITTED event is genuinely built by
     // reading the trimmed record back from state — reusing the untrimmed in-memory `item` instead
@@ -2248,6 +2575,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem))
             .create();
 
@@ -2312,13 +2640,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var configItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config")
@@ -2338,6 +2672,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem, userItem))
             .create();
 
@@ -2387,13 +2722,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var modelItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config-model")
@@ -2416,6 +2757,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementInstanceKey(elementInstanceKey)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(modelItem, toolsItem))
             .create();
 
@@ -2457,13 +2799,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var configItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config")
@@ -2478,6 +2826,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementInstanceKey(elementInstanceKey)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem))
             .create();
     final var agentInstanceKey = created.getKey();
@@ -2533,13 +2882,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var userItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-user")
@@ -2551,6 +2906,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(userItem))
             .create();
     final var userHistoryKey =
@@ -2589,20 +2945,33 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
+            .getKey();
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
+        .withJobLease(jobLease)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -2621,6 +2990,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withStatus(AgentInstanceStatus.THINKING)
             .update();
 
@@ -2655,14 +3026,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
 
     // when — first submission creates the item
@@ -2672,6 +3055,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -2693,6 +3077,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -2748,14 +3133,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var assistantItem =
         new AgentHistoryRecord()
@@ -2777,6 +3174,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(assistantItem))
             .update();
     assertThat(firstUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
@@ -2802,6 +3200,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(resentAssistantItem))
             .update();
 
@@ -2837,13 +3236,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
     final var baselineConfigItem =
         new AgentHistoryRecord()
@@ -2858,6 +3263,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -2876,6 +3282,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem))
             .update();
     assertThat(firstUpdate.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
@@ -2897,6 +3304,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(resentConfigItem))
             .update();
     assertThat(secondUpdate.getValue().getChangedAttributes()).doesNotContain("model");
@@ -2938,14 +3346,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
 
     final var userItem =
@@ -2990,6 +3410,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(userItem, assistantItem, toolResultItem, configItem))
             .update();
     final var originalKeys =
@@ -3004,6 +3425,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3072,14 +3494,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var itemA =
         new AgentHistoryRecord()
@@ -3105,6 +3539,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(itemA, itemB))
             .update();
     final var keyA = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
@@ -3118,6 +3553,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3196,14 +3632,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
     final var firstItem =
         new AgentHistoryRecord()
@@ -3231,6 +3679,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(firstItem, secondItem))
             .expectRejection()
             .update();
@@ -3294,17 +3743,43 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var ei1 = children.get(0).getKey();
     final var ei2 = children.get(1).getKey();
 
-    // the agent instance is created on EI1; EI1 remains active (parallel multi-instance).
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
-
-    ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
+    final var jobBatch =
+        ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).withLease().activate();
+    final var job1Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1)
+            .getFirst()
+            .getKey();
+    final var job1Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
+            .getLeaseToken();
     final var job2Key =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .filter(r -> r.getValue().getElementInstanceKey() == ei2)
             .getFirst()
+            .getKey();
+    final var job2Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
+            .getLeaseToken();
+
+    // the agent instance is created on EI1; EI1 remains active (parallel multi-instance).
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withJobKey(job1Key)
+            .withJobLease(job1Lease)
+            .create()
             .getKey();
 
     // when — EI2, a second, still-active element instance, attempts to push a history batch to
@@ -3315,6 +3790,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
+            .withJobLease(job2Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3379,10 +3855,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var ei1 = children.get(0).getKey();
     final var ei2 = children.get(1).getKey();
 
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
-
-    ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
+    final var jobBatch =
+        ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).withLease().activate();
     final var activatedJobs =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -3395,17 +3869,38 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .findFirst()
             .orElseThrow()
             .getKey();
+    final var job1Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
+            .getLeaseToken();
     final var job2Key =
         activatedJobs.stream()
             .filter(r -> r.getValue().getElementInstanceKey() == ei2)
             .findFirst()
             .orElseThrow()
             .getKey();
+    final var job2Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
+            .getLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withJobKey(job1Key)
+            .withJobLease(job1Lease)
+            .create()
+            .getKey();
 
     // EI1's job fails with no retries left, raising an incident. EI1 itself stays active — job
     // failure and element-instance completion are independent, so the element instance does not
     // reflect that its writer is done.
-    ENGINE.job().withKey(job1Key).withRetries(0).fail();
+    ENGINE.job().withKey(job1Key).withRetries(0).withLeaseToken(job1Lease).fail();
 
     // when — EI2 pushes a history batch to the same agent instance. EI1 is still active, but its
     // job is no longer ACTIVATED, so EI1 can no longer be mid-write.
@@ -3415,6 +3910,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
+            .withJobLease(job2Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3471,10 +3967,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var ei1 = children.get(0).getKey();
     final var ei2 = children.get(1).getKey();
 
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
-
-    ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
+    final var jobBatch =
+        ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).withLease().activate();
     final var activatedJobs =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -3487,12 +3981,40 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .findFirst()
             .orElseThrow()
             .getKey();
+    final var job1Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
+            .getLeaseToken();
+    final var job2Key =
+        activatedJobs.stream()
+            .filter(r -> r.getValue().getElementInstanceKey() == ei2)
+            .findFirst()
+            .orElseThrow()
+            .getKey();
+    final var job2Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
+            .getLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withJobKey(job1Key)
+            .withJobLease(job1Lease)
+            .create()
+            .getKey();
 
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(ei1)
         .withJobKey(job1Key)
+        .withJobLease(job1Lease)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -3512,6 +4034,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
+            .withJobKey(job2Key)
+            .withJobLease(job2Lease)
             .withStatus(AgentInstanceStatus.THINKING)
             .withChangedAttributes(List.of("status"))
             .expectRejection()
@@ -3539,6 +4063,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
+            .withJobLease(job1Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3578,9 +4103,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-
     final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -3590,6 +4112,15 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getKey();
     final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
     final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(lease1)
+            .create()
+            .getKey();
 
     ENGINE
         .agentInstances()
@@ -3673,9 +4204,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-
     // Activation 1 (superseded): push the item under lease1, carrying non-zero token/tool-call
     // deltas, then fail the job to trigger re-activation. Its copy stays pending — never
     // committed, never discarded.
@@ -3688,6 +4216,15 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getKey();
     final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
     final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(lease1)
+            .create()
+            .getKey();
 
     final var firstItem =
         new AgentHistoryRecord()
@@ -3807,11 +4344,35 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
 
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
+    final var job1Batch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var job1Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var job1Lease =
+        job1Batch
+            .getValue()
+            .getJobs()
+            .get(job1Batch.getValue().getJobKeys().indexOf(job1Key))
+            .getLeaseToken();
 
-    ENGINE.jobs().withType(helper.getJobType()).activate();
-    ENGINE.job().ofInstance(processInstanceKey).withType(helper.getJobType()).complete();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withJobKey(job1Key)
+            .withJobLease(job1Lease)
+            .create()
+            .getKey();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(helper.getJobType())
+        .withLeaseToken(job1Lease)
+        .complete();
 
     final var ei2 =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -3823,7 +4384,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .get(1)
             .getKey();
 
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var job2Batch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var job2Key =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -3831,6 +4392,12 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .filter(r -> r.getValue().getElementInstanceKey() == ei2)
             .getFirst()
             .getKey();
+    final var job2Lease =
+        job2Batch
+            .getValue()
+            .getJobs()
+            .get(job2Batch.getValue().getJobKeys().indexOf(job2Key))
+            .getLeaseToken();
 
     // when
     final var updated =
@@ -3839,6 +4406,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
+            .withJobLease(job2Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3892,15 +4460,27 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
-
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var job1Batch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var job1Key =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var job1Lease =
+        job1Batch
+            .getValue()
+            .getJobs()
+            .get(job1Batch.getValue().getJobKeys().indexOf(job1Key))
+            .getLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withJobKey(job1Key)
+            .withJobLease(job1Lease)
+            .create()
             .getKey();
 
     // when — job1 pushes "item-x", then completes, committing it
@@ -3910,6 +4490,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
+            .withJobLease(job1Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3923,7 +4504,12 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .update();
     final var originalKey = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
 
-    ENGINE.job().ofInstance(processInstanceKey).withType(helper.getJobType()).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(helper.getJobType())
+        .withLeaseToken(job1Lease)
+        .complete();
     RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
         .withJobKey(job1Key)
         .getFirst();
@@ -3937,7 +4523,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .toList()
             .get(1)
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var job2Batch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var job2Key =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -3945,6 +4531,12 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .filter(r -> r.getValue().getElementInstanceKey() == ei2)
             .getFirst()
             .getKey();
+    final var job2Lease =
+        job2Batch
+            .getValue()
+            .getJobs()
+            .get(job2Batch.getValue().getJobKeys().indexOf(job2Key))
+            .getLeaseToken();
 
     // when — job2 (a brand-new job, on a brand-new element instance) resends "item-x", with
     // different content
@@ -3954,6 +4546,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
+            .withJobLease(job2Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4009,14 +4602,27 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKeyA =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKeyA).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobABatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobAKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKeyA)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobALease =
+        jobABatch
+            .getValue()
+            .getJobs()
+            .get(jobABatch.getValue().getJobKeys().indexOf(jobAKey))
+            .getLeaseToken();
+
+    final var agentInstanceKeyA =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKeyA)
+            .withJobKey(jobAKey)
+            .withJobLease(jobALease)
+            .create()
             .getKey();
 
     final var firstUpdate =
@@ -4025,6 +4631,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyA)
             .withElementInstanceKey(elementInstanceKeyA)
             .withJobKey(jobAKey)
+            .withJobLease(jobALease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4049,6 +4656,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyA)
             .withElementInstanceKey(elementInstanceKeyA)
             .withJobKey(jobAKey)
+            .withJobLease(jobALease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4077,14 +4685,27 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKeyB =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKeyB).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobBKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKeyB)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobBLease =
+        jobBBatch
+            .getValue()
+            .getJobs()
+            .get(jobBBatch.getValue().getJobKeys().indexOf(jobBKey))
+            .getLeaseToken();
+
+    final var agentInstanceKeyB =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKeyB)
+            .withJobKey(jobBKey)
+            .withJobLease(jobBLease)
+            .create()
             .getKey();
 
     // when — the SAME historyItemId ("item-shared") is sent under agent instance B for the first
@@ -4095,6 +4716,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyB)
             .withElementInstanceKey(elementInstanceKeyB)
             .withJobKey(jobBKey)
+            .withJobLease(jobBLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4137,14 +4759,27 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKeyA =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKeyA).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobABatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobAKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKeyA)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobALease =
+        jobABatch
+            .getValue()
+            .getJobs()
+            .get(jobABatch.getValue().getJobKeys().indexOf(jobAKey))
+            .getLeaseToken();
+
+    final var agentInstanceKeyA =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKeyA)
+            .withJobKey(jobAKey)
+            .withJobLease(jobALease)
+            .create()
             .getKey();
 
     final var itemForA =
@@ -4163,6 +4798,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyA)
             .withElementInstanceKey(elementInstanceKeyA)
             .withJobKey(jobAKey)
+            .withJobLease(jobALease)
             .withHistory(List.of(itemForA))
             .update();
 
@@ -4179,14 +4815,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKeyB =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKeyB).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobBKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKeyB)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobBLease =
+        jobBBatch
+            .getValue()
+            .getJobs()
+            .get(jobBBatch.getValue().getJobKeys().indexOf(jobBKey))
+            .getLeaseToken();
+    final var agentInstanceKeyB =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKeyB)
+            .withJobKey(jobBKey)
+            .withJobLease(jobBLease)
+            .create()
             .getKey();
 
     // when — the SAME historyItemId ("item-shared") is sent to agent instance B for the first
@@ -4207,6 +4855,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyB)
             .withElementInstanceKey(elementInstanceKeyB)
             .withJobKey(jobBKey)
+            .withJobLease(jobBLease)
             .withHistory(List.of(itemForB))
             .update();
 
@@ -4249,14 +4898,26 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
             .getKey();
 
     final var committedItem =
@@ -4341,6 +5002,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4436,11 +5098,36 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
 
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
+    final var job1Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1)
+            .getFirst()
+            .getKey();
+    final var job1Batch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var job1Lease =
+        job1Batch
+            .getValue()
+            .getJobs()
+            .get(job1Batch.getValue().getJobKeys().indexOf(job1Key))
+            .getLeaseToken();
 
-    ENGINE.jobs().withType(helper.getJobType()).activate();
-    ENGINE.job().ofInstance(processInstanceKey).withType(helper.getJobType()).complete();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withJobKey(job1Key)
+            .withJobLease(job1Lease)
+            .create()
+            .getKey();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(helper.getJobType())
+        .withLeaseToken(job1Lease)
+        .complete();
 
     final var ei2 =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -4454,14 +5141,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // when — a resend reuses job1 (EI1's own, now-completed job) but targets EI2 (still active),
     // so the rejection reflects job1's own state, not EI2's — which is otherwise valid.
-    final var job1Key =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withType(helper.getJobType())
-            .filter(r -> r.getValue().getElementInstanceKey() == ei1)
-            .getFirst()
-            .getKey();
-
     final var rejection =
         ENGINE
             .agentInstances()

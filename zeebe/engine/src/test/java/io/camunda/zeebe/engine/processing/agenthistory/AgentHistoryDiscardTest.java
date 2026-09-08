@@ -49,8 +49,10 @@ public class AgentHistoryDiscardTest {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
-    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
-    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+    final var activatedJob = activateJobForProcessInstance(processInstanceKey);
+    final var jobKey = activatedJob.jobKey();
+    final var agentInstanceKey =
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
 
     // Two items share jobKey but have different leases — DISCARD with no lease must discard both
     // regardless of lease.
@@ -84,8 +86,10 @@ public class AgentHistoryDiscardTest {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
-    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
-    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+    final var activatedJob = activateJobForProcessInstance(processInstanceKey);
+    final var jobKey = activatedJob.jobKey();
+    final var agentInstanceKey =
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
 
     final long lease1ItemKey =
         createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-1");
@@ -118,8 +122,10 @@ public class AgentHistoryDiscardTest {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
-    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
-    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+    final var activatedJob = activateJobForProcessInstance(processInstanceKey);
+    final var jobKey = activatedJob.jobKey();
+    final var agentInstanceKey =
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
     final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "");
 
     final var discarded = ENGINE.agentHistories().withJobKey(jobKey).discard();
@@ -136,8 +142,10 @@ public class AgentHistoryDiscardTest {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
-    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
-    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+    final var activatedJob = activateJobForProcessInstance(processInstanceKey);
+    final var jobKey = activatedJob.jobKey();
+    final var agentInstanceKey =
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
 
     final var item =
         new AgentHistoryRecord()
@@ -161,6 +169,7 @@ public class AgentHistoryDiscardTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
+        .withJobLease(activatedJob.jobLease())
         .withHistory(List.of(item))
         .update();
 
@@ -179,7 +188,7 @@ public class AgentHistoryDiscardTest {
   public void shouldNotEmitAnyEventWhenNoItemsExistForJobKey() {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
-    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+    final var jobKey = activateJobForProcessInstance(processInstanceKey).jobKey();
 
     // No CREATED items for the job — DISCARD must be a no-op. The client helper would block
     // waiting for a follow-up event, which a no-op never produces, so write the command directly.
@@ -219,17 +228,31 @@ public class AgentHistoryDiscardTest {
         .getFirst();
   }
 
-  private static long activateJobForProcessInstance(final long processInstanceKey) {
-    ENGINE.jobs().withType(JOB_TYPE).activate();
-    return RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withType(JOB_TYPE)
-        .getFirst()
-        .getKey();
+  private static ActivatedJob activateJobForProcessInstance(final long processInstanceKey) {
+    final var jobBatch = ENGINE.jobs().withType(JOB_TYPE).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    return new ActivatedJob(jobKey, jobLease);
   }
 
-  private static Record<?> createAgentInstance(final long elementInstanceKey) {
-    return ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create();
+  private static Record<?> createAgentInstance(
+      final long elementInstanceKey, final long jobKey, final String jobLease) {
+    return ENGINE
+        .agentInstances()
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLease(jobLease)
+        .create();
   }
 
   private static long createHistoryItem(
@@ -277,9 +300,13 @@ public class AgentHistoryDiscardTest {
             .getFirst();
     final long elementInstanceKey = serviceTaskInstance.getKey();
 
-    final long agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
-    final long jobKey = activateJobForProcessInstance(processInstanceKey);
+    final var activatedJob = activateJobForProcessInstance(processInstanceKey);
+    final long jobKey = activatedJob.jobKey();
+    final long agentInstanceKey =
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
 
     return createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, jobLease);
   }
+
+  private record ActivatedJob(long jobKey, String jobLease) {}
 }
