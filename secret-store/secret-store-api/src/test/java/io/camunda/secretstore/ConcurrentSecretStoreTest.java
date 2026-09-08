@@ -11,6 +11,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
@@ -189,6 +190,32 @@ class ConcurrentSecretStoreTest {
     // then the queued chunk never reached the delegate: without the shared flag all three would
     // have called the store, one after another as permits freed up
     assertThat(delegate.resolveCalls).hasSizeLessThan(3);
+  }
+
+  @Test
+  void shouldSurfaceARealChunkFailureRatherThanASkippedSiblingAsThePrimaryException() {
+    // given six chunks (namesPerCall=1) all naming a secret the store treats as unavailable, with
+    // only two permits: at most the first two chunks to acquire one can ever call the store for
+    // real (nothing has set the flag yet when they start), and each sets the shared flag before
+    // releasing its permit, so every one of the remaining four chunks is guaranteed to observe the
+    // flag and skip once it acquires. Which chunks win that initial race is left to the scheduler,
+    // so a real failure can land anywhere in chunk order, not only first.
+    final var names =
+        new LinkedHashSet<>(List.of("fail-a", "fail-b", "fail-c", "fail-d", "fail-e", "fail-f"));
+    final var delegate = new FakeOneByOneStore();
+    delegate.namesPerCall = 1;
+    delegate.unavailableNames.addAll(names);
+    final var store = new ConcurrentSecretStore(delegate, pool, new Semaphore(2, true));
+
+    // when
+    final var thrown = catchThrowable(() -> store.resolve(names));
+
+    // then the primary exception is the real backend failure, never the synthetic "Skipped: ..."
+    // message a losing chunk throws, regardless of which chunk actually reached the store...
+    assertThat(thrown).isInstanceOf(SecretStoreUnavailableException.class);
+    assertThat(thrown.getMessage()).startsWith("store unavailable for");
+    // ...and every skipped sibling is still visible, attached as suppressed rather than dropped
+    assertThat(thrown.getSuppressed()).isNotEmpty();
   }
 
   @Test
