@@ -163,8 +163,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   // Not tracked — Optimize's import doesn't need the embedded history batch, only the
-  // instance-level fields above.
+  // instance-level fields above. Ignored by Jackson: with no backing field, a List-typed
+  // getter is otherwise treated as a setterless collection property and deserialization
+  // fails trying to populate the null this returns (#62414).
   @Override
+  @JsonIgnore
   public List<AgentHistoryRecordValue> getHistory() {
     return null;
   }
@@ -196,7 +199,10 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     this.definition = definition;
   }
 
+  // Not tracked — Optimize's import doesn't need the configured limits. Ignored by Jackson so
+  // a real exporter record carrying this field doesn't fail as an unrecognized property (#62414).
   @Override
+  @JsonIgnore
   public AgentInstanceLimitsValue getLimits() {
     return null;
   }
