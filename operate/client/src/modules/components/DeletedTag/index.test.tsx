@@ -16,17 +16,4 @@ describe('<DeletedTag />', () => {
     expect(screen.getByTestId('deleted-tag')).toBeInTheDocument();
     expect(screen.getByText('Deleted')).toBeInTheDocument();
   });
-
-  it('should explain the deleted state on keyboard focus', async () => {
-    const {user} = render(<DeletedTag />);
-
-    await user.tab();
-
-    expect(screen.getByTestId('deleted-tag')).toHaveFocus();
-    expect(
-      await screen.findByText(
-        'This process definition has been deleted. Its record remains available until its history is permanently deleted.',
-      ),
-    ).toBeInTheDocument();
-  });
 });

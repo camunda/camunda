@@ -62,10 +62,10 @@ const ProcessOperations: React.FC<Props> = observer(
           {isDraining && (
             <DrainingTag
               description={DRAINING_MESSAGES.version}
-              align="top-left"
+              align="bottom-right"
             />
           )}
-          {isDeleted && <DeletedTag align="top-left" />}
+          {isDeleted && <DeletedTag />}
           {!isDraining && !isDeleted && (
             <OperationItems>
               <DangerButton
