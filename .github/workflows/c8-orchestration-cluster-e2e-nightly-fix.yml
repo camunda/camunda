@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Camunda version (8.7, 8.8, 8.9, or main)'
+        description: 'Camunda version (8.7, 8.8, 8.9, 8.10 or main)'
         required: true
       test_specs:
         description: 'JSON array of {file, test_name, error, test_type, tasklist_mode?, database?}'
@@ -83,14 +83,14 @@ jobs:
                 echo "safe_version=main"
               } >> "$GITHUB_OUTPUT"
               ;;
-            8.7|8.8|8.9)
+            8.7|8.8|8.9|8.10)
               {
                 echo "ref=stable/${version}"
                 echo "safe_version=stable-${version}"
               } >> "$GITHUB_OUTPUT"
               ;;
             *)
-              echo "::error::Unsupported version: $version (must be 8.7, 8.8, 8.9, or main)"
+              echo "::error::Unsupported version: $version (must be 8.7, 8.8, 8.9, 8.10 or main)"
               exit 1
               ;;
           esac
