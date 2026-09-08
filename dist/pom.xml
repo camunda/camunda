@@ -162,6 +162,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <exclusions>
+        <!-- pulls in log4j-to-slf4j, which conflicts with log4j-slf4j2-impl on the classpath -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-mcp</artifactId>
     </dependency>
@@ -1124,6 +1136,8 @@
             <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <!-- Provides Swagger UI and swagger-config through Spring auto-configuration -->
+            <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
