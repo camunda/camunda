@@ -21,7 +21,7 @@ def _ago(**kw):
     return (NOW - timedelta(**kw)).isoformat().replace("+00:00", "Z")
 
 
-def _pr(number, keys, *, claims=(), age_hours=0):
+def _pr(number, keys, *, claims=(), age_hours=0, mergeable="MERGEABLE"):
     body = ""
     if claims:
         body = f"Fixes.\n\n{planning.render_coverage_block(set(claims))}\n"
@@ -30,6 +30,7 @@ def _pr(number, keys, *, claims=(), age_hours=0):
         "body": body,
         "createdAt": _ago(hours=age_hours),
         "labels": [{"name": f"{discover.KEY_LABEL_PREFIX}{k}"} for k in keys],
+        "mergeable": mergeable,
     }
 
 
@@ -139,3 +140,49 @@ def test_a_failed_lookup_reports_not_ok(monkeypatch):
     _stub(monkeypatch, [_pr(1, ["main:saas-smoke-e2e"], claims=["aaaaaaaa"])], ok=False)
     _covered, _keys, _per_spec, ok = discover.dedupe_inputs()
     assert ok is False
+
+
+# ---------------------------------------------------------------------------
+# Stale (CONFLICTING) fix PRs
+# ---------------------------------------------------------------------------
+
+
+def test_a_conflicting_holders_claims_do_not_count_as_covered(monkeypatch):
+    # c8-cross-component-e2e-tests#3154: claimed three fingerprints, then sat
+    # CONFLICTING for two weeks while every nightly hitting those specs was
+    # suppressed as already covered.
+    _stub(
+        monkeypatch,
+        [_pr(1, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"], mergeable="CONFLICTING")],
+    )
+    covered, keys, per_spec, _ok = discover.dedupe_inputs()
+    assert covered == set()
+    # The key still counts as claiming something, so the coarse per-surface lock
+    # still lifts for its neighbours; only the specific (untrustworthy) claim is
+    # dropped.
+    assert keys == {"main:sm-smoke-e2e"}
+    assert per_spec == {"main:sm-smoke-e2e"}
+
+
+def test_a_conflicting_holder_beside_a_healthy_one_still_covers_the_spec(monkeypatch):
+    # Two PRs holding the same key, one stale and one not: the healthy PR's claim
+    # must still count even though its stale sibling's does not.
+    _stub(
+        monkeypatch,
+        [
+            _pr(1, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"], mergeable="CONFLICTING"),
+            _pr(2, ["main:sm-smoke-e2e"], claims=["bbbbbbbb"]),
+        ],
+    )
+    covered, _keys, _per_spec, _ok = discover.dedupe_inputs()
+    assert covered == {"bbbbbbbb"}
+
+
+def test_an_unknown_mergeable_state_still_counts_as_covered(monkeypatch):
+    # GitHub has not finished computing mergeability yet; must not be read as broken.
+    _stub(
+        monkeypatch,
+        [_pr(1, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"], mergeable="UNKNOWN")],
+    )
+    covered, _keys, _per_spec, _ok = discover.dedupe_inputs()
+    assert covered == {"aaaaaaaa"}
