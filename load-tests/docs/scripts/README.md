@@ -100,6 +100,8 @@ zsh users: quote regex-looking arguments to avoid `no matches found` glob errors
 
 **Usage:**
 Builds a wider report for one load-test namespace and emits the values as JSON, CSV, or TSV. The
+`loadTestReport.sh` entrypoint delegates to `go run` for the Go implementation, so the command
+remains stable while the report logic is unit-testable.
 CSV/TSV column order follows the query file for the selected `--template` (see
 [Query file schema](#query-file-schema) below), which is laid out for spreadsheet imports:
 namespace and Docker image, cluster size, Camunda and secondary-storage resources, throughput,
@@ -124,8 +126,7 @@ multiply the query by 1000 to convert seconds to milliseconds.
 The `--template` flag selects a query file under this folder: `camunda` →
 [`report-queries.yaml`](report-queries.yaml), `stable-87` →
 [`report-queries-stable-87.yaml`](report-queries-stable-87.yaml). Pass `--queries-file <path>` to
-use a custom one instead — YAML or JSON are both accepted (the script converts either to JSON via
-`yq` before reading it), so an ad-hoc JSON file works too.
+use a custom one instead. YAML files are read with `yaml.v3`; JSON files are read directly by Go.
 
 Each file is a `queries:` list. Each entry is one report column, in emission order (JSON key order
 and CSV/TSV column order), with these fields:
@@ -168,6 +169,12 @@ deployments. Default: `camunda`.
 - `--no-header`: omit the CSV/TSV header row for direct spreadsheet row pasting.
 - `--missing-value <value>`: placeholder for missing CSV/TSV metrics. Default: `NaN`.
 - `--output <path>`: write the report to a file.
+
+**Tests:**
+
+```
+cd load-tests/docs/scripts && go test ./...
+```
 
 **Examples:**
 

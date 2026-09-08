@@ -2570,8 +2570,43 @@ jobs:
         run: bats .github/scripts/validate-flattened-poms.bats
       - name: Run release merge-back script tests
         run: bats .github/scripts/mergeback/mergeback.bats
-      - name: Run load test report script tests
-        run: bats load-tests/docs/scripts/loadTestReport.bats
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-report-go-tests:
+    if: needs.detect-changes.outputs.scripts-changes == 'true'
+    name: "Load Test / Report Go Tests"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    env:
+      TEST_OWNER: '@camunda/reliability-testing'
+      TEST_PRODUCT: 'load-tests'
+      TEST_TYPE: 'unit'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: load-tests/docs/scripts/go.mod
+          cache-dependency-path: load-tests/docs/scripts/go.sum
+      - name: Run load test report Go tests
+        working-directory: load-tests/docs/scripts
+        run: go test ./...
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2644,6 +2679,7 @@ jobs:
       - junit-vintage-check
       - load-test-golden-tests
       - load-test-helm-lockfile
+      - load-test-report-go-tests
       - maven-spotless-linter
       - openapi-lint
       - openapi-x-added-in-version-check
