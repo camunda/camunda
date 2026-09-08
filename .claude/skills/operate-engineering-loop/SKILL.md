@@ -138,16 +138,19 @@ git push -u origin HEAD:refs/heads/<branch-name>
 ```
 
 For new work, open a draft PR with `gh pr create --draft`, a conventional-commit title, and the
-completed repository template. For an existing PR, update it rather than creating another. Include:
+completed [repository PR template](../../../.github/pull_request_template.md). For an existing PR,
+update it rather than creating another.
 
-```markdown
-## Related issues
+Keep the body concise: a short **why** and **what** under `## Description`, the template's
+`## Checklist` with its applicable wording (delete irrelevant options as instructed), and
+`## Related issues` with the correct issue reference or checked no-issue opt-out. Do not invent
+replacement checklists or repeat scope sections. Include only brief genuine blockers or intentional
+behavior differences that matter to reviewers; keep detailed diagnostics in check logs or the
+session ledger, not long test inventories, exhaustive gate evidence, internal ledgers, or agent
+narration in the PR body.
 
-closes #<issue>
-```
-
-Use `relates to #<issue>` when the PR is one of several for that issue. A partial PR must not close
-an issue whose remaining work is deferred.
+Use `closes #<issue>` only when fully resolving it; use `relates to #<issue>` when the PR is one of
+several for that issue. A partial PR must not close an issue whose remaining work is deferred.
 
 Confirm the PR contains the latest pushed commit.
 
