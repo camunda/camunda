@@ -34,6 +34,7 @@ import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.Rdbms;
+import io.camunda.configuration.RdbmsAsyncReplication;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
@@ -45,6 +46,8 @@ import io.camunda.configuration.Write;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionAwarenessConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
@@ -1175,6 +1178,8 @@ public class BrokerBasedPropertiesOverride {
       }
       config.getAsyncReplication().setQueueDebounceTime(asyncReplication.getQueueDebounceTime());
       config.getAsyncReplication().setQueueCapacity(asyncReplication.getQueueCapacity());
+      applyRegionAwarenessConfiguration(
+          config.getAsyncReplication().getRegionAwareness(), asyncReplication.getRegionAwareness());
     }
 
     applyRdbmsExtensionPropertyConfiguration(
@@ -1188,6 +1193,26 @@ public class BrokerBasedPropertiesOverride {
     extensionProperties.setToolNameProperty(source.getToolNameProperty());
     extensionProperties.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
     extensionProperties.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
+  }
+
+  private static void applyRegionAwarenessConfiguration(
+      final RegionAwarenessConfiguration target,
+      final RdbmsAsyncReplication.RegionAwareness source) {
+    target.setEnabled(source.isEnabled());
+    target.setPrimaryRegion(source.getPrimaryRegion());
+    target.setRegions(
+        source.getRegions().stream()
+            .map(BrokerBasedPropertiesOverride::toRegionConfiguration)
+            .toList());
+  }
+
+  private static RegionConfiguration toRegionConfiguration(
+      final RdbmsAsyncReplication.Region region) {
+    final var target = new RegionConfiguration();
+    target.setName(region.getName());
+    target.setPattern(region.getPattern());
+    target.setMinReplicas(region.getMinReplicas());
+    return target;
   }
 
   private static void applyRdbmsHistoryExporterConfiguration(

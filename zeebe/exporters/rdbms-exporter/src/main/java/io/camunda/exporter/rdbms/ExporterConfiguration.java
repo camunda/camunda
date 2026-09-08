@@ -18,7 +18,11 @@ import io.camunda.zeebe.exporter.common.waitstate.WaitStateConfiguration;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class ExporterConfiguration {
   public static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofMillis(500);
@@ -636,6 +640,7 @@ public class ExporterConfiguration {
     private Duration delay;
     private Duration queueDebounceTime = DEFAULT_QUEUE_DEBOUNCE_TIME;
     private int queueCapacity = DEFAULT_QUEUE_CAPACITY;
+    private RegionAwarenessConfiguration regionAwareness = new RegionAwarenessConfiguration();
 
     public boolean isEnabled() {
       return enabled;
@@ -661,6 +666,12 @@ public class ExporterConfiguration {
       this.pollingInterval = pollingInterval;
     }
 
+    /**
+     * The number of replicas required to confirm a position. Ignored when {@link
+     * #regionAwareness}.{@link RegionAwarenessConfiguration#isEnabled() isEnabled()} is {@code
+     * true} - each declared region enforces its own {@link RegionConfiguration#getMinReplicas()}
+     * instead.
+     */
     public int getMinSyncReplicas() {
       return minSyncReplicas;
     }
@@ -709,6 +720,14 @@ public class ExporterConfiguration {
       this.queueCapacity = queueCapacity;
     }
 
+    public RegionAwarenessConfiguration getRegionAwareness() {
+      return regionAwareness;
+    }
+
+    public void setRegionAwareness(final RegionAwarenessConfiguration regionAwareness) {
+      this.regionAwareness = regionAwareness;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
 
@@ -736,6 +755,7 @@ public class ExporterConfiguration {
       if (type == ReplicationType.DELAY) {
         checkPositiveDuration(delay, "asyncReplication.delay", errors);
       }
+      errors.addAll(regionAwareness.validate());
       return errors;
     }
 
@@ -750,6 +770,144 @@ public class ExporterConfiguration {
       LOG_SEQ,
       TIME_LAG,
       DELAY
+    }
+
+    /**
+     * Optional region-aware replication quorum, for topologies where a flat {@link
+     * #minSyncReplicas} can't express per-region redundancy requirements (e.g. "at least 2 of 3
+     * nodes healthy in each of 3 regions"). Every declared {@link RegionConfiguration} is
+     * mandatory: if any one of them doesn't meet its own {@code minReplicas}, the position stays
+     * unconfirmed / the exporter pauses, even if the other regions are fully healthy.
+     */
+    public static class RegionAwarenessConfiguration {
+      public static final boolean DEFAULT_ENABLED = false;
+
+      private boolean enabled = DEFAULT_ENABLED;
+      private String primaryRegion;
+      private List<RegionConfiguration> regions = new ArrayList<>();
+
+      public boolean isEnabled() {
+        return enabled;
+      }
+
+      public void setEnabled(final boolean enabled) {
+        this.enabled = enabled;
+      }
+
+      /**
+       * The name of the region hosting the primary, matching one of {@link #regions}'s {@link
+       * RegionConfiguration#getName()}. When set, that region's quorum gets one synthetic,
+       * always-confirmed entry credited to the primary, so its {@code minReplicas} can be sized as
+       * the desired total healthy node count (primary + secondaries) rather than secondaries only.
+       * Optional - leave unset if no region should get primary credit.
+       */
+      public String getPrimaryRegion() {
+        return primaryRegion;
+      }
+
+      public void setPrimaryRegion(final String primaryRegion) {
+        this.primaryRegion = primaryRegion;
+      }
+
+      public List<RegionConfiguration> getRegions() {
+        return regions;
+      }
+
+      public void setRegions(final List<RegionConfiguration> regions) {
+        this.regions = regions;
+      }
+
+      public List<String> validate() {
+        final List<String> errors = new ArrayList<>();
+        if (!enabled) {
+          return errors;
+        }
+        if (regions.isEmpty()) {
+          errors.add("asyncReplication.regionAwareness.regions must not be empty when enabled");
+          return errors;
+        }
+
+        final Set<String> names = new HashSet<>();
+        for (final RegionConfiguration region : regions) {
+          final String name = region.getName();
+          if (name == null || name.isBlank()) {
+            errors.add("asyncReplication.regionAwareness.regions[].name must not be blank");
+          } else if (!names.add(name)) {
+            errors.add(
+                String.format(
+                    "asyncReplication.regionAwareness.regions[].name '%s' is declared more than"
+                        + " once",
+                    name));
+          }
+          if (region.getPattern() == null || region.getPattern().isBlank()) {
+            errors.add(
+                String.format(
+                    "asyncReplication.regionAwareness.regions[%s].pattern must not be blank",
+                    name));
+          } else {
+            try {
+              Pattern.compile(region.getPattern());
+            } catch (final PatternSyntaxException e) {
+              errors.add(
+                  String.format(
+                      "asyncReplication.regionAwareness.regions[%s].pattern is not a valid regex:"
+                          + " %s",
+                      name, e.getMessage()));
+            }
+          }
+          if (region.getMinReplicas() < 1) {
+            errors.add(
+                String.format(
+                    "asyncReplication.regionAwareness.regions[%s].minReplicas must be at least 1"
+                        + " but was %d",
+                    name, region.getMinReplicas()));
+          }
+        }
+        if (primaryRegion != null && !names.contains(primaryRegion)) {
+          errors.add(
+              String.format(
+                  "asyncReplication.regionAwareness.primaryRegion '%s' does not match any"
+                      + " declared region",
+                  primaryRegion));
+        }
+        return errors;
+      }
+    }
+
+    /**
+     * A single region: replicas whose label (see {@code replicaLabel} in {@link
+     * io.camunda.db.rdbms.read.replication.ReplicationStatus}) matches {@link #pattern} are grouped
+     * into this region and counted against its own {@link #minReplicas}.
+     */
+    public static class RegionConfiguration {
+      private String name;
+      private String pattern;
+      private int minReplicas;
+
+      public String getName() {
+        return name;
+      }
+
+      public void setName(final String name) {
+        this.name = name;
+      }
+
+      /** A regex matched against a replica's label; the first matching region wins. */
+      public String getPattern() {
+        return pattern;
+      }
+
+      public void setPattern(final String pattern) {
+        this.pattern = pattern;
+      }
+
+      public int getMinReplicas() {
+        return minReplicas;
+      }
+
+      public void setMinReplicas(final int minReplicas) {
+        this.minReplicas = minReplicas;
+      }
     }
   }
 }
