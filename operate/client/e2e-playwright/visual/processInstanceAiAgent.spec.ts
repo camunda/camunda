@@ -92,6 +92,7 @@ test.describe('AI agent details', () => {
   test('sections with agent instance information', async ({
     page,
     processInstancePage,
+    makeAxeBuilder,
   }) => {
     await page.route(
       URL_API_PATTERN,
@@ -106,6 +107,30 @@ test.describe('AI agent details', () => {
     await expect(
       processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
+
+    const diagramIcon = processInstancePage.diagram
+      .getFlowNodeById(AI_AGENT_ELEMENT_ID)
+      .locator('image');
+    const historyIcon = processInstancePage.instanceHistory
+      .getByTestId(`tree-node-${AI_AGENT_ELEMENT_INSTANCE_KEY}`)
+      .getByTestId('element-instance-icon');
+    await expect(diagramIcon).toBeVisible();
+    await expect(historyIcon).toHaveAttribute(
+      'src',
+      (await diagramIcon.getAttribute('href'))!,
+    );
+    await expect(historyIcon).toBeVisible();
+    await expect(historyIcon).toHaveAttribute('alt', '');
+    await expect(
+      processInstancePage.instanceHistory
+        .getByRole('treeitem', {name: 'Start', exact: true})
+        .getByTestId('element-instance-icon'),
+    ).not.toHaveAttribute('src');
+
+    const iconAccessibility = await makeAxeBuilder()
+      .include('[data-testid="element-instance-icon"]')
+      .analyze();
+    expect(iconAccessibility.violations).toEqual([]);
 
     await processInstancePage.aiAgentDetails.usageSectionTrigger.click();
     await processInstancePage.aiAgentDetails.systemPromptSection.click();
