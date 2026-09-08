@@ -96,7 +96,7 @@
     "eslint-plugin-testing-library": "7.16.2",
     "jsdom": "26.1.0",
     "monaco-editor": "0.55.1",
-    "msw": "2.12.10",
+    "msw": "2.12.14",
     "prettier": "3.8.1",
     "resize-observer-polyfill": "1.5.1",
     "rollup-plugin-license": "3.7.0",
