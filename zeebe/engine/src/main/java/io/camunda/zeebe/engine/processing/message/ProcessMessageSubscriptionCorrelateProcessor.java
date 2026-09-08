@@ -142,7 +142,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       // Race window: SUSPEND already deleted the message-side subscription, but this CORRELATE
       // was already in flight. Reject to release the message-side lock — another active
       // subscriber can then correlate, or the message returns 404. Gated on exact SUSPENDED, not
-      // isSuspended(); see onSuspend() below for why RESUMING must fall through instead.
+      // isSuspended(); see onSuspended() below for why RESUMING must fall through instead.
       // Checked last so a stale or duplicate correlate goes through those paths instead, without
       // releasing a live replacement's correlation lock.
       rejectCommand(command, RejectionType.INVALID_STATE, SUSPENDED_PI_MESSAGE);

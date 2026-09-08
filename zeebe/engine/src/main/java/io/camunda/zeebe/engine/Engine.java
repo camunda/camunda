@@ -203,7 +203,7 @@ public class Engine implements RecordProcessor {
             rejectSuspendedInstanceCommand(typedCommand, suspension.processInstanceKey());
         case BUFFER ->
             bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
-        default -> currentProcessor.processRecord(record, processingResultBuilder);
+        case PROCESS -> currentProcessor.processRecord(record, processingResultBuilder);
       }
     }
     return processingResultBuilder.build();
