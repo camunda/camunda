@@ -10,13 +10,13 @@ import {expect, test, type APIRequestContext} from '@playwright/test';
 import {
   cancelProcessInstance,
   createInstances,
-  createSingleInstance,
   deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   completeUserTask,
+  createInstanceOnceDeployed,
   deleteProcessDefinition,
   deployUserTaskProcess,
   drainProcessDefinition,
@@ -24,9 +24,9 @@ import {
   expectProcessDefinitionPurged,
   expectProcessDefinitionState,
   expectProcessInstanceCount,
-  searchProcessDefinitionItems,
   findUserTask,
   RESOURCE_DELETION_ENDPOINT,
+  searchProcessDefinitionItems,
   searchProcessInstances,
 } from '@requestHelpers';
 import {
@@ -146,7 +146,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const processDefinitionId = uniquePrefixedId('draining-complete');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
 
     const userTaskKey = await findUserTask(
@@ -182,7 +182,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const processDefinitionId = uniquePrefixedId('draining-cancel');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
 
     await findUserTask(request, instance.processInstanceKey, 'CREATED');
@@ -259,7 +259,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     );
     const parentKey = parentDeployment.processes[0].processDefinitionKey;
 
-    const parentInstance = await createSingleInstance(parentId, 1);
+    const parentInstance = await createInstanceOnceDeployed(parentId, 1);
     instancesToCancel.push(parentInstance.processInstanceKey);
 
     await expectProcessInstanceCount(
@@ -326,7 +326,7 @@ test.describe('Process Definition Draining Deletion API', () => {
 
     // The first parent instance keeps a child instance alive, so the child
     // definition stays DRAINING instead of finalizing immediately.
-    const firstParent = await createSingleInstance(parentId, 1);
+    const firstParent = await createInstanceOnceDeployed(parentId, 1);
     instancesToCancel.push(firstParent.processInstanceKey);
     await expectProcessInstanceCount(
       request,
@@ -377,7 +377,7 @@ test.describe('Process Definition Draining Deletion API', () => {
   }) => {
     const processDefinitionId = uniquePrefixedId('draining-newversion');
     const v1 = await deployUserTaskProcess(processDefinitionId);
-    const v1Instance = await createSingleInstance(processDefinitionId, 1);
+    const v1Instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(v1Instance.processInstanceKey);
     await findUserTask(request, v1Instance.processInstanceKey, 'CREATED');
 
@@ -412,7 +412,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const processDefinitionId = uniquePrefixedId('draining-blocked');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
 
     await drainProcessDefinition(request, processDefinitionKey);
@@ -437,7 +437,7 @@ test.describe('Process Definition Draining Deletion API', () => {
       v1.processDefinitionVersion,
     );
 
-    const v1Instance = await createSingleInstance(
+    const v1Instance = await createInstanceOnceDeployed(
       processDefinitionId,
       v1.processDefinitionVersion,
     );
@@ -458,7 +458,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const v1 = await deployUserTaskProcess(processDefinitionId);
     const v2 = await deployUserTaskProcess(processDefinitionId, '-v2');
 
-    const v2Instance = await createSingleInstance(
+    const v2Instance = await createInstanceOnceDeployed(
       processDefinitionId,
       v2.processDefinitionVersion,
     );
@@ -484,7 +484,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const v3 = await deployUserTaskProcess(processDefinitionId, '-v3');
 
     for (const version of [v3, v2]) {
-      const instance = await createSingleInstance(
+      const instance = await createInstanceOnceDeployed(
         processDefinitionId,
         version.processDefinitionVersion,
       );
@@ -507,7 +507,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const v2 = await deployUserTaskProcess(processDefinitionId, '-v2');
 
     for (const version of [v1, v2]) {
-      const instance = await createSingleInstance(
+      const instance = await createInstanceOnceDeployed(
         processDefinitionId,
         version.processDefinitionVersion,
       );
@@ -529,7 +529,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const processDefinitionId = uniquePrefixedId('draining-repeat');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
     await findUserTask(request, instance.processInstanceKey, 'CREATED');
 
@@ -550,7 +550,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const processDefinitionId = uniquePrefixedId('draining-keephistory');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
 
     const deletion = await deleteProcessDefinition(
@@ -576,7 +576,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     const processDefinitionId = uniquePrefixedId('draining-purgehistory');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
 
     const batchOperationKeysBefore = new Set(
