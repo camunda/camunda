@@ -205,7 +205,9 @@ public class SecondaryStorageRdbmsTest {
           .isEqualTo(ExporterConfiguration.ReplicationConfiguration.ReplicationType.LOG_SEQ);
       assertThat(exporterConfiguration.getAsyncReplication().getPollingInterval())
           .isEqualTo(Duration.parse(ASYNC_REPLICATION_POLLING_INTERVAL));
-      assertThat(exporterConfiguration.getAsyncReplication().getMinSyncReplicas()).isEqualTo(2);
+      assertThat(exporterConfiguration.getAsyncReplication().getRegions())
+          .singleElement()
+          .satisfies(region -> assertThat(region.getMinReplicas()).isEqualTo(2));
       assertThat(exporterConfiguration.getAsyncReplication().getMaxLag())
           .isEqualTo(Duration.parse(ASYNC_REPLICATION_MAX_LAG));
       assertThat(exporterConfiguration.getAsyncReplication().isPauseOnMaxLagExceeded()).isTrue();

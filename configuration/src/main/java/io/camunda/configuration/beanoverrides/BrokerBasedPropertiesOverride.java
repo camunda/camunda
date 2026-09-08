@@ -46,7 +46,7 @@ import io.camunda.configuration.Write;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
-import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionAwarenessConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
@@ -1168,7 +1168,6 @@ public class BrokerBasedPropertiesOverride {
         config.getAsyncReplication().setType(asyncReplication.getType());
       }
       config.getAsyncReplication().setPollingInterval(asyncReplication.getPollingInterval());
-      config.getAsyncReplication().setMinSyncReplicas(asyncReplication.getMinSyncReplicas());
       config.getAsyncReplication().setMaxLag(asyncReplication.getMaxLag());
       config
           .getAsyncReplication()
@@ -1178,8 +1177,7 @@ public class BrokerBasedPropertiesOverride {
       }
       config.getAsyncReplication().setQueueDebounceTime(asyncReplication.getQueueDebounceTime());
       config.getAsyncReplication().setQueueCapacity(asyncReplication.getQueueCapacity());
-      applyRegionAwarenessConfiguration(
-          config.getAsyncReplication().getRegionAwareness(), asyncReplication.getRegionAwareness());
+      config.getAsyncReplication().setRegions(toReplicationRegions(asyncReplication));
     }
 
     applyRdbmsExtensionPropertyConfiguration(
@@ -1195,15 +1193,37 @@ public class BrokerBasedPropertiesOverride {
     extensionProperties.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
   }
 
-  private static void applyRegionAwarenessConfiguration(
-      final RegionAwarenessConfiguration target,
-      final RdbmsAsyncReplication.RegionAwareness source) {
-    target.setEnabled(source.isEnabled());
-    target.setPrimaryRegion(source.getPrimaryRegion());
-    target.setRegions(
-        source.getRegions().stream()
-            .map(BrokerBasedPropertiesOverride::toRegionConfiguration)
-            .toList());
+  /**
+   * {@code minSyncReplicas} and {@code regions} are mutually exclusive alternatives on {@link
+   * RdbmsAsyncReplication} - the former is converted here into a single region matching every
+   * replica, so the exporter-side {@link ReplicationConfiguration} always deals with one shape (see
+   * {@code docs/adr/0001-region-aware-replication-quorum.md}). When neither is set, falls back to
+   * {@link ReplicationConfiguration#DEFAULT_MIN_SYNC_REPLICAS}.
+   */
+  private static List<RegionConfiguration> toReplicationRegions(
+      final RdbmsAsyncReplication asyncReplication) {
+    final List<RdbmsAsyncReplication.Region> regions = asyncReplication.getRegions();
+    final boolean hasRegions = regions != null && !regions.isEmpty();
+    final boolean hasMinSyncReplicas = asyncReplication.getMinSyncReplicas() != null;
+
+    if (hasRegions && hasMinSyncReplicas) {
+      throw new IllegalArgumentException(
+          "camunda.data.secondary-storage.rdbms.async-replication.min-sync-replicas and .regions"
+              + " are mutually exclusive - configure only one");
+    }
+    if (hasRegions) {
+      return regions.stream().map(BrokerBasedPropertiesOverride::toRegionConfiguration).toList();
+    }
+
+    final int minReplicas =
+        hasMinSyncReplicas
+            ? asyncReplication.getMinSyncReplicas()
+            : ReplicationConfiguration.DEFAULT_MIN_SYNC_REPLICAS;
+    final var defaultRegion = new RegionConfiguration();
+    defaultRegion.setName("default");
+    defaultRegion.setPattern(".*");
+    defaultRegion.setMinReplicas(minReplicas);
+    return List.of(defaultRegion);
   }
 
   private static RegionConfiguration toRegionConfiguration(

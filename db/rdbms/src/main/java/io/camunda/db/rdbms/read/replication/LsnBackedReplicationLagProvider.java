@@ -34,4 +34,9 @@ public final class LsnBackedReplicationLagProvider implements ReplicationLagProv
                     status.replicaLabel()))
         .toList();
   }
+
+  @Override
+  public String getCurrentReplicaLabel() {
+    return lsnProvider.getCurrentReplicaLabel();
+  }
 }

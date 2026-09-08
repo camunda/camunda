@@ -31,7 +31,7 @@ public final class LsnReplicationSignalStrategy
       final ReplicationLsnProvider lsnProvider, final ReplicationConfiguration config) {
     this.lsnProvider = lsnProvider;
     this.config = config;
-    regionResolver = new ReplicaRegionResolver(config.getRegionAwareness());
+    regionResolver = new ReplicaRegionResolver(config.getRegions());
   }
 
   @Override
@@ -45,15 +45,19 @@ public final class LsnReplicationSignalStrategy
   }
 
   /**
-   * Calculates the lowest LSN confirmed by at least the configured quorum of connected replicas -
-   * flat {@code minSyncReplicas}, or per-region {@code minReplicas} when region awareness is
-   * enabled (see {@link RegionAwareQuorum}). Returns {@link #UNCONFIRMED} if the provider itself
-   * reports an unhealthy position, or if quorum isn't met.
+   * Calculates the lowest LSN confirmed by at least each declared region's own quorum (see {@link
+   * RegionAwareQuorum}). Returns {@link #UNCONFIRMED} if the provider itself reports an unhealthy
+   * position, or if quorum isn't met.
    */
   @Override
   public long computeConfirmedMarker(final List<ReplicationLsnStatus> statuses) {
     return RegionAwareQuorum.evaluate(
-            statuses, config, regionResolver, ReplicationLsnStatus::logStatus, true)
+            statuses,
+            config,
+            regionResolver,
+            resolveCurrentPrimaryRegion(),
+            ReplicationLsnStatus::logStatus,
+            true)
         .orElse(UNCONFIRMED);
   }
 
@@ -67,7 +71,9 @@ public final class LsnReplicationSignalStrategy
   public Duration computePauseLag(
       final List<ReplicationLsnStatus> statuses, final Optional<Duration> queueHeadAge) {
     final boolean quorumNotMet =
-        queueHeadAge.isEmpty() && !RegionAwareQuorum.quorumMet(statuses, config, regionResolver);
+        queueHeadAge.isEmpty()
+            && !RegionAwareQuorum.quorumMet(
+                statuses, config, regionResolver, resolveCurrentPrimaryRegion());
     if (quorumNotMet) {
       return PAUSE_WORST_CASE;
     }
@@ -76,6 +82,15 @@ public final class LsnReplicationSignalStrategy
 
   @Override
   public List<String> regionsBelowQuorum(final List<ReplicationLsnStatus> statuses) {
-    return RegionAwareQuorum.regionsBelowQuorum(statuses, config, regionResolver);
+    return RegionAwareQuorum.regionsBelowQuorum(
+        statuses, config, regionResolver, resolveCurrentPrimaryRegion());
+  }
+
+  /**
+   * Resolved fresh on every call from the primary's live connection (never from static config), so
+   * it reflects whichever region currently hosts the primary, including after a failover.
+   */
+  private Optional<String> resolveCurrentPrimaryRegion() {
+    return regionResolver.resolve(lsnProvider.getCurrentReplicaLabel());
   }
 }

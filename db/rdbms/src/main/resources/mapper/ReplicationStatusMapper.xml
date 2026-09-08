@@ -192,6 +192,52 @@
   </select>
 
   <!--
+    cluster_name is a built-in Postgres GUC (since 9.5), settable only at server start, meant
+    exactly for per-instance self-identification - unlike application_name (a property of the
+    connecting client, already used for replicaLabel on secondaries), this is a property of the
+    server itself, so reading it live returns whichever physical instance currently serves as
+    primary, correctly reflecting the region hosting it after a failover. Defaults to '' (never
+    NULL) when unset, which optional region-awareness treats the same as no label.
+  -->
+  <select id="getCurrentReplicaLabel" resultType="java.lang.String" databaseId="postgresql">
+    SELECT current_setting('cluster_name')
+  </select>
+
+  <!--
+    MSSQL: mirrors getCurrentLogStatus/getCurrentDbTime above (is_local = 1 identifies the row for
+    whichever replica this connection is local to - the primary when connected directly to it,
+    reflecting a failover automatically) joined to sys.availability_replicas the same way
+    getReplicationStatus already does for secondaries, to read this instance's own
+    replica_server_name.
+  -->
+  <select id="getCurrentReplicaLabel" resultType="java.lang.String" databaseId="mssql">
+    SELECT ar.replica_server_name
+    FROM sys.dm_hadr_database_replica_states rs
+           JOIN sys.availability_replicas ar
+                ON ar.replica_id = rs.replica_id
+    WHERE rs.is_local = 1 AND rs.database_id = DB_ID()
+  </select>
+
+  <!--
+    Returns the primary's own server_id for Aurora Global Database (PostgreSQL) - the same column
+    getAuroraReplicationStatus below already reads for secondaries, just from the MASTER_SESSION_ID
+    row instead. Read live so a Global Database failover (which changes which region's instance
+    holds MASTER_SESSION_ID) is reflected without any static config.
+  -->
+  <select id="getAuroraCurrentReplicaLabel" resultType="java.lang.String" databaseId="postgresql">
+    SELECT server_id
+    FROM aurora_global_db_instance_status()
+    WHERE session_id = 'MASTER_SESSION_ID'
+  </select>
+
+  <!-- Aurora Global Database (MySQL) variant of getAuroraCurrentReplicaLabel above. -->
+  <select id="getAuroraCurrentReplicaLabel" resultType="java.lang.String" databaseId="mysql">
+    SELECT SERVER_ID
+    FROM information_schema.aurora_global_db_instance_status
+    WHERE SESSION_ID = 'MASTER_SESSION_ID'
+  </select>
+
+  <!--
     Returns the primary's current durable LSN for Aurora Global Database (MySQL). Reads from
     information_schema.aurora_global_db_instance_status (table, not function on MySQL).
     The row with SESSION_ID = 'MASTER_SESSION_ID' identifies the primary writer.

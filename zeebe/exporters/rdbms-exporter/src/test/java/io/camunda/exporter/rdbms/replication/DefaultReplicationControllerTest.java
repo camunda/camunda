@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.read.replication.ReplicationLagStatus;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import java.time.Duration;
@@ -57,7 +58,7 @@ class DefaultReplicationControllerTest {
     config = new ReplicationConfiguration();
     config.setPollingInterval(POLLING_INTERVAL);
     config.setMaxLag(MAX_LAG);
-    config.setMinSyncReplicas(MIN_SYNC_REPLICAS);
+    config.setRegions(List.of(defaultRegion(MIN_SYNC_REPLICAS)));
     config.setPauseOnMaxLagExceeded(true);
     // disabled by default so existing tests get one queue entry per onFlush call; dedicated tests
     // below set a non-zero value to exercise debouncing itself
@@ -496,5 +497,14 @@ class DefaultReplicationControllerTest {
       // then - age is measured from head (t=0), not tail (t=5000)
       assertThat(age).contains(Duration.ofMillis(6_000));
     }
+  }
+
+  /** A single region matching every replica - the flat quorum, degenerate case of regions. */
+  private static RegionConfiguration defaultRegion(final int minReplicas) {
+    final var region = new RegionConfiguration();
+    region.setName("default");
+    region.setPattern(".*");
+    region.setMinReplicas(minReplicas);
+    return region;
   }
 }

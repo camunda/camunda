@@ -26,4 +26,12 @@ public interface ReplicationLsnProvider {
    * the DB-reported replication lag in milliseconds.
    */
   List<ReplicationLsnStatus> getReplicationStatuses();
+
+  /**
+   * Returns the primary's own self-declared label (see {@code replicaLabel} on {@link
+   * ReplicationStatus}), read live from the connected write instance every call so it reflects the
+   * region currently hosting the primary even after a failover - never guessed or cached from
+   * static config. {@code null} if the vendor doesn't report one.
+   */
+  String getCurrentReplicaLabel();
 }

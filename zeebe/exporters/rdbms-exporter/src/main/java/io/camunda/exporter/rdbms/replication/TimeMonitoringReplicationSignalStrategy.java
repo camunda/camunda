@@ -31,7 +31,7 @@ public final class TimeMonitoringReplicationSignalStrategy
       final ReplicationLagProvider statusProvider, final ReplicationConfiguration config) {
     this.statusProvider = statusProvider;
     this.config = config;
-    regionResolver = new ReplicaRegionResolver(config.getRegionAwareness());
+    regionResolver = new ReplicaRegionResolver(config.getRegions());
   }
 
   @Override
@@ -45,10 +45,9 @@ public final class TimeMonitoringReplicationSignalStrategy
   }
 
   /**
-   * The point in time, as observed by the database, up to which the configured quorum of replicas -
-   * flat {@code minSyncReplicas}, or per-region {@code minReplicas} when region awareness is
-   * enabled (see {@link RegionAwareQuorum}) - have confirmed applying. Returns {@link #UNCONFIRMED}
-   * when quorum isn't met.
+   * The point in time, as observed by the database, up to which each declared region's own quorum
+   * (see {@link RegionAwareQuorum}) has confirmed applying. Returns {@link #UNCONFIRMED} when
+   * quorum isn't met.
    */
   @Override
   public long computeConfirmedMarker(final List<ReplicationLagStatus> statuses) {
@@ -56,6 +55,7 @@ public final class TimeMonitoringReplicationSignalStrategy
             statuses,
             config,
             regionResolver,
+            resolveCurrentPrimaryRegion(),
             s -> s.replicatedUntilMs() != null ? s.replicatedUntilMs() : UNCONFIRMED,
             true)
         .orElse(UNCONFIRMED);
@@ -77,6 +77,7 @@ public final class TimeMonitoringReplicationSignalStrategy
             statuses,
             config,
             regionResolver,
+            resolveCurrentPrimaryRegion(),
             s -> s.replicationLagMs() != null ? s.replicationLagMs() : Long.MAX_VALUE,
             false);
     if (worstLagMs.isEmpty()) {
@@ -87,6 +88,15 @@ public final class TimeMonitoringReplicationSignalStrategy
 
   @Override
   public List<String> regionsBelowQuorum(final List<ReplicationLagStatus> statuses) {
-    return RegionAwareQuorum.regionsBelowQuorum(statuses, config, regionResolver);
+    return RegionAwareQuorum.regionsBelowQuorum(
+        statuses, config, regionResolver, resolveCurrentPrimaryRegion());
+  }
+
+  /**
+   * Resolved fresh on every call from the primary's live connection (never from static config), so
+   * it reflects whichever region currently hosts the primary, including after a failover.
+   */
+  private Optional<String> resolveCurrentPrimaryRegion() {
+    return regionResolver.resolve(statusProvider.getCurrentReplicaLabel());
   }
 }

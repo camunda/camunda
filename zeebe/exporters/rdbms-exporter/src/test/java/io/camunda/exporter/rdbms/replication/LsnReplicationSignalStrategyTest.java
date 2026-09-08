@@ -31,12 +31,26 @@ class LsnReplicationSignalStrategyTest {
   void setUp() {
     lsnProvider = mock(ReplicationLsnProvider.class);
     config = new ReplicationConfiguration();
-    config.setMinSyncReplicas(1);
+    config.setRegions(List.of(flatRegion(1)));
     when(lsnProvider.getCurrent()).thenReturn(100L);
   }
 
   private LsnReplicationSignalStrategy createStrategy() {
     return new LsnReplicationSignalStrategy(lsnProvider, config);
+  }
+
+  /** A single region matching every replica - the flat quorum, degenerate case of regions. */
+  private static RegionConfiguration flatRegion(final int minReplicas) {
+    return region("default", ".*", minReplicas);
+  }
+
+  private static RegionConfiguration region(
+      final String name, final String pattern, final int minReplicas) {
+    final var region = new RegionConfiguration();
+    region.setName(name);
+    region.setPattern(pattern);
+    region.setMinReplicas(minReplicas);
+    return region;
   }
 
   @Test
@@ -79,7 +93,7 @@ class LsnReplicationSignalStrategyTest {
     @Test
     void shouldReturnUnconfirmedWhenNotEnoughReplicas() {
       // given
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       when(lsnProvider.getCurrent()).thenReturn(50L);
       final var strategy = createStrategy();
 
@@ -93,8 +107,8 @@ class LsnReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnLowestOfTopNReplicaLsns() {
-      // given - minSyncReplicas = 2, 3 replicas with lsn 10, 30, 50
-      config.setMinSyncReplicas(2);
+      // given - minReplicas = 2, 3 replicas with lsn 10, 30, 50
+      config.setRegions(List.of(flatRegion(2)));
       when(lsnProvider.getCurrent()).thenReturn(50L);
       final var strategy = createStrategy();
 
@@ -125,6 +139,21 @@ class LsnReplicationSignalStrategyTest {
       // then
       assertThat(result).isEqualTo(40L);
     }
+
+    @Test
+    void shouldNotCreditThePrimaryInAFlatCatchAllRegion() {
+      // given - flat/default mode (a single ".*" region); even though the primary's own
+      // (unstubbed, so null -> "") label trivially matches the catch-all, it must never count
+      // toward quorum there, or a bare minSyncReplicas=1 would be satisfied by the primary alone
+      // with zero real replicas
+      final var strategy = createStrategy();
+
+      // when
+      final long result = strategy.computeConfirmedMarker(List.of());
+
+      // then
+      assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+    }
   }
 
   @Nested
@@ -134,7 +163,7 @@ class LsnReplicationSignalStrategyTest {
     void shouldReturnPauseWorstCaseWhenQuorumNotMetAndQueueEmpty() {
       // given - quorum lost, and the queue is empty so there's no other lag signal to judge
       // staleness by
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
 
       // when
@@ -151,7 +180,7 @@ class LsnReplicationSignalStrategyTest {
       // given - quorum lost, but a position is still queued: its own queue-head-age already
       // signals staleness, so a replica shortage alone must not additionally force an immediate
       // pause on top of that
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
 
       // when
@@ -197,18 +226,15 @@ class LsnReplicationSignalStrategyTest {
 
     @BeforeEach
     void setUpRegions() {
-      config.getRegionAwareness().setEnabled(true);
-      config.getRegionAwareness().setRegions(List.of(region("us-east", "us-east-.*", 1)));
+      config.setRegions(List.of(region("us-east", "us-east-.*", 1)));
     }
 
     @Test
     void shouldReturnUnconfirmedWhenOneMandatoryRegionFallsShortEvenIfGlobalCountIsEnough() {
       // given - two regions, each needs 1 replica; us-west has none even though us-east alone
       // would already satisfy a flat minSyncReplicas=1
-      config
-          .getRegionAwareness()
-          .setRegions(
-              List.of(region("us-east", "us-east-.*", 1), region("us-west", "us-west-.*", 1)));
+      config.setRegions(
+          List.of(region("us-east", "us-east-.*", 1), region("us-west", "us-west-.*", 1)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(
@@ -225,10 +251,8 @@ class LsnReplicationSignalStrategyTest {
     @Test
     void shouldConfirmLowestLsnAmongEachRegionsOwnTopNThenWorstAcrossRegions() {
       // given - us-east needs 2, us-west needs 1
-      config
-          .getRegionAwareness()
-          .setRegions(
-              List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
+      config.setRegions(
+          List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(
@@ -260,10 +284,12 @@ class LsnReplicationSignalStrategyTest {
 
     @Test
     void shouldCreditThePrimaryRegionSoOnlyRemainingSecondariesAreRequired() {
-      // given - us-east hosts the primary and wants 2 nodes total; with the primary's automatic
-      // credit, only 1 real secondary is needed to satisfy it
-      config.getRegionAwareness().setPrimaryRegion("us-east");
-      config.getRegionAwareness().setRegions(List.of(region("us-east", "us-east-.*", 2)));
+      // given - us-east hosts the primary and wants 2 nodes total; the primary's own label,
+      // read live from its connection every check (never from static config, since it can move
+      // after a failover), resolves to us-east, crediting it and leaving only 1 real secondary
+      // required
+      when(lsnProvider.getCurrentReplicaLabel()).thenReturn("us-east-primary");
+      config.setRegions(List.of(region("us-east", "us-east-.*", 2)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(new ReplicationLsnStatus(70L, "replica-1", 0L, null, "us-east-1"));
@@ -274,6 +300,23 @@ class LsnReplicationSignalStrategyTest {
       // then - the primary's synthetic credit is always-best, so the real secondary's own lsn
       // (the worse of the two) is what gets returned
       assertThat(result).isEqualTo(70L);
+    }
+
+    @Test
+    void shouldNotCreditAPrimaryResolvedToACatchAllRegion() {
+      // given - us-east is a specific pattern eligible for credit, but the primary's live label
+      // resolves to a *different*, catch-all region instead - that region must not be credited,
+      // and us-east still has zero real replicas
+      config.setRegions(
+          List.of(region("us-east", "us-east-.*", 2), region("everything-else", ".*", 1)));
+      when(lsnProvider.getCurrentReplicaLabel()).thenReturn("unrelated-label");
+      final var strategy = createStrategy();
+
+      // when
+      final long result = strategy.computeConfirmedMarker(List.of());
+
+      // then
+      assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
     }
 
     @Test
@@ -312,15 +355,6 @@ class LsnReplicationSignalStrategyTest {
 
       // then
       assertThat(below).isEmpty();
-    }
-
-    private RegionConfiguration region(
-        final String name, final String pattern, final int minReplicas) {
-      final var region = new RegionConfiguration();
-      region.setName(name);
-      region.setPattern(pattern);
-      region.setMinReplicas(minReplicas);
-      return region;
     }
   }
 }

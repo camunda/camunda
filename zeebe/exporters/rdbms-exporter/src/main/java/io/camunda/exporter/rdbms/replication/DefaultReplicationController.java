@@ -252,23 +252,36 @@ public final class DefaultReplicationController implements ReplicationController
       final List<String> below = regionsBelowQuorum.get();
       log.warn(
           "[RDBMS Exporter P{}] Pausing exporter: replication lag ({}) exceeded maxLag ({}) "
-              + "or quorum not met ({}/{} replicas){}",
+              + "or quorum not met ({} replicas connected, {} required across {} region(s)){}",
           partitionId,
           replicationLag,
           config.getMaxLag(),
           connectedReplicas,
-          config.getMinSyncReplicas(),
+          totalMinReplicas(),
+          config.getRegions().size(),
           below.isEmpty() ? "" : " - regions below their own quorum: " + below);
     } else if (!shouldPause && wasPaused) {
       log.info(
           "[RDBMS Exporter P{}] Resuming exporter: replication lag ({}) within maxLag ({}) "
-              + "and quorum met ({}/{} replicas)",
+              + "and quorum met ({} replicas connected, {} required across {} region(s))",
           partitionId,
           replicationLag,
           config.getMaxLag(),
           connectedReplicas,
-          config.getMinSyncReplicas());
+          totalMinReplicas(),
+          config.getRegions().size());
     }
+  }
+
+  /**
+   * The sum of every declared region's {@code minReplicas} - for a flat quorum (a single region
+   * matching every replica) this is exactly the old {@code minSyncReplicas}; logged purely for
+   * operator visibility, not used in any quorum decision itself.
+   */
+  private int totalMinReplicas() {
+    return config.getRegions().stream()
+        .mapToInt(ReplicationConfiguration.RegionConfiguration::getMinReplicas)
+        .sum();
   }
 
   @Override
