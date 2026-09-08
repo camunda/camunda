@@ -14,6 +14,7 @@ previous stable version (e.g. `8.10`).
 
 1. **Create the three nightly workflow files**, copying the previous version's files and
    swapping the branch/version:
+
    - `.github/workflows/c8-orchestration-cluster-nightly-<X.Y>-e2e.yml`
    - `.github/workflows/c8-orchestration-cluster-nightly-<X.Y>-api-es.yml`
    - `.github/workflows/c8-orchestration-cluster-nightly-<X.Y>-api-rdbms.yml`
@@ -31,6 +32,7 @@ previous stable version (e.g. `8.10`).
 
 3. **Route the new branch in the on-demand workflow**
    (`.github/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml`):
+
    - Base-branch detection: add `stable/<X.Y>` to both the `git fetch origin ...` line and the
      `for candidate in ...` loop that resolves a base branch from an arbitrary input branch.
    - RDBMS gate (`c8-orchestration-cluster-api-tests-rdbms` job's `if:`): this is still an
@@ -48,7 +50,6 @@ previous stable version (e.g. `8.10`).
    - `tasklist_mode` matrix: enumerates `stable/8.6`/`stable/8.7` (v1-only) and
      `stable/8.8`/`stable/8.9` (v1+v2), defaulting everything else to v2-only. Self-updating as
      long as no future branch reintroduces Tasklist v1. No edit needed unless that changes.
-
 4. **Route the new branch in the release workflow**
    (`.github/workflows/c8-orchestration-cluster-e2e-tests-release.yml`):
    - Version-to-base mapping (the `if/elif` chain that sets `base="stable/<X.Y>"` from
@@ -62,15 +63,16 @@ previous stable version (e.g. `8.10`).
      predates RDBMS, which it won't.
    - `tasklist_mode` matrix: same v1/v2 enumeration and same self-updating caveat as the
      on-demand workflow above.
-
 5. **Cover the new branch in the responses-regeneration matrix**
    (`.github/workflows/c8-orchestration-cluster-responses-regenerate.yml`): add a
    `matrix.include` entry:
+
    ```yaml
    - ref: stable/<X.Y>
      safe: stable-<X.Y>
      paths_expected: 'true'
    ```
+
    `paths_expected` is declared per-row, not inferred from the branch name, specifically so
    this is the one place a new branch needs registering. Set it to `'true'` unless the new
    branch predates the typed `buildUrl` generator, which it won't going forward.
@@ -90,6 +92,7 @@ previous stable version (e.g. `8.10`).
    On `main` that default is correct: `SNAPSHOT` is main's own bleeding-edge build. On a stable
    branch it isn't: it resolves to whatever `main` last pushed, not the new branch's own build.
    Change every occurrence to `<X.Y>-SNAPSHOT` in:
+
    - `docker-compose.yml` (`camunda` service, and `optimize` where present)
    - `docker-compose.waitstates-isolated.yml` (`camunda` service)
    - `docker-compose.analytics-isolated.yml` (both `camunda` service occurrences)
@@ -104,3 +107,4 @@ previous stable version (e.g. `8.10`).
 - Check the pulled image tag in a local or nightly run's logs against the new branch's own
   version (step 7). A silently main-tracking image still passes, since main and the new branch
   start out identical, so this one won't fail loudly until the branches diverge.
+
