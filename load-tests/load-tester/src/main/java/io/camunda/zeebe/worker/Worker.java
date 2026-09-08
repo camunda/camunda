@@ -9,6 +9,7 @@ package io.camunda.zeebe.worker;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
@@ -19,10 +20,13 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -36,6 +40,25 @@ public class Worker {
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private static final int REQUEST_FUTURES_CAPACITY = 10_000;
 
+  // Job type of the agent-visibility scenario's ad-hoc sub-process ("AI Agent" orchestrator
+  // element in agentTools.bpmn). Jobs of this type are completed via the ad-hoc-sub-process
+  // JobResult flavor (round-schedule + tool activation) instead of the plain completion path
+  // below; every other job type (the scenario's 3 tool roles, and every other scenario's
+  // worker role) is unaffected.
+  private static final String AD_HOC_SUB_PROCESS_JOB_TYPE = "agent-visibility-orchestrator";
+
+  // Fixed, deliberately non-configurable tool-calling schedule for the agent-visibility
+  // scenario: round 1 activates one tool, round 2 activates two tools in the same job result
+  // (parallel tool calls), round 3 activates one tool again, round 4 activates none and instead
+  // fulfills the completion condition. Baseline and treatment runs of the scenario must produce
+  // byte-identical tool-activation traffic, so this schedule is never driven by Helm/env config.
+  private static final List<List<String>> AD_HOC_SUB_PROCESS_ROUND_SCHEDULE =
+      List.of(
+          List.of("tool-lookup-account"),
+          List.of("tool-calculate-score", "tool-send-notification"),
+          List.of("tool-lookup-account"),
+          List.of());
+
   private final CamundaClient client;
   private final WorkerProperties workerCfg;
   private final String variables;
@@ -43,6 +66,14 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+
+  // Per-process-instance round counter for the ad-hoc-sub-process orchestration path, keyed by
+  // ActivatedJob#getProcessInstanceKey(). In-memory and per-worker-pod: exact with the scenario's
+  // default single orchestrator replica; approximate (rounds could interleave across pods) if
+  // that role is ever scaled beyond one replica. Entries are evicted once the final round
+  // completes, to keep this bounded over long-running soak tests.
+  private final ConcurrentHashMap<Long, AtomicInteger> adHocSubProcessRounds =
+      new ConcurrentHashMap<>();
 
   public Worker(
       final CamundaClient client,
@@ -85,6 +116,11 @@ public class Worker {
 
   @JobWorker(autoComplete = false)
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
+    if (AD_HOC_SUB_PROCESS_JOB_TYPE.equals(job.getType())) {
+      handleAdHocSubProcessOrchestration(jobClient, job);
+      return;
+    }
+
     final long startHandlingTime = System.currentTimeMillis();
 
     if (workerCfg.isSendMessage()) {
@@ -122,6 +158,47 @@ public class Worker {
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
       // the operator can notice sustained backpressure without flooding the log.
+      THROTTLED_LOGGER.warn(
+          "Completion-response queue full (capacity: {}); dropping future tracking",
+          REQUEST_FUTURES_CAPACITY);
+    }
+  }
+
+  // Completes an agent-visibility scenario's ad-hoc-sub-process orchestrator job by following
+  // AD_HOC_SUB_PROCESS_ROUND_SCHEDULE: activates this round's tool(s) via the ad-hoc-sub-process
+  // JobResult flavor, or - on the final, empty round - fulfills the completion condition instead.
+  // The engine automatically creates a fresh job of the same type on the same element instance
+  // once the activated tool(s) complete, so no further loop-control is needed here; the next
+  // round is simply the next invocation of this method for the same process instance.
+  private void handleAdHocSubProcessOrchestration(
+      final JobClient jobClient, final ActivatedJob job) {
+    final long startHandlingTime = System.currentTimeMillis();
+    final long processInstanceKey = job.getProcessInstanceKey();
+    final int round =
+        adHocSubProcessRounds
+            .computeIfAbsent(processInstanceKey, key -> new AtomicInteger(0))
+            .getAndIncrement();
+    final boolean isFinalRound = round == AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.size() - 1;
+    final var toolsToActivate = AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.get(round);
+
+    if (isFinalRound) {
+      adHocSubProcessRounds.remove(processInstanceKey);
+    }
+
+    addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
+
+    final var command =
+        jobClient
+            .newCompleteCommand(job)
+            .withResult(
+                resultStep -> {
+                  CompleteAdHocSubProcessResultStep1 adHocResult = resultStep.forAdHocSubProcess();
+                  for (final var tool : toolsToActivate) {
+                    adHocResult = adHocResult.activateElement(tool);
+                  }
+                  return adHocResult.completionConditionFulfilled(isFinalRound);
+                });
+    if (!requestFutures.offer(command.send())) {
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
