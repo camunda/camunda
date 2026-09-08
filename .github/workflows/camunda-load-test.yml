@@ -104,7 +104,7 @@ on:
         description: 'Run continuous read benchmarks on secondary storage (may affect exporter performance)'
         type: boolean
         required: false
-        default: false
+        default: true
       ttl:
         description: '── Lifecycle & advanced ──────────── Days before the namespace is auto-deleted'
         type: number
@@ -184,7 +184,7 @@ on:
         description: 'Perform continuous read benchmarks on secondary storage. This may influence the exporter performance as it puts more load on the secondary database. The metrics are available in the Data-Layer dashboard.'
         type: boolean
         required: false
-        default: false
+        default: true
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
