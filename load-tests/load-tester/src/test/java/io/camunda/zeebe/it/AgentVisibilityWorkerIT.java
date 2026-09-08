@@ -11,11 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import java.time.Duration;
+import java.util.Comparator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,11 +39,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * test, so three trivial, immediately-completing job workers are opened directly against the
  * injected {@link CamundaClient} to stand in for them.
  *
- * <p>Deliberately narrow in scope: this only asserts the process instance reaches {@code
- * COMPLETED}, proving the round mechanism survives a real engine (lease handling, {@code JobResult}
- * acceptance, no rejections). The exact per-round/per-tool activation sequence is already covered
- * by the mocked {@code WorkerTest}; {@code AgentInstance}/{@code AgentHistory} assertions are added
- * once that simulation exists, in a later commit.
+ * <p>The process instance reaching {@code COMPLETED} proves the round mechanism survives a real
+ * engine (lease handling, {@code JobResult} acceptance, no rejections); the exact per-round/
+ * per-tool activation sequence is already covered by the mocked {@code WorkerTest}, so it is not
+ * re-asserted here. Agent-instance simulation is enabled so the resulting {@code AgentInstance}/
+ * {@code AgentHistory} records - proving the engine actually accepts the CREATE/UPDATE commands
+ * {@code Worker#simulateAgentInstance} issues, and commits their history items - can be asserted
+ * for real, not just mocked.
  */
 @Testcontainers
 @SpringBootTest(
@@ -56,6 +60,19 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       // worker: subscribed to the ad-hoc-sub-process orchestrator's job type, no artificial delay
       "camunda.client.worker.defaults.type=agent-visibility-orchestrator",
       "load-tester.worker.completion-delay=0ms",
+      // Job streaming causes the orchestrator's job to occasionally be delivered twice
+      // concurrently (a known streaming+poll race); the second delivery's AgentInstance UPDATE
+      // is then rejected with NOT_FOUND ("job was not active") since the first delivery already
+      // completed it - silently dropping that round's history item and failing the job for a
+      // retry. Harmless for the plain-completion path (a second, redundant complete is just
+      // ignored), but not for simulateAgentInstance's synchronous, non-idempotent calls. Disabled
+      // here; see ctxt/agent-visibility-job-streaming-discovery.md for the full writeup and the
+      // open question of how to apply this to the real scenario's orchestrator role.
+      "camunda.client.worker.defaults.stream-enabled=false",
+      // agent-instance simulation (the "treatment" configuration): CREATE requires the job to be
+      // activated with a lease, per CreateAgentInstanceCommandStep1#jobLease's javadoc
+      "load-tester.worker.agent-instance-simulation-enabled=true",
+      "camunda.client.worker.defaults.with-lease=true",
       // avoid background meters hitting the testcontainer gateway
       "load-tester.monitor-data-availability=false",
       "load-tester.perform-read-benchmarks=false",
@@ -108,11 +125,50 @@ class AgentVisibilityWorkerIT {
                         "Starter should have created instances of 'agentVisibilityBenchmark'")
                     .isNotEmpty();
 
-                assertThat(response.items())
+                final var completedProcessInstanceKey =
+                    response.items().stream()
+                        .filter(pi -> pi.getState() == ProcessInstanceState.COMPLETED)
+                        .findFirst()
+                        .orElseThrow(
+                            () ->
+                                new AssertionError(
+                                    "The ad-hoc-sub-process round schedule should have run to "
+                                        + "completion for at least one instance"))
+                        .getProcessInstanceKey();
+
+                // and — an AgentInstance was created for that instance, since the round-1
+                // CREATE call (Worker#simulateAgentInstance) is what the engine's
+                // zeebe:agentDefinition validation is exercising here
+                final var agentInstances =
+                    client
+                        .newAgentInstanceSearchRequest()
+                        .filter(f -> f.processInstanceKey(completedProcessInstanceKey))
+                        .send()
+                        .join();
+                assertThat(agentInstances.items())
+                    .describedAs("An AgentInstance should exist for the completed process instance")
+                    .isNotEmpty();
+                final var agentInstanceKey = agentInstances.items().get(0).getAgentInstanceKey();
+
+                // and — its history holds exactly the 4 items simulateAgentInstance produced:
+                // 1 CONFIGURATION (round 1's CREATE) + 3 ASSISTANT (rounds 2-4's UPDATEs),
+                // and the engine has committed all of them (JobCompleteProcessor fires
+                // AgentHistoryIntent.COMMIT on every completion of a job belonging to an agent)
+                final var history =
+                    client.newAgentInstanceHistorySearchRequest(agentInstanceKey).send().join();
+                final var items =
+                    history.items().stream()
+                        .sorted(Comparator.comparingInt(item -> item.getLoopIteration()))
+                        .toList();
+
+                assertThat(items)
                     .describedAs(
-                        "The ad-hoc-sub-process round schedule should have run to completion "
-                            + "for at least one instance")
-                    .anyMatch(pi -> pi.getState() == ProcessInstanceState.COMPLETED);
+                        "Expected 1 CONFIGURATION item (CREATE) + 3 ASSISTANT items (UPDATE x3)")
+                    .hasSize(4);
+                assertThat(items.get(0).getRole())
+                    .isEqualTo(AgentInstanceHistoryRole.CONFIGURATION);
+                assertThat(items.subList(1, 4))
+                    .allMatch(item -> item.getRole() == AgentInstanceHistoryRole.ASSISTANT);
               });
     }
   }
