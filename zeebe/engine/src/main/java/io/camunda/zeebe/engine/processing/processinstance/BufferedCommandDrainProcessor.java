@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -38,7 +37,7 @@ import org.jspecify.annotations.NullMarked;
  * current, since event appliers run synchronously — to decide the next step: another {@code DRAIN}
  * if more remains, or {@code RESUME_JOBS} to hand off to {@link
  * ProcessInstanceResumeJobsProcessor}, which un-parks jobs and appends {@code COMPLETE_RESUMING}
- * itself. {@link SuspensionBehavior#PROCESS} is unconditional: gating a {@code DRAIN} would strand
+ * itself. {@link SuspensionAction#PROCESS} is unconditional: gating a {@code DRAIN} would strand
  * the instance in {@code RESUMING} forever.
  *
  * <p>A cycle that fails to write (e.g. batch size exceeded) halts rather than drops the command:
@@ -162,9 +161,9 @@ public final class BufferedCommandDrainProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<BufferedCommandRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<BufferedCommandRecord> record) {
     // DRAIN is what ends the suspension: gating it would strand the instance in RESUMING
-    return SuspensionBehavior.PROCESS;
+    return SuspensionAction.PROCESS;
   }
 
   private void appendBufferedCommand(final BufferedCommand buffered) {

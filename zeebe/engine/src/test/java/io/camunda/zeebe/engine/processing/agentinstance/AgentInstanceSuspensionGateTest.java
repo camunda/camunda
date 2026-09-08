@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.agentinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -47,11 +48,10 @@ import org.junit.Test;
  * <p>COMPLETE is classified {@code PROCESS} so that teardown bookkeeping is not orphaned when a
  * suspended instance is cancelled.
  *
- * <p>{@link io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck} resolves the
- * process instance key for CREATE by looking up the target element instance ({@code
- * elementInstanceKey}), and for UPDATE by looking up the agent instance identified by the command
- * key — both are populated by real clients, so the gate fires for genuine external/internal
- * commands without any test scaffolding.
+ * <p>{@link SuspensionBehavior} resolves the process instance key for CREATE by looking up the
+ * target element instance ({@code elementInstanceKey}), and for UPDATE by looking up the agent
+ * instance identified by the command key — both are populated by real clients, so the gate fires
+ * for genuine external/internal commands without any test scaffolding.
  */
 public class AgentInstanceSuspensionGateTest {
 

@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -113,8 +112,7 @@ public class ConditionalSubscriptionTriggerProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ConditionalSubscriptionRecord> record) {
-    return SuspensionBehavior.BUFFER;
+  public SuspensionAction onSuspended(final TypedRecord<ConditionalSubscriptionRecord> record) {
+    return SuspensionAction.BUFFER;
   }
 }

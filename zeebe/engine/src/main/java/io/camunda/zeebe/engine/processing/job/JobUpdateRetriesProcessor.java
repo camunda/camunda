@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -64,7 +63,12 @@ public final class JobUpdateRetriesProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
-    return SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
   }
 }

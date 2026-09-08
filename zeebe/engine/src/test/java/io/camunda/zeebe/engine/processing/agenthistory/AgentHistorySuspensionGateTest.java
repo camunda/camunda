@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -48,10 +49,9 @@ import org.junit.Test;
  * <p>COMMIT and DISCARD are classified {@code PROCESS} so that teardown bookkeeping cannot be
  * orphaned when a suspended instance is cancelled.
  *
- * <p>{@link io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck} resolves the
- * process instance key for CREATE by looking up the agent instance identified by {@code
- * agentInstanceKey} — populated by real clients, so the gate fires for genuine external/internal
- * commands without any test scaffolding.
+ * <p>{@link SuspensionBehavior} resolves the process instance key for CREATE by looking up the
+ * agent instance identified by {@code agentInstanceKey} — populated by real clients, so the gate
+ * fires for genuine external/internal commands without any test scaffolding.
  */
 public class AgentHistorySuspensionGateTest {
 

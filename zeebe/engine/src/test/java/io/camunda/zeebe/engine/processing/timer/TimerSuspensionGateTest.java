@@ -132,7 +132,7 @@ public final class TimerSuspensionGateTest {
   }
 
   @Test
-  public void shouldNotEmitResumedForFreshTriggerWhileResuming() {
+  public void shouldEmitResumedForFreshTriggerWhileResuming() {
     // given - suspend before the timer is due so the due-date index is still present
     final long processInstanceKey = deployAndStartProcessWithTimer(Strings.newRandomValidBpmnId());
     final var created =
@@ -166,7 +166,7 @@ public final class TimerSuspensionGateTest {
                 .timerRecords()
                 .withIntent(TimerIntent.RESUMED)
                 .count())
-        .isZero();
+        .isEqualTo(1);
     assertThat(
             RecordingExporter.records()
                 .limitToProcessInstance(processInstanceKey)

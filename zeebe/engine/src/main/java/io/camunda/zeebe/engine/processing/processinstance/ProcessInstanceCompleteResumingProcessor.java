@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -33,7 +32,7 @@ import org.jspecify.annotations.NullMarked;
  * than silently skipped, so a concurrent drain chain restarted via {@code RESUME} (see {@link
  * ProcessInstanceResumeProcessor}) cannot write {@code RESUMED} twice.
  *
- * <p>{@link SuspensionBehavior#PROCESS} is unconditional: the marker is still {@code RESUMING} at
+ * <p>{@link SuspensionAction#PROCESS} is unconditional: the marker is still {@code RESUMING} at
  * this point, and gating would strand the instance there forever.
  */
 @ExcludeAuthorizationCheck
@@ -98,8 +97,8 @@ public final class ProcessInstanceCompleteResumingProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   private void reject(final TypedRecord<ProcessInstanceRecord> command, final String reason) {

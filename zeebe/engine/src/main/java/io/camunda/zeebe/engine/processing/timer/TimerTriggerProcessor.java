@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionAction;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -203,23 +204,18 @@ public final class TimerTriggerProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<TimerRecord> record) {
-    return SuspensionBehavior.BUFFER;
-  }
-
-  @Override
-  public void onBuffer(final TypedRecord<TimerRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
     stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.SUSPENDED, record.getValue());
+    return SuspensionAction.BUFFER;
   }
 
   @Override
-  public void onResume(final TypedRecord<TimerRecord> record) {
+  public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
     final long timerKey = record.getKey();
     final var timer = record.getValue();
-    // BUFFER+PROCESS also lets through fresh due triggers while RESUMING. Only a previously
-    // buffered trigger has had its due-date index dropped by SUSPENDED.
-    if (!timerInstanceState.hasDueDateEntry(timer.getElementInstanceKey(), timerKey)) {
-      stateWriter.appendFollowUpEvent(timerKey, TimerIntent.RESUMED, timer);
-    }
+    // A removed due date entry denotes that the timer instance was triggered when the process
+    // instance was suspended. A Timer.RESUMED event is written for symmetry (no-op).
+    stateWriter.appendFollowUpEvent(timerKey, TimerIntent.RESUMED, timer);
+    return SuspensionAction.PROCESS;
   }
 }

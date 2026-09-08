@@ -21,46 +21,37 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 public interface SuspensionAware<T extends UnifiedRecordValue> {
 
   /**
-   * Classifies how the suspension gate should treat the given command while its target is
-   * suspended.
+   * Classifies how the suspension gate should treat the given command while its target is {@code
+   * SUSPENDED}, and may write events that must accompany buffering (for example dropping a due-date
+   * index).
    *
    * @param record the command record being classified
-   * @return the {@link SuspensionBehavior} to apply; never {@code null}
+   * @return the {@link SuspensionAction} to apply; never {@code null}
    */
-  SuspensionBehavior suspensionBehavior(final TypedRecord<T> record);
+  SuspensionAction onSuspended(final TypedRecord<T> record);
 
   /**
-   * Called by the gate immediately before the command is buffered, while the target is {@code
-   * SUSPENDED}. Override to write events that must accompany buffering (for example dropping a
-   * due-date index) without processing the command itself.
+   * Classifies how the suspension gate should treat the given command while its target is {@code
+   * RESUMING}. The default is {@link SuspensionAction#PROCESS} so buffered commands drain.
+   * Processors that reject while {@code SUSPENDED} must return {@link SuspensionAction#REJECT} here
+   * too.
    *
-   * <p>Not invoked for {@link SuspensionBehavior#PROCESS} or {@link SuspensionBehavior#REJECT}.
+   * @param record the command record being classified
+   * @return the {@link SuspensionAction} to apply; never {@code null}
    */
-  default void onBuffer(final TypedRecord<T> record) {}
+  default SuspensionAction onResuming(final TypedRecord<T> record) {
+    return SuspensionAction.PROCESS;
+  }
 
-  /**
-   * Called by the gate immediately before {@code processRecord}, when a {@link
-   * SuspensionBehavior#BUFFER} command is passed through because the target is {@code RESUMING}.
-   * That includes drained commands and newly arriving {@code BUFFER} commands during {@code
-   * RESUMING}. This callback is not proof that {@link #onBuffer} ran; implementations that pair
-   * with buffering must distinguish those cases themselves (for example {@code Timer.RESUMED} only
-   * when the due-date index was already dropped).
-   *
-   * <p>Not invoked for {@link SuspensionBehavior#PROCESS} or {@link SuspensionBehavior#REJECT}.
-   */
-  default void onResume(final TypedRecord<T> record) {}
-
-  enum SuspensionBehavior {
+  enum SuspensionAction {
     /** Process the command immediately, regardless of the suspension marker. */
     PROCESS,
     /** Reject the command while any suspension marker (SUSPENDED or RESUMING) is present. */
     REJECT,
     /**
-     * Buffer the command while {@code SUSPENDED}; pass it through while {@code RESUMING} so that
-     * commands drained during resume can actually execute. {@link #onBuffer} runs immediately
-     * before the command is written to the buffer. {@link #onResume} runs immediately before {@code
-     * processRecord} for every {@code BUFFER} command passed through while {@code RESUMING},
-     * including drain and newly arriving commands.
+     * Buffer the command while {@code SUSPENDED}. While {@code RESUMING}, {@link #onResuming}
+     * classifies instead; the default {@code PROCESS} lets drained and newly arriving commands
+     * execute.
      */
     BUFFER
   }

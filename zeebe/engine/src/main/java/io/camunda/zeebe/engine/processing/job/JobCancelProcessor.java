@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -79,8 +78,8 @@ public final class JobCancelProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
     // cancellation should still work during suspension
-    return SuspensionBehavior.PROCESS;
+    return SuspensionAction.PROCESS;
   }
 }

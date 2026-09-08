@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavio
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -163,7 +162,12 @@ public final class AgentHistoryCreateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryRecord> record) {
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<AgentHistoryRecord> record) {
+    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AgentHistoryRecord> record) {
+    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
   }
 }

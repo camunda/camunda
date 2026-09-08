@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -55,7 +54,7 @@ public final class AgentHistoryDiscardProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<AgentHistoryRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

@@ -29,7 +29,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -1525,9 +1524,13 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessInstanceModificationRecord> record) {
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceModificationRecord> record) {
+    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceModificationRecord> record) {
+    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
   }
 
   /**

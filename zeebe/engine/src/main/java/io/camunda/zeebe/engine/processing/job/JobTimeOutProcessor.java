@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -102,9 +101,9 @@ public final class JobTimeOutProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
     // Process while suspended: an activated job must leave ACTIVATED on time-out so it can be
     // parked (Job.SUSPENDED) instead of looping on rejected TIME_OUT commands forever.
-    return SuspensionBehavior.PROCESS;
+    return SuspensionAction.PROCESS;
   }
 }

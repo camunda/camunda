@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -163,8 +162,7 @@ public class ProcessInstanceBusinessIdAssignProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }
