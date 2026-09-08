@@ -292,9 +292,6 @@ components:
           type: integer
           format: int64
           example: 4194304
-      x-properties-added-in-version:
-        - propertyName: isWaitStatesEnabled
-          addedInVersion: "8.10"
 
     AuthenticationConfigurationResponse:
       description: Configuration for authentication and session management.
