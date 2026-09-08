@@ -54,9 +54,17 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
     // The form version comes from the deployment rather than being assumed to
     // be 1: deploying the same form again on a cluster that already has it
     // mints a new version, so a hardcoded 1 fails on every run after the first.
-    state['expectedFormVersion'] = deployment.forms.find(
+    const deployedForm = deployment.forms.find(
       (form) => form.formId === 'sign_up_form',
-    )!.version;
+    );
+    if (deployedForm === undefined) {
+      throw new Error(
+        `Deployment did not contain the 'sign_up_form' form: ${JSON.stringify(
+          deployment.forms,
+        )}`,
+      );
+    }
+    state['expectedFormVersion'] = deployedForm.version;
   });
 
   test('Get Process Definition Start Form - Success 200', async ({request}) => {
