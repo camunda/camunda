@@ -162,7 +162,21 @@ final class FlowControlEndpointIT {
     Awaitility.await("HTTP actuator request")
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofMillis(200))
-        .untilAsserted(() -> result.set(request.get()));
+        .untilAsserted(
+            () -> {
+              try {
+                final var value = request.get();
+                assertThat(value).as("actuator response").isNotNull();
+                result.set(value);
+              } catch (final feign.RetryableException e) {
+                throw new AssertionError("Transient actuator failure", e);
+              } catch (final feign.FeignException e) {
+                if (e.status() == 500 || e.status() == 504) {
+                  throw new AssertionError("Transient actuator failure", e);
+                }
+                throw e;
+              }
+            });
     return result.get();
   }
 }
