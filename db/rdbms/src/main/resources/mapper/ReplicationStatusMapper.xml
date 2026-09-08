@@ -17,6 +17,7 @@
       <arg column="replicaId" javaType="java.lang.String" name="replicaId"/>
       <arg column="replicationLagMs" javaType="java.lang.Long" name="replicationLagMs"/>
       <arg column="replicatedUntilMs" javaType="java.lang.Long" name="replicatedUntilMs"/>
+      <arg column="replicaLabel" javaType="java.lang.String" name="replicaLabel"/>
     </constructor>
   </resultMap>
 
@@ -31,14 +32,17 @@
 
   <!-- Neither replicationLagMs nor replicatedUntilMs is coalesced when replay_lag is NULL, so an
        unmeasured replica (e.g. missing the pg_monitor grant - see hasRequiredPrivileges below) is
-       never mistaken for one that is perfectly caught up. -->
+       never mistaken for one that is perfectly caught up. application_name is the replica's own
+       self-declared label (set via its connection string), exposed as replicaLabel for optional
+       replication region awareness - unlike pid, it stays stable across reconnects. -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
     SELECT COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint AS logStatus,
            pid::text                                               AS replicaId,
            (EXTRACT(EPOCH FROM replay_lag) * 1000)::bigint         AS replicationLagMs,
            (EXTRACT(EPOCH FROM (clock_timestamp() - replay_lag)) * 1000)::bigint
-                                                                    AS replicatedUntilMs
+                                                                    AS replicatedUntilMs,
+           application_name                                        AS replicaLabel
     FROM pg_stat_replication
     WHERE pid IS NOT NULL;
   </select>
@@ -76,18 +80,24 @@
     GUID identifying the same AG-member database across replicas, unlike database_id which is a
     replica-local id). pri.database_id = DB_ID() scopes the primary side to the exporter's own
     database - see getCurrentLogStatus above for why that's necessary; the secondary side is then
-    already correctly scoped transitively via the group_database_id join.
+    already correctly scoped transitively via the group_database_id join. replica_server_name -
+    the name the replica was given when added to the availability group - is joined in from
+    sys.availability_replicas and exposed as replicaLabel for optional replication region
+    awareness; unlike replica_id (a GUID), it's a human-chosen, stable name.
       -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="mssql">
     SELECT CONVERT(bigint, ISNULL(secondary.last_commit_lsn, 0)) AS logStatus,
            CONVERT(nvarchar(36), secondary.replica_id)          AS replicaId,
            DATEDIFF_BIG(millisecond, secondary.last_commit_time, pri.last_commit_time) AS replicationLagMs,
-           DATEDIFF_BIG(millisecond, '19700101', secondary.last_commit_time) AS replicatedUntilMs
+           DATEDIFF_BIG(millisecond, '19700101', secondary.last_commit_time) AS replicatedUntilMs,
+           ar.replica_server_name                                AS replicaLabel
     FROM sys.dm_hadr_database_replica_states secondary
            JOIN sys.dm_hadr_database_replica_states pri
                 ON secondary.group_database_id = pri.group_database_id
                   AND pri.is_local = 1
                   AND pri.database_id = DB_ID()
+           JOIN sys.availability_replicas ar
+                ON ar.replica_id = secondary.replica_id
     WHERE secondary.is_local = 0
       AND secondary.last_commit_time IS NOT NULL
   </select>
@@ -197,6 +207,10 @@
     instance reports its durable_lsn together with visibility_lag_in_msec; neither replicationLagMs
     nor replicatedUntilMs (the database's own current time minus that lag) is coalesced when the lag
     itself is NULL, so an unmeasured replica is never mistaken for one that is perfectly caught up.
+    server_id is also exposed as replicaLabel for optional replication region awareness - each
+    secondary instance in a Global Database lives in its own AWS region, so an operator-provided
+    naming convention on server_id (or the instance's endpoint) is what a region pattern matches
+    against.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
@@ -204,7 +218,8 @@
            server_id                AS replicaId,
            visibility_lag_in_msec   AS replicationLagMs,
            (EXTRACT(EPOCH FROM clock_timestamp()) * 1000 - visibility_lag_in_msec)::bigint
-                                     AS replicatedUntilMs
+                                     AS replicatedUntilMs,
+           server_id                AS replicaLabel
     FROM aurora_global_db_instance_status()
     WHERE session_id != 'MASTER_SESSION_ID'
   </select>
@@ -213,7 +228,8 @@
     Returns per-replica replication status for Aurora Global Database (MySQL). Reads from
     information_schema.aurora_global_db_instance_status (table, not function on MySQL);
     replicationLagMs/replicatedUntilMs mirror the PostgreSQL variant above, including leaving
-    both un-coalesced when the lag itself is NULL.
+    both un-coalesced when the lag itself is NULL. SERVER_ID is also exposed as replicaLabel -
+    see the PostgreSQL variant above for why.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="mysql">
@@ -221,7 +237,8 @@
            SERVER_ID                AS replicaId,
            VISIBILITY_LAG_IN_MSEC   AS replicationLagMs,
            CAST(UNIX_TIMESTAMP(NOW(3)) * 1000 AS SIGNED) - VISIBILITY_LAG_IN_MSEC
-                                     AS replicatedUntilMs
+                                     AS replicatedUntilMs,
+           SERVER_ID                AS replicaLabel
     FROM information_schema.aurora_global_db_instance_status
     WHERE SESSION_ID != 'MASTER_SESSION_ID'
   </select>

@@ -28,7 +28,10 @@ public final class LsnBackedReplicationLagProvider implements ReplicationLagProv
         .map(
             status ->
                 new ReplicationLagStatus(
-                    status.replicaId(), status.replicationLagMs(), status.replicatedUntilMs()))
+                    status.replicaId(),
+                    status.replicationLagMs(),
+                    status.replicatedUntilMs(),
+                    status.replicaLabel()))
         .toList();
   }
 }
