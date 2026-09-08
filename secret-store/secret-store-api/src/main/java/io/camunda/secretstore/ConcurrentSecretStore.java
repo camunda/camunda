@@ -21,7 +21,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Resolves a {@link SecretStore} whose cost scales with the number of sequential backend calls it
@@ -58,6 +57,10 @@ import org.jspecify.annotations.Nullable;
  */
 @NullMarked
 public final class ConcurrentSecretStore implements SecretStore {
+
+  /** Message identifying a chunk failure caused only by a sibling chunk's failure, not its own. */
+  private static final String SKIPPED_MESSAGE =
+      "Skipped: a concurrently-dispatched chunk already reported this store unavailable";
 
   private final SecretStore delegate;
   private final ExecutorService pool;
@@ -126,12 +129,12 @@ public final class ConcurrentSecretStore implements SecretStore {
     // unwrapped call would have thrown: one SecretStoreUnavailableException for the whole request.
     // Later failures are attached as suppressed rather than dropped, so a caller inspecting the
     // thrown exception can still see every chunk that failed, not just the first.
-    RuntimeException firstFailure = null;
+    final List<RuntimeException> failures = new ArrayList<>();
     for (final var future : futures) {
       try {
         results.putAll(future.get());
       } catch (final ExecutionException e) {
-        firstFailure = addFailure(firstFailure, unwrap(e));
+        failures.add(unwrap(e));
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         // the caller is a long-lived shared actor thread, not a short-lived worker: restoring the
@@ -139,17 +142,37 @@ public final class ConcurrentSecretStore implements SecretStore {
         // interrupted it did), it just means the next blocking call on this same thread also sees
         // the flag set. Nothing in this codebase interrupts actor threads today, so this path is
         // not expected to be reachable in production.
-        firstFailure =
-            addFailure(
-                firstFailure,
-                new SecretStoreUnavailableException(
-                    "Interrupted while resolving secrets concurrently", e));
+        failures.add(
+            new SecretStoreUnavailableException(
+                "Interrupted while resolving secrets concurrently", e));
       }
     }
-    if (firstFailure != null) {
-      throw firstFailure;
+    if (!failures.isEmpty()) {
+      throw primaryFailure(failures);
     }
     return results;
+  }
+
+  /**
+   * Picks which of a request's chunk failures becomes the exception this call throws: the first
+   * failure that is not the synthetic {@link #skippedException}, so a caller sees the backend
+   * failure that actually caused the store to be marked unavailable rather than a sibling chunk's
+   * downstream skip. Falls back to the first failure if every one of them was a skip, which is not
+   * expected: the chunk that flips {@code storeUnavailable} always fails with the real cause first.
+   * Every other failure is attached as suppressed, so nothing collected here is dropped.
+   */
+  private static RuntimeException primaryFailure(final List<RuntimeException> failures) {
+    final RuntimeException primary =
+        failures.stream()
+            .filter(failure -> !isSkipped(failure))
+            .findFirst()
+            .orElseGet(() -> failures.get(0));
+    for (final var failure : failures) {
+      if (failure != primary) {
+        primary.addSuppressed(failure);
+      }
+    }
+    return primary;
   }
 
   /**
@@ -180,17 +203,12 @@ public final class ConcurrentSecretStore implements SecretStore {
   }
 
   private static SecretStoreUnavailableException skippedException() {
-    return new SecretStoreUnavailableException(
-        "Skipped: a concurrently-dispatched chunk already reported this store unavailable");
+    return new SecretStoreUnavailableException(SKIPPED_MESSAGE);
   }
 
-  private static RuntimeException addFailure(
-      final @Nullable RuntimeException firstFailure, final RuntimeException newFailure) {
-    if (firstFailure == null) {
-      return newFailure;
-    }
-    firstFailure.addSuppressed(newFailure);
-    return firstFailure;
+  private static boolean isSkipped(final RuntimeException failure) {
+    return failure instanceof SecretStoreUnavailableException
+        && SKIPPED_MESSAGE.equals(failure.getMessage());
   }
 
   @Override
