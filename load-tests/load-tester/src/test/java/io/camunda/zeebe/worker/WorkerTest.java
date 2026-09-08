@@ -8,8 +8,10 @@
 package io.camunda.zeebe.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,7 +19,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1.CompleteAdHocSubProcessResultStep2;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
+import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
@@ -29,9 +34,12 @@ import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class WorkerTest {
 
@@ -39,6 +47,7 @@ class WorkerTest {
   private static final String CORRELATION_KEY_VALUE = "abc";
   private static final String MESSAGE_NAME = "messageName";
   private static final Duration COMPLETION_DELAY = Duration.ofMillis(250);
+  private static final String AD_HOC_SUB_PROCESS_JOB_TYPE = "agent-visibility-orchestrator";
 
   @Test
   void shouldApplyCompletionDelayWhenPublishMessageFails() throws Exception {
@@ -82,6 +91,114 @@ class WorkerTest {
         .isGreaterThanOrEqualTo(COMPLETION_DELAY.toMillis());
     verify(jobClient).newCompleteCommand(job.getKey());
     verify(completeStep).send();
+  }
+
+  @Test
+  void shouldFollowFixedRoundScheduleForAdHocSubProcessOrchestration() {
+    // given — a single worker instance, so its internal round counter persists across
+    // successive "activations" of the same process instance's orchestrator job
+    final var jobClient = mock(JobClient.class);
+    final var worker = newWorker(mock(CamundaClient.class), zeroDelayProperties());
+    final long processInstanceKey = 777L;
+
+    // round 1 — one tool activated, completion condition not yet fulfilled
+    var round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+    assertThat(round.completionConditionFulfilled()).isFalse();
+
+    // round 2 — two tools activated within the same job result (parallel tool calls)
+    round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    assertThat(round.activatedElements())
+        .containsExactly("tool-calculate-score", "tool-send-notification");
+    assertThat(round.completionConditionFulfilled()).isFalse();
+
+    // round 3 — one tool activated again, revisiting round 1's tool
+    round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+    assertThat(round.completionConditionFulfilled()).isFalse();
+
+    // round 4 — no tools activated; the completion condition is fulfilled instead
+    round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    assertThat(round.activatedElements()).isEmpty();
+    assertThat(round.completionConditionFulfilled()).isTrue();
+
+    // and — the round-counter entry for this process instance was evicted once round 4
+    // completed: a further call restarts the schedule from round 1 rather than continuing
+    // past the end of it
+    round = driveAdHocSubProcessRound(worker, jobClient, processInstanceKey);
+    assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+  }
+
+  @Test
+  void shouldFallThroughToPlainCompletionForOtherJobTypes() {
+    // given — a job of a type that is not the ad-hoc-sub-process orchestrator (e.g. one of the
+    // scenario's tool roles, or any other scenario's worker role)
+    final var jobClient = mock(JobClient.class);
+    final var job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("tool-lookup-account");
+    when(job.getKey()).thenReturn(99L);
+    final var completeStep = mockCompleteJob(jobClient);
+    final var worker = newWorker(mock(CamundaClient.class), zeroDelayProperties());
+
+    // when
+    worker.handleJob(jobClient, job);
+
+    // then — the existing plain-completion path is used, never the ad-hoc-sub-process one
+    verify(jobClient).newCompleteCommand(job.getKey());
+    verify(jobClient, never()).newCompleteCommand(job);
+    verify(completeStep).send();
+  }
+
+  /** One round's outcome: which tool elements were activated, and the final completion flag. */
+  private record AdHocSubProcessRoundResult(
+      List<String> activatedElements, boolean completionConditionFulfilled) {}
+
+  /**
+   * Drives a single {@link Worker#handleJob} invocation for an ad-hoc-sub-process orchestrator job
+   * on the given process instance, capturing the {@code JobResult} function passed to {@link
+   * CompleteJobCommandStep1#withResult} and invoking it exactly as the real command builder would,
+   * so the resulting {@code activateElement}/{@code completionConditionFulfilled} calls can be
+   * asserted on.
+   */
+  @SuppressWarnings("unchecked")
+  private static AdHocSubProcessRoundResult driveAdHocSubProcessRound(
+      final Worker worker, final JobClient jobClient, final long processInstanceKey) {
+    final var job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn(AD_HOC_SUB_PROCESS_JOB_TYPE);
+    when(job.getProcessInstanceKey()).thenReturn(processInstanceKey);
+
+    final var completeStep = mock(CompleteJobCommandStep1.class);
+    final CamundaFuture<Object> future = mock(CamundaFuture.class);
+    when(jobClient.newCompleteCommand(job)).thenReturn(completeStep);
+    when(completeStep.send()).thenReturn((CamundaFuture) future);
+
+    final ArgumentCaptor<Function<CompleteJobCommandJobResultStep, CompleteJobResult>>
+        resultFunctionCaptor = ArgumentCaptor.forClass(Function.class);
+    when(completeStep.withResult(resultFunctionCaptor.capture())).thenReturn(completeStep);
+
+    worker.handleJob(jobClient, job);
+
+    final var jobResultStep = mock(CompleteJobCommandJobResultStep.class);
+    final var adHocResult = mock(CompleteAdHocSubProcessResultStep2.class);
+    when(jobResultStep.forAdHocSubProcess()).thenReturn(adHocResult);
+    when(adHocResult.activateElement(anyString())).thenReturn(adHocResult);
+    when(adHocResult.completionConditionFulfilled(anyBoolean())).thenReturn(adHocResult);
+
+    resultFunctionCaptor.getValue().apply(jobResultStep);
+
+    final var activatedElements = ArgumentCaptor.forClass(String.class);
+    verify(adHocResult, atLeast(0)).activateElement(activatedElements.capture());
+    final var completionConditionFulfilled = ArgumentCaptor.forClass(Boolean.class);
+    verify(adHocResult).completionConditionFulfilled(completionConditionFulfilled.capture());
+
+    return new AdHocSubProcessRoundResult(
+        activatedElements.getAllValues(), completionConditionFulfilled.getValue());
+  }
+
+  private static WorkerProperties zeroDelayProperties() {
+    final var props = new WorkerProperties();
+    props.setCompletionDelay(Duration.ZERO);
+    return props;
   }
 
   private static long timeHandleJob(
