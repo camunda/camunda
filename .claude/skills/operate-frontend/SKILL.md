@@ -1,403 +1,161 @@
 ---
-
 name: operate-frontend
-description: Use for any work in the Operate legacy frontend (operate/client/) — bugs, changes, tests, components, API hooks, styled-components, MobX stores, React Router, or questions about Operate patterns, conventions, or architecture.
-
+description: Use for any Operate frontend work — the target pod at webapp/client/apps/orchestration-cluster-webapp/src/operate/ and the legacy client at operate/client/. Covers routing, data fetching, state, styling, testing, forms and conventions in both. For porting a page from legacy to target, use frontend-operate-migrator.
 ---
 
-# Operate Legacy Frontend
+# Operate Frontend
 
-Operate is the process monitoring frontend at `operate/client/`. It is **legacy code being phased out** — the orchestration cluster webapp at `webapp/client/` is replacing it. Work in Operate should be limited to bug fixes, small adjustments, and maintenance. For substantial new features, build them in the new app instead (see the `frontend-feature` and `frontend-migrator` skills).
+Operate's frontend lives in two codebases while the migration runs:
 
-Follow the existing conventions described here. Don't introduce new architectural patterns — consistency matters more than modernization in a codebase that's winding down.
+- **Target** — `webapp/client/apps/orchestration-cluster-webapp/src/operate/` (~240 files). All new
+  work goes here. React 19, TanStack Router + Query, Carbon, styled-components (temporary).
+- **Legacy** — `operate/client/` (~1200 files). Bug fixes, small adjustments and maintenance only.
+  React 18, React Router 7, TanStack Query 5, MobX 6, Carbon, styled-components, React Final Form.
+  Winding down; don't add architecture.
 
-## Tech stack
+Both render BPMN/DMN with `bpmn-js` / `dmn-js` and edit JSON with Monaco (`@monaco-editor/react`).
+The target rules follow. For legacy work, read [references/legacy.md](references/legacy.md); for a
+migration, read both and use [frontend-operate-migrator](../frontend-operate-migrator/SKILL.md).
 
-|   Category   |                                   Technology                                    |
-|--------------|---------------------------------------------------------------------------------|
-| UI framework | React 18, React DOM 18                                                          |
-| Language     | TypeScript 5.9 (strict mode)                                                    |
-| Bundler      | Vite 8                                                                          |
-| Routing      | react-router-dom 7 (React Router v6 API)                                        |
-| Server state | TanStack React Query 5                                                          |
-| Client state | MobX 6 + mobx-react / mobx-react-lite                                           |
-| Styling      | styled-components 6, Carbon Design System (`@carbon/react`, `@carbon/elements`) |
-| Forms        | React Final Form + final-form-arrays                                            |
-| Testing      | Vitest (jsdom) + Testing Library + MSW 2, Playwright (E2E)                      |
-| BPMN/DMN     | bpmn-js 18, dmn-js 17                                                           |
-| Code editor  | Monaco Editor (`@monaco-editor/react`)                                          |
+For target unit tests, follow [frontend-unit-test](../frontend-unit-test/SKILL.md). For other target
+concerns, read the relevant canonical guide under `docs/monorepo-docs/frontend/`. For app-wide
+layout and boundaries, start with `docs/monorepo-docs/frontend/orchestration-cluster-webapp.md`.
+The rules below record Operate-specific choices and overrides.
 
 ## Project structure
 
-```
-operate/client/src/
-  index.tsx                          # Entry point, renders <App />
-  App/                               # App shell + page components
-    index.tsx                        # Router, providers, route tree
-    Layout/                          # App shell (header, sidebar, content)
-    Dashboard/                       # Dashboard page
-    Processes/                       # Process instances list
-    ProcessInstance/                  # Process instance detail (BPMN + tabs)
-    Decisions/                       # Decision instances list
-    DecisionInstance/                 # Decision instance detail
-    BatchOperations/                 # Batch operations list + detail
-    OperationsLog/                   # Operations log
-    Login/                           # Login page
-    RedirectDeprecatedRoutes.tsx     # Migrates old /instances URLs
-  modules/                           # Shared concerns
-    api/v2/                          # API endpoint functions (one per endpoint)
-    queries/                         # React Query hooks (useQuery, useInfiniteQuery)
-    mutations/                       # React Query mutations (useMutation)
-    react-query/                     # QueryClient provider + config
-    stores/                          # MobX stores (UI state)
-    hooks/                           # Custom React hooks
-    components/                      # Shared UI components
-    mock-server/                     # MSW setup (node for tests)
-    mocks/                           # Mock data + mock request builders
-    request/                         # HTTP request utilities
-    Routes.tsx                       # Centralized path builders (Paths, Locations)
-    testing-library.ts               # Custom render() with userEvent
-    types/                           # Shared TypeScript types
-    utils/                           # General utilities
-```
+**Target:** routes in `src/routes/_carbon/_auth/operate/`, pages and their query/search contracts in
+`src/operate/`, cross-pod primitives in `src/shared/`. Dependencies flow **routes → operate →
+shared**: feature code must not import route files, shared code must not import feature code. Define
+shared route/feature schemas in the feature. Never import across the legacy app boundary.
 
-Components follow a consistent directory layout: `index.tsx` (component), `styled.ts` (styled-components), `index.test.tsx` (tests). Some components place tests in a `tests/` subdirectory instead.
+Pages are directories named after their primary export — `Dashboard/Dashboard.tsx`, not
+`DashboardPage`. One file, one primary export, filename matches it. A colocated query module may
+export both its `queryOptions` and its `use*` hook.
 
 ## Routing
 
-Routes are defined in `src/App/index.tsx` using React Router v6's `createBrowserRouter` with `createRoutesFromElements`. Every page-level route is lazy-loaded:
+**Target:** TanStack file-based routes under `src/routes/_carbon/_auth/operate/`. Route IDs include
+`/_carbon/_auth`; browser URLs stay `/operate/...`. Do not introduce historical `/_auth/operate/...`
+IDs. The guard, Dashboard and Processes list already exist — inspect before adding or splitting.
+`beforeLoad` is for auth/guards only; `loader` prefetches data. Route files are thin: they wire a
+page component and own `loader`, `pendingComponent`, `errorComponent`.
 
-```tsx
-<Route
-  path={Paths.processes()}
-  lazy={async () => {
-    const {Processes} = await import('./Processes/index');
-    return {Component: Processes};
-  }}
-/>
-```
+## URL as state (target)
 
-### Path builders
-
-All route paths are centralized in `modules/Routes.tsx` via the `Paths` object. Never hardcode path strings — always use `Paths`:
-
-```tsx
-import {Paths} from 'modules/Routes';
-
-Paths.processes()
-Paths.processInstance('123')
-Paths.processInstance()
-Paths.decisionInstance('456')
-Paths.batchOperation('789')
-```
-
-The `Locations` object builds `{pathname, search}` objects with default filter params:
-
-```tsx
-import {Locations} from 'modules/Routes';
-
-Locations.processes()
-Locations.decisions()
-```
-
-### Route params and search params
-
-Route params use `useParams` with a type argument:
-
-```tsx
-const {processInstanceId} = useParams<{processInstanceId: string}>();
-```
-
-The `useProcessInstancePageParams` hook in `App/ProcessInstance/` wraps this for the process instance detail pages — use it instead of calling `useParams` directly in that context.
-
-Search params drive filter state. The `useFilters` hook in `modules/hooks/useFilters.tsx` provides `getFilters()` and `setFilters()` that read/write URL search params via `useNavigate` and `useLocation`. Filters are fully URL-driven — no MobX store for filter state.
-
-### Authentication guards
-
-All authenticated routes are wrapped in `AuthenticationCheck` (redirects to `/login` if not logged in) and `AuthorizationCheck` (redirects to `/forbidden` if user lacks permissions). These are composed in the dashboard route's `lazy` loader. If you add a new authenticated route, nest it under the dashboard route in the route tree — don't duplicate the guards.
-
-### Error boundaries
-
-A single `PageErrorBoundary` is attached to the root route via React Router's `ErrorBoundary` prop. It uses `useRouteError()` to render error details. Individual pages don't define their own error boundaries — the root one catches everything.
+Follow `docs/monorepo-docs/frontend/development-process/creating-a-new-page.md`: entity identity goes
+in path params, shareable view state in validated search params, and ephemeral UI state locally.
+Operate links must preserve validated tenant, definition/version, and incident identity filters.
+Cover duplicate definition IDs across tenants and browser back/forward.
 
 ## Data fetching
 
-Data fetching has three layers. Follow this architecture — don't bypass it.
+**Target:** endpoint factories in `#/shared/http/endpoints.ts`. Operate-only query options live
+**beside the owning feature** in `<feature>.queries.ts` or a local hook; only cross-app query options
+belong in `#/shared/http/queries.ts`. Do not add Operate-specific polling, aggregation or
+multi-page fetching to the shared registry.
 
-### Layer 1: API functions (`modules/api/v2/`)
+| Concern | Where it goes |
+|---------|--------------|
+| Polling / cache policy | Feature-local query options, local hook, or call site |
+| Multi-page fetching | Local hook exporting a `queryOptions` function (for route prefetch) + a `use*` hook (for the component) |
+| Aggregation / transformation | `select` on `useSuspenseQuery`, or inside the local hook's `queryFn` |
 
-Each endpoint gets a thin typed function. Endpoints come from `@camunda/camunda-api-zod-schemas/8.10`:
+Reference: `operate/pages/Dashboard/useRunningInstancesCount.ts` exports
+`runningInstancesCountQuery()` and `useRunningInstancesCount()`; the route imports the query options,
+the component imports the hook. Check `@camunda/camunda-api-zod-schemas/8.10` before writing a custom
+endpoint — most Operate endpoints are already there.
 
-```tsx
-import {endpoints, type QueryProcessInstancesRequestBody, type QueryProcessInstancesResponseBody}
-  from '@camunda/camunda-api-zod-schemas/8.10';
-import {requestWithThrow} from 'modules/request';
-```
+Suspense queries throw initial errors without data, but a failed refetch can retain cached data —
+handle those explicitly. Where a panel needs independent loading and recovery, use a granular
+boundary or `useQuery`. See `docs/monorepo-docs/frontend/data-loading.md`.
 
-`requestWithThrow` returns `{response, error}` — a discriminated union, not a thrown exception (despite the name). `response` is the parsed data on success, `null` on failure. `error` is a `RequestError` on failure, `null` on success. The underlying `request` function handles 401s automatically by disabling the session.
+## Writes (target)
 
-There is also `requestAndParse` — this is an older utility used by a few legacy stores. Don't use it for new code; use `requestWithThrow`.
+Use direct `request()` handlers for simple writes, and XState machines for accepted/pending
+lifecycles. This is an Operate rule; it does not change other pods' write patterns.
 
-### Layer 2: React Query hooks (`modules/queries/`)
+- **Simple write, then refresh:** call `request(endpoints.xxx(...))` in the handler, then
+  `queryClient.invalidateQueries({queryKey: [...]})` for affected lists.
+- **Write with a lifecycle** (API returns 202 and the resource passes through pending states): model
+  it as an XState machine (`setup` + `fromPromise` actors) taking `queryClient` as input — optimistic
+  update via `setQueryData` with rollback, poll via `fetchQuery` until the resource leaves the
+  transitional state, then invalidate affected lists. Behavior reference:
+  `tasklist/modules/task-details/taskCompletionMachine.ts` (the machine's shape, not Tasklist's route
+  tree or design-system wrappers).
 
-Query hooks wrap the API functions. Query keys are centralized in `modules/queries/queryKeys.ts`:
-
-```tsx
-const useProcessInstance = () => {
-  const {processInstanceId} = useProcessInstancePageParams();
-  return useQuery({
-```
-
-The standard pattern: destructure `{response, error}` from the API function, return `response` on success, `throw error` on failure. React Query catches the thrown error and surfaces it via `query.error`.
-
-### Layer 3: Components
-
-Components call the query hooks directly. There is no route-level data prefetching — components initiate their own fetches:
-
-```tsx
-function ProcessInstanceHeader() {
-  const {data: processInstance, isLoading} = useProcessInstance();
-  if (isLoading) return <SkeletonText />;
-}
-```
-
-### Mutations
-
-Mutations follow the same `{response, error}` pattern. Some mutations poll for eventual consistency using `queryClient.fetchQuery` with `retry: true`:
-
-```tsx
-await queryClient.fetchQuery({
-  queryKey: queryKeys.processInstance.get(key),
-  queryFn: async () => {
-    const {response} = await fetchProcessInstance(key);
-    if (response.state === 'ACTIVE') throw new Error('Still running');
-    return response;
-  },
-  retry: true,
-  retryDelay: 1000,
-});
-```
-
-### Polling
-
-Live data uses `refetchInterval` on query hooks (standard interval is 5000ms). Conditional polling is common — only poll when the instance is running or active.
+Operate's batch operations follow this lifecycle. Distinguish **starting** a new batch (returns a
+key) from suspend/resume/cancel of an **existing** one (bodyless response — don't parse JSON from an
+empty body). Never put write logic in `queries.ts`; it stays a read-only registry.
 
 ## State management
 
-State is split across three mechanisms. When you encounter state, identify which category it belongs to:
-
-|                              What                               |                         Where                         |                            Why                             |
-|-----------------------------------------------------------------|-------------------------------------------------------|------------------------------------------------------------|
-| Server data (API responses)                                     | React Query via `modules/queries/`                    | Automatic caching, deduplication, background refresh       |
-| Filters, sort, pagination, element selection                    | URL search params via `useFilters`, `useSearchParams` | Shareable, survives refresh, back/forward works            |
-| UI mode (modification mode, panel visibility, selection, theme) | MobX stores in `modules/stores/`                      | Ephemeral client-side state that doesn't belong in the URL |
-
-### MobX stores
-
-There are ~20 MobX stores. The important ones:
-
-|           Store            |                               What it manages                               |
-|----------------------------|-----------------------------------------------------------------------------|
-| `authentication`           | Session state, login/logout flow                                            |
-| `modifications`            | Process instance modification mode (add/cancel/move tokens, variable edits) |
-| `notifications`            | Toast notification queue (max 5 visible)                                    |
-| `instancesSelection`       | Selected process instances for batch operations                             |
-| `processInstanceMigration` | Migration wizard state                                                      |
-| `panelStates`              | UI panel open/closed state                                                  |
-| `batchModification`        | Batch modification mode                                                     |
-| `currentTheme`             | Light/dark theme preference                                                 |
-
-Components that read MobX stores must be wrapped with `observer()`:
-
-```tsx
-import {observer} from 'mobx-react';
-import {panelStatesStore} from 'modules/stores/panelStates';
-
-const MyComponent = observer(() => {
-  const isOpen = panelStatesStore.isFiltersOpen;
-});
-
-export {MyComponent};
-```
-
-Don't wrap components that don't access stores — `observer()` adds overhead.
+**Target:** URL search params own shareable state, `useState` owns ephemeral UI, and TanStack Query
+owns server data. Reuse shared session, theme, and notification modules rather than porting stores.
+Complex pending state may use a local reducer or MobX when simpler state is insufficient.
 
 ## Styling
 
-All component styling uses styled-components. There are no SCSS modules in this codebase — don't introduce them. Don't use inline `style={{}}` props either — all styling belongs in a `styled.ts` file.
-
-### File convention
-
-Each component directory has a `styled.ts` file exporting styled components:
-
-```tsx
-import styled, {css} from 'styled-components';
-import {Tile as BaseTile} from '@carbon/react';
-import {styles} from '@carbon/elements';
-```
-
-### Key patterns
-
-- **Wrapping Carbon components**: `styled(CarbonComponent)` applies additional styles on top of Carbon's defaults.
-- **Respect Carbon's defaults**: Carbon components ship with intentional styling — colors, spacing, typography, interactive states. Before applying any style that changes a Carbon component's visual defaults, you must first tell the user what you're about to override and why it's risky — even if the user explicitly asked for the change, because they may not realize it touches Carbon defaults. Explain what the override is (e.g., "This would set a custom height on SkeletonText, overriding Carbon's built-in sizing"), suggest the Carbon-native alternative if one exists (e.g., a prop, a token, a different component), and ask the user to confirm before proceeding. Only apply the override after the user says to go ahead.
-- **Carbon tokens**: typography via `@carbon/elements` `styles` object (`${styles.productiveHeading02}`), spacing/color via CSS custom properties (`var(--cds-spacing-05)`, `var(--cds-text-primary)`).
-- **Transient props**: use the `$` prefix (`$isActive`, `$size`) to avoid passing props to the DOM. Type them with generics: `styled.div<{$isActive: boolean}>`.
-- **`css` helper**: use for conditional style blocks inside template literals.
+**Target:** `styled-components` and Carbon are kept **temporarily** for the legacy-to-unified
+migration. This is a compatibility step, not the target design system and not a frontend-wide
+default — the Camunda design system replaces it later via
+[design-system-migrator](../design-system-migrator/SKILL.md). Reuse existing Carbon components;
+custom JSX is a last resort at this stage. Tasklist's design-system migration runs independently —
+never apply these Carbon rules there.
 
 ## Component structure
 
-- **File naming**: `index.tsx` for the component, `styled.ts` for styles, `index.test.tsx` for tests.
-- **Exports**: always use named exports at the end of the file: `export {MyComponent}`. Never `export default`.
-- **`observer()` wrapping**: wrap the component function, not the export: `const Comp = observer(() => {...}); export {Comp};`
-- **`React.FC` typing**: most components use `const Component: React.FC<Props> = ({...}) => {...}`.
-- **No comments**: don't generate code comments. The code should be self-explanatory. If something needs a comment, the code itself should be rewritten to be clearer instead.
+**Both:** named exports only, never `export default`. No code comments — if something needs one,
+rewrite the code. Prefer declarative and functional (`const`, `map`/`filter`/`reduce`); a local
+`let`/`for` is fine for tight data aggregation where it reads clearer (see
+`useRunningInstancesCount.ts`).
+
+**Target:** one file, one primary export, filename matches it.
+
+## i18n (target)
+
+Operate strings go under `operate.*` inside the shared `translation` namespace in
+`src/shared/i18n/locales/`, used as `t('operate.dashboard.title')`. Add all four locales (en/de/fr/es)
+— LLM-translate de/fr/es and note "LLM-translated — native speaker review requested" in the PR
+description.
 
 ## Testing
 
-Tests use Vitest with jsdom, `@testing-library/react`, and MSW v2 for API mocking.
-
-### Custom render
-
-Import `render` from `modules/testing-library`, not from `@testing-library/react` directly. It bundles a pre-configured `userEvent` instance:
-
-```tsx
-import {render, screen, waitFor} from 'modules/testing-library';
-
-const {user} = render(<MyComponent />, {wrapper: getWrapper()});
-await user.click(screen.getByRole('button', {name: /submit/i}));
-```
-
-### Test wrapper
-
-Tests that render components needing context use a wrapper function composing `QueryClientProvider` + `MemoryRouter`:
-
-```tsx
-import {QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter, Routes, Route} from 'react-router-dom';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {Paths} from 'modules/Routes';
-
-const getWrapper = (initialPath = Paths.processes()) => {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
-    <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path={Paths.processes()} element={children} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
-  return Wrapper;
-};
-```
-
-`getMockQueryClient()` creates a `QueryClient` with `retry: false`, `gcTime: Infinity`, `staleTime: Infinity` — no retries, no cache expiration, always fresh.
-
-### API mocking
-
-Each endpoint has a typed mock builder in `modules/mocks/api/`. The fluent builder pattern:
-
-```tsx
-import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-
-mockFetchProcessInstance().withSuccess(processInstanceData);
-
-mockFetchProcessInstance().withServerError(404);
-
-mockFetchProcessInstance().withDelay(processInstanceData);
-
-mockFetchProcessInstance().withNetworkError();
-```
-
-All handlers except `withNetworkError` are registered with `{once: true}` — they're consumed on first match, then removed. This lets you chain multiple setups for sequential requests in the same test. The MSW server resets all handlers in `afterEach` via `setupTests.tsx`.
-
-To create a new mock, use `mockGetRequest`, `mockPostRequest`, etc. from `modules/mocks/api/mockRequest.ts`:
-
-```tsx
-import {mockPostRequest} from 'modules/mocks/api/mockRequest';
-import type {MyResponseType} from '@camunda/camunda-api-zod-schemas/8.10';
-
-const mockSearchMyEntity = (contextPath = '') =>
-  mockPostRequest<MyResponseType>(`${contextPath}/v2/my-entities/search`);
-```
-
-### Test data factories
-
-Use factory functions from `modules/mocks/` to create typed test data:
-
-```tsx
-import {createUser} from 'modules/mocks/user';
-import {createProcessDefinition} from 'modules/mocks/processDefinition';
-
-mockMe().withSuccess(createUser());
-mockSearchProcessDefinitions().withSuccess(searchResult([createProcessDefinition({name: 'Test'})]));
-```
-
-### Assertion patterns
-
-```tsx
-expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
-
-expect(await screen.findByText('10 running instances')).toBeInTheDocument();
-
-expect(screen.queryByText('Error')).not.toBeInTheDocument();
-
-await waitFor(() => {
-  expect(screen.getByRole('cell', {name: 'completed'})).toBeInTheDocument();
-});
-
-const row = screen.getByRole('row', {name: /my-process/i});
-expect(within(row).getByText('v2')).toBeInTheDocument();
-```
-
-### Store cleanup
-
-All MobX stores are reset automatically in `afterEach` via `resetAllStores()` in `setupTests.tsx`. You don't need to reset stores manually in tests unless you need a mid-test reset.
+**Target:** follow [frontend-unit-test](../frontend-unit-test/SKILL.md). Put reusable response data in
+`shared-test-modules/api-mocks/` factories rather than constructing large literals in tests.
 
 ## Forms
 
-Forms use React Final Form. Two main patterns:
+**Target:** follow `docs/monorepo-docs/frontend/forms.md`.
 
-1. **Filter forms**: use `<Form>` with field components that sync to URL search params via `useFilters`.
+## Before building a target feature
 
-2. **Modal/editing forms**: standard `<Form onSubmit={...}>` with `<Field>` components and explicit submit buttons. Variable editing uses `FieldArray` from `final-form-arrays`.
+Read `docs/monorepo-docs/frontend/development-process/before-starting.md`. Preserve each endpoint's
+pagination contract and legacy UX: keep the existing paginated table for offset-based pages rather
+than converting it to infinite scroll. Honor eventual-consistency metadata, keep authorization
+server-driven, and cover multi-tenancy. Verify imports are declared dependencies and inspect
+`tsconfig.browser.json` before adding global types.
+
+## Feature flags (target)
+
+Follow `docs/monorepo-docs/frontend/development-process/working-on-large-feature.md`.
 
 ## Commands
 
-Run from `operate/client/`:
+Run target checks from `webapp/client/`:
 
 ```bash
-npm start              # Dev server on :3000 (proxies API to :8080)
-npm test               # Unit tests (Vitest, jsdom)
-npm run lint           # TypeScript check + ESLint + Prettier
-npm run ts-check       # TypeScript only (tsc -b)
-npm run build          # Production build
-npm run knip           # Dead code/dependency analysis
+npm run lint
+npm run typecheck -w @camunda/orchestration-cluster-webapp
+npm run test:unit -w @camunda/orchestration-cluster-webapp
 ```
 
-## Common pitfalls
-
-- **Mock handler consumption**: `.withSuccess()` handlers are `{once: true}` — if a component makes the same request twice, the second call gets no handler. Chain two `.withSuccess()` calls or use a non-one-shot approach.
-- **Missing `observer()`**: if a component reads a MobX store but isn't wrapped in `observer()`, it won't re-render when the store changes. Symptoms: stale UI, tests that pass individually but fail in sequence.
-- **`requestAndParse` vs `requestWithThrow`**: `requestAndParse` is legacy. Use `requestWithThrow` for all new code. They have different return shapes — don't mix them up.
-- **No i18n**: all strings are hardcoded in English. Don't add `i18next` or translation files.
-- **No SCSS modules**: styling is entirely styled-components. Don't introduce `.module.scss` files.
-- **No data prefetching**: components fetch their own data via query hooks. There are no route-level loaders. Don't add them — that's the new app's pattern.
+For tracked end-to-end work, the complete validation tiers live in
+[operate-engineering-loop](../operate-engineering-loop/SKILL.md).
 
 ## Boundaries
 
-**Follow existing conventions:**
-- styled-components for styling
-- React Final Form for forms
-- `mockFetchX().withSuccess()` pattern for test mocking
-- Named exports, `index.tsx` entry files
-- `Paths` object for all route paths
-
-**Don't introduce:**
-- SCSS modules or CSS modules
-- i18n / translation files
-- TanStack Router or file-based routing
-- Route-level data loaders / prefetching
-- New UI component libraries
-
-**For substantial new features:** use the `frontend-migrator` skill to build them in the orchestration cluster webapp instead. Operate is winding down — invest engineering effort in the replacement.
+**Target — don't introduce:** `/_auth/operate/...` route IDs, Operate-specific policy in
+`#/shared/http/queries.ts`, per-consumer copies of shared logic, imports across the legacy app
+boundary, or Mixpanel tracking (the app has none — when porting a callback that mixes tracking with
+behavior, keep the behavior and drop the tracking).

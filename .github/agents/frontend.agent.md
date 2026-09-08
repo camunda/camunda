@@ -91,14 +91,11 @@ For detailed guidance, consult the frontend docs:
 - `docs/monorepo-docs/frontend/forms.md` — form library guidance
 - `docs/monorepo-docs/frontend/code-style.md` — naming, exports, comments
 
-## Migration from Legacy Frontends
+## Operate
 
-When migrating code from `operate/client/` to the orchestration cluster webapp, consult the migration skill for pattern transformations:
-
-- `.claude/skills/frontend-migrator/` — maps legacy patterns (React Router, MobX stores, styled-components, jsdom tests) to target patterns (TanStack Router, TanStack Query, SCSS modules, Vitest browser mode)
-- `references/pattern-mapping.md` — side-by-side code examples for every transformation
-
-Key principles: migration is a rewrite (not a code port), dependencies flow routes → pages → modules, and MobX stores should be decomposed by purpose (server data → TanStack Query, filters → URL params, ephemeral UI → useState).
+For Operate work, load `.claude/skills/operate-frontend/`. Also load
+`frontend-operate-migrator` when porting legacy behavior, or `operate-engineering-loop` for a tracked
+target-pod change delivered through a draft PR.
 
 ## Tasklist Pod
 
@@ -107,14 +104,6 @@ When building, changing, or testing features in the Tasklist pod area at `webapp
 - `.claude/skills/tasklist-frontend/` — Tasklist pod ownership (Employee Engagement & Tasklist), structure, and boundaries
 
 Key principles: building blocks live in `src/tasklist/modules/` (split by meaningful unit, kept flat — components in `components/`, everything else at the module root), pages are assembled in `src/tasklist/pages/`, and routes are thin wrappers under `src/routes/_auth/tasklist/`. **Do not modify `src/shared/` for Tasklist work unless an engineer explicitly tells you to** — surface the need instead. Defer to `frontend-feature` for general conventions.
-
-## Legacy Operate Frontend
-
-When fixing bugs, writing tests, or making small changes in the legacy Operate frontend at `operate/client/`, consult the operate-frontend skill:
-
-- `.claude/skills/operate-frontend/` — conventions for the legacy codebase (styled-components, MobX, React Router, Testing Library + MSW mock builders)
-
-Operate is being phased out in favor of the orchestration cluster webapp. Limit work to bug fixes and maintenance. Follow existing patterns — don't modernize the architecture. Substantial new features should go to the orchestration cluster webapp instead.
 
 ## Boundaries
 
