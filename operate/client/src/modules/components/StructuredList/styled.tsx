@@ -18,12 +18,13 @@ type StructuredListCellProps = {
   $size?: 'sm' | 'md';
   $width?: string;
   $verticalCellPadding?: string;
+  $leftCellPadding?: string;
 };
 
 const StructuredListCell = styled(
   BaseStructuredListCell,
 )<StructuredListCellProps>`
-  ${({$size = 'md', $width, $verticalCellPadding}) => {
+  ${({$size = 'md', $width, $verticalCellPadding, $leftCellPadding}) => {
     return css`
       vertical-align: top;
       ${
@@ -43,6 +44,12 @@ const StructuredListCell = styled(
         css`
           padding-top: ${$verticalCellPadding} !important;
           padding-bottom: ${$verticalCellPadding} !important;
+        `
+      }
+      ${
+        $leftCellPadding &&
+        css`
+          padding-left: ${$leftCellPadding} !important;
         `
       }
     `;

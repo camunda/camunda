@@ -34,6 +34,12 @@ type Props = {
   className?: string;
   dynamicRows?: React.ReactNode;
   verticalCellPadding?: string;
+  /**
+   * Adds left padding to the second column of each row (the "value"
+   * column in a Property/Value list) so long values are easier to scan.
+   * Left unset, existing consumers of this shared component are unaffected.
+   */
+  valueCellPadding?: string;
   dataTestId?: string;
   isFlush?: boolean;
 } & Pick<
@@ -41,10 +47,9 @@ type Props = {
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
 >;
 
-const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding'>> = ({
-  rows,
-  verticalCellPadding,
-}) => {
+const StructuredRows: React.FC<
+  Pick<Props, 'rows' | 'verticalCellPadding' | 'valueCellPadding'>
+> = ({rows, verticalCellPadding, valueCellPadding}) => {
   return (
     <>
       {rows.map(({key, dataTestId, columns}) => (
@@ -54,6 +59,7 @@ const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding'>> = ({
               <StructuredListCell
                 key={index}
                 $verticalCellPadding={verticalCellPadding}
+                $leftCellPadding={index === 1 ? valueCellPadding : undefined}
                 $width={width}
                 onFocus={(e) => {
                   e.stopPropagation();
@@ -77,6 +83,7 @@ const StructuredList: React.FC<Props> = ({
   className,
   dynamicRows,
   verticalCellPadding,
+  valueCellPadding,
   dataTestId,
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
@@ -117,6 +124,7 @@ const StructuredList: React.FC<Props> = ({
             <StructuredRows
               rows={rows}
               verticalCellPadding={verticalCellPadding}
+              valueCellPadding={valueCellPadding}
             />
           </div>
         </InfiniteScroller>
