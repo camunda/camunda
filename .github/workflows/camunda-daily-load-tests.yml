@@ -99,7 +99,7 @@ jobs:
         variant:
           - key: grpc
             label: gRPC
-            load-test-load: ''
+            load-test-load: '--set global.preferRest.enabled=false'
             load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
             secondary-storage-type: elasticsearch
           - key: rest
