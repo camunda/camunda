@@ -179,6 +179,27 @@ public class CriticalComponentsHealthMonitorTest {
   }
 
   @Test
+  public void shouldRemoveComponentMonitoredByNameOnly() {
+    // given - a monitored name that nothing ever registers under, next to a healthy component:
+    // the placeholder counts as unknown and so drags the whole monitor down
+    final ControllableComponent component = new ControllableComponent("registered");
+    monitor.monitorComponent("placeholder");
+    monitor.registerComponent(component);
+    waitUntilAllDone();
+    assertThat(monitor.getHealthReport().children()).containsOnlyKeys("placeholder", "registered");
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+
+    // when
+    monitor.removeComponent("placeholder");
+    waitUntilAllDone();
+
+    // then - removing by name is the only way to undo monitorComponent; without it nothing could
+    // ever clear the placeholder and the monitor would stay unhealthy for good
+    assertThat(monitor.getHealthReport().children()).containsOnlyKeys("registered");
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
+  }
+
+  @Test
   public void shouldMonitorComponentDeath() {
     // given
     final ControllableComponent component1 = new ControllableComponent("comp1");
