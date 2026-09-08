@@ -23,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
+import io.camunda.exporter.tasks.incident.PendingIncidentUpdateCountTask;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -181,8 +182,9 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(6)
+        .hasSize(7)
         .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
+        .anyMatch(task -> isTaskOfType(task, PendingIncidentUpdateCountTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricsArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationUpdateTask.class))
@@ -202,7 +204,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not schedule ApplyRolloverPeriodJob when retention is disabled")
-        .hasSize(7)
+        .hasSize(8)
         .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
@@ -218,7 +220,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
-        .hasSize(8)
+        .hasSize(9)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 

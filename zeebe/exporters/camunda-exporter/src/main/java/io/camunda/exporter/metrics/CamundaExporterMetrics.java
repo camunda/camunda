@@ -34,6 +34,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
       meterName("since.last.flush.seconds");
   private static final String PROCESS_INSTANCES_AWAITING_ARCHIVAL_METER_NAME =
       meterName("process.instances.awaiting.archival");
+  private static final String PENDING_INCIDENT_UPDATES_METER_NAME =
+      meterName("incident.updates.pending");
   private static final String FLUSH_FAILURE_TYPE_METER_NAME = meterName("flush.failure.type");
   private final MeterRegistry meterRegistry;
   private final InstantSource streamClock;
@@ -121,6 +123,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
   private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
+  private final AtomicInteger pendingIncidentUpdatesCount = new AtomicInteger(0);
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this(meterRegistry, InstantSource.system());
@@ -342,6 +345,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
             AtomicInteger::get)
         .description("Number of process instances awaiting archival (approximate)")
         .register(meterRegistry);
+
+    Gauge.builder(
+            PENDING_INCIDENT_UPDATES_METER_NAME, pendingIncidentUpdatesCount, AtomicInteger::get)
+        .description("Number of incident updates pending (approximate)")
+        .register(meterRegistry);
   }
 
   public void recordFlushReasonBatchSize() {
@@ -483,6 +491,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
     processInstancesAwaitingArchival.set(count);
   }
 
+  public void setPendingIncidentUpdatesCount(final int count) {
+    pendingIncidentUpdatesCount.set(count);
+  }
+
   /**
    * For each record write timestamp, observes the export latency by subtracting the timestamp from
    * the current stream clock.
@@ -601,6 +613,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(SINCE_LAST_FLUSH_SECONDS_METER_NAME);
     removeGaugeIfExists(PROCESS_INSTANCES_AWAITING_ARCHIVAL_METER_NAME);
+    removeGaugeIfExists(PENDING_INCIDENT_UPDATES_METER_NAME);
   }
 
   private void removeGaugeIfExists(final String meterName) {
