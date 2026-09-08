@@ -12,11 +12,13 @@ import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {ThemeProvider} from '#/shared/theme/shadcn.components/ThemeProvider';
 import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
 import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
+import {NetworkStatusWatcher} from '#/shared/notifications/shadcn.components/NetworkStatusWatcher';
 
 const Route = createFileRoute('/shadcn')({
 	component: function RouteComponent() {
 		return (
 			<ThemeProvider>
+				<NetworkStatusWatcher />
 				<Outlet />
 			</ThemeProvider>
 		);

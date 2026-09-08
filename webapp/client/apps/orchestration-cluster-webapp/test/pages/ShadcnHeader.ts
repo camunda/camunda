@@ -40,6 +40,10 @@ class ShadcnHeader extends View {
 		return this.page.getByRole('menuitem', {name: /log out/i});
 	}
 
+	get offlineNotification() {
+		return this.notifications.getByNotificationTitle('Internet connection lost');
+	}
+
 	get documentationLink() {
 		return this.page.getByRole('menuitem', {name: 'Documentation'});
 	}

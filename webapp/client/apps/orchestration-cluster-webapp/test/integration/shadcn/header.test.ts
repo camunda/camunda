@@ -70,6 +70,22 @@ test.describe('logout', () => {
 	});
 });
 
+test.describe('network status', () => {
+	test('should show a persistent notification when going offline and remove it when reconnecting', async ({
+		shadcnTasklistIndexPage,
+		page,
+	}) => {
+		await shadcnTasklistIndexPage.goto();
+		await expect(shadcnTasklistIndexPage.tasksPanel).toBeVisible();
+
+		await page.context().setOffline(true);
+		await expect(shadcnTasklistIndexPage.header.offlineNotification).toBeVisible();
+
+		await page.context().setOffline(false);
+		await expect(shadcnTasklistIndexPage.header.offlineNotification).not.toBeVisible();
+	});
+});
+
 test.describe('user sidebar', () => {
 	test('should display user details and update header text when language is changed', async ({
 		shadcnTasklistIndexPage,
