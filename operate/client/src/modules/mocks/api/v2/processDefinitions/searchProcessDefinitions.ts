@@ -6,17 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Tag} from '@carbon/react';
-import styled from 'styled-components';
+import {mockPostRequest} from 'modules/mocks/api/mockRequest';
+import {
+  type QueryProcessDefinitionsResponseBody,
+  endpoints,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
-const VersionTag = styled(Tag)`
-  margin-left: 0;
-`;
+const mockSearchProcessDefinitions = () =>
+  mockPostRequest<QueryProcessDefinitionsResponseBody>(
+    endpoints.queryProcessDefinitions.getUrl(),
+  );
 
-const HeaderActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-03);
-`;
-
-export {VersionTag, HeaderActions};
+export {mockSearchProcessDefinitions};

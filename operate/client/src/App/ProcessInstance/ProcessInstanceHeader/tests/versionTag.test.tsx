@@ -20,6 +20,7 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('InstanceHeader', () => {
   beforeEach(() => {
@@ -27,6 +28,10 @@ describe('InstanceHeader', () => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(createUser());
+    mockSearchProcessDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
   });
 
   it('should render version tag', async () => {

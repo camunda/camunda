@@ -26,6 +26,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/stores/process', () => ({
   processStore: {state: {process: {}}, fetchProcess: vi.fn()},
@@ -52,6 +53,13 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('InstanceHeader', () => {
+  beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+  });
+
   it('should render multi tenancy column and include tenant in version link', async () => {
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,

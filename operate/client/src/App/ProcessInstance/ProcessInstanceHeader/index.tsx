@@ -16,12 +16,15 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
-import {VersionTag} from './styled';
+import {VersionTag, HeaderActions} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
+import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
+import {DrainingTag} from 'modules/components/DrainingTag';
+import {DRAINING_MESSAGES} from 'modules/utils/draining';
 
 const headerColumns = [
   'Process Name',
@@ -92,6 +95,10 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {data: draining} = useDrainingProcessDefinitions();
+  const isDraining =
+    processDefinitionKey !== undefined &&
+    !!draining?.byKey.has(processDefinitionKey);
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
@@ -245,7 +252,15 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         },
       ]}
       additionalContent={
-        <ProcessInstanceOperations processInstance={processInstance} />
+        <HeaderActions>
+          {isDraining && (
+            <DrainingTag
+              description={DRAINING_MESSAGES.version}
+              align="bottom-right"
+            />
+          )}
+          <ProcessInstanceOperations processInstance={processInstance} />
+        </HeaderActions>
       }
     />
   );

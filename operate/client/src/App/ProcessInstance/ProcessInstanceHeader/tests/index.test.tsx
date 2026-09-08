@@ -36,6 +36,7 @@ import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetc
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -47,6 +48,10 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchCallHierarchy().withSuccess([]);
     mockMe().withSuccess(createUser());
+    mockSearchProcessDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
   });
 
   it('should render process instance data', async () => {
@@ -286,6 +291,35 @@ describe('InstanceHeader', () => {
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     });
+  });
+
+  it('should show draining tag when process definition is draining', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess({
+      items: [
+        {
+          name: 'Order process',
+          processDefinitionId: 'orderProcess',
+          processDefinitionKey: '123',
+          version: 1,
+          tenantId: '<default>',
+          hasStartForm: false,
+          state: 'DRAINING',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(await screen.findByTestId('draining-tag')).toBeInTheDocument();
   });
 
   it('should show spinner on process instance cancellation', async () => {

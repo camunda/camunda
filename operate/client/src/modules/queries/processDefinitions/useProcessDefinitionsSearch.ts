@@ -1,0 +1,68 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import type {
+  QueryProcessDefinitionsRequestBody,
+  QueryProcessDefinitionsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useQuery} from '@tanstack/react-query';
+import {queryKeys} from '../queryKeys';
+import {searchProcessDefinitions} from 'modules/api/v2/processDefinitions/searchProcessDefinitions';
+
+type QueryOptions<T> = {
+  payload?: QueryProcessDefinitionsRequestBody;
+  enabled?: boolean;
+  select?: (result: QueryProcessDefinitionsResponseBody['items']) => T;
+  staleTime?: number;
+  refetchInterval?: number;
+};
+
+function useProcessDefinitionsSearch<
+  T = QueryProcessDefinitionsResponseBody['items'],
+>(options?: QueryOptions<T>) {
+  return useQuery({
+    queryKey: queryKeys.processDefinitions.search(options?.payload),
+    enabled: options?.enabled,
+    select: options?.select,
+    staleTime: options?.staleTime,
+    refetchInterval: options?.refetchInterval,
+    queryFn: async () => {
+      const {response, error} = await searchProcessDefinitions(
+        options?.payload,
+      );
+
+      if (error !== null) {
+        throw error;
+      }
+
+      if (
+        response.page.totalItems <= response.items.length ||
+        response.page.endCursor === undefined
+      ) {
+        return response.items;
+      }
+
+      const {response: remaining, error: remainingError} =
+        await searchProcessDefinitions({
+          ...options?.payload,
+          page: {
+            after: response.page.endCursor,
+            limit: response.page.totalItems - response.items.length,
+          },
+        });
+
+      if (remainingError !== null) {
+        throw remainingError;
+      }
+
+      return response.items.concat(remaining.items);
+    },
+  });
+}
+
+export {useProcessDefinitionsSearch};
