@@ -21,6 +21,12 @@ public class WorkerProperties {
   private boolean sendMessage = false;
   private String messageName = "messageName";
   private String correlationKeyVariableName = "correlationKey-var";
+  // Baseline/treatment toggle for the agent-visibility scenario: only meaningful for jobs of
+  // type Worker.AD_HOC_SUB_PROCESS_JOB_TYPE. When true, the orchestrator additionally issues
+  // AgentInstance CREATE/UPDATE commands alongside the (unchanged) round-schedule/tool-activation
+  // behaviour, so the measured delta between a false and true run is the agent-instance command
+  // traffic itself, not a difference in the underlying workload.
+  private boolean agentInstanceSimulationEnabled = false;
 
   public Duration getCompletionDelay() {
     return completionDelay;
@@ -60,5 +66,13 @@ public class WorkerProperties {
 
   public void setCorrelationKeyVariableName(final String correlationKeyVariableName) {
     this.correlationKeyVariableName = correlationKeyVariableName;
+  }
+
+  public boolean isAgentInstanceSimulationEnabled() {
+    return agentInstanceSimulationEnabled;
+  }
+
+  public void setAgentInstanceSimulationEnabled(final boolean agentInstanceSimulationEnabled) {
+    this.agentInstanceSimulationEnabled = agentInstanceSimulationEnabled;
   }
 }
