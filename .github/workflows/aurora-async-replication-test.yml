@@ -357,7 +357,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "@zeebe-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "text": "@zeebe-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nRunbook: ${{ github.server_url }}/${{ github.repository }}/blob/main/.github/terraform/aurora-replication-it/README.md\nFrom `.github/terraform/aurora-replication-it/`: `./cleanup.sh ${{ github.run_id }} ${{ inputs.db_engine || 'postgresql' }}`"
                   }
                 }
               ]
