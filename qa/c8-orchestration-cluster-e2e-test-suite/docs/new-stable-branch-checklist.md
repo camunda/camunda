@@ -82,6 +82,18 @@ previous stable version (e.g. `8.10`).
    `stable/8.10` are still missing from it today. Add `stable/<X.Y>` here too, and back-fill the
    missing versions at the same time instead of leaving them for a future cut.
 
+7. **Pin the Camunda image tag in the new branch's own docker-compose files.** Unlike items
+   1-6, this edit lands on the freshly cut `stable/<X.Y>` branch itself, not on `main`, since
+   each branch carries its own copy of `qa/c8-orchestration-cluster-e2e-test-suite/config/`.
+   Every `docker-compose*.yml` there defaults `CAMUNDA_DOCKER_IMAGE` (and, from 8.10 onward,
+   `OPTIMIZE_DOCKER_IMAGE`) to a bare `:SNAPSHOT` tag, inherited as-is from `main` at cut time.
+   On `main` that default is correct: `SNAPSHOT` is main's own bleeding-edge build. On a stable
+   branch it isn't: it resolves to whatever `main` last pushed, not the new branch's own build.
+   Change every occurrence to `<X.Y>-SNAPSHOT` in:
+   - `docker-compose.yml` (`camunda` service, and `optimize` where present)
+   - `docker-compose.waitstates-isolated.yml` (`camunda` service)
+   - `docker-compose.analytics-isolated.yml` (both `camunda` service occurrences)
+
 ## After merging
 
 - Confirm each new nightly workflow actually appears in the next day's metrics report (step 2
@@ -89,3 +101,6 @@ previous stable version (e.g. `8.10`).
 - Watch the first few on-demand and release runs against the new branch for "Detected base
   branch: main" in the logs. That log line means one of the base-branch-detection spots in
   step 3, 4, or 6 was missed.
+- Check the pulled image tag in a local or nightly run's logs against the new branch's own
+  version (step 7). A silently main-tracking image still passes, since main and the new branch
+  start out identical, so this one won't fail loudly until the branches diverge.
