@@ -42,7 +42,7 @@ elasticsearch_version=""
 case "$target_version" in
   main)
     # renovate: version=camunda-platform-8.10
-    camunda_platform_helm_chart_version="15.0.0-alpha4"
+    camunda_platform_helm_chart_version="15.0.0-alpha5"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     ;;
   stable-87)
@@ -65,7 +65,7 @@ case "$target_version" in
     ;;
   stable-810)
     # renovate: version=camunda-platform-8.10
-    camunda_platform_helm_chart_version="15.0.0-alpha4"
+    camunda_platform_helm_chart_version="15.0.0-alpha5"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     elasticsearch_version="8.18.0"
     ;;
