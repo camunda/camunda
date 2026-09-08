@@ -15,6 +15,7 @@ import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.PostImporterQueueTemplate.*;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.*;
@@ -613,19 +614,37 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
             .source(
                 new SearchSourceBuilder()
                     .query(
-                        idsQuery()
-                            .addIds(
-                                incidents.stream()
-                                    .map(i -> String.valueOf(i.getProcessInstanceKey()))
-                                    .toArray(String[]::new)))
+                        joinWithAnd(
+                            idsQuery()
+                                .addIds(
+                                    incidents.stream()
+                                        .map(i -> String.valueOf(i.getProcessInstanceKey()))
+                                        .toArray(String[]::new)),
+                            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)))
                     .fetchSource(ListViewTemplate.TREE_PATH, null));
     scrollWith(
         piRequest,
         esClient,
         sh -> {
+          final var validHits =
+              Arrays.stream(sh.getHits())
+                  .filter(
+                      hit -> {
+                        final boolean hasTreePath =
+                            hit.getSourceAsMap().get(ListViewTemplate.TREE_PATH) != null;
+                        if (!hasTreePath) {
+                          LOGGER.warn(
+                              "Process instance lookup matched list-view document {} in index {} "
+                                  + "with no treePath (expected a processInstance document); skipping it.",
+                              hit.getId(),
+                              hit.getIndex());
+                        }
+                        return hasTreePath;
+                      })
+                  .toList();
           data.getProcessInstanceTreePaths()
               .putAll(
-                  Arrays.stream(sh.getHits())
+                  validHits.stream()
                       .collect(
                           toMap(
                               hit -> Long.valueOf(hit.getId()),
@@ -633,7 +652,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                               (path1, path2) -> path1)));
           data.getProcessInstanceIndices()
               .putAll(
-                  Arrays.stream(sh.getHits())
+                  validHits.stream()
                       .collect(
                           toMap(
                               hit -> hit.getId(),
