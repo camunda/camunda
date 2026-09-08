@@ -20,7 +20,20 @@ app's directory layout, pod areas and shared-code boundaries, see
 data fetching, state, styling, testing — are in
 [operate-frontend](../operate-frontend/SKILL.md).
 
-This skill stops at a review-ready **draft PR**. Send progress only at the end.
+## Execution authorization
+
+An explicit engineering-loop invocation, directly or through
+[frontend-operate-migrator](../frontend-operate-migrator/SKILL.md), authorizes local edits, branch
+creation, commits, pushes, draft PR creation, independent agent reviews, Copilot review requests,
+and handling review threads. This applies to execution, not analysis or planning. It does **not**
+authorize marking the PR ready, merging it, or changing unrelated code. Later user instructions
+replace the relevant permission; never carry permissions over from another invocation.
+
+Human/team PR reviewer and assignee selection belongs to the user. Do not request or assign them
+unless the user explicitly names them.
+
+This skill stops at a review-ready **draft PR** by default. When updating an existing PR, preserve
+its current state unless the user instructs otherwise. Send progress only at the end.
 
 ## Inputs
 
@@ -51,18 +64,17 @@ use provided backport targets or ask before opening the PR.
   findings with evidence.
 - Never count an inaccessible or failed review as approval.
 - Follow repository commit and PR conventions and keep the engineer as the sole commit author.
-- Do not finish while a todo, review thread, unpushed commit, or requested review is outstanding.
 
 ## Validation loop
 
 Run from `webapp/client`. Loop on the cheapest failing tier and graduate only when it is green.
 `npm run lint` combines Prettier, ESLint, and Knip; `npm run prettier:format` fixes formatting.
 
-| Tier | Required gates | When | Max |
-|------|----------------|------|-----|
-| **edit** | `npm run lint:prettier`; `npm run lint:eslint`; `npm run typecheck -w @camunda/orchestration-cluster-webapp` | After meaningful edits | 5 |
-| **component** | Edit tier; `npm run test:unit -w @camunda/orchestration-cluster-webapp`; `npm run build -w @camunda/orchestration-cluster-webapp`; `npm run lint:knip` | When a component is complete | 5 |
-| **PR** | `npm run test:integration -w @camunda/orchestration-cluster-webapp`; `npm run test:a11y -w @camunda/orchestration-cluster-webapp`; visual CI | After opening the draft PR | 3 |
+| Tier          | Required gates                                                                                                                                         | When                         | Max |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- | --- |
+| **edit**      | `npm run lint:prettier`; `npm run lint:eslint`; `npm run typecheck -w @camunda/orchestration-cluster-webapp`                                           | After meaningful edits       | 5   |
+| **component** | Edit tier; `npm run test:unit -w @camunda/orchestration-cluster-webapp`; `npm run build -w @camunda/orchestration-cluster-webapp`; `npm run lint:knip` | When a component is complete | 5   |
+| **PR**        | `npm run test:integration -w @camunda/orchestration-cluster-webapp`; `npm run test:a11y -w @camunda/orchestration-cluster-webapp`; visual CI           | After opening the draft PR   | 3   |
 
 Never regenerate visual snapshots locally. Stop at a tier's limit and report the exact blocker; an
 iteration that repeats the same failure and fix without progress counts double.
@@ -125,9 +137,8 @@ Push with an explicit refspec so a branch initially configured from `origin/main
 git push -u origin HEAD:refs/heads/<branch-name>
 ```
 
-Open a draft PR with `gh pr create --draft`, a conventional-commit title, and the completed
-repository template. Assign the team reviewer and keep the PR draft after convergence — the engineer
-decides when it is ready. Include:
+For new work, open a draft PR with `gh pr create --draft`, a conventional-commit title, and the
+completed repository template. For an existing PR, update it rather than creating another. Include:
 
 ```markdown
 ## Related issues
@@ -138,19 +149,19 @@ closes #<issue>
 Use `relates to #<issue>` when the PR is one of several for that issue. A partial PR must not close
 an issue whose remaining work is deferred.
 
-Confirm the draft PR contains the latest pushed commit.
+Confirm the PR contains the latest pushed commit.
 
 ## Phase 5: Copilot Review Loop
 
 Read and follow [references/copilot-review.md](references/copilot-review.md). Repeat until the latest
-review recommends approval, adds no comments, and leaves no unresolved threads. Stop only for an
-external blocker or repeated invalid feedback already answered with evidence.
+review satisfies the completion gate below. Stop only for an external blocker or repeated invalid
+feedback already answered with evidence.
 
 ## Phase 6: CI Convergence
 
 Run the PR tier once the draft PR is open. Diagnose a failing check with `ci-fix-failure`; this
 skill owns applying the valid fix, validating it locally, and pushing it. Rerun only verified
-transient failures. After every push, refresh both CI and the unresolved review threads.
+transient failures. Refresh CI after every push; the Copilot reference owns review-thread handling.
 
 The PR tier's 3-iteration budget in the tiered validation loop covers this Copilot/CI
 convergence — it is one budget, not an additional one. At the cap, report the exact blocker instead
@@ -160,15 +171,15 @@ of retrying blindly or claiming completion.
 
 Before returning to the engineer, verify:
 
-- the worktree is clean and the latest local commit is pushed to the draft PR
+- the worktree is clean and the latest local commit is pushed to the PR
 - all gates in all three tiers are green on the latest pushed SHA
 - all independent review findings are addressed
-- the latest Copilot review recommends approval
+- the latest Copilot review recommends approval and adds no comments, with no Copilot review pending
 - no review threads or workflow todos remain unresolved
-- the commit has the engineer as sole author, and the PR is correctly linked, still draft, and has
-  the team reviewer assigned
+- the commit has the engineer as sole author, and the PR is correctly linked and in the state
+  required by the execution authorization
 
-Lead the final response with the draft PR number, then concisely state the delivered behavior,
+Lead the final response with the PR number, then concisely state the delivered behavior,
 number of review iterations, and any blocker. Routine green checks and test counts are implicit.
 
 Every recurring failure mode becomes a rule, not a one-off fix: encode it in this skill so it

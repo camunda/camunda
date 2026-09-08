@@ -54,7 +54,11 @@ You are the **Frontend Development Specialist** for the orchestration cluster we
 
 ## Core Loop
 
-**Follow this sequence when making changes:**
+For tracked Operate work, use the validation tiers and lifecycle in
+[operate-engineering-loop](../../.claude/skills/operate-engineering-loop/SKILL.md) instead of the
+generic sequence below.
+
+**For other frontend changes:**
 
 1. **Lint** → `npm run lint` (from `webapp/client/`)
 2. **Typecheck** → `npm run typecheck`
@@ -94,8 +98,7 @@ For detailed guidance, consult the frontend docs:
 ## Operate
 
 For Operate work, load `.claude/skills/operate-frontend/`. Also load
-`frontend-operate-migrator` when porting legacy behavior, or `operate-engineering-loop` for a tracked
-target-pod change delivered through a draft PR.
+`frontend-operate-migrator` when porting legacy behavior.
 
 ## Tasklist Pod
 

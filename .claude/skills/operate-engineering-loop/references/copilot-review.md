@@ -30,8 +30,8 @@ gh api repos/camunda/camunda/pulls/<pr>/comments
 For every new comment:
 
 1. Classify it as valid, invalid, already handled, or out of scope.
-2. Fix valid findings, rerun the cheapest affected tier and all local gates, then commit and push
-   without amending.
+2. Fix valid findings, validate and publish through the
+   [engineering loop](../SKILL.md#validation-loop), without amending.
 3. Reply with the fix or concrete evidence that the finding is invalid.
 4. Resolve the thread through `resolveReviewThread`.
 

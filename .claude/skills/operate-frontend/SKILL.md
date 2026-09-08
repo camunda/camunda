@@ -30,8 +30,7 @@ shared**: feature code must not import route files, shared code must not import 
 shared route/feature schemas in the feature. Never import across the legacy app boundary.
 
 Pages are directories named after their primary export — `Dashboard/Dashboard.tsx`, not
-`DashboardPage`. One file, one primary export, filename matches it. A colocated query module may
-export both its `queryOptions` and its `use*` hook.
+`DashboardPage`.
 
 ## Routing
 
@@ -55,11 +54,11 @@ Cover duplicate definition IDs across tenants and browser back/forward.
 belong in `#/shared/http/queries.ts`. Do not add Operate-specific polling, aggregation or
 multi-page fetching to the shared registry.
 
-| Concern | Where it goes |
-|---------|--------------|
-| Polling / cache policy | Feature-local query options, local hook, or call site |
-| Multi-page fetching | Local hook exporting a `queryOptions` function (for route prefetch) + a `use*` hook (for the component) |
-| Aggregation / transformation | `select` on `useSuspenseQuery`, or inside the local hook's `queryFn` |
+| Concern                      | Where it goes                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Polling / cache policy       | Feature-local query options, local hook, or call site                                                   |
+| Multi-page fetching          | Local hook exporting a `queryOptions` function (for route prefetch) + a `use*` hook (for the component) |
+| Aggregation / transformation | `select` on `useSuspenseQuery`, or inside the local hook's `queryFn`                                    |
 
 Reference: `operate/pages/Dashboard/useRunningInstancesCount.ts` exports
 `runningInstancesCountQuery()` and `useRunningInstancesCount()`; the route imports the query options,
@@ -110,13 +109,14 @@ rewrite the code. Prefer declarative and functional (`const`, `map`/`filter`/`re
 `let`/`for` is fine for tight data aggregation where it reads clearer (see
 `useRunningInstancesCount.ts`).
 
-**Target:** one file, one primary export, filename matches it.
+**Target:** one file, one primary export, filename matches it. A colocated query module may export
+both its `queryOptions` and its `use*` hook.
 
 ## i18n (target)
 
 Operate strings go under `operate.*` inside the shared `translation` namespace in
 `src/shared/i18n/locales/`, used as `t('operate.dashboard.title')`. Add all four locales (en/de/fr/es)
-— LLM-translate de/fr/es and note "LLM-translated — native speaker review requested" in the PR
+— LLM-translate de/fr/es and note "LLM-translated — not yet verified by native speakers" in the PR
 description.
 
 ## Testing
@@ -140,18 +140,11 @@ server-driven, and cover multi-tenancy. Verify imports are declared dependencies
 
 Follow `docs/monorepo-docs/frontend/development-process/working-on-large-feature.md`.
 
-## Commands
+## Validation
 
-Run target checks from `webapp/client/`:
-
-```bash
-npm run lint
-npm run typecheck -w @camunda/orchestration-cluster-webapp
-npm run test:unit -w @camunda/orchestration-cluster-webapp
-```
-
-For tracked end-to-end work, the complete validation tiers live in
-[operate-engineering-loop](../operate-engineering-loop/SKILL.md).
+For target validation commands and tracked end-to-end delivery, follow
+[operate-engineering-loop](../operate-engineering-loop/SKILL.md). This skill owns coding conventions,
+not a separate execution or PR-review loop.
 
 ## Boundaries
 
