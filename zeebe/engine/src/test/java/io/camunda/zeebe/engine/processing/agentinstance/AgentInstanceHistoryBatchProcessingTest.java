@@ -2721,8 +2721,11 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withValueType(ValueType.AGENT_HISTORY)
             .withIntent(AgentHistoryIntent.CREATED)
             .filter(
-                r ->
-                    ((AgentHistoryRecordValue) r.getValue()).getHistoryItemId().equals("item-user"))
+                r -> {
+                  final var value = (AgentHistoryRecordValue) r.getValue();
+                  return value.getAgentInstanceKey() == agentInstanceKey
+                      && value.getHistoryItemId().equals("item-user");
+                })
             .toList();
     assertThat(createdForItem).hasSize(1);
   }
