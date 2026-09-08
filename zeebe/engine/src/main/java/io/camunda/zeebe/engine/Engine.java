@@ -204,6 +204,7 @@ public class Engine implements RecordProcessor {
         case BUFFER ->
             bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
         case PROCESS -> currentProcessor.processRecord(record, processingResultBuilder);
+        default -> throw new IllegalStateException("Unexpected suspension action: " + outcome);
       }
     }
     return processingResultBuilder.build();
