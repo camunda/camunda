@@ -77,6 +77,16 @@ class DocumentReferenceResolverTest {
   }
 
   @Test
+  void shouldIgnoreNullValuesInTree() {
+    // given a variable holding JSON nulls, which the resolver walks over as Java nulls
+    // when/then
+    assertThat(resolver.resolve("null")).isEmpty();
+    assertThat(resolver.resolve("{\"a\": null}")).isEmpty();
+    assertThat(resolver.resolve("[null, null]")).isEmpty();
+    assertThat(resolver.resolve("{\"camunda.document.type\": null}")).isEmpty();
+  }
+
+  @Test
   void shouldResolveTopLevelReference() {
     // given
     when(client.newDocumentContentGetRequest(any(DocumentReferenceResponse.class)))
