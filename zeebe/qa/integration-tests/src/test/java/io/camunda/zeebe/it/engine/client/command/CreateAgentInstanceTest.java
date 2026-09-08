@@ -129,7 +129,7 @@ public final class CreateAgentInstanceTest {
             .getFirst()
             .getValue()
             .getElementInstanceKey();
-    final long jobKey =
+    final var activatedJob =
         client
             .newActivateJobsCommand()
             .jobType("agent-conflict-job")
@@ -137,8 +137,9 @@ public final class CreateAgentInstanceTest {
             .send()
             .join()
             .getJobs()
-            .getFirst()
-            .getKey();
+            .getFirst();
+    final long jobKey = activatedJob.getKey();
+    final String jobLease = activatedJob.getLeaseToken();
 
     // first CREATE — must succeed and return the new agentInstanceKey.
     final var firstResult =
@@ -146,7 +147,7 @@ public final class CreateAgentInstanceTest {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .jobLease("test-job-lease")
+            .jobLease(jobLease)
             .history(
                 List.of(
                     configurationHistoryItem(
@@ -163,7 +164,7 @@ public final class CreateAgentInstanceTest {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey)
                         .jobKey(jobKey)
-                        .jobLease("test-job-lease")
+                        .jobLease(jobLease)
                         .history(
                             List.of(
                                 configurationHistoryItem(

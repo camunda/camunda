@@ -106,7 +106,7 @@ public class AgentInstanceTenancyIT {
         .newUpdateAgentInstanceCommand(agentInstanceKeyA)
         .elementInstanceKey(elementInstanceKeyA)
         .jobKey(jobKeyA)
-        .jobLease("test-job-lease")
+        .jobLease(resultA.jobLease())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -129,7 +129,7 @@ public class AgentInstanceTenancyIT {
         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
         .elementInstanceKey(elementInstanceKeyB)
         .jobKey(jobKeyB)
-        .jobLease("test-job-lease")
+        .jobLease(resultB.jobLease())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -412,20 +412,21 @@ public class AgentInstanceTenancyIT {
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
     final long jobKey = activatedJobs.get(0).getKey();
+    final String jobLease = activatedJobs.get(0).getLeaseToken();
 
     final var agentInstanceKey =
         client
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .jobLease("test-job-lease")
+            .jobLease(jobLease)
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
             .execute()
             .getAgentInstanceKey();
 
-    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
+    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey, jobLease);
   }
 
   private static AgentInstanceHistoryItem configurationHistoryItem(
@@ -442,5 +443,5 @@ public class AgentInstanceTenancyIT {
   }
 
   private record AgentInstanceCreationResult(
-      long agentInstanceKey, long elementInstanceKey, long jobKey) {}
+      long agentInstanceKey, long elementInstanceKey, long jobKey, String jobLease) {}
 }
