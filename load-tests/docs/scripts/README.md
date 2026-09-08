@@ -140,8 +140,8 @@ and CSV/TSV column order), with these fields:
 | `query`       | a single-line PromQL string evaluated against Prometheus.                                                                                                      |
 | `valueLabel`  | when set, the query result is read from this Prometheus label (deduplicated, joined with `, `) instead of the sample value — used for the Docker image column. |
 
-Template variables, substituted before each query is sent: `$NAMESPACE` (the exact load-test
-namespace), `$DURATION_S` (the report window duration with an `s` suffix, e.g. `600s`),
+Template variables, substituted in the query file before it is decoded: `$NAMESPACE` (the exact
+load-test namespace), `$DURATION_S` (the report window duration with an `s` suffix, e.g. `600s`),
 `$RATE_INTERVAL` (the short `--rate-interval` used for dashboard-style rate samples), and
 `$SAMPLE_STEP` (the `--sample-step` subquery resolution used to summarize a window of those samples
 into one value, e.g. `quantile_over_time`, `avg_over_time`).

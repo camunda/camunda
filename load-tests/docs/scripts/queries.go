@@ -23,11 +23,12 @@ type queryDefinition struct {
 	ValueLabel  string `json:"valueLabel" yaml:"valueLabel"`
 }
 
-func loadQueryDocument(queriesFile string) (queryDocument, error) {
+func loadQueryDocument(queriesFile string, substitutions map[string]string) (queryDocument, error) {
 	data, err := os.ReadFile(queriesFile)
 	if err != nil {
 		return queryDocument{}, fmt.Errorf("failed to read queries file %s: %w", queriesFile, err)
 	}
+	data = []byte(substituteString(string(data), substitutions))
 
 	var document queryDocument
 	if strings.EqualFold(filepath.Ext(queriesFile), ".json") {
@@ -80,18 +81,13 @@ func validateQueryDocument(document queryDocument) error {
 	return nil
 }
 
-func substituteTemplates(document queryDocument, substitutions map[string]string) queryDocument {
-	rendered := queryDocument{Queries: make([]queryDefinition, 0, len(document.Queries))}
-	for _, query := range document.Queries {
-		query.Key = substituteString(query.Key, substitutions)
-		query.Header = substituteString(query.Header, substitutions)
-		query.Description = substituteString(query.Description, substitutions)
-		query.Value = substituteString(query.Value, substitutions)
-		query.Query = substituteString(query.Query, substitutions)
-		query.ValueLabel = substituteString(query.ValueLabel, substitutions)
-		rendered.Queries = append(rendered.Queries, query)
+func querySubstitutions(opts options) map[string]string {
+	return map[string]string{
+		"$NAMESPACE":     opts.namespace,
+		"$DURATION_S":    fmt.Sprintf("%ds", opts.durationSeconds),
+		"$RATE_INTERVAL": opts.rateInterval,
+		"$SAMPLE_STEP":   opts.sampleStep,
 	}
-	return rendered
 }
 
 func substituteString(value string, substitutions map[string]string) string {

@@ -135,9 +135,9 @@ func TestBuildReportShouldBuildReportWithoutNetworkSideEffects(t *testing.T) {
 	}
 	queryDocument := queryDocument{
 		Queries: []queryDefinition{
-			{Key: "namespace", Header: "Namespace", Value: "$NAMESPACE"},
-			{Key: "throughput", Header: "Throughput", Query: `rate(total{namespace="$NAMESPACE"}[$RATE_INTERVAL])`},
-			{Key: "image", Header: "Image", Query: "image_query[$DURATION_S:$SAMPLE_STEP]", ValueLabel: "image"},
+			{Key: "namespace", Header: "Namespace", Value: "c8-ck-test"},
+			{Key: "throughput", Header: "Throughput", Query: `rate(total{namespace="c8-ck-test"}[30s])`},
+			{Key: "image", Header: "Image", Query: "image_query[900s:15s]", ValueLabel: "image"},
 			{Key: "missing", Header: "Missing", Query: "missing_query"},
 		},
 	}
@@ -286,7 +286,7 @@ func TestLoadQueryDocumentShouldLoadYAMLQueryFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	document, err := loadQueryDocument(queriesFile)
+	document, err := loadQueryDocument(queriesFile, map[string]string{"$NAMESPACE": "c8-ck-test"})
 
 	if err != nil {
 		t.Fatalf("expected document, got error %v", err)
@@ -294,14 +294,42 @@ func TestLoadQueryDocumentShouldLoadYAMLQueryFile(t *testing.T) {
 	if document.Queries[0].Key != "namespace" {
 		t.Fatalf("unexpected key: %#v", document.Queries[0].Key)
 	}
+	if document.Queries[0].Value != "c8-ck-test" {
+		t.Fatalf("unexpected substituted value: %#v", document.Queries[0].Value)
+	}
+}
+
+func TestLoadQueryDocumentShouldSubstituteTemplateVariablesBeforeUnmarshalling(t *testing.T) {
+	tempDir := t.TempDir()
+	queriesFile := filepath.Join(tempDir, "queries.json")
+	if err := os.WriteFile(queriesFile, []byte(`{"queries":[{"key":"namespace","value":"$NAMESPACE"},{"key":"window","query":"metric{namespace=\"$NAMESPACE\"}[$DURATION_S:$SAMPLE_STEP] offset $RATE_INTERVAL"}]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	document, err := loadQueryDocument(queriesFile, querySubstitutions(options{
+		namespace:       "c8-ck-test",
+		durationSeconds: 900,
+		rateInterval:    "30s",
+		sampleStep:      "15s",
+	}))
+
+	if err != nil {
+		t.Fatalf("expected document, got error %v", err)
+	}
+	if document.Queries[0].Value != "c8-ck-test" {
+		t.Fatalf("unexpected namespace value: %#v", document.Queries[0].Value)
+	}
+	if document.Queries[1].Query != `metric{namespace="c8-ck-test"}[900s:15s] offset 30s` {
+		t.Fatalf("unexpected query: %#v", document.Queries[1].Query)
+	}
 }
 
 func TestLoadQueryDocumentShouldLoadDefaultTemplates(t *testing.T) {
-	camundaDocument, err := loadQueryDocument("report-queries.yaml")
+	camundaDocument, err := loadQueryDocument("report-queries.yaml", map[string]string{})
 	if err != nil {
 		t.Fatalf("expected camunda query document, got error %v", err)
 	}
-	stableDocument, err := loadQueryDocument("report-queries-stable-87.yaml")
+	stableDocument, err := loadQueryDocument("report-queries-stable-87.yaml", map[string]string{})
 	if err != nil {
 		t.Fatalf("expected stable-87 query document, got error %v", err)
 	}
@@ -321,7 +349,7 @@ func TestLoadQueryDocumentShouldRejectInvalidQueryFileSchema(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := loadQueryDocument(queriesFile)
+	_, err := loadQueryDocument(queriesFile, map[string]string{})
 
 	if err == nil {
 		t.Fatal("expected schema error")

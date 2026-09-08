@@ -42,14 +42,6 @@ func (e missingMetricError) Error() string {
 }
 
 func buildReport(opts options, document queryDocument, client prometheusAPI, generatedAt string, warningSink func(string)) (report, error) {
-	substitutions := map[string]string{
-		"$NAMESPACE":     opts.namespace,
-		"$DURATION_S":    fmt.Sprintf("%ds", opts.durationSeconds),
-		"$RATE_INTERVAL": opts.rateInterval,
-		"$SAMPLE_STEP":   opts.sampleStep,
-	}
-	renderedDocument := substituteTemplates(document, substitutions)
-
 	report := report{
 		Namespace:       opts.namespace,
 		DurationSeconds: opts.durationSeconds,
@@ -65,7 +57,7 @@ func buildReport(opts options, document queryDocument, client prometheusAPI, gen
 		report.GeneratedAt = time.Now().UTC().Format("2006-01-02T15:04:05Z")
 	}
 
-	for _, query := range renderedDocument.Queries {
+	for _, query := range document.Queries {
 		report.Columns = append(report.Columns, query.Key)
 		report.Headers = append(report.Headers, stringValueOrDefault(query.Header, query.Key))
 

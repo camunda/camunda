@@ -84,7 +84,7 @@ func run(args []string) int {
 		return 1
 	}
 
-	queryDocument, err := loadQueryDocument(opts.queriesFile)
+	queryDocument, err := loadQueryDocument(opts.queriesFile, querySubstitutions(opts))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
