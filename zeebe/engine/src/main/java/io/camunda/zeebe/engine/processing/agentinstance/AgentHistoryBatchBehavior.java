@@ -59,6 +59,9 @@ public final class AgentHistoryBatchBehavior {
   static final String ERROR_MSG_JOB_KEY_REQUIRED =
       "Expected to update agent instance, but no jobKey was provided. A command must always be "
           + "attributed to the active job that produced it.";
+  static final String ERROR_MSG_JOB_LEASE_REQUIRED =
+      "Expected to update agent instance related to job with key '%d', but no jobLease was "
+          + "provided. A command must always carry the lease its job was activated with.";
   static final String ERROR_MSG_JOB_NOT_ACTIVE =
       "Expected to update agent instance related to job with key '%d', but job was not active.";
   static final String ERROR_MSG_JOB_LEASE_MISMATCH =
@@ -109,10 +112,10 @@ public final class AgentHistoryBatchBehavior {
   }
 
   /**
-   * Validates the job context a command carries. {@code jobKey} is always required — a command must
-   * always be attributed to the active job that produced it, and is rejected outright if unset. The
-   * referenced job must be currently active, must hold a lease, and must belong to {@code
-   * elementInstanceKey}.
+   * Validates the job context a command carries. {@code jobKey} and {@code jobLease} are always
+   * required — a command must always be attributed to the active job that produced it and carry the
+   * lease it was activated with, and is rejected outright if either is unset. The referenced job
+   * must be currently active, must hold a lease, and must belong to {@code elementInstanceKey}.
    *
    * <p>{@code jobLease} is a fencing token, not an authorization check (see ADR 0005-810): whether
    * a mismatch against the job's current lease is fatal depends on {@code leaseMismatchHandling},
@@ -129,6 +132,12 @@ public final class AgentHistoryBatchBehavior {
 
     if (jobKey == -1L) {
       return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_KEY_REQUIRED));
+    }
+
+    if (jobLease == null || jobLease.isBlank()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_LEASE_REQUIRED.formatted(jobKey)));
     }
 
     final var jobState = processingState.getJobState();
