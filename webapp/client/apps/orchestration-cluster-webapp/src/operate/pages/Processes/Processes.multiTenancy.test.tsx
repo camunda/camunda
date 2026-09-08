@@ -178,7 +178,7 @@ describe('Multi tenancy', () => {
 	});
 
 	it('should not scope the process-definitions request when "all tenants" is selected', async ({worker}) => {
-		let requestReceived = false;
+		let isRequestReceived = false;
 		let requestedFilter: unknown;
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
@@ -187,7 +187,7 @@ describe('Multi tenancy', () => {
 				endpoints.queryProcessDefinitions.getUrl(),
 				async ({request}) => {
 					requestedFilter = (await request.json()).filter;
-					requestReceived = true;
+					isRequestReceived = true;
 					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: []}));
 				},
 			),
@@ -196,7 +196,7 @@ describe('Multi tenancy', () => {
 
 		await renderProcessesPage({tenantId: 'all'});
 
-		await expect.poll(() => requestReceived).toBe(true);
+		await expect.poll(() => isRequestReceived).toBe(true);
 		expect(requestedFilter).toBeUndefined();
 	});
 });

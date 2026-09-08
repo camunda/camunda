@@ -181,14 +181,14 @@ describe('Multi tenancy', () => {
 	});
 
 	it('should not scope the decision-definitions request when "all tenants" is selected', async ({worker}) => {
-		let requestReceived = false;
+		let isRequestReceived = false;
 		let requestedFilter: unknown;
 		worker.use(
 			http.post<PathParams, QueryDecisionDefinitionsRequestBody>(
 				endpoints.queryDecisionDefinitions.getUrl(),
 				async ({request}) => {
 					requestedFilter = (await request.json()).filter;
-					requestReceived = true;
+					isRequestReceived = true;
 					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
 				},
 			),
@@ -197,7 +197,7 @@ describe('Multi tenancy', () => {
 
 		await renderDecisionsPage({tenantId: 'all'});
 
-		await expect.poll(() => requestReceived).toBe(true);
+		await expect.poll(() => isRequestReceived).toBe(true);
 		expect(requestedFilter).toBeUndefined();
 	});
 });
