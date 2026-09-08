@@ -50,9 +50,8 @@ public class RdbmsSchemaVersionStore {
    * The table that tracks the RDBMS schema version applied by this application. An entry is
    * written/updated after every successful Liquibase migration run.
    */
-  private static final String SCHEMA_VERSION_TABLE = "RDBMS_SCHEMA_VERSION";
-
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSchemaVersionStore.class);
+
   private final DataSource dataSource;
   private final String prefix;
 
@@ -218,7 +217,7 @@ public class RdbmsSchemaVersionStore {
       return;
     }
 
-    final var tableName = prefix + SCHEMA_VERSION_TABLE;
+    final var tableName = prefix + RdbmsTableNames.SCHEMA_VERSION;
 
     try (final var connection = dataSource.getConnection()) {
       final var autoCommit = connection.getAutoCommit();
@@ -290,7 +289,7 @@ public class RdbmsSchemaVersionStore {
   @VisibleForTesting
   protected String readSchemaVersion(final Connection connection, final String prefix)
       throws SQLException {
-    final var tableName = prefix + SCHEMA_VERSION_TABLE;
+    final var tableName = prefix + RdbmsTableNames.SCHEMA_VERSION;
     if (!tableExists(connection, tableName)) {
       return null;
     }
