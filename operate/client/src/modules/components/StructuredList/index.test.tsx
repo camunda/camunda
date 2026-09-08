@@ -20,31 +20,32 @@ describe('<StructuredList />', () => {
       columns: [{cellContent: 'Flow Node Instance Key'}, {cellContent: '123'}],
     },
   ];
+  const TEST_PADDING = '13px';
 
-  it('should not apply left padding to any cell when valueCellPadding is not set', () => {
+  it('should not apply left padding to any cell when valueCellLeftPadding is not set', () => {
     render(
       <StructuredList label="Details" headerColumns={headerColumns} rows={rows} />,
     );
 
     expect(screen.getByText('Flow Node Instance Key')).not.toHaveStyle({
-      paddingLeft: '8px',
+      paddingLeft: TEST_PADDING,
     });
-    expect(screen.getByText('123')).not.toHaveStyle({paddingLeft: '8px'});
+    expect(screen.getByText('123')).not.toHaveStyle({paddingLeft: TEST_PADDING});
   });
 
-  it('should apply left padding only to the value column when valueCellPadding is set', () => {
+  it('should apply left padding only to the value column when valueCellLeftPadding is set', () => {
     render(
       <StructuredList
         label="Details"
         headerColumns={headerColumns}
         rows={rows}
-        valueCellPadding="8px"
+        valueCellLeftPadding={TEST_PADDING}
       />,
     );
 
     expect(screen.getByText('Flow Node Instance Key')).not.toHaveStyle({
-      paddingLeft: '8px',
+      paddingLeft: TEST_PADDING,
     });
-    expect(screen.getByText('123')).toHaveStyle({paddingLeft: '8px'});
+    expect(screen.getByText('123')).toHaveStyle({paddingLeft: TEST_PADDING});
   });
 });
