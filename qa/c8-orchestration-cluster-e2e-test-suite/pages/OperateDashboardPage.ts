@@ -30,6 +30,7 @@ export class OperateDashboardPage {
   readonly expandRowButton: () => Locator;
   readonly incidentBadgeFromItem: (item: Locator) => Locator;
   readonly activeBadgeFromItem: (item: Locator) => Locator;
+  readonly drainingIndicatorFromItem: (item: Locator) => Locator;
   readonly expandRowButtonFromItem: (item: Locator) => Locator;
   readonly firstLinkFromItem: (item: Locator) => Locator;
 
@@ -84,6 +85,9 @@ export class OperateDashboardPage {
 
     this.activeBadgeFromItem = (item) =>
       item.getByTestId('active-instances-badge');
+
+    this.drainingIndicatorFromItem = (item) =>
+      item.getByTestId('draining-indicator');
 
     this.expandRowButtonFromItem = (item) =>
       item.getByRole('button', {

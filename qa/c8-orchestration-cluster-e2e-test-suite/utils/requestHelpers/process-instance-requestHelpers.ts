@@ -9,7 +9,7 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {defaultAssertionOptions} from '../constants';
+import {DEFAULT_PAGE_LIMIT, defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
 
@@ -194,5 +194,65 @@ export async function expectProcessState(
     const json = await res.json();
     expect(json.items).toHaveLength(1);
     expect(json.items[0].state).toBe(state);
+  }).toPass(assertionOptions);
+}
+
+export async function clearAllProcessInstances(
+  request: APIRequestContext,
+): Promise<void> {
+  // Cancel all active instances first.
+  if ((await countProcessInstances(request, 'ACTIVE')) > 0) {
+    await runBatchAndWaitForCompletion(
+      request,
+      '/process-instances/cancellation',
+      {state: 'ACTIVE'},
+    );
+  }
+  // Cancellation moves instances to TERMINATED; delete each terminal state
+  // individually to avoid relying on $or in the search pre-check.
+  for (const state of ['COMPLETED', 'TERMINATED']) {
+    if ((await countProcessInstances(request, state)) > 0) {
+      await runBatchAndWaitForCompletion(
+        request,
+        '/process-instances/deletion',
+        {state},
+      );
+    }
+  }
+}
+
+export type ProcessInstanceItem = {
+  processInstanceKey: string;
+  processDefinitionKey: string;
+  processDefinitionId: string;
+  state: string;
+};
+
+export async function searchProcessInstances(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+): Promise<ProcessInstanceItem[]> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter, page: {limit: DEFAULT_PAGE_LIMIT}},
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {path: '/process-instances/search', method: 'POST', status: '200'},
+    res,
+  );
+  return ((await res.json()).items ?? []) as ProcessInstanceItem[];
+}
+
+export async function expectProcessInstanceCount(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+  expectedCount: number,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    expect(await searchProcessInstances(request, filter)).toHaveLength(
+      expectedCount,
+    );
   }).toPass(assertionOptions);
 }
