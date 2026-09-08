@@ -134,6 +134,7 @@ public final class CreateAgentInstanceTest {
             .newActivateJobsCommand()
             .jobType("agent-conflict-job")
             .maxJobsToActivate(1)
+            .withLease(true)
             .send()
             .join()
             .getJobs()
