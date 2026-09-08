@@ -12,6 +12,7 @@ export declare global {
     isCamundaGroupsEnabled?: string;
     isTenantsApiEnabled?: string;
     isNewDesignSystemEnabled?: string;
+    isAdditionalIdpConfigured?: string;
     organizationId?: string;
     clusterId?: string;
     idPattern?: string;

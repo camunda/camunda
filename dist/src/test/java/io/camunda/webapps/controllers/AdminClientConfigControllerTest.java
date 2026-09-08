@@ -24,8 +24,10 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.SaasConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -175,6 +177,87 @@ public class AdminClientConfigControllerTest {
         .containsEntry("isNewDesignSystemEnabled", "true");
     assertThat(extractConfig(selfManagedProperties, disabledConfiguration))
         .containsEntry("isNewDesignSystemEnabled", "false");
+  }
+
+  @Test
+  void shouldSetAdditionalIdpConfiguredWhenNamedProviderHasContent() throws Exception {
+    // given
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    final var namedProvider = new OidcConfiguration();
+    namedProvider.setIssuerUri("https://customer-idp.example.com");
+    final var providers = new OidcProvidersConfiguration();
+    providers.setOidc(Map.of("entra", namedProvider));
+    cslProperties.getAuthentication().setProviders(providers);
+    final var controller = new AdminClientConfigController(cslProperties, null);
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final var config = extractConfigFromResponse(performGetConfig());
+
+    // then
+    assertThat(config).containsEntry("isAdditionalIdpConfigured", "true");
+  }
+
+  @Test
+  void shouldNotSetAdditionalIdpConfiguredWhenNoNamedProviderConfigured() throws Exception {
+    // given
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    final var controller = new AdminClientConfigController(cslProperties, null);
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final var config = extractConfigFromResponse(performGetConfig());
+
+    // then
+    assertThat(config).containsEntry("isAdditionalIdpConfigured", "false");
+  }
+
+  @Test
+  void shouldNotSetAdditionalIdpConfiguredWhenNamedProviderHasNoContent() throws Exception {
+    // given: a named provider map entry exists but carries no actual configuration
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    final var providers = new OidcProvidersConfiguration();
+    providers.setOidc(Map.of("entra", new OidcConfiguration()));
+    cslProperties.getAuthentication().setProviders(providers);
+    final var controller = new AdminClientConfigController(cslProperties, null);
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final var config = extractConfigFromResponse(performGetConfig());
+
+    // then
+    assertThat(config).containsEntry("isAdditionalIdpConfigured", "false");
+  }
+
+  @Test
+  void shouldNotSetAdditionalIdpConfiguredWhenNamedProviderMapContainsNullValue() throws Exception {
+    // given: a named provider id is present but its configuration entry is null
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    final var providers = new OidcProvidersConfiguration();
+    final Map<String, OidcConfiguration> oidcProvidersWithNullEntry = new HashMap<>();
+    oidcProvidersWithNullEntry.put("entra", null);
+    providers.setOidc(oidcProvidersWithNullEntry);
+    cslProperties.getAuthentication().setProviders(providers);
+    final var controller = new AdminClientConfigController(cslProperties, null);
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final var config = extractConfigFromResponse(performGetConfig());
+
+    // then
+    assertThat(config).containsEntry("isAdditionalIdpConfigured", "false");
+  }
+
+  private String performGetConfig() throws Exception {
+    return mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
   }
 
   private CamundaSecurityLibraryProperties createCamundaSecurityLibraryProperties(

@@ -19,6 +19,7 @@ import OperationsLog from "src/pages/operations-log";
 import GlobalTaskListeners from "src/pages/global-task-listeners";
 import McpProcesses from "src/pages/mcp-processes";
 import {
+  isAdditionalIdpConfigured,
   isCamundaGroupsEnabled,
   isOIDC,
   isSaaS,
@@ -41,7 +42,7 @@ export const useGlobalRoutes = () => {
           element: <Users />,
         },
       ]
-    : !isSaaS
+    : !isSaaS || isAdditionalIdpConfigured
       ? [
           {
             path: `${Paths.mappingRules()}/*`,

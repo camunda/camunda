@@ -29,6 +29,10 @@ export const isNewDesignSystemEnabled = getClientConfigBoolean(
   "isNewDesignSystemEnabled",
   false,
 );
+export const isAdditionalIdpConfigured = getClientConfigBoolean(
+  "isAdditionalIdpConfigured",
+  false,
+);
 
 export const docsUrl = "https://docs.camunda.io/docs/next";
 
