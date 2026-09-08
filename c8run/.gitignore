@@ -17,3 +17,4 @@ connectors.process
 /e2e_tests/node_modules
 /e2e_tests/playwright-report
 /e2e_tests/test-results
+/secrets

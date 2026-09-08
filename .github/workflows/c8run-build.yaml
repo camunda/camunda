@@ -212,7 +212,7 @@ jobs:
         if: failure()
         with:
           name: c8run-logs-${{ matrix.os }}
-          path: ./c8run/log/*.log
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
           retention-days: 10
 
       - name: Import Secrets
@@ -316,14 +316,28 @@ jobs:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
+      - name: Extract packaged C8Run for E2E
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path e2e-distribution | Out-Null
+          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath e2e-distribution
+          $distribution = (Get-ChildItem e2e-distribution -Directory).FullName
+          "C8RUN_E2E_DIR=$distribution" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        working-directory: .\c8run
+
+      - name: Configure packaged C8Run E2E secret
+        shell: bash
+        run: printf '%s' 'c8run-centralized-secret-test-value' | ./c8run.exe secrets set C8RUN_E2E_SECRET --stdin
+        working-directory: ${{ env.C8RUN_E2E_DIR }}
+
       - name: ls
         run: ls
         working-directory: .\c8run
 
       - name: Run c8run
         timeout-minutes: 3
-        run: bash -c './c8run.exe start --config e2e_tests/prefix-config.yaml'
-        working-directory: ./c8run
+        run: bash -c './c8run.exe start'
+        working-directory: ${{ env.C8RUN_E2E_DIR }}
         shell: bash
 
       - name: Install jq
@@ -374,7 +388,7 @@ jobs:
         if: failure()
         with:
           name: c8run-logs
-          path: .\c8run\log\*.log
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
           retention-days: 10
 
       - name: Upload message to Slack on failure
