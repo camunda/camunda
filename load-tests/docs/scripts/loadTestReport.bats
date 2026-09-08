@@ -176,6 +176,62 @@ EOF
   [[ "$output" == *"Usage: loadTestReport.sh"* ]]
 }
 
+@test "should reject the legacy loadTestMetrics query schema" {
+  cat > "${BATS_TEST_TMPDIR}/legacy-queries.yaml" <<'EOF'
+queries:
+  - name: throughput-per-second
+    description: Client Process Instance Started Rate (avg)
+    query: numeric_metric{namespace="$NAMESPACE"}
+EOF
+
+  run bash "$SCRIPT" c8-test-ns --queries-file "${BATS_TEST_TMPDIR}/legacy-queries.yaml"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"invalid queries file"* ]]
+  [[ "$output" == *"non-empty string key"* ]]
+}
+
+@test "should reject duplicate query keys" {
+  cat > "${BATS_TEST_TMPDIR}/duplicate-queries.yaml" <<'EOF'
+queries:
+  - key: duplicate_metric
+    header: Duplicate 1
+    query: numeric_metric{namespace="$NAMESPACE"}
+  - key: duplicate_metric
+    header: Duplicate 2
+    value: static
+EOF
+
+  run bash "$SCRIPT" c8-test-ns --queries-file "${BATS_TEST_TMPDIR}/duplicate-queries.yaml"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"duplicate query key: duplicate_metric"* ]]
+}
+
+@test "should reject entries without exactly one value source" {
+  cat > "${BATS_TEST_TMPDIR}/invalid-source-queries.yaml" <<'EOF'
+queries:
+  - key: missing_source
+    header: Missing source
+EOF
+
+  run bash "$SCRIPT" c8-test-ns --queries-file "${BATS_TEST_TMPDIR}/invalid-source-queries.yaml"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"must set exactly one of query or value"* ]]
+}
+
+@test "should reject valueLabel without a query" {
+  cat > "${BATS_TEST_TMPDIR}/invalid-label-queries.yaml" <<'EOF'
+queries:
+  - key: invalid_label
+    header: Invalid label
+    value: static
+    valueLabel: image
+EOF
+
+  run bash "$SCRIPT" c8-test-ns --queries-file "${BATS_TEST_TMPDIR}/invalid-label-queries.yaml"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"sets valueLabel without query"* ]]
+}
+
 @test "should render the default camunda template end-to-end" {
   run --separate-stderr bash "$SCRIPT" c8-test-ns
   [ "$status" -eq 0 ]

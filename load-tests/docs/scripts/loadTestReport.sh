@@ -120,6 +120,40 @@ extract_metric_value() {
   printf '%s\n' "$raw_value"
 }
 
+validate_queries_json() {
+  local queries_json="$1" validation_errors
+
+  if ! validation_errors="$(jq -r '
+    def nonempty_string($name):
+      has($name) and (.[$name] | type == "string" and length > 0);
+
+    if ((.queries | type) != "array") or ((.queries | length) == 0) then
+      "queries must be a non-empty array"
+    else
+      empty
+    end,
+    (.queries[]? |
+      select((.key | type) != "string" or (.key | length) == 0) |
+      "each query entry must have a non-empty string key"),
+    ([.queries[]?.key | select(type == "string")] |
+      group_by(.)[] |
+      select(length > 1) |
+      "duplicate query key: \(.[0])"),
+    (.queries[]? |
+      nonempty_string("query") as $has_query |
+      nonempty_string("value") as $has_value |
+      select($has_query == $has_value) |
+      "query entry \(.key // "<missing key>") must set exactly one of query or value"),
+    (.queries[]? |
+      select(nonempty_string("valueLabel") and (nonempty_string("query") | not)) |
+      "query entry \(.key) sets valueLabel without query")
+  ' <<<"$queries_json")"; then
+    die "failed to validate queries file."
+  fi
+
+  [[ -z "$validation_errors" ]] || die "$(printf 'invalid queries file:\n%s' "$validation_errors")"
+}
+
 # main <args...>
 # Everything below is wrapped in a function (rather than run at file scope)
 # so bats can `source` this file to unit-test the functions above without
@@ -339,6 +373,7 @@ EOF
   QUERIES_JSON="${QUERIES_JSON//\$DURATION_S/$DURATION_S}"
   QUERIES_JSON="${QUERIES_JSON//\$RATE_INTERVAL/$RATE_INTERVAL_S}"
   QUERIES_JSON="${QUERIES_JSON//\$SAMPLE_STEP/$SAMPLE_STEP_S}"
+  validate_queries_json "$QUERIES_JSON"
 
   declare -a key_entries=()
   declare -a header_entries=()
