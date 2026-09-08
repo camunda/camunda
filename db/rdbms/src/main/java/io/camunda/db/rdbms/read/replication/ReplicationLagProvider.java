@@ -23,4 +23,10 @@ public interface ReplicationLagProvider {
    * milliseconds.
    */
   List<ReplicationLagStatus> getReplicationStatuses();
+
+  /**
+   * Returns the primary's own self-declared label, read live from the connected write instance -
+   * see {@link ReplicationLsnProvider#getCurrentReplicaLabel()}.
+   */
+  String getCurrentReplicaLabel();
 }

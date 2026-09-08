@@ -31,11 +31,25 @@ class TimeMonitoringReplicationSignalStrategyTest {
   void setUp() {
     statusProvider = mock(ReplicationLagProvider.class);
     config = new ReplicationConfiguration();
-    config.setMinSyncReplicas(1);
+    config.setRegions(List.of(flatRegion(1)));
   }
 
   private TimeMonitoringReplicationSignalStrategy createStrategy() {
     return new TimeMonitoringReplicationSignalStrategy(statusProvider, config);
+  }
+
+  /** A single region matching every replica - the flat quorum, degenerate case of regions. */
+  private static RegionConfiguration flatRegion(final int minReplicas) {
+    return region("default", ".*", minReplicas);
+  }
+
+  private static RegionConfiguration region(
+      final String name, final String pattern, final int minReplicas) {
+    final var region = new RegionConfiguration();
+    region.setName(name);
+    region.setPattern(pattern);
+    region.setMinReplicas(minReplicas);
+    return region;
   }
 
   @Test
@@ -76,8 +90,8 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnUnconfirmedWhenFewerThanMinSyncReplicasConnected() {
-      // given - minSyncReplicas=2, but only one replica reporting
-      config.setMinSyncReplicas(2);
+      // given - minReplicas=2, but only one replica reporting
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses = List.of(new ReplicationLagStatus("r1", 5_000L, 20_000L));
 
@@ -90,9 +104,9 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnLowestAsOfAmongTheTopMinSyncReplicas() {
-      // given - minSyncReplicas=2 with 3 replicas connected; the worst of the two BEST replicas
+      // given - minReplicas=2 with 3 replicas connected; the worst of the two BEST replicas
       // determines the confirmed point, mirroring LsnReplicationSignalStrategy's LSN computation
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(
@@ -110,7 +124,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldIgnoreNullAsOfFromReplicaBeyondQuorum() {
-      // given - minSyncReplicas=1, one replica genuinely confirmed, one extra with an unknown
+      // given - minReplicas=1, one replica genuinely confirmed, one extra with an unknown
       // as-of point; the extra replica falls outside the required quorum
       final var strategy = createStrategy();
       final var statuses =
@@ -127,9 +141,9 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldTreatNullAsOfAsWorstCaseWhenWithinQuorum() {
-      // given - minSyncReplicas=2 with exactly 2 replicas connected, so both fall within the
+      // given - minReplicas=2 with exactly 2 replicas connected, so both fall within the
       // required quorum; the unknown as-of point must not look like "confirmed up to now"
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(
@@ -142,6 +156,21 @@ class TimeMonitoringReplicationSignalStrategyTest {
       // then
       assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
     }
+
+    @Test
+    void shouldNotCreditThePrimaryInAFlatCatchAllRegion() {
+      // given - flat/default mode (a single ".*" region); even though the primary's own
+      // (unstubbed, so null -> "") label trivially matches the catch-all, it must never count
+      // toward quorum there, or a bare minSyncReplicas=1 would be satisfied by the primary alone
+      // with zero real replicas
+      final var strategy = createStrategy();
+
+      // when
+      final long asOfMs = strategy.computeConfirmedMarker(List.of());
+
+      // then
+      assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+    }
   }
 
   @Nested
@@ -149,7 +178,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnPauseWorstCaseForEmptyListWhenQuorumRequired() {
-      // given - minSyncReplicas=1 (default), no replicas connected
+      // given - minReplicas=1 (default), no replicas connected
       final var strategy = createStrategy();
 
       // when
@@ -161,8 +190,8 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnPauseWorstCaseWhenQuorumNotMetAndQueueEmpty() {
-      // given - minSyncReplicas=2, only one replica reporting, and no queue-head signal available
-      config.setMinSyncReplicas(2);
+      // given - minReplicas=2, only one replica reporting, and no queue-head signal available
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses = List.of(new ReplicationLagStatus("r1", 1_000L, 0L));
 
@@ -175,9 +204,9 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnQueueHeadAgeWhenQuorumNotMetButQueueNonEmpty() {
-      // given - minSyncReplicas=2, only one replica reporting (with a much smaller reported lag
+      // given - minReplicas=2, only one replica reporting (with a much smaller reported lag
       // than the queue-head age), and a position is queued and waiting
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses = List.of(new ReplicationLagStatus("r1", 100L, 0L));
 
@@ -206,10 +235,10 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnWorstLagAmongTheTopMinSyncReplicas() {
-      // given - minSyncReplicas=2 with 3 replicas connected; only the worst of the two BEST
+      // given - minReplicas=2 with 3 replicas connected; only the worst of the two BEST
       // (lowest-lag) replicas determines the pause decision, mirroring
       // computeConfirmedMarker's top-N handling
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(
@@ -262,11 +291,8 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @BeforeEach
     void setUpRegions() {
-      config.getRegionAwareness().setEnabled(true);
-      config
-          .getRegionAwareness()
-          .setRegions(
-              List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
+      config.setRegions(
+          List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
     }
 
     @Test
@@ -305,10 +331,12 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldCreditThePrimaryRegionWhenComputingTheConfirmedMarker() {
-      // given - us-east hosts the primary and needs 2 nodes total; with the primary's automatic
-      // credit, its single real secondary determines the region's result
-      config.getRegionAwareness().setPrimaryRegion("us-east");
-      config.getRegionAwareness().setRegions(List.of(region("us-east", "us-east-.*", 2)));
+      // given - us-east hosts the primary and needs 2 nodes total; the primary's own label, read
+      // live from its connection every check (never from static config, since it can move after
+      // a failover), resolves to us-east, so its single real secondary determines the region's
+      // result
+      when(statusProvider.getCurrentReplicaLabel()).thenReturn("us-east-primary");
+      config.setRegions(List.of(region("us-east", "us-east-.*", 2)));
       final var strategy = createStrategy();
       final var statuses = List.of(new ReplicationLagStatus("r1", 1_000L, 30_000L, "us-east-1"));
 
@@ -351,15 +379,6 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
       // then
       assertThat(lag).isEqualTo(Duration.ofSeconds(4));
-    }
-
-    private RegionConfiguration region(
-        final String name, final String pattern, final int minReplicas) {
-      final var region = new RegionConfiguration();
-      region.setName(name);
-      region.setPattern(pattern);
-      region.setMinReplicas(minReplicas);
-      return region;
     }
   }
 }

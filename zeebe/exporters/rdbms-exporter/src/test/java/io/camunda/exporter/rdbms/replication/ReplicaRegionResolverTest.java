@@ -9,7 +9,6 @@ package io.camunda.exporter.rdbms.replication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionAwarenessConfiguration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -28,9 +27,7 @@ class ReplicaRegionResolverTest {
   @Test
   void shouldResolveLabelMatchingItsRegionsPattern() {
     // given
-    final var config = new RegionAwarenessConfiguration();
-    config.setRegions(List.of(region("us-east", "us-east-.*", 1)));
-    final var resolver = new ReplicaRegionResolver(config);
+    final var resolver = new ReplicaRegionResolver(List.of(region("us-east", "us-east-.*", 1)));
 
     // when
     final var region = resolver.resolve("us-east-1a");
@@ -42,9 +39,7 @@ class ReplicaRegionResolverTest {
   @Test
   void shouldReturnEmptyWhenLabelMatchesNoConfiguredRegion() {
     // given
-    final var config = new RegionAwarenessConfiguration();
-    config.setRegions(List.of(region("us-east", "us-east-.*", 1)));
-    final var resolver = new ReplicaRegionResolver(config);
+    final var resolver = new ReplicaRegionResolver(List.of(region("us-east", "us-east-.*", 1)));
 
     // when
     final var region = resolver.resolve("eu-central-1a");
@@ -54,11 +49,9 @@ class ReplicaRegionResolverTest {
   }
 
   @Test
-  void shouldReturnEmptyForNullLabel() {
+  void shouldReturnEmptyForNullLabelAgainstASpecificPattern() {
     // given
-    final var config = new RegionAwarenessConfiguration();
-    config.setRegions(List.of(region("us-east", "us-east-.*", 1)));
-    final var resolver = new ReplicaRegionResolver(config);
+    final var resolver = new ReplicaRegionResolver(List.of(region("us-east", "us-east-.*", 1)));
 
     // when
     final var region = resolver.resolve(null);
@@ -68,12 +61,26 @@ class ReplicaRegionResolverTest {
   }
 
   @Test
+  void shouldMatchNullLabelAgainstACatchAllPattern() {
+    // given - null is treated as the empty string, so a catch-all still counts a replica that
+    // reports no label at all; this is what lets a flat minSyncReplicas (converted into a single
+    // catch-all region) behave exactly like the pre-region-awareness flat count
+    final var resolver = new ReplicaRegionResolver(List.of(region("default", ".*", 1)));
+
+    // when
+    final var region = resolver.resolve(null);
+
+    // then
+    assertThat(region).contains("default");
+  }
+
+  @Test
   void shouldResolveToTheFirstMatchingRegionWhenPatternsOverlap() {
     // given - both patterns match "us-east-1a"; the first declared region wins
-    final var config = new RegionAwarenessConfiguration();
-    config.setRegions(
-        List.of(region("us-east-primary", "us-east-1.*", 1), region("us-east", "us-east-.*", 1)));
-    final var resolver = new ReplicaRegionResolver(config);
+    final var resolver =
+        new ReplicaRegionResolver(
+            List.of(
+                region("us-east-primary", "us-east-1.*", 1), region("us-east", "us-east-.*", 1)));
 
     // when
     final var region = resolver.resolve("us-east-1a");
@@ -85,9 +92,7 @@ class ReplicaRegionResolverTest {
   @Test
   void shouldRequireAFullMatchNotJustASubstring() {
     // given - the pattern requires the label to be exactly "us-east", not merely contain it
-    final var config = new RegionAwarenessConfiguration();
-    config.setRegions(List.of(region("us-east", "us-east", 1)));
-    final var resolver = new ReplicaRegionResolver(config);
+    final var resolver = new ReplicaRegionResolver(List.of(region("us-east", "us-east", 1)));
 
     // when
     final var region = resolver.resolve("us-east-1a");

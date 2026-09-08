@@ -9,7 +9,6 @@ package io.camunda.exporter.rdbms.replication;
 
 import io.camunda.db.rdbms.read.replication.ReplicationStatus;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
-import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionAwarenessConfiguration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,66 +22,57 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Shared quorum math for {@link ReplicationSignalStrategy} implementations: the "sort
- * best-replicas-first, take the configured quorum size, return the worst of that slice" pattern
- * both {@link LsnReplicationSignalStrategy} and {@link TimeMonitoringReplicationSignalStrategy}
- * already apply, generalized to optionally partition replicas into operator-declared regions - see
- * {@code docs/adr/0001-region-aware-replication-quorum.md}.
+ * Shared quorum math for {@link ReplicationSignalStrategy} implementations: replicas are grouped by
+ * the region resolved from their {@code replicaLabel} via {@link ReplicaRegionResolver} (a label
+ * matching no configured region counts toward no region), each declared region is ranked
+ * independently - "sort best-replicas-first, take the region's own {@code minReplicas}, return the
+ * worst of that slice" - and every region is mandatory: the overall result is the worst value
+ * across all of them, so if any one region falls short of its own {@code minReplicas} the whole
+ * position is unconfirmed. See {@code docs/adr/0001-region-aware-replication-quorum.md}.
  *
- * <p>When {@link RegionAwarenessConfiguration#isEnabled()} is {@code false} (the default), both
- * methods reduce to the original flat behavior: rank all replicas together and require {@link
- * ReplicationConfiguration#getMinSyncReplicas()} of them.
+ * <p>A flat quorum (the old {@code minSyncReplicas}) is just the degenerate case of a single region
+ * matching every replica - see {@link ReplicationConfiguration#getRegions()} - so there is only
+ * ever this one code path.
  *
- * <p>When enabled, replicas are grouped by the region resolved from their {@code replicaLabel} via
- * {@link ReplicaRegionResolver}; a label matching no configured region counts toward no region.
- * Every declared region is mandatory and independently ranked using its own {@link
- * RegionConfiguration#getMinReplicas()}; the region hosting the primary (see {@link
- * RegionAwarenessConfiguration#getPrimaryRegion()}) gets one synthetic, always-best entry credited
- * to it, so operators size {@code minReplicas} as the desired total healthy node count for that
- * region. The overall result is the worst value among all mandatory regions - if any region falls
- * short of its own {@code minReplicas}, the whole position is unconfirmed.
+ * <p>{@code currentPrimaryRegion}, freshly resolved by the caller from the primary's own live
+ * connection every check (see {@code getCurrentReplicaLabel()} on the providers in {@code
+ * db/rdbms}), gets one synthetic, always-best entry credited to whichever region it resolves to -
+ * except a catch-all region (pattern exactly {@code ".*"}), which never receives it, since a
+ * catch-all can't meaningfully claim to specifically host the primary without silently satisfying
+ * the whole quorum with the primary alone. The primary's region is resolved dynamically, not from
+ * static config, because it can change after a failover.
  */
 final class RegionAwareQuorum {
+
+  private static final String CATCH_ALL_PATTERN = ".*";
 
   private static final Logger LOG = LoggerFactory.getLogger(RegionAwareQuorum.class);
 
   private RegionAwareQuorum() {}
 
-  /**
-   * The count-only quorum check, used where no per-replica value can be ranked (e.g. LSN mode's
-   * pause lag).
-   */
   static boolean quorumMet(
       final List<? extends ReplicationStatus> statuses,
       final ReplicationConfiguration config,
-      final ReplicaRegionResolver resolver) {
-    final RegionAwarenessConfiguration regionAwareness = config.getRegionAwareness();
-    if (!regionAwareness.isEnabled()) {
-      return statuses.size() >= config.getMinSyncReplicas();
-    }
-    return regionsBelowQuorum(statuses, config, resolver).isEmpty();
+      final ReplicaRegionResolver resolver,
+      final Optional<String> currentPrimaryRegion) {
+    return regionsBelowQuorum(statuses, config, resolver, currentPrimaryRegion).isEmpty();
   }
 
   /**
    * The names of mandatory regions currently short of their own {@code minReplicas} (counting the
-   * primary's automatic credit where applicable). Empty when region awareness is disabled or every
-   * declared region meets its own quorum - used for diagnostic logging when the exporter pauses,
-   * see {@link DefaultReplicationController}.
+   * primary's automatic credit where eligible). Used for diagnostic logging when the exporter
+   * pauses, see {@link DefaultReplicationController}.
    */
   static List<String> regionsBelowQuorum(
       final List<? extends ReplicationStatus> statuses,
       final ReplicationConfiguration config,
-      final ReplicaRegionResolver resolver) {
-    final RegionAwarenessConfiguration regionAwareness = config.getRegionAwareness();
-    if (!regionAwareness.isEnabled()) {
-      return List.of();
-    }
-
+      final ReplicaRegionResolver resolver,
+      final Optional<String> currentPrimaryRegion) {
     final Map<String, Long> countsByRegion = countByRegion(statuses, resolver);
     final List<String> below = new ArrayList<>();
-    for (final RegionConfiguration region : regionAwareness.getRegions()) {
+    for (final RegionConfiguration region : config.getRegions()) {
       long count = countsByRegion.getOrDefault(region.getName(), 0L);
-      if (region.getName().equals(regionAwareness.getPrimaryRegion())) {
+      if (isPrimaryCreditedTo(region, currentPrimaryRegion)) {
         count++;
       }
       if (count < region.getMinReplicas()) {
@@ -92,50 +82,27 @@ final class RegionAwareQuorum {
     return below;
   }
 
-  private static Map<String, Long> countByRegion(
-      final List<? extends ReplicationStatus> statuses, final ReplicaRegionResolver resolver) {
-    final Map<String, Long> counts = new LinkedHashMap<>();
-    for (final ReplicationStatus status : statuses) {
-      resolveLogWarning(resolver, status.replicaLabel())
-          .ifPresent(region -> counts.merge(region, 1L, Long::sum));
-    }
-    return counts;
-  }
-
   /**
-   * The ranked quorum value: {@code higherIsBetter} orders replicas from most- to least-caught-up
-   * (e.g. {@code true} for an LSN or an as-of timestamp, {@code false} for a lag in milliseconds).
-   * Returns {@link OptionalLong#empty()} when quorum isn't met (flat: not enough replicas overall;
-   * region-aware: at least one mandatory region falls short of its own {@code minReplicas}).
+   * {@code higherIsBetter} orders replicas from most- to least-caught-up (e.g. {@code true} for an
+   * LSN or an as-of timestamp, {@code false} for a lag in milliseconds). Returns {@link
+   * OptionalLong#empty()} when at least one mandatory region falls short of its own {@code
+   * minReplicas}.
    */
   static <T extends ReplicationStatus> OptionalLong evaluate(
       final List<T> statuses,
       final ReplicationConfiguration config,
       final ReplicaRegionResolver resolver,
+      final Optional<String> currentPrimaryRegion,
       final ToLongFunction<? super T> valueExtractor,
       final boolean higherIsBetter) {
-    final RegionAwarenessConfiguration regionAwareness = config.getRegionAwareness();
-    if (!regionAwareness.isEnabled()) {
-      final List<Long> values = statuses.stream().map(valueExtractor::applyAsLong).toList();
-      return worstOfTopN(values, config.getMinSyncReplicas(), higherIsBetter);
-    }
-
-    final Map<String, List<Long>> valuesByRegion = new LinkedHashMap<>();
-    for (final T status : statuses) {
-      resolveLogWarning(resolver, status.replicaLabel())
-          .ifPresent(
-              region ->
-                  valuesByRegion
-                      .computeIfAbsent(region, key -> new ArrayList<>())
-                      .add(valueExtractor.applyAsLong(status)));
-    }
-
+    final Map<String, List<Long>> valuesByRegion =
+        groupValuesByRegion(statuses, resolver, valueExtractor);
     final long primaryCreditValue = higherIsBetter ? Long.MAX_VALUE : Long.MIN_VALUE;
     final List<Long> regionResults = new ArrayList<>();
-    for (final RegionConfiguration region : regionAwareness.getRegions()) {
+    for (final RegionConfiguration region : config.getRegions()) {
       final List<Long> values =
           new ArrayList<>(valuesByRegion.getOrDefault(region.getName(), List.of()));
-      if (region.getName().equals(regionAwareness.getPrimaryRegion())) {
+      if (isPrimaryCreditedTo(region, currentPrimaryRegion)) {
         values.add(primaryCreditValue);
       }
       final OptionalLong regionResult =
@@ -150,16 +117,10 @@ final class RegionAwareQuorum {
     return worstOfTopN(regionResults, regionResults.size(), higherIsBetter);
   }
 
-  private static Optional<String> resolveLogWarning(
-      final ReplicaRegionResolver resolver, final String replicaLabel) {
-    final Optional<String> region = resolver.resolve(replicaLabel);
-    if (region.isEmpty()) {
-      LOG.warn(
-          "Replica label '{}' did not match any configured region pattern; it will not count"
-              + " toward any region's replication quorum.",
-          replicaLabel);
-    }
-    return region;
+  private static boolean isPrimaryCreditedTo(
+      final RegionConfiguration region, final Optional<String> currentPrimaryRegion) {
+    return !CATCH_ALL_PATTERN.equals(region.getPattern())
+        && currentPrimaryRegion.filter(region.getName()::equals).isPresent();
   }
 
   private static OptionalLong worstOfTopN(
@@ -171,5 +132,43 @@ final class RegionAwareQuorum {
         higherIsBetter ? Comparator.<Long>reverseOrder() : Comparator.naturalOrder();
     final var topN = values.stream().sorted(bestFirst).limit(n).mapToLong(Long::longValue);
     return higherIsBetter ? topN.min() : topN.max();
+  }
+
+  private static <T extends ReplicationStatus> Map<String, List<Long>> groupValuesByRegion(
+      final List<T> statuses,
+      final ReplicaRegionResolver resolver,
+      final ToLongFunction<? super T> valueExtractor) {
+    final Map<String, List<Long>> byRegion = new LinkedHashMap<>();
+    for (final T status : statuses) {
+      resolveLogWarning(resolver, status.replicaLabel())
+          .ifPresent(
+              region ->
+                  byRegion
+                      .computeIfAbsent(region, key -> new ArrayList<>())
+                      .add(valueExtractor.applyAsLong(status)));
+    }
+    return byRegion;
+  }
+
+  private static Map<String, Long> countByRegion(
+      final List<? extends ReplicationStatus> statuses, final ReplicaRegionResolver resolver) {
+    final Map<String, Long> counts = new LinkedHashMap<>();
+    for (final ReplicationStatus status : statuses) {
+      resolveLogWarning(resolver, status.replicaLabel())
+          .ifPresent(region -> counts.merge(region, 1L, Long::sum));
+    }
+    return counts;
+  }
+
+  private static Optional<String> resolveLogWarning(
+      final ReplicaRegionResolver resolver, final String replicaLabel) {
+    final Optional<String> region = resolver.resolve(replicaLabel);
+    if (region.isEmpty()) {
+      LOG.warn(
+          "Replica label '{}' did not match any configured region pattern; it will not count"
+              + " toward any region's replication quorum.",
+          replicaLabel);
+    }
+    return region;
   }
 }

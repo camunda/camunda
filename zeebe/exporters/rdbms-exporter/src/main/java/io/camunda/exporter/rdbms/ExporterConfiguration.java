@@ -634,13 +634,21 @@ public class ExporterConfiguration {
     private boolean enabled = DEFAULT_ENABLED;
     private ReplicationType type = DEFAULT_TYPE;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
-    private int minSyncReplicas = DEFAULT_MIN_SYNC_REPLICAS;
     private Duration maxLag = DEFAULT_MAX_LAG;
     private boolean pauseOnMaxLagExceeded = DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
     private Duration delay;
     private Duration queueDebounceTime = DEFAULT_QUEUE_DEBOUNCE_TIME;
     private int queueCapacity = DEFAULT_QUEUE_CAPACITY;
-    private RegionAwarenessConfiguration regionAwareness = new RegionAwarenessConfiguration();
+
+    /**
+     * Every declared region is mandatory: if any one of them doesn't meet its own {@link
+     * RegionConfiguration#getMinReplicas()}, the position stays unconfirmed / the exporter pauses,
+     * even if the other regions are fully healthy. Always non-empty when {@link #enabled} - a flat
+     * quorum (the old {@code minSyncReplicas}) is represented as a single region matching every
+     * replica; see {@code RdbmsAsyncReplication} in the {@code configuration} module for where that
+     * conversion happens. See {@code docs/adr/0001-region-aware-replication-quorum.md}.
+     */
+    private List<RegionConfiguration> regions = new ArrayList<>();
 
     public boolean isEnabled() {
       return enabled;
@@ -664,20 +672,6 @@ public class ExporterConfiguration {
 
     public void setPollingInterval(final Duration pollingInterval) {
       this.pollingInterval = pollingInterval;
-    }
-
-    /**
-     * The number of replicas required to confirm a position. Ignored when {@link
-     * #regionAwareness}.{@link RegionAwarenessConfiguration#isEnabled() isEnabled()} is {@code
-     * true} - each declared region enforces its own {@link RegionConfiguration#getMinReplicas()}
-     * instead.
-     */
-    public int getMinSyncReplicas() {
-      return minSyncReplicas;
-    }
-
-    public void setMinSyncReplicas(final int minSyncReplicas) {
-      this.minSyncReplicas = minSyncReplicas;
     }
 
     public Duration getMaxLag() {
@@ -720,12 +714,12 @@ public class ExporterConfiguration {
       this.queueCapacity = queueCapacity;
     }
 
-    public RegionAwarenessConfiguration getRegionAwareness() {
-      return regionAwareness;
+    public List<RegionConfiguration> getRegions() {
+      return regions;
     }
 
-    public void setRegionAwareness(final RegionAwarenessConfiguration regionAwareness) {
-      this.regionAwareness = regionAwareness;
+    public void setRegions(final List<RegionConfiguration> regions) {
+      this.regions = regions;
     }
 
     public List<String> validate() {
@@ -733,12 +727,6 @@ public class ExporterConfiguration {
 
       if (!enabled) {
         return errors;
-      }
-
-      if (minSyncReplicas <= 0) {
-        errors.add(
-            String.format(
-                "asyncReplication.minSyncReplicas must be greater 0 but was %d", minSyncReplicas));
       }
 
       // queueCapacity, queueDebounceTime, pollingInterval, and maxLag apply to every
@@ -755,7 +743,46 @@ public class ExporterConfiguration {
       if (type == ReplicationType.DELAY) {
         checkPositiveDuration(delay, "asyncReplication.delay", errors);
       }
-      errors.addAll(regionAwareness.validate());
+      errors.addAll(validateRegions());
+      return errors;
+    }
+
+    private List<String> validateRegions() {
+      final List<String> errors = new ArrayList<>();
+      if (regions.isEmpty()) {
+        errors.add("asyncReplication.regions must not be empty");
+        return errors;
+      }
+
+      final Set<String> names = new HashSet<>();
+      for (final RegionConfiguration region : regions) {
+        final String name = region.getName();
+        if (name == null || name.isBlank()) {
+          errors.add("asyncReplication.regions[].name must not be blank");
+        } else if (!names.add(name)) {
+          errors.add(
+              String.format(
+                  "asyncReplication.regions[].name '%s' is declared more than once", name));
+        }
+        if (region.getPattern() == null || region.getPattern().isBlank()) {
+          errors.add(String.format("asyncReplication.regions[%s].pattern must not be blank", name));
+        } else {
+          try {
+            Pattern.compile(region.getPattern());
+          } catch (final PatternSyntaxException e) {
+            errors.add(
+                String.format(
+                    "asyncReplication.regions[%s].pattern is not a valid regex: %s",
+                    name, e.getMessage()));
+          }
+        }
+        if (region.getMinReplicas() < 1) {
+          errors.add(
+              String.format(
+                  "asyncReplication.regions[%s].minReplicas must be at least 1 but was %d",
+                  name, region.getMinReplicas()));
+        }
+      }
       return errors;
     }
 
@@ -773,111 +800,15 @@ public class ExporterConfiguration {
     }
 
     /**
-     * Optional region-aware replication quorum, for topologies where a flat {@link
-     * #minSyncReplicas} can't express per-region redundancy requirements (e.g. "at least 2 of 3
-     * nodes healthy in each of 3 regions"). Every declared {@link RegionConfiguration} is
-     * mandatory: if any one of them doesn't meet its own {@code minReplicas}, the position stays
-     * unconfirmed / the exporter pauses, even if the other regions are fully healthy.
-     */
-    public static class RegionAwarenessConfiguration {
-      public static final boolean DEFAULT_ENABLED = false;
-
-      private boolean enabled = DEFAULT_ENABLED;
-      private String primaryRegion;
-      private List<RegionConfiguration> regions = new ArrayList<>();
-
-      public boolean isEnabled() {
-        return enabled;
-      }
-
-      public void setEnabled(final boolean enabled) {
-        this.enabled = enabled;
-      }
-
-      /**
-       * The name of the region hosting the primary, matching one of {@link #regions}'s {@link
-       * RegionConfiguration#getName()}. When set, that region's quorum gets one synthetic,
-       * always-confirmed entry credited to the primary, so its {@code minReplicas} can be sized as
-       * the desired total healthy node count (primary + secondaries) rather than secondaries only.
-       * Optional - leave unset if no region should get primary credit.
-       */
-      public String getPrimaryRegion() {
-        return primaryRegion;
-      }
-
-      public void setPrimaryRegion(final String primaryRegion) {
-        this.primaryRegion = primaryRegion;
-      }
-
-      public List<RegionConfiguration> getRegions() {
-        return regions;
-      }
-
-      public void setRegions(final List<RegionConfiguration> regions) {
-        this.regions = regions;
-      }
-
-      public List<String> validate() {
-        final List<String> errors = new ArrayList<>();
-        if (!enabled) {
-          return errors;
-        }
-        if (regions.isEmpty()) {
-          errors.add("asyncReplication.regionAwareness.regions must not be empty when enabled");
-          return errors;
-        }
-
-        final Set<String> names = new HashSet<>();
-        for (final RegionConfiguration region : regions) {
-          final String name = region.getName();
-          if (name == null || name.isBlank()) {
-            errors.add("asyncReplication.regionAwareness.regions[].name must not be blank");
-          } else if (!names.add(name)) {
-            errors.add(
-                String.format(
-                    "asyncReplication.regionAwareness.regions[].name '%s' is declared more than"
-                        + " once",
-                    name));
-          }
-          if (region.getPattern() == null || region.getPattern().isBlank()) {
-            errors.add(
-                String.format(
-                    "asyncReplication.regionAwareness.regions[%s].pattern must not be blank",
-                    name));
-          } else {
-            try {
-              Pattern.compile(region.getPattern());
-            } catch (final PatternSyntaxException e) {
-              errors.add(
-                  String.format(
-                      "asyncReplication.regionAwareness.regions[%s].pattern is not a valid regex:"
-                          + " %s",
-                      name, e.getMessage()));
-            }
-          }
-          if (region.getMinReplicas() < 1) {
-            errors.add(
-                String.format(
-                    "asyncReplication.regionAwareness.regions[%s].minReplicas must be at least 1"
-                        + " but was %d",
-                    name, region.getMinReplicas()));
-          }
-        }
-        if (primaryRegion != null && !names.contains(primaryRegion)) {
-          errors.add(
-              String.format(
-                  "asyncReplication.regionAwareness.primaryRegion '%s' does not match any"
-                      + " declared region",
-                  primaryRegion));
-        }
-        return errors;
-      }
-    }
-
-    /**
      * A single region: replicas whose label (see {@code replicaLabel} in {@link
      * io.camunda.db.rdbms.read.replication.ReplicationStatus}) matches {@link #pattern} are grouped
      * into this region and counted against its own {@link #minReplicas}.
+     *
+     * <p>A region whose pattern is exactly {@code ".*"} - a catch-all, such as the single region
+     * synthesized from a flat {@code minSyncReplicas} - never receives the primary's automatic
+     * credit (see {@code RegionAwareQuorum}), since a catch-all can't meaningfully claim to
+     * specifically host the primary without silently satisfying the whole quorum with the primary
+     * alone.
      */
     public static class RegionConfiguration {
       private String name;
