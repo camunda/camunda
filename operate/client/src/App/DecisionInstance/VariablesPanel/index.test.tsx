@@ -145,6 +145,9 @@ describe('<VariablesPanel />', () => {
   });
 
   it('should keep the Result tab selected when switching back to a decision with both tabs', async () => {
+    // A fresh mock is registered before each render below, since switching
+    // decisionEvaluationInstanceKey triggers a new GET request per render
+    // (mockFetchDecisionInstance's handlers are one-time use).
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     const {user, rerender} = render(
@@ -155,10 +158,15 @@ describe('<VariablesPanel />', () => {
       {wrapper: Wrapper},
     );
 
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('inputs-skeleton'),
+    );
+
     await user.click(screen.getByRole('tab', {name: /result/i}));
     expect(await screen.findByTestId('monaco-editor')).toBeVisible();
 
     // Switch to a literal expression decision, which only has a Result tab.
+    mockFetchDecisionInstance().withSuccess(literalExpression);
     rerender(
       <VariablesPanel
         decisionEvaluationInstanceKey="2"
@@ -167,11 +175,15 @@ describe('<VariablesPanel />', () => {
     );
 
     expect(
+      await screen.findByTestId('results-json-viewer'),
+    ).toBeInTheDocument();
+    expect(
       screen.queryByRole('tab', {name: /inputs and outputs/i}),
     ).not.toBeInTheDocument();
 
     // Switch back to a decision with both tabs — Result should still be
     // selected instead of resetting to Inputs and Outputs.
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
     rerender(
       <VariablesPanel
         decisionEvaluationInstanceKey="1"
@@ -180,7 +192,7 @@ describe('<VariablesPanel />', () => {
     );
 
     expect(
-      screen.getByRole('tab', {name: /result/i}),
+      await screen.findByRole('tab', {name: /result/i}),
     ).toHaveAttribute('aria-selected', 'true');
     expect(
       screen.getByRole('tab', {name: /inputs and outputs/i}),
