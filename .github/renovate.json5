@@ -770,6 +770,7 @@
         "dmn-js-drd",
         "dmn-js-literal-expression",
         "dmn-js-shared",
+        "camunda-load-tests",
       ],
       minimumReleaseAge: "0 days",
     },
