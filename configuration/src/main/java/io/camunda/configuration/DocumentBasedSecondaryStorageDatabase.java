@@ -427,8 +427,10 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   /**
-   * Validates that a connection-pool limit, when set, is a positive value. A value of zero or less
-   * is a misconfiguration that would otherwise fail later with a cryptic Apache HttpClient error.
+   * Validates that a value, when set, is positive. Zero or less is a misconfiguration that would
+   * otherwise surface far from its cause — a cryptic Apache HttpClient error for a connection-pool
+   * limit, or a rejected schema creation naming neither the property nor the index for a shard
+   * count.
    *
    * @throws IllegalArgumentException if the value is set and not positive
    */
@@ -498,20 +500,11 @@ public abstract class DocumentBasedSecondaryStorageDatabase
             BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
             legacyShardsByIndexNameProperties());
 
-    // An index cannot be created with zero shards, and shards are immutable afterwards, so the
-    // search engine would reject the whole schema creation on startup with an error that names
-    // neither the property nor the index.
     shardsPerIndex
         .toIndexNameMap()
         .forEach(
-            (indexName, shards) -> {
-              if (shards < 1) {
-                throw new IllegalArgumentException(
-                    String.format(
-                        "%s.number-of-shards-per-index.%s must be at least 1, but was %d",
-                        prefix(), indexName, shards));
-              }
-            });
+            (indexName, shards) ->
+                validatePositive(".number-of-shards-per-index." + indexName, shards));
 
     return shardsPerIndex;
   }

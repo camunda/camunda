@@ -477,7 +477,7 @@ class SchemaManagerTest {
     }
 
     @Test
-    void shouldWarnWhenWideningASingleShardByDesignIndex() {
+    void shouldWarnWhenOverridingAPinnedShardCount() {
       // given — post-importer-queue is pinned to 1 shard because entries for one partition must
       // not scatter across independently refreshing shards
       final var template = new PostImporterQueueTemplate("test", true);
@@ -492,11 +492,15 @@ class SchemaManagerTest {
         // Exactly once: the settings resolver runs three times for a configured template (template
         // creation, index creation, settings update), so warning from there repeated the message.
         assertThat(logs.messagesAt(Level.WARN))
-            .filteredOn(message -> message.contains("defaults to a single primary shard by design"))
+            .filteredOn(message -> message.contains("is pinned to"))
             .singleElement()
             .satisfies(
                 message ->
-                    assertThat(message).contains(template.getIndexName()).contains("issues/56117"));
+                    assertThat(message)
+                        .contains(template.getIndexName())
+                        .contains("'1'")
+                        .contains("'3'")
+                        .contains("issues/56117"));
       }
 
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
@@ -517,9 +521,7 @@ class SchemaManagerTest {
 
         // then
         assertThat(logs.messagesAt(Level.WARN))
-            .noneSatisfy(
-                message ->
-                    assertThat(message).contains("defaults to a single primary shard by design"));
+            .noneSatisfy(message -> assertThat(message).contains("is pinned to"));
       }
     }
 
@@ -609,9 +611,7 @@ class SchemaManagerTest {
 
         // then
         assertThat(logs.messagesAt(Level.WARN))
-            .noneSatisfy(
-                message ->
-                    assertThat(message).contains("defaults to a single primary shard by design"));
+            .noneSatisfy(message -> assertThat(message).contains("is pinned to"));
       }
     }
   }

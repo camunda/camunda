@@ -122,14 +122,17 @@ trade.**
 - A count below 1 is a hard error, raised in the configuration layer so the message
   names the property path and the index rather than surfacing as an engine-level
   schema-creation failure.
-- Raising a single-shard-by-design index above 1 shard is a **warning**, not a
-  rejection — rejecting would contradict D3. What is traded away differs by index:
-  for most of them one shard is merely the efficient choice for
-  configuration or definition data, and widening costs a fan-out per read; only
-  where a reader also assumes a single atomic refresh is it a correctness risk.
-  The warning therefore names the index and offers post-importer-queue and
-  camunda/camunda#56117 as the example of the latter, rather than asserting that
-  risk of whichever index it fires on.
+- Configuring a count that differs from one a descriptor pins is a **warning**, not
+  a rejection — rejecting would contradict D3. The condition is stated against the
+  descriptor rather than against the number 1, so a descriptor that later pins some
+  other count is covered without revisiting it; today every pin is 1, so in practice
+  this fires when a single-shard-by-design index is widened.
+  What is traded away differs by index: for most of them one shard is merely the
+  efficient choice for configuration or definition data, and widening costs a
+  fan-out per read; only where a reader also assumes a single atomic refresh is it a
+  correctness risk. The warning therefore stays short — index, pinned count,
+  configured count — and leaves the why to camunda/camunda#56117, rather than
+  asserting a risk that may not apply to the index it fired on.
 - A configured count that differs from an already-created index's actual count is a
   **warning**. Shards are immutable after creation, so such a setting is otherwise a
   silent no-op: the operator sees the value they asked for in their configuration and a

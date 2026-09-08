@@ -292,19 +292,17 @@ public class SchemaManager implements CloseableSilently {
       return;
     }
 
+    // Smaller than explicitShards when a configured name matches no descriptor here — a typo, or a
+    // component running with a subset of the schema. Those names are simply not ours to check.
     final var configuredShardsByIndexName = new HashMap<String, Integer>();
     allIndexDescriptors.forEach(
         descriptor ->
             ofNullable(explicitShards.get(descriptor.getIndexName()))
                 .ifPresent(
                     shards -> {
-                      warnIfWideningSingleShardIndex(descriptor, shards);
+                      warnIfOverridingPinnedShardCount(descriptor, shards);
                       configuredShardsByIndexName.put(descriptor.getFullQualifiedName(), shards);
                     }));
-
-    if (configuredShardsByIndexName.isEmpty()) {
-      return;
-    }
 
     warnOnUnappliedShardCounts(configuredShardsByIndexName);
   }
@@ -557,25 +555,22 @@ public class SchemaManager implements CloseableSilently {
   /**
    * Explicit configuration wins over the descriptor default by design, so this only warns.
    *
-   * <p>Most single-shard-by-design indices hold configuration or definition data that simply does
-   * not benefit from being spread, so widening one costs a fan-out per read and nothing else. Only
-   * where a reader also assumes a single atomic refresh does it become a correctness risk, which is
-   * why the message offers post-importer-queue as the example rather than asserting the risk
-   * applies to whichever index is being warned about.
+   * <p>Descriptors that pin a count do so for a reason the operator cannot see from their own
+   * configuration file, so overriding one deserves a line in the log. The linked issue carries why
+   * it matters — post-importer-queue skipped entries once it was spread over several shards — which
+   * keeps that detail out of a message most readers only need to act on.
    */
-  private void warnIfWideningSingleShardIndex(
+  private void warnIfOverridingPinnedShardCount(
       final IndexDescriptor descriptor, final int configured) {
-    if (configured <= 1 || descriptor.getDefaultShardCount().orElse(configured) != 1) {
+    final var pinned = descriptor.getDefaultShardCount();
+    if (pinned.isEmpty() || pinned.getAsInt() == configured) {
       return;
     }
     LOG.warn(
-        "Index '{}' defaults to a single primary shard by design but is configured with '{}'. "
-            + "The explicit configuration wins. Such indices generally hold configuration or "
-            + "definition data that does not benefit from sharding; where a reader additionally "
-            + "assumes an atomic refresh, spreading entries over independently refreshing shards "
-            + "can make it skip data, as it did for post-importer-queue - see "
-            + "https://github.com/camunda/camunda/issues/56117.",
+        "Index '{}' is pinned to '{}' primary shards by design but is configured with '{}'; "
+            + "the configuration wins. See https://github.com/camunda/camunda/issues/56117.",
         descriptor.getIndexName(),
+        pinned.getAsInt(),
         configured);
   }
 
