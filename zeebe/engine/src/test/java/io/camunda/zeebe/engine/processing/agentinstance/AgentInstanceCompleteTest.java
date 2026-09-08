@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMess
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -215,17 +216,17 @@ public class AgentInstanceCompleteTest {
     ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-committed").commit();
 
     // when — completing the agent instance drives the real, registered CLEAN_UP/CLEANED
-    // pipeline (AgentInstanceProcessors' wiring), not just AgentInstanceCleanUpProcessor tested
-    // in isolation
+    // pipeline (AgentHistoryBatchProcessors' wiring), not just AgentHistoryBatchCleanUpProcessor
+    // tested in isolation
     ENGINE.agentInstances().withProcessInstanceKey(fixture.processInstanceKey()).complete();
 
     // then — both the committed and the discard-only, metrics-accumulated-only ids are actually
     // reached and returned on the CLEANED event
     final var cleaned =
-        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.CLEANED)
+        RecordingExporter.agentHistoryBatchRecords(AgentHistoryBatchIntent.CLEANED)
             .withAgentInstanceKey(fixture.agentInstanceKey())
             .getFirst();
-    assertThat(cleaned.getValue().getHistoryItemIdsToDelete())
+    assertThat(cleaned.getValue().getHistoryItemIds())
         .containsExactlyInAnyOrder("discarded-item", "committed-item");
   }
 
