@@ -84,4 +84,9 @@ public final class TimeMonitoringReplicationSignalStrategy
     }
     return Duration.ofMillis(worstLagMs.getAsLong());
   }
+
+  @Override
+  public List<String> regionsBelowQuorum(final List<ReplicationLagStatus> statuses) {
+    return RegionAwareQuorum.regionsBelowQuorum(statuses, config, regionResolver);
+  }
 }
