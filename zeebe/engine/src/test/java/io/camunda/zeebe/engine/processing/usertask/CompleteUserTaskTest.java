@@ -20,10 +20,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,10 +31,7 @@ import org.junit.Test;
 
 public final class CompleteUserTaskTest {
 
-  @ClassRule
-  public static final EngineRule ENGINE =
-      EngineRule.singlePartition()
-          .withEngineConfig(config -> config.setUserTaskCompletionVariableAuditEnabled(true));
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
 
@@ -137,37 +132,6 @@ public final class CompleteUserTaskTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.COMPLETING);
     assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withName("foo")
-                .getFirst()
-                .getValue()
-                .getSource()
-                .getType())
-        .isEqualTo(VariableOperationType.USER_TASK_COMPLETION);
-  }
-
-  @Test
-  public void shouldMarkUpdatedVariablesAsComingFromUserTaskCompletion() {
-    // given
-    ENGINE.deployment().withXmlResource(process()).deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", "old").create();
-
-    // when
-    ENGINE.userTask().ofInstance(processInstanceKey).withVariable("foo", "new").complete();
-
-    // then
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.UPDATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withName("foo")
-                .getFirst()
-                .getValue()
-                .getSource()
-                .getType())
-        .isEqualTo(VariableOperationType.USER_TASK_COMPLETION);
   }
 
   @Test

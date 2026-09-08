@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.configuration.engine;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -38,7 +37,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
   private StartupCfg startup = new StartupCfg();
   private StorageOrdinalsCfg storageOrdinals = new StorageOrdinalsCfg();
-  @JsonIgnore private boolean userTaskCompletionVariableAuditEnabled;
+  private boolean userTaskCompletionVariableAuditEnabled;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -252,6 +251,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + startup
         + ", storageOrdinals="
         + storageOrdinals
+        + ", userTaskCompletionVariableAuditEnabled="
+        + userTaskCompletionVariableAuditEnabled
         + ", inputMappingMode="
         + inputMappingMode
         + ", inputComparisonMode="

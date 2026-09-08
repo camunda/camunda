@@ -55,14 +55,17 @@ public final class BpmnVariableMappingBehavior {
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final MappingResolver<InputMappings> inputMappingResolver,
-      final MappingResolver<OutputMappings> outputMappingResolver) {
+      final MappingResolver<OutputMappings> outputMappingResolver,
+      final boolean userTaskCompletionVariableAuditEnabled) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
     userTaskCompletionVariableBehavior =
-        variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion());
+        userTaskCompletionVariableAuditEnabled
+            ? variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion())
+            : variableBehavior;
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.inputMappingResolver = inputMappingResolver;
@@ -170,8 +173,7 @@ public final class BpmnVariableMappingBehavior {
     if (outputMappings.isPresent()) {
       // set as local variables
       if (hasVariables) {
-        final Either<Failure, Void> variableEither =
-            mapLocalVariables(context, element, variables);
+        final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
         if (variableEither.isLeft()) {
           return variableEither;
         }
@@ -256,17 +258,9 @@ public final class BpmnVariableMappingBehavior {
       final BpmnElementContext context,
       final ExecutableFlowNode element,
       final DirectBuffer result) {
-    return mapLocalVariables(context, element, result, variableBehavior);
-  }
-
-  private @NonNull Either<Failure, Void> mapLocalVariables(
-      final BpmnElementContext context,
-      final ExecutableFlowNode element,
-      final DirectBuffer result,
-      final VariableBehavior outputVariableBehavior) {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
-      outputVariableBehavior.mergeLocalDocument(
+      variableBehavior.mergeLocalDocument(
           context.getElementInstanceKey(),
           record.getProcessDefinitionKey(),
           record.getProcessInstanceKey(),

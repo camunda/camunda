@@ -17,11 +17,9 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
   private final StringValue decodedValue = new StringValue();
   private @Nullable E value;
   private final Class<E> klass;
-  private final @Nullable E defaultValue;
 
   public EnumValue(final Class<E> e, final @Nullable E defaultValue) {
     klass = e;
-    this.defaultValue = defaultValue;
     value = defaultValue;
     if (value != null) {
       decodedValue.wrap(value.toString().getBytes(StandardCharsets.UTF_8));
@@ -60,17 +58,7 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
   @Override
   public void read(final MsgPackReader reader) {
     decodedValue.read(reader);
-
-    try {
-      value = Enum.valueOf(klass, decodedValue.toString());
-    } catch (final IllegalArgumentException e) {
-      if (defaultValue == null) {
-        throw e;
-      }
-
-      value = defaultValue;
-      decodedValue.wrap(defaultValue.toString().getBytes(StandardCharsets.UTF_8));
-    }
+    value = Enum.valueOf(klass, decodedValue.toString());
   }
 
   @Override
