@@ -491,6 +491,22 @@ Select the `scenario` input in the workflow dispatch form:
 - `typical` — straight-through baseline with a representative BPMN model and `50` PI/s target load; use it for sustained baseline comparisons. See [typical load](../docs/testing/reliability-testing.md#typical-load).
 - `latency` — low-throughput artificial workload (`1` PI/s, `1` worker) to isolate latency and reduce blast radius while debugging. See [latency load test](../docs/testing/reliability-testing.md#latency-load-test).
 - `archiver` — multi-instance archiver-focused scenario with no workers; use it when validating archiver or secondary-storage-related behavior. Its current wiring is defined in [`load-tests/setup/main/Makefile`](setup/main/Makefile).
+- `agent-visibility` — ad-hoc sub-process ("AI Agent" element) driving a fixed 4-round tool-calling schedule (`agentTools.bpmn`), used to measure the overhead of Agent Visibility & Explainability's `AgentInstance`/`AgentHistory` commands. Run as a baseline/treatment pair rather than once:
+
+  ```bash
+  # Baseline — identical tool-calling workload, no AgentInstance/AgentHistory traffic
+  gh workflow run camunda-load-test.yml -f ref=<branch> -f name=<initials>-agentviz-baseline -f scenario=agent-visibility
+
+  # Treatment — agent-instance simulation on. Both flags are release-scoped (global.extraEnvVars),
+  # not per-role: agentInstanceSimulationEnabled/with-lease/stream-enabled aren't in the chart's
+  # per-worker whitelist, and applying them to all 4 roles is harmless since the 3 tool roles
+  # never read them. stream-enabled=false works around a job-streaming double-delivery race that
+  # otherwise silently drops history items on the orchestrator role.
+  gh workflow run camunda-load-test.yml -f ref=<branch> -f name=<initials>-agentviz-treatment -f scenario=agent-visibility \
+    -f load-test-load="--set global.extraEnvVars[0].name=LOAD_TESTER_WORKER_AGENT_INSTANCE_SIMULATION_ENABLED --set global.extraEnvVars[0].value=true --set global.extraEnvVars[1].name=CAMUNDA_CLIENT_WORKER_DEFAULTS_WITH_LEASE --set global.extraEnvVars[1].value=true --set global.extraEnvVars[2].name=CAMUNDA_CLIENT_WORKER_DEFAULTS_STREAM_ENABLED --set global.extraEnvVars[2].value=false"
+  ```
+
+  Compare the two namespaces' dashboards (PI/s, exporter backlog, broker CPU/heap, backpressure) — the delta is the measured cost of agent visibility on top of an already-realistic multi-tool-calling workload. See [`docs/metrics.md`](docs/metrics.md#slo-targets-by-test-variant) for the scenario's per-PI flow-node shape.
 
 For manual runs and deeper scenario details, see [`load-tests/setup/README.md`](setup/README.md#running-specific-scenarios).
 
