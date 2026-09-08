@@ -15,12 +15,14 @@ import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManagers;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.sql.Connection;
 import java.util.LinkedHashMap;
@@ -142,7 +144,12 @@ class RdbmsSchemaInitializerH2IT {
   // ---- helpers ----
 
   private static RdbmsSchemaInitializer initializerFor(final RdbmsDataSources tenants) {
-    return new RdbmsSchemaInitializer(schemaManagersFor(tenants));
+    final var retry = new Rdbms().getRetry();
+    final var converted = new RetryConfiguration();
+    converted.setMaxRetries(retry.getMaxRetries());
+    converted.setMinRetryDelay(retry.getMinRetryDelay());
+    converted.setMaxRetryDelay(retry.getMaxRetryDelay());
+    return new RdbmsSchemaInitializer(schemaManagersFor(tenants), physicalTenantId -> converted);
   }
 
   private static Map<String, RdbmsSchemaManager> schemaManagersFor(final RdbmsDataSources tenants) {

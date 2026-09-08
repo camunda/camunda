@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer.TerminalSchemaInitializationException;
+import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
@@ -249,7 +250,7 @@ final class RdbmsSchemaInitializerTest {
   @Test
   void shouldRetryADegradedTenantWithoutABudgetThatRunsOut() {
     // given / when
-    final var retry = RdbmsSchemaInitializer.DEFAULT_RETRY;
+    final var retry = new Rdbms().getRetry();
 
     // then - a finite budget would leave every tenant that was migrating during a transient
     // database outage permanently degraded until an operator restarts the node
