@@ -48,7 +48,7 @@ export async function searchProcessDefinitionItems(
     {path: PROCESS_DEFINITION_SEARCH_ENDPOINT, method: 'POST', status: '200'},
     res,
   );
-  return (await res.json()).items as ProcessDefinitionItem[];
+  return ((await res.json()).items ?? []) as ProcessDefinitionItem[];
 }
 
 /**

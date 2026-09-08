@@ -53,7 +53,11 @@ test.beforeAll(async ({request}) => {
 });
 
 test.afterAll(async () => {
-  await cancelProcessInstance(processInstanceKey);
+  // Teardown stays best-effort: a beforeAll that fails before the instance
+  // exists would otherwise throw here and mask the original failure.
+  if (processInstanceKey) {
+    await cancelProcessInstance(processInstanceKey);
+  }
 });
 
 test.describe('Operate Process Definition Draining', () => {
