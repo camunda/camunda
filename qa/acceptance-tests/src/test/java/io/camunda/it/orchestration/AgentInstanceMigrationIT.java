@@ -179,6 +179,7 @@ public class AgentInstanceMigrationIT {
             .jobType(agentJobType)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
+            .withLease(true)
             .send()
             .join()
             .getJobs()

@@ -450,6 +450,7 @@ class AgentInstanceAuthorizationIT {
             .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
+            .withLease(true)
             .send()
             .join()
             .getJobs();
