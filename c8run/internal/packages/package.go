@@ -650,13 +650,17 @@ func stripGrpcNettyShadedNativeLibs(camundaVersion, osType, arch string) error {
 		return fmt.Errorf("stripGrpcNettyShadedNativeLibs: open %s: %w", jars[0], err)
 	}
 	var toDrop int
-	var keepFound bool
+	var hasNativeEntries bool
+	var tcnativeFound bool
 	for _, f := range r.File {
 		if !isGrpcNettyShadedNativeEntry(f.Name) {
 			continue
 		}
+		hasNativeEntries = true
+		if strings.Contains(f.Name, tcnativeToken) {
+			tcnativeFound = true
+		}
 		if keep(f.Name) {
-			keepFound = true
 			continue
 		}
 		toDrop++
@@ -665,7 +669,7 @@ func stripGrpcNettyShadedNativeLibs(camundaVersion, osType, arch string) error {
 		return fmt.Errorf("stripGrpcNettyShadedNativeLibs: close %s: %w", jars[0], err)
 	}
 
-	if toDrop > 0 && !keepFound {
+	if hasNativeEntries && !tcnativeFound {
 		return fmt.Errorf("stripGrpcNettyShadedNativeLibs: no entries matching tcnative token %q found in %s: verify grpcNettyShadedNativeTokens mapping", tcnativeToken, jars[0])
 	}
 
