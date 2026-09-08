@@ -62,7 +62,7 @@ public class PurgerCompletenessIT {
   private List<String> getAllCamundaTableNames() {
     return jdbcTemplate
         .queryForList(
-            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_NAME NOT IN ('DATABASECHANGELOG', 'DATABASECHANGELOGLOCK')")
+            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_NAME NOT IN ('DATABASECHANGELOG', 'DATABASECHANGELOGLOCK', 'RDBMS_SCHEMA_VERSION')")
         .stream()
         .map(row -> row.get("TABLE_NAME").toString())
         .toList();

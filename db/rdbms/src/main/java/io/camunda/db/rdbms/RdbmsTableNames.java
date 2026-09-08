@@ -73,8 +73,7 @@ public final class RdbmsTableNames {
           "PROCESS_DEF_VAR_NAME_LOOKUP",
           "VARIABLE",
           "WAIT_STATE",
-          "WEB_SESSION",
-          "RDBMS_SCHEMA_VERSION");
+          "WEB_SESSION");
 
   private RdbmsTableNames() {
     // Utility class - prevent instantiation
