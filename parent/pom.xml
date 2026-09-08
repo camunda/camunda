@@ -2518,8 +2518,8 @@
           <version>${plugin.version.surefire}</version>
           <configuration>
             <argLine>${jvm.module.opens}</argLine>
-            <!-- by default, exclude performance and strace tests -->
-            <excludedGroups>performance, strace, ${failsafe.excluded.nightly}</excludedGroups>
+            <!-- by default, exclude tests with dedicated CI jobs -->
+            <excludedGroups>performance, randomized, strace, io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory, ${failsafe.excluded.nightly}</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -3092,27 +3092,7 @@
     </profile>
 
     <profile>
-      <id>skip-random-tests</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <excludes>
-                <exclude>**/*RandomizedPropertyTest.java</exclude>
-                <exclude>**/*RandomizedRaftTest.java</exclude>
-                <!-- Re-add the default exclude for inner classes, see https://github.com/camunda/camunda/issues/8637 -->
-                <exclude>**/*$*.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <!-- Dedicated profile to run ONLY random tests. The include config overwrites the default pattern-->
+      <!-- Dedicated profile to run only randomized tests. -->
       <id>include-random-tests</id>
       <build>
         <plugins>
@@ -3120,16 +3100,29 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <includes>
-                <include>**/*RandomizedPropertyTest.java</include>
-                <include>**/*RandomizedRaftTest.java</include>
-              </includes>
+              <groups>randomized</groups>
+              <excludedGroups combine.self="override"/>
+              <excludes combine.self="override"/>
               <systemPropertyVariables>
                 <processCount>10</processCount>
                 <executionCount>100</executionCount>
                 <replayExecutionCount>5</replayExecutionCount>
               </systemPropertyVariables>
             </configuration>
+            <executions>
+              <execution>
+                <id>legacy-randomized-tests</id>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <phase>test</phase>
+                <configuration>
+                  <groups combine.self="override">io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory</groups>
+                  <excludes combine.self="override"/>
+                  <excludedGroups combine.self="override"/>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>

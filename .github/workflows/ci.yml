@@ -967,7 +967,7 @@ jobs:
           -D forkCount=7
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ env.GENERAL_UT_MODULES }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -1073,7 +1073,7 @@ jobs:
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
           -D argLine="@{argLine} -Xmx4g"
-          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"

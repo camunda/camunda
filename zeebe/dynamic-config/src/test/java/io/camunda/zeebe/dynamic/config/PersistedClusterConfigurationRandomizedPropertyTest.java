@@ -16,9 +16,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
+import net.jqwik.api.Tag;
 import net.jqwik.api.domains.Domain;
 import net.jqwik.api.domains.DomainContext;
 
+@Tag("randomized")
 final class PersistedClusterConfigurationRandomizedPropertyTest {
 
   @Property(tries = 100)
