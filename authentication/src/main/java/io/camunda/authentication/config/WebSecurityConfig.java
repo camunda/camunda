@@ -860,7 +860,10 @@ public class WebSecurityConfig {
         final var oidcConfig =
             oidcProviderRepository.getOidcAuthenticationConfigurationById(
                 clientRegistration.getRegistrationId());
-        final var additionalUris = oidcConfig != null ? oidcConfig.getAdditionalJwkSetUris() : null;
+        final var additionalUris =
+            oidcConfig != null && oidcConfig.getAdditionalJwkSetUris() != null
+                ? List.copyOf(oidcConfig.getAdditionalJwkSetUris())
+                : null;
         LOG.info(
             "Create Access Token JWT Decoder for OIDC Provider: {}",
             clientRegistration.getRegistrationId());
