@@ -9,7 +9,9 @@
 import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function createSystemConfiguration(
-	overrides?: Partial<GetSystemConfigurationResponseBody>,
+	overrides?: Omit<Partial<GetSystemConfigurationResponseBody>, 'deployment'> & {
+		deployment?: Partial<GetSystemConfigurationResponseBody['deployment']>;
+	},
 ): GetSystemConfigurationResponseBody {
 	return {
 		jobMetrics: {
@@ -21,15 +23,17 @@ function createSystemConfiguration(
 			maxUniqueKeys: 100,
 		},
 		components: {active: []},
-		deployment: {
-			isMultiTenancyEnabled: false,
-			maxRequestSize: 0,
-		},
 		authentication: {canLogout: true, isLoginDelegated: false},
 		cloud: {
 			stage: null,
 		},
 		...overrides,
+		deployment: {
+			isMultiTenancyEnabled: false,
+			isWaitStatesEnabled: true,
+			maxRequestSize: 0,
+			...overrides?.deployment,
+		},
 	};
 }
 

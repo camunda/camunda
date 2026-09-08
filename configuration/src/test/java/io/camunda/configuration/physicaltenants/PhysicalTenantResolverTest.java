@@ -15,11 +15,14 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
@@ -90,6 +93,28 @@ class PhysicalTenantResolverTest {
     // then both declared tenants are present (alongside the synthesized 'default')
     assertThat(indexPrefixOf(resolved.get("tenanta"))).isEqualTo("tenanta");
     assertThat(indexPrefixOf(resolved.get("tenantb"))).isEqualTo("tenantb");
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldResolveWaitStateRestConfigurationPerPhysicalTenant(final boolean rootEnabled) {
+    // given
+    setProperties(
+        Map.of(
+            "camunda.data.wait-states.enabled", rootEnabled,
+            "camunda.physical-tenants.tenanta.data.wait-states.enabled", !rootEnabled,
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"),
+        "tenanta");
+
+    // when
+    final var configs =
+        newResolver()
+            .mapValues(config -> new GatewayRestPropertiesOverride.Converter(config).convert());
+
+    // then
+    assertThat(configs.get("default").isWaitStatesEnabled()).isEqualTo(rootEnabled);
+    assertThat(configs.get("tenanta").isWaitStatesEnabled()).isEqualTo(!rootEnabled);
   }
 
   @Test

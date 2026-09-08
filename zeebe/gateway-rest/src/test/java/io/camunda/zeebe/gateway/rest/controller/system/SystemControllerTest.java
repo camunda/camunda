@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.system;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -38,6 +39,8 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -90,6 +93,7 @@ public class SystemControllerTest extends RestControllerTest {
 
   // WebappConfiguration is provided by SystemControllerTestConfiguration
   @Autowired WebappConfiguration webappConfiguration;
+  @Autowired SystemController systemController;
 
   @BeforeEach
   void setupUsageMetricsServices() {
@@ -454,6 +458,58 @@ public class SystemControllerTest extends RestControllerTest {
             }
             """,
             JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWaitStatesEnabledByDefault() {
+    // given the default REST configuration
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.deployment.isWaitStatesEnabled")
+        .isEqualTo(true);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldReturnConfiguredWaitStatesEnabled(final boolean enabled) {
+    // given
+    final var config = new GatewayRestConfiguration();
+    config.setWaitStatesEnabled(enabled);
+    when(tenantRestConfigProvider.forPhysicalTenant(any())).thenReturn(config);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.deployment.isWaitStatesEnabled")
+        .isEqualTo(enabled);
+  }
+
+  @Test
+  void shouldReturnWaitStatesConfigurationForEachPhysicalTenant() {
+    // given
+    final var enabledConfig = new GatewayRestConfiguration();
+    final var disabledConfig = new GatewayRestConfiguration();
+    disabledConfig.setWaitStatesEnabled(false);
+    when(tenantRestConfigProvider.forPhysicalTenant("enabled")).thenReturn(enabledConfig);
+    when(tenantRestConfigProvider.forPhysicalTenant("disabled")).thenReturn(disabledConfig);
+
+    // when/then
+    for (final var tenantId : List.of("enabled", "disabled", "enabled")) {
+      final var response = systemController.getSystemConfiguration(tenantId);
+      assertThat(response.getBody().getDeployment().getIsWaitStatesEnabled())
+          .isEqualTo(tenantId.equals("enabled"));
+    }
   }
 
   @Test
