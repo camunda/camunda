@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLagStatus;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -253,6 +254,112 @@ class TimeMonitoringReplicationSignalStrategyTest {
       assertThat(lagWithNoQueueAge)
           .isEqualTo(lagWithHugeQueueAge)
           .isEqualTo(Duration.ofMillis(5_000L));
+    }
+  }
+
+  @Nested
+  class RegionAwareTest {
+
+    @BeforeEach
+    void setUpRegions() {
+      config.getRegionAwareness().setEnabled(true);
+      config
+          .getRegionAwareness()
+          .setRegions(
+              List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
+    }
+
+    @Test
+    void shouldReturnUnconfirmedWhenOneMandatoryRegionFallsShort() {
+      // given - us-east needs 2 replicas but only 1 is reporting; us-west is fully healthy
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 20_000L, "us-east-1"),
+              new ReplicationLagStatus("r2", 1_000L, 20_000L, "us-west-1"));
+
+      // when
+      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+    }
+
+    @Test
+    void shouldConfirmWorstAsOfAcrossAllMandatoryRegions() {
+      // given - us-east's own top 2 are 20_000 and 10_000 (worst: 10_000); us-west's top 1 is
+      // 5_000 (worst: 5_000); the overall confirmed point can't be later than either
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 20_000L, "us-east-1"),
+              new ReplicationLagStatus("r2", 1_000L, 10_000L, "us-east-2"),
+              new ReplicationLagStatus("r3", 1_000L, 5_000L, "us-west-1"));
+
+      // when
+      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(asOfMs).isEqualTo(5_000L);
+    }
+
+    @Test
+    void shouldCreditThePrimaryRegionWhenComputingTheConfirmedMarker() {
+      // given - us-east hosts the primary and needs 2 nodes total; with the primary's automatic
+      // credit, its single real secondary determines the region's result
+      config.getRegionAwareness().setPrimaryRegion("us-east");
+      config.getRegionAwareness().setRegions(List.of(region("us-east", "us-east-.*", 2)));
+      final var strategy = createStrategy();
+      final var statuses = List.of(new ReplicationLagStatus("r1", 1_000L, 30_000L, "us-east-1"));
+
+      // when
+      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(asOfMs).isEqualTo(30_000L);
+    }
+
+    @Test
+    void shouldPauseWithWorstLagAcrossAllMandatoryRegionsWhenQuorumIsMet() {
+      // given - us-east's own best 2 by lag are r1 (1_000) and r2 (2_000), worst of those is
+      // 2_000; us-west's best 1 is r3 (500); the overall pause lag is the worst across regions
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 0L, "us-east-1"),
+              new ReplicationLagStatus("r2", 2_000L, 0L, "us-east-2"),
+              new ReplicationLagStatus("r3", 500L, 0L, "us-west-1"));
+
+      // when
+      final Duration lag = strategy.computePauseLag(statuses, Optional.empty());
+
+      // then
+      assertThat(lag).isEqualTo(Duration.ofMillis(2_000L));
+    }
+
+    @Test
+    void shouldFallBackToQueueHeadAgeWhenAMandatoryRegionFallsShort() {
+      // given - us-west needs 1 replica but has none; us-east is fully healthy
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 0L, "us-east-1"),
+              new ReplicationLagStatus("r2", 1_000L, 0L, "us-east-2"));
+
+      // when
+      final Duration lag = strategy.computePauseLag(statuses, Optional.of(Duration.ofSeconds(4)));
+
+      // then
+      assertThat(lag).isEqualTo(Duration.ofSeconds(4));
+    }
+
+    private RegionConfiguration region(
+        final String name, final String pattern, final int minReplicas) {
+      final var region = new RegionConfiguration();
+      region.setName(name);
+      region.setPattern(pattern);
+      region.setMinReplicas(minReplicas);
+      return region;
     }
   }
 }
