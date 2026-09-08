@@ -6,6 +6,13 @@ metadata:
   name: starter
   labels:
     app: starter
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -16,6 +23,13 @@ spec:
       labels:
         app: starter
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
         
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
@@ -37,16 +51,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=true
-                -Dapp.performReadBenchmarks=false
-                -Dapp.starter.rate=300
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.starter.processId="benchmark"
-                -Dapp.starter.bpmnXmlPath="bpmn/one_task.bpmn"
-                -Dapp.starter.businessKey="businessKey"
-                -Dapp.starter.payloadPath="bpmn/typical_payload.json"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"
