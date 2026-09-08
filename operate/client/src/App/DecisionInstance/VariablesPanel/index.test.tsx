@@ -143,4 +143,47 @@ describe('<VariablesPanel />', () => {
       }),
     ).not.toBeInTheDocument();
   });
+
+  it('should keep the Result tab selected when switching back to a decision with both tabs', async () => {
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
+
+    const {user, rerender} = render(
+      <VariablesPanel
+        decisionEvaluationInstanceKey="1"
+        decisionDefinitionType="DECISION_TABLE"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(screen.getByRole('tab', {name: /result/i}));
+    expect(await screen.findByTestId('monaco-editor')).toBeVisible();
+
+    // Switch to a literal expression decision, which only has a Result tab.
+    rerender(
+      <VariablesPanel
+        decisionEvaluationInstanceKey="2"
+        decisionDefinitionType="LITERAL_EXPRESSION"
+      />,
+    );
+
+    expect(
+      screen.queryByRole('tab', {name: /inputs and outputs/i}),
+    ).not.toBeInTheDocument();
+
+    // Switch back to a decision with both tabs — Result should still be
+    // selected instead of resetting to Inputs and Outputs.
+    rerender(
+      <VariablesPanel
+        decisionEvaluationInstanceKey="1"
+        decisionDefinitionType="DECISION_TABLE"
+      />,
+    );
+
+    expect(
+      screen.getByRole('tab', {name: /result/i}),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(
+      screen.getByRole('tab', {name: /inputs and outputs/i}),
+    ).toHaveAttribute('aria-selected', 'false');
+  });
 });
