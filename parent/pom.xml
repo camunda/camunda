@@ -2521,6 +2521,7 @@
             <!-- by default, exclude tests with dedicated CI jobs -->
             <excludedGroups>performance, randomized, slow, strace, io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory, io.camunda.zeebe.test.util.junit.SlowTest, ${failsafe.excluded.nightly}</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
+            <failIfNoSpecifiedTests>true</failIfNoSpecifiedTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <systemPropertyVariables>
