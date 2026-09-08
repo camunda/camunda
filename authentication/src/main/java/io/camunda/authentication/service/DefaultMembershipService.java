@@ -10,6 +10,8 @@ package io.camunda.authentication.service;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
+import io.camunda.authentication.utils.OutageLog;
+import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -23,11 +25,14 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.github.resilience4j.retry.Retry;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +45,13 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageEnabled
 public class DefaultMembershipService implements MembershipService {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultMembershipService.class);
+  private static final Retry MEMBERSHIP_LOOKUP_RETRY = TransientRetry.of("membership-lookup");
+
+  // One entry per lookup, so a failing group store does not suppress the report of a failing tenant
+  // store. Resolvers are per-authentication but this service is a singleton, which is what makes an
+  // outage report span requests instead of being repeated by each one; the map is therefore bounded
+  // by the four lookups, not by traffic.
+  private final Map<String, OutageLog> lookupOutages = new ConcurrentHashMap<>();
 
   private final MappingRuleServices mappingRuleServices;
   private final TenantServices tenantServices;
@@ -75,6 +87,40 @@ public class DefaultMembershipService implements MembershipService {
     final List<String> eagerGroupsFromClaims =
         isGroupsClaimConfigured ? List.copyOf(oidcGroupsLoader.load(tokenClaims)) : null;
     return new Resolver(tokenClaims, principalId, principalType, eagerGroupsFromClaims);
+  }
+
+  /**
+   * Runs {@code lookup}, retrying on transient search failures (see {@link
+   * TransientRetry#isTransient}). Once retries are exhausted, degrades to {@code empty} so
+   * authorization is still evaluated against direct grants rather than failing the whole request
+   * over a search-store outage — which, because these lookups also run during session
+   * serialization, would otherwise surface as an opaque serialization crash at request commit. A
+   * non-transient failure propagates unchanged: it needs an operator, not a fallback.
+   *
+   * @param empty the degraded result, which must grant no membership of its own
+   */
+  private <T> T resolveWithRetry(final String label, final Supplier<T> lookup, final T empty) {
+    try {
+      final var ids = Retry.decorateSupplier(MEMBERSHIP_LOOKUP_RETRY, lookup).get();
+      final var outage = lookupOutages.get(label);
+      if (outage != null) {
+        outage.recovery("Resolving {} works again", label);
+      }
+      return ids;
+    } catch (final RuntimeException e) {
+      if (TransientRetry.isTransient(e)) {
+        lookupOutages
+            .computeIfAbsent(label, l -> new OutageLog(LOG))
+            .failure(
+                "Failed to resolve {} after {} attempts, falling back to empty: {}",
+                label,
+                TransientRetry.MAX_ATTEMPTS,
+                e.getMessage(),
+                e);
+        return empty;
+      }
+      throw e;
+    }
   }
 
   /**
@@ -114,11 +160,15 @@ public class DefaultMembershipService implements MembershipService {
         }
 
         final var ids =
-            mappingRuleServices
-                .withAuthentication(CamundaAuthentication.anonymous())
-                .getMatchingMappingRules(tokenClaims)
-                .map(MappingRuleEntity::mappingRuleId)
-                .collect(Collectors.toSet());
+            resolveWithRetry(
+                "mappingRules",
+                () ->
+                    mappingRuleServices
+                        .withAuthentication(CamundaAuthentication.anonymous())
+                        .getMatchingMappingRules(tokenClaims)
+                        .map(MappingRuleEntity::mappingRuleId)
+                        .collect(Collectors.toSet()),
+                Set.<String>of());
         if (!ids.isEmpty()) {
           ownerTypeToIds.put(MAPPING_RULE, ids);
         } else {
@@ -143,12 +193,16 @@ public class DefaultMembershipService implements MembershipService {
           // when any mapping rules matched the claims.
           mappingRules();
           ids =
-              groupServices
-                  .withAuthentication(CamundaAuthentication.anonymous())
-                  .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds)
-                  .stream()
-                  .map(GroupEntity::groupId)
-                  .collect(Collectors.toSet());
+              resolveWithRetry(
+                  "groups",
+                  () ->
+                      groupServices
+                          .withAuthentication(CamundaAuthentication.anonymous())
+                          .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds)
+                          .stream()
+                          .map(GroupEntity::groupId)
+                          .collect(Collectors.toSet()),
+                  Set.<String>of());
         }
 
         if (!ids.isEmpty()) {
@@ -168,12 +222,16 @@ public class DefaultMembershipService implements MembershipService {
         groups();
 
         final var ids =
-            roleServices
-                .withAuthentication(CamundaAuthentication.anonymous())
-                .getRolesByMemberTypeAndMemberIds(ownerTypeToIds)
-                .stream()
-                .map(RoleEntity::roleId)
-                .collect(Collectors.toSet());
+            resolveWithRetry(
+                "roles",
+                () ->
+                    roleServices
+                        .withAuthentication(CamundaAuthentication.anonymous())
+                        .getRolesByMemberTypeAndMemberIds(ownerTypeToIds)
+                        .stream()
+                        .map(RoleEntity::roleId)
+                        .collect(Collectors.toSet()),
+                Set.<String>of());
 
         if (!ids.isEmpty()) {
           ownerTypeToIds.put(EntityType.ROLE, ids);
@@ -189,12 +247,16 @@ public class DefaultMembershipService implements MembershipService {
         roles();
 
         tenants =
-            tenantServices
-                .withAuthentication(CamundaAuthentication.anonymous())
-                .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds)
-                .stream()
-                .map(TenantEntity::tenantId)
-                .toList();
+            resolveWithRetry(
+                "tenants",
+                () ->
+                    tenantServices
+                        .withAuthentication(CamundaAuthentication.anonymous())
+                        .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds)
+                        .stream()
+                        .map(TenantEntity::tenantId)
+                        .toList(),
+                List.<String>of());
       }
       return tenants;
     }
