@@ -11,7 +11,7 @@ ES_URL="${ES_URL:-http://localhost:9200}"
 zeebe_definition_count() {
   curl -sf -u demo:demo -H 'Content-Type: application/json' \
     -X POST "${ZEEBE_URL}/v2/process-definitions/search" \
-    -d '{"page":{"limit":0}}' 2>/dev/null | jq '.page.totalItems // 0' || echo 0
+    -d '{"page":{"limit":1}}' 2>/dev/null | jq '.page.totalItems // 0' || echo 0
 }
 
 optimize_count() {
