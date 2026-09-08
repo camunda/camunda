@@ -15,6 +15,7 @@
  */
 package io.atomix.raft;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.RaftError.Type;
@@ -32,7 +33,9 @@ import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftSnapshotReplicationFailureHandlingTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

@@ -15,6 +15,7 @@
  */
 package io.atomix.raft;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -33,7 +34,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftReplicationLagTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

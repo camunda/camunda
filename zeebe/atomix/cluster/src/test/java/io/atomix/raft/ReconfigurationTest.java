@@ -7,6 +7,7 @@
  */
 package io.atomix.raft;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.ClusterMembershipService;
@@ -63,6 +64,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@SlowTest
 final class ReconfigurationTest {
   private final SingleThreadContext context = new SingleThreadContext("raft-%d");
   private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory();

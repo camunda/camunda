@@ -15,6 +15,7 @@
  */
 package io.atomix.raft;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
@@ -25,8 +26,10 @@ import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /** Coverage for the catch-up step of a coordinated leadership transfer. */
+@Category(SlowTest.class)
 public class RaftLeadershipTransferCatchUpTest {
 
   private static final Duration REPLICATION_TIMEOUT = Duration.ofSeconds(2);

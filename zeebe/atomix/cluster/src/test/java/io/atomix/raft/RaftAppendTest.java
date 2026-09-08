@@ -15,6 +15,7 @@
  */
 package io.atomix.raft;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -27,12 +28,14 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
+@Category(SlowTest.class)
 public class RaftAppendTest {
 
   @Rule @Parameter public RaftRule raftRule;
