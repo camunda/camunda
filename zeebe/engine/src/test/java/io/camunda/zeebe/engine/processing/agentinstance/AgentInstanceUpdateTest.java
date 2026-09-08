@@ -61,12 +61,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -117,12 +116,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -180,12 +178,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -238,12 +235,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -314,12 +310,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -369,12 +364,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -451,12 +445,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -523,12 +516,11 @@ public class AgentInstanceUpdateTest {
                 .withType("agent")
                 .getFirst()
                 .getKey();
-        final var jobLease =
-            jobBatch
-                .getValue()
-                .getJobs()
-                .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-                .getLeaseToken();
+        final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+        assertThat(jobIndex)
+            .as("activated job batch contains job with key '%d'", jobKey)
+            .isNotEqualTo(-1);
+        final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
         final var agentInstanceKey =
             ENGINE
                 .agentInstances()
@@ -813,12 +805,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -868,12 +859,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -938,12 +928,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -1022,12 +1011,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -1092,12 +1080,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -1254,12 +1241,11 @@ public class AgentInstanceUpdateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
-        jobBatch
-            .getValue()
-            .getJobs()
-            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
