@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.metrics.TenantMetrics;
 import io.camunda.zeebe.engine.processing.agenthistory.AgentHistoryProcessors;
+import io.camunda.zeebe.engine.processing.agenthistorybatch.AgentHistoryBatchProcessors;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentInstanceProcessors;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -545,6 +546,9 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
+        typedRecordProcessors, writers, processingState);
+
+    AgentHistoryBatchProcessors.addAgentHistoryBatchProcessors(
         typedRecordProcessors, writers, processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(
