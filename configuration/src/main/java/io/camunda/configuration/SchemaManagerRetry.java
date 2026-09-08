@@ -11,12 +11,16 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import io.camunda.search.schema.config.SchemaManagerConfiguration.SchemaManagerRetryConfiguration;
 import java.time.Duration;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 public class SchemaManagerRetry {
 
   private static final String LEGACY_PREFIX = "camunda.database.schema-manager.retry";
 
   private final String prefix;
+
+  /** Null for a storage whose retry settings never had a legacy property to migrate from. */
+  private @Nullable String legacyPrefix = LEGACY_PREFIX;
 
   private int maxRetries = SchemaManagerRetryConfiguration.DEFAULT_MAX_RETRIES;
   private Duration minRetryDelay = SchemaManagerRetryConfiguration.DEFAULT_MIN_RETRY_DELAY;
@@ -26,13 +30,22 @@ public class SchemaManagerRetry {
     prefix = "camunda.data.secondary-storage.%s.retry".formatted(databaseName);
   }
 
+  SchemaManagerRetry withoutLegacyProperties() {
+    legacyPrefix = null;
+    return this;
+  }
+
+  private Set<String> legacyProperties(final String suffix) {
+    return legacyPrefix == null ? Set.of() : Set.of(legacyPrefix + suffix);
+  }
+
   public int getMaxRetries() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".max-retries",
         maxRetries,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_PREFIX + ".maxRetries"));
+        legacyProperties(".maxRetries"));
   }
 
   public void setMaxRetries(final int maxRetries) {
@@ -45,7 +58,7 @@ public class SchemaManagerRetry {
         minRetryDelay,
         Duration.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_PREFIX + ".minRetryDelay"));
+        legacyProperties(".minRetryDelay"));
   }
 
   public void setMinRetryDelay(final Duration minRetryDelay) {
@@ -58,7 +71,7 @@ public class SchemaManagerRetry {
         maxRetryDelay,
         Duration.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_PREFIX + ".maxRetryDelay"));
+        legacyProperties(".maxRetryDelay"));
   }
 
   public void setMaxRetryDelay(final Duration maxRetryDelay) {
