@@ -25,7 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AgenticProcessDefinitionNameResolverTest {
+class ProcessDefinitionNameResolverTest {
 
   @Mock private DefinitionService definitionService;
 
@@ -38,7 +38,7 @@ class AgenticProcessDefinitionNameResolverTest {
         .thenReturn(Optional.of(definitionWithName("Invoice Approval")));
 
     // when
-    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
 
     // then
     final GroupByResult group = result.getGroups().getFirst();
@@ -55,7 +55,7 @@ class AgenticProcessDefinitionNameResolverTest {
         .thenReturn(Optional.empty());
 
     // when
-    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
 
     // then the label falls back to the key
     assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("orphan-process");
@@ -70,7 +70,7 @@ class AgenticProcessDefinitionNameResolverTest {
         .thenReturn(Optional.of(definitionWithName("   ")));
 
     // when
-    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
 
     // then the blank name is ignored and the label falls back to the key
     assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("unnamed-process");
@@ -88,7 +88,7 @@ class AgenticProcessDefinitionNameResolverTest {
         .thenReturn(Optional.empty());
 
     // when
-    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
 
     // then each group is resolved on its own; unresolved keys keep the key as label
     assertThat(result.getGroups())
@@ -105,7 +105,7 @@ class AgenticProcessDefinitionNameResolverTest {
         .thenReturn(Optional.of(definitionWithName(null)));
 
     // when
-    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
 
     // then the null name is ignored and the label falls back to the key
     assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("nameless-process");
@@ -117,7 +117,7 @@ class AgenticProcessDefinitionNameResolverTest {
     final CompositeCommandResult result = resultWithGroups("   ");
 
     // when
-    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
 
     // then the definition service is never consulted
     verifyNoInteractions(definitionService);

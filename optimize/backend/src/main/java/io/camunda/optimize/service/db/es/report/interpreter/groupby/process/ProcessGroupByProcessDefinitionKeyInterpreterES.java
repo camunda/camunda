@@ -21,9 +21,11 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.util.ProcessDefinitionNameResolver;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
@@ -44,14 +46,17 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterES
   private final ConfigurationService configurationService;
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final DefinitionService definitionService;
 
   public ProcessGroupByProcessDefinitionKeyInterpreterES(
       final ConfigurationService configurationService,
       final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final DefinitionService definitionService) {
     this.configurationService = configurationService;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
+    this.definitionService = definitionService;
   }
 
   @Override
@@ -99,6 +104,21 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterES
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setDistributedByKeyOfNumericType(
         distributedByInterpreter.isKeyOfNumericType(context));
+    if (shouldResolveDefinitionNames(context)) {
+      ProcessDefinitionNameResolver.applyLatestVersionNameLabels(
+          compositeCommandResult, definitionService);
+    }
+  }
+
+  /**
+   * Whether each group's label should be the definition's name instead of the raw BPMN process id.
+   * Only reports Optimize generates itself opt in, because a user-built report grouped by process
+   * is filtered, sorted and CSV-exported on the id today, and silently relabelling it would change
+   * those outputs. Subclasses serving a system dashboard override this.
+   */
+  protected boolean shouldResolveDefinitionNames(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return context.getReportData().isBusinessValueReport();
   }
 
   @Override
