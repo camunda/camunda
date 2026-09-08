@@ -214,10 +214,6 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ## GitHub Actions for Testing
 
-> **Cutting a new `stable/<X.Y>` branch?** See the
-> [new stable branch checklist](docs/new-stable-branch-checklist.md) for every CI file that
-> needs a matching update.
-
 ### Running the On-Demand Workflow
 
 - `c8-orchestration-cluster-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing

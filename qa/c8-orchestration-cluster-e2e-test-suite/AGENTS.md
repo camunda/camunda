@@ -28,10 +28,6 @@ repository instead.
 > directories). Instead, each `camunda/camunda` branch (`main`, `stable/8.10`, `stable/8.9`,
 > `stable/8.8`, `stable/8.7`) carries its own copy of this directory, and the nightly workflow
 > runs each branch's copy against its own build.
->
-> When a new `stable/<X.Y>` branch is cut, wiring it into this suite's CI is a multi-file
-> manual step, not automatic — see
-> [`docs/new-stable-branch-checklist.md`](docs/new-stable-branch-checklist.md).
 
 ## Directory Structure
 
