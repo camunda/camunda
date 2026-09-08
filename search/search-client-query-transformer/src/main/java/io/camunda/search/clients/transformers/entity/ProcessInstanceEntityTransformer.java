@@ -35,7 +35,8 @@ public class ProcessInstanceEntityTransformer
         source.getTreePath(),
         source.getTags(),
         emptyToNull(source.getBusinessId()),
-        source.getSuspendedDate());
+        source.getSuspendedDate(),
+        source.getStorageOrdinalKey());
   }
 
   private static String emptyToNull(final String value) {

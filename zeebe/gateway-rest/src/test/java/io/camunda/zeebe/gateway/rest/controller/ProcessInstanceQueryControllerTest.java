@@ -113,7 +113,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "hasIncident": false,
             "tenantId": "tenant",
             "tags": ["tag1", "tag2"],
-            "businessId": "biz-id"
+            "businessId": "biz-id",
+            "storageOrdinalKey": null
           }
           """;
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -137,7 +138,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "hasIncident": false,
                   "tenantId": "tenant",
                   "tags": ["tag1", "tag2"],
-                  "businessId": "biz-id"
+                  "businessId": "biz-id",
+                  "storageOrdinalKey": null
                 }
               ],
               "page": {
@@ -795,7 +797,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "hasIncident": false,
               "tenantId": "tenant",
               "tags": [],
-              "businessId": null
+              "businessId": null,
+              "storageOrdinalKey": null
             }
             """;
 

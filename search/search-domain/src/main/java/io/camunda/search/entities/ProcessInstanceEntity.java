@@ -46,7 +46,10 @@ public record ProcessInstanceEntity(
     Set<String> tags,
     @Nullable String businessId,
     // not set by the primary handler; populated once the exporter/appliers for SUSPEND/RESUME land.
-    @Nullable OffsetDateTime suspendedDate)
+    @Nullable OffsetDateTime suspendedDate,
+    // only present for ES/OS-backed data belonging to process instances created in 8.11+; RDBMS
+    // storage has no equivalent concept and always leaves this null.
+    @Nullable Integer storageOrdinalKey)
     implements TenantOwnedEntity {
 
   public ProcessInstanceEntity {
@@ -94,6 +97,7 @@ public record ProcessInstanceEntity(
         treePath,
         new HashSet<>(),
         businessId,
+        null,
         null);
   }
 
@@ -134,7 +138,50 @@ public record ProcessInstanceEntity(
         treePath,
         new HashSet<>(),
         businessId,
-        suspendedDate);
+        suspendedDate,
+        null);
+  }
+
+  public ProcessInstanceEntity(
+      final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
+      final String processDefinitionId,
+      final String processDefinitionName,
+      final Integer processDefinitionVersion,
+      final String processDefinitionVersionTag,
+      final Long processDefinitionKey,
+      final Long parentProcessInstanceKey,
+      final Long parentFlowNodeInstanceKey,
+      final OffsetDateTime startDate,
+      final OffsetDateTime endDate,
+      final ProcessInstanceState state,
+      final Boolean hasIncident,
+      final String tenantId,
+      final String treePath,
+      final Set<String> tags,
+      final String businessId,
+      final OffsetDateTime suspendedDate) {
+
+    this(
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        processDefinitionName,
+        processDefinitionVersion,
+        processDefinitionVersionTag,
+        processDefinitionKey,
+        parentProcessInstanceKey,
+        parentFlowNodeInstanceKey,
+        startDate,
+        endDate,
+        state,
+        hasIncident,
+        tenantId,
+        treePath,
+        tags,
+        businessId,
+        suspendedDate,
+        null);
   }
 
   public enum ProcessInstanceState {
