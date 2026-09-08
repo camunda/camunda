@@ -15,7 +15,9 @@ import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockCurrentUserEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
@@ -109,6 +111,9 @@ describe('<Dashboard />', () => {
 
 	it('should render metric panel with running instance counts', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -129,6 +134,9 @@ describe('<Dashboard />', () => {
 
 	it('should render tile titles when running instances exist', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -149,6 +157,9 @@ describe('<Dashboard />', () => {
 
 	it('should render instances by process list', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -170,6 +181,9 @@ describe('<Dashboard />', () => {
 
 	it('should render incidents by error list', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -191,6 +205,9 @@ describe('<Dashboard />', () => {
 
 	it('should render healthy empty state when there are no incidents', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
