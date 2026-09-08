@@ -20,22 +20,31 @@ type fakePrometheusClient struct {
 	queries   []string
 }
 
-func (c *fakePrometheusClient) runtimeInfo() (map[string]any, error) {
-	return map[string]any{"status": "success"}, nil
+func (c *fakePrometheusClient) runtimeInfo() (prometheusResponse, error) {
+	return prometheusResponse{Status: "success"}, nil
 }
 
-func (c *fakePrometheusClient) query(query string) (map[string]any, error) {
+func (c *fakePrometheusClient) query(query string) (prometheusResponse, error) {
 	c.queries = append(c.queries, query)
 	response := c.responses[0]
 	c.responses = c.responses[1:]
 	if err, ok := response.(error); ok {
-		return nil, err
+		return prometheusResponse{}, err
 	}
-	return response.(map[string]any), nil
+	return response.(prometheusResponse), nil
+}
+
+func mustPrometheusResponse(t *testing.T, raw string) prometheusResponse {
+	t.Helper()
+	var response prometheusResponse
+	if err := json.Unmarshal([]byte(raw), &response); err != nil {
+		t.Fatalf("failed to parse Prometheus response fixture: %v", err)
+	}
+	return response
 }
 
 func TestExtractMetricValueShouldExtractNumericSample(t *testing.T) {
-	response := map[string]any{"status": "success", "data": map[string]any{"result": []any{map[string]any{"value": []any{123, "42.5"}}}}}
+	response := mustPrometheusResponse(t, `{"status":"success","data":{"result":[{"value":[123,"42.5"]}]}}`)
 
 	value, err := extractMetricValue(response, "", "throughput", func(string) {})
 
@@ -48,16 +57,7 @@ func TestExtractMetricValueShouldExtractNumericSample(t *testing.T) {
 }
 
 func TestExtractMetricValueShouldExtractSortedUniqueLabelValues(t *testing.T) {
-	response := map[string]any{
-		"status": "success",
-		"data": map[string]any{
-			"result": []any{
-				map[string]any{"metric": map[string]any{"image": "registry/camunda:2"}},
-				map[string]any{"metric": map[string]any{"image": "registry/camunda:1"}},
-				map[string]any{"metric": map[string]any{"image": "registry/camunda:2"}},
-			},
-		},
-	}
+	response := mustPrometheusResponse(t, `{"status":"success","data":{"result":[{"metric":{"image":"registry/camunda:2"}},{"metric":{"image":"registry/camunda:1"}},{"metric":{"image":"registry/camunda:2"}}]}}`)
 
 	value, err := extractMetricValue(response, "image", "image", func(string) {})
 
@@ -70,7 +70,7 @@ func TestExtractMetricValueShouldExtractSortedUniqueLabelValues(t *testing.T) {
 }
 
 func TestExtractMetricValueShouldWarnWhenNumericSampleIsMissing(t *testing.T) {
-	response := map[string]any{"status": "success", "data": map[string]any{"result": []any{}}}
+	response := mustPrometheusResponse(t, `{"status":"success","data":{"result":[]}}`)
 	var warnings []string
 
 	_, err := extractMetricValue(response, "", "throughput", func(message string) {
@@ -87,7 +87,7 @@ func TestExtractMetricValueShouldWarnWhenNumericSampleIsMissing(t *testing.T) {
 }
 
 func TestExtractMetricValueShouldWarnWhenLabelSampleIsMissing(t *testing.T) {
-	response := map[string]any{"status": "success", "data": map[string]any{"result": []any{}}}
+	response := mustPrometheusResponse(t, `{"status":"success","data":{"result":[]}}`)
 	var warnings []string
 
 	_, err := extractMetricValue(response, "image", "image", func(message string) {
@@ -104,7 +104,7 @@ func TestExtractMetricValueShouldWarnWhenLabelSampleIsMissing(t *testing.T) {
 }
 
 func TestExtractMetricValueShouldWarnWhenPrometheusStatusIsNotSuccess(t *testing.T) {
-	response := map[string]any{"status": "error", "data": map[string]any{"result": []any{}}}
+	response := mustPrometheusResponse(t, `{"status":"error","data":{"result":[]}}`)
 	var warnings []string
 
 	_, err := extractMetricValue(response, "", "throughput", func(message string) {
@@ -133,19 +133,19 @@ func TestBuildReportShouldBuildReportWithoutNetworkSideEffects(t *testing.T) {
 		missingValue:    "NaN",
 		queriesFile:     "queries.json",
 	}
-	queryDocument := map[string]any{
-		"queries": []any{
-			map[string]any{"key": "namespace", "header": "Namespace", "value": "$NAMESPACE"},
-			map[string]any{"key": "throughput", "header": "Throughput", "query": `rate(total{namespace="$NAMESPACE"}[$RATE_INTERVAL])`},
-			map[string]any{"key": "image", "header": "Image", "query": "image_query[$DURATION_S:$SAMPLE_STEP]", "valueLabel": "image"},
-			map[string]any{"key": "missing", "header": "Missing", "query": "missing_query"},
+	queryDocument := queryDocument{
+		Queries: []queryDefinition{
+			{Key: "namespace", Header: "Namespace", Value: "$NAMESPACE"},
+			{Key: "throughput", Header: "Throughput", Query: `rate(total{namespace="$NAMESPACE"}[$RATE_INTERVAL])`},
+			{Key: "image", Header: "Image", Query: "image_query[$DURATION_S:$SAMPLE_STEP]", ValueLabel: "image"},
+			{Key: "missing", Header: "Missing", Query: "missing_query"},
 		},
 	}
 	client := &fakePrometheusClient{
 		responses: []any{
-			map[string]any{"status": "success", "data": map[string]any{"result": []any{map[string]any{"value": []any{123, "10"}}}}},
-			map[string]any{"status": "success", "data": map[string]any{"result": []any{map[string]any{"metric": map[string]any{"image": "camunda:SNAPSHOT"}}}}},
-			map[string]any{"status": "success", "data": map[string]any{"result": []any{}}},
+			mustPrometheusResponse(t, `{"status":"success","data":{"result":[{"value":[123,"10"]}]}}`),
+			mustPrometheusResponse(t, `{"status":"success","data":{"result":[{"metric":{"image":"camunda:SNAPSHOT"}}]}}`),
+			mustPrometheusResponse(t, `{"status":"success","data":{"result":[]}}`),
 		},
 	}
 	var warnings []string
@@ -180,7 +180,7 @@ func TestBuildReportShouldBuildReportWithoutNetworkSideEffects(t *testing.T) {
 
 func TestBuildReportShouldWarnWhenQueryFails(t *testing.T) {
 	opts := options{namespace: "c8-ck-test", durationSeconds: 900, rateInterval: "30s", sampleStep: "15s", endpoint: "http://prometheus.example"}
-	queryDocument := map[string]any{"queries": []any{map[string]any{"key": "throughput", "query": "throughput_query"}}}
+	queryDocument := queryDocument{Queries: []queryDefinition{{Key: "throughput", Query: "throughput_query"}}}
 	client := &fakePrometheusClient{responses: []any{errors.New("query failed")}}
 	var warnings []string
 
@@ -199,8 +199,8 @@ func TestBuildReportShouldWarnWhenQueryFails(t *testing.T) {
 	}
 }
 
-func TestParseHTTPHeadersShouldParseBasicAuthAndHeaders(t *testing.T) {
-	headers, err := parseHTTPHeaders(`--user "user:pass" --header "X-Test: yes"`)
+func TestAuthHeadersShouldSetBasicAuth(t *testing.T) {
+	headers, err := authHeaders(options{basicAuthUser: "user", basicAuthPass: "pass"})
 
 	if err != nil {
 		t.Fatalf("expected headers, got error %v", err)
@@ -208,16 +208,32 @@ func TestParseHTTPHeadersShouldParseBasicAuthAndHeaders(t *testing.T) {
 	if headers.Get("Authorization") != "Basic dXNlcjpwYXNz" {
 		t.Fatalf("unexpected authorization header: %s", headers.Get("Authorization"))
 	}
-	if headers.Get("X-Test") != "yes" {
-		t.Fatalf("unexpected X-Test header: %s", headers.Get("X-Test"))
+}
+
+func TestAuthHeadersShouldSetBearerToken(t *testing.T) {
+	headers, err := authHeaders(options{bearerToken: "abc123"})
+
+	if err != nil {
+		t.Fatalf("expected headers, got error %v", err)
+	}
+	if headers.Get("Authorization") != "Bearer abc123" {
+		t.Fatalf("unexpected authorization header: %s", headers.Get("Authorization"))
 	}
 }
 
-func TestParseHTTPHeadersShouldRejectUnsupportedCurlOptions(t *testing.T) {
-	_, err := parseHTTPHeaders("--retry 3")
+func TestAuthHeadersShouldRejectMixedAuth(t *testing.T) {
+	_, err := authHeaders(options{bearerToken: "abc123", basicAuthUser: "user", basicAuthPass: "pass"})
 
-	if err == nil || !strings.Contains(err.Error(), "Unsupported --curl-opts") {
-		t.Fatalf("expected unsupported curl opts error, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "--token cannot be combined") {
+		t.Fatalf("expected mixed auth error, got %v", err)
+	}
+}
+
+func TestAuthHeadersShouldRequireUserAndPasswordTogether(t *testing.T) {
+	_, err := authHeaders(options{basicAuthUser: "user"})
+
+	if err == nil || !strings.Contains(err.Error(), "--user and --password") {
+		t.Fatalf("expected incomplete basic auth error, got %v", err)
 	}
 }
 
@@ -230,7 +246,12 @@ func TestPrometheusClientShouldQueryPrometheusWithURLEncodedQueryAndHeaders(t *t
 	}))
 	defer server.Close()
 
-	client, err := newPrometheusClient(server.URL+"/", `--user user:pass --header "X-Test: yes"`, "2026-09-07T18:00:00Z")
+	client, err := newPrometheusClient(options{
+		endpoint:      server.URL + "/",
+		basicAuthUser: "user",
+		basicAuthPass: "pass",
+		timeAnchor:    "2026-09-07T18:00:00Z",
+	})
 	if err != nil {
 		t.Fatalf("expected client, got error %v", err)
 	}
@@ -239,7 +260,7 @@ func TestPrometheusClientShouldQueryPrometheusWithURLEncodedQueryAndHeaders(t *t
 	if err != nil {
 		t.Fatalf("expected response, got error %v", err)
 	}
-	if response["status"] != "success" {
+	if response.Status != "success" {
 		t.Fatalf("unexpected response: %#v", response)
 	}
 	request := seenRequests[0]
@@ -256,9 +277,6 @@ func TestPrometheusClientShouldQueryPrometheusWithURLEncodedQueryAndHeaders(t *t
 	if request.Header.Get("Authorization") != "Basic dXNlcjpwYXNz" {
 		t.Fatalf("unexpected authorization header: %s", request.Header.Get("Authorization"))
 	}
-	if request.Header.Get("X-Test") != "yes" {
-		t.Fatalf("unexpected X-Test header: %s", request.Header.Get("X-Test"))
-	}
 }
 
 func TestLoadQueryDocumentShouldLoadYAMLQueryFile(t *testing.T) {
@@ -273,10 +291,8 @@ func TestLoadQueryDocumentShouldLoadYAMLQueryFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected document, got error %v", err)
 	}
-	queries := document["queries"].([]any)
-	query := queries[0].(map[string]any)
-	if query["key"] != "namespace" {
-		t.Fatalf("unexpected key: %#v", query["key"])
+	if document.Queries[0].Key != "namespace" {
+		t.Fatalf("unexpected key: %#v", document.Queries[0].Key)
 	}
 }
 
@@ -290,11 +306,11 @@ func TestLoadQueryDocumentShouldLoadDefaultTemplates(t *testing.T) {
 		t.Fatalf("expected stable-87 query document, got error %v", err)
 	}
 
-	if len(camundaDocument["queries"].([]any)) != 45 {
-		t.Fatalf("unexpected camunda template size: %d", len(camundaDocument["queries"].([]any)))
+	if len(camundaDocument.Queries) != 45 {
+		t.Fatalf("unexpected camunda template size: %d", len(camundaDocument.Queries))
 	}
-	if len(stableDocument["queries"].([]any)) != 53 {
-		t.Fatalf("unexpected stable-87 template size: %d", len(stableDocument["queries"].([]any)))
+	if len(stableDocument.Queries) != 53 {
+		t.Fatalf("unexpected stable-87 template size: %d", len(stableDocument.Queries))
 	}
 }
 

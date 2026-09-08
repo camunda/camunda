@@ -164,7 +164,9 @@ deployments. Default: `camunda`.
 - `--at <time>`: Prometheus query time anchor; the window ends at this RFC3339 or Unix timestamp.
 - `--start <time> --end <time>`: exact reporting window; duration is derived automatically.
 - `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
-- `--curl-opts <opts>`: curl options, word-split on spaces (no nested quoting), e.g. `--user u:p`.
+- `--token <token>`: bearer token for Prometheus HTTP authentication.
+- `--user <user> --password <password>`: basic auth credentials for Prometheus HTTP
+authentication.
 - `--format json|csv|tsv`: output format. Default: `json`.
 - `--no-header`: omit the CSV/TSV header row for direct spreadsheet row pasting.
 - `--missing-value <value>`: placeholder for missing CSV/TSV metrics. Default: `NaN`.
@@ -213,7 +215,8 @@ CI monitor ingress with basic auth:
 ./loadTestReport.sh c8-ck-baseline-20260814 \
   --duration-seconds 1800 \
   --endpoint https://ci-monitor.benchmark.camunda.cloud \
-  --curl-opts "--user $PROM_USER:$PROM_PASS" \
+  --user "$PROM_USER" \
+  --password "$PROM_PASS" \
   --format csv > /tmp/load-test-report.csv
 ```
 
