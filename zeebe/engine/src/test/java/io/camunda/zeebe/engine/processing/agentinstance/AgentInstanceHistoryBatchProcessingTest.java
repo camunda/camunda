@@ -1066,6 +1066,80 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
+  public void shouldRejectHistoryBatchWithoutJobLeaseOnUpdate() {
+    // given — UPDATE runs with LeaseMismatchHandling.ALLOW_STALE, which skips the lease-mismatch
+    // check entirely; jobLease must still be rejected as missing before that check is even
+    // reached, or an UPDATE could go through with no fencing token at all.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
+            .getKey();
+
+    // when — jobKey is supplied but no withJobLease(...) call at all, so jobLease defaults to ""
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-1")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi"))))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to update agent instance related to job with key '%d', but no jobLease was "
+                    .formatted(jobKey)
+                + "provided. A command must always carry the lease its job was activated with.");
+  }
+
+  @Test
   public void shouldAcceptUpdateWithSupersededJobLeaseAndAccumulateItsMetrics() {
     // given
     ENGINE
