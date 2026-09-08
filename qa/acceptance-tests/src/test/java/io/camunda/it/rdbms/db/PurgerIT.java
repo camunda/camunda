@@ -7,6 +7,9 @@
  */
 package io.camunda.it.rdbms.db;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+
+import io.camunda.db.rdbms.RdbmsSchemaVersionStore;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
@@ -16,6 +19,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.zeebe.util.VersionUtil;
 import java.time.OffsetDateTime;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -51,5 +55,10 @@ public class PurgerIT {
                 .search(ProcessDefinitionQuery.of(b -> b))
                 .total())
         .isZero();
+
+    final var versionStore =
+        new RdbmsSchemaVersionStore(
+            testApplication.bean(javax.sql.DataSource.class), "", VersionUtil.getVersion());
+    assertThatCode(versionStore::checkCompatibility).doesNotThrowAnyException();
   }
 }
