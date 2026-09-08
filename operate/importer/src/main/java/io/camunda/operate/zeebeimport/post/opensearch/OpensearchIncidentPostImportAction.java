@@ -15,6 +15,7 @@ import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.PostImporterQueueTemplate.*;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
@@ -586,10 +587,12 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     final var request =
         searchRequestBuilder(listViewTemplate)
             .query(
-                ids(
-                    incidents.stream()
-                        .map(i -> String.valueOf(i.getProcessInstanceKey()))
-                        .toList()))
+                and(
+                    ids(
+                        incidents.stream()
+                            .map(i -> String.valueOf(i.getProcessInstanceKey()))
+                            .toList()),
+                    term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)))
             .source(sourceInclude(ListViewTemplate.TREE_PATH));
     richOpenSearchClient
         .doc()
@@ -597,9 +600,24 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
             request,
             Result.class,
             hits -> {
+              final var validHits =
+                  hits.stream()
+                      .filter(
+                          hit -> {
+                            final boolean hasTreePath = hit.source().treePath != null;
+                            if (!hasTreePath) {
+                              LOGGER.warn(
+                                  "Process instance lookup matched list-view document {} in index {} "
+                                      + "with no treePath (expected a processInstance document); skipping it.",
+                                  hit.id(),
+                                  hit.index());
+                            }
+                            return hasTreePath;
+                          })
+                      .toList();
               data.getProcessInstanceTreePaths()
                   .putAll(
-                      hits.stream()
+                      validHits.stream()
                           .collect(
                               toMap(
                                   hit -> Long.valueOf(hit.id()),
@@ -607,7 +625,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
                                   (path1, path2) -> path1)));
               data.getProcessInstanceIndices()
                   .putAll(
-                      hits.stream()
+                      validHits.stream()
                           .collect(toMap(Hit::id, hit -> hit.index(), (index1, index2) -> index1)));
             });
   }
