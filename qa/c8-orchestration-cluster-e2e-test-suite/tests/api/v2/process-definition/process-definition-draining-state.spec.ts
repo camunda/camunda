@@ -7,17 +7,15 @@
  */
 
 import {expect, test, type APIRequestContext} from '@playwright/test';
+import {cancelProcessInstance} from '../../../../utils/zeebeClient';
 import {
-  cancelProcessInstance,
-  createSingleInstance,
-} from '../../../../utils/zeebeClient';
-import {
+  createInstanceOnceDeployed,
   deployUserTaskProcess,
   drainProcessDefinition,
   expectProcessDefinitionDeleted,
   findUserTask,
-  searchProcessDefinitions,
   searchProcessDefinitionItems,
+  searchProcessDefinitions,
 } from '@requestHelpers';
 import {
   defaultAssertionOptions,
@@ -64,7 +62,7 @@ test.describe('Process Definition Draining State', () => {
     const processDefinitionId = uniquePrefixedId('draining-state');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createSingleInstance(processDefinitionId, 1);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
 
     await expectDefinitionKeysForState(request, processDefinitionId, 'ACTIVE', [
@@ -119,7 +117,7 @@ test.describe('Process Definition Draining State', () => {
     const processDefinitionId = uniquePrefixedId('draining-latest');
     const v1 = await deployUserTaskProcess(processDefinitionId);
     const v2 = await deployUserTaskProcess(processDefinitionId, '-v2');
-    const instance = await createSingleInstance(
+    const instance = await createInstanceOnceDeployed(
       processDefinitionId,
       v2.processDefinitionVersion,
     );
