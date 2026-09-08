@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -46,15 +47,16 @@ import org.junit.jupiter.api.Test;
  * <p>Tests are grouped into {@code @Nested} classes mirroring the eight numbered rules of the
  * internal "Rules that input mappings adhere to" reference doc, one class per rule, with each
  * {@code @Test}'s {@code @DisplayName} citing the doc's own scenario number (e.g. "5.3"). Rule 8
- * (type survival across mappings) describes a real gap in today's behavior, confirmed as
- * camunda/camunda#60011 -- that test intentionally asserts today's actual, non-ideal output, not
- * the proposed fix, and will need deliberate updating once that issue is fixed. Rule 7 (partial
- * shadowing) turned out, once this test exercised a real ancestor-scope hierarchy instead of a flat
- * in-memory stand-in, to already be correctly implemented by {@link OrderedInputMappingResolver}
- * for every scenario here -- the actual gap sits in {@link CombinedInputMappingResolver}'s single
- * combined-FEEL-context evaluation, which loses an ancestor's untouched sibling once that object's
- * root has been partially mapped (see 7.3-7.5). Two further groups cover scenarios the doc doesn't
- * address: the qualified/bare-name self-reference cases from issue #60551 that motivated this whole
+ * (type survival across mappings) used to describe a real gap in {@link
+ * OrderedInputMappingResolver}'s behavior, confirmed as camunda/camunda#60011 and fixed by carrying
+ * a mapping's result to the next mapping as the FEEL value it is instead of MessagePack -- both
+ * resolvers now agree on every scenario in that rule. Rule 7 (partial shadowing) turned out, once
+ * this test exercised a real ancestor-scope hierarchy instead of a flat in-memory stand-in, to
+ * already be correctly implemented by {@link OrderedInputMappingResolver} for every scenario here
+ * -- the actual gap sits in {@link CombinedInputMappingResolver}'s single combined-FEEL-context
+ * evaluation, which loses an ancestor's untouched sibling once that object's root has been
+ * partially mapped (see 7.3-7.5). Two further groups cover scenarios the doc doesn't address: the
+ * qualified/bare-name self-reference cases from issue #60551 that motivated this whole
  * resolver-strategy refactor, and pre-existing transformer-level regression coverage (static-source
  * string preservation, missing source, secret placeholders).
  *
@@ -467,18 +469,18 @@ class InputMappingResolverComparisonTest {
 
     @Test
     @DisplayName(
-        "8.1 OrderedInputMappingResolver loses the FEEL type at the mapping boundary (bug #60011);"
-            + " CombinedInputMappingResolver preserves it within the single FEEL context")
-    void shouldLoseTheFeelTypeAcrossMappingsInOrderedButNotInCombined() {
+        "8.1 OrderedInputMappingResolver preserves the FEEL type at the mapping boundary (fixed"
+            + " #60011), matching CombinedInputMappingResolver")
+    void shouldKeepTheFeelTypeAcrossMappingsInBothResolvers() {
       final var mappings =
           List.of(Helpers.mapping("=duration(\"P1DT2H\")", "x"), Helpers.mapping("=x.days", "y"));
 
       final var results = Helpers.resolve(mappings, Map.of());
 
-      // ORDERED: x is stored as MsgPack string after mapping 1; x.days in mapping 2 sees a
-      // plain string, not a duration → y=null. COMBINED: x stays a live FEEL duration inside
-      // the single context expression → x.days=1.
-      Helpers.assertDiffers(results, "{'x':'P1DT2H','y':null}", "{'x':'P1DT2H','y':1}");
+      // ORDERED: x is carried to mapping 2 as the FEEL duration it is, not yet serialized to
+      // MsgPack, so x.days sees a real duration → y=1, same as COMBINED's single context
+      // expression where x never leaves FEEL in the first place.
+      Helpers.assertSame(results, "{'x':'P1DT2H','y':1}");
     }
 
     @Test
@@ -696,7 +698,7 @@ class InputMappingResolverComparisonTest {
             for (final var scope : encoded) {
               final var value = scope.get(name);
               if (value != null) {
-                return Either.left(value);
+                return Either.left(ContextValue.msgPack(value));
               }
             }
             return Either.left(null);

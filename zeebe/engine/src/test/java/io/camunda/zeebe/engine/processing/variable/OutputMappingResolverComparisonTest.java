@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
@@ -104,7 +105,8 @@ class OutputMappingResolverComparisonTest {
         final Map<String, Object> jobVars, final Map<String, Object> elementScope) {
       final var ej = encode(jobVars);
       final var ee = encode(elementScope);
-      final ScopedEvaluationContext ctx = name -> Either.left(ee.getOrDefault(name, ej.get(name)));
+      final ScopedEvaluationContext ctx =
+          name -> Either.left(ContextValue.msgPack(ee.getOrDefault(name, ej.get(name))));
       final var ctx2 = new MappingContext(BufferUtil.wrapString("t"), -1L, -1L, -1L, "");
       return new MappingExpressionProcessor(
           new ExpressionProcessor(EXPRESSION_LANGUAGE, ctx, DEFAULT_TIMEOUT), ctx2);

@@ -32,18 +32,25 @@ final class FeelVariableContext extends CustomContext {
   /**
    * Converts a resolved {@link ContextValue} into the object FEEL's value mapper consumes.
    *
-   * <p>A {@link ContextValue.MsgPack} stays a buffer, which {@code MessagePackValueMapper} decodes.
-   * An {@link ContextValue.Evaluated} that FEEL itself produced hands its {@code Val} straight
-   * back: {@code DefaultValueMapper} returns a {@code Val} unchanged, so the type survives. Any
-   * other evaluation result — a static or a null expression — has no FEEL value and falls back to
-   * its MessagePack form; those are all JSON-representable, so nothing is lost.
+   * <p>A {@link ContextValue.MsgPack} stays a buffer, which {@code MessagePackValueMapper} decodes
+   * — an empty buffer maps to {@code null} (absent), matching {@link ContextValue#msgPack}. An
+   * {@link ContextValue.Evaluated} that FEEL itself produced hands its {@code Val} straight back:
+   * {@code DefaultValueMapper} returns a {@code Val} unchanged, so the type survives. Any other
+   * evaluation result — a static or a null expression — has no FEEL value and falls back to its
+   * MessagePack form, with the same empty-buffer-to-absent mapping; those are all
+   * JSON-representable, so nothing is lost.
    */
   static @Nullable Object toFeelValue(final @Nullable ContextValue value) {
     return switch (value) {
       case null -> null;
       case ContextValue.MsgPack(final var buffer) -> buffer.capacity() > 0 ? buffer : null;
-      case ContextValue.Evaluated(final var result) ->
-          result instanceof final FeelEvaluationResult feel ? feel.result : result.toBuffer();
+      case ContextValue.Evaluated(final var result) -> {
+        if (result instanceof final FeelEvaluationResult feel) {
+          yield feel.result;
+        }
+        final var buffer = result.toBuffer();
+        yield buffer.capacity() > 0 ? buffer : null;
+      }
       case ContextValue.Structure(final var entries) ->
           new ValContext(new StructureContext(entries));
     };

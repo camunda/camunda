@@ -29,13 +29,13 @@ import io.camunda.zeebe.util.Either;
  *
  * <pre>{@code
  * // Example path resolution for "camunda.vars.cluster.key":
- * Either<DirectBuffer, EvaluationContext> step1 = root.getVariable("camunda");
+ * Either<ContextValue, EvaluationContext> step1 = root.getVariable("camunda");
  * // if Right(ctx1), then:
- * Either<DirectBuffer, EvaluationContext> step2 = ctx1.getVariable("vars");
+ * Either<ContextValue, EvaluationContext> step2 = ctx1.getVariable("vars");
  * // if Right(ctx2), then:
- * Either<DirectBuffer, EvaluationContext> step3 = ctx2.getVariable("cluster");
+ * Either<ContextValue, EvaluationContext> step3 = ctx2.getVariable("cluster");
  * // if Right(ctx3), then:
- * Either<DirectBuffer, EvaluationContext> step4 = ctx3.getVariable("key");
+ * Either<ContextValue, EvaluationContext> step4 = ctx3.getVariable("key");
  * // step4 is expected to be Left(value) or Left(null) if not found
  * }</pre>
  *
@@ -45,8 +45,9 @@ import io.camunda.zeebe.util.Either;
  *
  * <h3>Buffer lifetime</h3>
  *
- * Unless otherwise documented by a given implementation, the {@link DirectBuffer} returned in
- * {@code Left} is considered valid only until the next call into the same implementation.
+ * Unless otherwise documented by a given implementation, a {@link ContextValue.MsgPack} returned in
+ * {@code Left} wraps a buffer considered valid only until the next call into the same
+ * implementation.
  */
 @FunctionalInterface
 public interface EvaluationContext {
