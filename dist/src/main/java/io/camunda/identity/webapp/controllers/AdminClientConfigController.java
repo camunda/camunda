@@ -12,11 +12,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SaasConfigurationHelper;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,7 @@ public class AdminClientConfigController {
   private static final String IS_OIDC = "isOidc";
   private static final String IS_CAMUNDA_GROUPS_ENABLED = "isCamundaGroupsEnabled";
   private static final String IS_TENANTS_API_ENABLED = "isTenantsApiEnabled";
+  private static final String IS_ADDITIONAL_IDP_CONFIGURED = "isAdditionalIdpConfigured";
   private static final String ORGANIZATION_ID = "organizationId";
   private static final String CLUSTER_ID = "clusterId";
   private static final String ID_PATTERN = "idPattern";
@@ -85,6 +88,8 @@ public class AdminClientConfigController {
     config.put(IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(cslProperties)));
     config.put(
         IS_TENANTS_API_ENABLED, String.valueOf(cslProperties.getMultiTenancy().isApiEnabled()));
+    config.put(
+        IS_ADDITIONAL_IDP_CONFIGURED, String.valueOf(isAdditionalIdpConfigured(cslProperties)));
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
     config.put(ID_PATTERN, cslProperties.getIdValidationPattern());
@@ -97,6 +102,17 @@ public class AdminClientConfigController {
 
   private boolean isOidcAuthentication(final CamundaSecurityLibraryProperties cslProperties) {
     return AuthenticationMethod.OIDC.equals(cslProperties.getAuthentication().getMethod());
+  }
+
+  private boolean isAdditionalIdpConfigured(final CamundaSecurityLibraryProperties cslProperties) {
+    final var providers = cslProperties.getAuthentication().getProviders();
+    final var namedProviders = providers != null ? providers.getOidc() : null;
+    if (namedProviders == null) {
+      return false;
+    }
+    return namedProviders.values().stream()
+        .filter(Objects::nonNull)
+        .anyMatch(OidcConfiguration::isAnyPropertySet);
   }
 
   private boolean isCamundaGroupsEnabled(final CamundaSecurityLibraryProperties cslProperties) {
