@@ -10,11 +10,11 @@ import {expect, test, type APIRequestContext} from '@playwright/test';
 import {randomUUID} from 'crypto';
 import {
   cancelProcessInstance,
-  createSingleInstance,
   deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {
+  createInstanceOnceDeployed,
   deployUserTaskProcess,
   drainProcessDefinition,
   expectProcessInstanceCount,
@@ -188,7 +188,7 @@ test.describe('Process Definition Draining Deletion — alternative start paths'
     await deployUserTaskProcess(sourceProcessDefinitionId);
     const target = await deployUserTaskProcess(targetProcessDefinitionId);
 
-    const sourceInstance = await createSingleInstance(
+    const sourceInstance = await createInstanceOnceDeployed(
       sourceProcessDefinitionId,
       1,
     );
@@ -197,7 +197,7 @@ test.describe('Process Definition Draining Deletion — alternative start paths'
 
     // Without a running instance the target's deletion finalizes immediately and
     // the migration would be refused for a missing definition, not a draining one.
-    const targetInstance = await createSingleInstance(
+    const targetInstance = await createInstanceOnceDeployed(
       targetProcessDefinitionId,
       1,
     );

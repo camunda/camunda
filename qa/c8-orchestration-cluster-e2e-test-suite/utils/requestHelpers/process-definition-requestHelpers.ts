@@ -12,7 +12,9 @@ import {
   type APIResponse,
 } from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {deployWithSubstitutions} from '../zeebeClient';
+import {createSingleInstance, deployWithSubstitutions} from '../zeebeClient';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
+import {sleep} from '../sleep';
 import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
 import {validateResponse} from 'json-body-assertions';
 import {deleteResource} from './resource-requestHelpers';
@@ -129,6 +131,39 @@ export async function drainProcessDefinition(
     200,
   );
   await expectProcessDefinitionState(request, processDefinitionKey, 'DRAINING');
+}
+
+/**
+ * Starts an instance of a specific version, retrying while the create is
+ * rejected `NOT_FOUND`.
+ *
+ * A deployment reaches the partitions asynchronously, so a create issued right
+ * after one can land on a partition that has not applied it yet and be refused
+ * as if the definition did not exist. Only that rejection is retried — a
+ * `NOT_FOUND` from a definition already deleted would surface once the budget
+ * runs out, and every other rejection is raised immediately.
+ */
+export async function createInstanceOnceDeployed(
+  processDefinitionId: string,
+  processDefinitionVersion: number,
+  variables?: JSONDoc,
+) {
+  const deadline = Date.now() + 30_000;
+  for (;;) {
+    try {
+      return await createSingleInstance(
+        processDefinitionId,
+        processDefinitionVersion,
+        variables,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('NOT_FOUND') || Date.now() > deadline) {
+        throw error;
+      }
+      await sleep(500);
+    }
+  }
 }
 
 const USER_TASK_MODEL = './resources/Zeebe_User_Task_Process.bpmn';
