@@ -158,6 +158,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     if (rootProcessInstanceKey > 0) {
       piEntity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
+    final int storageOrdinalKey = recordValue.getStorageOrdinalKey();
+    if (storageOrdinalKey > 0) {
+      piEntity.setStorageOrdinalKey(storageOrdinalKey);
+    }
   }
 
   @Override
@@ -194,6 +198,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     }
     if (entity.getBusinessId() != null && !entity.getBusinessId().isEmpty()) {
       updateFields.put(ListViewTemplate.BUSINESS_ID, entity.getBusinessId());
+    }
+    if (entity.getStorageOrdinalKey() != null) {
+      updateFields.put(ListViewTemplate.STORAGE_ORDINAL_KEY, entity.getStorageOrdinalKey());
     }
 
     batchRequest.upsert(index, entity.getId(), entity, updateFields);
