@@ -73,4 +73,9 @@ public final class LsnReplicationSignalStrategy
     }
     return queueHeadAge.orElse(Duration.ZERO);
   }
+
+  @Override
+  public List<String> regionsBelowQuorum(final List<ReplicationLsnStatus> statuses) {
+    return RegionAwareQuorum.regionsBelowQuorum(statuses, config, regionResolver);
+  }
 }

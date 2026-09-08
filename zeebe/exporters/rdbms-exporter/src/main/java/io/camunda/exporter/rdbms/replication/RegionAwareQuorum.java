@@ -60,22 +60,46 @@ final class RegionAwareQuorum {
     if (!regionAwareness.isEnabled()) {
       return statuses.size() >= config.getMinSyncReplicas();
     }
+    return regionsBelowQuorum(statuses, config, resolver).isEmpty();
+  }
 
-    final Map<String, Long> countsByRegion = new LinkedHashMap<>();
-    for (final ReplicationStatus status : statuses) {
-      resolveLogWarning(resolver, status.replicaLabel())
-          .ifPresent(region -> countsByRegion.merge(region, 1L, Long::sum));
+  /**
+   * The names of mandatory regions currently short of their own {@code minReplicas} (counting the
+   * primary's automatic credit where applicable). Empty when region awareness is disabled or every
+   * declared region meets its own quorum - used for diagnostic logging when the exporter pauses,
+   * see {@link DefaultReplicationController}.
+   */
+  static List<String> regionsBelowQuorum(
+      final List<? extends ReplicationStatus> statuses,
+      final ReplicationConfiguration config,
+      final ReplicaRegionResolver resolver) {
+    final RegionAwarenessConfiguration regionAwareness = config.getRegionAwareness();
+    if (!regionAwareness.isEnabled()) {
+      return List.of();
     }
+
+    final Map<String, Long> countsByRegion = countByRegion(statuses, resolver);
+    final List<String> below = new ArrayList<>();
     for (final RegionConfiguration region : regionAwareness.getRegions()) {
       long count = countsByRegion.getOrDefault(region.getName(), 0L);
       if (region.getName().equals(regionAwareness.getPrimaryRegion())) {
         count++;
       }
       if (count < region.getMinReplicas()) {
-        return false;
+        below.add(region.getName());
       }
     }
-    return true;
+    return below;
+  }
+
+  private static Map<String, Long> countByRegion(
+      final List<? extends ReplicationStatus> statuses, final ReplicaRegionResolver resolver) {
+    final Map<String, Long> counts = new LinkedHashMap<>();
+    for (final ReplicationStatus status : statuses) {
+      resolveLogWarning(resolver, status.replicaLabel())
+          .ifPresent(region -> counts.merge(region, 1L, Long::sum));
+    }
+    return counts;
   }
 
   /**

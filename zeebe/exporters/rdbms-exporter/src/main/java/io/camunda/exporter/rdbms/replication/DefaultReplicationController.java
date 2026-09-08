@@ -21,6 +21,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +166,8 @@ public final class DefaultReplicationController implements ReplicationController
       updatePausedState(
           config.isPauseOnMaxLagExceeded() && pauseLag.compareTo(config.getMaxLag()) > 0,
           pauseLag,
-          connectedReplicas);
+          connectedReplicas,
+          () -> strategy.regionsBelowQuorum(statuses));
 
       if (confirmedEntry != null) {
         acknowledge(confirmedEntry, pauseLag, connectedReplicas);
@@ -241,17 +243,22 @@ public final class DefaultReplicationController implements ReplicationController
   }
 
   private void updatePausedState(
-      final boolean shouldPause, final Duration replicationLag, final int connectedReplicas) {
+      final boolean shouldPause,
+      final Duration replicationLag,
+      final int connectedReplicas,
+      final Supplier<List<String>> regionsBelowQuorum) {
     final boolean wasPaused = paused.getAndSet(shouldPause);
     if (shouldPause && !wasPaused) {
+      final List<String> below = regionsBelowQuorum.get();
       log.warn(
           "[RDBMS Exporter P{}] Pausing exporter: replication lag ({}) exceeded maxLag ({}) "
-              + "or quorum not met ({}/{} replicas)",
+              + "or quorum not met ({}/{} replicas){}",
           partitionId,
           replicationLag,
           config.getMaxLag(),
           connectedReplicas,
-          config.getMinSyncReplicas());
+          config.getMinSyncReplicas(),
+          below.isEmpty() ? "" : " - regions below their own quorum: " + below);
     } else if (!shouldPause && wasPaused) {
       log.info(
           "[RDBMS Exporter P{}] Resuming exporter: replication lag ({}) within maxLag ({}) "

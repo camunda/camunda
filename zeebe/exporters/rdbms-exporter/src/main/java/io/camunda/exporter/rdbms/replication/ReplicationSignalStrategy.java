@@ -56,4 +56,13 @@ public interface ReplicationSignalStrategy<T extends ReplicationStatus> {
       final Duration pollingInterval, final Optional<Duration> queueHeadAge) {
     return pollingInterval;
   }
+
+  /**
+   * The names of mandatory regions currently short of their own {@code minReplicas}, for diagnostic
+   * logging when the exporter pauses. Empty when region awareness is disabled or every declared
+   * region meets its own quorum. Defaults to always-empty for strategies with no region concept.
+   */
+  default List<String> regionsBelowQuorum(final List<T> statuses) {
+    return List.of();
+  }
 }

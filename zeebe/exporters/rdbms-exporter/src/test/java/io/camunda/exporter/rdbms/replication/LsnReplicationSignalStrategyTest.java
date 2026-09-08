@@ -288,6 +288,32 @@ class LsnReplicationSignalStrategyTest {
       assertThat(lag).isEqualTo(ReplicationSignalStrategy.PAUSE_WORST_CASE);
     }
 
+    @Test
+    void shouldReportRegionsBelowQuorum() {
+      // given - us-east requires 1 replica but has none
+      final var strategy = createStrategy();
+
+      // when
+      final var below = strategy.regionsBelowQuorum(List.of());
+
+      // then
+      assertThat(below).containsExactly("us-east");
+    }
+
+    @Test
+    void shouldReportNoRegionsBelowQuorumWhenHealthy() {
+      // given
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(new ReplicationLsnStatus(50L, "replica-1", 0L, null, "us-east-1"));
+
+      // when
+      final var below = strategy.regionsBelowQuorum(statuses);
+
+      // then
+      assertThat(below).isEmpty();
+    }
+
     private RegionConfiguration region(
         final String name, final String pattern, final int minReplicas) {
       final var region = new RegionConfiguration();
