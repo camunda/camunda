@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {Toaster} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
@@ -20,6 +20,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
 );
 
 describe('<NetworkStatusWatcher />', () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
 	it('should display a persistent notification when initially offline', async () => {
 		vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
 
