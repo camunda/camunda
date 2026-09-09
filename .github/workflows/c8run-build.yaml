@@ -333,14 +333,9 @@ jobs:
         working-directory: .\c8run
 
       - name: Run c8run
-<<<<<<< HEAD
-        run: bash -c './c8run.exe start --config e2e_tests/prefix-config.yaml'
-        working-directory: ./c8run
-=======
         timeout-minutes: 3
         run: bash -c './c8run.exe start'
         working-directory: ${{ env.C8RUN_E2E_DIR }}
->>>>>>> 38d2c7c6 (feat: make local secrets available in c8run)
         shell: bash
 
       - name: Install jq
