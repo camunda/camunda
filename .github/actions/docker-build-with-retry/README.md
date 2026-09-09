@@ -57,6 +57,15 @@ which attempt's outputs to return, since only one attempt's step id is knowable 
 - **Three attempts, 10s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
   composite action has no loop, so `max_attempts` would have to change the number of steps in the
   file. Change the count by adding or removing an attempt block.
+- **The retry window is ~24 seconds for a fast-failing build.** Measured in
+  [run 34333710709](https://github.com/camunda/camunda/actions/runs/34333710709), where the build
+  failed in ~1s per attempt: three attempts plus two 10s gaps gave up 24s after the step started. A
+  build that fails *slowly* (a long `RUN` that dies near the end) stretches this, since the window is
+  attempt duration plus the fixed 20s of sleep — but a build that fails fast gets barely more than
+  20s of protection. That is a blip, **not an outage.** The throttling window behind INC-7723 lasted
+  30 minutes; neither this configuration nor the `Wandalen/wretry.action` one it replaced (identical
+  `attempt_limit: 3` / `attempt_delay: 10000`) would have saved a single one of those jobs. What
+  fixes that failure mode is that nothing is fetched at runtime any more — see below.
 - **Editing one attempt means editing all three.** The `env:` and `with:` blocks must stay identical,
   including the pinned `docker/build-push-action` SHA. A mismatch means an attempt silently builds
   something different from its predecessor — the worst possible failure mode here, because the
@@ -69,8 +78,13 @@ which attempt's outputs to return, since only one attempt's step id is knowable 
 - **A retry is cheap up to the point that failed, but not free.** Layers already built are cached in
   the builder, which persists across attempts, so a replay resumes near where it broke — except that
   a failing `RUN` re-executes on every attempt.
-- **A failed attempt still emits its error annotations.** They stay in the job log even when a later
-  attempt succeeds, so a green job can contain red annotations from this action.
+- **A failed attempt still emits its error annotations.** `continue-on-error` absorbs the *step*, but
+  the annotation is already published to the check run and annotations have no notion of being
+  absorbed — so a green job can carry red annotations from this action.
+  [`post-ci-failure-reasons`](../post-ci-failure-reasons) filters on job conclusion before it reads
+  annotations, so a job that recovered produces no PR comment. The residual effect: if the job later
+  fails for an unrelated reason, that comment will list these already-retried errors alongside the
+  real one.
 - No failure classification: a broken Dockerfile or a 4xx from the registry is retried just like a
   5xx, and costs all three attempts before the job reports red.
 - `tags` may be multi-line. It is passed through as a plain string and only interpreted by
