@@ -15,7 +15,6 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Optional;
 import org.awaitility.Awaitility;
 
 public final class CamundaExporterSchemaUtils {
@@ -27,10 +26,7 @@ public final class CamundaExporterSchemaUtils {
    * will control how/long we would retry.
    */
   private static final Duration SCHEMA_CREATION_TIMEOUT =
-      Optional.ofNullable(
-              System.getProperty(SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
-          .map(val -> Duration.ofSeconds(Long.parseLong(val)))
-          .orElse(Duration.ofSeconds(120));
+      SearchDBExtension.awsDataAvailabilityTimeout(Duration.ofSeconds(120));
 
   private CamundaExporterSchemaUtils() {}
 
