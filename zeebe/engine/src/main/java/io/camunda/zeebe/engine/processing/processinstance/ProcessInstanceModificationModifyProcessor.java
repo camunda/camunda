@@ -348,6 +348,7 @@ public final class ProcessInstanceModificationModifyProcessor
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
+        .setStorageOrdinalKey(processInstanceRecord.getStorageOrdinalKey())
         .setTenantId(processInstanceRecord.getTenantId())
         .setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
 
@@ -1509,6 +1510,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    command.getValue().setStorageOrdinalKey(processInstanceRecord.getStorageOrdinalKey());
   }
 
   private void enrichRejectionCommand(
