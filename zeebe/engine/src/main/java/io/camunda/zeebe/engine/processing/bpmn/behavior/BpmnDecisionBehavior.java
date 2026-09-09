@@ -214,6 +214,7 @@ public final class BpmnDecisionBehavior {
     eventTriggerBehavior.triggeringProcessEvent(
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
+        context.getStorageOrdinalKey(),
         context.getTenantId(),
         context.getElementInstanceKey(),
         context.getElementId(),
