@@ -1119,11 +1119,20 @@ jobs:
                 else
                   DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
                   DOWNSTREAM_OWNER="@camunda/distribution"
+                  # Both remaining cases are parent-side plumbing, but they need
+                  # different first moves: an unreadable listing points at access
+                  # or retention, while a readable one that names a `json-report`
+                  # rules both out and leaves the download itself.
+                  if [[ "$REPORT_COUNT" == "unreadable" ]]; then
+                    CAUSE="Could not list the run's artifacts either. Common causes: the dispatch GitHub App installation lacks \`actions: read\` on the downstream repo, or the artifact retention window has expired."
+                  else
+                    CAUSE="The run has $REPORT_COUNT \`json-report\` artifact(s) and the listing succeeded, so access and retention are both fine — the download itself failed."
+                  fi
                   {
                     echo "### Downstream Category Unavailable"
                     echo ""
                     echo "\`gh run download\` failed for run $RUN_ID on $TARGET_REPO."
-                    echo "Common causes: the dispatch GitHub App installation lacks \`actions: read\` on the downstream repo, or the artifact retention window has expired."
+                    echo "$CAUSE"
                     echo ""
                     echo "stderr: \`${DOWNLOAD_ERR:-(empty)}\`"
                   } >> "$GITHUB_STEP_SUMMARY"
@@ -1149,9 +1158,11 @@ jobs:
               downstream_run_url:$downstream_run_url
             }' > "$CONTEXT_FILE"
 
-          echo "downstream_category=$DOWNSTREAM_CATEGORY" >> "$GITHUB_OUTPUT"
-          echo "downstream_owner=$DOWNSTREAM_OWNER" >> "$GITHUB_OUTPUT"
-          echo "downstream_failed_job=$DOWNSTREAM_FAILED_JOB" >> "$GITHUB_OUTPUT"
+          {
+            echo "downstream_category=$DOWNSTREAM_CATEGORY"
+            echo "downstream_owner=$DOWNSTREAM_OWNER"
+            echo "downstream_failed_job=$DOWNSTREAM_FAILED_JOB"
+          } >> "$GITHUB_OUTPUT"
           {
             echo "### Downstream SaaS E2E Failure Category"
             echo ""
