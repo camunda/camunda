@@ -1,7 +1,6 @@
 ---
-name: Setup Java with retry
-
 # owner: @camunda/engineering-operations
+name: Setup Java with retry
 
 description: >
   Runs `actions/setup-java` with retries so a transient failure while resolving
