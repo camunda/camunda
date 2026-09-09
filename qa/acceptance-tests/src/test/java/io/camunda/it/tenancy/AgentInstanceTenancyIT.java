@@ -117,7 +117,7 @@ public class AgentInstanceTenancyIT {
                     .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job A so JobCompleteProcessor emits AGENT_HISTORY:COMMIT for its items.
-    adminClient.newCompleteCommand(jobKeyA).execute();
+    adminClient.newCompleteCommand(jobKeyA).withLeaseToken(resultA.jobLease()).execute();
 
     final var resultB = createAgentInstanceWithResult(adminClient, TENANT_B);
     agentInstanceKeyB = resultB.agentInstanceKey();
@@ -140,7 +140,7 @@ public class AgentInstanceTenancyIT {
                     .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job B so its history items also transition to COMMITTED.
-    adminClient.newCompleteCommand(jobKeyB).execute();
+    adminClient.newCompleteCommand(jobKeyB).withLeaseToken(resultB.jobLease()).execute();
 
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyA);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyB);
