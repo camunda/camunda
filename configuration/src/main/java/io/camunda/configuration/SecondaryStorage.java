@@ -50,7 +50,6 @@ public class SecondaryStorage {
 
   private volatile SecondaryStorageType resolvedType;
 
-
   public boolean getAutoconfigureCamundaExporter() {
     return autoconfigureCamundaExporter;
   }
