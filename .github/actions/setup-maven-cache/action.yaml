@@ -14,6 +14,13 @@ inputs:
     description: Whether to use a connection pool for HTTP connections.
     default: "true"
     required: false
+  cache-download-timeout-mins:
+    description: >
+      Upper bound, in minutes, on how long `actions/cache` may spend downloading a single
+      cache segment before aborting the restore. A healthy restore takes under 60s, so the
+      default trades a rare cold resolve for a bounded one -- see INC-7899.
+    default: "3"
+    required: false
 
 runs:
   using: composite
@@ -85,9 +92,18 @@ runs:
       run: |
         echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
 
+    # `actions/cache` aborts a stalled segment download with a *warning*, not a failure, and
+    # then hands the job a cold Maven repository -- so the cost of a slow cache backend is paid
+    # by every later Maven step rather than surfacing here. `SEGMENT_DOWNLOAD_TIMEOUT_MINS`
+    # defaults to 10 minutes, which on its own exceeds several jobs' entire timeout budget
+    # (`zeebe-unit-tests` allows 20). Bounding it keeps a degraded backend from converting a
+    # 6-minute job into a timeout. `timeout-minutes` is deliberately not used: GitHub ignores it
+    # on composite-action steps, so the bound has to come from the action's own env var.
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
       if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: ${{ inputs.cache-download-timeout-mins }}
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ env.MAVEN_CACHE_PATH }}
@@ -98,6 +114,8 @@ runs:
     - name: Restore maven cache
       # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is enabled
       if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'false' && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: ${{ inputs.cache-download-timeout-mins }}
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         # This has to match the 'Cache local Maven repository' step above

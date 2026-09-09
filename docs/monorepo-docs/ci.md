@@ -517,6 +517,14 @@ Implementation:
 3. Use [setup-yarn-cache](https://github.com/camunda/infra-global-github-actions/tree/main/setup-yarn-cache) action, see [usage example in #21607](https://github.com/camunda/camunda/pull/21607).
 4. No implementation since Golang usage is low.
 
+Bound the cost of a degraded cache backend. `actions/cache` aborts a stalled segment download
+with a *warning* rather than a failure, then lets the build continue against a cold repository,
+so a slow backend shows up as a job timeout somewhere later instead of as a cache problem. The
+`setup-maven-cache` action therefore caps `SEGMENT_DOWNLOAD_TIMEOUT_MINS` (default 10 minutes,
+which alone exceeds some jobs' whole budget) via its `cache-download-timeout-mins` input. Note
+that `timeout-minutes` cannot serve this purpose: GitHub ignores it on steps inside a composite
+action, so a bound has to come from the wrapped action's own configuration.
+
 ### Disable cache restoration for a Pull Request
 
 You can temporarily turn off cache restore functionality in a PR by using the `/ci-disable-cache` command as described under [ChatOps](#chatops). This could be useful to test GHA workflows without the caching mechanism. To restore standard functionality, you need to issue the `/ci-enable-cache` command or drop the empty commit.
