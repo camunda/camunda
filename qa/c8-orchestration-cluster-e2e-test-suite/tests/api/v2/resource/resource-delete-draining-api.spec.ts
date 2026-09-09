@@ -281,10 +281,7 @@ test.describe('Process Definition Draining Deletion API', () => {
   test('Deleting a definition with no running instances is deleted without draining', async ({
     request,
   }) => {
-    // Nothing to drain, so the definition goes straight to DELETED. Guards the
-    // regression fixed in camunda#60472: the engine finalized while the RDBMS
-    // row stayed at DRAINING, which an engine-level test cannot see. If that
-    // came back, the poll below would never observe the terminal state.
+    // Regression guard for camunda#60472 — RDBMS only, invisible to the engine tests.
     const processDefinitionId = uniquePrefixedId('draining-none');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
