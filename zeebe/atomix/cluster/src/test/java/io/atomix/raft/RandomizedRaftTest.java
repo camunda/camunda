@@ -15,8 +15,14 @@
  */
 package io.atomix.raft;
 
+import static dev.hegel.Generators.longs;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HealthCheck;
+import dev.hegel.HegelTest;
+import dev.hegel.OptBoolean;
+import dev.hegel.Phase;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -27,21 +33,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.EdgeCasesMode;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.PropertyDefaults;
-import net.jqwik.api.Provide;
-import net.jqwik.api.ShrinkingMode;
-import net.jqwik.api.lifecycle.AfterTry;
-import net.jqwik.api.lifecycle.BeforeProperty;
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-@PropertyDefaults(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
 public class RandomizedRaftTest {
 
   private static final int OPERATION_SIZE = 10000;
@@ -56,7 +52,7 @@ public class RandomizedRaftTest {
   private List<MemberId> raftMembers;
   private Path raftDataDirectory;
 
-  @BeforeProperty
+  @BeforeEach
   public void initOperations() {
     // Need members ids to generate pair operations
     final var servers =
@@ -73,126 +69,134 @@ public class RandomizedRaftTest {
     raftMembers = servers;
   }
 
-  @AfterTry
-  public void shutDownRaftNodes() throws IOException {
-    raftContexts.shutdown();
-    FileUtil.deleteFolder(raftDataDirectory);
-    raftDataDirectory = null;
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void consistencyTestWithNoSnapshot(final TestCase tc) throws Exception {
+    runRandomized(tc, defaultOperations, this::consistencyTest);
   }
 
-  @Property
-  void consistencyTestWithNoSnapshot(
-      @ForAll("raftOperations") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-
-    consistencyTest(raftOperations, raftMembers, seed);
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void consistencyTestWithSnapshot(final TestCase tc) throws Exception {
+    runRandomized(tc, operationsWithSnapshot, this::consistencyTest);
   }
 
-  @Property
-  void consistencyTestWithSnapshot(
-      @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-
-    consistencyTest(raftOperations, raftMembers, seed);
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void consistencyTestWithRestarts(final TestCase tc) throws Exception {
+    runRandomized(tc, operationsWithRestarts, this::consistencyTest);
   }
 
-  @Property
-  void consistencyTestWithRestarts(
-      @ForAll("raftOperationsWithRestarts") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-
-    consistencyTest(raftOperations, raftMembers, seed);
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void consistencyTestWithSnapshotsAndRestarts(final TestCase tc) throws Exception {
+    runRandomized(tc, operationsWithSnapshotsAndRestarts, this::consistencyTest);
   }
 
-  @Property
-  void consistencyTestWithSnapshotsAndRestarts(
-      @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-
-    consistencyTest(raftOperations, raftMembers, seed);
+  @HegelTest(
+      testCases = 1,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void consistencyTestAfterDataLoss(final TestCase tc) throws Exception {
+    runRandomized(tc, operationsWithSnapshotsAndRestartsWithDataLoss, this::consistencyTest);
   }
 
-  @Property(tries = 1)
-  void consistencyTestAfterDataLoss(
-      @ForAll("raftOperationsWithSnapshotsAndRestartsWithDataLoss")
-          final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-
-    consistencyTest(raftOperations, raftMembers, seed);
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void livenessTestWithRestarts(final TestCase tc) throws Exception {
+    runRandomized(tc, operationsWithRestarts, this::livenessTest);
   }
 
-  @Property
-  void livenessTestWithRestarts(
-      @ForAll("raftOperationsWithRestarts") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-    livenessTest(raftOperations, raftMembers, seed);
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void livenessTestWithRestartsAndSnapshots(final TestCase tc) throws Exception {
+    runRandomized(tc, operationsWithSnapshotsAndRestarts, this::livenessTest);
   }
 
-  @Property
-  void livenessTestWithRestartsAndSnapshots(
-      @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-    livenessTest(raftOperations, raftMembers, seed);
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void livenessTestWithNoSnapshot(final TestCase tc) throws Exception {
+    runRandomized(tc, defaultOperations, this::livenessTest);
   }
 
-  @Property
-  void livenessTestWithNoSnapshot(
-      @ForAll("raftOperations") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-
-    livenessTest(raftOperations, raftMembers, seed);
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void livenessTestWithSnapshot(final TestCase tc) throws Exception {
+    runRandomized(tc, operationsWithSnapshot, this::livenessTest);
   }
 
-  @Property
-  void livenessTestWithSnapshot(
-      @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void livenessTestWithSnapshotAndSingleRestart(final TestCase tc) throws Exception {
+    runRandomized(
+        tc,
+        operationsWithSnapshot,
+        (raftOperations, raftMembers) -> {
+          // After all operations, restart all members once
+          final var modifiedOperations = new ArrayList<>(raftOperations);
+          for (final var member : this.raftMembers) {
+            modifiedOperations.add(
+                RaftOperation.of("Restart member", ControllableRaftContexts::restart));
+          }
 
-    livenessTest(raftOperations, raftMembers, seed);
+          final var modifiedMemberList = new ArrayList<>(raftMembers);
+          modifiedMemberList.addAll(this.raftMembers);
+
+          livenessTest(modifiedOperations, modifiedMemberList);
+        });
   }
 
-  @Property
-  void livenessTestWithSnapshotAndSingleRestart(
-      @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
+  /**
+   * Runs one test case: the seed drawn from Hegel determines the operation sequence, the members
+   * each operation is applied to, and the raft nodes' own randomness, so a reported seed replays
+   * the whole case.
+   */
+  private void runRandomized(
+      final TestCase tc, final List<RaftOperation> operations, final RaftTest test)
       throws Exception {
-
-    // After all operations, restart all members once
-    final var modifiedOperations = new ArrayList<>(raftOperations);
-    for (final var member : this.raftMembers) {
-      modifiedOperations.add(RaftOperation.of("Restart member", ControllableRaftContexts::restart));
+    final long seed = tc.draw(longs(), "seed");
+    LOG.info("Running test case with seed {}", seed);
+    final var random = new Random(seed);
+    final var raftOperations = RandomSequence.of(random, operations, OPERATION_SIZE);
+    final var members = RandomSequence.of(random, raftMembers, OPERATION_SIZE);
+    setUpRaftNodes(random);
+    try {
+      test.run(raftOperations, members);
+    } finally {
+      shutDownRaftNodes();
     }
-
-    final var modifiedMemberList = new ArrayList<>(raftMembers);
-    modifiedMemberList.addAll(this.raftMembers);
-
-    livenessTest(modifiedOperations, modifiedMemberList, seed);
   }
 
   private void consistencyTest(
-      final List<RaftOperation> raftOperations, final List<MemberId> raftMembers, final long seed)
-      throws Exception {
-    setUpRaftNodes(new Random(seed));
-
+      final List<RaftOperation> raftOperations, final List<MemberId> raftMembers) throws Exception {
     int step = 0;
     final var memberIter = raftMembers.iterator();
     for (final RaftOperation operation : raftOperations) {
@@ -219,10 +223,7 @@ public class RandomizedRaftTest {
   }
 
   private void livenessTest(
-      final List<RaftOperation> raftOperations, final List<MemberId> raftMembers, final long seed)
-      throws Exception {
-    setUpRaftNodes(new Random(seed));
-
+      final List<RaftOperation> raftOperations, final List<MemberId> raftMembers) throws Exception {
     // given - when there are failures such as message loss
     final var memberIter = raftMembers.iterator();
     for (final RaftOperation operation : raftOperations) {
@@ -267,52 +268,21 @@ public class RandomizedRaftTest {
     raftContexts.assertNoDataLoss();
   }
 
-  /** Basic raft operations without snapshotting, compaction or restart */
-  @Provide
-  Arbitrary<List<RaftOperation>> raftOperations() {
-    final var operation = Arbitraries.of(defaultOperations);
-    return operation.list().ofSize(OPERATION_SIZE);
-  }
-
-  /** Basic raft operation with snapshotting and compaction */
-  @Provide
-  Arbitrary<List<RaftOperation>> raftOperationsWithSnapshot() {
-    final var operation = Arbitraries.of(operationsWithSnapshot);
-    return operation.list().ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<List<RaftOperation>> raftOperationsWithRestarts() {
-    return Arbitraries.of(operationsWithRestarts).list().ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<List<RaftOperation>> raftOperationsWithSnapshotsAndRestarts() {
-    return Arbitraries.of(operationsWithSnapshotsAndRestarts).list().ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<List<RaftOperation>> raftOperationsWithSnapshotsAndRestartsWithDataLoss() {
-    return Arbitraries.of(operationsWithSnapshotsAndRestartsWithDataLoss)
-        .list()
-        .ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<List<MemberId>> raftMembers() {
-    final var members = Arbitraries.of(raftMembers);
-    return members.list().ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<Long> seeds() {
-    return Arbitraries.longs();
-  }
-
   private void setUpRaftNodes(final Random random) throws Exception {
     // Could not make @TempDir annotation work
     raftDataDirectory = Files.createTempDirectory(null);
     raftContexts = new ControllableRaftContexts(3);
     raftContexts.setup(raftDataDirectory, random);
+  }
+
+  private void shutDownRaftNodes() throws IOException {
+    raftContexts.shutdown();
+    FileUtil.deleteFolder(raftDataDirectory);
+    raftDataDirectory = null;
+  }
+
+  @FunctionalInterface
+  private interface RaftTest {
+    void run(List<RaftOperation> raftOperations, List<MemberId> raftMembers) throws Exception;
   }
 }

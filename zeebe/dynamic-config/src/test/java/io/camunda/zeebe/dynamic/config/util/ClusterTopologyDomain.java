@@ -7,6 +7,21 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static dev.hegel.Generators.composite;
+import static dev.hegel.Generators.fromRegex;
+import static dev.hegel.Generators.integers;
+import static dev.hegel.Generators.lists;
+import static dev.hegel.Generators.longs;
+import static dev.hegel.Generators.maps;
+import static dev.hegel.Generators.oneOf;
+import static dev.hegel.Generators.optional;
+import static dev.hegel.Generators.records;
+import static dev.hegel.Generators.sampledFrom;
+import static dev.hegel.Generators.sets;
+import static dev.hegel.Generators.text;
+
+import dev.hegel.Generator;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
@@ -38,13 +53,12 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.dynamic.config.state.TenantAvailability;
-import io.camunda.zeebe.util.ReflectUtil;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,75 +68,57 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.Combinators;
-import net.jqwik.api.Provide;
-import net.jqwik.api.domains.DomainContextBase;
-import net.jqwik.api.providers.ArbitraryProvider;
-import net.jqwik.api.providers.TypeUsage;
-import net.jqwik.api.support.CollectorsSupport;
-import net.jqwik.time.api.DateTimes;
 
 /**
- * Contains all arbitraries needed to generate a {@link ClusterConfiguration}. The topology is not
+ * Contains all generators needed to generate a {@link ClusterConfiguration}. The topology is not
  * semantically correct (e.g. contains operations for members that don't exist) but all fields
  * should have valid values.
  */
-public final class ClusterTopologyDomain extends DomainContextBase {
+public final class ClusterTopologyDomain {
 
-  @Provide
-  Arbitrary<ClusterConfiguration> clusterTopologies() {
-    // Combine arbitraries (instead of just using `Arbitraries.forType(ClusterTopology.class)`
-    // here so that we have control over the version. Version must be greater than 0 for
+  private static final DerivedGenerators PLAIN = new DerivedGenerators(Map.of());
+
+  /**
+   * Derivation for types whose components include the model's value types. Deriving those from the
+   * type alone would either fail (they are not records) or produce values their constructors
+   * reject.
+   */
+  private static final DerivedGenerators DERIVED =
+      new DerivedGenerators(
+          Map.of(
+              MemberId.class, memberIds(),
+              Instant.class, nanoPrecisionInstants(),
+              PartitionDistributorConfig.class, partitionDistributorConfig(),
+              DynamicPartitionConfig.class, dynamicPartitionConfigs(),
+              RoutingState.class, routingStates()));
+
+  private ClusterTopologyDomain() {}
+
+  public static Generator<ClusterConfiguration> clusterTopologies() {
+    // Combine generators (instead of just deriving from `ClusterConfiguration.class`) so that we
+    // have control over the version. Version must be greater than 0 for
     // `ClusterTopology#isUninitialized` to return false.
-    final var arbitraryVersion = Arbitraries.integers().greaterOrEqual(0);
-    final var arbitraryMembers =
-        Arbitraries.maps(memberIds(), Arbitraries.forType(MemberState.class).enableRecursion())
-            .ofMaxSize(10);
-    final var arbitraryCompletedChange =
-        Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
-    final var arbitraryChangePlan =
-        Arbitraries.forType(ClusterChangePlan.class)
-            .enableRecursion()
-            .<ChangePlan>map(plan -> plan)
-            .optional();
-    final var arbitraryRoutingState = routingStates().optional();
-    final var arbitraryClusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
-    final var arbitraryIncarnationNumber = Arbitraries.longs().greaterOrEqual(0);
-    return Combinators.combine(
-            arbitraryVersion,
-            arbitraryMembers,
-            arbitraryCompletedChange,
-            arbitraryChangePlan,
-            arbitraryRoutingState,
-            arbitraryClusterId,
-            arbitraryIncarnationNumber)
-        .flatAs(
-            (version,
-                members,
-                lastChange,
-                pendingChanges,
-                routingState,
-                clusterId,
-                incarnationNumber) ->
-                partitionDistributorConfigs()
-                    .map(
-                        distributorConfig ->
-                            new ClusterConfiguration(
-                                version,
-                                members,
-                                lastChange,
-                                pendingChanges,
-                                routingState,
-                                clusterId,
-                                incarnationNumber,
-                                distributorConfig)));
+    final var members = maps(memberIds(), DERIVED.forType(MemberState.class)).maxSize(10);
+    final var completedChange = optional(DERIVED.forType(CompletedChange.class));
+    final var changePlan =
+        optional(DERIVED.forType(ClusterChangePlan.class).<ChangePlan>map(plan -> plan));
+    final var routingState = optional(routingStates());
+    final var clusterId = optional(text().minSize(1).maxSize(50));
+    return composite(
+        tc ->
+            new ClusterConfiguration(
+                tc.draw(integers().min(0)),
+                tc.draw(members),
+                tc.draw(completedChange),
+                tc.draw(changePlan),
+                tc.draw(routingState),
+                tc.draw(clusterId),
+                tc.draw(longs().min(0)),
+                tc.draw(partitionDistributorConfigs())));
   }
 
-  @Provide
-  Arbitrary<PartitionDistributorConfig> partitionDistributorConfig() {
-    return Arbitraries.of(
+  public static Generator<PartitionDistributorConfig> partitionDistributorConfig() {
+    return sampledFrom(
         new PartitionDistributorConfig.RoundRobinConfig(),
         new PartitionDistributorConfig.FixedConfig(),
         new PartitionDistributorConfig.ZoneAwareConfig(
@@ -140,9 +136,8 @@ public final class ClusterTopologyDomain extends DomainContextBase {
             List.of(new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000))));
   }
 
-  @Provide
-  Arbitrary<Optional<PartitionDistributorConfig>> partitionDistributorConfigs() {
-    return Arbitraries.of(
+  public static Generator<Optional<PartitionDistributorConfig>> partitionDistributorConfigs() {
+    return sampledFrom(
         Optional.empty(),
         Optional.of(new PartitionDistributorConfig.RoundRobinConfig()),
         Optional.of(new PartitionDistributorConfig.FixedConfig()),
@@ -153,204 +148,174 @@ public final class ClusterTopologyDomain extends DomainContextBase {
                     new PartitionDistributorConfig.ZoneSpec("zone-b", 1, 500)))));
   }
 
-  @Provide
-  Arbitrary<RoutingState> routingStates() {
-    final var version = Arbitraries.longs().greaterOrEqual(0);
-    return Combinators.combine(version, requestHandling(), messageCorrelation())
-        .as(RoutingState::new);
+  public static Generator<RoutingState> routingStates() {
+    final var requestHandling = requestHandling();
+    final var messageCorrelation = messageCorrelation();
+    return composite(
+        tc ->
+            new RoutingState(
+                tc.draw(longs().min(0)), tc.draw(requestHandling), tc.draw(messageCorrelation)));
   }
 
-  @Provide
-  Arbitrary<RequestHandling> requestHandling() {
-    return Arbitraries.oneOf(
-        allPartitions().map(RequestHandling.class::cast),
-        activePartitions().map(RequestHandling.class::cast));
+  public static Generator<RequestHandling> requestHandling() {
+    return oneOf(allPartitions(), activePartitions());
   }
 
-  @Provide
-  Arbitrary<AllPartitions> allPartitions() {
-    return Arbitraries.integers().between(1, 5).map(AllPartitions::new);
+  public static Generator<AllPartitions> allPartitions() {
+    return integers().min(1).max(5).map(AllPartitions::new);
   }
 
-  @Provide
-  Arbitrary<ActivePartitions> activePartitions() {
-    final var basePartitionCount = Arbitraries.integers().between(1, 3);
-    final var activePartitions = Arbitraries.integers().between(4, 8).list().map(TreeSet::new);
-    final var inactivePartitions = Arbitraries.integers().between(9, 12).list().map(TreeSet::new);
-
-    return Combinators.combine(basePartitionCount, activePartitions, inactivePartitions)
-        .as(ActivePartitions::new);
+  public static Generator<ActivePartitions> activePartitions() {
+    final var activePartitions = lists(integers().min(4).max(8));
+    final var inactivePartitions = lists(integers().min(9).max(12));
+    return composite(
+        tc ->
+            new ActivePartitions(
+                tc.draw(integers().min(1).max(3)),
+                new TreeSet<>(tc.draw(activePartitions)),
+                new TreeSet<>(tc.draw(inactivePartitions))));
   }
 
-  @Provide
-  Arbitrary<MessageCorrelation> messageCorrelation() {
-    return Arbitraries.of(
-            ReflectUtil.implementationsOfSealedInterface(MessageCorrelation.class).toList())
-        .flatMap(Arbitraries::forType);
+  public static Generator<MessageCorrelation> messageCorrelation() {
+    final var hashMods = records(HashMod.class).with("partitionCount", integers().min(1));
+    return new DerivedGenerators(Map.of(HashMod.class, hashMods)).forType(MessageCorrelation.class);
   }
 
-  @Provide
-  Arbitrary<ClusterConfigurationChangeOperation> topologyChangeOperations() {
-    // jqwik does not support sealed classes yet, so we have to use reflection to get all possible
-    // types. See https://github.com/jqwik-team/jqwik/issues/523
-    return Arbitraries.of(
-            ReflectUtil.implementationsOfSealedInterface(ClusterConfigurationChangeOperation.class)
-                .toList())
-        .flatMap(Arbitraries::forType);
+  public static Generator<ClusterConfigurationChangeOperation> topologyChangeOperations() {
+    return DERIVED.forType(ClusterConfigurationChangeOperation.class);
   }
 
-  @Provide
-  Arbitrary<MemberId> memberIds() {
-    return Arbitraries.integers().greaterOrEqual(0).map(id -> MemberId.from(id.toString()));
+  public static Generator<MemberId> memberIds() {
+    return integers().min(0).map(id -> MemberId.from(id.toString()));
   }
 
-  @Provide
-  Arbitrary<DynamicPartitionConfig> dynamicPartitionConfigs() {
-    return Arbitraries.forType(ExportingConfig.class)
-        .enableRecursion()
-        .map(DynamicPartitionConfig::new)
-        .filter(DynamicPartitionConfig::isInitialized);
+  public static Generator<DynamicPartitionConfig> dynamicPartitionConfigs() {
+    return PLAIN.forType(ExportingConfig.class).map(DynamicPartitionConfig::new);
   }
 
   // ---- New multi-partition-group model (8.10) ----
 
-  @Provide
-  Arbitrary<CurrentClusterConfiguration> currentClusterConfigurations() {
+  public static Generator<CurrentClusterConfiguration> currentClusterConfigurations() {
+    final var global = globalConfigurations();
     final var partitionGroups =
-        Arbitraries.maps(partitionGroupIds(), partitionGroupConfigurations()).ofMaxSize(4);
-    return Combinators.combine(globalConfigurations(), partitionGroups, phasedChangeStates())
-        .as(
-            (global, groups, phasedChangeState) ->
-                // version is always INITIAL_VERSION and reserved; it is not used in merge.
-                new CurrentClusterConfiguration(
-                    CurrentClusterConfiguration.INITIAL_VERSION,
-                    global,
-                    groups,
-                    phasedChangeState));
+        maps(partitionGroupIds(), partitionGroupConfigurations()).maxSize(4);
+    final var phasedChangeState = phasedChangeStates();
+    return composite(
+        tc ->
+            // version is always INITIAL_VERSION and reserved; it is not used in merge.
+            new CurrentClusterConfiguration(
+                CurrentClusterConfiguration.INITIAL_VERSION,
+                tc.draw(global),
+                tc.draw(partitionGroups),
+                tc.draw(phasedChangeState)));
   }
 
-  @Provide
-  Arbitrary<GlobalConfiguration> globalConfigurations() {
-    final var version = Arbitraries.longs().greaterOrEqual(0);
+  public static Generator<GlobalConfiguration> globalConfigurations() {
     // clusterId must be non-empty: the serializer treats the empty string as "absent".
-    final var clusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
-    final var members = Arbitraries.maps(memberIds(), brokerStates()).ofMaxSize(6);
+    final var clusterId = optional(text().minSize(1).maxSize(50));
+    final var members = maps(memberIds(), brokerStates()).maxSize(6);
     // Cluster-wide changes run as graphs too, so this is the only plan shape generated here.
-    final Arbitrary<Optional<DependencyChangePlan>> pendingChanges =
-        globalDependencyChangePlans().optional();
-    final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
-    return Combinators.combine(
-            version, clusterId, members, partitionDistributorConfigs(), pendingChanges, lastChange)
-        .as(
-            (v, cid, m, distributor, pending, last) ->
-                new GlobalConfiguration(v, cid, m, distributor, pending, last));
+    final var pendingChanges = optional(globalDependencyChangePlans());
+    final var lastChange = optional(DERIVED.forType(CompletedChange.class));
+    return composite(
+        tc ->
+            new GlobalConfiguration(
+                tc.draw(longs().min(0)),
+                tc.draw(clusterId),
+                tc.draw(members),
+                tc.draw(partitionDistributorConfigs()),
+                tc.draw(pendingChanges),
+                tc.draw(lastChange)));
   }
 
-  @Provide
-  Arbitrary<PartitionGroupConfiguration> partitionGroupConfigurations() {
-    final var version = Arbitraries.longs().greaterOrEqual(0);
-    final var incarnationNumber = Arbitraries.longs().greaterOrEqual(0);
-    final var members = Arbitraries.maps(memberIds(), brokerPartitionStates()).ofMaxSize(6);
-    final var routingState = routingStates().optional();
+  public static Generator<PartitionGroupConfiguration> partitionGroupConfigurations() {
+    final var members = maps(memberIds(), brokerPartitionStates()).maxSize(6);
+    final var routingState = optional(routingStates());
     // A group's change is always a dependency graph, so this is the only plan shape generated here.
-    final Arbitrary<Optional<DependencyChangePlan>> pendingChanges =
-        dependencyChangePlans().optional();
-    final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
+    final var pendingChanges = optional(dependencyChangePlans());
+    final var lastChange = optional(DERIVED.forType(CompletedChange.class));
     final var availability = tenantAvailabilities();
-    return Combinators.combine(
-            version,
-            incarnationNumber,
-            members,
-            routingState,
-            pendingChanges,
-            lastChange,
-            availability)
-        .as(
-            (v, inc, m, routing, pending, last, tenantAvailability) ->
-                new PartitionGroupConfiguration(
-                    v, inc, m, routing, pending, last, tenantAvailability));
+    return composite(
+        tc ->
+            new PartitionGroupConfiguration(
+                tc.draw(longs().min(0)),
+                tc.draw(longs().min(0)),
+                tc.draw(members),
+                tc.draw(routingState),
+                tc.draw(pendingChanges),
+                tc.draw(lastChange),
+                tc.draw(availability)));
   }
 
-  @Provide
-  Arbitrary<TenantAvailability> tenantAvailabilities() {
-    final var version = Arbitraries.longs().greaterOrEqual(0);
-    final var state = Arbitraries.of(TenantAvailability.State.values());
-    return Combinators.combine(version, state).as(TenantAvailability::new);
+  public static Generator<TenantAvailability> tenantAvailabilities() {
+    final var state = sampledFrom(TenantAvailability.State.values());
+    return composite(tc -> new TenantAvailability(tc.draw(longs().min(0)), tc.draw(state)));
   }
 
-  @Provide
-  Arbitrary<BrokerState> brokerStates() {
-    final var version = Arbitraries.longs().greaterOrEqual(0);
-    final var state = Arbitraries.of(BrokerState.State.values());
-    return Combinators.combine(version, nanoPrecisionInstants(), state)
-        .as((v, lastUpdated, s) -> new BrokerState(v, lastUpdated, s));
+  public static Generator<BrokerState> brokerStates() {
+    final var state = sampledFrom(BrokerState.State.values());
+    return composite(
+        tc ->
+            new BrokerState(
+                tc.draw(longs().min(0)), tc.draw(nanoPrecisionInstants()), tc.draw(state)));
   }
 
-  @Provide
-  Arbitrary<BrokerPartitionState> brokerPartitionStates() {
-    final var version = Arbitraries.longs().greaterOrEqual(0);
+  public static Generator<BrokerPartitionState> brokerPartitionStates() {
     final var partitions =
-        Arbitraries.maps(
-                Arbitraries.integers().between(1, 20),
-                Arbitraries.forType(PartitionState.class).enableRecursion())
-            .ofMaxSize(4);
-    final var mode = Arbitraries.of(Mode.values());
-    return Combinators.combine(version, nanoPrecisionInstants(), partitions, mode)
-        .as((v, lastUpdated, p, m) -> new BrokerPartitionState(v, lastUpdated, p, m));
+        maps(integers().min(1).max(20), DERIVED.forType(PartitionState.class)).maxSize(4);
+    final var mode = sampledFrom(Mode.values());
+    return composite(
+        tc ->
+            new BrokerPartitionState(
+                tc.draw(longs().min(0)),
+                tc.draw(nanoPrecisionInstants()),
+                tc.draw(partitions),
+                tc.draw(mode)));
   }
 
-  @Provide
-  Arbitrary<PhasedChangeState> phasedChangeStates() {
+  public static Generator<PhasedChangeState> phasedChangeStates() {
     // History ids are reassigned sequentially from 0, and an optional pending plan (if any) gets
     // the next id after that — this keeps every id below nextId, satisfying PhasedChangeState's
     // invariant, while still exercising arbitrary statuses/timestamps/phases via the existing
     // completedPhasedChanges()/phases() generators.
-    final var rawHistory = completedPhasedChanges().list().ofMaxSize(3);
-    final var maybePhaseList = phases().list().ofMinSize(1).ofMaxSize(4).optional();
-    return Combinators.combine(rawHistory, maybePhaseList, nanoPrecisionInstants())
-        .flatAs(
-            (raw, maybePhases, pendingStartedAt) -> {
-              final List<CompletedPhasedChange> history = new ArrayList<>();
-              for (int i = 0; i < raw.size(); i++) {
-                final var c = raw.get(i);
-                history.add(
-                    new CompletedPhasedChange(i, c.status(), c.startedAt(), c.completedAt()));
-              }
-              final long pendingId = Math.max(history.size(), PhasedChangePlan.INITIAL_PLAN_ID);
-              if (maybePhases.isEmpty()) {
-                return Arbitraries.just(new PhasedChangeState(pendingId, Map.of(), history));
-              }
-              final var phaseList = maybePhases.get();
-              return Arbitraries.integers()
-                  .between(0, phaseList.size() - 1)
-                  .map(
-                      index -> {
-                        final var plan =
-                            new PhasedChangePlan(pendingId, index, phaseList, pendingStartedAt);
-                        return new PhasedChangeState(
-                            pendingId + 1, Map.of(pendingId, plan), history);
-                      });
-            });
+    final var rawHistory = lists(completedPhasedChanges()).maxSize(3);
+    final var maybePhaseList = optional(lists(phases()).minSize(1).maxSize(4));
+    return composite(
+        tc -> {
+          final List<CompletedPhasedChange> history = new ArrayList<>();
+          final var raw = tc.draw(rawHistory);
+          for (int i = 0; i < raw.size(); i++) {
+            final var c = raw.get(i);
+            history.add(new CompletedPhasedChange(i, c.status(), c.startedAt(), c.completedAt()));
+          }
+          final long pendingId = Math.max(history.size(), PhasedChangePlan.INITIAL_PLAN_ID);
+          final var maybePhases = tc.draw(maybePhaseList);
+          if (maybePhases.isEmpty()) {
+            return new PhasedChangeState(pendingId, Map.of(), history);
+          }
+          final var phaseList = maybePhases.get();
+          final var index = tc.draw(integers().min(0).max(phaseList.size() - 1));
+          final var plan =
+              new PhasedChangePlan(pendingId, index, phaseList, tc.draw(nanoPrecisionInstants()));
+          return new PhasedChangeState(pendingId + 1, Map.of(pendingId, plan), history);
+        });
   }
 
-  @Provide
-  Arbitrary<Phase> phases() {
-    final Arbitrary<Phase> globalPhases =
-        globalChangeOperations().list().ofMaxSize(3).<Phase>map(GlobalPhase::new);
+  public static Generator<Phase> phases() {
+    final Generator<Phase> globalPhases =
+        lists(globalChangeOperations()).maxSize(3).<Phase>map(GlobalPhase::new);
     // Each group's own operation list must be non-empty: PartitionGroupPhase.sequential builds an
     // OperationGraph per group, and OperationGraph.of rejects an empty one -- the same invariant
     // operationGraphs() below already respects.
-    final Arbitrary<Phase> sequentialGroupPhases =
-        Arbitraries.maps(
-                partitionGroupIds(),
-                partitionGroupChangeOperations().list().ofMinSize(1).ofMaxSize(3))
-            .ofMaxSize(3)
+    final Generator<Phase> sequentialGroupPhases =
+        maps(partitionGroupIds(), lists(partitionGroupChangeOperations()).minSize(1).maxSize(3))
+            .maxSize(3)
             .<Phase>map(PartitionGroupPhase::sequential);
-    final Arbitrary<Phase> graphGroupPhases =
-        Arbitraries.maps(partitionGroupIds(), operationGraphs())
-            .ofMaxSize(3)
+    final Generator<Phase> graphGroupPhases =
+        maps(partitionGroupIds(), operationGraphs())
+            .maxSize(3)
             .<Phase>map(PartitionGroupPhase::new);
-    return Arbitraries.oneOf(globalPhases, sequentialGroupPhases, graphGroupPhases);
+    return oneOf(globalPhases, sequentialGroupPhases, graphGroupPhases);
   }
 
   /**
@@ -360,13 +325,9 @@ public final class ClusterTopologyDomain extends DomainContextBase {
    * construction, with no rejection sampling needed to keep {@link OperationGraph#of} from
    * throwing.
    */
-  @Provide
-  Arbitrary<OperationGraph> operationGraphs() {
-    return partitionGroupChangeOperations()
-        .list()
-        .ofMinSize(1)
-        .ofMaxSize(4)
-        .flatMap(ClusterTopologyDomain::operationGraphOf);
+  public static Generator<OperationGraph> operationGraphs() {
+    final var operations = lists(partitionGroupChangeOperations()).minSize(1).maxSize(4);
+    return composite(tc -> operationGraphOf(tc, tc.draw(operations)));
   }
 
   /**
@@ -375,40 +336,25 @@ public final class ClusterTopologyDomain extends DomainContextBase {
    * different arms of {@code PlannedOperation}'s oneof, and a round-trip property fed only
    * partition-group operations would never exercise the other one.
    */
-  @Provide
-  Arbitrary<OperationGraph> globalOperationGraphs() {
-    return globalChangeOperations()
-        .list()
-        .ofMinSize(1)
-        .ofMaxSize(4)
-        .flatMap(ClusterTopologyDomain::operationGraphOf);
+  public static Generator<OperationGraph> globalOperationGraphs() {
+    final var operations = lists(globalChangeOperations()).minSize(1).maxSize(4);
+    return composite(tc -> operationGraphOf(tc, tc.draw(operations)));
   }
 
-  private static Arbitrary<OperationGraph> operationGraphOf(
-      final List<? extends ClusterConfigurationChangeOperation> operations) {
-    final List<Arbitrary<Set<Integer>>> dependsOnPerIndex = new ArrayList<>();
+  private static OperationGraph operationGraphOf(
+      final TestCase tc, final List<? extends ClusterConfigurationChangeOperation> operations) {
+    final SortedMap<OperationId, OperationGraph.PlannedOperation> planned = new TreeMap<>();
     for (int i = 0; i < operations.size(); i++) {
-      dependsOnPerIndex.add(
-          i == 0
-              ? Arbitraries.just(Set.of())
-              : Arbitraries.integers().between(0, i - 1).set().ofMaxSize(i));
+      final Set<Integer> dependsOnIndexes =
+          i == 0 ? Set.of() : tc.draw(sets(integers().min(0).max(i - 1)).maxSize(i));
+      final SortedSet<OperationId> dependsOn = new TreeSet<>();
+      for (final var index : dependsOnIndexes) {
+        dependsOn.add(OperationId.of(index));
+      }
+      planned.put(
+          OperationId.of(i), new OperationGraph.PlannedOperation(operations.get(i), dependsOn));
     }
-    return Combinators.combine(dependsOnPerIndex)
-        .as(
-            dependsOnByIndex -> {
-              final SortedMap<OperationId, OperationGraph.PlannedOperation> planned =
-                  new TreeMap<>();
-              for (int i = 0; i < operations.size(); i++) {
-                final SortedSet<OperationId> dependsOn = new TreeSet<>();
-                for (final var index : dependsOnByIndex.get(i)) {
-                  dependsOn.add(OperationId.of(index));
-                }
-                planned.put(
-                    OperationId.of(i),
-                    new OperationGraph.PlannedOperation(operations.get(i), dependsOn));
-              }
-              return OperationGraph.of(planned);
-            });
+    return OperationGraph.of(planned);
   }
 
   /**
@@ -417,138 +363,77 @@ public final class ClusterTopologyDomain extends DomainContextBase {
    * graph, which is the shape every real plan has and the one round-trip/merge/decode tests need to
    * see exercised.
    */
-  @Provide
-  Arbitrary<DependencyChangePlan> dependencyChangePlans() {
+  public static Generator<DependencyChangePlan> dependencyChangePlans() {
     return dependencyChangePlansOver(operationGraphs());
   }
 
-  @Provide
-  Arbitrary<DependencyChangePlan> globalDependencyChangePlans() {
+  public static Generator<DependencyChangePlan> globalDependencyChangePlans() {
     return dependencyChangePlansOver(globalOperationGraphs());
   }
 
-  private Arbitrary<DependencyChangePlan> dependencyChangePlansOver(
-      final Arbitrary<OperationGraph> graphs) {
-    final var id = Arbitraries.longs().between(0, 500);
-    final var status = Arbitraries.of(ClusterChangePlan.Status.values());
-    return Combinators.combine(id, status, nanoPrecisionInstants(), graphs)
-        .as(PartialDependencyChangePlan::new)
-        .flatMap(ClusterTopologyDomain::withCompletedOperations);
+  private static Generator<DependencyChangePlan> dependencyChangePlansOver(
+      final Generator<OperationGraph> graphs) {
+    final var status = sampledFrom(ClusterChangePlan.Status.values());
+    return composite(
+        tc -> {
+          final long id = tc.draw(longs().min(0).max(500));
+          final var planStatus = tc.draw(status);
+          final var startedAt = tc.draw(nanoPrecisionInstants());
+          final var graph = tc.draw(graphs);
+          final var ids = new ArrayList<>(graph.operations().keySet());
+          final var pickedIds = tc.draw(sets(sampledFrom(ids)).maxSize(ids.size()));
+          // An operation counts as complete only once everything it depends on is: no
+          // execution can produce any other combination, and DependencyChangePlan rejects
+          // one outright. Ids ascend with dependency order (see operationGraphs()), so a
+          // single ascending pass suffices -- a picked operation whose dependencies were not
+          // themselves picked is simply not reached yet, and is dropped.
+          //
+          // Each completion gets its own instant, derived from the operation id so it stays
+          // reproducible. Reusing startedAt for all of them would make every generated plan
+          // share the shape an encoder bug produces -- writing startedAt in place of each
+          // operation's real completion instant -- and the round-trip property could then
+          // never tell the bug from the fixture.
+          final SortedMap<OperationId, Instant> completed = new TreeMap<>();
+          for (final var operationId : ids) {
+            final var plannedOperation = graph.operations().get(operationId);
+            if (pickedIds.contains(operationId)
+                && completed.keySet().containsAll(plannedOperation.dependsOn())) {
+              completed.put(operationId, startedAt.plusMillis(1L + operationId.value()));
+            }
+          }
+          return new DependencyChangePlan(id, planStatus, startedAt, graph, completed);
+        });
   }
 
-  private static Arbitrary<DependencyChangePlan> withCompletedOperations(
-      final PartialDependencyChangePlan partial) {
-    final var ids = new ArrayList<>(partial.graph().operations().keySet());
-    return Arbitraries.of(ids)
-        .set()
-        .ofMaxSize(ids.size())
-        .map(
-            pickedIds -> {
-              // An operation counts as complete only once everything it depends on is: no
-              // execution can produce any other combination, and DependencyChangePlan rejects
-              // one outright. Ids ascend with dependency order (see operationGraphs()), so a
-              // single ascending pass suffices -- a picked operation whose dependencies were not
-              // themselves picked is simply not reached yet, and is dropped.
-              //
-              // Each completion gets its own instant, derived from the operation id so it stays
-              // reproducible. Reusing startedAt for all of them would make every generated plan
-              // share the shape an encoder bug produces -- writing startedAt in place of each
-              // operation's real completion instant -- and the round-trip property could then
-              // never tell the bug from the fixture.
-              final SortedMap<OperationId, Instant> completed = new TreeMap<>();
-              for (final var operationId : ids) {
-                final var planned = partial.graph().operations().get(operationId);
-                if (pickedIds.contains(operationId)
-                    && completed.keySet().containsAll(planned.dependsOn())) {
-                  completed.put(
-                      operationId, partial.startedAt().plusMillis(1L + operationId.value()));
-                }
-              }
-              return new DependencyChangePlan(
-                  partial.id(), partial.status(), partial.startedAt(), partial.graph(), completed);
-            });
+  public static Generator<CompletedPhasedChange> completedPhasedChanges() {
+    final var status = sampledFrom(PhasedChangePlanStatus.values());
+    return composite(
+        tc ->
+            new CompletedPhasedChange(
+                tc.draw(longs().min(0).max(500)),
+                tc.draw(status),
+                tc.draw(nanoPrecisionInstants()),
+                tc.draw(nanoPrecisionInstants())));
   }
 
-  @Provide
-  Arbitrary<CompletedPhasedChange> completedPhasedChanges() {
-    final var id = Arbitraries.longs().between(0, 500);
-    final var status = Arbitraries.of(PhasedChangePlanStatus.values());
-    return Combinators.combine(id, status, nanoPrecisionInstants(), nanoPrecisionInstants())
-        .as(
-            (planId, s, startedAt, completedAt) ->
-                new CompletedPhasedChange(planId, s, startedAt, completedAt));
+  public static Generator<GlobalChangeOperation> globalChangeOperations() {
+    return DERIVED.forType(GlobalChangeOperation.class);
   }
 
-  @Provide
-  Arbitrary<GlobalChangeOperation> globalChangeOperations() {
-    return Arbitraries.of(
-            ReflectUtil.implementationsOfSealedInterface(GlobalChangeOperation.class).toList())
-        .flatMap(Arbitraries::forType);
+  public static Generator<PartitionGroupOperation> partitionGroupChangeOperations() {
+    return DERIVED.forType(PartitionGroupOperation.class);
   }
 
-  @Provide
-  Arbitrary<PartitionGroupOperation> partitionGroupChangeOperations() {
-    return Arbitraries.of(
-            ReflectUtil.implementationsOfSealedInterface(PartitionGroupOperation.class).toList())
-        .flatMap(Arbitraries::forType);
+  public static Generator<String> partitionGroupIds() {
+    return fromRegex("[a-zA-Z]{1,10}");
   }
 
-  @Provide
-  Arbitrary<String> partitionGroupIds() {
-    return Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(10);
+  /** Nanosecond-precision instants. */
+  public static Generator<Instant> nanoPrecisionInstants() {
+    return composite(
+        tc ->
+            Instant.ofEpochSecond(
+                tc.draw(longs().min(0).max(4_000_000_000L)),
+                tc.draw(integers().min(0).max(999_999_999))));
   }
-
-  /** Nanosecond-precision instants. The default precision in jqwik is seconds. */
-  @Provide
-  Arbitrary<Instant> nanoPrecisionInstants() {
-    return DateTimes.instants()
-        .between(Instant.ofEpochSecond(0), Instant.ofEpochSecond(4_000_000_000L))
-        .ofPrecision(ChronoUnit.NANOS);
-  }
-
-  @SuppressWarnings("unused")
-  static class SortedMapArbitraryProvider implements ArbitraryProvider {
-    @Override
-    public boolean canProvideFor(final TypeUsage targetType) {
-      return targetType.isAssignableFrom(SortedMap.class);
-    }
-
-    @Override
-    public Set<Arbitrary<?>> provideFor(
-        final TypeUsage targetType, final SubtypeProvider subtypeProvider) {
-      final TypeUsage keyType = targetType.getTypeArgument(0);
-      final TypeUsage valueType = targetType.getTypeArgument(1);
-
-      return subtypeProvider
-          .resolveAndCombine(keyType, valueType)
-          .map(
-              arbitraries -> {
-                final Arbitrary<?> keyArbitrary = arbitraries.get(0);
-                final Arbitrary<?> valueArbitrary = arbitraries.get(1);
-                return Arbitraries.maps(keyArbitrary, valueArbitrary).map(TreeMap::new);
-              })
-          .collect(CollectorsSupport.toLinkedHashSet());
-    }
-  }
-
-  @SuppressWarnings("unused")
-  static class SortedSetArbitraryProvider implements ArbitraryProvider {
-    @Override
-    public boolean canProvideFor(final TypeUsage targetType) {
-      return targetType.isAssignableFrom(SortedSet.class);
-    }
-
-    @Override
-    public Set<Arbitrary<?>> provideFor(
-        final TypeUsage targetType, final SubtypeProvider subtypeProvider) {
-      final TypeUsage elementType = targetType.getTypeArgument(0);
-      final Set<Arbitrary<?>> elementArbitraries = subtypeProvider.apply(elementType);
-      return elementArbitraries.stream()
-          .map(arbitrary -> arbitrary.set().map(TreeSet::new))
-          .collect(CollectorsSupport.toLinkedHashSet());
-    }
-  }
-
-  private record PartialDependencyChangePlan(
-      long id, ClusterChangePlan.Status status, Instant startedAt, OperationGraph graph) {}
 }

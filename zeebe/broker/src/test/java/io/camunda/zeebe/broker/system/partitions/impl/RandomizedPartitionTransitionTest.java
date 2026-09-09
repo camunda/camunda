@@ -7,6 +7,11 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import static dev.hegel.Generators.booleans;
+import static dev.hegel.Generators.composite;
+import static dev.hegel.Generators.forType;
+import static dev.hegel.Generators.integers;
+import static dev.hegel.Generators.lists;
 import static java.lang.String.format;
 import static java.util.List.of;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -16,6 +21,9 @@ import static org.mockito.Mockito.framework;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.hegel.Generator;
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition.CancelledPartitionTransition;
@@ -36,15 +44,7 @@ import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.Combinators;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.GenerationMode;
-import net.jqwik.api.Property;
-import net.jqwik.api.Provide;
-import net.jqwik.api.lifecycle.AfterTry;
-import net.jqwik.api.lifecycle.BeforeTry;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,17 +52,26 @@ public class RandomizedPartitionTransitionTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(RandomizedPartitionTransitionTest.class);
 
-  private ActorScheduler actorScheduler;
-  private TestActor actor;
+  private static final Generator<TestOperation> TEST_OPERATION =
+      composite(
+          tc ->
+              createTestOperation(
+                  tc.draw(forType(TestOperationKind.class)), tc.draw(forType(Role.class))));
 
-  @BeforeTry
-  public void beforeTry() {
-    actorScheduler = ActorScheduler.newActorScheduler().build();
-    actorScheduler.start();
-
-    actor = new TestActor();
-    actorScheduler.submitActor(actor);
-  }
+  /**
+   * Up to four operations of which at least one requests a transition, followed by a final catch up
+   * so that every scheduled transition runs to its end.
+   */
+  private static final Generator<List<TestOperation>> TEST_OPERATIONS =
+      composite(
+          tc -> {
+            final var operations = new ArrayList<>(tc.draw(lists(TEST_OPERATION).maxSize(3)));
+            final var transition =
+                new RequestTransition(tc.draw(forType(Role.class)), tc.draw(booleans()));
+            operations.add(tc.draw(integers().min(0).max(operations.size())), transition);
+            operations.add(new CatchUpOperation());
+            return operations;
+          });
 
   /**
    * Verifies that during transitions at most one {@code StreamProcessor} is created. It sets up the
@@ -76,12 +85,10 @@ public class RandomizedPartitionTransitionTest {
    * The first step is there to manipulate execution order. In particular, the step will wait for a
    * countdown latch thus pausing transition execution. This in turn, allows scheduling successive
    * transition which cancel their predecessors
-   *
-   * @param operations the operations to run
    */
-  @Property(generation = GenerationMode.RANDOMIZED)
-  void atMostOneStreamProcessorIsRunningAtAnyTime(
-      @ForAll("testOperations") final List<TestOperation> operations) {
+  @HegelTest
+  void atMostOneStreamProcessorIsRunningAtAnyTime(final TestCase tc) {
+    final var operations = tc.draw(TEST_OPERATIONS, "operations");
     LOGGER.debug(
         format(
             "Testing property 'atMostOneStreamProcessorIsRunningAtAnyTime' on sequence %s",
@@ -107,10 +114,13 @@ public class RandomizedPartitionTransitionTest {
     context.setComponentHealthMonitor(mock(HealthMonitor.class));
 
     final var sut = new PartitionTransitionImpl(of(firstStep, streamProcessorStep));
-    sut.setConcurrencyControl(actor);
-    sut.updateTransitionContext(context);
+    runWithActor(
+        actor -> {
+          sut.setConcurrencyControl(actor);
+          sut.updateTransitionContext(context);
 
-    runOperations(operations, sut);
+          runOperations(operations, sut);
+        });
 
     assertThat(instanceTracker.getOpenedInstances())
         .describedAs("Active stream processors at end of transition sequence")
@@ -129,12 +139,10 @@ public class RandomizedPartitionTransitionTest {
    * The first step is there to manipulate execution order. In particular, the step will wait for a
    * countdown latch thus pausing transition execution. This in turn, allows scheduling successive
    * transition which cancel their predecessors
-   *
-   * @param operations the operations to run
    */
-  @Property(generation = GenerationMode.RANDOMIZED)
-  void atMostOneZeebeDbIsOpenAtAnyTime(
-      @ForAll("testOperations") final List<TestOperation> operations) {
+  @HegelTest
+  void atMostOneZeebeDbIsOpenAtAnyTime(final TestCase tc) {
+    final var operations = tc.draw(TEST_OPERATIONS, "operations");
     LOGGER.debug(
         format("Testing property 'atMostOneZeebeDbIsOpenAtAnyTime' on sequence %s", operations));
 
@@ -155,20 +163,32 @@ public class RandomizedPartitionTransitionTest {
     context.setStateController(new TestStateController(instanceTracker));
 
     final var sut = new PartitionTransitionImpl(of(firstStep, zeebeDbStep));
-    sut.setConcurrencyControl(actor);
-    sut.updateTransitionContext(context);
+    runWithActor(
+        actor -> {
+          sut.setConcurrencyControl(actor);
+          sut.updateTransitionContext(context);
 
-    runOperations(operations, sut);
+          runOperations(operations, sut);
+        });
 
     assertThat(instanceTracker.getOpenedInstances())
         .describedAs("Zeebe DB processes at end of transition sequence")
         .hasSizeLessThan(2);
   }
 
-  @AfterTry
-  public void afterTry() {
-    actorScheduler.stop();
-    framework().clearInlineMocks(); // prevent memory leaks from statically held mocks and stubbings
+  /** Every generated sequence runs on a fresh actor scheduler so that cases cannot interfere. */
+  private static void runWithActor(final Consumer<TestActor> test) {
+    final var actorScheduler = ActorScheduler.newActorScheduler().build();
+    actorScheduler.start();
+    final var actor = new TestActor();
+    actorScheduler.submitActor(actor);
+    try {
+      test.accept(actor);
+    } finally {
+      actorScheduler.stop();
+      // prevent memory leaks from statically held mocks and stubbings
+      framework().clearInlineMocks();
+    }
   }
 
   private void runOperations(
@@ -221,25 +241,7 @@ public class RandomizedPartitionTransitionTest {
     }
   }
 
-  @Provide
-  Arbitrary<List<TestOperation>> testOperations() {
-    final var kind = Arbitraries.of(TestOperationKind.class);
-    final var role = Arbitraries.of(RaftServer.Role.class);
-
-    final var operation = Combinators.combine(kind, role).as(this::createTestOperation);
-
-    return operation
-        .list()
-        .ofMaxSize(4)
-        .filter(list -> list.stream().anyMatch(RequestTransition.class::isInstance))
-        .map(
-            list -> {
-              list.add(new CatchUpOperation());
-              return list;
-            });
-  }
-
-  private TestOperation createTestOperation(
+  private static TestOperation createTestOperation(
       final TestOperationKind kind, final RaftServer.Role role) {
     switch (kind) {
       case TRANSITION_TO_ROLE_NO_PAUSE:

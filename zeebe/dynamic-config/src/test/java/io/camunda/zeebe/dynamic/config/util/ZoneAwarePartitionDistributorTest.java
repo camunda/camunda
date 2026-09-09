@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static dev.hegel.Generators.integers;
 import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
@@ -24,9 +27,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -284,11 +284,11 @@ final class ZoneAwarePartitionDistributorTest {
     assertThat(result).isEqualTo(expected);
   }
 
-  @Property(tries = 25)
-  void shouldEqualPlainRoundRobinForAnyFullyBareCluster(
-      @ForAll @IntRange(min = 2, max = 30) final int replicationFactor,
-      @ForAll @IntRange(min = 0, max = 30) final int extraBrokers,
-      @ForAll @IntRange(min = 1, max = 30) final int partitionCount) {
+  @HegelTest(testCases = 25)
+  void shouldEqualPlainRoundRobinForAnyFullyBareCluster(final TestCase tc) {
+    final int replicationFactor = tc.draw(integers().min(2).max(30), "replicationFactor");
+    final int extraBrokers = tc.draw(integers().min(0).max(30), "extraBrokers");
+    final int partitionCount = tc.draw(integers().min(1).max(30), "partitionCount");
     // given — two zones whose replicas sum to the replication factor, distinct priorities so the
     // zone-aware path would normally engage, and a fully bare cluster with at least RF brokers.
     final var zoneAReplicas = (replicationFactor + 1) / 2;

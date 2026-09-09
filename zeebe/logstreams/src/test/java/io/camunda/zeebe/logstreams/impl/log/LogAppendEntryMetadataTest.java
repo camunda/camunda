@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import static dev.hegel.Generators.sampledFrom;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.Generator;
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -17,20 +21,28 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Arrays;
 import java.util.List;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.Provide;
 
 final class LogAppendEntryMetadataTest {
 
-  @Property
-  void shouldCopyMetadata(
-      @ForAll("recordTypes") final RecordType recordType,
-      @ForAll("valueTypes") final ValueType valueType,
-      @ForAll("intents") final Intent intent) {
+  private static final Generator<RecordType> RECORD_TYPES =
+      sampledFrom(
+          Arrays.stream(RecordType.values()).filter(v -> v != RecordType.SBE_UNKNOWN).toList());
+  private static final Generator<ValueType> VALUE_TYPES =
+      sampledFrom(
+          Arrays.stream(ValueType.values()).filter(v -> v != ValueType.SBE_UNKNOWN).toList());
+  private static final Generator<Intent> INTENTS =
+      sampledFrom(
+          Intent.INTENT_CLASSES.stream()
+              .<Intent>flatMap(clazz -> Arrays.stream(clazz.getEnumConstants()))
+              .distinct()
+              .toList());
+
+  @HegelTest
+  void shouldCopyMetadata(final TestCase tc) {
     // given
+    final var recordType = tc.draw(RECORD_TYPES, "recordType");
+    final var valueType = tc.draw(VALUE_TYPES, "valueType");
+    final var intent = tc.draw(INTENTS, "intent");
     final var compatibleIntent = Intent.fromProtocolValue(valueType, intent.value());
     final var entries = List.of(createEntry(recordType, valueType, compatibleIntent));
 
@@ -49,26 +61,5 @@ final class LogAppendEntryMetadataTest {
     final var metadata =
         new RecordMetadata().recordType(recordType).valueType(valueType).intent(intent);
     return LogAppendEntry.of(metadata, new UnifiedRecordValue(0));
-  }
-
-  @Provide
-  Arbitrary<RecordType> recordTypes() {
-    return Arbitraries.of(
-        Arrays.stream(RecordType.values()).filter(v -> v != RecordType.SBE_UNKNOWN).toList());
-  }
-
-  @Provide
-  Arbitrary<ValueType> valueTypes() {
-    return Arbitraries.of(
-        Arrays.stream(ValueType.values()).filter(v -> v != ValueType.SBE_UNKNOWN).toList());
-  }
-
-  @Provide
-  Arbitrary<Intent> intents() {
-    return Arbitraries.of(
-        Intent.INTENT_CLASSES.stream()
-            .flatMap(clazz -> Arrays.stream(clazz.getEnumConstants()))
-            .distinct()
-            .toList());
   }
 }
