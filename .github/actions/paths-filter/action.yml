@@ -279,6 +279,17 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-scripts.outputs.scripts-change == 'true'
       }}
+  gradle-changes:
+    description: Output whether Gradle validation should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.gradle-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -333,6 +344,14 @@ runs:
           - '**/pom.xml'
           - '.mvn/**'
           - '.ci/db-versions.yml'
+
+        gradle-change:
+          - '**/*.gradle.kts'
+          - 'gradle.properties'
+          - 'gradlew'
+          - 'gradlew.bat'
+          - 'gradle/**'
+          - 'buildSrc/**'
 
         validate-pom-metadata-extra-change:
           - 'mvnw'
