@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Load-test report command entrypoint."""
+"""Load-test report command entrypoint.
+
+Run `make -C load-tests/docs/scripts/load_test_report check` from the repository
+root to validate local changes.
+"""
 
 from __future__ import annotations
 
