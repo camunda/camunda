@@ -2,9 +2,11 @@
 #              and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and
 #              REST flavors (exporters disabled). After a 15-minute warmup, profiles the next 30
 #              minutes of each variant via async-profiler. After a 3-hour soak: snapshots metrics
-#              as a GitHub artifact, posts a side-by-side summary table (with flamegraph links) to
-#              Slack (the scheduled run always posts; a manual run only when opted in via the
-#              post-to-slack input), then immediately deletes the namespaces to reduce cost.
+#              as a GitHub artifact, persists metrics and flamegraphs to the
+#              camunda-benchmark-load-test-results-prod GCS bucket for long-term retention, posts a
+#              side-by-side summary table (with flamegraph links) to Slack (the scheduled run always
+#              posts; a manual run only when opted in via the post-to-slack input), then immediately
+#              deletes the namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
 #              Each variant's full lifecycle (setup, warmup, profile, soak, collect-metrics,
 #              cleanup) is delegated to the reusable stress-load-test.yml workflow via a
@@ -193,6 +195,10 @@ jobs:
         with:
           sparse-checkout: .github
           persist-credentials: false
+          # clean: false -- checkout defaults to `git clean -ffdx`, which would delete the
+          # metrics-*.json/variants.json files the steps above just wrote into $GITHUB_WORKSPACE
+          # before the GCS upload step below gets to read them.
+          clean: false
       - name: Download flamegraph artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true # profiling is best-effort; a run with no flamegraphs still persists its metrics
