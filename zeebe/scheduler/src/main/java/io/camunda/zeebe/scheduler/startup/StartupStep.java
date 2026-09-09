@@ -28,6 +28,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
  *   <li>Implementation classes can assume that methods of this interface are never called
  *       concurrently, unless {@link StartupStep#isInterruptible()} is true, in which case shutdown
  *       can be called while startup is still running.
+ *   <li>Shutdown may be called after a startup that failed - whether it returned a failed future or
+ *       threw - so it must tolerate context resources this step would have set being absent
  * </ul>
  *
  * @param <CONTEXT> context object for the startup and shutdown steps. During startup this context
