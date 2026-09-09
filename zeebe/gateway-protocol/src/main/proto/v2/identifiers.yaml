@@ -239,9 +239,9 @@ components:
         activated with a lease, and passed back on fenced job commands — and on
         agent-instance creation/updates as `jobLease` — to prove the caller holds the
         current lease. The token is opaque: clients may rely on its presence and equality
-        only, and must never construct, parse, compare, or otherwise interpret it. It
-        cannot be minted client-side; only the engine produces it, exactly once per leased
-        activation, and clients must not depend on any particular internal format.
+        only, and must never construct, parse, or otherwise interpret it beyond equality
+        checks. It cannot be minted client-side; only the engine produces it, exactly once
+        per leased activation, and clients must not depend on any particular internal format.
       type: string
       format: JobLeaseToken
       x-semantic-type: JobLeaseToken
