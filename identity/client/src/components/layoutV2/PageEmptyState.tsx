@@ -7,7 +7,7 @@
  */
 
 import { Button, EmptyState } from "@camunda/design-system";
-import { Plus } from "lucide-react";
+import { Plus } from "@camunda/design-system/icons";
 import { FC } from "react";
 import { documentationHref } from "src/components/documentationV2";
 import { useDocsUrl } from "../documentation/DocsUrlContext";

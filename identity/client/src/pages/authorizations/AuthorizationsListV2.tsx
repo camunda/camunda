@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "@camunda/design-system/icons";
 import { Button, EmptyState } from "@camunda/design-system";
 import { SearchResponse, usePagination } from "src/utility/api";
 import useTranslate from "src/utility/localization";

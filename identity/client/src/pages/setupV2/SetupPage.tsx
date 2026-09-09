@@ -9,7 +9,7 @@
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Heading, Separator } from "@camunda/design-system";
-import { UserCog } from "lucide-react";
+import { UserCog } from "@camunda/design-system/icons";
 import useTranslate from "src/utility/localization";
 import CamundaLogo from "src/assets/images/camunda.svg";
 import Page from "src/components/layoutV2/Page";

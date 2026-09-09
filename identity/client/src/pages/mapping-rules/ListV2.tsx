@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
 import { useQuery } from "@tanstack/react-query";

@@ -10,7 +10,7 @@ import { FC, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Button, Heading, Text } from "@camunda/design-system";
-import { ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Info } from "@camunda/design-system/icons";
 import { DocumentationLink } from "src/components/documentationV2";
 import TextField from "src/components/formV2/TextField";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

@@ -20,7 +20,7 @@ import {
   Input,
   Textarea,
 } from "@camunda/design-system";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "@camunda/design-system/icons";
 import useTranslate from "src/utility/localization";
 import FormField from "./FormField";
 
