@@ -35,6 +35,10 @@ import org.jspecify.annotations.NullMarked;
  * and the REST resolution path alike): {@link #close} therefore closes only the wrapped store,
  * never the pool or the semaphore.
  *
+ * <p>A chunk holds its permit for the whole duration of {@code delegate.resolve}, including any
+ * retries the delegate performs internally against a throttled backend (e.g. the AWS store's own
+ * retry strategy): one permit can therefore cover several backend requests over time, not just one.
+ *
  * <p>A store that already covers the whole request in one call ({@code namesPerCall() >=
  * names.size()}), or a semaphore of one permit, take the same single, un-hopped call the wrapped
  * store would have taken anyway; the fan-out below never runs for them. The one-permit case is
