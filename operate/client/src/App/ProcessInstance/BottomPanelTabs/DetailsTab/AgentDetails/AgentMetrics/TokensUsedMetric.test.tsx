@@ -85,9 +85,7 @@ describe('<TokensUsedMetric />', () => {
 
     const container = screen.getByRole('article', {name: 'Tokens Used'});
     expect(within(container).queryByText('Reasoning')).not.toBeInTheDocument();
-    expect(
-      within(container).queryByText('Cache read'),
-    ).not.toBeInTheDocument();
+    expect(within(container).queryByText('Cache read')).not.toBeInTheDocument();
     expect(
       within(container).queryByText('Cache write'),
     ).not.toBeInTheDocument();
