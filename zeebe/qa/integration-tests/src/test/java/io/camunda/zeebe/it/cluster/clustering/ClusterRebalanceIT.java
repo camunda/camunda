@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.clustering;
 
+import static io.camunda.zeebe.it.cluster.clustering.ClusterRebalanceTestUtil.awaitTerminalRebalance;
 import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.assertThatAllJobsCanBeCompleted;
 import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,39 +87,17 @@ final class ClusterRebalanceIT {
     return rebalanceClient.triggerRebalance();
   }
 
-  private TypedResponse<ClusterBalanceResponse> getRebalance() {
-    return rebalanceClient.getRebalance();
-  }
-
   private void awaitCompletedRebalance() {
-    Awaitility.await("the rebalance completes with at least one transferred partition")
-        .atMost(Duration.ofMinutes(1))
-        .untilAsserted(
-            () -> {
-              final var response = getRebalance();
-              assertThat(response.status())
-                  .as("rebalance status response: %s", response.body())
-                  .isEqualTo(HttpURLConnection.HTTP_OK);
-
-              final var body = response.body();
-              assertThat(body.getRunningRebalance())
-                  .as("no rebalance still running: %s", body)
-                  .isNull();
-              final var lastCompleted = body.getLastCompletedRebalance();
-              assertThat(lastCompleted)
-                  .as("a completed rebalance is present: %s", body)
-                  .isNotNull();
-              assertThat(lastCompleted.getResult())
-                  .as("rebalance result: %s", body)
-                  .isEqualTo(ClusterCompletedRebalance.ResultEnum.COMPLETED);
-              assertThat(lastCompleted.getPartitions())
-                  .as("rebalance partitions: %s", body)
-                  .isNotEmpty()
-                  .anyMatch(
-                      partition ->
-                          partition.getResult()
-                              == ClusterRebalanceOperationPartition.ResultEnum.TRANSFERRED);
-            });
+    final var completed = awaitTerminalRebalance(rebalanceClient, Duration.ofMinutes(1));
+    assertThat(completed.getResult())
+        .as("rebalance result: %s", completed)
+        .isEqualTo(ClusterCompletedRebalance.ResultEnum.COMPLETED);
+    assertThat(completed.getPartitions())
+        .as("rebalance partitions: %s", completed)
+        .isNotEmpty()
+        .anyMatch(
+            partition ->
+                partition.getResult() == ClusterRebalanceOperationPartition.ResultEnum.TRANSFERRED);
   }
 
   private void awaitBalancedTopology() {
