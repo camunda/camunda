@@ -23,10 +23,8 @@ tasks.named<ProcessResources>("processTestResources") {
   }
 }
 
-val optimizeClient = project(":optimize-client")
-
 tasks.named<ProcessResources>("processResources") {
-  from(optimizeClient.layout.projectDirectory.dir("dist")) { into("META-INF/resources") }
+  from(layout.settingsDirectory.dir("optimize/client/dist")) { into("META-INF/resources") }
 }
 
 sourceSets {

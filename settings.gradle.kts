@@ -69,7 +69,32 @@ fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
 val quickly = providers.gradleProperty("quickly").asEnabledFlag().getOrElse(false)
 
 rootProject.name = "camunda-8-root"
-gradle.rootProject { version = rootPomVersion }
+
+// Each project owns its version so isolated project configuration does not need to read mutable
+// state from the root project. Capture the parsed value as a plain String in the callback.
+rootPomVersion.let { versionFromMaven ->
+  gradle.lifecycle.beforeProject {
+    version = versionFromMaven
+  }
+}
+
+// Aggregator projects do not apply the Java conventions and therefore do not have the lifecycle
+// tasks used by the shared CI commands. Register local placeholders after each project has been
+// configured instead of mutating subprojects from the root project.
+gradle.lifecycle.afterProject {
+  if ("test" !in tasks.names) {
+    tasks.register("test") {
+      group = "verification"
+      description = "No-op placeholder (module has no unit tests)"
+    }
+  }
+  if ("it" !in tasks.names) {
+    tasks.register("it") {
+      group = "verification"
+      description = "No-op placeholder (module has no integration tests)"
+    }
+  }
+}
 
 dependencyResolutionManagement {
   // PREFER_SETTINGS: repositories declared here take precedence; subproject repositories are
@@ -1678,7 +1703,6 @@ include(":camunda-process-test-example")
 
 include(":camunda-load-tester")
 
-
 include(":zeebe-protocol")
 
 include(":zeebe-scheduler")
@@ -1755,8 +1779,6 @@ include(":camunda-search-client-elasticsearch")
 
 include(":zeebe-atomix-cluster")
 
-
-
 include(":zeebe-msgpack-value")
 
 include(":zeebe-qa-util")
@@ -1801,7 +1823,6 @@ include(":debug-cli")
 
 include(":zeebe-opensearch-exporter")
 
-
 include(":zeebe-msgpack-core")
 
 include(":camunda-db")
@@ -1813,7 +1834,6 @@ include(":zeebe-backup")
 include(":zeebe-backup-store-azure")
 
 include(":zeebe-logstreams")
-
 
 include(":camunda-microbenchmarks")
 
@@ -1827,7 +1847,6 @@ include(":zeebe-exporter-config-support")
 
 include(":zeebe-backup-store-gcs")
 
-
 include(":camunda-db-rdbms-schema")
 
 include(":camunda-search-client")
@@ -1835,7 +1854,6 @@ include(":camunda-search-client")
 include(":camunda-client-java")
 
 include(":rdbms-exporter")
-
 
 include(":operate-webjar")
 
@@ -1858,7 +1876,6 @@ include(":zeebe-build-tools")
 include(":zeebe-elasticsearch-exporter")
 
 include(":camunda-search-client-query-transformer")
-
 
 include(":camunda-archunit-tests")
 
@@ -1889,7 +1906,6 @@ include(":camunda-secret-store-gcp")
 include(":zeebe-rebalance")
 
 include(":zeebe-test-util")
-
 
 include(":camunda-gateway-mapping-http")
 
@@ -1970,7 +1986,6 @@ project(":camunda-process-test-example").projectDir = file("testing/camunda-proc
 
 project(":camunda-load-tester").projectDir = file("load-tests/load-tester")
 
-
 project(":zeebe-protocol").projectDir = file("zeebe/protocol")
 
 project(":zeebe-scheduler").projectDir = file("zeebe/scheduler")
@@ -2044,8 +2059,6 @@ project(":camunda-search-client-elasticsearch").projectDir =
 
 project(":zeebe-atomix-cluster").projectDir = file("zeebe/atomix/cluster")
 
-
-
 project(":zeebe-msgpack-value").projectDir = file("zeebe/msgpack-value")
 
 project(":zeebe-qa-util").projectDir = file("zeebe/qa/util")
@@ -2084,7 +2097,6 @@ project(":zeebe-feel-tagged-parameters").projectDir = file("zeebe/feel-tagged-pa
 
 project(":zeebe-opensearch-exporter").projectDir = file("zeebe/exporters/opensearch-exporter")
 
-
 project(":zeebe-msgpack-core").projectDir = file("zeebe/msgpack-core")
 
 project(":camunda-db").projectDir = file("db")
@@ -2096,7 +2108,6 @@ project(":zeebe-backup").projectDir = file("zeebe/backup")
 project(":zeebe-backup-store-azure").projectDir = file("zeebe/backup-stores/azure")
 
 project(":zeebe-logstreams").projectDir = file("zeebe/logstreams")
-
 
 project(":camunda-microbenchmarks").projectDir = file("microbenchmarks")
 
@@ -2110,7 +2121,6 @@ project(":zeebe-exporter-config-support").projectDir = file("zeebe/exporter-conf
 
 project(":zeebe-backup-store-gcs").projectDir = file("zeebe/backup-stores/gcs")
 
-
 project(":camunda-db-rdbms-schema").projectDir = file("db/rdbms-schema")
 
 project(":camunda-search-client").projectDir = file("search/search-client")
@@ -2118,7 +2128,6 @@ project(":camunda-search-client").projectDir = file("search/search-client")
 project(":camunda-client-java").projectDir = file("clients/java")
 
 project(":rdbms-exporter").projectDir = file("zeebe/exporters/rdbms-exporter")
-
 
 project(":operate-webjar").projectDir = file("operate/client")
 
@@ -2142,7 +2151,6 @@ project(":zeebe-elasticsearch-exporter").projectDir = file("zeebe/exporters/elas
 
 project(":camunda-search-client-query-transformer").projectDir =
   file("search/search-client-query-transformer")
-
 
 project(":camunda-archunit-tests").projectDir = file("qa/archunit-tests")
 
@@ -2173,7 +2181,6 @@ project(":camunda-secret-store-gcp").projectDir = file("secret-store/secret-stor
 project(":zeebe-rebalance").projectDir = file("zeebe/rebalance")
 
 project(":zeebe-test-util").projectDir = file("zeebe/test-util")
-
 
 project(":camunda-gateway-mapping-http").projectDir = file("gateways/gateway-mapping-http")
 
