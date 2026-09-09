@@ -187,6 +187,7 @@ public class AdminClientConfigControllerTest {
             AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
     final var namedProvider = new OidcConfiguration();
     namedProvider.setIssuerUri("https://customer-idp.example.com");
+    namedProvider.setClientId("customer-client-id");
     final var providers = new OidcProvidersConfiguration();
     providers.setOidc(Map.of("entra", namedProvider));
     cslProperties.getAuthentication().setProviders(providers);
@@ -245,6 +246,47 @@ public class AdminClientConfigControllerTest {
     final Map<String, OidcConfiguration> oidcProvidersWithNullEntry = new HashMap<>();
     oidcProvidersWithNullEntry.put("entra", null);
     providers.setOidc(oidcProvidersWithNullEntry);
+    cslProperties.getAuthentication().setProviders(providers);
+    final var controller = new AdminClientConfigController(cslProperties, null);
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final var config = extractConfigFromResponse(performGetConfig());
+
+    // then
+    assertThat(config).containsEntry("isAdditionalIdpConfigured", "false");
+  }
+
+  @Test
+  void shouldNotSetAdditionalIdpConfiguredWhenOnlyFlatProviderIsConfigured() throws Exception {
+    // given: the flat authentication.oidc slot (the primary IdP) is fully configured, but no
+    // named provider exists
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    cslProperties.getAuthentication().getOidc().setClientId("primary-client-id");
+    cslProperties.getAuthentication().getOidc().setIssuerUri("https://primary-idp.example.com");
+    final var controller = new AdminClientConfigController(cslProperties, null);
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final var config = extractConfigFromResponse(performGetConfig());
+
+    // then
+    assertThat(config).containsEntry("isAdditionalIdpConfigured", "false");
+  }
+
+  @Test
+  void shouldNotSetAdditionalIdpConfiguredWhenNamedProviderHasNoClientId() throws Exception {
+    // given: a named provider deviates from the default configuration (e.g. a groups claim) but
+    // has no clientId, so it cannot back a working registration
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    final var namedProvider = new OidcConfiguration();
+    namedProvider.setGroupsClaim("groups");
+    final var providers = new OidcProvidersConfiguration();
+    providers.setOidc(Map.of("entra", namedProvider));
     cslProperties.getAuthentication().setProviders(providers);
     final var controller = new AdminClientConfigController(cslProperties, null);
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();

@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -54,22 +55,31 @@ public class AdminClientConfigController {
     final boolean isSaas = SaasConfigurationHelper.isSaas(cslProperties.getSaas());
     final boolean isNewDesignSystemEnabled =
         resolvedWebappConfiguration.resolveNewDesignSystemEnabled(isSaas);
+    final var namedProviders = namedProviders(cslProperties);
+    final boolean isAdditionalIdpConfigured = isAdditionalIdpConfigured(namedProviders);
 
     LOG.info(
         "Admin new design system resolved to {} (explicit override={}, isSaas={})",
         isNewDesignSystemEnabled,
         resolvedWebappConfiguration.getNewDesignSystemEnabled(),
         isSaas);
+    LOG.info(
+        "Admin additional IdP resolved to {} (namedProviders={})",
+        isAdditionalIdpConfigured,
+        namedProviders.keySet());
 
     objectMapper = new ObjectMapper();
-    clientConfigAsJS = generateClientConfig(cslProperties, isNewDesignSystemEnabled);
+    clientConfigAsJS =
+        generateClientConfig(cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured);
   }
 
   private String generateClientConfig(
       final CamundaSecurityLibraryProperties cslProperties,
-      final boolean isNewDesignSystemEnabled) {
+      final boolean isNewDesignSystemEnabled,
+      final boolean isAdditionalIdpConfigured) {
     try {
-      final Map<String, Object> config = createConfigMap(cslProperties, isNewDesignSystemEnabled);
+      final Map<String, Object> config =
+          createConfigMap(cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -80,7 +90,8 @@ public class AdminClientConfigController {
 
   private Map<String, Object> createConfigMap(
       final CamundaSecurityLibraryProperties cslProperties,
-      final boolean isNewDesignSystemEnabled) {
+      final boolean isNewDesignSystemEnabled,
+      final boolean isAdditionalIdpConfigured) {
     final var config = new java.util.HashMap<String, Object>();
     final var saasConfiguration = cslProperties.getSaas();
 
@@ -88,8 +99,7 @@ public class AdminClientConfigController {
     config.put(IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(cslProperties)));
     config.put(
         IS_TENANTS_API_ENABLED, String.valueOf(cslProperties.getMultiTenancy().isApiEnabled()));
-    config.put(
-        IS_ADDITIONAL_IDP_CONFIGURED, String.valueOf(isAdditionalIdpConfigured(cslProperties)));
+    config.put(IS_ADDITIONAL_IDP_CONFIGURED, String.valueOf(isAdditionalIdpConfigured));
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
     config.put(ID_PATTERN, cslProperties.getIdValidationPattern());
@@ -104,15 +114,19 @@ public class AdminClientConfigController {
     return AuthenticationMethod.OIDC.equals(cslProperties.getAuthentication().getMethod());
   }
 
-  private boolean isAdditionalIdpConfigured(final CamundaSecurityLibraryProperties cslProperties) {
+  private static Map<String, OidcConfiguration> namedProviders(
+      final CamundaSecurityLibraryProperties cslProperties) {
     final var providers = cslProperties.getAuthentication().getProviders();
     final var namedProviders = providers != null ? providers.getOidc() : null;
-    if (namedProviders == null) {
-      return false;
-    }
+    return namedProviders != null ? namedProviders : Map.of();
+  }
+
+  // Only the named providers.oidc.* slot counts (the BYOIDP additional-IdP surface); the flat
+  // authentication.oidc block is the primary IdP and is intentionally excluded.
+  private boolean isAdditionalIdpConfigured(final Map<String, OidcConfiguration> namedProviders) {
     return namedProviders.values().stream()
         .filter(Objects::nonNull)
-        .anyMatch(OidcConfiguration::isAnyPropertySet);
+        .anyMatch(oidc -> StringUtils.hasText(oidc.getClientId()));
   }
 
   private boolean isCamundaGroupsEnabled(final CamundaSecurityLibraryProperties cslProperties) {
