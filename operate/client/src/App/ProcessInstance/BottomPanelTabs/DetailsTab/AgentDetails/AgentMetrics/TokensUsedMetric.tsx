@@ -52,20 +52,22 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
             </TokenBreakdown>
           )}
         </TokenBreakdownColumn>
-        <TokenBreakdownColumn>
-          {cacheReadTokens > 0 && (
-            <TokenBreakdown $dotColor="var(--cds-status-gray)">
-              <span>Cache read</span>
-              <span>{cacheReadTokens.toLocaleString()}</span>
-            </TokenBreakdown>
-          )}
-          {cacheCreationTokens > 0 && (
-            <TokenBreakdown $dotColor="var(--cds-status-gray)">
-              <span>Cache write</span>
-              <span>{cacheCreationTokens.toLocaleString()}</span>
-            </TokenBreakdown>
-          )}
-        </TokenBreakdownColumn>
+        {(cacheReadTokens > 0 || cacheCreationTokens > 0) && (
+          <TokenBreakdownColumn>
+            {cacheReadTokens > 0 && (
+              <TokenBreakdown $dotColor="var(--cds-status-gray)">
+                <span>Cache read</span>
+                <span>{cacheReadTokens.toLocaleString()}</span>
+              </TokenBreakdown>
+            )}
+            {cacheCreationTokens > 0 && (
+              <TokenBreakdown $dotColor="var(--cds-status-gray)">
+                <span>Cache write</span>
+                <span>{cacheCreationTokens.toLocaleString()}</span>
+              </TokenBreakdown>
+            )}
+          </TokenBreakdownColumn>
+        )}
       </TokenBreakdownContainer>
     </MetricCard>
   );
