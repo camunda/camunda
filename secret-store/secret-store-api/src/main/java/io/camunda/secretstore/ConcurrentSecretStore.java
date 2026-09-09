@@ -126,13 +126,21 @@ public final class ConcurrentSecretStore implements SecretStore {
           e);
     }
 
+    return drain(futures, names.size());
+  }
+
+  /**
+   * Collects every chunk's result once {@code futures} are all done, or throws the request's {@link
+   * #primaryFailure} if any chunk failed. Draining them all before deciding whether to fail loses
+   * nothing and keeps the failure the same shape a single unwrapped call would have thrown: one
+   * {@link SecretStoreUnavailableException} for the whole request. Later failures are attached as
+   * suppressed rather than dropped, so a caller inspecting the thrown exception can still see every
+   * chunk that failed, not just the first.
+   */
+  private static Map<String, SecretResolutionResult> drain(
+      final List<Future<Map<String, SecretResolutionResult>>> futures, final int nameCount) {
     final Map<String, SecretResolutionResult> results =
-        new LinkedHashMap<>((int) (names.size() / 0.75f) + 1);
-    // every future is already done by the time invokeAll returns, so draining them all before
-    // deciding whether to fail loses nothing and keeps the failure the same shape a single
-    // unwrapped call would have thrown: one SecretStoreUnavailableException for the whole request.
-    // Later failures are attached as suppressed rather than dropped, so a caller inspecting the
-    // thrown exception can still see every chunk that failed, not just the first.
+        new LinkedHashMap<>((int) (nameCount / 0.75f) + 1);
     final List<RuntimeException> failures = new ArrayList<>();
     for (final var future : futures) {
       try {
