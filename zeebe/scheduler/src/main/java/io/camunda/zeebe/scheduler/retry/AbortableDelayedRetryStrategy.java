@@ -12,6 +12,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.RetryDelayStrategy;
 import java.util.function.BooleanSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Retries an operation with delays between attempts. The first attempt runs immediately; retries
@@ -23,17 +25,27 @@ import java.util.function.BooleanSupplier;
  */
 public final class AbortableDelayedRetryStrategy implements RetryStrategy {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AbortableDelayedRetryStrategy.class);
+
   private final ActorControl actor;
   private final RetryDelayStrategy delayStrategy;
+  private final String operationName;
 
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier currentTerminateCondition;
   private OperationToRetry currentCallable;
+  private int retryCount;
 
   public AbortableDelayedRetryStrategy(
       final ActorControl actor, final RetryDelayStrategy delayStrategy) {
+    this(actor, delayStrategy, DEFAULT_OPERATION_NAME);
+  }
+
+  public AbortableDelayedRetryStrategy(
+      final ActorControl actor, final RetryDelayStrategy delayStrategy, final String operationName) {
     this.actor = actor;
     this.delayStrategy = delayStrategy;
+    this.operationName = operationName;
   }
 
   @Override
@@ -47,6 +59,7 @@ public final class AbortableDelayedRetryStrategy implements RetryStrategy {
     currentFuture = new CompletableActorFuture<>();
     currentTerminateCondition = terminateCondition;
     currentCallable = callable;
+    retryCount = 0;
     delayStrategy.reset();
 
     actor.run(this::run);
@@ -61,6 +74,8 @@ public final class AbortableDelayedRetryStrategy implements RetryStrategy {
       } else if (currentTerminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
       } else {
+        LOG.trace(
+            "Operation '{}' did not complete, scheduling retry {}", operationName, ++retryCount);
         backOff();
       }
     } catch (final Exception exception) {
