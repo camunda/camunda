@@ -225,3 +225,19 @@ func TestShouldParseDisableConnectorsFlagOnStart(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, settings.DisableConnectors)
 }
+
+func TestShouldParseNoBrowserFlagOnStart(t *testing.T) {
+	// given
+	oldArgs := os.Args
+	os.Args = []string{"c8run", "start", "--no-browser"}
+	t.Cleanup(func() {
+		os.Args = oldArgs
+	})
+
+	// when
+	settings, _, err := getBaseCommandSettings("start")
+
+	// then
+	require.NoError(t, err)
+	assert.True(t, settings.NoBrowser)
+}

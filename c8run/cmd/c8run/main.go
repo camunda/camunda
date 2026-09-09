@@ -75,12 +75,14 @@ Options:
   --extra-driver <path>     Copy a JDBC driver into the Camunda lib directory before startup (repeat per jar)
   --keystore <path>         Enable HTTPS with a TLS certificate (JKS format)
   --keystorePassword <pw>  Password for the provided keystore
+  --no-browser              Start Camunda 8 Run without opening a browser window
   --port <number>           Set the main Camunda port (default: 8080)
   --log-level <level>       Set log level (e.g., info, debug)
 
 Examples:
   %[1]s start
   %[1]s start --disable-connectors
+  %[1]s start --no-browser
   %[1]s start --config ./my-config.yaml
   %[1]s stop
 
@@ -173,6 +175,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.Config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.DisableConnectors, "disable-connectors", false, "Skips starting the bundled connectors runtime.")
+	startFlagSet.BoolVar(&settings.NoBrowser, "no-browser", false, "Skips opening a browser window after startup.")
 	startFlagSet.Var((*stringSliceFlag)(&settings.ExtraDrivers), "extra-driver", "Path to a JDBC driver jar to copy into the Camunda lib directory (repeatable).")
 	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
 	startFlagSet.IntVar(&settings.Port, "port", 8080, "Port to run Camunda on")
