@@ -195,3 +195,7 @@ Setting `postgresql.pooler.enabled` directly (e.g. via
 Camunda connected straight to the Cluster's `-rw` Service — the Pooler deploys but nothing
 routes through it.
 
+### Connection monitoring
+
+`PodMonitor`s are wired automatically for the Cluster's and (when enabled) the Pooler's own connection metrics — no separate toggle.
+
