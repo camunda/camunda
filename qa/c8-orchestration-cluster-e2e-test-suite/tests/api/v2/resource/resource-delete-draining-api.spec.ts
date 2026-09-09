@@ -68,14 +68,7 @@ async function startedInstanceOf(
   return res.json();
 }
 
-/**
- * Key of the history-deletion batch operation that acted on one process
- * instance, or undefined while none has been recorded yet.
- *
- * Matching on the item rather than diffing the batch-operation list is what
- * ties the assertion to this test: the API project runs four workers and other
- * specs create `DELETE_PROCESS_INSTANCE` operations of their own.
- */
+// Matched on the item, since parallel specs create DELETE_PROCESS_INSTANCE too.
 async function historyBatchOperationKeyFor(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -90,10 +83,6 @@ async function historyBatchOperationKeyFor(
   return items.length === 0 ? undefined : String(items[0]!.batchOperationKey);
 }
 
-/**
- * Number of partitions the cluster runs, so a test can start enough
- * instances to cover all of them.
- */
 async function partitionsCount(request: APIRequestContext): Promise<number> {
   const res = await request.get(buildUrl('/topology'), {
     headers: jsonHeaders(),
@@ -601,10 +590,7 @@ test.describe('Process Definition Draining Deletion API', () => {
       extendedAssertionOptions,
     );
 
-    // The purge runs as a batch operation that has to reach COMPLETED, or
-    // history lingers with nothing left to retry. The operation is identified
-    // by the item recorded against this test's own instance, so a parallel
-    // spec's history deletion cannot stand in for it.
+    // Must reach COMPLETED, or history lingers with nothing left to retry.
     await expect(async () => {
       const batchOperationKey = await historyBatchOperationKeyFor(
         request,

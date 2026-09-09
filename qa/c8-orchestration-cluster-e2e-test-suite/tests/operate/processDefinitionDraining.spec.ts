@@ -39,11 +39,8 @@ const processDefinitionId = uniquePrefixedId('draining-ui');
 
 let processInstanceKey: string;
 
-/**
- * Opens Operate and waits for its shell. Operate is unauthenticated per test on
- * this branch, so the login has to happen before any app chrome exists; a slow
- * app start is retried rather than failing a test before it asserts anything.
- */
+// Operate is unauthenticated per test on this branch, so the login has to come
+// before any app chrome exists.
 async function openOperateHome(
   page: Page,
   loginPage: {login: (user: string, password: string) => Promise<void>},
