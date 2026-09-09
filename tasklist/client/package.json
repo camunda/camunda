@@ -36,7 +36,7 @@
     "react-router": "7.18.3",
     "react-transition-group": "4.4.5",
     "sass": "1.97.3",
-    "styled-components": "6.4.1",
+    "styled-components": "6.4.4",
     "ts-pattern": "5.9.0",
     "zod": "4.3.6"
   },
