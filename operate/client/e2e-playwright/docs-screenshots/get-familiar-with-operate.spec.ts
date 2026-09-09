@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
-  mockIncidentsByError,
-  mockProcessDefinitionStatistics,
+  mockHealthyIncidentsByError,
+  mockHealthyProcessDefinitionStatistics,
   mockResponses as mockDashboardResponses,
 } from '../mocks/dashboard.mocks';
 
@@ -38,12 +39,13 @@ test.describe('get familiar with operate', () => {
     await page.route(
       URL_API_PATTERN,
       mockDashboardResponses({
-        incidentsByError: mockIncidentsByError,
-        processDefinitionStatistics: mockProcessDefinitionStatistics,
+        incidentsByError: mockHealthyIncidentsByError,
+        processDefinitionStatistics: mockHealthyProcessDefinitionStatistics,
       }),
     );
 
     await dashboardPage.gotoDashboardPage();
+    await expect(page.getByText('Order process')).toBeVisible();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/get-familiar-with-operate/operate-introduction.png',
