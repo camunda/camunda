@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 
-public class PingConsoleRunnerIT {
+public class PingConsoleRunnerTest {
 
   private ApplicationContext applicationContext;
   private WireMockServer wireMockServer;

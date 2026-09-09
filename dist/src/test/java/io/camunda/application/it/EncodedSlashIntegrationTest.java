@@ -63,8 +63,8 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
-    classes = EncodedSlashIntegrationIT.TestConfig.class)
-class EncodedSlashIntegrationIT {
+    classes = EncodedSlashIntegrationTest.TestConfig.class)
+class EncodedSlashIntegrationTest {
 
   @LocalServerPort private int port;
 
