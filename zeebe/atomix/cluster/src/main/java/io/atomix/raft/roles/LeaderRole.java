@@ -619,6 +619,16 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     pauseGuard.resume();
   }
 
+  /**
+   * Completes once {@code memberId} has replicated up to {@code targetIndex}. The returned future
+   * must only be completed or cancelled on the Raft thread. See {@link
+   * LeaderAppender#awaitReplication}.
+   */
+  public CompletableFuture<Void> awaitReplication(final MemberId memberId, final long targetIndex) {
+    raft.checkThread();
+    return appender.awaitReplication(memberId, targetIndex);
+  }
+
   /** Whether the partition is currently frozen for a coordinated leadership transfer. */
   private boolean isPausedForTransfer() {
     return pauseGuard.isPaused();
