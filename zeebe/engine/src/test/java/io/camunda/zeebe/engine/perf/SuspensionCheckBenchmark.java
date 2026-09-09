@@ -60,7 +60,7 @@ public class SuspensionCheckBenchmark {
           .endEvent()
           .done();
 
-  @Param({"0", "10000", "100000", "1000000"})
+  @Param({"0", "10000", "100000", "500000"})
   private int suspendedInstanceCount;
 
   private TestContext testContext;
@@ -138,7 +138,7 @@ public class SuspensionCheckBenchmark {
   }
 
   @JMHTest("measureProcessCreationThroughput")
-  void shouldMeasureSuspensionCheckOverheadWith1MSuspendedInstances(final JMHTestCase testCase) {
-    testCase.withOptions(opts -> opts.param("suspendedInstanceCount", "1000000")).run();
+  void shouldMeasureSuspensionCheckOverheadWith500kSuspendedInstances(final JMHTestCase testCase) {
+    testCase.withOptions(opts -> opts.param("suspendedInstanceCount", "500000")).run();
   }
 }

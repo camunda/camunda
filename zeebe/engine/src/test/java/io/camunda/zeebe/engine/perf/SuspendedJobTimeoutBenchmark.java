@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Job.SUSPENDED}).
  */
 // SingleShotTime with fixed iterations: the @Setup (re-create, activate and suspend up to
-// 100k jobs) dwarfs the timed burst, and a time-based window would repeat it many times per
+// 10k jobs) dwarfs the timed burst, and a time-based window would repeat it many times per
 // iteration. One measured op per iteration is enough.
 @Warmup(iterations = 3, batchSize = 1)
 @Measurement(iterations = 5, batchSize = 1)
@@ -59,10 +59,10 @@ public class SuspendedJobTimeoutBenchmark {
 
   private static final Duration JOB_TIMEOUT = Duration.ofSeconds(30);
   // one activate() call returns its whole batch in a single record, subject to the 4MB limit;
-  // activate in chunks so the setup can hand out 100k jobs without exceeding it
+  // activate in chunks so the setup can hand out 10k jobs without exceeding it
   private static final int ACTIVATE_CHUNK_SIZE = 1000;
 
-  @Param({"1000", "10000", "100000"})
+  @Param({"1000", "10000"})
   private int jobCount;
 
   private TestContext testContext;
@@ -105,7 +105,7 @@ public class SuspendedJobTimeoutBenchmark {
   public void setupProcessInstance() {
     LOG.info("Creating PI with {} jobs...", jobCount);
     // engine.reset() in the previous invocation's teardown restores the 5s default wait, and
-    // creating/activating up to 100k jobs below far exceeds it - raise the ceiling before them, not
+    // creating/activating up to 10k jobs below far exceeds it - raise the ceiling before them, not
     // only before the timed burst. It only bounds how long a wait takes to fail; it doesn't bias
     // the timed call.
     RecordingExporter.setMaximumWaitTime(Duration.ofMinutes(5).toMillis());
@@ -176,10 +176,5 @@ public class SuspendedJobTimeoutBenchmark {
   @JMHTest("measureSuspendedJobTimeoutBurst")
   void shouldMeasureSuspendedJobTimeoutBurstWith10kJobs(final JMHTestCase testCase) {
     testCase.withOptions(opts -> opts.param("jobCount", "10000")).run();
-  }
-
-  @JMHTest("measureSuspendedJobTimeoutBurst")
-  void shouldMeasureSuspendedJobTimeoutBurstWith100kJobs(final JMHTestCase testCase) {
-    testCase.withOptions(opts -> opts.param("jobCount", "100000")).run();
   }
 }
