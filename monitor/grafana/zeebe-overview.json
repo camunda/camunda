@@ -255,11 +255,11 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "zeebe_health{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"} ",
+          "expr": "zeebe_health{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", partition=~\"$partition\", pod=~\"$pod\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
-          "legendFormat": "Partition {{pod}} {{partition}}",
+          "legendFormat": "{{zone}} Partition {{pod}} {{partition}}",
           "refId": "A"
         },
         {
@@ -267,7 +267,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} ",
+          "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", pod=~\"$pod\", partition=~\"$partition\"} ",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -291,6 +291,7 @@
           "options": {
             "include": {
               "names": [
+                "zone",
                 "partition",
                 "pod",
                 "Value #B",
@@ -304,8 +305,9 @@
           "options": {
             "excludeByName": {},
             "indexByName": {
-              "Value": 2,
-              "partition": 1,
+              "Value": 3,
+              "zone": 1,
+              "partition": 2,
               "pod": 0
             },
             "renameByName": {}
@@ -419,12 +421,12 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", cluster=~\"$cluster\", container!~\"curator|curl\", namespace=~\"$namespace\"}",
+          "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", cluster=~\"$cluster\", container!~\"curator|curl\", namespace=~\"$namespace\", zone=~\"$zone\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
           "interval": "",
-          "legendFormat": "{{pod}} restart",
+          "legendFormat": "{{zone}} {{pod}} restart",
           "refId": "A"
         }
       ],
@@ -493,13 +495,13 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+          "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", pod=~\"$pod\", partition=~\"$partition\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{pod}} p{{partition}} ",
+          "legendFormat": "{{zone}} {{pod}} p{{partition}} ",
           "refId": "A"
         }
       ],
@@ -614,9 +616,9 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "kube_pod_container_status_last_terminated_reason{cluster=~\"$cluster\", namespace=~\"$namespace\", container=\"zeebe\"}",
+          "expr": "kube_pod_container_status_last_terminated_reason{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", container=\"zeebe\"}",
           "interval": "",
-          "legendFormat": "{{ pod }}",
+          "legendFormat": "{{ zone }} {{ pod }}",
           "refId": "A"
         }
       ],
@@ -736,7 +738,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "(sum(rate(zeebe_dropped_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_received_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) ) * 100",
+          "expr": "(sum(rate(zeebe_dropped_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", partition=~\"$partition\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_received_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", partition=~\"$partition\"}[$__rate_interval])) by (partition) ) * 100",
           "interval": "",
           "legendFormat": "Partition {{partition}}",
           "refId": "A"
@@ -814,20 +816,20 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"skipped|processed\"}[$__rate_interval])) by (pod, partition, processor)",
+          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",zone=~\"$zone\",partition=~\"$partition\",pod=~\"$pod\", action=~\"skipped|processed\"}[$__rate_interval])) by (zone, pod, partition, processor)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{pod}}-{{partition}}-{{processor}}-processed",
+          "legendFormat": "{{zone}} {{pod}}-{{partition}}-{{processor}}-processed",
           "refId": "A"
         },
         {
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"written\"}[$__rate_interval])) by (pod, partition, processor)",
+          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",zone=~\"$zone\",partition=~\"$partition\",pod=~\"$pod\", action=~\"written\"}[$__rate_interval])) by (zone, pod, partition, processor)",
           "interval": "",
-          "legendFormat": "{{pod}}-{{partition}}-{{processor}}-written",
+          "legendFormat": "{{zone}} {{pod}}-{{partition}}-{{processor}}-written",
           "refId": "C"
         }
       ],
@@ -933,7 +935,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval]))",
           "instant": true,
           "interval": "",
           "legendFormat": "Partition {{partition}} FNI per s",
@@ -1002,12 +1004,12 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "sum(rate(zeebe_exporter_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (pod, partition, exporter)",
+          "expr": "sum(rate(zeebe_exporter_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",zone=~\"$zone\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (zone, pod, partition, exporter)",
           "format": "time_series",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{pod}}-{{partition}}-exported",
+          "legendFormat": "{{zone}} {{pod}}-{{partition}}-exported",
           "refId": "B"
         }
       ],
@@ -1109,7 +1111,7 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",zone=~\"$zone\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{type}} {{action}}",
@@ -1186,7 +1188,7 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",zone=~\"$zone\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{type}} {{action}}",
@@ -1249,9 +1251,9 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=~\"$cluster\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[$__rate_interval]))",
+          "expr": "sum by (zone, pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[$__rate_interval]))",
           "interval": "",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{zone}} {{pod}}",
           "refId": "A"
         }
       ],
@@ -1348,7 +1350,7 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (method, statusCode)",
+          "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\"}[$__rate_interval])) by (method, statusCode)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1455,19 +1457,19 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
+          "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",zone=~\"$zone\",pod=~\"$pod\", container=~\"zeebe.*\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{pod}} RSS",
+          "legendFormat": "{{zone}} {{pod}} RSS",
           "refId": "A"
         },
         {
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
+          "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",zone=~\"$zone\",pod=~\"$pod\", container=~\"zeebe.*\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "limit",
@@ -1477,7 +1479,7 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
+          "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",zone=~\"$zone\",pod=~\"$pod\", container=~\"zeebe.*\"})",
           "interval": "",
           "legendFormat": "request",
           "refId": "C"
@@ -1579,7 +1581,7 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\"elastic.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\"elastic.*\"})",
+          "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", persistentvolumeclaim=~\"elastic.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", persistentvolumeclaim=~\"elastic.*\"})",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
@@ -1689,7 +1691,7 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"})",
+          "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", persistentvolumeclaim=~\".*zeebe.*\"})",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
@@ -1820,7 +1822,34 @@
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"}, pod)",
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"}, zone)",
+        "description": "Cluster zone",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "zone",
+        "options": [],
+        "query": {
+          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"}, zone)",
+          "refId": "Prometheus-zone-Variable-Query"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\"}, pod)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
@@ -1846,14 +1875,14 @@
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", pod=~\"$pod\"}, partition)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "partition",
         "options": [],
         "query": {
-          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", zone=~\"$zone\", pod=~\"$pod\"}, partition)",
           "refId": "Prometheus-partition-Variable-Query"
         },
         "refresh": 2,
