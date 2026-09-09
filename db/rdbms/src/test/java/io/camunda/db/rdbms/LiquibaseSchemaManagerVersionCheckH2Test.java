@@ -171,7 +171,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
   }
 
   @Test
-  void shouldNotSeedPreVersioningVersionWhenSchemaIsAlreadyPast8_10() throws Exception {
+  void shouldNotSeedPreVersioningVersionWhenSchemaIsAlreadyPast810() throws Exception {
     // given: a schema migrated to 8.10 but carrying no recorded version — a database from a build
     // that predates the seed run, whose version write did not land
     runMasterChangelogOnly();
