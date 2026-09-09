@@ -1,0 +1,274 @@
+# THROWAWAY — proves the three retry-by-repetition composite actions actually retry.
+#
+# Two things need proving, and they need different setups:
+#
+#   R (recover)  a broken first attempt is survived and the job goes green
+#   X (exhaust)  a permanently broken step still fails the job after 3 attempts
+#
+# X is the deterministic half and the one that would silently rot: if `continue-on-error` were
+# ever left on the last attempt, every failure in these actions would be swallowed and CI would
+# go green on broken builds. X asserts both the failure and, via elapsed time, that three
+# attempts really ran -- two 10s inter-attempt sleeps mean an exhausted retry cannot finish in
+# under 20s.
+#
+# R is timing-based by necessity. The attempts inside a composite action are identical copies
+# with no hook between them, so nothing can flip a switch after attempt 1. The breakage has to
+# heal itself: each R job installs the breakage, backgrounds a `sleep N && heal`, and then calls
+# the real composite unmodified. Which attempt recovers depends on how fast the wrapped action
+# fails, so R does NOT assert an attempt number -- read that off the log. What it asserts is the
+# part that matters: starting from a broken state, the job ends green and the wrapped action's
+# effect is really present.
+---
+name: "tmp retry composite proof"
+
+on:
+  push:
+    branches:
+      - tmp/retry-composite-proof
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  java-recover:
+    name: "R1 setup-java survives a broken first attempt"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # setup-java resolves the release through api.adoptium.net from the runner host, so a hosts
+      # entry pointing it at localhost with nothing listening fails it in well under a second.
+      # Healing after 6s lands inside the action's first 10s inter-attempt sleep.
+      # If the runner already has this JDK cached, setup-java never touches the network and R1
+      # would pass without ever having failed an attempt. Fail loudly rather than pass vacuously.
+      - name: Guard against a pre-cached JDK
+        shell: bash
+        run: |
+          ls -d /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/24* 2>/dev/null \
+            && { echo "  R1 INVALID - temurin 24 is pre-cached; pick an uncached version"; exit 1; }
+          echo "  temurin 24 not in the tool cache, the network break will be reached"
+
+      - name: Break Adoptium resolution, heal after 6s
+        shell: bash
+        run: |
+          echo '127.0.0.1 api.adoptium.net' | sudo tee -a /etc/hosts > /dev/null
+          echo "  poisoned: $(getent hosts api.adoptium.net || echo '<unresolvable>')"
+          sudo bash -c 'nohup sh -c "sleep 6; sed -i \"/api.adoptium.net/d\" /etc/hosts" >/dev/null 2>&1 &'
+
+      # A version the hosted runners do not pre-cache, so the tool cache cannot mask the breakage.
+      - name: Setup Java through the real composite
+        uses: ./.github/actions/setup-java-with-retry
+        with:
+          distribution: temurin
+          java-version: "24"
+
+      - name: Assert Java 24 is actually active
+        shell: bash
+        run: |
+          echo "  JAVA_HOME=$JAVA_HOME"
+          java -version 2>&1 | head -1 | sed 's/^/    /'
+          if java -version 2>&1 | head -1 | grep -q '"24'; then
+            echo "  R1 PASS - recovered from a broken first attempt"
+          else
+            echo "  R1 FAIL - java 24 not active"
+            exit 1
+          fi
+          if grep -q api.adoptium.net /etc/hosts; then
+            echo "  R1 INVALID - the heal never ran, so nothing was proven"
+            exit 1
+          fi
+
+  java-exhaust:
+    name: "X1 setup-java still fails the job after 3 attempts"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Same vacuous-pass hazard as R1: a cached JDK would let the step succeed and X1 would then
+      # report a failure that is really a broken test setup.
+      - name: Guard against a pre-cached JDK
+        shell: bash
+        run: |
+          ls -d /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/24* 2>/dev/null \
+            && { echo "  X1 INVALID - temurin 24 is pre-cached; pick an uncached version"; exit 1; }
+          echo "  temurin 24 not in the tool cache, the network break will be reached"
+
+      - name: Break Adoptium resolution permanently
+        shell: bash
+        run: echo '127.0.0.1 api.adoptium.net' | sudo tee -a /etc/hosts > /dev/null
+
+      - name: Record start time
+        id: t0
+        shell: bash
+        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      # continue-on-error here is the CALLER's, not the action's: it is what lets this job read the
+      # composite's own final verdict instead of dying on it.
+      - name: Setup Java through the real composite
+        id: java
+        continue-on-error: true
+        uses: ./.github/actions/setup-java-with-retry
+        with:
+          distribution: temurin
+          java-version: "24"
+
+      - name: Assert the composite reported failure after three attempts
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.java.outcome }}
+          T0: ${{ steps.t0.outputs.epoch }}
+        run: |
+          elapsed=$(( $(date +%s) - T0 ))
+          echo "  outcome=$OUTCOME (expected: failure)"
+          echo "  elapsed=${elapsed}s (expected: >= 20, from two 10s inter-attempt sleeps)"
+          rc=0
+          [[ "$OUTCOME" == "failure" ]] || { echo "  X1 FAIL - a broken step did not fail the job"; rc=1; }
+          (( elapsed >= 20 )) || { echo "  X1 FAIL - too fast for 3 attempts; the retry did not fire"; rc=1; }
+          (( rc == 0 )) && echo "  X1 PASS - 3 attempts ran and the job still went red"
+          exit $rc
+
+  buildx-recover:
+    name: "R2 setup-buildx survives a broken first attempt"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create the Docker context the action expects
+        shell: bash
+        run: docker context create zeebe-context
+
+      # Booting the builder makes the host daemon pull moby/buildkit from Docker Hub, so a hosts
+      # entry for the registry breaks it. The daemon's pull backoff is slower and less predictable
+      # than setup-java's API call, so this heals later; expect recovery on attempt 2 or 3.
+      - name: Break Docker Hub resolution, heal after 25s
+        shell: bash
+        run: |
+          echo '127.0.0.1 registry-1.docker.io' | sudo tee -a /etc/hosts > /dev/null
+          sudo bash -c 'nohup sh -c "sleep 25; sed -i \"/registry-1.docker.io/d\" /etc/hosts" >/dev/null 2>&1 &'
+
+      - name: Set up Buildx through the real composite
+        uses: ./.github/actions/setup-buildx-with-retry
+        with:
+          driver-opts: network=host
+          endpoint: zeebe-context
+
+      - name: Assert a working builder is active
+        shell: bash
+        run: |
+          docker buildx inspect --bootstrap 2>&1 | sed 's/^/    /'
+          if docker buildx inspect --bootstrap > /dev/null 2>&1; then
+            echo "  R2 PASS - builder is up after a broken first attempt"
+          else
+            echo "  R2 FAIL - no working builder"
+            exit 1
+          fi
+          if grep -q registry-1.docker.io /etc/hosts; then
+            echo "  R2 INVALID - the heal never ran, so nothing was proven"
+            exit 1
+          fi
+          echo "  builders registered (a retry may leave more than one -- see the action README):"
+          docker buildx ls | sed 's/^/    /'
+
+  build-recover:
+    name: "R3 docker build survives a broken first attempt"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create the Docker context the action expects
+        shell: bash
+        run: docker context create zeebe-context
+
+      - name: Set up Buildx
+        uses: ./.github/actions/setup-buildx-with-retry
+        with:
+          driver-opts: network=host
+          endpoint: zeebe-context
+
+      # Not a network break. The base-image and frontend pulls that fail in production happen
+      # inside the buildkit container, which has its own resolver, so poisoning the host's
+      # /etc/hosts would not reach them. A missing Dockerfile fails build-push-action just as
+      # hard and heals deterministically, which is what R3 needs: it is testing the retry gating
+      # around the step, not reproducing the Docker Hub failure class.
+      - name: Withhold the Dockerfile, provide it after 8s
+        shell: bash
+        run: |
+          nohup sh -c 'sleep 8; cp .github/tmp-retry-proof/app.Dockerfile .github/tmp-retry-proof/late.Dockerfile' >/dev/null 2>&1 &
+          test ! -f .github/tmp-retry-proof/late.Dockerfile && echo "  late.Dockerfile absent at start, as intended"
+
+      - name: Build through the real composite
+        uses: ./.github/actions/docker-build-with-retry
+        with:
+          dockerfile: .github/tmp-retry-proof/late.Dockerfile
+          tags: tmp-retry-proof:local
+          platforms: linux/amd64
+          push: "false"
+
+      - name: Assert the image was really built
+        shell: bash
+        run: |
+          docker image inspect tmp-retry-proof:local --format '    id={{.Id}} size={{.Size}}' \
+            || { echo "  R3 FAIL - image not in the local daemon"; exit 1; }
+          echo "  R3 PASS - image built after a broken first attempt"
+
+  build-exhaust:
+    name: "X2 docker build still fails the job after 3 attempts"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create the Docker context the action expects
+        shell: bash
+        run: docker context create zeebe-context
+
+      - name: Set up Buildx
+        uses: ./.github/actions/setup-buildx-with-retry
+        with:
+          driver-opts: network=host
+          endpoint: zeebe-context
+
+      - name: Record start time
+        id: t0
+        shell: bash
+        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Build a Dockerfile that never appears
+        id: build
+        continue-on-error: true
+        uses: ./.github/actions/docker-build-with-retry
+        with:
+          dockerfile: .github/tmp-retry-proof/does-not-exist.Dockerfile
+          tags: tmp-retry-proof:never
+          platforms: linux/amd64
+          push: "false"
+
+      - name: Assert the composite reported failure after three attempts
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.build.outcome }}
+          T0: ${{ steps.t0.outputs.epoch }}
+        run: |
+          elapsed=$(( $(date +%s) - T0 ))
+          echo "  outcome=$OUTCOME (expected: failure)"
+          echo "  elapsed=${elapsed}s (expected: >= 20, from two 10s inter-attempt sleeps)"
+          rc=0
+          [[ "$OUTCOME" == "failure" ]] || { echo "  X2 FAIL - a broken build did not fail the job"; rc=1; }
+          (( elapsed >= 20 )) || { echo "  X2 FAIL - too fast for 3 attempts; the retry did not fire"; rc=1; }
+          (( rc == 0 )) && echo "  X2 PASS - 3 attempts ran and the job still went red"
+          exit $rc
