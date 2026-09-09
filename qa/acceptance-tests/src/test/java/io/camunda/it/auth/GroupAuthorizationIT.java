@@ -29,6 +29,7 @@ import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.authz.EntityType;
@@ -201,6 +202,7 @@ class GroupAuthorizationIT {
 
     // then
     Awaitility.await("Client is assigned to the group")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -253,6 +255,7 @@ class GroupAuthorizationIT {
         .join();
 
     Awaitility.await("Client is assigned to the group")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -271,6 +274,7 @@ class GroupAuthorizationIT {
 
     // then
     Awaitility.await("Client is unassigned from the group")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -309,6 +313,7 @@ class GroupAuthorizationIT {
 
     // then
     Awaitility.await("Clients are assigned to the group and can be searched")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
