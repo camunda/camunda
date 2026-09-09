@@ -1,5 +1,4 @@
 UV ?= uv
-export UV_LOCKED := true
 PYTEST_ARGS ?= --verbose --color=yes --tb=short
 
 .PHONY: test format lint check
