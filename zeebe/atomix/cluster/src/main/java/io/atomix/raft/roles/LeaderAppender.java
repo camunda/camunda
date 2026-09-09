@@ -975,13 +975,12 @@ final class LeaderAppender {
             future.completeExceptionally(
                 new RaftException.ProtocolException("Failed to reach consensus")));
 
-    final var waits = List.copyOf(replicationWaits);
-    replicationWaits.clear();
-    waits.forEach(
-        wait ->
-            wait.future()
-                .completeExceptionally(
-                    new AppendFailureException(wait.targetIndex(), "Leader stepping down")));
+    while (!replicationWaits.isEmpty()) {
+      final var wait = replicationWaits.removeLast();
+      wait.future()
+          .completeExceptionally(
+              new AppendFailureException(wait.targetIndex(), "Leader stepping down"));
+    }
   }
 
   private void tryToReplicate(final RaftMemberContext member) {
