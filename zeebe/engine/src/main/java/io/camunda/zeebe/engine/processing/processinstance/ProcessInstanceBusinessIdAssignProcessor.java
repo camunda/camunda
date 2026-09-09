@@ -158,7 +158,8 @@ public class ProcessInstanceBusinessIdAssignProcessor
         .setTenantId(processInstanceRecord.getTenantId())
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setBpmnProcessId(processInstanceRecord.getBpmnProcessId())
-        .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
+        .setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   @Override
