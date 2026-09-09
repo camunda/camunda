@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -69,9 +68,10 @@ public final class SuspensionBehavior {
         switch (marker) {
           case SUSPENDED -> onSuspended(suspensionAware, command);
           case RESUMING -> onResuming(suspensionAware, command);
-          case null -> SuspensionAction.PROCESS;
+          case null -> null;
         };
 
+    // captures onSuspended and onResuming null return values along with null markers
     if (action == null) {
       LOG.error(
           "Processor '{}' implements SuspensionAware but returned a null suspension behavior for"
@@ -79,12 +79,6 @@ public final class SuspensionBehavior {
           processor.getClass().getName(),
           command.getValueType());
       return passThrough(processInstanceKey);
-    }
-
-    if (marker == State.RESUMING && action == SuspensionAction.BUFFER) {
-      throw new IllegalStateException(
-          "Expected PROCESS or REJECT from onResuming, but got BUFFER from processor '%s' for command '%s'."
-              .formatted(processor.getClass().getName(), command.getValueType()));
     }
 
     return new SuspensionResult(action, processInstanceKey);
@@ -169,15 +163,21 @@ public final class SuspensionBehavior {
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private static SuspensionAware.@Nullable SuspensionAction onSuspended(
+  private static SuspensionAware.SuspensionAction onSuspended(
       final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
     return ((SuspensionAware) suspensionAware).onSuspended(command);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private static SuspensionAware.@Nullable SuspensionAction onResuming(
+  private static SuspensionAware.SuspensionAction onResuming(
       final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
-    return ((SuspensionAware) suspensionAware).onResuming(command);
+    final SuspensionAction action = ((SuspensionAware) suspensionAware).onResuming(command);
+    if (action == SuspensionAction.BUFFER) {
+      throw new IllegalStateException(
+          "Expected PROCESS or REJECT from onResuming, but got BUFFER from processor '%s' for command '%s'."
+              .formatted(suspensionAware.getClass().getName(), command.getValueType()));
+    }
+    return action;
   }
 
   /**

@@ -18,7 +18,7 @@ public interface MutableTimerInstanceState extends TimerInstanceState {
 
   void update(TimerInstance timer);
 
-  void restoreDueDate(long elementInstanceKey, long timerKey, long dueDate);
+  void suspend(long elementInstanceKey, long timerKey, long dueDate);
 
-  void removeDueDate(long elementInstanceKey, long timerKey, long dueDate);
+  void resume(long elementInstanceKey, long timerKey, long dueDate);
 }

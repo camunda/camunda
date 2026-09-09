@@ -72,12 +72,12 @@ public class AdHocSubProcessInstructionCompleteProcessor
 
   @Override
   public SuspensionAction onSuspended(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+    return SuspensionAware.bufferInternalOnly(record);
   }
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
+    return SuspensionAware.processInternalOnly(record);
   }
 
   private BpmnElementContext createBpmnElementContext(final ElementInstance elementInstance) {

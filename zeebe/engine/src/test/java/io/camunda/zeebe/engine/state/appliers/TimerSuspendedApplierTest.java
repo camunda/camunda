@@ -59,7 +59,8 @@ public class TimerSuspendedApplierTest {
 
     // then
     assertThat(timerState.get(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isNotNull();
-    assertThat(timerState.hasDueDateEntry(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isFalse();
+    assertThat(timerState.processTimersWithDueDateBefore(ELEMENT_INSTANCE_KEY, t -> true))
+        .isEqualTo(-1L);
     assertThat(dueTimers()).isEmpty();
   }
 
@@ -100,7 +101,8 @@ public class TimerSuspendedApplierTest {
 
     // then
     assertThat(timerState.get(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isNotNull();
-    assertThat(timerState.hasDueDateEntry(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isTrue();
+    assertThat(timerState.processTimersWithDueDateBefore(ELEMENT_INSTANCE_KEY, t -> true))
+        .isEqualTo(DUE_DATE);
     assertThat(dueTimers()).extracting(TimerInstance::getKey).containsExactly(TIMER_KEY);
   }
 
@@ -113,7 +115,8 @@ public class TimerSuspendedApplierTest {
     resumedApplier.applyState(TIMER_KEY, timerRecord());
 
     // then
-    assertThat(timerState.hasDueDateEntry(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isTrue();
+    assertThat(timerState.processTimersWithDueDateBefore(ELEMENT_INSTANCE_KEY, t -> true))
+        .isEqualTo(DUE_DATE);
     assertThat(dueTimers()).extracting(TimerInstance::getKey).containsExactly(TIMER_KEY);
   }
 
@@ -128,7 +131,8 @@ public class TimerSuspendedApplierTest {
     resumedApplier.applyState(TIMER_KEY, timerRecord());
 
     // then
-    assertThat(timerState.hasDueDateEntry(ELEMENT_INSTANCE_KEY, TIMER_KEY)).isFalse();
+    assertThat(timerState.processTimersWithDueDateBefore(ELEMENT_INSTANCE_KEY, t -> true))
+        .isEqualTo(-1L);
     assertThat(dueTimers()).isEmpty();
   }
 

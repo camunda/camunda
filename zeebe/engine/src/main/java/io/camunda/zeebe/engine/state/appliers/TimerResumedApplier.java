@@ -22,6 +22,6 @@ final class TimerResumedApplier implements TypedEventApplier<TimerIntent, TimerR
 
   @Override
   public void applyState(final long key, final TimerRecord value) {
-    timerInstanceState.restoreDueDate(value.getElementInstanceKey(), key, value.getDueDate());
+    timerInstanceState.resume(value.getElementInstanceKey(), key, value.getDueDate());
   }
 }

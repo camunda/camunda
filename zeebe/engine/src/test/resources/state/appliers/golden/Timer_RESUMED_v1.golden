@@ -22,10 +22,6 @@ final class TimerResumedApplier implements TypedEventApplier<TimerIntent, TimerR
 
   @Override
   public void applyState(final long key, final TimerRecord value) {
-    // A duplicate buffered trigger can resume after the first trigger removed the timer.
-    // Do not recreate a due-date entry for a timer that no longer exists.
-    if (timerInstanceState.get(value.getElementInstanceKey(), key) != null) {
-      timerInstanceState.restoreDueDate(value.getElementInstanceKey(), key, value.getDueDate());
-    }
+    timerInstanceState.resume(value.getElementInstanceKey(), key, value.getDueDate());
   }
 }

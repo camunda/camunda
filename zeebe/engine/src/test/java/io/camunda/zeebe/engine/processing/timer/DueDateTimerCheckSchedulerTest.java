@@ -238,10 +238,5 @@ class DueDateTimerCheckSchedulerTest {
     public TimerInstance get(final long elementInstanceKey, final long timerKey) {
       return null;
     }
-
-    @Override
-    public boolean hasDueDateEntry(final long elementInstanceKey, final long timerKey) {
-      return false;
-    }
   }
 }

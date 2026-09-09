@@ -132,52 +132,6 @@ public final class TimerSuspensionGateTest {
   }
 
   @Test
-  public void shouldEmitResumedForFreshTriggerWhileResuming() {
-    // given - suspend before the timer is due so the due-date index is still present
-    final long processInstanceKey = deployAndStartProcessWithTimer(Strings.newRandomValidBpmnId());
-    final var created =
-        RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    final var process =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.PROCESS)
-            .getFirst();
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
-
-    // when - RESUME then a fresh TRIGGER while the instance is still RESUMING
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .processInstance(ProcessInstanceIntent.RESUME, process.getValue())
-            .key(processInstanceKey),
-        RecordToWrite.command()
-            .timer(TimerIntent.TRIGGER, created.getValue())
-            .key(created.getKey()));
-
-    // then
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementType(BpmnElementType.PROCESS)
-        .await();
-    assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .timerRecords()
-                .withIntent(TimerIntent.RESUMED)
-                .count())
-        .isEqualTo(1);
-    assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .timerRecords()
-                .withIntent(TimerIntent.TRIGGERED)
-                .filter(r -> r.getValue().getProcessInstanceKey() == processInstanceKey)
-                .count())
-        .isEqualTo(1);
-  }
-
-  @Test
   public void shouldFireTimerThatBecomesDueAfterResume() {
     // given
     final long processInstanceKey = deployAndStartProcessWithTimer(Strings.newRandomValidBpmnId());

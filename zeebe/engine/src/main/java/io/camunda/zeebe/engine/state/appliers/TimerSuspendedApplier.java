@@ -22,6 +22,6 @@ final class TimerSuspendedApplier implements TypedEventApplier<TimerIntent, Time
 
   @Override
   public void applyState(final long key, final TimerRecord value) {
-    timerInstanceState.removeDueDate(value.getElementInstanceKey(), key, value.getDueDate());
+    timerInstanceState.suspend(value.getElementInstanceKey(), key, value.getDueDate());
   }
 }

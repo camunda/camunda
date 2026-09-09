@@ -176,11 +176,11 @@ public final class TimerInstanceStateTest {
     createTimerInstance(1, 2, 1000L);
 
     // when
-    state.removeDueDate(1L, 2L, 1000L);
+    state.suspend(1L, 2L, 1000L);
 
     // then
     assertThat(state.get(1L, 2L)).isNotNull();
-    assertThat(state.hasDueDateEntry(1L, 2L)).isFalse();
+    assertThat(state.processTimersWithDueDateBefore(1000L, t -> true)).isEqualTo(-1L);
     final List<TimerInstance> timers = new ArrayList<>();
     state.processTimersWithDueDateBefore(1000L, timers::add);
     assertThat(timers).isEmpty();
@@ -190,23 +190,13 @@ public final class TimerInstanceStateTest {
   public void shouldRemoveTimerWhenDueDateAlreadyGone() {
     // given
     final TimerInstance timer = createTimerInstance(1, 2, 1000L);
-    state.removeDueDate(1L, 2L, 1000L);
+    state.suspend(1L, 2L, 1000L);
 
     // when
     state.remove(timer);
 
     // then
     assertThat(state.get(1L, 2L)).isNull();
-  }
-
-  @Test
-  public void shouldReportWhetherDueDateExists() {
-    // given
-    createTimerInstance(1, 2, 1000L);
-
-    // then
-    assertThat(state.hasDueDateEntry(1L, 2L)).isTrue();
-    assertThat(state.hasDueDateEntry(2L, 2L)).isFalse();
   }
 
   @Test
