@@ -27,7 +27,7 @@ val resourceTargetPath = frontendWebjar.resourceTargetPath
 
 val parentPomVersions =
   parsePomProperties(
-    providers.fileContents(rootProject.layout.projectDirectory.file("parent/pom.xml")).asText.get()
+    providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get()
   )
 
 extensions.configure<NodeExtension> {
@@ -35,8 +35,8 @@ extensions.configure<NodeExtension> {
   version.set(pomVersion(parentPomVersions, "version.node").removePrefix("v"))
   npmVersion.set(pomVersion(parentPomVersions, "version.npm"))
   distBaseUrl.set(null as String?)
-  workDir.set(rootProject.layout.projectDirectory.dir(".gradle/nodejs/${project.name}"))
-  npmWorkDir.set(rootProject.layout.projectDirectory.dir(".gradle/npm/${project.name}"))
+  workDir.set(layout.settingsDirectory.dir(".gradle/nodejs/${project.name}"))
+  npmWorkDir.set(layout.settingsDirectory.dir(".gradle/npm/${project.name}"))
   nodeProjectDir.set(layout.projectDirectory)
 }
 
