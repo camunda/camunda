@@ -5,8 +5,6 @@ Run `make -C load-tests/docs/scripts/load_test_report check` from the repository
 root to validate local changes.
 """
 
-from __future__ import annotations
-
 import argparse
 import sys
 

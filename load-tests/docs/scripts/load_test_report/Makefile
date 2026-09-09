@@ -1,20 +1,18 @@
 UV ?= uv
+export UV_LOCKED := true
 PYTEST_ARGS ?= --verbose --color=yes --tb=short
 
-.PHONY: test compile format lint check
+.PHONY: test format lint check
 
 test:
-	$(UV) run --locked pytest $(PYTEST_ARGS) tests
-
-compile:
-	$(UV) run --locked python -m py_compile load_test_report.py
+	$(UV) run pytest $(PYTEST_ARGS) tests
 
 format:
-	$(UV) run --locked ruff check --fix .
-	$(UV) run --locked ruff format .
+	$(UV) run ruff check --fix .
+	$(UV) run ruff format .
 
 lint:
-	$(UV) run --locked ruff check .
-	$(UV) run --locked ruff format --check .
+	$(UV) run ruff check .
+	$(UV) run ruff format --check .
 
-check: compile lint test
+check: lint test
