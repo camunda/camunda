@@ -51,7 +51,7 @@ describe('<StartProcessFormModal />', () => {
 
 		await expect.element(screen.getByRole('dialog', {name: 'Start process Invoice review'})).toBeVisible();
 		await expect.element(screen.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Share process URL'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Copy link'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Cancel'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Start process'})).toBeVisible();
 	});
@@ -104,7 +104,7 @@ describe('<StartProcessFormModal />', () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Share process URL'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Copy link'}));
 
 		expect(writeText).toHaveBeenCalledWith(window.location.href);
 	});

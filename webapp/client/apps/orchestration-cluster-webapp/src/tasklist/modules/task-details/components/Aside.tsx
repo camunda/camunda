@@ -6,26 +6,39 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
-import {useTranslation} from 'react-i18next';
+import {Badge, Text} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
-import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
+import {useTranslation} from 'react-i18next';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
-import styles from './Aside.module.scss';
-import layoutStyles from './taskDetailsLayoutCommon.module.scss';
+import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 
 type Props = {
 	creationDate: string;
-	completionDate: string | null | undefined;
-	dueDate: string | null | undefined;
-	followUpDate: string | null | undefined;
-	priority: number | null | undefined;
+	completionDate: string | null;
+	dueDate: string | null;
+	followUpDate: string | null;
+	priority: number | null;
 	candidateUsers: string[];
 	candidateGroups: string[];
 	tenantId: string;
-	businessId: string | null | undefined;
+	businessId: string | null;
 	user: CurrentUser;
+	showTitle?: boolean;
 };
+
+type DetailItemProps = {
+	label: string;
+	children: React.ReactNode;
+};
+
+const DetailItem: React.FC<DetailItemProps> = ({label, children}) => (
+	<div className="px-4 py-3">
+		<Text as="div" variant="body-sm" className="text-neutral-foreground-subtle">
+			{label}
+		</Text>
+		<div className="text-sm leading-5 text-neutral-foreground-strong">{children}</div>
+	</div>
+);
 
 const Aside: React.FC<Props> = ({
 	creationDate,
@@ -38,78 +51,55 @@ const Aside: React.FC<Props> = ({
 	tenantId,
 	businessId,
 	user,
+	showTitle = true,
 }) => {
 	const {t} = useTranslation();
 	const taskTenant = user.tenants.length > 1 ? user.tenants.find((tenant) => tenant.tenantId === tenantId) : undefined;
 	const candidates = [...(candidateUsers ?? []), ...(candidateGroups ?? [])];
 
 	return (
-		<aside className={layoutStyles.aside} aria-label={t('tasklist.taskDetailsRightPanel')}>
-			<ContainedList label={t('tasklist.taskDetailsDetailsLabel')} kind="disclosed">
-				<>
-					{taskTenant === undefined ? null : (
-						<ContainedListItem>
-							<span className={styles.itemHeading}>{t('tasklist.taskDetailsTenantLabel')}</span>
-							<br />
-							<span className={styles.itemBody}>{taskTenant.name}</span>
-						</ContainedListItem>
-					)}
-				</>
-				<ContainedListItem>
-					<span className={styles.itemHeading}>{t('tasklist.taskDetailsCreationDateLabel')}</span>
-					<br />
-					<span className={styles.itemBody}>{formatISODateTime(creationDate)?.absolute.text ?? creationDate}</span>
-				</ContainedListItem>
-				<ContainedListItem>
-					<span className={styles.itemHeading}>{t('tasklist.taskDetailsCandidatesLabel')}</span>
-					<br />
-					{candidates.length === 0 ? (
-						<span className={styles.itemBody}>{t('tasklist.taskDetailsNoCandidatesLabel')}</span>
-					) : null}
-					{candidates.map((candidate) => (
-						<Tag size="sm" type="gray" key={candidate}>
-							{candidate}
-						</Tag>
-					))}
-				</ContainedListItem>
-				{typeof priority === 'number' ? (
-					<ContainedListItem>
-						<span className={styles.itemHeading}>{t('tasklist.taskDetailsPriorityLabel')}</span>
-						<br />
-						<span className={styles.itemBody}>{getPriorityLabel(priority).short}</span>
-					</ContainedListItem>
-				) : null}
-				{completionDate ? (
-					<ContainedListItem>
-						<span className={styles.itemHeading}>{t('tasklist.taskDetailsCompletionDateLabel')}</span>
-						<br />
-						<span className={styles.itemBody}>
-							{formatISODateTime(completionDate)?.absolute.text ?? completionDate}
-						</span>
-					</ContainedListItem>
-				) : null}
-				<ContainedListItem>
-					<span className={styles.itemHeading}>{t('tasklist.taskDetailsDueDateLabel')}</span>
-					<br />
-					<span className={styles.itemBody}>
-						{dueDate ? (formatISODateTime(dueDate)?.absolute.text ?? dueDate) : t('tasklist.taskDetailsNoDueDateLabel')}
-					</span>
-				</ContainedListItem>
-				{followUpDate ? (
-					<ContainedListItem>
-						<span className={styles.itemHeading}>{t('tasklist.taskDetailsFollowUpDateLabel')}</span>
-						<br />
-						<span className={styles.itemBody}>{formatISODateTime(followUpDate)?.absolute.text ?? followUpDate}</span>
-					</ContainedListItem>
-				) : null}
-				{businessId ? (
-					<ContainedListItem>
-						<span className={styles.itemHeading}>{t('tasklist.taskDetailsBusinessIdLabel')}</span>
-						<br />
-						<span className={styles.itemBody}>{businessId}</span>
-					</ContainedListItem>
-				) : null}
-			</ContainedList>
+		<aside className="h-full overflow-auto" aria-label={t('tasklist.taskDetailsRightPanel')}>
+			{showTitle ? (
+				<Text as="div" variant="label-md-strong" className="px-4 pb-2 text-neutral-foreground-strong">
+					{t('tasklist.taskDetailsDetailsLabel')}
+				</Text>
+			) : null}
+			{taskTenant === undefined ? null : (
+				<DetailItem label={t('tasklist.taskDetailsTenantLabel')}>{taskTenant.name}</DetailItem>
+			)}
+			<DetailItem label={t('tasklist.taskDetailsCreationDateLabel')}>
+				{formatISODateTime(creationDate)?.absolute.text ?? creationDate}
+			</DetailItem>
+			<DetailItem label={t('tasklist.taskDetailsCandidatesLabel')}>
+				{candidates.length === 0 ? (
+					t('tasklist.taskDetailsNoCandidatesLabel')
+				) : (
+					<div className="flex flex-wrap gap-1 pt-1">
+						{candidates.map((candidate) => (
+							<Badge variant="neutral" key={candidate}>
+								{candidate}
+							</Badge>
+						))}
+					</div>
+				)}
+			</DetailItem>
+			{typeof priority === 'number' ? (
+				<DetailItem label={t('tasklist.taskDetailsPriorityLabel')}>{getPriorityLabel(priority).short}</DetailItem>
+			) : null}
+			{completionDate ? (
+				<DetailItem label={t('tasklist.taskDetailsCompletionDateLabel')}>
+					{formatISODateTime(completionDate)?.absolute.text ?? completionDate}
+				</DetailItem>
+			) : null}
+			<DetailItem label={t('tasklist.taskDetailsDueDateLabel')}>
+				{dueDate ? (formatISODateTime(dueDate)?.absolute.text ?? dueDate) : t('tasklist.taskDetailsNoDueDateLabel')}
+			</DetailItem>
+			{followUpDate ? (
+				<DetailItem label={t('tasklist.taskDetailsFollowUpDateLabel')}>
+					{formatISODateTime(followUpDate)?.absolute.text ?? followUpDate}
+				</DetailItem>
+			) : null}
+			{businessId ? <DetailItem label={t('tasklist.taskDetailsBusinessIdLabel')}>{businessId}</DetailItem> : null}
 		</aside>
 	);
 };

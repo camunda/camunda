@@ -6,51 +6,78 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
+import {Outlet, useMatchRoute} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useMediaQuery} from '@camunda/design-system';
+import {cn} from '#/shared/cn';
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/components/AvailableTasks';
-import {CollapsiblePanel} from '#/tasklist/modules/available-tasks/components/CollapsiblePanel';
 import {Filters} from '#/tasklist/modules/available-tasks/components/Filters';
 import {AutoSelectNextTaskToggle} from '#/tasklist/modules/available-tasks/components/AutoSelectNextTaskToggle';
-import styles from './TasksLayoutPage.module.scss';
-import {Outlet} from '@tanstack/react-router';
 
 type Props = {
-	tasks: UserTask[];
+	pages: QueryUserTasksResponseBody[];
 	currentUser: CurrentUser;
+	isPending?: boolean;
 	hasNextPage: boolean;
 	hasPreviousPage: boolean;
-	onScrollDown: () => Promise<UserTask[]>;
-	onScrollUp: () => Promise<UserTask[]>;
+	onScrollDown: () => Promise<void>;
+	onScrollUp: () => Promise<void>;
+	isFetchingNextPage?: boolean;
+	isFetchingPreviousPage?: boolean;
 };
 
 const TasksLayoutPage: React.FC<Props> = ({
-	tasks,
+	pages,
 	currentUser,
+	isPending = false,
 	hasNextPage,
 	hasPreviousPage,
 	onScrollDown,
 	onScrollUp,
+	isFetchingNextPage,
+	isFetchingPreviousPage,
 }) => {
 	const {t} = useTranslation();
+	const matchRoute = useMatchRoute();
+	const isBelowMd = useMediaQuery('(width < 48rem)');
+	const hasSelectedTask = matchRoute({to: '/tasklist/$userTaskKey', fuzzy: true}) !== false;
 
 	return (
-		<main id="main-content" className={styles.container}>
-			<CollapsiblePanel />
-			<Stack as="section" className={styles.tasksPanel} aria-label={t('tasklist.tasksPanelLabel')}>
-				<Filters />
+		<main
+			id="main-content"
+			className={cn('grid h-full overflow-hidden', isBelowMd ? 'grid-cols-1' : 'grid-cols-[19.5rem_minmax(0,1fr)]')}
+		>
+			<section
+				className={cn(
+					'grid min-w-0 grid-rows-[3rem_minmax(0,1fr)_auto] overflow-hidden',
+					isBelowMd && hasSelectedTask && 'hidden',
+				)}
+				aria-label={t('tasklist.tasksPanelLabel')}
+			>
+				<header className="flex items-center border-b border-border px-2">
+					<h1 className="sr-only">{t('tasklist.headerNavItemTasks')}</h1>
+					<Filters disabled={isPending} />
+				</header>
 				<AvailableTasks
-					tasks={tasks}
+					pages={pages}
 					currentUser={currentUser}
 					hasNextPage={hasNextPage}
 					hasPreviousPage={hasPreviousPage}
 					onScrollDown={onScrollDown}
 					onScrollUp={onScrollUp}
+					isFetchingNextPage={isFetchingNextPage}
+					isFetchingPreviousPage={isFetchingPreviousPage}
 				/>
 				<AutoSelectNextTaskToggle />
-			</Stack>
-			<div className={styles.detailsPanel}>
+			</section>
+			<div
+				className={cn(
+					'min-w-0 overflow-auto',
+					!isBelowMd && 'border-l border-border',
+					isBelowMd && !hasSelectedTask && 'hidden',
+				)}
+			>
 				<Outlet />
 			</div>
 		</main>

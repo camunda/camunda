@@ -22,10 +22,6 @@ import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
 import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
-import {ShadcnTasklistIndexPage} from '#/pages/ShadcnTasklistIndex.page';
-import {ShadcnTasklistProcessesPage} from '#/pages/ShadcnTasklistProcesses.page';
-import {ShadcnTasklistLoginPage} from '#/pages/ShadcnTasklistLogin.page';
-import {ShadcnTaskDetailPage} from '#/pages/ShadcnTaskDetail.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
@@ -33,9 +29,6 @@ type Fixtures = {
 	makeAxeBuilder: () => AxeBuilder;
 	loginPage: LoginPage;
 	tasklistLoginPage: TasklistLoginPage;
-	shadcnTasklistLoginPage: ShadcnTasklistLoginPage;
-	shadcnTasklistProcessesPage: ShadcnTasklistProcessesPage;
-	shadcnTaskDetailPage: ShadcnTaskDetailPage;
 	tasklistIndexPage: TasklistIndexPage;
 	tasklistProcessesPage: TasklistProcessesPage;
 	taskDetailPage: TaskDetailPage;
@@ -46,7 +39,6 @@ type Fixtures = {
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
 	componentAccessDeniedPage: ComponentAccessDeniedPage;
-	shadcnTasklistIndexPage: ShadcnTasklistIndexPage;
 };
 
 const test = base.extend<Fixtures>({
@@ -59,15 +51,6 @@ const test = base.extend<Fixtures>({
 	},
 	tasklistLoginPage: async ({page}, use) => {
 		await use(new TasklistLoginPage(page));
-	},
-	shadcnTasklistLoginPage: async ({page}, use) => {
-		await use(new ShadcnTasklistLoginPage(page));
-	},
-	shadcnTasklistProcessesPage: async ({page}, use) => {
-		await use(new ShadcnTasklistProcessesPage(page));
-	},
-	shadcnTaskDetailPage: async ({page}, use) => {
-		await use(new ShadcnTaskDetailPage(page));
 	},
 	tasklistIndexPage: async ({page}, use) => {
 		await use(new TasklistIndexPage(page));
@@ -98,9 +81,6 @@ const test = base.extend<Fixtures>({
 	},
 	componentAccessDeniedPage: async ({page}, use) => {
 		await use(new ComponentAccessDeniedPage(page));
-	},
-	shadcnTasklistIndexPage: async ({page}, use) => {
-		await use(new ShadcnTasklistIndexPage(page));
 	},
 	handlers: [[], {option: true}],
 	network: [

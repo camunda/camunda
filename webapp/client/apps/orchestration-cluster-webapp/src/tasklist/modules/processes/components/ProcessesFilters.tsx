@@ -6,36 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Column, Dropdown, Grid, Search} from '@carbon/react';
+import {
+	Label,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+	SearchInput,
+} from '@camunda/design-system';
 import {useNavigate} from '@tanstack/react-router';
 import {useEffect, useEffectEvent, useReducer} from 'react';
 import {Field, Form, type FormRenderProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getClientConfig} from '#/shared/config/getClientConfig';
-import styles from './ProcessesFilters.module.scss';
 
 const SUBMIT_DEBOUNCE = 500;
-
-const DEFAULT_PROCESS_FILTER = {
-	id: 'all',
-	translationKey: 'tasklist.processFiltersAllProcesses',
-	hasStartForm: undefined,
-} as const;
-
-const PROCESS_FILTERS = [
-	DEFAULT_PROCESS_FILTER,
-	{
-		id: 'requires-form',
-		translationKey: 'tasklist.processesFormFilterRequiresForm',
-		hasStartForm: 'yes',
-	} as const,
-	{
-		id: 'requires-no-form',
-		translationKey: 'tasklist.processesFormFilterRequiresNoForm',
-		hasStartForm: 'no',
-	} as const,
-];
 
 type FilterValues = {
 	search: string;
@@ -76,75 +63,98 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 	const debouncedHandleSubmit = useDebounce(handleSubmit, SUBMIT_DEBOUNCE);
 
 	return (
-		<Grid narrow>
-			<Column className={styles.filter} sm={4} md={isMultiTenancyEnabled ? 8 : 5} lg={10}>
-				<Field<string> name="search">
-					{({input}) => (
-						<Search
-							id="process-search"
-							size="md"
-							placeholder={t('tasklist.processesFilterFieldLabel')}
-							labelText={t('tasklist.processesFilterFieldLabel')}
-							closeButtonLabelText={t('tasklist.processesClearFilterFieldButtonLabel')}
-							value={input.value}
-							onChange={(event) => {
-								input.onChange(event);
-								debouncedHandleSubmit();
-							}}
-						/>
-					)}
+		<div className="flex flex-wrap items-center gap-3">
+			<Label htmlFor="process-search" className="sr-only">
+				{t('tasklist.processesFilterFieldLabel')}
+			</Label>
+			<Field<string> name="search">
+				{({input}) => (
+					<SearchInput
+						id="process-search"
+						className="min-w-48 max-w-sm flex-1"
+						placeholder={t('tasklist.processesFilterFieldLabel')}
+						clearLabel={t('tasklist.processesClearFilterFieldButtonLabel')}
+						value={input.value}
+						onChange={(event) => {
+							input.onChange(event);
+							debouncedHandleSubmit();
+						}}
+					/>
+				)}
+			</Field>
+			<div className="min-w-0">
+				<Field<FilterValues['hasStartForm']> name="hasStartForm" format={(value) => value}>
+					{({input}) => {
+						return (
+							<>
+								<Label htmlFor={input.name} className="sr-only">
+									{t('tasklist.processesFilterDropdownLabel')}
+								</Label>
+								<Select
+									defaultValue="all"
+									value={input.value ?? 'all'}
+									onValueChange={(value) => {
+										if (!value) {
+											return;
+										}
+
+										input.onChange(value === 'all' ? undefined : value);
+										handleSubmit();
+									}}
+								>
+									<SelectTrigger id={input.name} aria-label={t('tasklist.processesFilterDropdownLabel')}>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all">{t('tasklist.processFiltersAllProcesses')}</SelectItem>
+										<SelectItem value="yes">{t('tasklist.processesFormFilterRequiresForm')}</SelectItem>
+										<SelectItem value="no">{t('tasklist.processesFormFilterRequiresNoForm')}</SelectItem>
+									</SelectContent>
+								</Select>
+							</>
+						);
+					}}
 				</Field>
-			</Column>
-			<Column
-				className={styles.filter}
-				sm={isMultiTenancyEnabled ? 2 : 4}
-				md={isMultiTenancyEnabled ? 4 : 3}
-				lg={isMultiTenancyEnabled ? 3 : 5}
-			>
-				<Field<FilterValues['hasStartForm']> name="hasStartForm">
-					{({input}) => (
-						<Dropdown
-							id="process-filters"
-							className={styles.dropdown}
-							hideLabel
-							selectedItem={
-								PROCESS_FILTERS.find(({hasStartForm}) => hasStartForm === input.value) ?? DEFAULT_PROCESS_FILTER
-							}
-							titleText={t('tasklist.processesFilterDropdownLabel')}
-							label={t('tasklist.processesFilterDropdownLabel')}
-							items={PROCESS_FILTERS}
-							itemToString={(item) => (item ? t(item.translationKey) : '')}
-							onChange={({selectedItem}) => {
-								input.onChange(selectedItem?.hasStartForm);
-								handleSubmit();
-							}}
-						/>
-					)}
-				</Field>
-			</Column>
+			</div>
 			{isMultiTenancyEnabled ? (
-				<Column className={styles.filter} sm={2} md={4} lg={2}>
+				<div className="min-w-0">
 					<Field<FilterValues['tenantId']> name="tenantId" initialValue={tenants[0]?.tenantId}>
-						{({input}) => (
-							<Dropdown
-								id="tenant-filter"
-								className={styles.dropdown}
-								hideLabel
-								selectedItem={tenants.find(({tenantId}) => tenantId === input.value) ?? tenants[0]}
-								titleText={t('tasklist.multiTenancyDropdownLabel')}
-								label={t('tasklist.multiTenancyDropdownLabel')}
-								items={tenants}
-								itemToString={(item) => (item ? `${item.name} - ${item.tenantId}` : '')}
-								onChange={({selectedItem}) => {
-									input.onChange(selectedItem?.tenantId);
-									handleSubmit();
-								}}
-							/>
-						)}
+						{({input}) => {
+							return (
+								<>
+									<Label htmlFor={input.name} className="sr-only">
+										{t('tasklist.multiTenancyDropdownLabel')}
+									</Label>
+									<Select
+										defaultValue={tenants[0]?.tenantId}
+										value={input.value}
+										onValueChange={(tenantId) => {
+											if (!tenantId) {
+												return;
+											}
+
+											input.onChange(tenantId);
+											handleSubmit();
+										}}
+									>
+										<SelectTrigger id={input.name} aria-label={t('tasklist.multiTenancyDropdownLabel')}>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{tenants.map((tenant) => (
+												<SelectItem key={tenant.tenantId} value={tenant.tenantId}>
+													{tenant.name} - {tenant.tenantId}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</>
+							);
+						}}
 					</Field>
-				</Column>
+				</div>
 			) : null}
-		</Grid>
+		</div>
 	);
 };
 

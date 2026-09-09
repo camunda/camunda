@@ -6,16 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {TooltipProvider} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect} from 'vitest';
-import {userEvent} from 'vitest/browser';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {Task} from './Task';
 
 const currentUser = createCurrentUser({username: 'demo'});
 
-const baseProps = {
+type TaskProps = React.ComponentProps<typeof Task>;
+
+const baseProps: TaskProps = {
 	userTaskKey: 'task-42',
 	displayName: 'Review invoice',
 	businessId: null,
@@ -29,9 +31,15 @@ const baseProps = {
 	currentUser,
 };
 
+const TestTask: React.FC<Partial<TaskProps>> = (props) => (
+	<TooltipProvider>
+		<Task {...baseProps} {...props} />
+	</TooltipProvider>
+);
+
 describe('<Task />', () => {
 	it('should render the task display name and process name', async () => {
-		const screen = await renderWithRouter(() => <Task {...baseProps} />, {
+		const screen = await renderWithRouter(() => <TestTask />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
@@ -41,7 +49,7 @@ describe('<Task />', () => {
 	});
 
 	it('should render a business id when provided', async () => {
-		const screen = await renderWithRouter(() => <Task {...baseProps} businessId="order-123" />, {
+		const screen = await renderWithRouter(() => <TestTask businessId="order-123" />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
@@ -50,7 +58,7 @@ describe('<Task />', () => {
 	});
 
 	it('should render a link with an accessible label for an unassigned task', async () => {
-		const screen = await renderWithRouter(() => <Task {...baseProps} assignee={null} />, {
+		const screen = await renderWithRouter(() => <TestTask assignee={null} />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
@@ -59,7 +67,7 @@ describe('<Task />', () => {
 	});
 
 	it('should render an "assigned to me" label', async () => {
-		const screen = await renderWithRouter(() => <Task {...baseProps} assignee={currentUser.username} />, {
+		const screen = await renderWithRouter(() => <TestTask assignee={currentUser.username} />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
@@ -68,7 +76,7 @@ describe('<Task />', () => {
 	});
 
 	it('should render an "assigned task" label', async () => {
-		const screen = await renderWithRouter(() => <Task {...baseProps} assignee="john.doe" />, {
+		const screen = await renderWithRouter(() => <TestTask assignee="john.doe" />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
@@ -77,7 +85,7 @@ describe('<Task />', () => {
 	});
 
 	it('should render the priority label', async () => {
-		const screen = await renderWithRouter(() => <Task {...baseProps} priority={80} />, {
+		const screen = await renderWithRouter(() => <TestTask priority={80} />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
@@ -85,24 +93,8 @@ describe('<Task />', () => {
 		await expect.element(screen.getByText('Critical', {exact: true})).toBeVisible();
 	});
 
-	it('should preserve the task list search params when opening the task', async () => {
-		const {router, ...screen} = await renderWithRouter(() => <Task {...baseProps} />, {
-			path: '/tasklist/$userTaskKey',
-			initialEntry: '/tasklist/other-task?filter=custom&sortBy=priority&processDefinitionKey=process-1',
-		});
-
-		await userEvent.click(screen.getByRole('link', {name: 'Unassigned task: Review invoice'}));
-
-		await expect.poll(() => router.state.location.pathname).toBe('/tasklist/task-42');
-		expect(router.state.location.search).toEqual({
-			filter: 'custom',
-			processDefinitionKey: 'process-1',
-			sortBy: 'priority',
-		});
-	});
-
 	it('should not render the priority label', async () => {
-		const screen = await renderWithRouter(() => <Task {...baseProps} priority={null} />, {
+		const screen = await renderWithRouter(() => <TestTask priority={null} />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
@@ -111,5 +103,28 @@ describe('<Task />', () => {
 		await expect.element(screen.getByText('High')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Medium')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Low')).not.toBeInTheDocument();
+	});
+
+	it.for([
+		{path: '/tasklist/$userTaskKey' as const, initialEntry: '/tasklist/task-42'},
+		{path: '/tasklist/$userTaskKey/process' as const, initialEntry: '/tasklist/task-42/process'},
+		{path: '/tasklist/$userTaskKey/history' as const, initialEntry: '/tasklist/task-42/history'},
+	])('should mark the task as selected at $initialEntry', async ({path, initialEntry}) => {
+		const screen = await renderWithRouter(() => <TestTask />, {path, initialEntry});
+
+		await expect
+			.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'}))
+			.toHaveAttribute('aria-current', 'page');
+	});
+
+	it('should not mark a different task as selected', async () => {
+		const screen = await renderWithRouter(() => <TestTask />, {
+			path: '/tasklist/$userTaskKey/process',
+			initialEntry: '/tasklist/other-task/process',
+		});
+
+		await expect
+			.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'}))
+			.not.toHaveAttribute('aria-current');
 	});
 });

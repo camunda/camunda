@@ -6,31 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type RefObject, useEffect} from 'react';
 import {
+	Alert,
 	Button,
-	IconButton,
-	InlineNotification,
-	SkeletonText,
-	StructuredListBody,
-	StructuredListCell,
-	StructuredListHead,
-	StructuredListRow,
-	StructuredListWrapper,
-} from '@carbon/react';
-import {Close, Maximize} from '@carbon/react/icons';
-import {useVirtualizer} from '@tanstack/react-virtual';
+	Skeleton,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@camunda/design-system';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useVirtualizer} from '@tanstack/react-virtual';
+import {Maximize2, X} from 'lucide-react';
+import {type RefObject, useEffect} from 'react';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {useTranslation} from 'react-i18next';
-import {cn} from '#/shared/cn';
-import type {VariablesFormValues} from '#/tasklist/modules/task-details-variables/types';
-import {
-	createNewVariableFieldName,
-	createVariableFieldName,
-} from '#/tasklist/modules/task-details-variables/variableFieldNames';
 import {mergeValidators} from '#/tasklist/modules/task-details-variables/mergeValidators';
+import type {VariablesFormValues} from '#/tasklist/modules/task-details-variables/types';
 import {
 	validateDuplicateNames,
 	validateNameCharacters,
@@ -38,14 +33,21 @@ import {
 	validateValueComplete,
 	validateValueJSON,
 } from '#/tasklist/modules/task-details-variables/validators';
+import {
+	createNewVariableFieldName,
+	createVariableFieldName,
+} from '#/tasklist/modules/task-details-variables/variableFieldNames';
 import {DelayedErrorField} from './DelayedErrorField';
 import {LoadingTextarea} from './LoadingTextarea';
-import {TextInput} from './TextInput';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
-import styles from './VariableEditor.module.scss';
+import {TextInput} from './TextInput';
 
 const ESTIMATED_ROW_HEIGHT = 48;
 const OVERSCAN = 5;
+const COLUMN_COUNT = 3;
+const NAME_CELL_CLASS = 'w-50 align-middle';
+const VALUE_CELL_CLASS = 'min-w-0 break-all align-middle';
+const CONTROLS_CELL_CLASS = 'w-20 align-middle';
 
 type Props = {
 	containerRef: RefObject<HTMLElement | null>;
@@ -111,78 +113,82 @@ const VariableEditor: React.FC<Props> = ({
 	const paddingBottom = isNextPageError ? 0 : virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0);
 
 	return (
-		<StructuredListWrapper className={styles.list} isCondensed>
-			<StructuredListHead>
-				<StructuredListRow head>
-					<StructuredListCell className={styles.cell} head>
-						{t('tasklist.variableEditorVariableNameHeader')}
-					</StructuredListCell>
-					<StructuredListCell className={styles.cell} head>
-						{t('tasklist.variableEditorVariableValueHeader')}
-					</StructuredListCell>
-					<StructuredListCell className={styles.cell} head>
-						<span className="cds--visually-hidden">{t('tasklist.variableEditorOpenJsonLabel')}</span>
-					</StructuredListCell>
-				</StructuredListRow>
-			</StructuredListHead>
-			<StructuredListBody>
+		<Table size="md" className="h-min table-fixed">
+			<TableHeader>
+				<TableRow>
+					<TableHead className={NAME_CELL_CLASS}>{t('tasklist.variableEditorVariableNameHeader')}</TableHead>
+					<TableHead className={VALUE_CELL_CLASS}>{t('tasklist.variableEditorVariableValueHeader')}</TableHead>
+					<TableHead className={CONTROLS_CELL_CLASS}>
+						<span className="sr-only">{t('tasklist.variableEditorOpenJsonLabel')}</span>
+					</TableHead>
+				</TableRow>
+			</TableHeader>
+			<TableBody>
 				{readOnly ? (
 					<>
-						{paddingTop > 0 ? <div style={{height: paddingTop}} aria-hidden /> : null}
+						{paddingTop > 0 ? (
+							<TableRow aria-hidden>
+								<TableCell colSpan={COLUMN_COUNT} style={{height: paddingTop, padding: 0}} />
+							</TableRow>
+						) : null}
 						{virtualItems.map((virtualRow) => {
 							const variable = variables[virtualRow.index];
 							if (variable === undefined) {
 								return (
-									<StructuredListRow key={virtualRow.index}>
-										<StructuredListCell className={cn(styles.cell, styles.nameCell)}>
-											<SkeletonText />
-										</StructuredListCell>
-										<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
-											<SkeletonText />
-										</StructuredListCell>
-										<StructuredListCell className={cn(styles.cell, styles.controlsCell)} />
-									</StructuredListRow>
+									<TableRow key={virtualRow.index}>
+										<TableCell className={NAME_CELL_CLASS}>
+											<Skeleton className="h-4 w-full" />
+										</TableCell>
+										<TableCell className={VALUE_CELL_CLASS}>
+											<Skeleton className="h-4 w-full" />
+										</TableCell>
+										<TableCell className={CONTROLS_CELL_CLASS} />
+									</TableRow>
 								);
 							}
 
 							return (
-								<StructuredListRow key={variable.variableKey}>
-									<StructuredListCell className={cn(styles.cell, styles.nameCell)}>{variable.name}</StructuredListCell>
-									<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
-										<div className={styles.singleLineValue}>{variable.value}</div>
-									</StructuredListCell>
-									<StructuredListCell className={cn(styles.cell, styles.controlsCell)}>
-										<div className={styles.controls}>
-											<IconButton
-												label={t('tasklist.variableEditorOpenJsonLabel')}
+								<TableRow key={variable.variableKey}>
+									<TableCell className={NAME_CELL_CLASS}>{variable.name}</TableCell>
+									<TableCell className={VALUE_CELL_CLASS}>
+										<div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">{variable.value}</div>
+									</TableCell>
+									<TableCell className={CONTROLS_CELL_CLASS}>
+										<div className="flex justify-end pr-2">
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon-sm"
+												aria-label={t('tasklist.variableEditorOpenJsonLabel')}
+												title={t('tasklist.variableEditorOpenJsonLabel')}
 												onClick={() => {
 													if (variable.isTruncated) {
-														void fetchFullVariable(variable.variableKey);
+														fetchFullVariable(variable.variableKey);
 													}
 													onMaximizeClick(createVariableFieldName(variable.name), variable.value);
 												}}
-												size="sm"
-												kind="ghost"
-												align="top-end"
-												leaveDelayMs={100}
 											>
-												<Maximize />
-											</IconButton>
+												<Maximize2 aria-hidden />
+											</Button>
 										</div>
-									</StructuredListCell>
-								</StructuredListRow>
+									</TableCell>
+								</TableRow>
 							);
 						})}
-						{paddingBottom > 0 ? <div style={{height: paddingBottom}} aria-hidden /> : null}
+						{paddingBottom > 0 ? (
+							<TableRow aria-hidden>
+								<TableCell colSpan={COLUMN_COUNT} style={{height: paddingBottom, padding: 0}} />
+							</TableRow>
+						) : null}
 					</>
 				) : (
 					<>
 						{variables.map((variable) => {
 							const fieldName = createVariableFieldName(variable.name);
 							return (
-								<StructuredListRow key={variable.name}>
-									<StructuredListCell className={cn(styles.cell, styles.nameCell)}>{variable.name}</StructuredListCell>
-									<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
+								<TableRow key={variable.name}>
+									<TableCell className={NAME_CELL_CLASS}>{variable.name}</TableCell>
+									<TableCell className={VALUE_CELL_CLASS}>
 										<Field<string>
 											name={fieldName}
 											validate={variable.isTruncated ? () => undefined : validateValueJSON}
@@ -195,7 +201,7 @@ const VariableEditor: React.FC<Props> = ({
 													isLoading={variablesLoadingFullValue.includes(variable.variableKey)}
 													onFocus={(event) => {
 														if (variable.isTruncated) {
-															void fetchFullVariable(variable.variableKey);
+															fetchFullVariable(variable.variableKey);
 														}
 														input.onFocus(event);
 													}}
@@ -207,28 +213,28 @@ const VariableEditor: React.FC<Props> = ({
 												/>
 											)}
 										</Field>
-									</StructuredListCell>
-									<StructuredListCell className={cn(styles.cell, styles.controlsCell)}>
-										<div className={styles.controls}>
-											<IconButton
-												label={t('tasklist.variableEditorOpenJsonLabel')}
+									</TableCell>
+									<TableCell className={CONTROLS_CELL_CLASS}>
+										<div className="flex justify-end pr-2">
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon-sm"
+												aria-label={t('tasklist.variableEditorOpenJsonLabel')}
+												title={t('tasklist.variableEditorOpenJsonLabel')}
+												disabled={isDisabled}
 												onClick={() => {
 													if (variable.isTruncated) {
-														void fetchFullVariable(variable.variableKey);
+														fetchFullVariable(variable.variableKey);
 													}
 													onMaximizeClick(fieldName, variable.value);
 												}}
-												disabled={isDisabled}
-												size="sm"
-												kind="ghost"
-												align="top-end"
-												leaveDelayMs={100}
 											>
-												<Maximize />
-											</IconButton>
+												<Maximize2 aria-hidden />
+											</Button>
 										</div>
-									</StructuredListCell>
-								</StructuredListRow>
+									</TableCell>
+								</TableRow>
 							);
 						})}
 						<OnNewVariableAdded
@@ -246,8 +252,8 @@ const VariableEditor: React.FC<Props> = ({
 									const nameFieldName = createNewVariableFieldName(variable, 'name');
 									const valueFieldName = createNewVariableFieldName(variable, 'value');
 									return (
-										<StructuredListRow key={variable}>
-											<StructuredListCell className={cn(styles.cell, styles.nameCell)}>
+										<TableRow key={variable}>
+											<TableCell className={NAME_CELL_CLASS}>
 												<DelayedErrorField
 													name={nameFieldName}
 													validate={mergeValidators(
@@ -272,8 +278,8 @@ const VariableEditor: React.FC<Props> = ({
 														/>
 													)}
 												</DelayedErrorField>
-											</StructuredListCell>
-											<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
+											</TableCell>
+											<TableCell className={VALUE_CELL_CLASS}>
 												<DelayedErrorField
 													name={valueFieldName}
 													validate={validateValueComplete}
@@ -293,34 +299,40 @@ const VariableEditor: React.FC<Props> = ({
 														/>
 													)}
 												</DelayedErrorField>
-											</StructuredListCell>
-											<StructuredListCell className={cn(styles.cell, styles.controlsCell)}>
-												<div className={styles.controls}>
-													<IconButton
-														label={t('tasklist.variableEditorOpenJsonLabel')}
+											</TableCell>
+											<TableCell className={CONTROLS_CELL_CLASS}>
+												<div className="flex justify-end pr-2">
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon-sm"
+														aria-label={t('tasklist.variableEditorOpenJsonLabel')}
+														title={t('tasklist.variableEditorOpenJsonLabel')}
+														disabled={isDisabled}
 														onClick={() => onMaximizeClick(valueFieldName, '')}
-														disabled={isDisabled}
-														size="sm"
-														kind="ghost"
-														align="top-end"
-														leaveDelayMs={100}
 													>
-														<Maximize />
-													</IconButton>
-													<IconButton
-														label={t('tasklist.taskVariablesRemoveVariable', {count: index + 1, ordinal: true})}
+														<Maximize2 aria-hidden />
+													</Button>
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon-sm"
+														aria-label={t('tasklist.taskVariablesRemoveVariable', {
+															count: index + 1,
+															ordinal: true,
+														})}
+														title={t('tasklist.taskVariablesRemoveVariable', {
+															count: index + 1,
+															ordinal: true,
+														})}
+														disabled={isDisabled}
 														onClick={() => fields.remove(index)}
-														disabled={isDisabled}
-														size="sm"
-														kind="ghost"
-														align="top-end"
-														leaveDelayMs={100}
 													>
-														<Close />
-													</IconButton>
+														<X aria-hidden />
+													</Button>
 												</div>
-											</StructuredListCell>
-										</StructuredListRow>
+											</TableCell>
+										</TableRow>
 									);
 								})
 							}
@@ -328,28 +340,25 @@ const VariableEditor: React.FC<Props> = ({
 					</>
 				)}
 				{isNextPageError ? (
-					<StructuredListRow>
-						<StructuredListCell>
-							<div className={styles.paginationError}>
-								<InlineNotification
-									kind="error"
-									hideCloseButton
+					<TableRow>
+						<TableCell colSpan={COLUMN_COUNT}>
+							<div className="flex items-center gap-2">
+								<Alert
+									className="flex-1"
+									variant="destructive"
 									role="alert"
-									lowContrast
 									title={t('tasklist.taskDetailsFailedToFetchVariablesErrorTitle')}
-									subtitle={t('tasklist.taskDetailsFailedToFetchVariablesErrorSubtitle')}
+									description={t('tasklist.taskDetailsFailedToFetchVariablesErrorSubtitle')}
 								/>
-								<Button kind="tertiary" size="sm" type="button" onClick={fetchNextPage}>
+								<Button variant="secondary" size="sm" type="button" onClick={fetchNextPage}>
 									{t('tasklist.taskDetailsProcessRetryButtonLabel')}
 								</Button>
 							</div>
-						</StructuredListCell>
-						<StructuredListCell />
-						<StructuredListCell />
-					</StructuredListRow>
+						</TableCell>
+					</TableRow>
 				) : null}
-			</StructuredListBody>
-		</StructuredListWrapper>
+			</TableBody>
+		</Table>
 	);
 };
 

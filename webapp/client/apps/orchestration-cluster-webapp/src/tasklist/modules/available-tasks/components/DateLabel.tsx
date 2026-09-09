@@ -6,35 +6,35 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Popover, Stack} from '@carbon/react';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
-import {LabelWithPopover} from './LabelWithPopover';
-import styles from './DateLabel.module.scss';
+import {LabelWithTooltip, type Align} from './LabelWithTooltip';
 
-const DateLabel: React.FC<{
+type Props = {
 	date: Exclude<ReturnType<typeof formatISODateTime>, null>;
 	relativeLabel: string;
 	absoluteLabel: string;
 	icon?: React.ReactNode;
-	align?: React.ComponentProps<typeof Popover>['align'];
-}> = ({date, relativeLabel, absoluteLabel, icon, align = 'top-start'}) => (
-	<LabelWithPopover
+	align?: Align;
+};
+
+const DateLabel: React.FC<Props> = ({date, relativeLabel, absoluteLabel, icon, align = 'top-start'}) => (
+	<LabelWithTooltip
 		title={
 			['week', 'months', 'years'].includes(date.relative.resolution)
 				? `${absoluteLabel} ${date.relative.speech}`
 				: `${relativeLabel} ${date.relative.speech}`
 		}
-		popoverContent={
-			<Stack orientation="vertical" gap={2}>
-				<span className={styles.popoverHeading}>{absoluteLabel}</span>
-				<span className={styles.popoverBody}>{date.absolute.text}</span>
-			</Stack>
+		content={
+			<div className="flex flex-col gap-1">
+				<span className="font-medium">{absoluteLabel}</span>
+				<span>{date.absolute.text}</span>
+			</div>
 		}
 		align={align}
 	>
 		{icon}
 		{date.relative.text}
-	</LabelWithPopover>
+	</LabelWithTooltip>
 );
 
 export {DateLabel};

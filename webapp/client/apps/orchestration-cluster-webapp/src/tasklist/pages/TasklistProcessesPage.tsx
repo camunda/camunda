@@ -6,18 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import EmptyMessageImage from '#/tasklist/modules/processes/empty-message-image.svg';
-import {ProcessesFilters} from '#/tasklist/modules/processes/components/ProcessesFilters';
+import {useCallback} from 'react';
+import {useTranslation} from 'react-i18next';
+import {Button, EmptyState, PageHeader, PageLayout} from '@camunda/design-system';
+import type {CurrentUser, ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {ProcessTile} from '#/tasklist/modules/processes/components/ProcessTile';
+import {ProcessesFilters} from '#/tasklist/modules/processes/components/ProcessesFilters';
 import {FirstTimeProcessWarning} from '#/tasklist/modules/processes/components/FirstTimeProcessWarning';
 import {useStartProcess} from '#/tasklist/modules/processes/useStartProcess';
-import {C3EmptyState} from '@camunda/camunda-composite-components';
-import {Button, Column, Grid, Layer, Link, Stack} from '@carbon/react';
-import type {CurrentUser, ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
-import {useTranslation} from 'react-i18next';
-import {useCallback} from 'react';
 import type {ProcessesSearch} from '#/tasklist/modules/processes/searchSchema';
-import styles from './TasklistProcessesPage.module.scss';
 
 type Props = {
 	initialFilterValues: ProcessesSearch;
@@ -41,8 +38,8 @@ const TasklistProcessesPage: React.FC<Props> = ({
 	children,
 }) => {
 	const {t} = useTranslation();
-	const {status, selectedProcessDefinitionKey, isBusy, startProcess} = useStartProcess();
 	const isFiltered = initialFilterValues.search !== undefined && initialFilterValues.search !== '';
+	const {status, selectedProcessDefinitionKey, isBusy, startProcess} = useStartProcess();
 	const handleStartProcess = useCallback(
 		(process: ProcessDefinition) => {
 			if (process.hasStartForm) {
@@ -57,85 +54,63 @@ const TasklistProcessesPage: React.FC<Props> = ({
 
 	return (
 		<>
-			<main id="main-content" className={`cds--content ${styles.page}`}>
-				<div className={styles.scrollContainer}>
-					<Stack gap={2}>
-						<section className={styles.header} aria-labelledby="processes-heading">
-							<Stack className={styles.headerContent} gap={6}>
-								<Grid narrow>
-									<Column sm={4} md={8} lg={16}>
-										<Stack gap={4}>
-											<h1 id="processes-heading">{t('tasklist.headerNavItemProcesses')}</h1>
-											<p>{t('tasklist.processesSubtitle')}</p>
-										</Stack>
-									</Column>
-								</Grid>
+			<PageLayout>
+				<div className="flex flex-col gap-6">
+					<PageHeader title={t('tasklist.headerNavItemProcesses')} description={t('tasklist.processesSubtitle')} />
 
-								<ProcessesFilters initialFilterValues={initialFilterValues} tenants={tenants} />
-							</Stack>
-						</section>
+					<div className="flex flex-col gap-4">
+						<ProcessesFilters initialFilterValues={initialFilterValues} tenants={tenants} />
 
-						<section className={styles.processes}>
-							<div className={styles.processesContent}>
-								{processes.length === 0 ? (
-									<Layer>
-										<C3EmptyState
-											icon={isFiltered ? undefined : {path: EmptyMessageImage, altText: ''}}
-											heading={
-												isFiltered
-													? t('tasklist.processesProcessNotFoundError')
-													: t('tasklist.processesProcessNotPublishedError')
-											}
-											description={
-												<span>
-													{t('tasklist.processesErrorBody')}
-													<Link
-														href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
-														target="_blank"
-														rel="noopener noreferrer"
-														inline
-													>
-														{t('tasklist.processesErrorBodyLinkLabel')}
-													</Link>
-												</span>
-											}
-										/>
-									</Layer>
-								) : (
-									<Grid narrow as={Layer}>
-										{processes.map((process) => (
-											<Column
-												className={styles.processTileWrapper}
-												sm={4}
-												md={4}
-												lg={5}
-												key={process.processDefinitionKey}
+						{processes.length === 0 ? (
+							<EmptyState
+								heading={
+									isFiltered
+										? t('tasklist.processesProcessNotFoundError')
+										: t('tasklist.processesProcessNotPublishedError')
+								}
+								description={
+									<>
+										{t('tasklist.processesErrorBody')}
+										<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
+											<a
+												href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
+												target="_blank"
+												rel="noopener noreferrer"
 											>
-												<ProcessTile
-													process={process}
-													status={selectedProcessDefinitionKey === process.processDefinitionKey ? status : 'inactive'}
-													isStartButtonDisabled={isBusy}
-													onStartProcess={() => handleStartProcess(process)}
-												/>
-											</Column>
-										))}
-									</Grid>
-								)}
-								{hasNextPage && processes.length > 0 ? (
-									<Button
-										onClick={onLoadMore}
-										disabled={isFetchingNextPage}
-										kind="ghost"
-										className={styles.loadMoreButton}
-									>
-										{isFetchingNextPage ? t('tasklist.processesLoadingMore') : t('tasklist.processesLoadMore')}
-									</Button>
-								) : null}
+												{t('tasklist.processesErrorBodyLinkLabel')}
+											</a>
+										</Button>
+									</>
+								}
+							/>
+						) : (
+							<div className="grid gap-4 max-[42rem]:grid-cols-1 min-[42rem]:grid-cols-2 min-[66rem]:grid-cols-3">
+								{processes.map((process) => {
+									const isSelected = selectedProcessDefinitionKey === process.processDefinitionKey;
+
+									return (
+										<ProcessTile
+											key={process.processDefinitionKey}
+											process={process}
+											status={isSelected ? status : 'inactive'}
+											isStartButtonDisabled={isBusy && !isSelected}
+											onStartProcess={() => handleStartProcess(process)}
+										/>
+									);
+								})}
 							</div>
-						</section>
-					</Stack>
+						)}
+
+						{hasNextPage && processes.length > 0 ? (
+							<div className="flex justify-center">
+								<Button type="button" variant="ghost" disabled={isFetchingNextPage} onClick={onLoadMore}>
+									{isFetchingNextPage ? t('tasklist.processesLoadingMore') : t('tasklist.processesLoadMore')}
+								</Button>
+							</div>
+						) : null}
+					</div>
 				</div>
-			</main>
+			</PageLayout>
 			<FirstTimeProcessWarning>{children}</FirstTimeProcessWarning>
 		</>
 	);

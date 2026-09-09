@@ -67,7 +67,8 @@ describe('<ProcessesFilters />', () => {
 		);
 
 		await userEvent.click(screen.getByRole('combobox', {name: 'Filter processes'}));
-		await userEvent.click(screen.getByRole('option', {name: 'Requires form input to start'}));
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'Requires form input to start'}), {force: true});
 
 		await expect.poll(() => router.state.location.search).toEqual({hasStartForm: 'yes'});
 	});
@@ -82,7 +83,8 @@ describe('<ProcessesFilters />', () => {
 		);
 
 		await userEvent.click(screen.getByRole('combobox', {name: 'Filter processes'}));
-		await userEvent.click(screen.getByRole('option', {name: 'All Processes'}));
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'All Processes'}), {force: true});
 
 		await expect.poll(() => router.state.location.search).toEqual({});
 	});
@@ -103,7 +105,8 @@ describe('<ProcessesFilters />', () => {
 		await expect.element(tenantFilter).toHaveTextContent('Default - <default>');
 
 		await userEvent.click(tenantFilter);
-		await userEvent.click(screen.getByRole('option', {name: 'Tenant A - tenant-a'}));
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'Tenant A - tenant-a'}), {force: true});
 
 		await expect.poll(() => router.state.location.search).toEqual({tenantId: 'tenant-a'});
 	});

@@ -21,7 +21,7 @@ const SessionWatcher: React.FC = observer(() => {
 	const isSessionExpired =
 		status === 'logged-out' ||
 		status === 'session-expired' ||
-		(status === 'session-invalid' && location.pathname !== '/shadcn');
+		(status === 'session-invalid' && location.pathname !== '/');
 
 	useEffect(() => {
 		if (location.pathname.endsWith('/login')) {
@@ -42,11 +42,7 @@ const SessionWatcher: React.FC = observer(() => {
 
 	if (isSessionExpired) {
 		return (
-			<Navigate
-				to="/shadcn/tasklist/login"
-				search={location.href === '/shadcn/tasklist' ? {} : {redirect: location.href}}
-				replace
-			/>
+			<Navigate to="/tasklist/login" search={location.href === '/tasklist' ? {} : {redirect: location.href}} replace />
 		);
 	}
 

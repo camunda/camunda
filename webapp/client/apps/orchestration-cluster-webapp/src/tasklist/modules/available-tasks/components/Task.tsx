@@ -7,30 +7,29 @@
  */
 
 import React from 'react';
-import {useTranslation} from 'react-i18next';
-import {Link, useMatch} from '@tanstack/react-router';
-import {Stack} from '@carbon/react';
-import {Calendar, CheckmarkFilled, Warning, Notification} from '@carbon/react/icons';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import {Text} from '@camunda/design-system';
+import {Link, useMatchRoute} from '@tanstack/react-router';
+import {Bell, Calendar, CircleCheck, TriangleAlert} from 'lucide-react';
+import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
-import {formatISODate, formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
-import {getSecondaryDate} from '#/tasklist/modules/available-tasks/getSecondaryDate';
 import {getNavLinkLabel} from '#/tasklist/modules/available-tasks/getNavLinkLabel';
-import {AssigneeTag} from './AssigneeTag';
+import {getSecondaryDate} from '#/tasklist/modules/available-tasks/getSecondaryDate';
+import {formatISODate, formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
+import {AssigneeBadge} from './AssigneeBadge';
 import {DateLabel} from './DateLabel';
 import {PriorityLabel} from './PriorityLabel';
-import styles from './Task.module.scss';
 
 type Props = {
 	userTaskKey: string;
 	displayName: string;
 	processDisplayName: string;
 	businessId: string | null;
-	assignee: string | null | undefined;
+	assignee: string | null;
 	creationDate: string;
-	followUpDate: string | null | undefined;
-	dueDate: string | null | undefined;
-	completionDate: string | null | undefined;
+	followUpDate: string | null;
+	dueDate: string | null;
+	completionDate: string | null;
 	priority: number | null;
 	currentUser: CurrentUser;
 };
@@ -53,93 +52,98 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 		ref,
 	) => {
 		const {t} = useTranslation();
-		const match = useMatch({
-			from: '/_carbon/_auth/tasklist/_tasks/$userTaskKey',
-			shouldThrow: false,
-		});
-		const isActive = match?.params.userTaskKey === userTaskKey;
-
+		const matchRoute = useMatchRoute();
+		const isActive = matchRoute({to: '/tasklist/$userTaskKey', params: {userTaskKey}, fuzzy: true}) !== false;
 		const creationDate = formatISODateTime(creationDateString);
-		const completionDate = formatISODate(completionDateString);
-		const dueDate = formatISODate(dueDateString);
-		const followUpDate = formatISODate(followUpDateString);
 		const secondaryDate = getSecondaryDate({
-			completionDate,
-			dueDate,
-			followUpDate,
+			completionDate: formatISODate(completionDateString),
+			dueDate: formatISODate(dueDateString),
+			followUpDate: formatISODate(followUpDateString),
 			sortBy: 'creation',
 		});
 
 		return (
-			<article className={cn(styles.container, {[styles.active!]: isActive})}>
+			<article>
 				<Link
-					className={styles.taskLink}
+					className={cn(
+						'flex min-h-34 w-full flex-col gap-3 rounded-xl border border-border bg-neutral-background-subtle p-4 text-neutral-foreground-strong outline-none transition-colors',
+						'hover:bg-neutral-background-medium focus-visible:ring-2 focus-visible:ring-ring',
+						{'bg-neutral-background-strong hover:bg-neutral-background-strong': isActive},
+					)}
 					to="/tasklist/$userTaskKey"
 					search
 					params={{userTaskKey}}
+					aria-current={isActive ? 'page' : undefined}
 					aria-label={getNavLinkLabel({
 						displayName,
 						assigneeId: assignee,
 						currentUsername: currentUser.username,
 					})}
 				>
-					<Stack className={styles.fullWidthAndHeight} data-testid={`task-${userTaskKey}`} gap={3} ref={ref}>
-						<div className={cn(styles.flex, styles.flexColumn)}>
-							<span className={styles.name}>{displayName}</span>
-							<span className={styles.label}>{processDisplayName}</span>
-							{businessId !== null && <span className={styles.label}>{businessId}</span>}
+					<div className="flex h-full w-full flex-col gap-3" data-testid={`task-${userTaskKey}`} ref={ref}>
+						<div className="flex min-h-5 flex-col justify-center">
+							<Text variant="label-md-strong">{displayName}</Text>
+							<Text variant="helper" className="text-neutral-foreground-subtle">
+								{processDisplayName}
+							</Text>
+							{businessId === null ? null : (
+								<Text variant="helper" className="text-neutral-foreground-subtle">
+									{businessId}
+								</Text>
+							)}
 						</div>
 
-						<div className={cn(styles.flex, styles.flexRow)}>
-							<AssigneeTag currentUser={currentUser} assignee={assignee} />
+						<div className="flex min-h-5 items-center justify-between gap-2">
+							<AssigneeBadge currentUser={currentUser} assignee={assignee} />
 							{priority === null ? null : <PriorityLabel priority={priority} />}
 						</div>
-						<div data-testid="dates" className={cn(styles.flex, styles.flexRow, styles.alignItemsEnd)}>
-							{creationDate ? (
+
+						<div data-testid="dates" className="flex min-h-5 items-end justify-between gap-2">
+							{creationDate === null ? null : (
 								<DateLabel
 									date={creationDate}
 									relativeLabel={t('tasklist.availableTasksCreatedRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksCreatedAbsoluteLabel')}
-									icon={<Calendar className={styles.inlineIcon} />}
+									icon={<Calendar className="size-4 shrink-0" aria-hidden />}
 								/>
-							) : null}
-							{secondaryDate.followUpDate !== undefined ? (
+							)}
+							{secondaryDate.followUpDate === undefined ? null : (
 								<DateLabel
 									date={secondaryDate.followUpDate}
 									relativeLabel={t('tasklist.availableTasksFollowUpRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksFollowUpAbsoluteLabel')}
-									icon={<Notification className={styles.inlineIcon} color="blue" />}
+									icon={<Bell className="size-4 shrink-0 text-info-action-default" aria-hidden />}
 									align="top-end"
 								/>
-							) : null}
-							{secondaryDate.overDueDate !== undefined ? (
+							)}
+							{secondaryDate.overDueDate === undefined ? null : (
 								<DateLabel
 									date={secondaryDate.overDueDate}
 									relativeLabel={t('tasklist.availableTasksOverdueRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksOverdueAbsoluteLabel')}
-									icon={<Warning className={styles.inlineIcon} color="red" />}
+									icon={<TriangleAlert className="size-4 shrink-0 text-danger-action-default" aria-hidden />}
 									align="top-end"
 								/>
-							) : null}
-							{secondaryDate.dueDate !== undefined ? (
+							)}
+							{secondaryDate.dueDate === undefined ? null : (
 								<DateLabel
 									date={secondaryDate.dueDate}
 									relativeLabel={t('tasklist.availableTasksDueRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksDueAbsoluteLabel')}
 									align="top-end"
 								/>
-							) : null}
-							{secondaryDate.completionDate !== undefined ? (
+							)}
+							{secondaryDate.completionDate === undefined ? null : (
 								<DateLabel
 									date={secondaryDate.completionDate}
 									relativeLabel={t('tasklist.availableTasksCompletedRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksCompletedAbsoluteLabel')}
-									icon={<CheckmarkFilled className={styles.inlineIcon} color="green" />}
+									icon={<CircleCheck className="size-4 shrink-0 text-success-action-default" aria-hidden />}
 									align="top-end"
 								/>
-							) : null}
+							)}
 						</div>
-					</Stack>
+					</div>
 				</Link>
 			</article>
 		);

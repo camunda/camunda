@@ -6,12 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Layer} from '@carbon/react';
-import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {TaskDetailsHistorySearch} from '#/tasklist/modules/task-details-history/sortUtils';
 import {HistoryTable} from '#/tasklist/modules/task-details-history/components/HistoryTable';
-import styles from './TaskDetailsHistoryPage.module.scss';
 
 type Props = {
 	userTaskKey: string;
@@ -21,8 +18,6 @@ type Props = {
 };
 
 const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search, onScrollDown}) => {
-	const {t} = useTranslation();
-
 	const handleScroll: React.UIEventHandler<HTMLDivElement> = (event) => {
 		const target = event.currentTarget;
 		const {scrollTop, scrollHeight, clientHeight} = target;
@@ -35,19 +30,21 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search
 
 	if (auditLogs.length === 0) {
 		return (
-			<div className={styles.container} data-testid="history-tab-content">
-				<div className={styles.emptyContainer}>
-					<Layer>
-						<p>{t('tasklist.taskDetailsHistoryEmptyMessage')}</p>
-					</Layer>
+			<div className="flex h-full min-h-0 w-full flex-col pt-4" data-testid="history-tab-content">
+				<div className="min-h-0 w-full flex-1 overflow-auto px-4 pb-4">
+					<HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={search} />
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className={styles.container} data-testid="history-tab-content">
-			<div className={styles.tableContainer} data-testid="history-scroll-container" onScroll={handleScroll}>
+		<div className="flex h-full min-h-0 w-full flex-col pt-4" data-testid="history-tab-content">
+			<div
+				className="min-h-0 w-full flex-1 overflow-auto px-4 pb-4"
+				data-testid="history-scroll-container"
+				onScroll={handleScroll}
+			>
 				<HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={search} />
 			</div>
 		</div>

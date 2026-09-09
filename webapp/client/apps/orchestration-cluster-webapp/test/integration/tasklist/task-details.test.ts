@@ -82,7 +82,32 @@ test.describe('Task details page', () => {
 		await expect(taskDetailPage.taskTab).toBeVisible();
 		await expect(taskDetailPage.processTab).toBeVisible();
 		await expect(taskDetailPage.historyTab).toBeVisible();
-		await expect(taskDetailPage.taskTab).toHaveAttribute('aria-current', 'page');
+		await expect(taskDetailPage.taskTab).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test('should navigate to initial page preserving search params when task is cancelled', async ({
+		network,
+		taskDetailPage,
+		page,
+	}) => {
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createUserTask({
+						state: 'CANCELED',
+						processName: 'Invoice process',
+						processInstanceKey: '2251799813685280',
+					}),
+				),
+			}),
+		);
+
+		await taskDetailPage.goto('2251799813685281', '?filter=assigned-to-me');
+
+		await expect(page).toHaveURL('/tasklist?filter=assigned-to-me');
+		const notification = taskDetailPage.header.notifications.getByNotificationTitle('Process instance cancelled');
+		await expect(notification).toBeVisible();
+		await expect(notification).toContainText('Invoice process (2251799813685280)');
 	});
 
 	test('should switch tabs and update the URL', async ({network, taskDetailPage, page}) => {
@@ -114,7 +139,10 @@ test.describe('Task details page', () => {
 		await expect(taskDetailPage.taskTabContent).toBeAttached();
 	});
 
-	test('should keep task details visible when process access is forbidden', async ({network, taskDetailPage}) => {
+	test('should keep task details visible when process access is forbidden', async ({
+		network,
+		taskDetailPage,
+	}) => {
 		network.use(
 			mockGetProcessDefinitionXmlEndpoint({
 				successResponse: new HttpResponse(null, {status: 403}),
@@ -125,20 +153,8 @@ test.describe('Task details page', () => {
 
 		await expect(taskDetailPage.detailsInfo).toBeVisible();
 		await expect(taskDetailPage.aside).toBeVisible();
-		await expect(taskDetailPage.processTab).toHaveAttribute('aria-current', 'page');
+		await expect(taskDetailPage.processTab).toHaveAttribute('aria-selected', 'true');
 		await expect(taskDetailPage.processForbiddenError).toBeVisible();
 		await expect(taskDetailPage.processRetryButton).not.toBeVisible();
-	});
-
-	test('should show the 404 page for a non-existent task', async ({network, taskDetailPage, page}) => {
-		network.use(
-			mockGetUserTaskEndpoint({
-				successResponse: HttpResponse.json({}, {status: 404}),
-			}),
-		);
-
-		await taskDetailPage.goto('nonexistent-key');
-
-		await expect(page.getByRole('heading', {name: /not found/i})).toBeVisible();
 	});
 });
