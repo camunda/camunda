@@ -65,7 +65,7 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/$userTaskKey
 				toast.info(t('tasklist.processInstanceCancelledNotification'), {
 					description: `${task.processName ?? task.processDefinitionId} (${task.processInstanceKey})`,
 				});
-navigate({to: '/shadcn/tasklist', search: true, replace: true});
+				navigate({to: '/shadcn/tasklist', search: true, replace: true});
 			}
 		}, [navigate, task.processDefinitionId, task.processInstanceKey, task.processName, task.state]);
 
