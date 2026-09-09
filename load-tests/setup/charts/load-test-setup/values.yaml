@@ -521,3 +521,46 @@ postgresql:
       # and the default is not enough headroom for this scenario's connection count.
       parameters:
         max_client_conn: "1000"
+
+k6:
+  tests:
+    default:
+      enabled: true
+      script: test.default.js
+
+  prometheus:
+    endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+
+  tags:
+    # Configure the list of "tags" (labels) automatically set on metrics by k6.
+    #
+    # We want to remove some default tags, like "name" and "url".
+    # These tags are automatically set by k6 on all the metrics, but they both
+    # contain the target URL of HTTP requests, which can create
+    # high-cardinality metrics in Prometheus, which in turns have a very
+    # negative impact on Prometheus performance.
+    #
+    # It's still possible to manually set these tags when calling the
+    # `http.XXX()` methods though ; they are just not automatically filled in
+    # by k6.
+    #
+    # See https://grafana.com/docs/k6/latest/using-k6/k6-options/reference/#system-tags
+    system:
+      - check
+      - error
+      - error_code
+      - expected_response
+      - group
+      - method
+      # Disable the default "name" system tag: it contains the URL being
+      # fetched, which can have a high cardinality.
+      #- name
+      - proto
+      - scenario
+      - service
+      - status
+      - subproto
+      - tls_version
+      # Disable the default "url" system tag: the URL can have a high
+      # cardinality.
+      #- url
