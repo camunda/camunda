@@ -156,7 +156,7 @@ services:
     networks:
       - localhost
   opensearch:
-    image: opensearchproject/opensearch:${OS_VERSION:-2.19.5}
+    image: opensearchproject/opensearch:${OS_VERSION:-2.19.6}
     profiles: ["opensearch"]
     container_name: opensearch
     environment:

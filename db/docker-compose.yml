@@ -20,7 +20,7 @@ services:
       - "5432:5432"
 
   mssql:
-    image: mcr.microsoft.com/mssql/server:${IMAGE_VERSION:-2022-latest}
+    image: mcr.microsoft.com/mssql/server:${IMAGE_VERSION:-2025-latest}
     restart: always
     environment:
       ACCEPT_EULA: y
@@ -70,7 +70,7 @@ services:
       # Name of the Docker Compose service
   oracle:
     # Override the pinned tag via the IMAGE_VERSION env var (see Docker Hub for available tags).
-    image: gvenzl/oracle-free:${IMAGE_VERSION:-23.26.1-slim-faststart}
+    image: gvenzl/oracle-free:${IMAGE_VERSION:-23.26.2-slim-faststart}
     # Forward Oracle port to localhost
     ports:
       - "1521:1521"
@@ -155,7 +155,7 @@ services:
     restart: always
 
   opensearch:
-    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.5}
+    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.6}
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -182,7 +182,7 @@ services:
       - zeebe_network
 
   opensearch-tenant:
-    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.5}
+    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.6}
     container_name: opensearch-tenant
     environment:
       - cluster.name=opensearch-tenant
