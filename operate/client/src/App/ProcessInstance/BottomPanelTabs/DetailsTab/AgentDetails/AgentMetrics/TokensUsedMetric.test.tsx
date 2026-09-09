@@ -12,7 +12,14 @@ import {TokensUsedMetric} from './TokensUsedMetric';
 describe('<TokensUsedMetric />', () => {
   it('should render total tokens calls and limit indicator', () => {
     render(
-      <TokensUsedMetric inputTokens={4} outputTokens={2} maxTokens={10} />,
+      <TokensUsedMetric
+        inputTokens={4}
+        outputTokens={2}
+        cacheReadTokens={0}
+        cacheCreationTokens={0}
+        reasoningTokens={0}
+        maxTokens={10}
+      />,
     );
 
     const container = screen.getByRole('article', {name: 'Tokens Used'});
@@ -25,7 +32,14 @@ describe('<TokensUsedMetric />', () => {
 
   it('should render separated input and output tokens information', () => {
     render(
-      <TokensUsedMetric inputTokens={4} outputTokens={2} maxTokens={10} />,
+      <TokensUsedMetric
+        inputTokens={4}
+        outputTokens={2}
+        cacheReadTokens={0}
+        cacheCreationTokens={0}
+        reasoningTokens={0}
+        maxTokens={10}
+      />,
     );
 
     const container = screen.getByRole('article', {name: 'Tokens Used'});
@@ -38,7 +52,14 @@ describe('<TokensUsedMetric />', () => {
 
   it('should hide the limit indicator when no limit is set', () => {
     render(
-      <TokensUsedMetric inputTokens={4} outputTokens={2} maxTokens={-1} />,
+      <TokensUsedMetric
+        inputTokens={4}
+        outputTokens={2}
+        cacheReadTokens={0}
+        cacheCreationTokens={0}
+        reasoningTokens={0}
+        maxTokens={-1}
+      />,
     );
 
     const container = screen.getByRole('article', {name: 'Tokens Used'});
@@ -50,8 +71,60 @@ describe('<TokensUsedMetric />', () => {
     ).toBeNull();
   });
 
+  it('should hide reasoning and cache breakdown rows when they are 0', () => {
+    render(
+      <TokensUsedMetric
+        inputTokens={4}
+        outputTokens={2}
+        cacheReadTokens={0}
+        cacheCreationTokens={0}
+        reasoningTokens={0}
+        maxTokens={10}
+      />,
+    );
+
+    const container = screen.getByRole('article', {name: 'Tokens Used'});
+    expect(within(container).queryByText('Reasoning')).not.toBeInTheDocument();
+    expect(
+      within(container).queryByText('Cache read'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(container).queryByText('Cache write'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show reasoning and cache breakdown rows when they are greater than 0', () => {
+    render(
+      <TokensUsedMetric
+        inputTokens={4}
+        outputTokens={2}
+        cacheReadTokens={7}
+        cacheCreationTokens={9}
+        reasoningTokens={3}
+        maxTokens={10}
+      />,
+    );
+
+    const container = screen.getByRole('article', {name: 'Tokens Used'});
+    expect(within(container).getByText('Reasoning')).toBeInTheDocument();
+    expect(within(container).getByText('3')).toBeInTheDocument();
+    expect(within(container).getByText('Cache read')).toBeInTheDocument();
+    expect(within(container).getByText('7')).toBeInTheDocument();
+    expect(within(container).getByText('Cache write')).toBeInTheDocument();
+    expect(within(container).getByText('9')).toBeInTheDocument();
+  });
+
   it('should show 100% usage when limit is set to 0', () => {
-    render(<TokensUsedMetric inputTokens={3} outputTokens={0} maxTokens={0} />);
+    render(
+      <TokensUsedMetric
+        inputTokens={3}
+        outputTokens={0}
+        cacheReadTokens={0}
+        cacheCreationTokens={0}
+        reasoningTokens={0}
+        maxTokens={0}
+      />,
+    );
 
     const container = screen.getByRole('article', {name: 'Tokens Used'});
     const limit = within(container).getByRole('meter', {name: 'Usage limit'});
