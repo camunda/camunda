@@ -643,7 +643,8 @@ components:
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         history:
           description: |
             A batch of history items to append to the agent instance's conversation
@@ -717,7 +718,8 @@ components:
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         history:
           description: |
             A batch of history items to append to the agent instance's conversation
@@ -1025,7 +1027,8 @@ components:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
         jobLease:
           description: The lease token of the activation that produced this item.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         loopIteration:
           description: The loop iteration this item belongs to.
           allOf:
