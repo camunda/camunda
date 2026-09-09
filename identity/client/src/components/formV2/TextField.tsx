@@ -127,8 +127,6 @@ const TextField: FC<TextFieldProps> = ({
   return (
     <FormField
       label={label}
-      error={errorText}
-      helperText={helperText}
       footer={
         showCounter
           ? (id) => (
@@ -154,6 +152,9 @@ const TextField: FC<TextFieldProps> = ({
           autoFocus,
           name,
           autoComplete,
+          "aria-invalid": errorText ? (true as const) : undefined,
+          invalidText: errorText || undefined,
+          helperText,
           onChange: handleChange,
           onBlur: handleBlur,
           onClick,
@@ -171,7 +172,7 @@ const TextField: FC<TextFieldProps> = ({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="absolute inset-y-0 right-0.5 my-auto"
+                className="absolute top-0.5 right-0.5"
                 aria-label={
                   passwordVisible ? t("hidePassword") : t("showPassword")
                 }
@@ -213,7 +214,7 @@ const TextField: FC<TextFieldProps> = ({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="absolute inset-y-0 right-0.5 my-auto"
+                className="absolute top-0.5 right-0.5"
                 aria-label={actionButton.label}
                 aria-haspopup={actionButton.ariaHasPopup}
                 aria-expanded={actionButton.ariaExpanded}
