@@ -1376,6 +1376,7 @@ public final class ProcessInstanceModificationModifyProcessor
                     process.getKey(),
                     processInstance.getKey(),
                     processInstance.getValue().getRootProcessInstanceKey(),
+                    processInstance.getValue().getStorageOrdinal(),
                     process.getBpmnProcessId(),
                     process.getTenantId(),
                     variableDocument);

@@ -414,6 +414,7 @@ public final class JobCompleteProcessor
           targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
           targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
           targetAdHocSubProcessInstanceValue.getRootProcessInstanceKey(),
+          targetAdHocSubProcessInstanceValue.getStorageOrdinal(),
           targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
           targetAdHocSubProcessInstanceValue.getTenantId(),
           completingJobRecord.getVariablesBuffer());

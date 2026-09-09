@@ -220,6 +220,7 @@ public final class VariableDocumentUpdateProcessor
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final long rootProcessInstanceKey = scope.getValue().getRootProcessInstanceKey();
+    final int storageOrdinal = scope.getValue().getStorageOrdinal();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
 
     try {
@@ -229,6 +230,7 @@ public final class VariableDocumentUpdateProcessor
             processDefinitionKey,
             processInstanceKey,
             rootProcessInstanceKey,
+            storageOrdinal,
             bpmnProcessId,
             tenantId,
             value.getVariablesBuffer());
@@ -238,6 +240,7 @@ public final class VariableDocumentUpdateProcessor
             processDefinitionKey,
             processInstanceKey,
             rootProcessInstanceKey,
+            storageOrdinal,
             bpmnProcessId,
             tenantId,
             value.getVariablesBuffer());
@@ -301,6 +304,7 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getProcessDefinitionKey(),
               userTaskRecord.getProcessInstanceKey(),
               userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getStorageOrdinal(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
               value.getVariablesBuffer());
@@ -310,6 +314,7 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getProcessDefinitionKey(),
               userTaskRecord.getProcessInstanceKey(),
               userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getStorageOrdinal(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
               value.getVariablesBuffer());
