@@ -232,6 +232,22 @@ components:
       # matches the RDBMS secondary storage's varchar column size.
       example: item-1
 
+    JobLeaseToken:
+      description: |
+        An opaque, engine-minted fencing token identifying a single activation of a job.
+        Returned by Activate Jobs as `ActivatedJobResult.leaseToken` when the job is
+        activated with a lease, and passed back on fenced job commands — and on
+        agent-instance creation/updates as `jobLease` — to prove the caller holds the
+        current lease. The token is opaque: clients may rely on its presence and equality
+        only, and must never construct, parse, compare, or otherwise interpret it. It
+        cannot be minted client-side; only the engine produces it, exactly once per leased
+        activation, and clients must not depend on any particular internal format.
+      type: string
+      format: JobLeaseToken
+      x-semantic-type: JobLeaseToken
+      minLength: 1
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
     ## Filters
 
     ElementIdFilterProperty:
