@@ -56,37 +56,38 @@ function getVariants(
       description: license.validLicense ? undefined : nonProductionDescription,
     },
   ];
+  if (license.isCommercial) {
+    return variants;
+  }
 
-  if (!license.isCommercial) {
-    const expiresAt =
-      license.expiresAt === null ? undefined : Date.parse(license.expiresAt);
-    const now = Date.now();
+  const expiresAt =
+    license.expiresAt === null ? undefined : Date.parse(license.expiresAt);
+  const now = Date.now();
 
-    if (expiresAt !== undefined && expiresAt < now) {
-      variants.push({
-        key: "non-commercial-expired",
-        label: t("licenseNonCommercialExpiredLabel"),
-        tone: "danger",
-        description: t("licenseNonCommercialExpiredDescription"),
-      });
-    } else if (
-      expiresAt !== undefined &&
-      expiresAt - EXPIRY_WARNING_THRESHOLD_MS < now
-    ) {
-      const daysLeft = Math.max(0, Math.floor((expiresAt - now) / DAY_MS));
-      variants.push({
-        key: "non-commercial-expiring",
-        label: t("licenseNonCommercialExpiringLabel", { count: daysLeft }),
-        tone: "warning",
-        description: t("licenseNonCommercialExpiringDescription"),
-      });
-    } else {
-      variants.push({
-        key: "non-commercial",
-        label: t("licenseNonCommercialLabel"),
-        tone: "neutral",
-      });
-    }
+  if (expiresAt !== undefined && expiresAt < now) {
+    variants.push({
+      key: "non-commercial-expired",
+      label: t("licenseNonCommercialExpiredLabel"),
+      tone: "danger",
+      description: t("licenseNonCommercialExpiredDescription"),
+    });
+  } else if (
+    expiresAt !== undefined &&
+    expiresAt - EXPIRY_WARNING_THRESHOLD_MS < now
+  ) {
+    const daysLeft = Math.max(0, Math.floor((expiresAt - now) / DAY_MS));
+    variants.push({
+      key: "non-commercial-expiring",
+      label: t("licenseNonCommercialExpiringLabel", { count: daysLeft }),
+      tone: "warning",
+      description: t("licenseNonCommercialExpiringDescription"),
+    });
+  } else {
+    variants.push({
+      key: "non-commercial",
+      label: t("licenseNonCommercialLabel"),
+      tone: "neutral",
+    });
   }
 
   return variants;
