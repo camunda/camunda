@@ -136,7 +136,7 @@ runs:
     # above and what build-push-action already resolved this to: it splits build args on newlines,
     # so any further line was never a VERSION value to begin with.
     - name: Reduce a multi-valued version to the first value
-      id: get-build-inputs
+      id: get-version-build-arg
       shell: bash
       env:
         VERSION_INPUT: ${{ inputs.version }}
@@ -161,5 +161,5 @@ runs:
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
-          VERSION=${{ steps.get-build-inputs.outputs.version }}
+          VERSION=${{ steps.get-version-build-arg.outputs.version }}
           ${{ steps.get-additional-build-args.outputs.result }}
