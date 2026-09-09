@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Calendar } from "lucide-react";
+import { Calendar } from "@camunda/design-system/icons";
 import TextField from "src/components/formV2/TextField";
 import { formatDate, formatTime } from "./formatDate";
 import { DateRangeModal } from "./DateRangeModal";

@@ -8,7 +8,7 @@
 
 import { FC } from "react";
 import { Button, EmptyState } from "@camunda/design-system";
-import { Plus } from "lucide-react";
+import { Plus } from "@camunda/design-system/icons";
 import { useDocsUrl } from "../documentation/DocsUrlContext";
 import { documentationHref } from "src/components/documentationV2";
 import useTranslate from "src/utility/localization";

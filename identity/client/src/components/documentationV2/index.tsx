@@ -9,7 +9,7 @@
 import { FC, ReactNode } from "react";
 import useTranslate from "../../utility/localization";
 import { useDocsUrl } from "../documentation/DocsUrlContext";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "@camunda/design-system/icons";
 
 type DocumentationLinkProps = {
   children?: ReactNode;

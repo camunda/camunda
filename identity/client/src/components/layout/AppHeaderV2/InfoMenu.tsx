@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { HelpCircle } from "lucide-react";
+import { HelpCircle } from "@camunda/design-system/icons";
 import {
   Button,
   DropdownMenu,

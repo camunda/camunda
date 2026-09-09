@@ -19,7 +19,7 @@ import {
   PopoverContent,
   Text,
 } from "@camunda/design-system";
-import { XIcon } from "lucide-react";
+import { XIcon } from "@camunda/design-system/icons";
 import useDebounce from "react-debounced";
 import useTranslate from "src/utility/localization";
 
