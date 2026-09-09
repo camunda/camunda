@@ -2,6 +2,7 @@ import com.diffplug.gradle.spotless.SpotlessExtension
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.provider.Provider
+
 fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
   value.isEmpty() || value.toBoolean()
 }
@@ -15,8 +16,6 @@ plugins {
 }
 
 group = "io.camunda"
-
-version = rootProject.version
 
 java {
   sourceCompatibility = JavaVersion.VERSION_21
