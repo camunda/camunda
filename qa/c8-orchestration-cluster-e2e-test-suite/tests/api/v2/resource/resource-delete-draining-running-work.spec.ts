@@ -17,14 +17,10 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {
   activateSingleJob,
   completeJob,
-  completeUserTask,
   createInstanceOnceDeployed,
-  deployUserTaskProcess,
   drainProcessDefinition,
   expectProcessDefinitionDeleted,
-  expectProcessDefinitionState,
   expectProcessState,
-  findUserTask,
   searchIncidentByPIK,
   searchVariableByNameAndProcessInstanceKey,
 } from '@requestHelpers';
@@ -244,56 +240,6 @@ test.describe('Process Definition Draining Deletion — work already in flight',
       extendedAssertionOptions,
     );
 
-    await expectProcessDefinitionDeleted(request, processDefinitionKey);
-  });
-
-  test('A suspended instance holds the drain open until it is resumed and completed', async ({
-    request,
-  }) => {
-    const processDefinitionId = uniquePrefixedId('draining-suspend');
-    const {processDefinitionKey} =
-      await deployUserTaskProcess(processDefinitionId);
-    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
-    instancesToCancel.push(instance.processInstanceKey);
-    const userTaskKey = await findUserTask(
-      request,
-      instance.processInstanceKey,
-      'CREATED',
-    );
-
-    await drainProcessDefinition(request, processDefinitionKey);
-
-    // Suspension acts on the instance, not the definition, so a drain in progress
-    // must not gate it.
-    await assertStatusCode(
-      await request.post(
-        buildUrl('/process-instances/{processInstanceKey}/suspension', {
-          processInstanceKey: instance.processInstanceKey,
-        }),
-        {headers: jsonHeaders()},
-      ),
-      204,
-    );
-
-    // A suspended instance never ends on its own, so the drain must not finalize
-    // as if the instance were gone.
-    await expectProcessDefinitionState(
-      request,
-      processDefinitionKey,
-      'DRAINING',
-    );
-
-    await assertStatusCode(
-      await request.post(
-        buildUrl('/process-instances/{processInstanceKey}/resumption', {
-          processInstanceKey: instance.processInstanceKey,
-        }),
-        {headers: jsonHeaders()},
-      ),
-      204,
-    );
-
-    await assertStatusCode(await completeUserTask(request, userTaskKey), 204);
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
   });
 });

@@ -144,12 +144,3 @@ export async function completeTaskWithRetry(
 export function tooltipWithText(page: Page, text: string): Locator {
   return page.getByRole('tooltip', {name: text});
 }
-
-export async function navigateToAppHome(
-  page: Page,
-  appName: string,
-): Promise<void> {
-  await page.goto(
-    `${process.env.CORE_APPLICATION_URL}/${appName.toLowerCase()}/`,
-  );
-}
