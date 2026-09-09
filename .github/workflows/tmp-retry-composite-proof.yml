@@ -40,9 +40,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # setup-java resolves the release through api.adoptium.net from the runner host, so a hosts
-      # entry pointing it at localhost with nothing listening fails it in well under a second.
-      # Healing after 6s lands inside the action's first 10s inter-attempt sleep.
       # If the runner already has this JDK cached, setup-java never touches the network and R1
       # would pass without ever having failed an attempt. Fail loudly rather than pass vacuously.
       - name: Guard against a pre-cached JDK
@@ -52,12 +49,24 @@ jobs:
             && { echo "  R1 INVALID - temurin 24 is pre-cached; pick an uncached version"; exit 1; }
           echo "  temurin 24 not in the tool cache, the network break will be reached"
 
-      - name: Break Adoptium resolution, heal after 6s
+      # setup-java resolves the release through api.adoptium.net from the runner host, so a hosts
+      # entry pointing it at localhost with nothing listening breaks it.
+      #
+      # Timing, measured in run 34330823597: attempt 1 reaches the API and fails ~6.2s in, so the
+      # first inter-attempt sleep spans roughly t+7 to t+17. Healing at t+12 sits in the middle of
+      # it. Do not lower this: at t+6 the poison lifted *during* attempt 1, which then simply
+      # succeeded, attempts 2 and 3 were skipped, and the job passed having proven nothing.
+      - name: Break Adoptium resolution, heal after 12s
         shell: bash
         run: |
           echo '127.0.0.1 api.adoptium.net' | sudo tee -a /etc/hosts > /dev/null
           echo "  poisoned: $(getent hosts api.adoptium.net || echo '<unresolvable>')"
-          sudo bash -c 'nohup sh -c "sleep 6; sed -i \"/api.adoptium.net/d\" /etc/hosts" >/dev/null 2>&1 &'
+          sudo bash -c 'nohup sh -c "sleep 12; sed -i \"/api.adoptium.net/d\" /etc/hosts" >/dev/null 2>&1 &'
+
+      - name: Record start time
+        id: t0
+        shell: bash
+        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
 
       # A version the hosted runners do not pre-cache, so the tool cache cannot mask the breakage.
       - name: Setup Java through the real composite
@@ -68,12 +77,14 @@ jobs:
 
       - name: Assert Java 24 is actually active
         shell: bash
+        env:
+          T0: ${{ steps.t0.outputs.epoch }}
         run: |
+          elapsed=$(( $(date +%s) - T0 ))
           echo "  JAVA_HOME=$JAVA_HOME"
+          echo "  elapsed=${elapsed}s (expected: >= 10, one inter-attempt sleep at minimum)"
           java -version 2>&1 | head -1 | sed 's/^/    /'
-          if java -version 2>&1 | head -1 | grep -q '"24'; then
-            echo "  R1 PASS - recovered from a broken first attempt"
-          else
+          if ! java -version 2>&1 | head -1 | grep -q '"24'; then
             echo "  R1 FAIL - java 24 not active"
             exit 1
           fi
@@ -81,6 +92,13 @@ jobs:
             echo "  R1 INVALID - the heal never ran, so nothing was proven"
             exit 1
           fi
+          # The guard that the first run of this job lacked. Reaching attempt 2 at all costs a 10s
+          # sleep, so anything faster means attempt 1 succeeded and no retry was exercised.
+          if (( elapsed < 10 )); then
+            echo "  R1 INVALID - too fast to have retried; attempt 1 succeeded, nothing proven"
+            exit 1
+          fi
+          echo "  R1 PASS - recovered from a genuinely broken first attempt"
 
   java-exhaust:
     name: "X1 setup-java still fails the job after 3 attempts"
@@ -148,13 +166,25 @@ jobs:
         run: docker context create zeebe-context
 
       # Booting the builder makes the host daemon pull moby/buildkit from Docker Hub, so a hosts
-      # entry for the registry breaks it. The daemon's pull backoff is slower and less predictable
-      # than setup-java's API call, so this heals later; expect recovery on attempt 2 or 3.
-      - name: Break Docker Hub resolution, heal after 25s
+      # entry for the registry breaks it.
+      #
+      # Timing, measured in run 34330823597: `connection refused` is immediate, so each attempt
+      # fails in 0.7-0.9s and the whole three-attempt sequence is over in 22.3s. The first run of
+      # this job healed at t+25 and so missed every attempt by 2.3s. Healing at t+6 lands inside
+      # the first inter-attempt sleep, which spans t+1 to t+11.
+      #
+      # Do not raise this to t+12 by analogy with R1: attempt 2 starts at ~t+11 and dies 0.66s
+      # later, so a t+12 heal would arrive just after it and only attempt 3 would recover.
+      - name: Break Docker Hub resolution, heal after 6s
         shell: bash
         run: |
           echo '127.0.0.1 registry-1.docker.io' | sudo tee -a /etc/hosts > /dev/null
-          sudo bash -c 'nohup sh -c "sleep 25; sed -i \"/registry-1.docker.io/d\" /etc/hosts" >/dev/null 2>&1 &'
+          sudo bash -c 'nohup sh -c "sleep 6; sed -i \"/registry-1.docker.io/d\" /etc/hosts" >/dev/null 2>&1 &'
+
+      - name: Record start time
+        id: t0
+        shell: bash
+        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Buildx through the real composite
         uses: ./.github/actions/setup-buildx-with-retry
@@ -164,11 +194,13 @@ jobs:
 
       - name: Assert a working builder is active
         shell: bash
+        env:
+          T0: ${{ steps.t0.outputs.epoch }}
         run: |
+          elapsed=$(( $(date +%s) - T0 ))
+          echo "  elapsed=${elapsed}s (expected: >= 10, one inter-attempt sleep at minimum)"
           docker buildx inspect --bootstrap 2>&1 | sed 's/^/    /'
-          if docker buildx inspect --bootstrap > /dev/null 2>&1; then
-            echo "  R2 PASS - builder is up after a broken first attempt"
-          else
+          if ! docker buildx inspect --bootstrap > /dev/null 2>&1; then
             echo "  R2 FAIL - no working builder"
             exit 1
           fi
@@ -176,7 +208,13 @@ jobs:
             echo "  R2 INVALID - the heal never ran, so nothing was proven"
             exit 1
           fi
-          echo "  builders registered (a retry may leave more than one -- see the action README):"
+          if (( elapsed < 10 )); then
+            echo "  R2 INVALID - too fast to have retried; attempt 1 succeeded, nothing proven"
+            exit 1
+          fi
+          echo "  R2 PASS - builder is up after a genuinely broken first attempt"
+          # Run 34330823597 showed the post hook removing one builder per attempt, all of them.
+          echo "  builders registered (one per attempt that got as far as create):"
           docker buildx ls | sed 's/^/    /'
 
   build-recover:
@@ -209,6 +247,13 @@ jobs:
           nohup sh -c 'sleep 8; cp .github/tmp-retry-proof/app.Dockerfile .github/tmp-retry-proof/late.Dockerfile' >/dev/null 2>&1 &
           test ! -f .github/tmp-retry-proof/late.Dockerfile && echo "  late.Dockerfile absent at start, as intended"
 
+      - name: Record start time
+        id: t0
+        shell: bash
+        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      # Timing confirmed in run 34330823597: attempt 1 failed at 0.97s, attempt 2 succeeded at
+      # ~11s, attempt 3 skipped. The 8s heal sits inside the first inter-attempt sleep.
       - name: Build through the real composite
         uses: ./.github/actions/docker-build-with-retry
         with:
@@ -219,10 +264,18 @@ jobs:
 
       - name: Assert the image was really built
         shell: bash
+        env:
+          T0: ${{ steps.t0.outputs.epoch }}
         run: |
+          elapsed=$(( $(date +%s) - T0 ))
+          echo "  elapsed=${elapsed}s (expected: >= 10, one inter-attempt sleep at minimum)"
           docker image inspect tmp-retry-proof:local --format '    id={{.Id}} size={{.Size}}' \
             || { echo "  R3 FAIL - image not in the local daemon"; exit 1; }
-          echo "  R3 PASS - image built after a broken first attempt"
+          if (( elapsed < 10 )); then
+            echo "  R3 INVALID - too fast to have retried; attempt 1 succeeded, nothing proven"
+            exit 1
+          fi
+          echo "  R3 PASS - image built after a genuinely broken first attempt"
 
   build-exhaust:
     name: "X2 docker build still fails the job after 3 attempts"
