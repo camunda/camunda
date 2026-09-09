@@ -9,7 +9,7 @@
 import { FC, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { Button, Heading, Text } from "@camunda/design-system";
+import { Heading, IconButton, Text } from "@camunda/design-system";
 import { ArrowRight, Info } from "@camunda/design-system/icons";
 import { DocumentationLink } from "src/components/documentationV2";
 import TextField from "src/components/formV2/TextField";
@@ -117,19 +117,17 @@ const AddTenantModal: FC<AddTenantModalProps> = ({
               <li key={item} className="border-b border-border py-1">
                 <div className="flex items-center justify-between gap-2">
                   <Text>{t(item)}</Text>
-                  <Button
+                  <IconButton
                     variant="ghost"
-                    size="icon"
-                    aria-label={t(item)}
+                    label={t(item)}
+                    icon={ArrowRight}
                     onClick={() => {
                       onClose?.();
                       void navigate(
                         `/tenants/${createdTenant.tenantId}/${ITEM_TO_TAB[item]}`,
                       );
                     }}
-                  >
-                    <ArrowRight aria-hidden="true" />
-                  </Button>
+                  />
                 </div>
                 {item === "assignClients" && (
                   <div className="flex items-start gap-2">
