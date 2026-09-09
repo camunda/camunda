@@ -290,7 +290,14 @@ test.describe('Process Instances Filters', () => {
         variableProcessInstance.processInstanceKey.toString();
       const callActivityProcessInstanceKey =
         callActivityProcessInstance.processInstanceKey.toString();
-      await operateFiltersPanelPage.resetFiltersButton.click();
+      await operateFiltersPanelPage.clickResetFilters();
+      // Reset clears filters and restores the default checkbox state
+      // asynchronously. Wait for the previous Process Instance Key filter to
+      // disappear before re-adding it, otherwise the pending reset clobbers the
+      // value filled below and the table falls back to the full, unfiltered set.
+      await expect(
+        operateFiltersPanelPage.processInstanceKeysFilter,
+      ).toBeHidden();
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
@@ -429,6 +436,13 @@ test.describe('Process Instances Filters', () => {
       await operateOperationPanelPage.collapseOperationIdField();
 
       await operateFiltersPanelPage.clickResetFilters();
+      // Wait for the reset to fully apply (the Process Instance Key filter used
+      // above is removed) before toggling the instance-state checkboxes.
+      // Otherwise the toggles race the async reset and operate on the stale,
+      // all-checked state, ending with every checkbox cleared and no instances.
+      await expect(
+        operateFiltersPanelPage.processInstanceKeysFilter,
+      ).toBeHidden();
       await operateFiltersPanelPage.clickRunningInstancesCheckbox();
       await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
 
