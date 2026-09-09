@@ -11,12 +11,13 @@ import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.assertThatAll
 import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import feign.Response;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.gateway.protocol.model.ClusterBalanceResponse;
+import io.camunda.gateway.protocol.model.ClusterCompletedRebalance;
+import io.camunda.gateway.protocol.model.ClusterRebalanceOperationPartition;
+import io.camunda.gateway.protocol.model.ClusterRebalanceOperationPartition.ResultEnum;
 import io.camunda.zeebe.it.cluster.backup.InProcessRestoreTestUtil;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.PartitionState;
@@ -27,12 +28,10 @@ import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.restapi.ClusterRebalanceRestClient;
+import io.camunda.zeebe.qa.util.restapi.ClusterRebalanceRestClient.TypedResponse;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +63,6 @@ final class ClusterRebalanceRecoveryModeIT {
           .withReplicationFactor(3)
           .build();
 
-  private static final ObjectMapper JSON = new ObjectMapper();
   @AutoClose private CamundaClient client;
   private ClusterRebalanceRestClient rebalanceClient;
 
@@ -96,15 +94,16 @@ final class ClusterRebalanceRecoveryModeIT {
         .isEqualTo(HttpURLConnection.HTTP_ACCEPTED);
     assertThat(statusOf(dryRun)).isEqualTo(HttpURLConnection.HTTP_ACCEPTED);
 
-    final var outcome = awaitTerminalRebalance(List.of("COMPLETED"));
-    assertThat(outcome).isEqualTo("COMPLETED");
+    final var outcome =
+        awaitTerminalRebalance(List.of(ClusterCompletedRebalance.ResultEnum.COMPLETED));
+    assertThat(outcome).isEqualTo(ClusterCompletedRebalance.ResultEnum.COMPLETED);
     final var completed = lastCompletedRebalance();
-    assertThat(completed.path("partitions").isEmpty())
+    assertThat(completed.getPartitions())
         .as("every tenant is recovering, so the plan is empty: %s", completed)
-        .isTrue();
-    assertThat(completedBefore.equals(completed))
+        .isEmpty();
+    assertThat(completed)
         .as("a real no-op request still records its own completed run")
-        .isFalse();
+        .isNotEqualTo(completedBefore);
   }
 
   @Test
@@ -121,7 +120,7 @@ final class ClusterRebalanceRecoveryModeIT {
         .isEqualTo(HttpURLConnection.HTTP_ACCEPTED);
 
     // then
-    awaitTerminalRebalance(List.of("COMPLETED"));
+    awaitTerminalRebalance(List.of(ClusterCompletedRebalance.ResultEnum.COMPLETED));
     awaitBalancedTopology();
     assertThatAllJobsCanBeCompleted(processInstanceKeys, client, JOB_TYPE);
   }
@@ -138,17 +137,21 @@ final class ClusterRebalanceRecoveryModeIT {
     ensureMode(PartitionStateCode.RECOVERING);
 
     // then
-    final var outcome = awaitTerminalRebalance(List.of("COMPLETED"));
+    final var outcome =
+        awaitTerminalRebalance(List.of(ClusterCompletedRebalance.ResultEnum.COMPLETED));
     LOG.info("Rebalance racing recovery finished as {}", outcome);
     final var completed = lastCompletedRebalance();
-    final var results = completed.path("partitions").findValuesAsText("result");
+    final var results =
+        completed.getPartitions().stream()
+            .map(ClusterRebalanceOperationPartition::getResult)
+            .toList();
     assertThat(results)
         .as("recovery skips partitions instead of cancelling the run: %s", completed)
         .allMatch(
             result ->
-                result.equals("TRANSFERRED")
-                    || result.equals("PHYSICAL_TENANT_RECOVERING")
-                    || result.equals("ALREADY_LEADER"));
+                result == ResultEnum.TRANSFERRED
+                    || result == ResultEnum.PHYSICAL_TENANT_RECOVERING
+                    || result == ResultEnum.ALREADY_LEADER);
 
     ensureMode(PartitionStateCode.ACTIVE);
     final var processInstanceKeys =
@@ -157,7 +160,7 @@ final class ClusterRebalanceRecoveryModeIT {
     assertThat(statusOf(rebalanceClient.triggerRebalance()))
         .as("a new rebalance is admitted once every tenant processes again")
         .isEqualTo(HttpURLConnection.HTTP_ACCEPTED);
-    awaitTerminalRebalance(List.of("COMPLETED"));
+    awaitTerminalRebalance(List.of(ClusterCompletedRebalance.ResultEnum.COMPLETED));
   }
 
   private void ensureMode(final PartitionStateCode target) {
@@ -188,59 +191,42 @@ final class ClusterRebalanceRecoveryModeIT {
         .allMatch(target::equals);
   }
 
-  private String awaitTerminalRebalance(final List<String> legalResults) {
-    final var terminalStatus = new AtomicReference<JsonNode>();
+  private ClusterCompletedRebalance.ResultEnum awaitTerminalRebalance(
+      final List<ClusterCompletedRebalance.ResultEnum> legalResults) {
+    final var terminalStatus = new AtomicReference<ClusterBalanceResponse>();
     Awaitility.await("the rebalance reaches a terminal state")
         .atMost(Duration.ofMinutes(2))
         .untilAsserted(
             () -> {
               final var status = rebalanceStatus();
-              assertThat(status.path("runningRebalance").isNull())
+              assertThat(status.getRunningRebalance())
                   .as("no rebalance still running: %s", status)
-                  .isTrue();
-              assertThat(status.path("lastCompletedRebalance").isNull())
+                  .isNull();
+              assertThat(status.getLastCompletedRebalance())
                   .as("a completed rebalance is present: %s", status)
-                  .isFalse();
+                  .isNotNull();
               terminalStatus.set(status);
             });
-    final var result = terminalStatus.get().path("lastCompletedRebalance").path("result").asText();
+    final var result = terminalStatus.get().getLastCompletedRebalance().getResult();
     assertThat(result).isIn(legalResults);
     return result;
   }
 
-  private JsonNode rebalanceStatus() {
+  private ClusterBalanceResponse rebalanceStatus() {
     final var response = rebalanceClient.getRebalance();
-    final var body = readBody(response);
     assertThat(response.status())
-        .as("rebalance status response: %s", body)
+        .as("rebalance status response: %s", response.body())
         .isEqualTo(HttpURLConnection.HTTP_OK);
-    try {
-      return JSON.readTree(body);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    return response.body();
   }
 
-  private JsonNode lastCompletedRebalance() {
-    return rebalanceStatus().path("lastCompletedRebalance");
+  private ClusterCompletedRebalance lastCompletedRebalance() {
+    return rebalanceStatus().getLastCompletedRebalance();
   }
 
-  private static int statusOf(final Response response) {
-    final var body = readBody(response);
-    LOG.debug("Rebalance request answered {}: {}", response.status(), body);
+  private static int statusOf(final TypedResponse<ClusterBalanceResponse> response) {
+    LOG.debug("Rebalance request answered {}: {}", response.status(), response.body());
     return response.status();
-  }
-
-  private static String readBody(final Response response) {
-    try (response) {
-      final var body = response.body();
-      if (body == null) {
-        return "";
-      }
-      return new String(body.asInputStream().readAllBytes(), StandardCharsets.UTF_8);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 
   private void awaitBalancedTopology() {
