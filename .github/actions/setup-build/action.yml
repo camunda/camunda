@@ -56,6 +56,10 @@ inputs:
       cache; see the setup-maven-cache action for why the bound exists.
     required: false
     default: "3"
+  skip-maven-cache:
+    description: Skip Maven cache setup (e.g. when running Gradle instead of Maven)
+    required: false
+    default: "false"
   maven-mirrors:
     description: |
       JSON list of extra Maven mirrors.
@@ -169,6 +173,7 @@ runs:
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"
   - name: Configure Maven cache
+    if: inputs.skip-maven-cache != 'true'
     uses: ./.github/actions/setup-maven-cache
     with:
       maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
