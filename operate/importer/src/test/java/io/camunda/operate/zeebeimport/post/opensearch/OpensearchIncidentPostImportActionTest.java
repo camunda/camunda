@@ -30,6 +30,7 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebeimport.post.AdditionalData;
 import jakarta.json.stream.JsonGenerator;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -154,9 +155,9 @@ public class OpensearchIncidentPostImportActionTest {
   private String json(final JsonpSerializable serializable) {
     final ByteArrayOutputStream baos = new ByteArrayOutputStream();
     final JsonbJsonpMapper mapper = new JsonbJsonpMapper();
-    final JsonGenerator generator = mapper.jsonProvider().createGenerator(baos);
-    serializable.serialize(generator, mapper);
-    generator.close();
-    return baos.toString();
+    try (JsonGenerator generator = mapper.jsonProvider().createGenerator(baos)) {
+      serializable.serialize(generator, mapper);
+    }
+    return baos.toString(StandardCharsets.UTF_8);
   }
 }
