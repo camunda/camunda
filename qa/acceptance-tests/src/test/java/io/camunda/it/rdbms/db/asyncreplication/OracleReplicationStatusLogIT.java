@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * getReplicationStatuses() always returns an empty list. We only verify the SQL executes without
  * error. For Postgres, we verify at least one active replica row is returned.
  */
-@Tag("rdbms")
+@Tag("async-repl")
 public class OracleReplicationStatusLogIT {
 
   @RegisterExtension
@@ -35,7 +35,7 @@ public class OracleReplicationStatusLogIT {
   @TestTemplate
   public void shouldQueryReplicationStatus(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var replicationStatusProvider = rdbmsService.getReplicationLogStatusProvider();
+    final var replicationStatusProvider = rdbmsService.getReplicationLsnProvider();
 
     Awaitility.await()
         .timeout(Duration.ofMinutes(2))
