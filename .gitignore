@@ -104,3 +104,6 @@ load-tests/setup/c8-*
 
 # python caches from scripts in skills
 **/__pycache__/**
+
+# Used by agents to persist session state
+STATE.md
