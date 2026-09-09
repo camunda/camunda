@@ -68,6 +68,57 @@ public class Executor {
    */
   private int queueCapacity = 64;
 
+  /**
+   * Additional core threads to add per physical tenant beyond the first, on top of the vCPU-derived
+   * {@link #corePoolSizeMultiplier} term. Each physical tenant is an independent traffic source, so
+   * this term is additive rather than folded into the vCPU multiplier.
+   *
+   * <p>Effective value: {@code corePoolSize = min(corePoolSizeCeiling, availableProcessors *
+   * corePoolSizeMultiplier + max(0, physicalTenantCount - 1) * corePoolSizePerTenant)}.
+   *
+   * <p>Default value: 1
+   */
+  private int corePoolSizePerTenant = 1;
+
+  /**
+   * Additional max threads to add per physical tenant beyond the first, on top of the vCPU-derived
+   * {@link #maxPoolSizeMultiplier} term. See {@link #corePoolSizePerTenant}.
+   *
+   * <p>Default value: 2
+   */
+  private int maxPoolSizePerTenant = 2;
+
+  /**
+   * Additional queue capacity to add per physical tenant beyond the first. See {@link
+   * #corePoolSizePerTenant}.
+   *
+   * <p>Default value: 16
+   */
+  private int queueCapacityPerTenant = 16;
+
+  /**
+   * Flat ceiling on {@code corePoolSize} regardless of vCPU count or physical-tenant count. Not
+   * vCPU-relative, since these threads are I/O-bound (parked waiting on RDBMS/ES) and cheap to keep
+   * idle.
+   *
+   * <p>Default value: 256
+   */
+  private int corePoolSizeCeiling = 256;
+
+  /**
+   * Flat ceiling on {@code maxPoolSize}. See {@link #corePoolSizeCeiling}.
+   *
+   * <p>Default value: 512
+   */
+  private int maxPoolSizeCeiling = 512;
+
+  /**
+   * Flat ceiling on {@code queueCapacity}. See {@link #corePoolSizeCeiling}.
+   *
+   * <p>Default value: 4096
+   */
+  private int queueCapacityCeiling = 4096;
+
   public int getCorePoolSizeMultiplier() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".core-pool-size-multiplier",
@@ -120,5 +171,53 @@ public class Executor {
 
   public void setQueueCapacity(final int queueCapacity) {
     this.queueCapacity = queueCapacity;
+  }
+
+  public int getCorePoolSizePerTenant() {
+    return corePoolSizePerTenant;
+  }
+
+  public void setCorePoolSizePerTenant(final int corePoolSizePerTenant) {
+    this.corePoolSizePerTenant = corePoolSizePerTenant;
+  }
+
+  public int getMaxPoolSizePerTenant() {
+    return maxPoolSizePerTenant;
+  }
+
+  public void setMaxPoolSizePerTenant(final int maxPoolSizePerTenant) {
+    this.maxPoolSizePerTenant = maxPoolSizePerTenant;
+  }
+
+  public int getQueueCapacityPerTenant() {
+    return queueCapacityPerTenant;
+  }
+
+  public void setQueueCapacityPerTenant(final int queueCapacityPerTenant) {
+    this.queueCapacityPerTenant = queueCapacityPerTenant;
+  }
+
+  public int getCorePoolSizeCeiling() {
+    return corePoolSizeCeiling;
+  }
+
+  public void setCorePoolSizeCeiling(final int corePoolSizeCeiling) {
+    this.corePoolSizeCeiling = corePoolSizeCeiling;
+  }
+
+  public int getMaxPoolSizeCeiling() {
+    return maxPoolSizeCeiling;
+  }
+
+  public void setMaxPoolSizeCeiling(final int maxPoolSizeCeiling) {
+    this.maxPoolSizeCeiling = maxPoolSizeCeiling;
+  }
+
+  public int getQueueCapacityCeiling() {
+    return queueCapacityCeiling;
+  }
+
+  public void setQueueCapacityCeiling(final int queueCapacityCeiling) {
+    this.queueCapacityCeiling = queueCapacityCeiling;
   }
 }

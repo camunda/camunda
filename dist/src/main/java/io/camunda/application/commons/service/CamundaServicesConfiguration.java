@@ -111,16 +111,25 @@ public class CamundaServicesConfiguration {
     return new SecurityContextProvider();
   }
 
-  // Cluster-wide executor, uses the node's availableProcessors
+  // Cluster-wide executor, uses the node's availableProcessors plus a per-physical-tenant term
+  // (see ApiServicesExecutorProvider for why the two are additive, not multiplicative)
   @Bean
   public ApiServicesExecutorProvider apiServicesExecutor(
-      final UnifiedConfiguration unifiedConfiguration) {
+      final UnifiedConfiguration unifiedConfiguration,
+      final PhysicalTenantResolver physicalTenantResolver) {
     final var executor = unifiedConfiguration.getCamunda().getApi().getRest().getExecutor();
     return new ApiServicesExecutorProvider(
         executor.getCorePoolSizeMultiplier(),
         executor.getMaxPoolSizeMultiplier(),
         executor.getKeepAlive().getSeconds(),
-        executor.getQueueCapacity());
+        executor.getQueueCapacity(),
+        physicalTenantResolver.known().size(),
+        executor.getCorePoolSizePerTenant(),
+        executor.getMaxPoolSizePerTenant(),
+        executor.getQueueCapacityPerTenant(),
+        executor.getCorePoolSizeCeiling(),
+        executor.getMaxPoolSizeCeiling(),
+        executor.getQueueCapacityCeiling());
   }
 
   /**
