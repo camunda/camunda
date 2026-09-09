@@ -20,6 +20,19 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @SpringJUnitConfig({UnifiedConfiguration.class, UnifiedConfigurationHelper.class})
 class SecretsTest {
 
+  /**
+   * The floor and the formula behind {@code camunda.secrets.max-concurrency}'s default, restated
+   * here rather than read from {@link Secrets}: the default is derived from the core count of
+   * whatever machine runs this, so a literal could only be pinned on one machine, and reading the
+   * production constant back would assert nothing. Restating it means a change to the formula has
+   * to be made here too, deliberately.
+   */
+  private static final int EXPECTED_MIN_DEFAULT_MAX_CONCURRENCY = 8;
+
+  private static final int EXPECTED_DEFAULT_MAX_CONCURRENCY =
+      Math.max(
+          EXPECTED_MIN_DEFAULT_MAX_CONCURRENCY, Runtime.getRuntime().availableProcessors() * 2);
+
   @Nested
   @TestPropertySource(
       properties = {"camunda.secrets.stores.file.mystore.path=/etc/camunda/secrets.txt"})
@@ -838,6 +851,109 @@ class SecretsTest {
 
       // then the default stands, so getMaxSize() can keep handing an int to the cache factory
       assertThat(cache.getMaxSize()).isEqualTo(1000);
+    }
+  }
+
+  @Nested
+  class WithoutMaxConcurrencyConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutMaxConcurrencyConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultMaxConcurrencyToTwicePerCoreAboveAFloor() {
+      // given no camunda.secrets.max-concurrency property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the max concurrency is the documented default, and never below the floor whatever
+      // core count the machine running this happens to report
+      assertThat(secrets.getMaxConcurrency())
+          .isEqualTo(EXPECTED_DEFAULT_MAX_CONCURRENCY)
+          .isGreaterThanOrEqualTo(EXPECTED_MIN_DEFAULT_MAX_CONCURRENCY);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.max-concurrency=3"})
+  class WithMaxConcurrencyConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithMaxConcurrencyConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindMaxConcurrency() {
+      // given camunda.secrets.max-concurrency is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound
+      assertThat(secrets.getMaxConcurrency()).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.max-concurrency=0"})
+  class WithZeroMaxConcurrency {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithZeroMaxConcurrency(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectMaxConcurrencyBelowOne() {
+      // given a max concurrency below 1, which would resolve nothing at all
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // when the validating getter is read
+      // then it is rejected with the property path
+      assertThatThrownBy(secrets::getMaxConcurrency)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("camunda.secrets.max-concurrency")
+          .hasMessageContaining("at least 1");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.max-concurrency="})
+  class WithEmptyMaxConcurrency {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEmptyMaxConcurrency(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultMaxConcurrencyWhenTheValueIsEmpty() {
+      // given an explicitly empty max concurrency, which an env-var-driven deployment produces
+      // routinely
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the default is kept rather than binding as 0, which the minimum would reject at
+      // startup
+      assertThat(secrets.getMaxConcurrency()).isEqualTo(EXPECTED_DEFAULT_MAX_CONCURRENCY);
+    }
+  }
+
+  @Nested
+  class MaxConcurrencyDefaults {
+
+    @Test
+    void shouldKeepTheDefaultMaxConcurrencyWhenSetToNull() {
+      // given the default secrets configuration
+      final Secrets secrets = new Secrets();
+
+      // when a caller sets max concurrency to null directly, which Spring's binder never does
+      secrets.setMaxConcurrency(null);
+
+      // then the default stands, so getMaxConcurrency() can keep handing an int to the pool
+      assertThat(secrets.getMaxConcurrency()).isEqualTo(EXPECTED_DEFAULT_MAX_CONCURRENCY);
     }
   }
 }
