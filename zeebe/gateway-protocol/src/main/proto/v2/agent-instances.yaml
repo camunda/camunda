@@ -527,9 +527,10 @@ components:
           nullable: true
           description: A human-readable description of the tool.
         elementId:
-          type: string
-          nullable: true
           description: The BPMN element ID of the tool element within the ad-hoc sub-process.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
 
     AgentInstanceMetrics:
       description: Aggregated metrics for an agent instance across all model calls.
@@ -1210,8 +1211,9 @@ components:
           type: string
         elementId:
           description: The BPMN element ID handling this tool.
-          type: string
           nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
         arguments:
           description: |
             The tool call arguments as provided by the LLM. May be null or populated on
