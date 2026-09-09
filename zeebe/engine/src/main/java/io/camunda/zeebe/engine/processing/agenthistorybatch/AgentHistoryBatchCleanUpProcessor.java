@@ -37,8 +37,12 @@ public final class AgentHistoryBatchCleanUpProcessor
     implements TypedRecordProcessor<AgentHistoryBatchRecord>,
         SuspensionAware<AgentHistoryBatchRecord> {
 
-  // number of history-item ids deleted, combined across the committed and metrics-accumulated
-  // indexes, per AGENT_HISTORY_BATCH:CLEANED cycle
+  /**
+   * Number of history-item ids deleted, combined across the committed and metrics-accumulated
+   * indexes, per {@code AGENT_HISTORY_BATCH:CLEANED} cycle. Each history-item id is capped at 256
+   * characters, so this bound keeps a cycle's worst case around 256 KB — comfortably within the
+   * default max message size, and smaller configured ones too.
+   */
   public static final int CHUNK_SIZE = 1000;
 
   private final StateWriter stateWriter;
