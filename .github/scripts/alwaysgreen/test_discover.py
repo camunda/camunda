@@ -147,7 +147,7 @@ def test_a_failed_lookup_reports_not_ok(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_a_conflicting_holders_claims_do_not_count_as_covered(monkeypatch):
+def test_a_conflicting_holders_claim_does_not_count_as_covered(monkeypatch):
     # c8-cross-component-e2e-tests#3154: claimed three fingerprints, then sat
     # CONFLICTING for two weeks while every nightly hitting those specs was
     # suppressed as already covered.

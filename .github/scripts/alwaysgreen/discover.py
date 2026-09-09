@@ -439,8 +439,9 @@ def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
             claims = planning.parse_coverage_block(pr.get("body"))
             if claims and planning.pr_is_stale(pr.get("mergeable")):
                 log(
-                    f"stale fix PR {repo}#{pr.get('number')} is CONFLICTING; not "
-                    f"treating its {len(claims)} claimed spec(s) as covered"
+                    f"stale fix PR {repo}#{pr.get('number')} is "
+                    f"{pr.get('mergeable')}; not treating its {len(claims)} "
+                    f"claimed spec(s) as covered"
                 )
             else:
                 covered |= claims
