@@ -1067,6 +1067,73 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
+  public void shouldRejectStatusOnlyUpdateWithoutJobKey() {
+    // given — the missing-jobKey tests above all attach a nonempty history batch, exercising only
+    // the branch that used to permit an omitted jobKey once the batch itself was empty. A
+    // status-only UPDATE never carries a history batch at all, so jobKey must be proven required
+    // on that path too, independently of the history-batch-driven checks.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var jobBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
+            .getKey();
+
+    // when — no withJobKey(...) call and no withHistory(...) call: a pure status update
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then — jobKey defaults to -1 when unset, and validateJobContext rejects it regardless of
+    // whether a history batch is attached.
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to update agent instance, but no jobKey was provided. A command must always "
+                + "be attributed to the active job that produced it.");
+  }
+
+  @Test
   public void shouldRejectHistoryBatchWithoutJobLeaseOnUpdate() {
     // given — UPDATE runs with LeaseMismatchHandling.ALLOW_STALE, which skips the lease-mismatch
     // check entirely; jobLease must still be rejected as missing before that check is even
