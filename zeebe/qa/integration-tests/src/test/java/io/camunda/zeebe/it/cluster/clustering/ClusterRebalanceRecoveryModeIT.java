@@ -35,7 +35,6 @@ import java.net.HttpURLConnection;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -193,35 +192,15 @@ final class ClusterRebalanceRecoveryModeIT {
 
   private ClusterCompletedRebalance.ResultEnum awaitTerminalRebalance(
       final List<ClusterCompletedRebalance.ResultEnum> legalResults) {
-    final var terminalStatus = new AtomicReference<ClusterBalanceResponse>();
-    Awaitility.await("the rebalance reaches a terminal state")
-        .atMost(Duration.ofMinutes(2))
-        .untilAsserted(
-            () -> {
-              final var status = rebalanceStatus();
-              assertThat(status.getRunningRebalance())
-                  .as("no rebalance still running: %s", status)
-                  .isNull();
-              assertThat(status.getLastCompletedRebalance())
-                  .as("a completed rebalance is present: %s", status)
-                  .isNotNull();
-              terminalStatus.set(status);
-            });
-    final var result = terminalStatus.get().getLastCompletedRebalance().getResult();
+    final var completed =
+        ClusterRebalanceTestUtil.awaitTerminalRebalance(rebalanceClient, Duration.ofMinutes(2));
+    final var result = completed.getResult();
     assertThat(result).isIn(legalResults);
     return result;
   }
 
-  private ClusterBalanceResponse rebalanceStatus() {
-    final var response = rebalanceClient.getRebalance();
-    assertThat(response.status())
-        .as("rebalance status response: %s", response.body())
-        .isEqualTo(HttpURLConnection.HTTP_OK);
-    return response.body();
-  }
-
   private ClusterCompletedRebalance lastCompletedRebalance() {
-    return rebalanceStatus().getLastCompletedRebalance();
+    return ClusterRebalanceTestUtil.getRebalanceStatus(rebalanceClient).getLastCompletedRebalance();
   }
 
   private static int statusOf(final TypedResponse<ClusterBalanceResponse> response) {
