@@ -77,4 +77,4 @@ azure-sql:
 oracle:
   - "21-slim-faststart"
   # renovate: datasource=docker depName=gvenzl/oracle-free versioning=docker
-  - '23.26.2-slim-faststart'
+  - '23.26.3-slim-faststart'
