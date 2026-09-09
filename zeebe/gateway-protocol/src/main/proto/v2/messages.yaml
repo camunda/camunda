@@ -663,7 +663,8 @@ components:
           format: date-time
         elementId:
           description: The element ID that received the message.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
