@@ -29,19 +29,14 @@ public class DatabaseTypeProviderConfiguration {
   public Function<String, DatabaseType> databaseTypeProvider(
       final PhysicalTenantResolver physicalTenantResolver) {
 
-    final Map<String,DatabaseType> secondaryStorageTypeCache = new ConcurrentHashMap<>();
 
     return tenantId ->
-        secondaryStorageTypeCache.computeIfAbsent(
-            tenantId,
-            id ->
                     DatabaseType.from(
                       physicalTenantResolver
                         .forPhysicalTenant(tenantId)
                         .getData()
                         .getSecondaryStorage()
                         .getType()
-                        .name())
-        );
+                        .name());
   }
 }
