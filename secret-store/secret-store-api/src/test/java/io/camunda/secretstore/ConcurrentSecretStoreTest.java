@@ -84,6 +84,42 @@ class ConcurrentSecretStoreTest {
   }
 
   @Test
+  void shouldNotFanOutWhenNamesExactlyFillOneCall() {
+    // given exactly as many names as one call covers: the `callSize >= names.size()` short
+    // circuit from the equal side, not just the clearly-larger side the other single-call tests
+    // below exercise
+    final var names = namesUpTo(4);
+    final var delegate = new FakeOneByOneStore();
+    delegate.namesPerCall = 4;
+    final var store = new ConcurrentSecretStore(delegate, pool, new Semaphore(8, true));
+
+    // when
+    store.resolve(names);
+
+    // then the whole set still reaches the delegate in a single call, not two (one full chunk and
+    // one spuriously empty one)
+    assertThat(delegate.resolveCalls).containsExactly(names);
+  }
+
+  @Test
+  void shouldFanOutIntoExactlyTwoChunks() {
+    // given one more name than a single call covers: the minimal possible fan-out, distinct from
+    // the larger chunk counts the other chunking test above exercises
+    final var names = namesUpTo(5);
+    final var delegate = new FakeOneByOneStore();
+    delegate.namesPerCall = 4;
+    final var store = new ConcurrentSecretStore(delegate, pool, new Semaphore(8, true));
+
+    // when
+    final var results = store.resolve(names);
+
+    // then every name resolves, split across exactly two chunks of at most 4 names each
+    names.forEach(name -> assertThat(results.get(name)).isEqualTo(new Resolved(name + "-value")));
+    assertThat(delegate.resolveCalls).hasSize(2);
+    delegate.resolveCalls.forEach(call -> assertThat(call.size()).isLessThanOrEqualTo(4));
+  }
+
+  @Test
   void shouldNotFanOutWhenDelegateCoversWholeRequestInOneCall() {
     // given a store that already covers many names per call (e.g. a container or batched store
     // sized to the whole request): the default namesPerCall, left unset
