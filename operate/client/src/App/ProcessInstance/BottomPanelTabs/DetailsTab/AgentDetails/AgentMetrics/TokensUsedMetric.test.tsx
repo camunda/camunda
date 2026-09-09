@@ -112,6 +112,25 @@ describe('<TokensUsedMetric />', () => {
     expect(within(container).getByText('9')).toBeInTheDocument();
   });
 
+  it('should show both cache read and cache write when only one is greater than 0', () => {
+    render(
+      <TokensUsedMetric
+        inputTokens={4}
+        outputTokens={2}
+        cacheReadTokens={7}
+        cacheCreationTokens={0}
+        reasoningTokens={0}
+        maxTokens={10}
+      />,
+    );
+
+    const container = screen.getByRole('article', {name: 'Tokens Used'});
+    expect(within(container).getByText('Cache read')).toBeInTheDocument();
+    expect(within(container).getByText('7')).toBeInTheDocument();
+    expect(within(container).getByText('Cache write')).toBeInTheDocument();
+    expect(within(container).getByText('0')).toBeInTheDocument();
+  });
+
   it('should show 100% usage when limit is set to 0', () => {
     render(
       <TokensUsedMetric
