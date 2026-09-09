@@ -271,13 +271,22 @@ outputs:
         steps.filter-load-test-setup.outputs.load-test-setup-change == 'true'
       }}
   scripts-changes:
-    description: Output whether any file under .github/scripts/ or .ci/db-versions.yml changed, so their Python unit tests should be run
+    description: Output whether any repository Python-tested script changed, so their Python unit tests should be run
     value: >-
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-scripts.outputs.scripts-change == 'true'
+      }}
+  load-test-scripts-changes:
+    description: Output whether load-test Python script tests should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-scripts.outputs.load-test-scripts-change == 'true'
       }}
 
 runs:
@@ -543,6 +552,8 @@ runs:
         scripts-change:
           - '.github/scripts/**'
           - '.ci/db-versions.yml'
+        load-test-scripts-change:
+          - 'load-tests/docs/scripts/load_test_report/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch

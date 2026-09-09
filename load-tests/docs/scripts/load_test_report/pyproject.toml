@@ -1,0 +1,26 @@
+[project]
+name = "load-test-report"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "pyyaml==6.0.3",
+]
+
+[dependency-groups]
+dev = [
+  "pytest==8.4.2",
+  "ruff==0.14.6",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

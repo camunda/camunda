@@ -569,6 +569,7 @@ If you need to use a 3rd party action not on the list, ask the Engineering Opera
 EnricoMi/publish-unit-test-result-action@*,
 YunaBraska/java-info-action@*,
 asdf-vm/actions/install@*,
+astral-sh/setup-uv@*,
 atomicjar/testcontainers-cloud-setup-action@*,
 aws-actions/configure-aws-credentials@*,
 blombard/move-to-next-iteration@*,
