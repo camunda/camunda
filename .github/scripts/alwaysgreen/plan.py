@@ -96,6 +96,39 @@ def pr_lock_expired(
     return now - created > timedelta(hours=ttl_hours)
 
 
+#: `mergeable` states GitHub computes for a PR. Only `"CONFLICTING"` counts as stale:
+#: `"UNKNOWN"` just means GitHub has not finished computing the merge base yet and
+#: must not be read as broken, and `"MERGEABLE"` is fine by definition.
+STALE_MERGEABLE_STATES = frozenset({"CONFLICTING"})
+
+
+def pr_is_stale(mergeable: str | None) -> bool:
+    """Whether a fix PR is broken badly enough that its coverage claim should lapse.
+
+    c8-cross-component-e2e-tests#3154 claimed three SM-8.10 Modeler-navigation
+    fingerprints on 2026-08-26 and has sat CONFLICTING ever since. Every nightly that
+    hit those same three specs over the following two weeks was suppressed as
+    `open-pr-covers-all-specs`, even though the PR could never land and fix them.
+    `PR_LOCK_TTL_HOURS` does not help here: that only bounds the coarse per-surface
+    lock a claim-nothing PR holds, and a PR that claims fingerprints is deliberately
+    authoritative for them for as long as it is open (see `dedupe_inputs`'s docstring
+    in discover.py) — the TTL is skipped outright for it. A stale PR needs its claims
+    invalidated instead, so a fresh agent gets a chance while the broken PR still sits
+    open for a human to close or rebase.
+
+    `mergeable` is a value GitHub computes fresh on every read, not something a PR
+    body can lie about or a bad clock can misjudge, so unlike the TTL there is no
+    reason to time-bound this: it reflects the PR's current state, checked on every
+    triage run, not the state it started in.
+
+    Only mergeability is checked, not CI status: `statusCheckRollup` carries dozens
+    of matrix legs per PR in these repos, and treating any single red leg as "stale"
+    would drop a PR's coverage while its own fix-verification job is still running or
+    hit an unrelated flake — the opposite of what this is for.
+    """
+    return (mergeable or "").strip().upper() in STALE_MERGEABLE_STATES
+
+
 def spec_suite(spec_file: str) -> str | None:
     """The version directory a spec lives in: `tests/SM-8.10/x.spec.ts` -> `SM-8.10`."""
     parts = (spec_file or "").split("/")

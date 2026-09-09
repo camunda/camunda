@@ -335,6 +335,14 @@ camunda: # Type: io.camunda.configuration.Camunda
       # need to replay and export everything. It can for example can start from the last exported position
       # it has received by the distribution mechanism.
       distribution-interval: null # Type: Duration, Env: CAMUNDA_DATA_EXPORT_DISTRIBUTIONINTERVAL
+      # The maximum number of not-yet-exported records to scan, starting from the oldest one still pending,
+      # when checking whether every pending record on a partition is on the current application version.
+      # This backs the `exporterMigrated` upgrade-readiness condition: if the backlog of not-yet-exported
+      # records is larger than this limit, the condition reports that it cannot verify all of them rather
+      # than risking an incorrect positive result. Scanning is bounded because its cost scales with the size
+      # of the backlog, which is exactly unbounded in the scenario this check exists to catch (e.g. a long
+      # soft-paused exporter).
+      migration-status-scan-max-records: null # Type: Integer, Env: CAMUNDA_DATA_EXPORT_MIGRATIONSTATUSSCANMAXRECORDS
       # Enable the exporters to skip record positions per partition. Allows to skip certain records by their
       # position for a specific partition. This is useful for debugging or skipping a record that is
       # preventing processing or exporting to continue. Record positions defined to skip in this definition
@@ -1498,6 +1506,26 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Defaults to `20m`.
       ttl: "20m" # Type: Duration, Env: CAMUNDA_SECRETS_CACHE_TTL
 
+    # How many sequential backend calls a store whose cost scales with call count (`namesPerCall()` less
+    # than the request size) may issue at once, bounded by a semaphore shared by every such store the
+    # registry wraps. `1` resolves exactly as before this setting existed: one call at a time, on the
+    # calling thread. A store that already covers the whole request in one call (a container-style store,
+    # or one backed by local disk) is unaffected either way; a batched store (e.g. AWS's
+    # `BatchGetSecretValue` mode) is included once its request needs more than one batch.
+    # The permits are shared per node and physical tenant, so they bound how many backend calls this node
+    # has in flight for such stores at once. A request small enough to resolve in a single call (at most
+    # `namesPerCall()` names) takes no permit, so actual concurrency can exceed this value by one such call
+    # per concurrent caller. The bound is on call concurrency, not request rate, so it only approximates a
+    # provider quota measured in calls per second rather than guaranteeing it sees at most this value times
+    # the node count.
+    # Raising it past what one request can use changes nothing, since a request is split into `ceil(names
+    # / namesPerCall())` chunks and cannot use more permits than it has chunks. The resolve endpoint caps
+    # its request size at 20 names via the `maxItems` on its `references` array; background resolution
+    # defaults to the same 20 via `camunda.processing.engine.secrets.batch-resolution-limit`, but that
+    # limit is a configurable default, not a hard cap. For a one-by-one store the endpoint's cap puts the
+    # chunk ceiling at 20; for a batched store it is `ceil(20 / batchSize)`.
+    # Defaults to twice the available processor count, and never below `8`.
+    max-concurrency: null # Type: Integer, Env: CAMUNDA_SECRETS_MAXCONCURRENCY
     stores: # Type: io.camunda.configuration.Secrets$Stores
       aws: null # Type: Map<String,io.camunda.configuration.Secrets$AwsSecretsManagerStore>, Env: CAMUNDA_SECRETS_STORES_AWS
       file: null # Type: Map<String,io.camunda.configuration.Secrets$FileStore>, Env: CAMUNDA_SECRETS_STORES_FILE
@@ -1568,117 +1596,6 @@ camunda: # Type: io.camunda.configuration.Camunda
       # snapshot or alpha versions. Default: True, means it is not allowed to migrate to incompatible
       # version like: SNAPSHOT or alpha.
       enable-version-check: null # Type: Boolean, Env: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
-
-  tasklist: # Type: io.camunda.configuration.beanoverrides.LegacyTasklistProperties
-    auth0: # Type: io.camunda.tasklist.property.Auth0Properties
-      claim-name: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_CLAIMNAME
-      client-id: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_CLIENTID
-      client-secret: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_CLIENTSECRET
-      domain: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_DOMAIN
-      email-key: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_EMAILKEY
-      name-key: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_NAMEKEY
-      organization: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_ORGANIZATION
-      organizations-key: null # Type: String, Env: CAMUNDA_TASKLIST_AUTH0_ORGANIZATIONSKEY
-
-    backup: # Type: io.camunda.tasklist.property.BackupProperties
-      repository-name: null # Type: String, Env: CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME
-
-    client: # Type: io.camunda.tasklist.property.ClientProperties
-      audience: null # Type: String, Env: CAMUNDA_TASKLIST_CLIENT_AUDIENCE
-      cluster-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLIENT_CLUSTERID
-
-    cloud: # Type: io.camunda.tasklist.property.CloudProperties
-      cluster-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_CLUSTERID
-      console-url: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_CONSOLEURL
-      mixpanel-a-p-i-host: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST
-      mixpanel-token: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN
-      organization-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID
-      permission-audience: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_PERMISSIONAUDIENCE
-      permission-url: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_PERMISSIONURL
-      stage: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_STAGE
-
-    database: null # Type: String, Env: CAMUNDA_TASKLIST_DATABASE
-    documentation: # Type: io.camunda.tasklist.property.TasklistDocumentationProperties
-      api-migration-docs-url: null # Type: String, Env: CAMUNDA_TASKLIST_DOCUMENTATION_APIMIGRATIONDOCSURL
-
-    elasticsearch: # Type: io.camunda.tasklist.property.TasklistElasticsearchProperties
-      batch-size: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_BATCHSIZE
-      cluster-name: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_CLUSTERNAME
-      connect-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_CONNECTTIMEOUT
-      create-schema: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_CREATESCHEMA
-      date-format: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_DATEFORMAT
-      els-date-format: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_ELSDATEFORMAT
-      health-check-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_HEALTHCHECKENABLED
-      index-prefix: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX
-      interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_INTERCEPTORPLUGINS
-      max-terms-count: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_MAXTERMSCOUNT
-      password: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
-      proxy: # Type: io.camunda.tasklist.property.ProxyProperties
-        enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_ENABLED
-        host: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_HOST
-        password: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_PASSWORD
-        port: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_PORT
-        ssl-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_SSLENABLED
-        username: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_USERNAME
-
-      socket-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SOCKETTIMEOUT
-      ssl: # Type: io.camunda.tasklist.property.SslProperties
-        certificate-path: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SSL_CERTIFICATEPATH
-        self-signed: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SSL_SELFSIGNED
-        verify-hostname: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SSL_VERIFYHOSTNAME
-
-      url: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
-      urls: null # Type: List<String>, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_URLS
-      username: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
-
-    enterprise: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ENTERPRISE
-    feature-flag: # Type: io.camunda.tasklist.property.FeatureFlagProperties
-      allow-non-self-assignment: null # Type: Boolean, Env: CAMUNDA_TASKLIST_FEATUREFLAG_ALLOWNONSELFASSIGNMENT
-      process-public-endpoints: null # Type: Boolean, Env: CAMUNDA_TASKLIST_FEATUREFLAG_PROCESSPUBLICENDPOINTS
-
-    identity: # Type: io.camunda.tasklist.property.IdentityProperties
-      user-access-restrictions-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_IDENTITY_USERACCESSRESTRICTIONSENABLED
-
-    importer: # Type: io.camunda.tasklist.property.ImportProperties
-      variable-size-threshold: null # Type: Integer, Env: CAMUNDA_TASKLIST_IMPORTER_VARIABLESIZETHRESHOLD
-
-    open-search: # Type: io.camunda.tasklist.property.TasklistOpenSearchProperties
-      aws-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_AWSENABLED
-      batch-size: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_BATCHSIZE
-      cluster-name: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_CLUSTERNAME
-      connect-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_CONNECTTIMEOUT
-      create-schema: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_CREATESCHEMA
-      date-format: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_DATEFORMAT
-      els-date-format: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_ELSDATEFORMAT
-      health-check-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_HEALTHCHECKENABLED
-      index-prefix: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
-      interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_TASKLIST_OPENSEARCH_INTERCEPTORPLUGINS
-      max-terms-count: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_MAXTERMSCOUNT
-      password: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
-      proxy: # Type: io.camunda.tasklist.property.ProxyProperties
-        enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_ENABLED
-        host: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_HOST
-        password: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_PASSWORD
-        port: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_PORT
-        ssl-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_SSLENABLED
-        username: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_USERNAME
-
-      socket-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_SOCKETTIMEOUT
-      ssl: # Type: io.camunda.tasklist.property.SslProperties
-        certificate-path: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_SSL_CERTIFICATEPATH
-        self-signed: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_SSL_SELFSIGNED
-        verify-hostname: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_SSL_VERIFYHOSTNAME
-
-      url: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_URL
-      urls: null # Type: List<String>, Env: CAMUNDA_TASKLIST_OPENSEARCH_URLS
-      username: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
-
-    version: null # Type: String, Env: CAMUNDA_TASKLIST_VERSION
-    zeebe: # Type: io.camunda.tasklist.property.ZeebeProperties
-      certificate-path: null # Type: String, Env: CAMUNDA_TASKLIST_ZEEBE_CERTIFICATEPATH
-      gateway-address: null # Type: String, Env: CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS
-      rest-address: null # Type: String, Env: CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS
-      secure: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ZEEBE_SECURE
 
   webapp: # Type: io.camunda.configuration.beans.WebappProperties
     active-components: null # Type: List<String>, Env: CAMUNDA_WEBAPP_ACTIVECOMPONENTS

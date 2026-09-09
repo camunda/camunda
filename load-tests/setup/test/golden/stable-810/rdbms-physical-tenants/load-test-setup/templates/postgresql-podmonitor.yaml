@@ -1,0 +1,21 @@
+---
+# Source: load-test-setup/templates/postgresql-podmonitor.yaml
+# Scrape the CNPG-managed PostgreSQL cluster's own metrics (e.g. cnpg_backends_total,
+# labeled by state: active/idle/idle in transaction/...)
+#
+# A PodMonitor is a Prometheus Operator CRD (a scrape-config object the existing
+# Prometheus picks up) — it deploys no Pods/Deployments/Services of its own.
+# `Cluster.spec.monitoring.enablePodMonitor` is deprecated in favor of a standalone
+# PodMonitor: https://cloudnative-pg.io/docs/current/monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: postgresql
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: postgresql
+  podMetricsEndpoints:
+    - port: metrics

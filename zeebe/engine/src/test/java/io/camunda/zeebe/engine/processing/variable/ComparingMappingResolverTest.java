@@ -11,13 +11,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
+import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
+import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.logging.log4j.Level;
@@ -266,6 +272,105 @@ final class ComparingMappingResolverTest {
             e -> {
               assertThat(e.getLevel()).isEqualTo(Level.WARN);
               assertThat(e.getMessage().getFormattedMessage()).contains("threw unexpectedly");
+            });
+  }
+
+  @Test
+  void shouldLogWarnForEachDivergence() {
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(msgPackOf("{\"a\":1}"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"a\":2}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
+
+    resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
+    resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
+
+    assertThat(recorder.getAppendedEvents()).hasSize(2);
+  }
+
+  @Test
+  void shouldIncludeMappingContextInWarnMessage() {
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(msgPackOf("{\"a\":1}"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"a\":2}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
+
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
+
+    assertThat(result.isRight()).isTrue();
+    assertThat(recorder.getAppendedEvents())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            e -> {
+              final String formattedMessage = e.getMessage().getFormattedMessage();
+              assertThat(formattedMessage)
+                  .contains(
+                      "MappingContext[elementId=element-1, scopeKey=100, processInstanceKey=200, processDefinitionKey=300, tenantId=default]");
+            });
+  }
+
+  @Test
+  void shouldIncludeInputMappingsInWarnMessage() {
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(msgPackOf("{\"a\":1}"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"a\":2}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
+
+    final Expression sourceExpression = mock(Expression.class);
+    when(sourceExpression.getExpression()).thenReturn("=1");
+
+    final Expression combinedExpression = mock(Expression.class);
+
+    final InputMappings inputMappings =
+        new InputMappings(
+            List.of(new InputMapping(sourceExpression, List.of("a"))),
+            combinedExpression,
+            Collections.emptyMap(),
+            Collections.emptyMap());
+
+    final var result = resolver.resolve(inputMappings, PROCESSOR);
+
+    assertThat(result.isRight()).isTrue();
+    assertThat(recorder.getAppendedEvents())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            e -> {
+              final String formattedMessage = e.getMessage().getFormattedMessage();
+              assertThat(formattedMessage)
+                  .contains("InputMappings{mappings=[InputMapping{source='=1', targetPath=[a]}]}");
+            });
+  }
+
+  @Test
+  void shouldIncludeOutputMappingsInWarnMessage() {
+    final MappingResolver<OutputMappings> primary = (m, p) -> Either.right(msgPackOf("{\"a\":1}"));
+    final MappingResolver<OutputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"a\":2}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
+
+    final Expression sourceExpression = mock(Expression.class);
+    when(sourceExpression.getExpression()).thenReturn("=1");
+
+    final Expression combinedExpression = mock(Expression.class);
+
+    final OutputMappings outputMappings =
+        new OutputMappings(
+            combinedExpression, List.of(new OutputMapping(sourceExpression, List.of("a"))));
+
+    final var result = resolver.resolve(outputMappings, PROCESSOR);
+
+    assertThat(result.isRight()).isTrue();
+    assertThat(recorder.getAppendedEvents())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            e -> {
+              final String formattedMessage = e.getMessage().getFormattedMessage();
+              assertThat(formattedMessage)
+                  .contains(
+                      "OutputMappings{mappings=[OutputMapping{source='=1', targetPath=[a]}]}");
             });
   }
 }

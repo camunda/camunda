@@ -39,7 +39,8 @@ class AgentInstanceRequestValidatorTest {
   private final AgentInstanceRequestValidator validator = new AgentInstanceRequestValidator();
 
   @Nested
-  @DisplayName("Existing update rules")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Existing update rules")
   class ExistingUpdateRuleTest {
 
     @Test
@@ -94,7 +95,8 @@ class AgentInstanceRequestValidatorTest {
   }
 
   @Nested
-  @DisplayName("History batch rules")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("History batch rules")
   class HistoryBatchRuleTest {
 
     @Test
@@ -1075,7 +1077,8 @@ class AgentInstanceRequestValidatorTest {
   }
 
   @Nested
-  @DisplayName("Create request rules")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Create request rules")
   class CreateRequestRuleTest {
 
     private AgentInstanceCreationRequest validRequest(final String jobKey) {

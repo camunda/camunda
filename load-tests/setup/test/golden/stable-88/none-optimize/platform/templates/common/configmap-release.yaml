@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-88-none-optimize
       namespace: c8-golden-stable-88-none-optimize
-      version: 13.12.8
+      version: 13.13.0
       tags:
       - dev
       custom-properties: []
@@ -30,32 +30,32 @@ data:
         url: 
       - name: Identity
         id: identity
-        version: 8.8.16
+        version: 8.8.17
         url: http://localhost:8080
         readiness: http://identity.c8-golden-stable-88-none-optimize:82/actuator/health
         metrics: http://identity.c8-golden-stable-88-none-optimize:82/actuator/prometheus
       - name: Operate
         id: operate
-        version: 8.8.36
+        version: 8.8.37
         url: http://localhost:8088/operate
         readiness: http://camunda.c8-golden-stable-88-none-optimize:9600/actuator/health/readiness
         metrics: http://camunda.c8-golden-stable-88-none-optimize:9600/actuator/prometheus
       - name: Tasklist
         id: tasklist
-        version: 8.8.36
+        version: 8.8.37
         url: http://localhost:8088/tasklist
         readiness: http://camunda.c8-golden-stable-88-none-optimize:9600/actuator/health/readiness
         metrics: http://camunda.c8-golden-stable-88-none-optimize:9600/actuator/prometheus
       - name: Orchestration Identity
         id: orchestrationIdentity
-        version: 8.8.36
+        version: 8.8.37
         url: http://localhost:8088/identity
         readiness: http://camunda.c8-golden-stable-88-none-optimize:9600/actuator/health/readiness
         metrics: http://camunda.c8-golden-stable-88-none-optimize:9600/actuator/prometheus
     
       - name: Orchestration Cluster
         id: orchestration
-        version: 8.8.36
+        version: 8.8.37
         urls:
           grpc: http://localhost:26500
           http: http://localhost:8088

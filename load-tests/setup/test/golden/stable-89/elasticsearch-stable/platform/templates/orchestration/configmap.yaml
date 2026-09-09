@@ -117,6 +117,12 @@ data:
             index-prefix: ""
             number-of-replicas: "1"
             history:
+              els-rollover-date-format: "date"
+              rollover-interval: "1d"
+              rollover-batch-size: 500
+              wait-period-before-archiving: "1m"
+              delay-between-runs: 2000
+              max-delay-between-runs: 60000
               policy-name: "camunda-retention-policy"
     
       # Security configuration - Separated syntax.
@@ -255,19 +261,6 @@ data:
                 enabled: true
                 minimumAge: "3d"
                 policyName: "zeebe-record-retention-policy"
-          camundaexporter:
-            className: "io.camunda.exporter.CamundaExporter"
-            args:
-              connect:
-                type: "elasticsearch"
-                awsEnabled: false
-              history:
-                elsRolloverDateFormat: "date"
-                rolloverInterval: "1d"
-                rolloverBatchSize: 100
-                waitPeriodBeforeArchiving: "1h"
-                delayBetweenRuns: 2000
-                maxDelayBetweenRuns: 60000
     
   log4j2.xml: |
   application.yml: |
@@ -281,10 +274,6 @@ data:
     # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
     zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
     zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
-    
-    # Camunda Exporter configuration
-    zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 500
-    zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
     
     # Configure a rate limit for all writes, so that we can visualize flow control metrics.
     zeebe.broker.flowControl.write.enabled: "true"

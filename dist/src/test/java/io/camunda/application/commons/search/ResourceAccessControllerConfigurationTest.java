@@ -54,8 +54,9 @@ public class ResourceAccessControllerConfigurationTest {
             () -> mock(AuthorizationScopeRepositoryPort.class))
         .withBean(PhysicalTenantSearchClientReaders.class, () -> defaultPtReaders)
         .withBean(PhysicalTenantSecurityProperties.class, () -> defaultPtSecProps)
-        // make REST gateway condition pass
+        // make REST gateway and secondary storage conditions pass
         .withPropertyValues(
+            "camunda.data.secondary-storage.type=elasticsearch",
             "zeebe.broker.gateway.enable=true",
             "camunda.rest.enabled=true",
             "camunda.security.authorizations.enabled=false");

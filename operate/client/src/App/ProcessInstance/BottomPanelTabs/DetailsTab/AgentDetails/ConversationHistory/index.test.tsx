@@ -319,7 +319,7 @@ describe('<ConversationHistory />', () => {
       screen.queryByTestId('conversation-history-skeleton'),
     );
 
-    const sortButton = screen.getByRole('button', {name: 'Most recent first'});
+    const sortButton = screen.getByRole('button', {name: 'Latest first'});
     expect(sortButton).toBeVisible();
     expect(query).toEqual(
       expect.objectContaining({
@@ -783,7 +783,7 @@ describe('<ConversationHistory />', () => {
         }),
       ]),
     );
-    // Mock data for initial "most recent" sorting
+    // Mock data for initial "latest first" sorting
     mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
 
     const {user} = render(
@@ -802,7 +802,7 @@ describe('<ConversationHistory />', () => {
       screen.queryByTestId('conversation-history-skeleton'),
     );
 
-    await user.click(screen.getByRole('button', {name: 'Most recent first'}));
+    await user.click(screen.getByRole('button', {name: 'Latest first'}));
     expect(screen.getByRole('button', {name: 'Oldest first'})).toBeVisible();
 
     const firstMarker = await screen.findByText('1. iteration');

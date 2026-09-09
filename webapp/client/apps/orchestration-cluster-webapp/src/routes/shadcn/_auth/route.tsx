@@ -7,10 +7,17 @@
  */
 
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
+import {useSessionHeartbeat} from '@camunda/session-heartbeat/react';
 import {SessionWatcher} from '#/shared/auth/shadcn.components/SessionWatcher';
+import {authenticationStore} from '#/shared/auth/authentication.store';
+import {endpoints} from '#/shared/http/endpoints';
+import {getCsrfTokenFromStorage} from '#/shared/http/request';
 import {queries} from '#/shared/http/queries';
+import {reactQueryClient} from '#/shared/http/reactQueryClient';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
 import {Header} from '#/shared/header/shadcn.components/Header';
+import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
+import {PageLayout} from '@camunda/design-system';
 
 export const Route = createFileRoute('/shadcn/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
@@ -33,7 +40,21 @@ export const Route = createFileRoute('/shadcn/_auth')({
 			});
 		}
 	},
-	component() {
+	notFoundComponent: () => (
+		<PageLayout>
+			<NotFoundPage />
+		</PageLayout>
+	),
+	component: function RouteComponent() {
+		useSessionHeartbeat({
+			url: endpoints.sessionHeartbeatUrl(),
+			csrfToken: getCsrfTokenFromStorage,
+			onUnauthorized: () => {
+				authenticationStore.disableSession();
+				reactQueryClient.clear();
+			},
+		});
+
 		return (
 			<>
 				<SessionWatcher />

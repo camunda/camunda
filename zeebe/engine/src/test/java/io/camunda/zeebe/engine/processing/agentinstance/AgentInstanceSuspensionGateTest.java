@@ -99,13 +99,7 @@ public class AgentInstanceSuspensionGateTest {
             .getProcessInstanceKey();
 
     final long agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "sys")
-            .withLimits(100L, 5, 5)
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -171,13 +165,7 @@ public class AgentInstanceSuspensionGateTest {
             .getProcessInstanceKey();
 
     final long agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "sys")
-            .withLimits(100L, 5, 5)
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -223,13 +211,7 @@ public class AgentInstanceSuspensionGateTest {
             .getProcessInstanceKey();
 
     final long agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "sys")
-            .withLimits(100L, 5, 5)
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 

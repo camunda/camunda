@@ -168,8 +168,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
+      <groupId>org.wiremock.integrations</groupId>
+      <artifactId>wiremock-spring-boot</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -213,6 +213,9 @@
           <execution>
             <id>analyze-dependencies</id>
             <configuration>
+              <ignoredUsedUndeclaredDependencies combine.children="append">
+                <dep>org.wiremock:wiremock</dep>
+              </ignoredUsedUndeclaredDependencies>
               <ignoredNonTestScopedDependencies combine.children="append">
                 <dep>org.awaitility:awaitility</dep>
                 <dep>org.apache.httpcomponents.client5:httpclient5</dep>

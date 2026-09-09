@@ -85,6 +85,31 @@ test.describe('Task details page', () => {
 		await expect(shadcnTaskDetailPage.taskTab).toHaveAttribute('aria-selected', 'true');
 	});
 
+	test('should navigate to initial page preserving search params when task is cancelled', async ({
+		network,
+		shadcnTaskDetailPage,
+		page,
+	}) => {
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createUserTask({
+						state: 'CANCELED',
+						processName: 'Invoice process',
+						processInstanceKey: '2251799813685280',
+					}),
+				),
+			}),
+		);
+
+		await shadcnTaskDetailPage.goto('2251799813685281', '?filter=assigned-to-me');
+
+		await expect(page).toHaveURL('/shadcn/tasklist?filter=assigned-to-me');
+		const notification = shadcnTaskDetailPage.header.notifications.getByNotificationTitle('Process instance cancelled');
+		await expect(notification).toBeVisible();
+		await expect(notification).toContainText('Invoice process (2251799813685280)');
+	});
+
 	test('should switch tabs and update the URL', async ({network, shadcnTaskDetailPage: taskDetailPage, page}) => {
 		network.use(
 			mockGetProcessDefinitionXmlEndpoint({

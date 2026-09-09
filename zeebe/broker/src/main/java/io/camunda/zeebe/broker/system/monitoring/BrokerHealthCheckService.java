@@ -104,9 +104,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private final Set<String> registeredPhysicalTenants = ConcurrentHashMap.newKeySet();
   /* Tracks the install status of every bootstrap partition the broker is responsible for, keyed by
   its full PartitionId (partition group + id). Each physical tenant registers its own partitions, so
-  this map accumulates across all tenants. Stays null until the first registration so that an
-  install status update before any partition is known fails fast. */
-  private volatile Map<PartitionId, Boolean> partitionInstallStatus;
+  this map accumulates across all tenants. Concurrent by construction: physical tenants register
+  from their own threads (each tenant's partition manager starts on its own topology-manager actor,
+  a recovering tenant registers from the broker actor), and lazily creating the map instead would
+  let two such registrations race and drop one tenant's partitions. */
+  private final Map<PartitionId, Boolean> partitionInstallStatus = new ConcurrentHashMap<>();
   /* Guards against logging "broker is ready" more than once. Only touched on the actor thread. */
   private boolean readyLogged = false;
   private volatile boolean brokerStarted = false;
@@ -130,9 +132,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     // never started". Accumulate rather than replace so a later tenant's call does not drop the
     // partitions registered by previous tenants.
     registeredPhysicalTenants.add(physicalTenantId);
-    if (partitionInstallStatus == null) {
-      partitionInstallStatus = new ConcurrentHashMap<>();
-    }
     partitions.forEach(
         metadata -> {
           partitionInstallStatus.putIfAbsent(metadata.id(), false);
@@ -143,16 +142,58 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     actor.run(this::logBrokerReadyOnce);
   }
 
+  /**
+   * Registers the partitions of a physical tenant that is in recovery mode. Recovery partitions
+   * never join Raft, so the {@link PartitionRaftListener} callbacks that normally mark a bootstrap
+   * partition as installed never fire for them. A broker in recovery mode is ready by design - it
+   * must accept management traffic (e.g. restore requests) - so its partitions count as installed
+   * immediately. Unhealthy recovery outcomes are surfaced through the health monitor instead, via
+   * {@link #registerMonitoredPartition(int, HealthMonitorable)}.
+   */
+  public void registerRecoveringPartitions(
+      final String physicalTenantId, final Collection<PartitionId> partitions) {
+    registeredPhysicalTenants.add(physicalTenantId);
+    // Clear this tenant's previous entries first: its partition manager may have stopped for the
+    // mode transition without unregistering (e.g. a processing-mode manager never does), leaving
+    // a still-installing ("false") or now-stale partition behind. Left in place, that entry would
+    // permanently block isBrokerReady() even though recovery does not depend on Raft roles.
+    partitionInstallStatus.keySet().removeIf(id -> id.group().equals(physicalTenantId));
+    partitions.forEach(partitionId -> partitionInstallStatus.put(partitionId, true));
+    actor.run(this::logBrokerReadyOnce);
+  }
+
+  /**
+   * Unregisters a physical tenant, dropping both its partitions' install status and their nodes in
+   * the health tree. Called when the tenant's partition manager stops as part of a mode transition,
+   * so that the next manager's registration starts from a clean slate: without this, the
+   * "installed" marks left behind by recovery mode would make {@link #isBrokerReady()} claim
+   * readiness after exiting recovery, before the partitions have actually rejoined Raft ({@link
+   * #registerBootstrapPartitions} only uses putIfAbsent).
+   */
+  public void unregisterPhysicalTenant(final String physicalTenantId) {
+    registeredPhysicalTenants.remove(physicalTenantId);
+    final var tenantPartitions =
+        partitionInstallStatus.keySet().stream()
+            .filter(partitionId -> partitionId.group().equals(physicalTenantId))
+            .toList();
+    tenantPartitions.forEach(partitionInstallStatus::remove);
+    // Take the health tree nodes with it, mirroring registerBootstrapPartitions. Its
+    // monitorComponent placeholders are the only entries nothing else removes - a partition that
+    // registers a real component has it removed when the component shuts down - and a placeholder
+    // left behind counts as unknown, which reads UNHEALTHY, so it would keep the broker unhealthy
+    // for the rest of its life.
+    tenantPartitions.forEach(
+        partitionId -> healthMonitor.removeComponent(ZeebePartition.componentName(partitionId)));
+  }
+
   public boolean isBrokerReady() {
     // Ready once every expected physical tenant has registered and every one of their partitions
     // has been installed. Both conditions are evaluated live: requiring all tenants prevents a
     // missing tenant from being silently ignored, and reading the map directly lets partitions
     // registered by a later tenant still gate readiness even if an earlier tenant already finished.
-    final var status = partitionInstallStatus;
     return brokerStarted
         && registeredPhysicalTenants.containsAll(expectedPhysicalTenants)
-        && status != null
-        && !status.containsValue(false);
+        && !partitionInstallStatus.containsValue(false);
   }
 
   public String componentName() {
@@ -173,8 +214,10 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   private void checkState() {
-    if (partitionInstallStatus == null) {
-      throw new IllegalStateException("PartitionInstallStatus must not be null.");
+    if (registeredPhysicalTenants.isEmpty()) {
+      throw new IllegalStateException(
+          "No physical tenant has registered its partitions yet, so no install status can be"
+              + " updated.");
     }
   }
 

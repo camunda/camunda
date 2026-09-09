@@ -32,6 +32,7 @@ const OperationRenderer: React.FC<Props> = ({
     processInstanceKey,
     onExecute: operation.onExecute,
     disabled: operation.disabled,
+    title: operation.label,
   };
 
   switch (operation.type) {

@@ -84,7 +84,7 @@ queries:
           or
           sum(rate(http_server_requests_seconds_count{
             method="POST",
-            uri="/v2/process-instances",
+            uri=~"/v2/process-instances|/physical-tenants/[^/]+/v2/process-instances",
             namespace="$NAMESPACE"
           }[$DURATION_S]) != 0)
         )
@@ -120,7 +120,7 @@ queries:
       sum(rate(http_server_requests_seconds_count{
         method="POST",
         namespace="$NAMESPACE",
-        uri="/v2/process-instances"
+        uri=~"/v2/process-instances|/physical-tenants/[^/]+/v2/process-instances"
       }[$DURATION_S]) != 0)
     higher_is_better: true
     format: float

@@ -65,6 +65,9 @@ type AgentInstanceDefinition = z.infer<typeof agentInstanceDefinitionSchema>;
 const agentInstanceMetricsSchema = z.object({
 	inputTokens: z.number(),
 	outputTokens: z.number(),
+	reasoningTokenCount: z.number(),
+	cacheCreationTokenCount: z.number(),
+	cacheReadTokenCount: z.number(),
 	modelCalls: z.number(),
 	toolCalls: z.number(),
 });
@@ -169,6 +172,9 @@ type AgentInstanceToolCall = z.infer<typeof agentInstanceToolCallSchema>;
 const agentInstanceHistoryItemMetricsSchema = z.object({
 	inputTokens: z.number().nullable(),
 	outputTokens: z.number().nullable(),
+	reasoningTokenCount: z.number().nullable(),
+	cacheCreationTokenCount: z.number().nullable(),
+	cacheReadTokenCount: z.number().nullable(),
 	durationMs: z.number().nullable(),
 });
 type AgentInstanceHistoryItemMetrics = z.infer<typeof agentInstanceHistoryItemMetricsSchema>;

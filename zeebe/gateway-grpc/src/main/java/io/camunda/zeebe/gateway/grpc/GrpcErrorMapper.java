@@ -16,6 +16,7 @@ import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInRecoveryException;
 import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
@@ -130,6 +131,12 @@ public final class GrpcErrorMapper {
         builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
         logger.trace(
             "Expected to handle gRPC request, but the target partition is currently inactive",
+            rootError);
+      }
+      case final PartitionInRecoveryException ignored -> {
+        builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
+        logger.trace(
+            "Expected to handle gRPC request, but the target partition is in recovery mode",
             rootError);
       }
       case final NoTopologyAvailableException ignored -> {

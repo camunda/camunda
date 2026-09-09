@@ -44,7 +44,7 @@ See [this self-updating release timeline page](pathname:///release-timeline/).
 
 ### Release Dependencies
 
-_Caveat: While Optimize is part of the C8 monorepo, it has its own release process separate from the C8 monorepo release process (covers only Operate/Tasklist/Zeebe)._
+_Caveat: While Optimize is part of the C8 monorepo, it has its own release process separate from the C8 monorepo release process (covers Operate, Zeebe, Tasklist on applicable stable lines, and the consolidated Camunda application)._
 
 Component releases that the C8 monorepo releases depend on:
 
@@ -364,6 +364,7 @@ Ownership model:
 #### 8. Wire release workflows (branch must exist)
 
 - [ ] Merge the dry-run and preview/smoke-test PRs (drafted earlier). Every job resolves `uses: ...@stable/<minor>` and checks out the branch, so they only pass once it exists. **Quote every version literal** — unquoted, `8.10` parses as `8.1`.
+- [ ] ⚠️ **Preview-env smoke test:** wait until this minor is released and its smoke tests exist in `camunda/c8-cross-component-e2e-tests` before turning on its `deploy-<minor>` job in [`preview-env-smoke-test.yml`](../../../.github/workflows/preview-env-smoke-test.yml). Until then, keep the job set to run by hand only (its `if:` should match just its own version, not `all` or `""`). If you turn it on too early, the Monday run fails with `No tests found` and pages `monorepo-ci-medic`. See the [Preview Environment Smoke Test Failure runbook](../ci-runbooks.md#preview-environment-smoke-test-failure).
 - [ ] Verify the release BPMN uses `stable/<minor>` as the source branch, and that the code freeze date and start date are correct when starting the minor instance.
 - [ ] Confirm the scheduled `stable/<minor>` release dry-run is green before starting the minor.
 
@@ -557,14 +558,15 @@ As a first step, you need to find out how to best identify the artifacts to be d
 1. Do all affected artifacts (and only those) have a specific version (e.g. 8.99.0-dryrun)?
 2. Do you have a log of GitHub Actions workflow run uploading the files to identify them?
 
-If you know a specific version (and ideally have the the log of a GHA workflow run), [you can use this script](https://github.com/camunda/infra-core/blob/stage/cmd/artifactory/delete_artifacts.py). The script source code has detailed usage instructions. Since the C8 monorepo currently publishes Operate, Tasklist and Zeebe a suitable deletion command for example for version `8.99.0-dryrun` is:
+If you know a specific version (and ideally have the the log of a GHA workflow run), [you can use this script](https://github.com/camunda/infra-core/blob/stage/cmd/artifactory/delete_artifacts.py). The script source code has detailed usage instructions. The Tasklist repository applies only to release lines that still publish standalone Tasklist artifacts.
 
 ```bash
 REPOSITORY=zeebe-io ARTIFACTORY_PATH="io/camunda*" VERSION=8.99.0-dryrun python delete_artifacts.py
 
 REPOSITORY=camunda-operate ARTIFACTORY_PATH="io/camunda*" VERSION=8.99.0-dryrun python delete_artifacts.py
 
-REPOSITORY=camunda-zeebe-tasklist ARTIFACTORY_PATH="io/camunda*" VERSION=8.99.0-dryrun python delete_artifacts.py
+REPOSITORY=camunda-zeebe-tasklist ARTIFACTORY_PATH="io/camunda*" VERSION=<applicable-stable-version> python delete_artifacts.py
+
 ```
 
 If you have a log of a GHA workflow run called `log.txt`, you can use `grep` to identify exact URLs of all uploaded files to [Artifactory](https://artifacts.camunda.com):

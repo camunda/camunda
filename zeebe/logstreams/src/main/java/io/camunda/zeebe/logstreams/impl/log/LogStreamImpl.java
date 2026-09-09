@@ -21,6 +21,7 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.AppendedListener;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommittedPositionListener;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Collection;
@@ -190,9 +191,17 @@ public final class LogStreamImpl implements LogStream, CommitListener, AppendedL
   }
 
   private LogStreamReader createLogStreamReader(final Supplier<LogStorageReader> readerSupplier) {
-    final var newReader = new LogStreamReaderImpl(readerSupplier.get());
+    // Deregister on close instead of holding onto every reader ever created for the life of this
+    // LogStream -- a caller that opens and closes many short-lived readers (e.g. one per poll of a
+    // diagnostic endpoint) would otherwise leak one entry here per call.
+    final var newReader = new LogStreamReaderImpl(readerSupplier.get(), readers::remove);
     readers.add(newReader);
     return newReader;
+  }
+
+  @VisibleForTesting
+  int openReaderCount() {
+    return readers.size();
   }
 
   private long getWriteBuffersInitialPosition() {

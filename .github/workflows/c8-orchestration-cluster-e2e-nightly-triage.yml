@@ -1,6 +1,6 @@
 # description: Discovery + classification + dispatch for C8 Orchestration Cluster nightly
 #              E2E and API test failures. Scans the latest run of each in-scope nightly
-#              workflow for every supported version (8.7 / 8.8 / 8.9 / main), extracts
+#              workflow for every supported version (8.7 / 8.8 / 8.9 / 8.10 / main), extracts
 #              failing tests from json-report artifacts, groups by version, and dispatches
 #              one fix-agent run per version. Skips dispatch when an open failing-test-fix
 #              PR already exists for the same base branch.
@@ -28,8 +28,8 @@ on:
         default: true
         required: false
       daily_cap:
-        description: 'Max fix-agent dispatches this run (default: 4 -- one per supported version)'
-        default: '4'
+        description: 'Max fix-agent dispatches this run (default: 5 -- one per supported version)'
+        default: '5'
         required: false
       send_slack_notification:
         description: 'Post triage summary and fix-agent replies to Slack (always true for scheduled runs)'
@@ -134,6 +134,9 @@ jobs:
             "c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e"
             "c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api_es"
             "c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api_rdbms"
+            "c8-orchestration-cluster-nightly-8.10-api-es.yml|8.10|api_es"
+            "c8-orchestration-cluster-nightly-8.10-api-rdbms.yml|8.10|api_rdbms"
+            "c8-orchestration-cluster-nightly-8.10-e2e.yml|8.10|e2e"
           )
           SCOPE+=(
             "c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e"
@@ -203,10 +206,14 @@ jobs:
             # Build the list of json-report artifact patterns to download
             declare -a patterns=()
             if [ "$test_type" = "e2e" ]; then
-              # Each version has different modes; just attempt both -- gh will silently miss
-              for mode in v1 v2; do
-                patterns+=("json-report-nightly-e2e-${safe_version}-${mode}|${mode}")
-              done
+              if [ "$version" = "main" ]; then
+                patterns+=("json-report-nightly-e2e-${safe_version}|current")
+              else
+                # Stable versions have different modes; gh silently ignores missing artifacts.
+                for mode in v1 v2; do
+                  patterns+=("json-report-nightly-e2e-${safe_version}-${mode}|${mode}")
+                done
+              fi
             elif [ "$test_type" = "api_es" ]; then
               # Trailing glob tolerates the mode suffix (e.g. "-profiles") the
               # API-tests job now appends to the artifact name. Does not collide
@@ -287,7 +294,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPO:     ${{ github.repository }}
-          DAILY_CAP: ${{ github.event.inputs.daily_cap || '4' }}
+          DAILY_CAP: ${{ github.event.inputs.daily_cap || '5' }}
         run: |
           set -euo pipefail
 

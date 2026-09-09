@@ -18,7 +18,9 @@ import io.camunda.zeebe.util.VersionUtil;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Verifies {@link RdbmsSchemaVersionStore#tableExists} finds {@code RDBMS_SCHEMA_VERSION} on every
@@ -27,8 +29,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * missed.
  */
 @Tag("rdbms")
-@ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
+@Execution(ExecutionMode.SAME_THREAD)
 final class RdbmsSchemaVersionStoreIT {
+
+  @RegisterExtension
+  static final CamundaRdbmsInvocationContextProviderExtension TEST_APPLICATIONS =
+      CamundaRdbmsInvocationContextProviderExtension.isolated();
 
   @TestTemplate
   void shouldFindExistingSchemaVersionRegardlessOfVendorIdentifierCasing(
@@ -67,8 +73,8 @@ final class RdbmsSchemaVersionStoreIT {
       assertThatThrownBy(versionStore::checkCompatibility)
           .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class);
     } finally {
-      // Restore the version a real boot would have recorded, so any later test reusing this
-      // vendor's shared, cached test application observes a consistent, correctly-migrated state.
+      // Restore the version a real boot would have recorded so the next template invocation for
+      // this class observes a consistent, correctly migrated state.
       versionStore.recordCurrentVersion();
     }
   }

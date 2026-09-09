@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * <ul>
  *   <li>{@code camunda.secrets.cache.ttl}
  *   <li>{@code camunda.secrets.cache.max-size}
+ *   <li>{@code camunda.secrets.max-concurrency}
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
  *   <li>{@code camunda.secrets.stores.aws.<id>.region}
  *   <li>{@code camunda.secrets.stores.aws.<id>.path-prefix}
@@ -45,8 +46,67 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @NullMarked
 public class Secrets {
 
+  /**
+   * Floor for {@link #DEFAULT_MAX_CONCURRENCY}, so a small container does not end up with fewer
+   * permits than it has callers competing for them: below the number of concurrently resolving
+   * callers, the shared semaphore is a throttle rather than a speed-up, and a two-core node would
+   * otherwise resolve more slowly than it did before the semaphore existed.
+   */
+  private static final int MIN_DEFAULT_MAX_CONCURRENCY = 8;
+
+  /**
+   * Twice the core count, not once: the permits bound blocking backend round trips rather than CPU
+   * work, and staying clear of the virtual-thread carrier pool (sized to the core count) leaves
+   * room for a store whose client pins its carrier. It also keeps the default above
+   * partitions-per-node, which is what the callers competing for these permits scale with.
+   */
+  private static final int DEFAULT_MAX_CONCURRENCY_PER_CORE = 2;
+
+  /**
+   * Default for {@link #maxConcurrency}. Derived from the host rather than fixed, since the callers
+   * sharing these permits (one per partition on this node, plus the REST resolution path) scale
+   * with the node's size, and a fixed number too far below them turns the shared semaphore into a
+   * throttle.
+   *
+   * <p>Computed here rather than read from {@code secret-store-api} for the same reason {@link
+   * Cache}'s defaults are restated as literals: this module deliberately does not depend on that
+   * module.
+   */
+  private static final int DEFAULT_MAX_CONCURRENCY =
+      Math.max(
+          MIN_DEFAULT_MAX_CONCURRENCY,
+          Runtime.getRuntime().availableProcessors() * DEFAULT_MAX_CONCURRENCY_PER_CORE);
+
   @NestedConfigurationProperty private Stores stores = new Stores();
   @NestedConfigurationProperty private Cache cache = new Cache();
+
+  /**
+   * How many sequential backend calls a store whose cost scales with call count ({@code
+   * namesPerCall()} less than the request size) may issue at once, bounded by a semaphore shared by
+   * every such store the registry wraps. {@code 1} resolves exactly as before this setting existed:
+   * one call at a time, on the calling thread. A store that already covers the whole request in one
+   * call (a container-style store, or one backed by local disk) is unaffected either way; a batched
+   * store (e.g. AWS's {@code BatchGetSecretValue} mode) is included once its request needs more
+   * than one batch.
+   *
+   * <p>The permits are shared per node and physical tenant, so they bound how many backend calls
+   * this node has in flight for such stores at once. A request small enough to resolve in a single
+   * call (at most {@code namesPerCall()} names) takes no permit, so actual concurrency can exceed
+   * this value by one such call per concurrent caller. The bound is on call concurrency, not
+   * request rate, so it only approximates a provider quota measured in calls per second rather than
+   * guaranteeing it sees at most this value times the node count.
+   *
+   * <p>Raising it past what one request can use changes nothing, since a request is split into
+   * {@code ceil(names / namesPerCall())} chunks and cannot use more permits than it has chunks. The
+   * resolve endpoint caps its request size at 20 names via the {@code maxItems} on its {@code
+   * references} array; background resolution defaults to the same 20 via {@code
+   * camunda.processing.engine.secrets.batch-resolution-limit}, but that limit is a configurable
+   * default, not a hard cap. For a one-by-one store the endpoint's cap puts the chunk ceiling at
+   * 20; for a batched store it is {@code ceil(20 / batchSize)}.
+   *
+   * <p>Defaults to twice the available processor count, and never below {@code 8}.
+   */
+  private Integer maxConcurrency = DEFAULT_MAX_CONCURRENCY;
 
   public Stores getStores() {
     return stores;
@@ -67,6 +127,26 @@ public class Secrets {
 
   public void setCache(final Cache cache) {
     this.cache = cache;
+  }
+
+  /**
+   * @throws IllegalArgumentException if max-concurrency is below 1
+   */
+  public int getMaxConcurrency() {
+    if (maxConcurrency < 1) {
+      throw new IllegalArgumentException(
+          "camunda.secrets.max-concurrency must be at least 1, but was " + maxConcurrency);
+    }
+    return maxConcurrency;
+  }
+
+  /**
+   * @param maxConcurrency the configured value, or {@code null}, bound to the same outcome {@code
+   *     ttl}/{@code max-size} already have, rather than the two disagreeing on what an empty value
+   *     means (routine for an env-var-driven deployment)
+   */
+  public void setMaxConcurrency(final @Nullable Integer maxConcurrency) {
+    this.maxConcurrency = maxConcurrency == null ? DEFAULT_MAX_CONCURRENCY : maxConcurrency;
   }
 
   public static class Stores {

@@ -140,7 +140,8 @@ services:
       KEYCLOAK_USERS_6_ROLES_1: 'ManagementIdentity'
   camunda:
     profiles: ['self-managed', 'self-managed:elasticsearch']
-    image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
+    image: ${CAMUNDA_IMAGE:-camunda/camunda:${CAMUNDA_VERSION:-8.9.0}}
+    pull_policy: ${CAMUNDA_PULL_POLICY:-missing}
     container_name: camunda
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
@@ -174,7 +175,8 @@ services:
       - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml
   camunda-opensearch:
     profiles: ['self-managed:opensearch']
-    image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
+    image: ${CAMUNDA_IMAGE:-camunda/camunda:${CAMUNDA_VERSION:-8.9.0}}
+    pull_policy: ${CAMUNDA_PULL_POLICY:-missing}
     container_name: camunda-opensearch
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data

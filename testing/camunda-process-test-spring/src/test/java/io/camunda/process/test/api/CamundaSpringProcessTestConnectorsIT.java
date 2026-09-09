@@ -25,7 +25,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import java.io.IOException;
@@ -37,19 +36,21 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.Testcontainers;
+import org.wiremock.spring.EnableWireMock;
 
-@WireMockTest(httpPort = 9999)
+@EnableWireMock
 @SpringBootTest(
     classes = {CamundaSpringProcessTestConnectorsIT.class},
     properties = {
       "io.camunda.process.test.connectors-enabled=true",
       "io.camunda.process.test.connectors-secrets.CONNECTORS_URL=http://connectors:8080/actuator/health/readiness",
-      "io.camunda.process.test.connectors-secrets.BASE_URL=http://host.testcontainers.internal:9999"
+      "io.camunda.process.test.connectors-secrets.BASE_URL=http://host.testcontainers.internal:${wiremock.server.port}"
     })
 @CamundaSpringProcessTest
 public class CamundaSpringProcessTestConnectorsIT {
@@ -57,12 +58,15 @@ public class CamundaSpringProcessTestConnectorsIT {
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
 
+  @Value("${wiremock.server.port}")
+  private int wireMockPort;
+
   @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
 
-  @BeforeAll
-  static void setup() {
-    Testcontainers.exposeHostPorts(9999);
+  @BeforeEach
+  void exposeWireMockPort() {
+    Testcontainers.exposeHostPorts(wireMockPort);
   }
 
   @Test

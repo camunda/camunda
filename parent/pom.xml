@@ -46,7 +46,7 @@
     <version.bouncycastle>1.85</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
     <version.camunda-license-check>2.11.2</version.camunda-license-check>
-    <version.camunda-security-library>0.1.0-alpha67</version.camunda-security-library>
+    <version.camunda-security-library>1.0.0</version.camunda-security-library>
     <version.checkstyle>14.1.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
     <version.commons-lang>3.20.0</version.commons-lang>
@@ -65,7 +65,7 @@
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.50.0</version.error-prone>
     <version.nullaway>0.14.1</version.nullaway>
-    <version.grpc>1.83.1</version.grpc>
+    <version.grpc>1.84.0</version.grpc>
     <version.gson>2.14.0</version.gson>
     <version.guava>33.7.1-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
@@ -98,15 +98,16 @@
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
     <version.prometheus>1.3.5</version.prometheus>
     <version.protobuf>4.36.1</version.protobuf>
-    <version.protobuf-common>2.75.0</version.protobuf-common>
+    <version.protobuf-common>2.76.0</version.protobuf-common>
     <version.micrometer>1.17.1</version.micrometer>
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
     <version.sbe>1.40.1</version.sbe>
     <version.scala>3.9.0</version.scala>
-    <version.slf4j>2.0.18</version.slf4j>
+    <version.slf4j>2.0.19</version.slf4j>
     <version.snakeyaml>2.7</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.2</version.wiremock>
+    <version.wiremock-spring-boot>4.2.2</version.wiremock-spring-boot>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.10.1</version.asm>
     <version.testcontainers>2.0.5</version.testcontainers>
@@ -150,12 +151,12 @@
     <version.jnr-posix>3.2.2</version.jnr-posix>
     <version.jnr-constants>0.11.0</version.jnr-constants>
     <version.feign>13.14</version.feign>
-    <version.google-sdk>26.87.0</version.google-sdk>
+    <version.google-sdk>26.88.0</version.google-sdk>
     <!-- Must stay >= the version gax-httpjson needs; see the override further down in
          dependencyManagement for why this is pinned at all. -->
     <version.google-http-client>2.2.0</version.google-http-client>
     <version.azure-sdk>1.3.8</version.azure-sdk>
-    <version.awssdk>2.54.10</version.awssdk>
+    <version.awssdk>2.54.13</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.bind-api>4.0.5</version.bind-api>
@@ -169,7 +170,7 @@
     <version.java-jwt>4.6.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.13</version.postgresql>
-    <version.h2>2.4.240</version.h2>
+    <version.h2>2.5.250</version.h2>
     <version.aws-advanced-jdbc-wrapper>4.4.0</version.aws-advanced-jdbc-wrapper>
     <version.aws-signing>4.0.1</version.aws-signing>
     <version.tc-keycloak>4.3.1</version.tc-keycloak>
@@ -207,10 +208,10 @@
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
-    <version.auth0>5.0.0</version.auth0>
+    <version.auth0>5.1.0</version.auth0>
     <version.auth0.commons>1.12.0</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
-    <version.okio-jvm>3.18.1</version.okio-jvm>
+    <version.okio-jvm>3.18.2</version.okio-jvm>
     <version.jwks-rsa>0.24.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
@@ -249,7 +250,7 @@
     <plugin.version.shade>3.6.2</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.9.8.3</plugin.version.spotbugs>
-    <plugin.version.surefire>3.5.2</plugin.version.surefire>
+    <plugin.version.surefire>3.5.6</plugin.version.surefire>
     <plugin.version.versions>2.21.0</plugin.version.versions>
     <plugin.version.frontend-maven>2.0.2</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.4.0</plugin.version.maven-source>
@@ -778,79 +779,6 @@
         <groupId>io.camunda</groupId>
         <artifactId>microbenchmarks</artifactId>
         <version>${project.version}</version>
-      </dependency>
-
-      <!-- Tasklist Modules -->
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-webjar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-data-generator</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-it-tests</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-810</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-820</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-830</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-840</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-850</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
       </dependency>
 
       <dependency>
@@ -1722,6 +1650,12 @@
         <groupId>org.wiremock</groupId>
         <artifactId>wiremock-standalone</artifactId>
         <version>${version.wiremock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wiremock.integrations</groupId>
+        <artifactId>wiremock-spring-boot</artifactId>
+        <version>${version.wiremock-spring-boot}</version>
       </dependency>
 
       <!-- Testcontainers & Docker for container based integration tests -->

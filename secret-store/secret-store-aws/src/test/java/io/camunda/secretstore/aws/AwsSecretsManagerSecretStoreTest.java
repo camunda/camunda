@@ -119,6 +119,25 @@ class AwsSecretsManagerSecretStoreTest {
   }
 
   @Test
+  void shouldResolveOneNamePerCallWhenBatchingDisabled() {
+    // given
+    final var store = new AwsSecretsManagerSecretStore(client, "camunda/");
+
+    // then
+    assertThat(store.namesPerCall()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldResolveBatchSizeNamesPerCallWhenBatchingEnabled() {
+    // given batching already covers several secrets per BatchGetSecretValue call, so a request
+    // needing more than one batch still has sequential round trips worth overlapping
+    final var store = new AwsSecretsManagerSecretStore(client, "camunda/", true, 20);
+
+    // then
+    assertThat(store.namesPerCall()).isEqualTo(20);
+  }
+
+  @Test
   void shouldReturnNotFoundForMissingSecret() {
     // given
     final var store = new AwsSecretsManagerSecretStore(client, "");

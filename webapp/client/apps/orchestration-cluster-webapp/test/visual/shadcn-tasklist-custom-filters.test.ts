@@ -116,7 +116,7 @@ test('should match the delete filter confirmation', async ({shadcnTasklistIndexP
 	await shadcnTasklistIndexPage.goto();
 	await shadcnTasklistIndexPage.expandFilters();
 
-	await shadcnTasklistIndexPage.customFilterActionsButton.click();
+	await shadcnTasklistIndexPage.customFilterActionsButton('Custom').click();
 	await shadcnTasklistIndexPage.customFilterOverflowItem('Delete').click();
 
 	await expect(shadcnTasklistIndexPage.deleteFilterModal.dialog).toBeVisible();

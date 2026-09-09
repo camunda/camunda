@@ -24,6 +24,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -102,14 +103,20 @@ public final class ClockTest {
     final var record = clockClient.pinAt(fakeNow);
     // required to ensure we have updated the state
     ENGINE.awaitProcessingOf(record);
-    assertThat(ENGINE.hasReachedEnd()).isTrue();
+    // awaitProcessingOf only awaits the pin command's own processing, not that the state machine
+    // has fully caught up on the log, so this must be polled rather than asserted once
+    Awaitility.await("until the engine has reached the end of the log after pinning")
+        .until(ENGINE::hasReachedEnd);
 
     // when
     ENGINE.snapshot();
     ENGINE.stop();
     RecordingExporter.reset();
     ENGINE.start();
-    assertThat(ENGINE.hasReachedEnd()).isTrue();
+    // starting the engine only awaits recovery, not that the state machine has caught up on
+    // resumed processing, so this must be polled rather than asserted once
+    Awaitility.await("until the engine has reached the end of the log after restart")
+        .until(ENGINE::hasReachedEnd);
 
     // then
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);

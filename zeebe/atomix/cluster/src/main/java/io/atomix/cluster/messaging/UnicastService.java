@@ -22,55 +22,64 @@ import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 
 /**
- * Service for unreliable unicast messaging between nodes.
+ * Service for unreliable, fire-and-forget messaging between nodes.
  *
- * <p>The broadcast service is an unreliable broadcast messaging service backed by multicast. This
- * service provides no guaranteed regarding reliability or order of messages.
+ * <p>This service makes no guarantee regarding the reliability or order of messages: a send may be
+ * dropped without notice, so callers must be able to tolerate loss and retry.
+ *
+ * <p>A subject carries at most one listener, mirroring {@link MessagingService#registerHandler}.
  */
 public interface UnicastService {
 
   /**
-   * Broadcasts the given message to all listeners for the given subject.
+   * Sends the given message to the listener registered for the given subject on the peer at the
+   * given address.
    *
-   * <p>The message will be broadcast to all listeners for the given {@code subject}. This service
-   * makes no guarantee regarding the reliability or order of delivery of the message.
+   * <p>This service makes no guarantee regarding the reliability or order of delivery of the
+   * message.
    *
    * @param address the address to which to unicast the message
    * @param subject the message subject
-   * @param message the message to broadcast
+   * @param message the message to send
    */
   void unicast(Address address, String subject, byte[] message);
 
   /**
-   * Adds a broadcast listener for the given subject.
+   * Registers the listener for the given subject, called inline on the thread that dispatches the
+   * received message.
    *
-   * <p>Messages broadcast to the given {@code subject} will be delivered to the provided listener.
-   * This service provides no guarantee regarding the order in which messages arrive.
+   * <p>That thread belongs to the service (the receiving event loop, for {@code
+   * NettyUnicastService}), so a listener that blocks stalls the processing of further incoming
+   * messages. Register with an {@link Executor} instead if the listener may block.
    *
    * @param subject the message subject
-   * @param listener the broadcast listener to add
+   * @param listener the listener to register
    */
   default void addListener(final String subject, final BiConsumer<Address, byte[]> listener) {
     addListener(subject, listener, MoreExecutors.directExecutor());
   }
 
   /**
-   * Adds a broadcast listener for the given subject.
+   * Registers the listener for the given subject, replacing any listener already registered for it.
    *
-   * <p>Messages broadcast to the given {@code subject} will be delivered to the provided listener.
-   * This service provides no guarantee regarding the order in which messages arrive.
+   * <p>The replacement is silent, as it is for {@link MessagingService#registerHandler}. A subject
+   * carries at most one listener, so a second registration takes over delivery rather than adding
+   * to it.
    *
    * @param subject the message subject
-   * @param listener the broadcast listener to add
+   * @param listener the listener to register
    * @param executor an executor with which to call the listener
    */
   void addListener(String subject, BiConsumer<Address, byte[]> listener, Executor executor);
 
   /**
-   * Removes a broadcast listener for the given subject.
+   * Removes the given listener from the given subject, if it is the one currently registered.
+   *
+   * <p>Passing a listener that has since been replaced does nothing, so a stale reference cannot
+   * unregister its replacement.
    *
    * @param subject the message subject
-   * @param listener the broadcast listener to remove
+   * @param listener the listener to remove
    */
   void removeListener(String subject, BiConsumer<Address, byte[]> listener);
 }

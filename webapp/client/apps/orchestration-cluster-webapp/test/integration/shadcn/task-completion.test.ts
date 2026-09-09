@@ -83,6 +83,68 @@ test.describe('Task completion', () => {
 		await expect(page).toHaveURL(/\/shadcn\/tasklist$/);
 	});
 
+	test('should navigate to the next open task when auto-select is enabled', async ({
+		network,
+		shadcnTaskDetailPage,
+		page,
+	}) => {
+		const assigningTask = createUserTask({
+			userTaskKey: '2251799813685283',
+			name: 'Assigning purchase request after auto-select',
+			processName: 'Purchase process',
+			assignee: currentUser.username,
+			state: 'ASSIGNING',
+		});
+		const nextTask = createUserTask({
+			userTaskKey: '2251799813685282',
+			name: 'Review purchase request after auto-select',
+			processName: 'Purchase process',
+			assignee: currentUser.username,
+			state: 'CREATED',
+		});
+
+		network.use(
+			mockCompleteTaskEndpoint({
+				successResponse: new HttpResponse(null, {status: 200}),
+			}),
+		);
+
+		await shadcnTaskDetailPage.goto('2251799813685281', '?filter=assigned-to-me&sortBy=priority');
+		await expect(shadcnTaskDetailPage.detailsInfo.getByText('Review invoice before auto-select')).toBeVisible();
+		await shadcnTaskDetailPage.autoSelectNextTaskSwitch.click({force: true});
+
+		network.use(
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryUserTasksResponse({
+						items: [completedTask, assigningTask, nextTask],
+					}),
+				),
+			}),
+		);
+
+		await shadcnTaskDetailPage.completeTaskButton.click();
+
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(completedTask),
+			}),
+		);
+
+		await expect(shadcnTaskDetailPage.header.notifications.getByNotificationTitle('Task completed')).toBeVisible();
+
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(nextTask),
+			}),
+		);
+
+		await expect(page).toHaveURL(/\/shadcn\/tasklist\/2251799813685282\?/);
+		expect(new URL(page.url()).searchParams.get('filter')).toBe('assigned-to-me');
+		expect(new URL(page.url()).searchParams.get('sortBy')).toBe('priority');
+		await expect(shadcnTaskDetailPage.detailsInfo.getByText('Review purchase request after auto-select')).toBeVisible();
+	});
+
 	test('should show a failed state when completion is forbidden', async ({network, shadcnTaskDetailPage, page}) => {
 		network.use(
 			mockCompleteTaskEndpoint({

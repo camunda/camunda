@@ -8,7 +8,7 @@ version: "0.1.0"
 dependencies:
   - name: camunda-load-tests
     alias: load-tester
-    version: "0.1.12"
+    version: "0.1.13"
     repository: "https://camunda.github.io/camunda-load-tests-helm/"
     # Set load-tester.enabled: false in the parent values to skip deploying
     # the load generators (e.g. for a bare cluster setup or when using the

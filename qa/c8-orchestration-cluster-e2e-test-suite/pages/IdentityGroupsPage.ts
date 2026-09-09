@@ -149,7 +149,7 @@ export class IdentityGroupsPage {
     // accessible name is "Search by username" -- not the "Search by Username
     // or Name" the roles modal overrides it to.
     this.searchBox = this.assignUserModal.getByRole('combobox', {
-      name: 'Search by username',
+      name: 'Search by name, email, or username',
     });
     // The results render in a Radix popover that portals as a *sibling* of the
     // dialog (DS #496), so the listbox is not a descendant of the modal --

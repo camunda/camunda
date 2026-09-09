@@ -90,27 +90,6 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-operate.outputs.operate-frontend-change == 'true'
       }}
-  tasklist-frontend-changes:
-    description: Output whether Tasklist frontend tests should be run based on GitHub event and files changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
-        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
-        steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
-      }}
-  tasklist-backend-changes:
-    description: Output whether Tasklist backend build should be run based on GitHub event and files changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
-        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
-        steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
-        steps.filter-common.outputs.webapps-change == 'true' ||
-        steps.filter-common.outputs.maven-change == 'true' ||
-        steps.filter-common.outputs.dockerfile-change == 'true'
-      }}
   optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
     value: >-
@@ -292,13 +271,22 @@ outputs:
         steps.filter-load-test-setup.outputs.load-test-setup-change == 'true'
       }}
   scripts-changes:
-    description: Output whether any file under .github/scripts/ or .ci/db-versions.yml changed, so their Python unit tests should be run
+    description: Output whether any repository Python-tested script changed, so their Python unit tests should be run
     value: >-
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-scripts.outputs.scripts-change == 'true'
+      }}
+  load-test-scripts-changes:
+    description: Output whether load-test Python script tests should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-scripts.outputs.load-test-scripts-change == 'true'
       }}
 
 runs:
@@ -374,7 +362,6 @@ runs:
 
         frontend-change:
           - 'operate/client/**'
-          - 'tasklist/client/**'
           - 'identity/client/**'
           - 'optimize/client/**'
 
@@ -475,18 +462,6 @@ runs:
           - operate/client/**
 
   - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-    id: filter-tasklist
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        tasklist-backend-change:
-          - 'tasklist/!(client/**)/**'
-
-        tasklist-frontend-change:
-          - tasklist/client/**
-
-  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-optimize
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -577,6 +552,8 @@ runs:
         scripts-change:
           - '.github/scripts/**'
           - '.ci/db-versions.yml'
+        load-test-scripts-change:
+          - 'load-tests/docs/scripts/load_test_report/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch
