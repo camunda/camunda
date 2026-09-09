@@ -9,8 +9,6 @@ package io.camunda.application.commons.pt;
 
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.connect.configuration.DatabaseType;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
