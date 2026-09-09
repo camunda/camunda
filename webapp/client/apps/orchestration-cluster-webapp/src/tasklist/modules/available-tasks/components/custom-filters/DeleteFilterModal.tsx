@@ -6,9 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Modal} from '@carbon/react';
 import {Trans, useTranslation} from 'react-i18next';
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	Button,
+} from '@camunda/design-system';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
+import {useCallback} from 'react';
 
 type Props = {
 	isOpen: boolean;
@@ -21,29 +32,45 @@ type Props = {
 const DeleteFilterModal: React.FC<Props> = ({isOpen, onClose, onDelete, filterId, ...props}) => {
 	const {t} = useTranslation();
 	const filterName = getStateLocally('tasklist.customFilters')?.[filterId]?.name;
+	const handleOpenChange = useCallback(
+		(open: boolean) => {
+			if (!open) {
+				onClose();
+			}
+		},
+		[onClose],
+	);
+	const handleDelete = useCallback(
+		(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+			event.preventDefault();
+			onDelete(filterId);
+		},
+		[filterId, onDelete],
+	);
 
 	return (
-		<Modal
-			{...props}
-			danger
-			open={isOpen}
-			size="sm"
-			modalHeading={isOpen ? t('tasklist.customFiltersModalDeleteModalHeading') : undefined}
-			primaryButtonText={t('tasklist.customFiltersModalConfirmDeletionButton')}
-			secondaryButtonText={t('tasklist.tasksFiltersModalCancelButtonLabel')}
-			onRequestClose={onClose}
-			onRequestSubmit={() => {
-				onDelete(filterId);
-			}}
-		>
-			<p>
-				<Trans
-					i18nKey="tasklist.customFiltersModalDeleteModalBody"
-					values={{name: filterName}}
-					components={{strong: <strong />}}
-				/>
-			</p>
-		</Modal>
+		<AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
+			<AlertDialogContent {...props}>
+				<AlertDialogHeader>
+					<AlertDialogTitle>{isOpen ? t('tasklist.customFiltersModalDeleteModalHeading') : undefined}</AlertDialogTitle>
+				</AlertDialogHeader>
+				<AlertDialogDescription>
+					<Trans
+						i18nKey="tasklist.customFiltersModalDeleteModalBody"
+						values={{name: filterName}}
+						components={{strong: <strong />}}
+					/>
+				</AlertDialogDescription>
+				<AlertDialogFooter>
+					<AlertDialogCancel>{t('tasklist.tasksFiltersModalCancelButtonLabel')}</AlertDialogCancel>
+					<AlertDialogAction asChild>
+						<Button type="button" variant="destructive" onClick={handleDelete}>
+							{t('tasklist.customFiltersModalConfirmDeletionButton')}
+						</Button>
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 };
 

@@ -6,23 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useRef, useState, type ReactNode} from 'react';
-import {
-	Button,
-	ComposedModal,
-	InlineNotification,
-	ModalBody,
-	ModalFooter,
-	ModalHeader,
-	TextInputSkeleton,
-} from '@carbon/react';
-import {Share} from '@carbon/react/icons';
+import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {X} from 'lucide-react';
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
+import {
+	Alert,
+	Button,
+	Dialog,
+	DialogBody,
+	DialogClose,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	Skeleton,
+} from '@camunda/design-system';
 import {CamundaFormRenderer, type PartialVariable} from '#/tasklist/modules/form-js/CamundaFormRenderer';
 import type {FormManager} from '#/tasklist/modules/form-js/FormManager';
 import {ProcessStartFormImportError} from '#/shared/errors';
-import styles from './StartProcessFormModal.module.scss';
+import {cn} from '#/shared/cn';
+import {CopyLinkButton} from './CopyLinkButton';
 
 type CommonProps = {
 	processDisplayName: string;
@@ -45,9 +49,8 @@ type ErrorProps = CommonProps & {
 };
 
 type ShellProps = CommonProps & {
-	children: ReactNode;
-	footer: ReactNode;
-	isShareButtonVisible?: boolean;
+	children: React.ReactNode;
+	footer: React.ReactNode;
 };
 
 function getErrorSubtitleKey(variant: ErrorVariant) {
@@ -66,50 +69,44 @@ function getErrorSubtitleKey(variant: ErrorVariant) {
 	return 'tasklist.processesStartProcessWithModalFormLoadFailed';
 }
 
-const StartProcessFormModalShell: React.FC<ShellProps> = ({
-	processDisplayName,
-	onClose,
-	children,
-	footer,
-	isShareButtonVisible = false,
-}) => {
+const StartProcessFormModalShell: React.FC<ShellProps> = ({processDisplayName, onClose, children, footer}) => {
 	const {t} = useTranslation();
-	const title = t('tasklist.processesStartProcessWithForm', {processDisplayName});
-	const handleShareButtonClick = useCallback(async () => {
-		try {
-			await navigator.clipboard.writeText(window.location.href);
-		} catch (error) {
-			console.error('Failed to copy URL to clipboard', error);
-		}
-	}, []);
 
 	return (
-		<ComposedModal open preventCloseOnClickOutside size="lg" onClose={onClose} aria-label={title}>
-			<ModalHeader
-				title={
-					<div className={styles.title}>
-						<span>{title}</span>
-						{isShareButtonVisible ? (
-							<Button
-								kind="ghost"
-								size="sm"
-								hasIconOnly
-								renderIcon={Share}
-								iconDescription={t('tasklist.processesStartProcessWithFormShareURLAriaLabel')}
-								tooltipPosition="right"
-								onClick={handleShareButtonClick}
-								aria-label={t('tasklist.processesStartProcessWithFormShareURLAriaLabel')}
-							/>
-						) : null}
-					</div>
+		<Dialog
+			open
+			onOpenChange={(open) => {
+				if (!open) {
+					onClose();
 				}
-				iconDescription={t('tasklist.optionsModalCloseButton')}
-			/>
-			<ModalBody hasScrollingContent>
-				<div className={styles.formContainer}>{children}</div>
-			</ModalBody>
-			{footer}
-		</ComposedModal>
+			}}
+		>
+			<DialogContent
+				size="lg"
+				showCloseButton={false}
+				aria-describedby={undefined}
+				onInteractOutside={(event) => event.preventDefault()}
+			>
+				<DialogHeader>
+					<DialogTitle>{t('tasklist.processesStartProcessWithForm', {processDisplayName})}</DialogTitle>
+				</DialogHeader>
+				<DialogBody>
+					<div className="mx-auto w-full max-w-[900px]">{children}</div>
+				</DialogBody>
+				{footer}
+				<DialogClose asChild>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						className="absolute top-2 right-2"
+						aria-label={t('tasklist.optionsModalCloseButton')}
+					>
+						<X aria-hidden />
+					</Button>
+				</DialogClose>
+			</DialogContent>
+		</Dialog>
 	);
 };
 
@@ -136,18 +133,18 @@ const StartProcessFormModal: React.FC<Props> = ({
 		<StartProcessFormModalShell
 			processDisplayName={processDisplayName}
 			onClose={onClose}
-			isShareButtonVisible
 			footer={
-				<ModalFooter
-					primaryButtonText={t('tasklist.processesStartProcessWithFormStartButtonLabel')}
-					primaryButtonDisabled={isSubmitting}
-					secondaryButtonText={t('tasklist.processesProcessTileCancelButtonLabel')}
-					onRequestSubmit={() => formManagerRef.current?.submit()}
-					loadingStatus={isSubmitting ? 'active' : 'inactive'}
-					loadingDescription={t('tasklist.processesStartProcessPendingStatusText')}
-				>
-					{null}
-				</ModalFooter>
+				<DialogFooter>
+					<CopyLinkButton textToCopy={window.location.href} />
+					<Button type="button" variant="secondary" disabled={isSubmitting} onClick={onClose}>
+						{t('tasklist.processesProcessTileCancelButtonLabel')}
+					</Button>
+					<Button type="button" loading={isSubmitting} onClick={() => formManagerRef.current?.submit()}>
+						{isSubmitting
+							? t('tasklist.processesStartProcessPendingStatusText')
+							: t('tasklist.processesStartProcessWithFormStartButtonLabel')}
+					</Button>
+				</DialogFooter>
 			}
 		>
 			<CamundaFormRenderer
@@ -177,21 +174,16 @@ const StartProcessFormModal: React.FC<Props> = ({
 				}}
 			/>
 			{hasSubmissionFailed ? (
-				<div className={styles.inlineErrorContainer}>
-					<InlineNotification
-						className={styles.inlineNotification}
-						kind="error"
-						role="alert"
-						hideCloseButton
-						lowContrast
-						title={t('errorGenericErrorPageTitle')}
-						subtitle={
-							isMultiTenancyEnabled && tenantId === undefined
-								? t('tasklist.processesFetchErrorMissingTenant')
-								: t('tasklist.processesStartProcessWithModalSubmissionFailed')
-						}
-					/>
-				</div>
+				<Alert
+					className="mt-2"
+					variant="destructive"
+					title={t('errorGenericErrorPageTitle')}
+					description={
+						isMultiTenancyEnabled && tenantId === undefined
+							? t('tasklist.processesFetchErrorMissingTenant')
+							: t('tasklist.processesStartProcessWithModalSubmissionFailed')
+					}
+				/>
 			) : null}
 		</StartProcessFormModalShell>
 	);
@@ -205,18 +197,19 @@ const StartProcessFormModalSkeleton: React.FC<CommonProps> = ({processDisplayNam
 			processDisplayName={processDisplayName}
 			onClose={onClose}
 			footer={
-				<ModalFooter
-					primaryButtonText={t('tasklist.processesStartProcessWithFormStartButtonLabel')}
-					primaryButtonDisabled
-					secondaryButtonText={t('tasklist.processesProcessTileCancelButtonLabel')}
-				>
-					{null}
-				</ModalFooter>
+				<DialogFooter>
+					<Button type="button" variant="secondary" onClick={onClose}>
+						{t('tasklist.processesProcessTileCancelButtonLabel')}
+					</Button>
+					<Button type="button" disabled>
+						{t('tasklist.processesStartProcessWithFormStartButtonLabel')}
+					</Button>
+				</DialogFooter>
 			}
 		>
-			<div className={styles.formSkeletonContainer} data-testid="form-skeleton">
+			<div className="grid gap-4 max-[42rem]:grid-cols-1 min-[42rem]:grid-cols-2" data-testid="form-skeleton">
 				{Array.from({length: 6}, (_, index) => (
-					<TextInputSkeleton key={index} />
+					<Skeleton key={index} className={cn('h-9 w-full', index === 2 && 'min-[42rem]:col-span-2')} />
 				))}
 			</div>
 		</StartProcessFormModalShell>
@@ -233,21 +226,22 @@ const StartProcessFormModalError: React.FC<ErrorProps> = ({processDisplayName, v
 			processDisplayName={processDisplayName}
 			onClose={onClose}
 			footer={
-				<ModalFooter>
-					<Button kind="secondary" onClick={onClose}>
+				<DialogFooter>
+					<Button type="button" variant="secondary" onClick={onClose}>
 						{t('tasklist.processesProcessTileCancelButtonLabel')}
 					</Button>
-					{onRetry === undefined ? null : <Button onClick={onRetry}>{t('errorGenericErrorPageButtonLabel')}</Button>}
-				</ModalFooter>
+					{onRetry === undefined ? null : (
+						<Button type="button" onClick={onRetry}>
+							{t('errorGenericErrorPageButtonLabel')}
+						</Button>
+					)}
+				</DialogFooter>
 			}
 		>
-			<InlineNotification
-				kind="error"
-				role="alert"
-				hideCloseButton
-				lowContrast
+			<Alert
+				variant="destructive"
 				title={t(isForbidden ? 'tasklist.taskDetailsProcessForbiddenTitle' : 'errorGenericErrorPageTitle')}
-				subtitle={t(subtitleKey, {processDisplayName})}
+				description={t(subtitleKey, {processDisplayName})}
 			/>
 		</StartProcessFormModalShell>
 	);

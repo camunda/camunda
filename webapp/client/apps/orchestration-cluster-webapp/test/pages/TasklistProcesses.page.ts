@@ -8,14 +8,14 @@
 
 import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
-import {Header} from './Header';
+import {TasklistHeader} from './TasklistHeader';
 
 class TasklistProcessesPage extends BasePage {
-	readonly header: Header;
+	readonly header: TasklistHeader;
 
 	constructor(page: Page) {
 		super(page);
-		this.header = new Header(page);
+		this.header = new TasklistHeader(page);
 	}
 
 	async goto(search = '') {
@@ -42,12 +42,36 @@ class TasklistProcessesPage extends BasePage {
 		return this.firstTimeWarningDialog.getByRole('button', {name: 'Cancel'});
 	}
 
-	get tasksNavItem() {
-		return this.page.getByRole('link', {name: 'Tasks'});
+	get genericErrorHeading() {
+		return this.page.getByRole('heading', {name: 'Something went wrong'});
 	}
 
-	get processesNavItem() {
-		return this.page.getByRole('link', {name: 'Processes'});
+	get description() {
+		return this.page.getByText('Browse and run processes published by your organization.');
+	}
+
+	get startProcessButton() {
+		return this.page.getByRole('button', {name: 'Start process'});
+	}
+
+	get startProcessDialog() {
+		return this.page.getByRole('dialog', {name: /Start process/});
+	}
+
+	get cancelStartProcessButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Cancel'});
+	}
+
+	get startProcessFormButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Start process'});
+	}
+
+	get startProcessFormError() {
+		return this.startProcessDialog.getByRole('alert');
+	}
+
+	get waitingForTasksStatus() {
+		return this.page.getByText('Waiting for tasks...');
 	}
 
 	get searchInput() {
@@ -62,6 +86,10 @@ class TasklistProcessesPage extends BasePage {
 		return this.page.getByRole('combobox', {name: 'Tenant'});
 	}
 
+	tenantFilterOption(option: string) {
+		return this.page.getByRole('option', {name: option});
+	}
+
 	get unpublishedProcessesHeading() {
 		return this.page.getByRole('heading', {name: 'No published processes yet'});
 	}
@@ -74,44 +102,32 @@ class TasklistProcessesPage extends BasePage {
 		return this.page.getByRole('button', {name: 'Load more'});
 	}
 
-	get genericErrorHeading() {
-		return this.page.getByRole('heading', {name: 'Something went wrong'});
-	}
-
 	processHeading(name: string) {
 		return this.page.getByRole('heading', {name});
 	}
 
-	get startProcessButton() {
-		return this.page.getByRole('button', {name: 'Start process'});
+	processTile(processDefinitionKey: string) {
+		return this.page.getByTestId(`process-tile-${processDefinitionKey}`);
 	}
 
-	get waitingForTasksStatus() {
-		return this.page.getByText('Waiting for tasks...');
+	processDefinitionId(processDefinitionKey: string, processDefinitionId: string) {
+		return this.processTile(processDefinitionKey).getByText(processDefinitionId);
 	}
 
-	get startProcessDialog() {
-		return this.page.getByRole('dialog', {name: /Start process/});
+	requiresFormPill(processDefinitionKey: string) {
+		return this.processTile(processDefinitionKey).getByText('Requires form input');
 	}
 
-	get cancelStartProcessButton() {
-		return this.startProcessDialog.getByRole('button', {name: 'Cancel'});
+	async selectProcessFilter(
+		option: 'All Processes' | 'Requires form input to start' | 'Does not require form input to start',
+	) {
+		await this.processFilter.click();
+		await this.page.getByRole('option', {name: option}).click();
 	}
 
-	get closeStartProcessButton() {
-		return this.startProcessDialog.getByRole('button', {name: 'Close'});
-	}
-
-	get shareStartProcessButton() {
-		return this.startProcessDialog.getByRole('button', {name: 'Share process URL'});
-	}
-
-	get startProcessFormButton() {
-		return this.startProcessDialog.getByRole('button', {name: 'Start process'});
-	}
-
-	get startProcessFormError() {
-		return this.startProcessDialog.getByRole('alert');
+	async selectTenant(option: string) {
+		await this.tenantFilter.click();
+		await this.tenantFilterOption(option).click();
 	}
 }
 

@@ -116,7 +116,7 @@ test('should match the delete filter confirmation', async ({tasklistIndexPage, p
 	await tasklistIndexPage.goto();
 	await tasklistIndexPage.expandFilters();
 
-	await tasklistIndexPage.customFilterActionsButton.click();
+	await tasklistIndexPage.customFilterActionsButton('Custom').click();
 	await tasklistIndexPage.customFilterOverflowItem('Delete').click();
 
 	await expect(tasklistIndexPage.deleteFilterModal.dialog).toBeVisible();

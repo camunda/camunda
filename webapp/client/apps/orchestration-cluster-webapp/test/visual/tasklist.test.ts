@@ -39,7 +39,7 @@ test.beforeEach(({network}) => {
 
 test('should match the tasklist index page snapshot', async ({tasklistIndexPage, page}) => {
 	await tasklistIndexPage.goto();
-	await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
+	await expect(tasklistIndexPage.filterSelect).toHaveText('All open tasks');
 
 	await expect(page).toHaveScreenshot();
 });

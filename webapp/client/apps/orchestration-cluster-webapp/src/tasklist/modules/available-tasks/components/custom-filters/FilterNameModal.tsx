@@ -6,9 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, Button} from '@carbon/react';
 import {Field, Form} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
+import {X} from 'lucide-react';
+import {
+	Button,
+	Dialog,
+	DialogBody,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	Input,
+	Label,
+} from '@camunda/design-system';
 
 type Props = {
 	isOpen: boolean;
@@ -20,63 +31,86 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
 	const {t} = useTranslation();
 
 	return (
-		<ComposedModal
+		<Dialog
 			open={isOpen}
-			aria-label={t('tasklist.customFiltersModalSaveAria')}
-			preventCloseOnClickOutside
-			size="sm"
-			onClose={onCancel}
+			onOpenChange={(open) => {
+				if (!open) {
+					onCancel();
+				}
+			}}
 		>
-			{isOpen ? (
-				<Form<{filterName: string}>
-					onSubmit={(values) => {
-						onApply(values.filterName);
-					}}
-					validate={({filterName}) => {
-						const errors: {filterName?: string} = {};
+			<DialogContent
+				size="sm"
+				showCloseButton={false}
+				aria-label={t('tasklist.customFiltersModalSaveAria')}
+				aria-describedby={undefined}
+				onInteractOutside={(event) => event.preventDefault()}
+			>
+				{isOpen ? (
+					<Form<{filterName: string}>
+						onSubmit={(values) => {
+							onApply(values.filterName);
+						}}
+						validate={({filterName}) => {
+							const errors: {filterName?: string} = {};
 
-						if (!filterName) {
-							errors.filterName = t('tasklist.customFiltersModalNameRequiredError');
-						}
+							if (!filterName) {
+								errors.filterName = t('tasklist.customFiltersModalNameRequiredError');
+							}
 
-						return errors;
-					}}
-				>
-					{({handleSubmit, form}) => (
-						<>
-							<ModalHeader title={t('tasklist.customFiltersModalTitle')} buttonOnClick={onCancel} />
-							<ModalBody hasForm>
-								<form onSubmit={handleSubmit}>
-									<Field name="filterName" required>
-										{({input, meta}) => (
-											<TextInput
-												id="filterName"
-												labelText={t('tasklist.customFiltersNameModalFilterNameLabel')}
-												placeholder={t('tasklist.customFiltersModalNamePlaceholder')}
-												required
-												value={input.value}
-												onChange={input.onChange}
-												data-modal-primary-focus
-												invalid={Boolean(meta.error && meta.touched)}
-												invalidText={meta.error}
-											/>
-										)}
-									</Field>
-								</form>
-							</ModalBody>
-							<ModalFooter>
-								<Button kind="secondary" onClick={onCancel}>
-									{t('tasklist.customFiltersModalCancelButton')}
-								</Button>
-								<Button kind="primary" onClick={form.submit}>
-									{t('tasklist.customFiltersModalSaveAndApplyButton')}
-								</Button>
-							</ModalFooter>
-						</>
-					)}
-				</Form>
-			) : null}
-		</ComposedModal>
+							return errors;
+						}}
+					>
+						{({handleSubmit, form}) => (
+							<>
+								<DialogHeader>
+									<DialogTitle>{t('tasklist.customFiltersModalTitle')}</DialogTitle>
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon-sm"
+										className="absolute top-2 right-2"
+										aria-label={t('tasklist.customFiltersModalCancelButton')}
+										onClick={onCancel}
+									>
+										<X aria-hidden />
+									</Button>
+								</DialogHeader>
+								<DialogBody>
+									<form onSubmit={handleSubmit}>
+										<Field name="filterName" required>
+											{({input, meta}) => (
+												<div className="flex flex-col gap-1.5">
+													<Label htmlFor="filterName">{t('tasklist.customFiltersNameModalFilterNameLabel')}</Label>
+													<Input
+														id="filterName"
+														placeholder={t('tasklist.customFiltersModalNamePlaceholder')}
+														required
+														value={input.value}
+														onChange={input.onChange}
+														autoFocus
+														aria-invalid={Boolean(meta.error && meta.touched)}
+														invalidText={meta.error}
+													/>
+												</div>
+											)}
+										</Field>
+									</form>
+								</DialogBody>
+								<DialogFooter>
+									<Button type="button" variant="secondary" onClick={onCancel}>
+										{t('tasklist.customFiltersModalCancelButton')}
+									</Button>
+									<Button type="button" onClick={form.submit}>
+										{t('tasklist.customFiltersModalSaveAndApplyButton')}
+									</Button>
+								</DialogFooter>
+							</>
+						)}
+					</Form>
+				) : null}
+			</DialogContent>
+		</Dialog>
 	);
 };
 

@@ -56,7 +56,10 @@ test('should persist consent and skip the warning on later visits', async ({task
 	await expect(tasklistProcessesPage.firstTimeWarningDialog).not.toBeVisible();
 });
 
-test('should gate a directly linked start form until consent is given', async ({network, tasklistProcessesPage}) => {
+test('should gate a directly linked start form until consent is given', async ({
+	network,
+	tasklistProcessesPage,
+}) => {
 	const processDefinitionKey = '2251799813685279';
 	network.use(
 		mockGetProcessDefinitionEndpoint({

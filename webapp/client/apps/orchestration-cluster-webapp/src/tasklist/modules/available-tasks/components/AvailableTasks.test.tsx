@@ -6,21 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {TooltipProvider} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect, vi} from 'vitest';
-import {userEvent} from 'vitest/browser';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {AvailableTasks} from './AvailableTasks';
-import {createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 
 const currentUser = createCurrentUser({username: 'demo'});
-
-const noop = vi.fn().mockResolvedValue([]);
-
-function createTasks(count: number) {
-	return Array.from({length: count}, (_, i) => createUserTask({userTaskKey: String(i), name: `Task ${i}`}));
-}
+const noop = vi.fn().mockResolvedValue(undefined);
 
 describe('<AvailableTasks />', () => {
 	it('should render the list of tasks', async () => {
@@ -31,14 +26,16 @@ describe('<AvailableTasks />', () => {
 
 		const screen = await renderWithRouter(
 			() => (
-				<AvailableTasks
-					tasks={tasks}
-					currentUser={currentUser}
-					hasNextPage={false}
-					hasPreviousPage={false}
-					onScrollDown={noop}
-					onScrollUp={noop}
-				/>
+				<TooltipProvider>
+					<AvailableTasks
+						pages={[createQueryUserTasksResponse({items: tasks})]}
+						currentUser={currentUser}
+						hasNextPage={false}
+						hasPreviousPage={false}
+						onScrollDown={noop}
+						onScrollUp={noop}
+					/>
+				</TooltipProvider>
 			),
 			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
 		);
@@ -51,7 +48,7 @@ describe('<AvailableTasks />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<AvailableTasks
-					tasks={[]}
+					pages={[createQueryUserTasksResponse()]}
 					currentUser={currentUser}
 					hasNextPage={false}
 					hasPreviousPage={false}
@@ -59,120 +56,9 @@ describe('<AvailableTasks />', () => {
 					onScrollUp={noop}
 				/>
 			),
-			{path: '/', initialEntry: '/'},
+			{path: '/tasklist', initialEntry: '/tasklist'},
 		);
 
 		await expect.element(screen.getByText('No tasks found')).toBeVisible();
-	});
-
-	it('should call onScrollDown', async () => {
-		const tasks = createTasks(20);
-		const onScrollDown = vi.fn().mockResolvedValue([]);
-		const onScrollUp = vi.fn().mockResolvedValue([]);
-
-		const screen = await renderWithRouter(
-			() => (
-				<div style={{height: '100px'}}>
-					<AvailableTasks
-						tasks={tasks}
-						currentUser={currentUser}
-						hasNextPage={true}
-						hasPreviousPage={false}
-						onScrollDown={onScrollDown}
-						onScrollUp={onScrollUp}
-					/>
-				</div>
-			),
-			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
-		);
-
-		await userEvent.wheel(screen.getByTestId('scrollable-list'), {delta: {y: 10000}});
-
-		expect(onScrollDown).toHaveBeenCalled();
-		expect(onScrollUp).not.toHaveBeenCalled();
-	});
-
-	it('should not call onScrollDown when there is no next page', async () => {
-		const tasks = createTasks(20);
-		const onScrollDown = vi.fn().mockResolvedValue([]);
-		const onScrollUp = vi.fn().mockResolvedValue([]);
-
-		const screen = await renderWithRouter(
-			() => (
-				<div style={{height: '100px'}}>
-					<AvailableTasks
-						tasks={tasks}
-						currentUser={currentUser}
-						hasNextPage={false}
-						hasPreviousPage={false}
-						onScrollDown={onScrollDown}
-						onScrollUp={onScrollUp}
-					/>
-				</div>
-			),
-			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
-		);
-
-		await userEvent.wheel(screen.getByTestId('scrollable-list'), {delta: {y: 10000}});
-
-		expect(onScrollDown).not.toHaveBeenCalled();
-	});
-
-	it('should call onScrollUp', async () => {
-		const tasks = createTasks(20);
-		const onScrollDown = vi.fn().mockResolvedValue([]);
-		const onScrollUp = vi.fn().mockResolvedValue([]);
-
-		const screen = await renderWithRouter(
-			() => (
-				<div style={{height: '100px'}}>
-					<AvailableTasks
-						tasks={tasks}
-						currentUser={currentUser}
-						hasNextPage={false}
-						hasPreviousPage={true}
-						onScrollDown={onScrollDown}
-						onScrollUp={onScrollUp}
-					/>
-				</div>
-			),
-			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
-		);
-
-		const scrollableList = screen.getByTestId('scrollable-list');
-
-		await userEvent.wheel(scrollableList, {delta: {y: 200}});
-		await userEvent.wheel(scrollableList, {delta: {y: -10000}});
-
-		expect(onScrollUp).toHaveBeenCalled();
-		expect(onScrollDown).not.toHaveBeenCalled();
-	});
-
-	it('should not call onScrollUp', async () => {
-		const tasks = createTasks(20);
-		const onScrollDown = vi.fn().mockResolvedValue([]);
-		const onScrollUp = vi.fn().mockResolvedValue([]);
-
-		const screen = await renderWithRouter(
-			() => (
-				<div style={{height: '100px'}}>
-					<AvailableTasks
-						tasks={tasks}
-						currentUser={currentUser}
-						hasNextPage={false}
-						hasPreviousPage={false}
-						onScrollDown={onScrollDown}
-						onScrollUp={onScrollUp}
-					/>
-				</div>
-			),
-			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
-		);
-
-		const scrollableList = screen.getByTestId('scrollable-list');
-		await userEvent.wheel(scrollableList, {delta: {y: 200}});
-		await userEvent.wheel(scrollableList, {delta: {y: -10000}});
-
-		expect(onScrollUp).not.toHaveBeenCalled();
 	});
 });

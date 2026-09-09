@@ -41,16 +41,11 @@ describe('<ProcessesSelect />', () => {
 		);
 
 		const combobox = screen.getByRole('combobox', {name: /process/i});
-		await expect.element(combobox).toBeVisible();
 
-		await userEvent.selectOptions(combobox, 'all');
-		await expect.element(combobox).toHaveValue('all');
-
-		await userEvent.selectOptions(combobox, 'key-1');
-		await expect.element(combobox).toHaveValue('key-1');
-
-		await userEvent.selectOptions(combobox, 'key-2');
-		await expect.element(combobox).toHaveValue('key-2');
+		await userEvent.click(combobox);
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'Payment Process - v1'}), {force: true});
+		await expect.element(combobox).toHaveTextContent('Payment Process - v1');
 	});
 
 	it('should fall back to processDefinitionId when name is null', async ({worker}) => {
@@ -77,7 +72,9 @@ describe('<ProcessesSelect />', () => {
 		);
 
 		const combobox = screen.getByRole('combobox', {name: /process/i});
-		await expect.element(combobox).toBeVisible();
+		await userEvent.click(combobox);
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'my-process:1:0 - v1'}), {force: true});
 		await expect.element(combobox).toHaveTextContent(/my-process:1:0 - v1/i);
 	});
 

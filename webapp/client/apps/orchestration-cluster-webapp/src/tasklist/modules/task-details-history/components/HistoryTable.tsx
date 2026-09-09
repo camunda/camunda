@@ -7,31 +7,20 @@
  */
 
 import {useMemo} from 'react';
-import {
-	DataTable,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	type DataTableHeader,
-} from '@carbon/react';
-import {Information} from '@carbon/react/icons';
+import {Button, EmptyState, Table, TableBody, TableCell, TableHeader, TableRow} from '@camunda/design-system';
+import {Info} from 'lucide-react';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
-import {cn} from '#/shared/cn';
 import {formatHistoryDate} from '../formatHistoryDate';
 import {getOperationTypeTranslationKey} from '../getOperationTypeTranslationKey';
-import type {TaskDetailsHistorySearch} from '../sortUtils';
+import type {TaskDetailsHistorySearch, TaskDetailsHistorySortField} from '../sortUtils';
 import {ColumnHeader} from './ColumnHeader';
-import styles from './HistoryTable.module.scss';
 
 type HeaderConfig = {
 	key: string;
 	header: string;
-	sortKey?: string;
+	sortKey?: TaskDetailsHistorySortField;
 	isDisabled: boolean;
 };
 
@@ -70,10 +59,6 @@ const HEADERS_MAP = {
 
 const HEADERS = [HEADERS_MAP.operation, HEADERS_MAP.details, HEADERS_MAP.actor, HEADERS_MAP.date, HEADERS_MAP.actions];
 
-function isHeaderKey(key: string): key is keyof typeof HEADERS_MAP {
-	return key in HEADERS_MAP;
-}
-
 type RowData = {
 	id: string;
 	operation: string;
@@ -82,8 +67,6 @@ type RowData = {
 	date: string;
 	actions: string;
 };
-
-type RowCellValues = [RowData['operation'], RowData['details'], RowData['actor'], RowData['date'], RowData['actions']];
 
 type Props = {
 	userTaskKey: string;
@@ -94,7 +77,7 @@ type Props = {
 const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 	const {t} = useTranslation();
 
-	const headers = useMemo<DataTableHeader[]>(
+	const headers = useMemo(
 		() =>
 			HEADERS.map((header) => ({
 				...header,
@@ -111,7 +94,7 @@ const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 				details:
 					log.operationType === 'ASSIGN' ? (
 						<>
-							<div className={styles.detailsLabel}>{t('tasklist.taskDetailsHistoryPropertyAssignee')}</div>
+							<div className="text-xs leading-4">{t('tasklist.taskDetailsHistoryPropertyAssignee')}</div>
 							{log.relatedEntityKey}
 						</>
 					) : (
@@ -124,71 +107,57 @@ const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 		[auditLogs, t],
 	);
 
+	if (rows.length === 0) {
+		return (
+			<div className="flex h-32 w-full items-center justify-center rounded-xl border border-border bg-neutral-background-subtle shadow-sm">
+				<EmptyState size="sm" heading={t('tasklist.taskDetailsHistoryEmptyMessage')} />
+			</div>
+		);
+	}
+
 	return (
-		<DataTable<RowData, RowCellValues> rows={rows} headers={headers} isSortable>
-			{({rows, headers, getTableProps, getRowProps}) => (
-				<TableContainer className={styles.tableContainer}>
-					<Table {...getTableProps()} size="sm" isSortable>
-						<TableHead>
-							<TableRow>
-								{headers.map(({header, key}) => {
-									if (!isHeaderKey(key)) {
-										return null;
-									}
-
-									return (
-										<ColumnHeader
-											key={key}
-											label={HEADERS_MAP[key].header === '' ? '' : t(HEADERS_MAP[key].header)}
-											search={search}
-											sortKey={HEADERS_MAP[key].sortKey}
-											isDisabled={HEADERS_MAP[key].isDisabled}
-										>
-											{header}
-										</ColumnHeader>
-									);
-								})}
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{rows.map((row) => {
-								const {key, ...rowProps} = getRowProps({row});
-								const auditLogKey = row.id;
-
-								return (
-									<TableRow key={key} {...rowProps}>
-										{row.cells.map((cell) => (
-											<TableCell key={cell.id}>
-												{cell.info.header === 'actions' ? (
-													<Link
-														className={cn(
-															'cds--btn',
-															'cds--btn--sm',
-															'cds--layout--size-sm',
-															'cds--btn--ghost',
-															'cds--btn--icon-only',
-														)}
-														to="/tasklist/$userTaskKey/history/$auditLogKey"
-														params={{userTaskKey, auditLogKey}}
-														search={search}
-														aria-label={t('tasklist.taskDetailsHistoryDetailsLabel')}
-														title={t('tasklist.taskDetailsHistoryDetailsLabel')}
-													>
-														<Information />
-													</Link>
-												) : (
-													cell.value
-												)}
-											</TableCell>
-										))}
-									</TableRow>
-								);
-							})}
-						</TableBody>
-					</Table>
-				</TableContainer>
-			)}
-		</DataTable>
+		<Table size="md" aria-label={t('tasklist.taskDetailsHistoryTabLabel')}>
+			<TableHeader>
+				<TableRow>
+					{headers.map(({header, key}) => (
+						<ColumnHeader
+							key={key}
+							label={key === 'actions' ? t('tasklist.taskDetailsHistoryDetailsLabel') : t(HEADERS_MAP[key].header)}
+							search={search}
+							sortKey={HEADERS_MAP[key].sortKey}
+							isDisabled={HEADERS_MAP[key].isDisabled}
+						>
+							{header}
+						</ColumnHeader>
+					))}
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{rows.map((row) => (
+					<TableRow key={row.id}>
+						<TableCell>{row.operation}</TableCell>
+						<TableCell>{row.details}</TableCell>
+						<TableCell>{row.actor}</TableCell>
+						<TableCell>
+							<span className="whitespace-nowrap">{row.date}</span>
+						</TableCell>
+						<TableCell>
+							<Button asChild variant="ghost" size="icon-sm">
+								<Link
+									to="/tasklist/$userTaskKey/history/$auditLogKey"
+									params={{userTaskKey, auditLogKey: row.actions}}
+									search={search}
+									aria-label={t('tasklist.taskDetailsHistoryDetailsLabel')}
+									title={t('tasklist.taskDetailsHistoryDetailsLabel')}
+								>
+									<Info aria-hidden />
+								</Link>
+							</Button>
+						</TableCell>
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
 	);
 };
 

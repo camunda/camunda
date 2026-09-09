@@ -10,20 +10,16 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as CarbonRouteRouteImport } from './routes/_carbon/route'
-import { Route as ShadcnRouteRouteImport } from './routes/shadcn/route'
-import { Route as CarbonSplatRouteImport } from './routes/_carbon/$'
+import { Route as ShadcnRouteRouteImport } from './routes/_shadcn/route'
 import { Route as CarbonAuthRouteRouteImport } from './routes/_carbon/_auth/route'
 import { Route as CarbonLoginRouteImport } from './routes/_carbon/login'
-import { Route as ShadcnSplatRouteImport } from './routes/shadcn/$'
-import { Route as ShadcnAuthRouteRouteImport } from './routes/shadcn/_auth/route'
-import { Route as CarbonAuthIndexRouteImport } from './routes/_carbon/_auth/index'
+import { Route as ShadcnSplatRouteImport } from './routes/_shadcn/$'
+import { Route as ShadcnAuthRouteRouteImport } from './routes/_shadcn/_auth/route'
 import { Route as CarbonAuthAdminRouteRouteImport } from './routes/_carbon/_auth/admin/route'
 import { Route as CarbonAuthOperateRouteRouteImport } from './routes/_carbon/_auth/operate/route'
-import { Route as CarbonAuthTasklistRouteRouteImport } from './routes/_carbon/_auth/tasklist/route'
-import { Route as CarbonTasklistLoginRouteImport } from './routes/_carbon/tasklist.login'
-import { Route as ShadcnAuthIndexRouteImport } from './routes/shadcn/_auth/index'
-import { Route as ShadcnAuthTasklistRouteRouteImport } from './routes/shadcn/_auth/tasklist/route'
-import { Route as ShadcnTasklistLoginRouteImport } from './routes/shadcn/tasklist/login'
+import { Route as ShadcnAuthIndexRouteImport } from './routes/_shadcn/_auth/index'
+import { Route as ShadcnAuthTasklistRouteRouteImport } from './routes/_shadcn/_auth/tasklist/route'
+import { Route as ShadcnTasklistLoginRouteImport } from './routes/_shadcn/tasklist.login'
 import { Route as CarbonAuthAdminIndexRouteImport } from './routes/_carbon/_auth/admin/index'
 import { Route as CarbonAuthAdminSplatRouteImport } from './routes/_carbon/_auth/admin/$'
 import { Route as CarbonAuthOperateIndexRouteImport } from './routes/_carbon/_auth/operate/index'
@@ -32,44 +28,28 @@ import { Route as CarbonAuthOperateBatchOperationsRouteImport } from './routes/_
 import { Route as CarbonAuthOperateDecisionsRouteImport } from './routes/_carbon/_auth/operate/decisions'
 import { Route as CarbonAuthOperateOperationsLogRouteImport } from './routes/_carbon/_auth/operate/operations-log'
 import { Route as CarbonAuthOperateProcessesRouteImport } from './routes/_carbon/_auth/operate/processes'
-import { Route as CarbonAuthTasklistSplatRouteImport } from './routes/_carbon/_auth/tasklist/$'
-import { Route as CarbonAuthTasklistTasksRouteRouteImport } from './routes/_carbon/_auth/tasklist/_tasks/route'
-import { Route as CarbonAuthTasklistProcessesRouteRouteImport } from './routes/_carbon/_auth/tasklist/processes/route'
-import { Route as ShadcnAuthTasklistSplatRouteImport } from './routes/shadcn/_auth/tasklist/$'
-import { Route as ShadcnAuthTasklistTasksRouteRouteImport } from './routes/shadcn/_auth/tasklist/_tasks/route'
-import { Route as ShadcnAuthTasklistProcessesRouteRouteImport } from './routes/shadcn/_auth/tasklist/processes/route'
+import { Route as ShadcnAuthTasklistSplatRouteImport } from './routes/_shadcn/_auth/tasklist/$'
+import { Route as ShadcnAuthTasklistTasksRouteRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/route'
+import { Route as ShadcnAuthTasklistProcessesRouteRouteImport } from './routes/_shadcn/_auth/tasklist/processes/route'
 import { Route as CarbonAuthOperateBatchOperationsIndexRouteImport } from './routes/_carbon/_auth/operate/batch-operations/index'
 import { Route as CarbonAuthOperateBatchOperationsBatchOperationKeyRouteImport } from './routes/_carbon/_auth/operate/batch-operations/$batchOperationKey'
 import { Route as CarbonAuthOperateDecisionsIndexRouteImport } from './routes/_carbon/_auth/operate/decisions/index'
 import { Route as CarbonAuthOperateDecisionsDecisionInstanceIdRouteImport } from './routes/_carbon/_auth/operate/decisions/$decisionInstanceId'
-import { Route as CarbonAuthTasklistTasksIndexRouteImport } from './routes/_carbon/_auth/tasklist/_tasks/index'
-import { Route as CarbonAuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/_carbon/_auth/tasklist/_tasks/$userTaskKey/route'
-import { Route as ShadcnAuthTasklistTasksIndexRouteImport } from './routes/shadcn/_auth/tasklist/_tasks/index'
-import { Route as ShadcnAuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/shadcn/_auth/tasklist/_tasks/$userTaskKey/route'
-import { Route as CarbonAuthTasklistTasksUserTaskKeyIndexRouteImport } from './routes/_carbon/_auth/tasklist/_tasks/$userTaskKey/index'
-import { Route as CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteImport } from './routes/_carbon/_auth/tasklist/_tasks/$userTaskKey/history/route'
-import { Route as CarbonAuthTasklistTasksUserTaskKeyProcessRouteImport } from './routes/_carbon/_auth/tasklist/_tasks/$userTaskKey/process'
-import { Route as CarbonAuthTasklistProcessesProcessDefinitionKeyStartRouteImport } from './routes/_carbon/_auth/tasklist/processes/$processDefinitionKey/start'
-import { Route as ShadcnAuthTasklistTasksUserTaskKeyIndexRouteImport } from './routes/shadcn/_auth/tasklist/_tasks/$userTaskKey/index'
-import { Route as ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteImport } from './routes/shadcn/_auth/tasklist/_tasks/$userTaskKey/history/route'
-import { Route as ShadcnAuthTasklistTasksUserTaskKeyProcessRouteImport } from './routes/shadcn/_auth/tasklist/_tasks/$userTaskKey/process'
-import { Route as ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRouteImport } from './routes/shadcn/_auth/tasklist/processes/$processDefinitionKey/start'
-import { Route as CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport } from './routes/_carbon/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
-import { Route as ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport } from './routes/shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
+import { Route as ShadcnAuthTasklistTasksIndexRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/index'
+import { Route as ShadcnAuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/route'
+import { Route as ShadcnAuthTasklistTasksUserTaskKeyIndexRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/index'
+import { Route as ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history/route'
+import { Route as ShadcnAuthTasklistTasksUserTaskKeyProcessRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/process'
+import { Route as ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRouteImport } from './routes/_shadcn/_auth/tasklist/processes/$processDefinitionKey/start'
+import { Route as ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
 
 const CarbonRouteRoute = CarbonRouteRouteImport.update({
   id: '/_carbon',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShadcnRouteRoute = ShadcnRouteRouteImport.update({
-  id: '/shadcn',
-  path: '/shadcn',
+  id: '/_shadcn',
   getParentRoute: () => rootRouteImport,
-} as any)
-const CarbonSplatRoute = CarbonSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => CarbonRouteRoute,
 } as any)
 const CarbonAuthRouteRoute = CarbonAuthRouteRouteImport.update({
   id: '/_auth',
@@ -89,11 +69,6 @@ const ShadcnAuthRouteRoute = ShadcnAuthRouteRouteImport.update({
   id: '/_auth',
   getParentRoute: () => ShadcnRouteRoute,
 } as any)
-const CarbonAuthIndexRoute = CarbonAuthIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => CarbonAuthRouteRoute,
-} as any)
 const CarbonAuthAdminRouteRoute = CarbonAuthAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -103,16 +78,6 @@ const CarbonAuthOperateRouteRoute = CarbonAuthOperateRouteRouteImport.update({
   id: '/operate',
   path: '/operate',
   getParentRoute: () => CarbonAuthRouteRoute,
-} as any)
-const CarbonAuthTasklistRouteRoute = CarbonAuthTasklistRouteRouteImport.update({
-  id: '/tasklist',
-  path: '/tasklist',
-  getParentRoute: () => CarbonAuthRouteRoute,
-} as any)
-const CarbonTasklistLoginRoute = CarbonTasklistLoginRouteImport.update({
-  id: '/tasklist/login',
-  path: '/tasklist/login',
-  getParentRoute: () => CarbonRouteRoute,
 } as any)
 const ShadcnAuthIndexRoute = ShadcnAuthIndexRouteImport.update({
   id: '/',
@@ -173,22 +138,6 @@ const CarbonAuthOperateProcessesRoute =
     path: '/processes',
     getParentRoute: () => CarbonAuthOperateRouteRoute,
   } as any)
-const CarbonAuthTasklistSplatRoute = CarbonAuthTasklistSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => CarbonAuthTasklistRouteRoute,
-} as any)
-const CarbonAuthTasklistTasksRouteRoute =
-  CarbonAuthTasklistTasksRouteRouteImport.update({
-    id: '/_tasks',
-    getParentRoute: () => CarbonAuthTasklistRouteRoute,
-  } as any)
-const CarbonAuthTasklistProcessesRouteRoute =
-  CarbonAuthTasklistProcessesRouteRouteImport.update({
-    id: '/processes',
-    path: '/processes',
-    getParentRoute: () => CarbonAuthTasklistRouteRoute,
-  } as any)
 const ShadcnAuthTasklistSplatRoute = ShadcnAuthTasklistSplatRouteImport.update({
   id: '/$',
   path: '/$',
@@ -229,18 +178,6 @@ const CarbonAuthOperateDecisionsDecisionInstanceIdRoute =
     path: '/$decisionInstanceId',
     getParentRoute: () => CarbonAuthOperateDecisionsRoute,
   } as any)
-const CarbonAuthTasklistTasksIndexRoute =
-  CarbonAuthTasklistTasksIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => CarbonAuthTasklistTasksRouteRoute,
-  } as any)
-const CarbonAuthTasklistTasksUserTaskKeyRouteRoute =
-  CarbonAuthTasklistTasksUserTaskKeyRouteRouteImport.update({
-    id: '/$userTaskKey',
-    path: '/$userTaskKey',
-    getParentRoute: () => CarbonAuthTasklistTasksRouteRoute,
-  } as any)
 const ShadcnAuthTasklistTasksIndexRoute =
   ShadcnAuthTasklistTasksIndexRouteImport.update({
     id: '/',
@@ -252,30 +189,6 @@ const ShadcnAuthTasklistTasksUserTaskKeyRouteRoute =
     id: '/$userTaskKey',
     path: '/$userTaskKey',
     getParentRoute: () => ShadcnAuthTasklistTasksRouteRoute,
-  } as any)
-const CarbonAuthTasklistTasksUserTaskKeyIndexRoute =
-  CarbonAuthTasklistTasksUserTaskKeyIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => CarbonAuthTasklistTasksUserTaskKeyRouteRoute,
-  } as any)
-const CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRoute =
-  CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteImport.update({
-    id: '/history',
-    path: '/history',
-    getParentRoute: () => CarbonAuthTasklistTasksUserTaskKeyRouteRoute,
-  } as any)
-const CarbonAuthTasklistTasksUserTaskKeyProcessRoute =
-  CarbonAuthTasklistTasksUserTaskKeyProcessRouteImport.update({
-    id: '/process',
-    path: '/process',
-    getParentRoute: () => CarbonAuthTasklistTasksUserTaskKeyRouteRoute,
-  } as any)
-const CarbonAuthTasklistProcessesProcessDefinitionKeyStartRoute =
-  CarbonAuthTasklistProcessesProcessDefinitionKeyStartRouteImport.update({
-    id: '/$processDefinitionKey/start',
-    path: '/$processDefinitionKey/start',
-    getParentRoute: () => CarbonAuthTasklistProcessesRouteRoute,
   } as any)
 const ShadcnAuthTasklistTasksUserTaskKeyIndexRoute =
   ShadcnAuthTasklistTasksUserTaskKeyIndexRouteImport.update({
@@ -301,12 +214,6 @@ const ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute =
     path: '/$processDefinitionKey/start',
     getParentRoute: () => ShadcnAuthTasklistProcessesRouteRoute,
   } as any)
-const CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute =
-  CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport.update({
-    id: '/$auditLogKey',
-    path: '/$auditLogKey',
-    getParentRoute: () => CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRoute,
-  } as any)
 const ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute =
   ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport.update({
     id: '/$auditLogKey',
@@ -315,151 +222,106 @@ const ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof CarbonAuthIndexRoute
-  '/shadcn': typeof ShadcnRouteRouteWithChildren
-  '/$': typeof CarbonSplatRoute
+  '/': typeof ShadcnAuthIndexRoute
   '/login': typeof CarbonLoginRoute
-  '/shadcn/$': typeof ShadcnSplatRoute
+  '/$': typeof ShadcnSplatRoute
   '/admin': typeof CarbonAuthAdminRouteRouteWithChildren
   '/operate': typeof CarbonAuthOperateRouteRouteWithChildren
-  '/tasklist': typeof CarbonAuthTasklistRouteRouteWithChildren
-  '/shadcn/tasklist': typeof ShadcnAuthTasklistRouteRouteWithChildren
-  '/tasklist/login': typeof CarbonTasklistLoginRoute
-  '/shadcn/tasklist/login': typeof ShadcnTasklistLoginRoute
-  '/shadcn/': typeof ShadcnAuthIndexRoute
-  '/tasklist/processes': typeof CarbonAuthTasklistProcessesRouteRouteWithChildren
-  '/shadcn/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
+  '/tasklist': typeof ShadcnAuthTasklistRouteRouteWithChildren
+  '/tasklist/login': typeof ShadcnTasklistLoginRoute
+  '/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   '/admin/$': typeof CarbonAuthAdminSplatRoute
   '/operate/$': typeof CarbonAuthOperateSplatRoute
   '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsRouteWithChildren
   '/operate/decisions': typeof CarbonAuthOperateDecisionsRouteWithChildren
   '/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/operate/processes': typeof CarbonAuthOperateProcessesRoute
-  '/tasklist/$': typeof CarbonAuthTasklistSplatRoute
-  '/shadcn/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
+  '/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
   '/admin/': typeof CarbonAuthAdminIndexRoute
   '/operate/': typeof CarbonAuthOperateIndexRoute
-  '/tasklist/$userTaskKey': typeof CarbonAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
-  '/shadcn/tasklist/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
+  '/tasklist/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
-  '/tasklist/': typeof CarbonAuthTasklistTasksIndexRoute
-  '/shadcn/tasklist/': typeof ShadcnAuthTasklistTasksIndexRoute
-  '/tasklist/$userTaskKey/history': typeof CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
-  '/shadcn/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
-  '/tasklist/$userTaskKey/process': typeof CarbonAuthTasklistTasksUserTaskKeyProcessRoute
-  '/tasklist/processes/$processDefinitionKey/start': typeof CarbonAuthTasklistProcessesProcessDefinitionKeyStartRoute
-  '/shadcn/tasklist/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
-  '/shadcn/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
-  '/tasklist/$userTaskKey/': typeof CarbonAuthTasklistTasksUserTaskKeyIndexRoute
-  '/shadcn/tasklist/$userTaskKey/': typeof ShadcnAuthTasklistTasksUserTaskKeyIndexRoute
-  '/tasklist/$userTaskKey/history/$auditLogKey': typeof CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
-  '/shadcn/tasklist/$userTaskKey/history/$auditLogKey': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
+  '/tasklist/': typeof ShadcnAuthTasklistTasksIndexRoute
+  '/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
+  '/tasklist/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
+  '/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
+  '/tasklist/$userTaskKey/': typeof ShadcnAuthTasklistTasksUserTaskKeyIndexRoute
+  '/tasklist/$userTaskKey/history/$auditLogKey': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof CarbonAuthIndexRoute
-  '/shadcn': typeof ShadcnAuthIndexRoute
-  '/$': typeof CarbonSplatRoute
+  '/': typeof ShadcnAuthIndexRoute
   '/login': typeof CarbonLoginRoute
-  '/shadcn/$': typeof ShadcnSplatRoute
-  '/tasklist': typeof CarbonAuthTasklistTasksIndexRoute
-  '/shadcn/tasklist': typeof ShadcnAuthTasklistTasksIndexRoute
-  '/tasklist/login': typeof CarbonTasklistLoginRoute
-  '/shadcn/tasklist/login': typeof ShadcnTasklistLoginRoute
-  '/tasklist/processes': typeof CarbonAuthTasklistProcessesRouteRouteWithChildren
-  '/shadcn/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
+  '/$': typeof ShadcnSplatRoute
+  '/tasklist': typeof ShadcnAuthTasklistTasksIndexRoute
+  '/tasklist/login': typeof ShadcnTasklistLoginRoute
+  '/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   '/admin/$': typeof CarbonAuthAdminSplatRoute
   '/operate/$': typeof CarbonAuthOperateSplatRoute
   '/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/operate/processes': typeof CarbonAuthOperateProcessesRoute
-  '/tasklist/$': typeof CarbonAuthTasklistSplatRoute
-  '/shadcn/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
+  '/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
   '/admin': typeof CarbonAuthAdminIndexRoute
   '/operate': typeof CarbonAuthOperateIndexRoute
   '/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions': typeof CarbonAuthOperateDecisionsIndexRoute
-  '/tasklist/$userTaskKey/history': typeof CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
-  '/shadcn/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
-  '/tasklist/$userTaskKey/process': typeof CarbonAuthTasklistTasksUserTaskKeyProcessRoute
-  '/tasklist/processes/$processDefinitionKey/start': typeof CarbonAuthTasklistProcessesProcessDefinitionKeyStartRoute
-  '/shadcn/tasklist/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
-  '/shadcn/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
-  '/tasklist/$userTaskKey': typeof CarbonAuthTasklistTasksUserTaskKeyIndexRoute
-  '/shadcn/tasklist/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyIndexRoute
-  '/tasklist/$userTaskKey/history/$auditLogKey': typeof CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
-  '/shadcn/tasklist/$userTaskKey/history/$auditLogKey': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
+  '/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
+  '/tasklist/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
+  '/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
+  '/tasklist/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyIndexRoute
+  '/tasklist/$userTaskKey/history/$auditLogKey': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_carbon': typeof CarbonRouteRouteWithChildren
-  '/shadcn': typeof ShadcnRouteRouteWithChildren
+  '/_shadcn': typeof ShadcnRouteRouteWithChildren
   '/_carbon/_auth': typeof CarbonAuthRouteRouteWithChildren
-  '/shadcn/_auth': typeof ShadcnAuthRouteRouteWithChildren
-  '/_carbon/$': typeof CarbonSplatRoute
+  '/_shadcn/_auth': typeof ShadcnAuthRouteRouteWithChildren
   '/_carbon/login': typeof CarbonLoginRoute
-  '/shadcn/$': typeof ShadcnSplatRoute
+  '/_shadcn/$': typeof ShadcnSplatRoute
   '/_carbon/_auth/admin': typeof CarbonAuthAdminRouteRouteWithChildren
   '/_carbon/_auth/operate': typeof CarbonAuthOperateRouteRouteWithChildren
-  '/_carbon/_auth/tasklist': typeof CarbonAuthTasklistRouteRouteWithChildren
-  '/shadcn/_auth/tasklist': typeof ShadcnAuthTasklistRouteRouteWithChildren
-  '/_carbon/tasklist/login': typeof CarbonTasklistLoginRoute
-  '/shadcn/tasklist/login': typeof ShadcnTasklistLoginRoute
-  '/_carbon/_auth/': typeof CarbonAuthIndexRoute
-  '/shadcn/_auth/': typeof ShadcnAuthIndexRoute
-  '/_carbon/_auth/tasklist/_tasks': typeof CarbonAuthTasklistTasksRouteRouteWithChildren
-  '/_carbon/_auth/tasklist/processes': typeof CarbonAuthTasklistProcessesRouteRouteWithChildren
-  '/shadcn/_auth/tasklist/_tasks': typeof ShadcnAuthTasklistTasksRouteRouteWithChildren
-  '/shadcn/_auth/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
+  '/_shadcn/_auth/tasklist': typeof ShadcnAuthTasklistRouteRouteWithChildren
+  '/_shadcn/tasklist/login': typeof ShadcnTasklistLoginRoute
+  '/_shadcn/_auth/': typeof ShadcnAuthIndexRoute
+  '/_shadcn/_auth/tasklist/_tasks': typeof ShadcnAuthTasklistTasksRouteRouteWithChildren
+  '/_shadcn/_auth/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   '/_carbon/_auth/admin/$': typeof CarbonAuthAdminSplatRoute
   '/_carbon/_auth/operate/$': typeof CarbonAuthOperateSplatRoute
   '/_carbon/_auth/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsRouteWithChildren
   '/_carbon/_auth/operate/decisions': typeof CarbonAuthOperateDecisionsRouteWithChildren
   '/_carbon/_auth/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/_carbon/_auth/operate/processes': typeof CarbonAuthOperateProcessesRoute
-  '/_carbon/_auth/tasklist/$': typeof CarbonAuthTasklistSplatRoute
-  '/shadcn/_auth/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
+  '/_shadcn/_auth/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
   '/_carbon/_auth/admin/': typeof CarbonAuthAdminIndexRoute
   '/_carbon/_auth/operate/': typeof CarbonAuthOperateIndexRoute
-  '/_carbon/_auth/tasklist/_tasks/$userTaskKey': typeof CarbonAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
-  '/shadcn/_auth/tasklist/_tasks/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
+  '/_shadcn/_auth/tasklist/_tasks/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/_carbon/_auth/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/_carbon/_auth/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/_carbon/_auth/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/_carbon/_auth/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
-  '/_carbon/_auth/tasklist/_tasks/': typeof CarbonAuthTasklistTasksIndexRoute
-  '/shadcn/_auth/tasklist/_tasks/': typeof ShadcnAuthTasklistTasksIndexRoute
-  '/_carbon/_auth/tasklist/_tasks/$userTaskKey/history': typeof CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
-  '/shadcn/_auth/tasklist/_tasks/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
-  '/_carbon/_auth/tasklist/_tasks/$userTaskKey/process': typeof CarbonAuthTasklistTasksUserTaskKeyProcessRoute
-  '/_carbon/_auth/tasklist/processes/$processDefinitionKey/start': typeof CarbonAuthTasklistProcessesProcessDefinitionKeyStartRoute
-  '/shadcn/_auth/tasklist/_tasks/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
-  '/shadcn/_auth/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
-  '/_carbon/_auth/tasklist/_tasks/$userTaskKey/': typeof CarbonAuthTasklistTasksUserTaskKeyIndexRoute
-  '/shadcn/_auth/tasklist/_tasks/$userTaskKey/': typeof ShadcnAuthTasklistTasksUserTaskKeyIndexRoute
-  '/_carbon/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': typeof CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
-  '/shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
+  '/_shadcn/_auth/tasklist/_tasks/': typeof ShadcnAuthTasklistTasksIndexRoute
+  '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
+  '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
+  '/_shadcn/_auth/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
+  '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/': typeof ShadcnAuthTasklistTasksUserTaskKeyIndexRoute
+  '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/shadcn'
-    | '/$'
     | '/login'
-    | '/shadcn/$'
+    | '/$'
     | '/admin'
     | '/operate'
     | '/tasklist'
-    | '/shadcn/tasklist'
     | '/tasklist/login'
-    | '/shadcn/tasklist/login'
-    | '/shadcn/'
     | '/tasklist/processes'
-    | '/shadcn/tasklist/processes'
     | '/admin/$'
     | '/operate/$'
     | '/operate/batch-operations'
@@ -467,46 +329,32 @@ export interface FileRouteTypes {
     | '/operate/operations-log'
     | '/operate/processes'
     | '/tasklist/$'
-    | '/shadcn/tasklist/$'
     | '/admin/'
     | '/operate/'
     | '/tasklist/$userTaskKey'
-    | '/shadcn/tasklist/$userTaskKey'
     | '/operate/batch-operations/$batchOperationKey'
     | '/operate/decisions/$decisionInstanceId'
     | '/operate/batch-operations/'
     | '/operate/decisions/'
     | '/tasklist/'
-    | '/shadcn/tasklist/'
     | '/tasklist/$userTaskKey/history'
-    | '/shadcn/tasklist/$userTaskKey/history'
     | '/tasklist/$userTaskKey/process'
     | '/tasklist/processes/$processDefinitionKey/start'
-    | '/shadcn/tasklist/$userTaskKey/process'
-    | '/shadcn/tasklist/processes/$processDefinitionKey/start'
     | '/tasklist/$userTaskKey/'
-    | '/shadcn/tasklist/$userTaskKey/'
     | '/tasklist/$userTaskKey/history/$auditLogKey'
-    | '/shadcn/tasklist/$userTaskKey/history/$auditLogKey'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/shadcn'
-    | '/$'
     | '/login'
-    | '/shadcn/$'
+    | '/$'
     | '/tasklist'
-    | '/shadcn/tasklist'
     | '/tasklist/login'
-    | '/shadcn/tasklist/login'
     | '/tasklist/processes'
-    | '/shadcn/tasklist/processes'
     | '/admin/$'
     | '/operate/$'
     | '/operate/operations-log'
     | '/operate/processes'
     | '/tasklist/$'
-    | '/shadcn/tasklist/$'
     | '/admin'
     | '/operate'
     | '/operate/batch-operations/$batchOperationKey'
@@ -514,64 +362,45 @@ export interface FileRouteTypes {
     | '/operate/batch-operations'
     | '/operate/decisions'
     | '/tasklist/$userTaskKey/history'
-    | '/shadcn/tasklist/$userTaskKey/history'
     | '/tasklist/$userTaskKey/process'
     | '/tasklist/processes/$processDefinitionKey/start'
-    | '/shadcn/tasklist/$userTaskKey/process'
-    | '/shadcn/tasklist/processes/$processDefinitionKey/start'
     | '/tasklist/$userTaskKey'
-    | '/shadcn/tasklist/$userTaskKey'
     | '/tasklist/$userTaskKey/history/$auditLogKey'
-    | '/shadcn/tasklist/$userTaskKey/history/$auditLogKey'
   id:
     | '__root__'
     | '/_carbon'
-    | '/shadcn'
+    | '/_shadcn'
     | '/_carbon/_auth'
-    | '/shadcn/_auth'
-    | '/_carbon/$'
+    | '/_shadcn/_auth'
     | '/_carbon/login'
-    | '/shadcn/$'
+    | '/_shadcn/$'
     | '/_carbon/_auth/admin'
     | '/_carbon/_auth/operate'
-    | '/_carbon/_auth/tasklist'
-    | '/shadcn/_auth/tasklist'
-    | '/_carbon/tasklist/login'
-    | '/shadcn/tasklist/login'
-    | '/_carbon/_auth/'
-    | '/shadcn/_auth/'
-    | '/_carbon/_auth/tasklist/_tasks'
-    | '/_carbon/_auth/tasklist/processes'
-    | '/shadcn/_auth/tasklist/_tasks'
-    | '/shadcn/_auth/tasklist/processes'
+    | '/_shadcn/_auth/tasklist'
+    | '/_shadcn/tasklist/login'
+    | '/_shadcn/_auth/'
+    | '/_shadcn/_auth/tasklist/_tasks'
+    | '/_shadcn/_auth/tasklist/processes'
     | '/_carbon/_auth/admin/$'
     | '/_carbon/_auth/operate/$'
     | '/_carbon/_auth/operate/batch-operations'
     | '/_carbon/_auth/operate/decisions'
     | '/_carbon/_auth/operate/operations-log'
     | '/_carbon/_auth/operate/processes'
-    | '/_carbon/_auth/tasklist/$'
-    | '/shadcn/_auth/tasklist/$'
+    | '/_shadcn/_auth/tasklist/$'
     | '/_carbon/_auth/admin/'
     | '/_carbon/_auth/operate/'
-    | '/_carbon/_auth/tasklist/_tasks/$userTaskKey'
-    | '/shadcn/_auth/tasklist/_tasks/$userTaskKey'
+    | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey'
     | '/_carbon/_auth/operate/batch-operations/$batchOperationKey'
     | '/_carbon/_auth/operate/decisions/$decisionInstanceId'
     | '/_carbon/_auth/operate/batch-operations/'
     | '/_carbon/_auth/operate/decisions/'
-    | '/_carbon/_auth/tasklist/_tasks/'
-    | '/shadcn/_auth/tasklist/_tasks/'
-    | '/_carbon/_auth/tasklist/_tasks/$userTaskKey/history'
-    | '/shadcn/_auth/tasklist/_tasks/$userTaskKey/history'
-    | '/_carbon/_auth/tasklist/_tasks/$userTaskKey/process'
-    | '/_carbon/_auth/tasklist/processes/$processDefinitionKey/start'
-    | '/shadcn/_auth/tasklist/_tasks/$userTaskKey/process'
-    | '/shadcn/_auth/tasklist/processes/$processDefinitionKey/start'
-    | '/_carbon/_auth/tasklist/_tasks/$userTaskKey/'
-    | '/shadcn/_auth/tasklist/_tasks/$userTaskKey/'
-    | '/_carbon/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
-    | '/shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
+    | '/_shadcn/_auth/tasklist/_tasks/'
+    | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history'
+    | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/process'
+    | '/_shadcn/_auth/tasklist/processes/$processDefinitionKey/start'
+    | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/'
+    | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -588,19 +417,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarbonRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/shadcn': {
-      id: '/shadcn'
-      path: '/shadcn'
-      fullPath: '/shadcn'
+    '/_shadcn': {
+      id: '/_shadcn'
+      path: ''
+      fullPath: '/'
       preLoaderRoute: typeof ShadcnRouteRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_carbon/$': {
-      id: '/_carbon/$'
-      path: '/$'
-      fullPath: '/$'
-      preLoaderRoute: typeof CarbonSplatRouteImport
-      parentRoute: typeof CarbonRouteRoute
     }
     '/_carbon/_auth': {
       id: '/_carbon/_auth'
@@ -616,26 +438,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarbonLoginRouteImport
       parentRoute: typeof CarbonRouteRoute
     }
-    '/shadcn/$': {
-      id: '/shadcn/$'
+    '/_shadcn/$': {
+      id: '/_shadcn/$'
       path: '/$'
-      fullPath: '/shadcn/$'
+      fullPath: '/$'
       preLoaderRoute: typeof ShadcnSplatRouteImport
       parentRoute: typeof ShadcnRouteRoute
     }
-    '/shadcn/_auth': {
-      id: '/shadcn/_auth'
+    '/_shadcn/_auth': {
+      id: '/_shadcn/_auth'
       path: ''
-      fullPath: '/shadcn'
+      fullPath: '/'
       preLoaderRoute: typeof ShadcnAuthRouteRouteImport
       parentRoute: typeof ShadcnRouteRoute
-    }
-    '/_carbon/_auth/': {
-      id: '/_carbon/_auth/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof CarbonAuthIndexRouteImport
-      parentRoute: typeof CarbonAuthRouteRoute
     }
     '/_carbon/_auth/admin': {
       id: '/_carbon/_auth/admin'
@@ -651,38 +466,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarbonAuthOperateRouteRouteImport
       parentRoute: typeof CarbonAuthRouteRoute
     }
-    '/_carbon/_auth/tasklist': {
-      id: '/_carbon/_auth/tasklist'
-      path: '/tasklist'
-      fullPath: '/tasklist'
-      preLoaderRoute: typeof CarbonAuthTasklistRouteRouteImport
-      parentRoute: typeof CarbonAuthRouteRoute
-    }
-    '/_carbon/tasklist/login': {
-      id: '/_carbon/tasklist/login'
-      path: '/tasklist/login'
-      fullPath: '/tasklist/login'
-      preLoaderRoute: typeof CarbonTasklistLoginRouteImport
-      parentRoute: typeof CarbonRouteRoute
-    }
-    '/shadcn/_auth/': {
-      id: '/shadcn/_auth/'
+    '/_shadcn/_auth/': {
+      id: '/_shadcn/_auth/'
       path: '/'
-      fullPath: '/shadcn/'
+      fullPath: '/'
       preLoaderRoute: typeof ShadcnAuthIndexRouteImport
       parentRoute: typeof ShadcnAuthRouteRoute
     }
-    '/shadcn/_auth/tasklist': {
-      id: '/shadcn/_auth/tasklist'
+    '/_shadcn/_auth/tasklist': {
+      id: '/_shadcn/_auth/tasklist'
       path: '/tasklist'
-      fullPath: '/shadcn/tasklist'
+      fullPath: '/tasklist'
       preLoaderRoute: typeof ShadcnAuthTasklistRouteRouteImport
       parentRoute: typeof ShadcnAuthRouteRoute
     }
-    '/shadcn/tasklist/login': {
-      id: '/shadcn/tasklist/login'
+    '/_shadcn/tasklist/login': {
+      id: '/_shadcn/tasklist/login'
       path: '/tasklist/login'
-      fullPath: '/shadcn/tasklist/login'
+      fullPath: '/tasklist/login'
       preLoaderRoute: typeof ShadcnTasklistLoginRouteImport
       parentRoute: typeof ShadcnRouteRoute
     }
@@ -742,45 +543,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarbonAuthOperateProcessesRouteImport
       parentRoute: typeof CarbonAuthOperateRouteRoute
     }
-    '/_carbon/_auth/tasklist/$': {
-      id: '/_carbon/_auth/tasklist/$'
+    '/_shadcn/_auth/tasklist/$': {
+      id: '/_shadcn/_auth/tasklist/$'
       path: '/$'
       fullPath: '/tasklist/$'
-      preLoaderRoute: typeof CarbonAuthTasklistSplatRouteImport
-      parentRoute: typeof CarbonAuthTasklistRouteRoute
-    }
-    '/_carbon/_auth/tasklist/_tasks': {
-      id: '/_carbon/_auth/tasklist/_tasks'
-      path: ''
-      fullPath: '/tasklist'
-      preLoaderRoute: typeof CarbonAuthTasklistTasksRouteRouteImport
-      parentRoute: typeof CarbonAuthTasklistRouteRoute
-    }
-    '/_carbon/_auth/tasklist/processes': {
-      id: '/_carbon/_auth/tasklist/processes'
-      path: '/processes'
-      fullPath: '/tasklist/processes'
-      preLoaderRoute: typeof CarbonAuthTasklistProcessesRouteRouteImport
-      parentRoute: typeof CarbonAuthTasklistRouteRoute
-    }
-    '/shadcn/_auth/tasklist/$': {
-      id: '/shadcn/_auth/tasklist/$'
-      path: '/$'
-      fullPath: '/shadcn/tasklist/$'
       preLoaderRoute: typeof ShadcnAuthTasklistSplatRouteImport
       parentRoute: typeof ShadcnAuthTasklistRouteRoute
     }
-    '/shadcn/_auth/tasklist/_tasks': {
-      id: '/shadcn/_auth/tasklist/_tasks'
+    '/_shadcn/_auth/tasklist/_tasks': {
+      id: '/_shadcn/_auth/tasklist/_tasks'
       path: ''
-      fullPath: '/shadcn/tasklist'
+      fullPath: '/tasklist'
       preLoaderRoute: typeof ShadcnAuthTasklistTasksRouteRouteImport
       parentRoute: typeof ShadcnAuthTasklistRouteRoute
     }
-    '/shadcn/_auth/tasklist/processes': {
-      id: '/shadcn/_auth/tasklist/processes'
+    '/_shadcn/_auth/tasklist/processes': {
+      id: '/_shadcn/_auth/tasklist/processes'
       path: '/processes'
-      fullPath: '/shadcn/tasklist/processes'
+      fullPath: '/tasklist/processes'
       preLoaderRoute: typeof ShadcnAuthTasklistProcessesRouteRouteImport
       parentRoute: typeof ShadcnAuthTasklistRouteRoute
     }
@@ -812,101 +592,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarbonAuthOperateDecisionsDecisionInstanceIdRouteImport
       parentRoute: typeof CarbonAuthOperateDecisionsRoute
     }
-    '/_carbon/_auth/tasklist/_tasks/': {
-      id: '/_carbon/_auth/tasklist/_tasks/'
+    '/_shadcn/_auth/tasklist/_tasks/': {
+      id: '/_shadcn/_auth/tasklist/_tasks/'
       path: '/'
       fullPath: '/tasklist/'
-      preLoaderRoute: typeof CarbonAuthTasklistTasksIndexRouteImport
-      parentRoute: typeof CarbonAuthTasklistTasksRouteRoute
-    }
-    '/_carbon/_auth/tasklist/_tasks/$userTaskKey': {
-      id: '/_carbon/_auth/tasklist/_tasks/$userTaskKey'
-      path: '/$userTaskKey'
-      fullPath: '/tasklist/$userTaskKey'
-      preLoaderRoute: typeof CarbonAuthTasklistTasksUserTaskKeyRouteRouteImport
-      parentRoute: typeof CarbonAuthTasklistTasksRouteRoute
-    }
-    '/shadcn/_auth/tasklist/_tasks/': {
-      id: '/shadcn/_auth/tasklist/_tasks/'
-      path: '/'
-      fullPath: '/shadcn/tasklist/'
       preLoaderRoute: typeof ShadcnAuthTasklistTasksIndexRouteImport
       parentRoute: typeof ShadcnAuthTasklistTasksRouteRoute
     }
-    '/shadcn/_auth/tasklist/_tasks/$userTaskKey': {
-      id: '/shadcn/_auth/tasklist/_tasks/$userTaskKey'
+    '/_shadcn/_auth/tasklist/_tasks/$userTaskKey': {
+      id: '/_shadcn/_auth/tasklist/_tasks/$userTaskKey'
       path: '/$userTaskKey'
-      fullPath: '/shadcn/tasklist/$userTaskKey'
+      fullPath: '/tasklist/$userTaskKey'
       preLoaderRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteImport
       parentRoute: typeof ShadcnAuthTasklistTasksRouteRoute
     }
-    '/_carbon/_auth/tasklist/_tasks/$userTaskKey/': {
-      id: '/_carbon/_auth/tasklist/_tasks/$userTaskKey/'
+    '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/': {
+      id: '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/'
       path: '/'
       fullPath: '/tasklist/$userTaskKey/'
-      preLoaderRoute: typeof CarbonAuthTasklistTasksUserTaskKeyIndexRouteImport
-      parentRoute: typeof CarbonAuthTasklistTasksUserTaskKeyRouteRoute
-    }
-    '/_carbon/_auth/tasklist/_tasks/$userTaskKey/history': {
-      id: '/_carbon/_auth/tasklist/_tasks/$userTaskKey/history'
-      path: '/history'
-      fullPath: '/tasklist/$userTaskKey/history'
-      preLoaderRoute: typeof CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteImport
-      parentRoute: typeof CarbonAuthTasklistTasksUserTaskKeyRouteRoute
-    }
-    '/_carbon/_auth/tasklist/_tasks/$userTaskKey/process': {
-      id: '/_carbon/_auth/tasklist/_tasks/$userTaskKey/process'
-      path: '/process'
-      fullPath: '/tasklist/$userTaskKey/process'
-      preLoaderRoute: typeof CarbonAuthTasklistTasksUserTaskKeyProcessRouteImport
-      parentRoute: typeof CarbonAuthTasklistTasksUserTaskKeyRouteRoute
-    }
-    '/_carbon/_auth/tasklist/processes/$processDefinitionKey/start': {
-      id: '/_carbon/_auth/tasklist/processes/$processDefinitionKey/start'
-      path: '/$processDefinitionKey/start'
-      fullPath: '/tasklist/processes/$processDefinitionKey/start'
-      preLoaderRoute: typeof CarbonAuthTasklistProcessesProcessDefinitionKeyStartRouteImport
-      parentRoute: typeof CarbonAuthTasklistProcessesRouteRoute
-    }
-    '/shadcn/_auth/tasklist/_tasks/$userTaskKey/': {
-      id: '/shadcn/_auth/tasklist/_tasks/$userTaskKey/'
-      path: '/'
-      fullPath: '/shadcn/tasklist/$userTaskKey/'
       preLoaderRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyIndexRouteImport
       parentRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRoute
     }
-    '/shadcn/_auth/tasklist/_tasks/$userTaskKey/history': {
-      id: '/shadcn/_auth/tasklist/_tasks/$userTaskKey/history'
+    '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history': {
+      id: '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history'
       path: '/history'
-      fullPath: '/shadcn/tasklist/$userTaskKey/history'
+      fullPath: '/tasklist/$userTaskKey/history'
       preLoaderRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteImport
       parentRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRoute
     }
-    '/shadcn/_auth/tasklist/_tasks/$userTaskKey/process': {
-      id: '/shadcn/_auth/tasklist/_tasks/$userTaskKey/process'
+    '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/process': {
+      id: '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/process'
       path: '/process'
-      fullPath: '/shadcn/tasklist/$userTaskKey/process'
+      fullPath: '/tasklist/$userTaskKey/process'
       preLoaderRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRouteImport
       parentRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRoute
     }
-    '/shadcn/_auth/tasklist/processes/$processDefinitionKey/start': {
-      id: '/shadcn/_auth/tasklist/processes/$processDefinitionKey/start'
+    '/_shadcn/_auth/tasklist/processes/$processDefinitionKey/start': {
+      id: '/_shadcn/_auth/tasklist/processes/$processDefinitionKey/start'
       path: '/$processDefinitionKey/start'
-      fullPath: '/shadcn/tasklist/processes/$processDefinitionKey/start'
+      fullPath: '/tasklist/processes/$processDefinitionKey/start'
       preLoaderRoute: typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRouteImport
       parentRoute: typeof ShadcnAuthTasklistProcessesRouteRoute
     }
-    '/_carbon/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': {
-      id: '/_carbon/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
+    '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': {
+      id: '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
       path: '/$auditLogKey'
       fullPath: '/tasklist/$userTaskKey/history/$auditLogKey'
-      preLoaderRoute: typeof CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport
-      parentRoute: typeof CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRoute
-    }
-    '/shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': {
-      id: '/shadcn/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
-      path: '/$auditLogKey'
-      fullPath: '/shadcn/tasklist/$userTaskKey/history/$auditLogKey'
       preLoaderRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport
       parentRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRoute
     }
@@ -987,106 +718,14 @@ const CarbonAuthOperateRouteRouteWithChildren =
     CarbonAuthOperateRouteRouteChildren,
   )
 
-interface CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteChildren {
-  CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute: typeof CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
-}
-
-const CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteChildren: CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteChildren =
-  {
-    CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute:
-      CarbonAuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute,
-  }
-
-const CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren =
-  CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRoute._addFileChildren(
-    CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteChildren,
-  )
-
-interface CarbonAuthTasklistTasksUserTaskKeyRouteRouteChildren {
-  CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRoute: typeof CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
-  CarbonAuthTasklistTasksUserTaskKeyProcessRoute: typeof CarbonAuthTasklistTasksUserTaskKeyProcessRoute
-  CarbonAuthTasklistTasksUserTaskKeyIndexRoute: typeof CarbonAuthTasklistTasksUserTaskKeyIndexRoute
-}
-
-const CarbonAuthTasklistTasksUserTaskKeyRouteRouteChildren: CarbonAuthTasklistTasksUserTaskKeyRouteRouteChildren =
-  {
-    CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRoute:
-      CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren,
-    CarbonAuthTasklistTasksUserTaskKeyProcessRoute:
-      CarbonAuthTasklistTasksUserTaskKeyProcessRoute,
-    CarbonAuthTasklistTasksUserTaskKeyIndexRoute:
-      CarbonAuthTasklistTasksUserTaskKeyIndexRoute,
-  }
-
-const CarbonAuthTasklistTasksUserTaskKeyRouteRouteWithChildren =
-  CarbonAuthTasklistTasksUserTaskKeyRouteRoute._addFileChildren(
-    CarbonAuthTasklistTasksUserTaskKeyRouteRouteChildren,
-  )
-
-interface CarbonAuthTasklistTasksRouteRouteChildren {
-  CarbonAuthTasklistTasksUserTaskKeyRouteRoute: typeof CarbonAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
-  CarbonAuthTasklistTasksIndexRoute: typeof CarbonAuthTasklistTasksIndexRoute
-}
-
-const CarbonAuthTasklistTasksRouteRouteChildren: CarbonAuthTasklistTasksRouteRouteChildren =
-  {
-    CarbonAuthTasklistTasksUserTaskKeyRouteRoute:
-      CarbonAuthTasklistTasksUserTaskKeyRouteRouteWithChildren,
-    CarbonAuthTasklistTasksIndexRoute: CarbonAuthTasklistTasksIndexRoute,
-  }
-
-const CarbonAuthTasklistTasksRouteRouteWithChildren =
-  CarbonAuthTasklistTasksRouteRoute._addFileChildren(
-    CarbonAuthTasklistTasksRouteRouteChildren,
-  )
-
-interface CarbonAuthTasklistProcessesRouteRouteChildren {
-  CarbonAuthTasklistProcessesProcessDefinitionKeyStartRoute: typeof CarbonAuthTasklistProcessesProcessDefinitionKeyStartRoute
-}
-
-const CarbonAuthTasklistProcessesRouteRouteChildren: CarbonAuthTasklistProcessesRouteRouteChildren =
-  {
-    CarbonAuthTasklistProcessesProcessDefinitionKeyStartRoute:
-      CarbonAuthTasklistProcessesProcessDefinitionKeyStartRoute,
-  }
-
-const CarbonAuthTasklistProcessesRouteRouteWithChildren =
-  CarbonAuthTasklistProcessesRouteRoute._addFileChildren(
-    CarbonAuthTasklistProcessesRouteRouteChildren,
-  )
-
-interface CarbonAuthTasklistRouteRouteChildren {
-  CarbonAuthTasklistTasksRouteRoute: typeof CarbonAuthTasklistTasksRouteRouteWithChildren
-  CarbonAuthTasklistProcessesRouteRoute: typeof CarbonAuthTasklistProcessesRouteRouteWithChildren
-  CarbonAuthTasklistSplatRoute: typeof CarbonAuthTasklistSplatRoute
-}
-
-const CarbonAuthTasklistRouteRouteChildren: CarbonAuthTasklistRouteRouteChildren =
-  {
-    CarbonAuthTasklistTasksRouteRoute:
-      CarbonAuthTasklistTasksRouteRouteWithChildren,
-    CarbonAuthTasklistProcessesRouteRoute:
-      CarbonAuthTasklistProcessesRouteRouteWithChildren,
-    CarbonAuthTasklistSplatRoute: CarbonAuthTasklistSplatRoute,
-  }
-
-const CarbonAuthTasklistRouteRouteWithChildren =
-  CarbonAuthTasklistRouteRoute._addFileChildren(
-    CarbonAuthTasklistRouteRouteChildren,
-  )
-
 interface CarbonAuthRouteRouteChildren {
   CarbonAuthAdminRouteRoute: typeof CarbonAuthAdminRouteRouteWithChildren
   CarbonAuthOperateRouteRoute: typeof CarbonAuthOperateRouteRouteWithChildren
-  CarbonAuthTasklistRouteRoute: typeof CarbonAuthTasklistRouteRouteWithChildren
-  CarbonAuthIndexRoute: typeof CarbonAuthIndexRoute
 }
 
 const CarbonAuthRouteRouteChildren: CarbonAuthRouteRouteChildren = {
   CarbonAuthAdminRouteRoute: CarbonAuthAdminRouteRouteWithChildren,
   CarbonAuthOperateRouteRoute: CarbonAuthOperateRouteRouteWithChildren,
-  CarbonAuthTasklistRouteRoute: CarbonAuthTasklistRouteRouteWithChildren,
-  CarbonAuthIndexRoute: CarbonAuthIndexRoute,
 }
 
 const CarbonAuthRouteRouteWithChildren = CarbonAuthRouteRoute._addFileChildren(
@@ -1095,16 +734,12 @@ const CarbonAuthRouteRouteWithChildren = CarbonAuthRouteRoute._addFileChildren(
 
 interface CarbonRouteRouteChildren {
   CarbonAuthRouteRoute: typeof CarbonAuthRouteRouteWithChildren
-  CarbonSplatRoute: typeof CarbonSplatRoute
   CarbonLoginRoute: typeof CarbonLoginRoute
-  CarbonTasklistLoginRoute: typeof CarbonTasklistLoginRoute
 }
 
 const CarbonRouteRouteChildren: CarbonRouteRouteChildren = {
   CarbonAuthRouteRoute: CarbonAuthRouteRouteWithChildren,
-  CarbonSplatRoute: CarbonSplatRoute,
   CarbonLoginRoute: CarbonLoginRoute,
-  CarbonTasklistLoginRoute: CarbonTasklistLoginRoute,
 }
 
 const CarbonRouteRouteWithChildren = CarbonRouteRoute._addFileChildren(

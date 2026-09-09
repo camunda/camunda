@@ -6,56 +6,56 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@camunda/design-system';
 import {useNavigate} from '@tanstack/react-router';
-import {cn} from '#/shared/cn';
-import styles from './TabListNav.module.scss';
-import layoutStyles from './taskDetailsLayoutCommon.module.scss';
+import {useCallback} from 'react';
 
 type TabItem = {
 	key: string;
 	title: string;
 	label: string;
 	selected: boolean;
-	to: string;
-	visible?: boolean;
+	to: '/tasklist/$userTaskKey' | '/tasklist/$userTaskKey/process' | '/tasklist/$userTaskKey/history';
 };
 
 type Props = {
-	className?: string;
 	label: string;
 	items: TabItem[];
+	userTaskKey: string;
+	children?: React.ReactNode;
 };
 
-const TabListNav: React.FC<Props> = ({className, label, items}) => {
+const TabListNav: React.FC<Props> = ({label, items, userTaskKey, children}) => {
 	const navigate = useNavigate();
+	const selectedItem = items.find(({selected}) => selected) ?? items[0];
+	const handleValueChange = useCallback(
+		(key: string) => {
+			const nextItem = items.find((item) => item.key === key);
+
+			if (nextItem) {
+				navigate({to: nextItem.to, params: {userTaskKey}});
+			}
+		},
+		[items, navigate, userTaskKey],
+	);
 
 	return (
-		<nav className={cn(className, layoutStyles.tabs, 'cds--tabs')}>
-			<div className="cds--tab--list" aria-label={label}>
-				{items.map(({key, title, label: itemLabel, selected, to, visible}) => {
-					const isHidden = visible === false;
-					return (
-						<button
-							key={key}
-							type="button"
-							role="link"
-							aria-label={itemLabel}
-							aria-current={selected ? 'page' : undefined}
-							className={cn({[styles.hidden!]: isHidden}, 'cds--tabs__nav-item', 'cds--tabs__nav-link', {
-								'cds--tabs__nav-item--selected': selected,
-							})}
-							hidden={isHidden}
-							aria-hidden={isHidden}
-							onClick={() => navigate({to})}
-						>
-							<div className="cds--tabs__nav-item-label-wrapper">
-								<span className="cds--tabs__nav-item-label">{title}</span>
-							</div>
-						</button>
-					);
-				})}
-			</div>
-		</nav>
+		<Tabs className="flex min-h-0 w-full flex-1 flex-col" value={selectedItem?.key} onValueChange={handleValueChange}>
+			<nav className="w-full self-start pl-4" aria-label={label}>
+				<TabsList aria-label={label}>
+					{items.map(({key, title, label: itemLabel}) => (
+						<TabsTrigger key={key} value={key} aria-label={itemLabel}>
+							{title}
+						</TabsTrigger>
+					))}
+				</TabsList>
+			</nav>
+			{items.map(({key}) => (
+				<TabsContent key={key} value={key} forceMount className="min-h-0 w-full flex-1 data-[state=inactive]:hidden">
+					{key === selectedItem?.key ? children : null}
+				</TabsContent>
+			))}
+		</Tabs>
 	);
 };
 

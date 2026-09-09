@@ -16,8 +16,8 @@ import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute'
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
-	tasklistIndex: '/shadcn/tasklist',
-	tasklistProcesses: '/shadcn/tasklist/processes',
+	tasklistIndex: '/tasklist',
+	tasklistProcesses: '/tasklist/processes',
 } as const satisfies Record<string, FileRouteTypes['to']>;
 
 type SidebarNavigation = {

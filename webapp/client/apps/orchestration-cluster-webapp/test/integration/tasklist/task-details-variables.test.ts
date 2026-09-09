@@ -120,7 +120,10 @@ test.describe('Task details variables', () => {
 		await expect(page).toHaveURL(/\/tasklist$/);
 	});
 
-	test('should show variables as read-only for an unassigned task', async ({network, taskDetailPage}) => {
+	test('should show variables as read-only for an unassigned task', async ({
+		network,
+		taskDetailPage,
+	}) => {
 		network.use(
 			mockGetUserTaskEndpoint({
 				successResponse: HttpResponse.json(
@@ -144,7 +147,10 @@ test.describe('Task details variables', () => {
 		await expect(taskDetailPage.applyJsonEditorButton).not.toBeVisible();
 	});
 
-	test('should show variables as read-only for a completed task', async ({network, taskDetailPage}) => {
+	test('should show variables as read-only for a completed task', async ({
+		network,
+		taskDetailPage,
+	}) => {
 		network.use(
 			mockGetUserTaskEndpoint({
 				successResponse: HttpResponse.json(completedTask),
@@ -166,7 +172,10 @@ test.describe('Task details variables', () => {
 		await expect(taskDetailPage.applyJsonEditorButton).not.toBeVisible();
 	});
 
-	test('should load the full value of a truncated variable', async ({network, taskDetailPage}) => {
+	test('should load the full value of a truncated variable', async ({
+		network,
+		taskDetailPage,
+	}) => {
 		const truncatedVariable = createVariable({
 			name: 'details',
 			value: '{"description":"trunc',

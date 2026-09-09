@@ -6,73 +6,49 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Column, Grid, Link} from '@carbon/react';
-import {useTranslation, Trans} from 'react-i18next';
+import {Button, EmptyState} from '@camunda/design-system';
+import {Check, ListTodo} from 'lucide-react';
+import {useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
-import styles from './NoTaskSelectedPage.module.scss';
-import {SvgOrangeCheckMark} from '#/shared/svg/OrangeCheckMark';
+
+const TUTORIAL_URL = 'https://modeler.cloud.camunda.io/tutorial/quick-start-human-tasks';
 
 type Props = {
 	hasNoTasks: boolean;
 };
 
 const NoTaskSelectedPage: React.FC<Props> = ({hasNoTasks}) => {
-	const isOldUser = getStateLocally('tasklist.hasCompletedTask') === true;
 	const {t} = useTranslation();
+	const hasCompletedTask = getStateLocally('tasklist.hasCompletedTask') === true;
 
-	if (hasNoTasks && isOldUser) {
+	if (hasNoTasks && hasCompletedTask) {
 		return null;
 	}
 
 	return (
-		<Grid className={styles.container} condensed>
-			<Column
-				className={styles.imageContainer}
-				sm={1}
-				md={{
-					span: 2,
-					offset: 1,
-				}}
-				lg={{
-					span: 2,
-					offset: 4,
-				}}
-				xlg={{
-					span: 1,
-					offset: 5,
-				}}
-			>
-				<SvgOrangeCheckMark className={styles.image} aria-hidden />
-			</Column>
-			<Column className={isOldUser ? styles.oldUserText : styles.newUserText} sm={3} md={5} lg={10} xlg={10}>
-				{isOldUser ? (
-					<h3>{t('tasklist.taskEmptyPickPrompt')}</h3>
-				) : (
-					<>
-						<h3>{t('tasklist.taskEmptyHeader')}</h3>
-						<p data-testid="first-paragraph">
-							{t('tasklist.taskEmptyDetail1')}
-							<br />
-							{t('tasklist.taskEmptyDetail2')}
-						</p>
-						{!hasNoTasks && <p>{t('tasklist.taskEmptyTaskAvailablePrompt')}</p>}
-						<p data-testid="tutorial-paragraph">
-							<Trans i18nKey="tasklist.taskEmptyTutorial">
-								Follow our tutorial to{' '}
-								<Link
-									href="https://modeler.cloud.camunda.io/tutorial/quick-start-human-tasks"
-									target="_blank"
-									rel="noreferrer"
-									inline
-								>
-									learn how to create tasks.
-								</Link>
-							</Trans>
-						</p>
-					</>
-				)}
-			</Column>
-		</Grid>
+		<div className="flex h-full items-center justify-center">
+			<EmptyState
+				icon={hasCompletedTask ? <ListTodo aria-hidden /> : <Check aria-hidden />}
+				heading={t(hasCompletedTask ? 'tasklist.taskEmptyPickPrompt' : 'tasklist.taskEmptyHeader')}
+				description={
+					hasCompletedTask ? undefined : (
+						<>
+							{t('tasklist.taskEmptyDetail1')} {t('tasklist.taskEmptyDetail2')}
+							{hasNoTasks ? null : <> {t('tasklist.taskEmptyTaskAvailablePrompt')}</>}
+						</>
+					)
+				}
+				action={
+					hasCompletedTask ? undefined : (
+						<Button asChild>
+							<a href={TUTORIAL_URL} target="_blank" rel="noreferrer">
+								{t('tasklist.taskEmptyTutorialCta')}
+							</a>
+						</Button>
+					)
+				}
+			/>
+		</div>
 	);
 };
 

@@ -7,9 +7,9 @@
  */
 
 import {useLayoutEffect, useRef} from 'react';
-import {Loading} from '@carbon/react';
+import {LoaderCircle} from 'lucide-react';
+import {useTranslation} from 'react-i18next';
 import {TextInput} from './TextInput';
-import styles from './LoadingTextarea.module.scss';
 
 type Props = React.ComponentProps<typeof TextInput> & {
 	isLoading: boolean;
@@ -17,6 +17,7 @@ type Props = React.ComponentProps<typeof TextInput> & {
 };
 
 const LoadingTextarea: React.FC<Props> = ({isLoading, isActive = false, ...props}) => {
+	const {t} = useTranslation();
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	useLayoutEffect(() => {
@@ -28,9 +29,12 @@ const LoadingTextarea: React.FC<Props> = ({isLoading, isActive = false, ...props
 
 	if (isLoading) {
 		return (
-			<div className={styles.container} data-testid="textarea-loading-overlay">
-				<div className={styles.overlay}>
-					<Loading className={styles.spinner} withOverlay={false} />
+			<div className="relative w-full" data-testid="textarea-loading-overlay" aria-busy>
+				<div className="absolute inset-0 z-2 flex items-center justify-center bg-background/80">
+					<LoaderCircle className="size-4 animate-spin" aria-hidden />
+					<span className="sr-only" role="status">
+						{t('tasklist.processesLoadingMore')}
+					</span>
 				</div>
 				<TextInput ref={inputRef} {...props} disabled />
 			</div>

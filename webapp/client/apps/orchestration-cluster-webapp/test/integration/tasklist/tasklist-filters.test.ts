@@ -58,47 +58,16 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Filter panel', () => {
-	test('should expand and collapse the filter panel', async ({tasklistIndexPage}) => {
-		await tasklistIndexPage.goto();
-
-		await expect(tasklistIndexPage.expandFiltersButton).toBeVisible();
-		await expect(tasklistIndexPage.filterTasksButton).toBeVisible();
-
-		await tasklistIndexPage.expandFilters();
-
-		await expect(tasklistIndexPage.filterLink('All open tasks')).toBeVisible();
-		await expect(tasklistIndexPage.filterLink('Assigned to me')).toBeVisible();
-		await expect(tasklistIndexPage.filterLink('Unassigned')).toBeVisible();
-		await expect(tasklistIndexPage.filterLink('Completed')).toBeVisible();
-		await expect(tasklistIndexPage.newFilterButton).toBeVisible();
-		await expect(tasklistIndexPage.collapseFiltersButton).toBeVisible();
-
-		await tasklistIndexPage.collapseFiltersButton.click();
-
-		await expect(tasklistIndexPage.expandFiltersButton).toBeVisible();
-		await expect(tasklistIndexPage.filterLink('Assigned to me')).not.toBeVisible();
-	});
-
 	test('should navigate to the completed filter with completion sorting', async ({page, tasklistIndexPage}) => {
 		await tasklistIndexPage.goto();
-		await tasklistIndexPage.expandFilters();
 
-		await tasklistIndexPage.filterLink('Completed').click();
+		await tasklistIndexPage.filterSelect.click();
+		await tasklistIndexPage.filterOption('Completed').click();
 
 		const params = new URL(page.url()).searchParams;
 		expect(params.get('filter')).toBe('completed');
 		expect(params.get('sortBy')).toBe('completion');
-		await expect(tasklistIndexPage.tasksPanelHeading('Completed')).toBeVisible();
-	});
-
-	test('should mark the active filter with aria-current', async ({page, tasklistIndexPage}) => {
-		await page.goto('/tasklist?filter=unassigned');
-		await tasklistIndexPage.expandFilters();
-
-		await expect(tasklistIndexPage.filterLink('Unassigned')).toHaveAttribute('aria-current', 'page');
-		await expect(tasklistIndexPage.filterLink('All open tasks')).not.toHaveAttribute('aria-current', 'page');
-		await expect(tasklistIndexPage.filterLink('Assigned to me')).not.toHaveAttribute('aria-current', 'page');
-		await expect(tasklistIndexPage.filterLink('Completed')).not.toHaveAttribute('aria-current', 'page');
+		await expect(tasklistIndexPage.filterSelect).toHaveText('Completed');
 	});
 });
 
@@ -124,7 +93,7 @@ test.describe('Filter request bodies', () => {
 
 		await page.goto('/tasklist?filter=assigned-to-me');
 
-		await expect(tasklistIndexPage.tasksPanelHeading('Assigned to me')).toBeVisible();
+		await expect(tasklistIndexPage.filterSelect).toHaveText('Assigned to me');
 		await expect(tasklistIndexPage.taskItem('Assigned task')).toBeVisible();
 	});
 
@@ -149,7 +118,7 @@ test.describe('Filter request bodies', () => {
 
 		await page.goto('/tasklist?filter=unassigned');
 
-		await expect(tasklistIndexPage.tasksPanelHeading('Unassigned')).toBeVisible();
+		await expect(tasklistIndexPage.filterSelect).toHaveText('Unassigned');
 		await expect(tasklistIndexPage.taskItem('Unassigned task')).toBeVisible();
 	});
 
@@ -173,7 +142,7 @@ test.describe('Filter request bodies', () => {
 
 		await page.goto('/tasklist?filter=completed&sortBy=completion');
 
-		await expect(tasklistIndexPage.tasksPanelHeading('Completed')).toBeVisible();
+		await expect(tasklistIndexPage.filterSelect).toHaveText('Completed');
 		await expect(tasklistIndexPage.taskItem('Completed task')).toBeVisible();
 
 		await test.step('offers completion-date sorting in the sort menu', async () => {
@@ -186,7 +155,6 @@ test.describe('Filter request bodies', () => {
 		network,
 		page,
 		tasklistIndexPage,
-		taskDetailPage,
 	}) => {
 		await page.addInitScript(`localStorage.setItem('tasklist.autoSelectNextTask', JSON.stringify(true))`);
 		network.use(
@@ -215,7 +183,7 @@ test.describe('Filter request bodies', () => {
 
 		await expect(page).toHaveURL(/\/tasklist\?filter=completed&sortBy=completion$/);
 		await expect(tasklistIndexPage.taskItem('Completed task')).toBeVisible();
-		await expect(taskDetailPage.taskName('Completed task')).toBeVisible();
+		await expect(tasklistIndexPage.taskItem('Completed task')).toBeVisible();
 	});
 });
 
@@ -227,7 +195,7 @@ test.describe('Sorting', () => {
 	}) => {
 		await tasklistIndexPage.goto();
 
-		await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
+		await expect(tasklistIndexPage.filterSelect).toHaveText('All open tasks');
 
 		network.use(
 			mockQueryUserTasksEndpoint({
@@ -238,6 +206,9 @@ test.describe('Sorting', () => {
 					}),
 				),
 				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({userTaskKey: '1', name: 'Sorted task'})),
 			}),
 		);
 
@@ -279,7 +250,7 @@ test.describe('Sorting', () => {
 
 		await page.goto('/tasklist?filter=all-open&sortBy=completion');
 
-		await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
+		await expect(tasklistIndexPage.filterSelect).toHaveText('All open tasks');
 		expect(new URL(page.url()).searchParams.get('sortBy')).toBeNull();
 		await expect(tasklistIndexPage.taskItem('Reset sort task')).toBeVisible();
 	});

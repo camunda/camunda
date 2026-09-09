@@ -7,19 +7,10 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
-import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {HttpResponse} from 'msw';
 import {
-	createGetProcessDefinitionResponse,
-	createProcessDefinition,
-	createProcessStartFormResponse,
-	createQueryProcessDefinitionsResponse,
-} from '#/shared-test-modules/api-mocks/process-definitions';
-import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
-import {
-	mockCurrentUserEndpoint,
 	mockCreateProcessInstanceEndpoint,
+	mockCurrentUserEndpoint,
 	mockGetProcessDefinitionEndpoint,
 	mockGetProcessStartFormEndpoint,
 	mockLicenseEndpoint,
@@ -27,7 +18,16 @@ import {
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {HttpResponse} from 'msw';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
+import {
+	createGetProcessDefinitionResponse,
+	createProcessDefinition,
+	createProcessStartFormResponse,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
 
 test.beforeEach(async ({network, page}) => {
 	await page.addInitScript(() => {
@@ -97,7 +97,9 @@ test('should match the start-process form modal snapshot', async ({network, task
 	);
 
 	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
-	await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
+	await expect(
+		tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}),
+	).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -148,7 +150,9 @@ test('should match the start-process form validation and submission-error notifi
 
 	await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
 	await tasklistProcessesPage.startProcessFormButton.click();
-	await expect(tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed')).toBeVisible();
+	await expect(
+		tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed'),
+	).toBeVisible();
 	await expect(page).toHaveScreenshot('start-process-form-submission-error.png');
 });
 
@@ -216,7 +220,11 @@ test('should match the forbidden processes page snapshot', async ({
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the generic processes error page snapshot', async ({network, tasklistProcessesPage, page}) => {
+test('should match the generic processes error page snapshot', async ({
+	network,
+	tasklistProcessesPage,
+	page,
+}) => {
 	network.use(mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
 
 	await tasklistProcessesPage.goto();
