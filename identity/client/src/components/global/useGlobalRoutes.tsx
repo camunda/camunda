@@ -33,6 +33,13 @@ export const useGlobalRoutes = () => {
   const { t } = useTranslate();
   const { pathname } = useLocation();
 
+  const mappingRulesRoute = {
+    path: `${Paths.mappingRules()}/*`,
+    key: Paths.mappingRules(),
+    label: t("mappingRules"),
+    element: <MappingRules />,
+  };
+
   const OIDCDependentRoutes = !isOIDC
     ? [
         {
@@ -42,16 +49,14 @@ export const useGlobalRoutes = () => {
           element: <Users />,
         },
       ]
-    : !isSaaS || isAdditionalIdpConfigured
-      ? [
-          {
-            path: `${Paths.mappingRules()}/*`,
-            key: Paths.mappingRules(),
-            label: t("mappingRules"),
-            element: <MappingRules />,
-          },
-        ]
+    : !isSaaS
+      ? [mappingRulesRoute]
       : [];
+
+  // Kept out of OIDCDependentRoutes, whose first entry sets the index-route
+  // redirect (GlobalRoutes.tsx), so it doesn't change the SaaS landing page.
+  const saasMappingRulesRoutes =
+    isOIDC && isSaaS && isAdditionalIdpConfigured ? [mappingRulesRoute] : [];
 
   const camundaGroupsDependentRoutes = isCamundaGroupsEnabled
     ? [
@@ -134,6 +139,7 @@ export const useGlobalRoutes = () => {
       label: t("operationsLog"),
       element: <OperationsLog />,
     },
+    ...saasMappingRulesRoutes,
   ];
 
   return routes.map((route) => ({
