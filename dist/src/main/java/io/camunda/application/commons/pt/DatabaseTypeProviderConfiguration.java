@@ -28,15 +28,13 @@ public class DatabaseTypeProviderConfiguration {
   @Bean
   public Function<String, DatabaseType> databaseTypeProvider(
       final PhysicalTenantResolver physicalTenantResolver) {
-
-
     return tenantId ->
-                    DatabaseType.from(
-                      physicalTenantResolver
-                        .forPhysicalTenant(tenantId)
-                        .getData()
-                        .getSecondaryStorage()
-                        .getType()
-                        .name());
+        DatabaseType.from(
+            physicalTenantResolver
+                .forPhysicalTenant(tenantId)
+                .getData()
+                .getSecondaryStorage()
+                .getType()
+                .name());
   }
 }
