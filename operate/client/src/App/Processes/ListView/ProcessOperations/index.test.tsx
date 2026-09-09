@@ -407,6 +407,45 @@ describe('<ProcessOperations />', () => {
     );
   });
 
+  it('should keep the delete button disabled while the definition state is still loading', async () => {
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockSearchProcessDefinitions().withDelay({
+      items: [
+        {
+          name: 'myProcess',
+          processDefinitionId: 'myProcess',
+          processDefinitionKey: '2251799813687094',
+          version: 2,
+          tenantId: '<default>',
+          hasStartForm: false,
+          state: 'DELETED',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
+
+    render(
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /^delete process definition "myProcess - version 2"$/i,
+      }),
+    ).toBeDisabled();
+
+    expect(await screen.findByTestId('deleted-tag')).toBeInTheDocument();
+  });
+
   it('should disable delete button when there are running instances', async () => {
     mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
     mockFetchProcessInstances().withSuccess({
@@ -465,6 +504,44 @@ describe('<ProcessOperations />', () => {
         name: /^delete process definition/i,
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('should show deleted tag instead of delete button when definition is deleted', async () => {
+    mockSearchProcessDefinitions().withSuccess({
+      items: [
+        {
+          name: 'myProcess',
+          processDefinitionId: 'myProcess',
+          processDefinitionKey: '2251799813687094',
+          version: 2,
+          tenantId: '<default>',
+          hasStartForm: false,
+          state: 'DELETED',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
+
+    render(
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(await screen.findByTestId('deleted-tag')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /^delete process definition/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('draining-tag')).not.toBeInTheDocument();
   });
 
   it('should enable delete button when process instances could not be fetched', async () => {

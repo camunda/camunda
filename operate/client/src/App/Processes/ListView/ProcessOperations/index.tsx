@@ -12,6 +12,7 @@ import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DrainingTag} from 'modules/components/DrainingTag';
+import {DeletedTag} from 'modules/components/DeletedTag';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
@@ -21,7 +22,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
+import {useProcessDefinitionState} from 'modules/queries/processDefinitions/useProcessDefinitionState';
 import {DRAINING_MESSAGES} from 'modules/utils/draining';
 
 type Props = {
@@ -38,8 +39,10 @@ const ProcessOperations: React.FC<Props> = observer(
     const [isOperationRunning, setIsOperationRunning] = useState(false);
     const {runningInstancesCount} = processInstancesStore.state;
 
-    const {data: draining} = useDrainingProcessDefinitions();
-    const isDraining = !!draining?.byKey.has(processDefinitionId);
+    const {data: processDefinitionState, isPending: isStatePending} =
+      useProcessDefinitionState(processDefinitionId);
+    const isDraining = processDefinitionState === 'DRAINING';
+    const isDeleted = processDefinitionState === 'DELETED';
 
     useEffect(() => {
       processInstancesStore.fetchRunningInstancesCount();
@@ -56,12 +59,14 @@ const ProcessOperations: React.FC<Props> = observer(
           {isOperationRunning && (
             <InlineLoading data-testid="delete-operation-spinner" />
           )}
-          {isDraining ? (
+          {isDraining && (
             <DrainingTag
               description={DRAINING_MESSAGES.version}
-              align="top-left"
+              align="bottom-right"
             />
-          ) : (
+          )}
+          {isDeleted && <DeletedTag />}
+          {!isDraining && !isDeleted && (
             <OperationItems>
               <DangerButton
                 title={
@@ -70,7 +75,11 @@ const ProcessOperations: React.FC<Props> = observer(
                     : `Delete Process Definition "${processName} - Version ${processVersion}"`
                 }
                 type="DELETE"
-                disabled={isOperationRunning || runningInstancesCount !== 0}
+                disabled={
+                  isOperationRunning ||
+                  isStatePending ||
+                  runningInstancesCount !== 0
+                }
                 onClick={() => {
                   tracking.track({
                     eventName: 'definition-deletion-button',
