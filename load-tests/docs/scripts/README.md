@@ -75,10 +75,10 @@ Runs every PromQL query defined in `queries.yaml` against a Prometheus HTTP endp
 ```
 
 **Arguments:**
-- `namespace` — exact namespace label, e.g. `c8-pgoyal-quicker-pr-1234`. Required.
-- `duration_seconds` — PromQL range-vector window. Default: `600`.
-- `endpoint` — Prometheus base URL. Default: `http://localhost:9090` (assumes `kubectl port-forward` is open).
-- `extra_curl_opts` — free-form curl options string, e.g. `--user "u:p"` for HTTP basic auth.
+- `namespace` - exact namespace label, e.g. `c8-pgoyal-quicker-pr-1234`. Required.
+- `duration_seconds` - PromQL range-vector window. Default: `600`.
+- `endpoint` - Prometheus base URL. Default: `http://localhost:9090` (assumes `kubectl port-forward` is open).
+- `extra_curl_opts` - free-form curl options string, e.g. `--user "u:p"` for HTTP basic auth.
 
 **Examples:**
 
@@ -98,6 +98,23 @@ Against the LDAP-protected ingress:
 ```
 
 zsh users: quote regex-looking arguments to avoid `no matches found` glob errors.
+
+## load_test_report
+
+Builds a wide JSON, CSV, or TSV report for one load-test namespace from Prometheus.
+The tool lives in its own Python subproject:
+[`load_test_report/`](load_test_report/).
+
+Quick start:
+
+```bash
+cd load-tests/docs/scripts/load_test_report
+make test
+uv run ./load_test_report.py c8-ck-baseline-20260814 --duration-seconds 1800
+```
+
+See [`load_test_report/README.md`](load_test_report/README.md) for setup, examples,
+query-file documentation, and the Makefile targets used by CI.
 
 ## PartitionDistribution.sh
 

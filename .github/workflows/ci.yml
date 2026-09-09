@@ -2720,9 +2720,11 @@ jobs:
         with:
           persist-credentials: false
       - name: Install test dependencies
-        run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
-      - name: Run unit tests
+        run: python3 -m pip install --quiet pytest uv==0.8.22 -r .github/actions/read-db-versions/requirements.txt
+      - name: Run repository script unit tests
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions
+      - name: Run load-test script unit tests
+        run: make -C load-tests/docs/scripts/load_test_report check
       - name: Observe build status
         if: always()
         continue-on-error: true

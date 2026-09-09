@@ -271,7 +271,7 @@ outputs:
         steps.filter-load-test-setup.outputs.load-test-setup-change == 'true'
       }}
   scripts-changes:
-    description: Output whether any file under .github/scripts/ or .ci/db-versions.yml changed, so their Python unit tests should be run
+    description: Output whether any Python-tested script changed, so their Python unit tests should be run
     value: >-
       ${{
         github.event_name == 'push' ||
@@ -543,6 +543,7 @@ runs:
         scripts-change:
           - '.github/scripts/**'
           - '.ci/db-versions.yml'
+          - 'load-tests/docs/scripts/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch
