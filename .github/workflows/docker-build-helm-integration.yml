@@ -1024,6 +1024,7 @@ jobs:
 
           DOWNSTREAM_CATEGORY="unknown"
           DOWNSTREAM_OWNER="@camunda/test-automation-team"
+          DOWNSTREAM_FAILED_JOB=""
 
           case "$DOWNSTREAM_CONCLUSION" in
             success)
@@ -1072,25 +1073,80 @@ jobs:
                   DOWNSTREAM_CATEGORY="unknown"
                 fi
               else
-                # The artifact was unreachable. Distinguish this from a
-                # genuinely "unknown" categorisation so consumers don't
-                # confuse "we couldn't tell" with "we tried and the data
-                # was ambiguous". This is an integration / permissions
-                # problem with the parent workflow (owned by Distribution,
-                # see TEST_OWNER above) -- not a downstream test failure,
-                # and not something monorepo-ci-medic has a runbook for.
+                # No report to read. Two very different causes hide behind that,
+                # and they have different owners:
+                #   - the downstream run never uploaded one, usually because its
+                #     own pre-test setup (org creation, cluster generation, lint)
+                #     failed and the test jobs were skipped -- a downstream SaaS
+                #     failure, owned by test-automation like every other one;
+                #   - the artifacts cannot be read at all (the dispatch GitHub
+                #     App installation lacks `actions: read` → 403, retention
+                #     expired → 404) -- an integration / permissions problem
+                #     with this parent workflow, owned by Distribution (see
+                #     TEST_OWNER above), and not something monorepo-ci-medic
+                #     has a runbook for.
+                # Listing the artifacts settles which one it is: a successful
+                # listing proves access, so no `json-report` in it means the
+                # downstream run never uploaded one. The total is counted too,
+                # because "uploaded nothing at all" (setup died) and "uploaded
+                # other artifacts but no report" (tests ran, the report upload
+                # or merge broke) are both test-automation's, but they are not
+                # the same bug to go looking for.
                 DOWNLOAD_ERR=$(tr '\n' ' ' < "$DOWNLOAD_LOG" 2>/dev/null | sed 's/  */ /g' | cut -c1-300)
                 echo "::warning::Could not download downstream json-report artifact: ${DOWNLOAD_ERR:-no stderr}" >&2
-                DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
-                DOWNSTREAM_OWNER="@camunda/distribution"
-                {
-                  echo "### Downstream Category Unavailable"
-                  echo ""
-                  echo "\`gh run download\` failed for run $RUN_ID on $TARGET_REPO."
-                  echo "Common causes: the dispatch GitHub App installation lacks \`actions: read\` on the downstream repo, or the artifact retention window has expired."
-                  echo ""
-                  echo "stderr: \`${DOWNLOAD_ERR:-(empty)}\`"
-                } >> "$GITHUB_STEP_SUMMARY"
+                ARTIFACT_NAMES="${WORK_DIR}/.artifact-names"
+                if gh api "/repos/$TARGET_REPO/actions/runs/$RUN_ID/artifacts?per_page=100" \
+                    --paginate --jq '.artifacts[].name' > "$ARTIFACT_NAMES" 2>/dev/null; then
+                  REPORT_COUNT=$(grep -c '^json-report' "$ARTIFACT_NAMES" || true)
+                  ARTIFACT_TOTAL=$(wc -l < "$ARTIFACT_NAMES" | tr -d '[:space:]')
+                else
+                  REPORT_COUNT="unreadable"
+                  ARTIFACT_TOTAL="unreadable"
+                fi
+                echo "downstream artifacts: total=$ARTIFACT_TOTAL json-report=$REPORT_COUNT"
+
+                if [[ "$REPORT_COUNT" == "0" ]]; then
+                  # Same verdict as an empty report (TOTAL == 0 above): no test
+                  # produced a result. DOWNSTREAM_OWNER already points at
+                  # test-automation, so only the category and the evidence change.
+                  DOWNSTREAM_CATEGORY="infrastructure"
+                  DOWNSTREAM_FAILED_JOB=$(gh api \
+                    "/repos/$TARGET_REPO/actions/runs/$RUN_ID/jobs?per_page=100" \
+                    --paginate --jq '.jobs[] | select(.conclusion == "failure") | .name' \
+                    2>/dev/null | head -n 1 || true)
+                  if [[ "$ARTIFACT_TOTAL" == "0" ]]; then
+                    WHAT="uploaded no artifacts at all, so it failed before any test ran"
+                  else
+                    WHAT="uploaded $ARTIFACT_TOTAL artifact(s) but no \`json-report\`, so either no test ran or the report upload/merge failed"
+                  fi
+                  {
+                    echo "### Downstream SaaS E2E Failure Without a Report"
+                    echo ""
+                    echo "Run $RUN_ID on $TARGET_REPO $WHAT."
+                    echo ""
+                    echo "First failing downstream job: \`${DOWNSTREAM_FAILED_JOB:-(unresolved)}\`"
+                  } >> "$GITHUB_STEP_SUMMARY"
+                else
+                  DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
+                  DOWNSTREAM_OWNER="@camunda/distribution"
+                  # Both remaining cases are parent-side plumbing, but they need
+                  # different first moves: an unreadable listing points at access
+                  # or retention, while a readable one that names a `json-report`
+                  # rules both out and leaves the download itself.
+                  if [[ "$REPORT_COUNT" == "unreadable" ]]; then
+                    CAUSE="Could not list the run's artifacts either. Common causes: the dispatch GitHub App installation lacks \`actions: read\` on the downstream repo, or the artifact retention window has expired."
+                  else
+                    CAUSE="The run has $REPORT_COUNT \`json-report\` artifact(s) and the listing succeeded, so access and retention are both fine — the download itself failed."
+                  fi
+                  {
+                    echo "### Downstream Category Unavailable"
+                    echo ""
+                    echo "\`gh run download\` failed for run $RUN_ID on $TARGET_REPO."
+                    echo "$CAUSE"
+                    echo ""
+                    echo "stderr: \`${DOWNLOAD_ERR:-(empty)}\`"
+                  } >> "$GITHUB_STEP_SUMMARY"
+                fi
               fi
               ;;
           esac
@@ -1112,8 +1168,11 @@ jobs:
               downstream_run_url:$downstream_run_url
             }' > "$CONTEXT_FILE"
 
-          echo "downstream_category=$DOWNSTREAM_CATEGORY" >> "$GITHUB_OUTPUT"
-          echo "downstream_owner=$DOWNSTREAM_OWNER" >> "$GITHUB_OUTPUT"
+          {
+            echo "downstream_category=$DOWNSTREAM_CATEGORY"
+            echo "downstream_owner=$DOWNSTREAM_OWNER"
+            echo "downstream_failed_job=$DOWNSTREAM_FAILED_JOB"
+          } >> "$GITHUB_OUTPUT"
           {
             echo "### Downstream SaaS E2E Failure Category"
             echo ""
@@ -1161,6 +1220,7 @@ jobs:
           DOWNSTREAM_OWNER: ${{ steps.downstream-category.outputs.downstream_owner }}
           DOWNSTREAM_URL: ${{ steps.wait-downstream.outputs.downstream_run_url }}
           DOWNSTREAM_CONCLUSION: ${{ steps.wait-downstream.outputs.downstream_conclusion }}
+          DOWNSTREAM_FAILED_JOB: ${{ steps.downstream-category.outputs.downstream_failed_job }}
         run: |
           set -euo pipefail
           case "${DOWNSTREAM_CATEGORY:-}" in
@@ -1186,6 +1246,12 @@ jobs:
 
           if [[ -n "${DOWNSTREAM_URL:-}" ]]; then
             EVIDENCE="Downstream SaaS E2E run ${DOWNSTREAM_CONCLUSION:-failed} (category: ${DOWNSTREAM_CATEGORY:-unresolved}) — ${DOWNSTREAM_URL}"
+            # Set only when the downstream run uploaded no json-report at all;
+            # naming the job saves the medic a click to find out whether it was
+            # org creation, the cluster, or lint.
+            if [[ -n "${DOWNSTREAM_FAILED_JOB:-}" ]]; then
+              EVIDENCE="${EVIDENCE} — no test report, first failing downstream job: \`${DOWNSTREAM_FAILED_JOB}\`"
+            fi
           else
             EVIDENCE="SaaS E2E dispatch or wait failed before a downstream run could be resolved."
           fi
