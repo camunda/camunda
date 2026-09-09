@@ -38,7 +38,7 @@ val copyStreamProtocol =
 val createProtocolSymlink =
   tasks.register("createProtocolSymlink") {
     val linkPath = layout.buildDirectory.file("protocol")
-    val targetDir = project(":zeebe-protocol").projectDir
+    val targetDir = layout.settingsDirectory.dir("zeebe/protocol").asFile
 
     inputs.property("targetDir", targetDir.absolutePath)
     // Don't track symlink as output - it points to a directory outside our build
@@ -71,7 +71,7 @@ val createProtocolSymlink =
 sbe {
   inputFiles.from(
     "src/main/resources/stream-protocol.xml",
-    project(":zeebe-protocol").file("src/main/resources/common-types.xml"),
+    layout.settingsDirectory.file("zeebe/protocol/src/main/resources/common-types.xml"),
   )
 }
 

@@ -20,7 +20,7 @@ plugins {
 
 val parentPomVersions =
   parsePomProperties(
-    providers.fileContents(rootProject.layout.projectDirectory.file("parent/pom.xml")).asText.get()
+    providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get()
   )
 
 extensions.configure<NodeExtension> {
