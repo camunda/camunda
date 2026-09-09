@@ -26,7 +26,6 @@ import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.JavaCompile
@@ -140,35 +139,22 @@ abstract class PatchRecordAssertTask : DefaultTask() {
 val assertjGeneratedDir = layout.buildDirectory.dir("generated-sources/assertj-assertions")
 val generatedAssertjClassesDir = layout.buildDirectory.dir("generated-classes/assertj")
 
-val protocolSourceSet = project(":zeebe-protocol")
-    .extensions
-    .getByType(SourceSetContainer::class)
-    .named("main")
-    .get()
-val securityProtocolSourceSet = project(":camunda-security-protocol")
-    .extensions
-    .getByType(SourceSetContainer::class)
-    .named("main")
-    .get()
-
-val protocolOutput = protocolSourceSet.output
-val protocolCompileClasspath = project(":zeebe-protocol").configurations.getByName("compileClasspath")
-val securityProtocolOutput = securityProtocolSourceSet.output
-val securityProtocolCompileClasspath =
-    project(":camunda-security-protocol").configurations.getByName("compileClasspath")
+// Use stable output locations for the producer projects instead of reading their mutable model.
+// The project dependencies below still provide the compile classpath and task graph edges.
+val protocolOutput = layout.settingsDirectory.dir("zeebe/protocol/build/classes/java/main")
+val securityProtocolOutput =
+  layout.settingsDirectory.dir("security/security-protocol/build/classes/java/main")
+val protocolCompileClasspath = configurations.compileClasspath
 
 val generateAssertjAssertions =
   tasks.register<GenerateAssertjAssertionsTask>("generateAssertjAssertions") {
     group = "code generation"
     description = "Generate AssertJ assertions for Zeebe protocol record types"
 
-    dependsOn(
-        project(":zeebe-protocol").tasks.named("classes"),
-        project(":camunda-security-protocol").tasks.named("classes"),
-    )
+    dependsOn(":zeebe-protocol:classes", ":camunda-security-protocol:classes")
 
-    classDirs.from(protocolOutput.classesDirs, securityProtocolOutput.classesDirs)
-    classpath.from(protocolCompileClasspath, securityProtocolCompileClasspath)
+    classDirs.from(protocolOutput, securityProtocolOutput)
+    classpath.from(protocolCompileClasspath)
     outputDir.set(assertjGeneratedDir)
 }
 
@@ -196,7 +182,7 @@ val compileGeneratedAssertjJava =
   tasks.register<JavaCompile>("compileGeneratedAssertjJava") {
     dependsOn(patchRecordAssert)
     source(assertjGeneratedDir)
-    classpath = sourceSets["main"].compileClasspath + protocolOutput + securityProtocolOutput
+    classpath = files(sourceSets["main"].compileClasspath, protocolOutput, securityProtocolOutput)
     destinationDirectory.set(generatedAssertjClassesDir)
     options.encoding = "utf-8"
 }
