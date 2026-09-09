@@ -9,7 +9,7 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect, test} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {defaultAssertionOptions} from '../constants';
+import {extendedAssertionOptions} from '../constants';
 import {validateResponse} from '../../json-body-assertions';
 import {createInstances} from '../zeebeClient';
 
@@ -53,7 +53,9 @@ export async function searchVariableByNameAndProcessInstanceKey(
     const json = await res.json();
     expect(json.items.length).toBeGreaterThan(0);
     localState['variable'] = json.items[0];
-  }).toPass(defaultAssertionOptions);
+    // Newly created variables have to propagate through the secondary-storage
+    // indexer, which can exceed 30s on a loaded RDBMS nightly cluster.
+  }).toPass(extendedAssertionOptions);
 
   return localState['variable'] as {
     variableKey: string;
