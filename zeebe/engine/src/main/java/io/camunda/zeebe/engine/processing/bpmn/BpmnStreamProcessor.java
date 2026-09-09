@@ -433,6 +433,7 @@ public final class BpmnStreamProcessor
                       context.getProcessDefinitionKey(),
                       context.getProcessInstanceKey(),
                       context.getRootProcessInstanceKey(),
+                      context.getStorageOrdinalKey(),
                       context.getBpmnProcessId(),
                       context.getTenantId(),
                       eventTrigger.getVariables());
