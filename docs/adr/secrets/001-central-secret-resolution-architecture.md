@@ -300,6 +300,16 @@ and customer data on the metrics endpoint.
   backwards can let an entry outlive its TTL. It can only delay expiry, never corrupt a value, and
   only a movement comparable to the TTL matters, which in practice means the controlled-clock tests
   rather than production.
+- **Only the leaf a reference was authored at is injected; a placeholder copied onward stays
+  literal.** Input mappings evaluate one after another, so a later mapping can read an earlier
+  mapping's target and carry the placeholder text with it. In `t = camunda.secrets.token` followed
+  by `copy = t`, deploy time recorded a reference at `/t` and nowhere else, so `/t` is injected and
+  `copy` reaches the worker as the literal `camunda.secrets.token`. This follows from D2 rather
+  than working around it: `copy`'s source is `t`, a variable, and a value that merely holds a
+  reference is runtime data. Resolving it would mean resolving whatever a variable happens to spell
+  out, which is the injection vector constraint 3 exists to exclude. A reference has to be written
+  where its value is meant to be used. Nothing reports the difference, so a worker that receives a
+  raw `camunda.secrets.<name>` has been handed a copy rather than an authored reference.
 - **A new operator-facing failure surface exists**: `SECRET_RESOLUTION_ERROR` incidents, raised
   either by a permanent resolution failure or by a failed injection, both of which keep the job
   parked until the incident is resolved.
