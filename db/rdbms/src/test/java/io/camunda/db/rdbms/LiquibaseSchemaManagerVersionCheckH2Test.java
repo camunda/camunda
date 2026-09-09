@@ -30,6 +30,8 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
   private static final String DB_URL = "jdbc:h2:mem:version-check-test;DB_CLOSE_DELAY=-1";
   private static final String PRE_8_10_CHANGE_LOG =
       "db/changelog/rdbms-exporter-pre-8-10/changelog-master.xml";
+  private static final String PRE_8_9_9_CHANGE_LOG =
+      "db/changelog/rdbms-exporter-8-9-0/changelog-master.xml";
 
   private JdbcDataSource dataSource;
 
@@ -138,8 +140,8 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
 
   @Test
   void shouldRejectUpgradeFromPreVersioningDatabaseWhenMinorVersionIsSkipped() throws Exception {
-    // given: a pre-8.10 database that pre-8.10 code finished
-    createCompletedPreVersioningSchema();
+    // given: an 8.9.0 database that never took the 8.9.9 patch
+    createCompleted890Schema();
 
     // when: start app with 8.11.0 (seeded schema=8.9.0, skips 8.10)
     final var manager = buildSchemaManager("8.11.0");
@@ -148,6 +150,21 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     assertThatThrownBy(manager::initialize)
         .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
         .hasMessageContaining("8.9.0")
+        .hasMessageContaining("8.11.0");
+  }
+
+  @Test
+  void shouldSeedThePatchLevelThePreVersioningSchemaReached() throws Exception {
+    // given: a pre-8.10 database that pre-8.10 code finished, 8.9.9 patch included
+    createCompletedPreVersioningSchema();
+
+    // when: start app with 8.11.0 (seeded schema=8.9.9, skips 8.10)
+    final var manager = buildSchemaManager("8.11.0");
+
+    // then: startup fails, naming the patch level the schema actually reached
+    assertThatThrownBy(manager::initialize)
+        .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
+        .hasMessageContaining("8.9.9")
         .hasMessageContaining("8.11.0");
   }
 
@@ -197,6 +214,22 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
 
     // then: an unfinished migration is not a legacy database, so nothing is seeded and the
     // migration is resumed rather than refused as an upgrade that skips a minor
+    assertThat(readSchemaVersion()).isEqualTo("8.11.0");
+  }
+
+  @Test
+  void shouldNotSeedPreVersioningVersionWhenAFirstMigrationWasInterruptedInThePatchChangesets()
+      throws Exception {
+    // given: a first migration by a build without the seed run that got all the way through
+    // 8.9.0.xml before it died inside 8.9.9.xml, the file the master changelog applies next
+    createSchemaInterruptedInsideThePatchChangesets();
+    assertThat(indexExists("IDX_AUDIT_LOG_ACTOR_ID")).isTrue();
+
+    // when: that half-created schema is picked up by 8.11.0, two minors on
+    buildSchemaManager("8.11.0").initialize();
+
+    // then: a schema stopped between two releases is no more a legacy database than one stopped at
+    // its first changeset, so nothing is seeded and the migration is resumed rather than refused
     assertThat(readSchemaVersion()).isEqualTo("8.11.0");
   }
 
@@ -258,12 +291,33 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
    * behind: a complete schema with no {@code RDBMS_SCHEMA_VERSION} table.
    */
   private void createCompletedPreVersioningSchema() throws Exception {
+    runChangeLog(PRE_8_10_CHANGE_LOG, "8.9.9");
+  }
+
+  /** The same, for a database still on 8.9.0 GA that never took the 8.9.9 patch. */
+  private void createCompleted890Schema() throws Exception {
+    runChangeLog(PRE_8_9_9_CHANGE_LOG, "8.9.0");
+  }
+
+  /**
+   * A first migration that applied all of {@code 8.9.0.xml} and then died after the first of the
+   * three columns {@code 8.9.9.xml} adds — a shape no release ever shipped.
+   */
+  private void createSchemaInterruptedInsideThePatchChangesets() throws Exception {
+    createCompleted890Schema();
+    try (final var conn = dataSource.getConnection();
+        final var stmt = conn.createStatement()) {
+      stmt.execute("ALTER TABLE DECISION_INSTANCE ADD COLUMN FULL_RESULT CLOB");
+    }
+  }
+
+  private void runChangeLog(final String changeLog, final String version) throws Exception {
     final var manager =
-        new LiquibaseSchemaManager(schemaConfig(), "8.9.9") {
+        new LiquibaseSchemaManager(schemaConfig(), version) {
           @Override
           protected SpringLiquibase buildRunner() {
             final var runner = super.buildRunner();
-            runner.setChangeLog(PRE_8_10_CHANGE_LOG);
+            runner.setChangeLog(changeLog);
             return runner;
           }
         };
