@@ -18,7 +18,7 @@ import {
   CharacterCount,
   IconButton,
   Input,
-  NavIcon,
+  type NavIcon,
   Textarea,
 } from "@camunda/design-system";
 import { Eye, EyeOff } from "@camunda/design-system/icons";
