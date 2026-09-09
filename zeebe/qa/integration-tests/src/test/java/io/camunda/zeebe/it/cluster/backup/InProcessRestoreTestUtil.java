@@ -57,15 +57,45 @@ public final class InProcessRestoreTestUtil {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+  /** Where a broker keeps its data underneath its working directory ({@code DataCfg}). */
+  private static final String BROKER_DATA_DIRECTORY = "data";
+
   private InProcessRestoreTestUtil() {}
+
+  /**
+   * The REST base the given physical tenant is addressed through: the client's own address for the
+   * default tenant, that address prefixed with {@code physical-tenants/<id>} for any other. Always
+   * ends in a {@code /}, so callers can append a path directly.
+   *
+   * <p>The tenant has to be put in the path here rather than taken from the client, even when the
+   * client was built for that same tenant: a physical-tenant client prefixes the path per request,
+   * so the address it exposes through {@link CamundaClient#getConfiguration()} is the bare one and
+   * a request built from it reaches the default tenant.
+   */
+  private static String restBase(final CamundaClient client, final String physicalTenantId) {
+    final var base =
+        client.getConfiguration().getRestAddress().toString().replaceAll("/+$", "") + "/";
+    return physicalTenantId == null
+            || PhysicalTenantsITHelper.DEFAULT_TENANT_ID.equals(physicalTenantId)
+        ? base
+        : base + "physical-tenants/" + physicalTenantId + "/";
+  }
 
   /** POSTs a restore request with the given body to {@code v2/restore} and returns the response. */
   static HttpResponse<String> sendRestoreRequest(
       final CamundaClient client, final Map<String, Object> body) {
+    return sendRestoreRequest(client, null, body);
+  }
+
+  /**
+   * POSTs a restore request with the given body to the given physical tenant's {@code v2/restore}
+   * and returns the response.
+   */
+  static HttpResponse<String> sendRestoreRequest(
+      final CamundaClient client, final String physicalTenantId, final Map<String, Object> body) {
     try (final var httpClient = HttpClient.newHttpClient()) {
       final var uri =
-          URI.create(
-              "%sv2/restore?dryRun=false".formatted(client.getConfiguration().getRestAddress()));
+          URI.create("%sv2/restore?dryRun=false".formatted(restBase(client, physicalTenantId)));
       final var request =
           HttpRequest.newBuilder(uri)
               .header("Content-Type", "application/json")
@@ -185,9 +215,18 @@ public final class InProcessRestoreTestUtil {
 
   /** GETs the current restore status from {@code v2/restore} and returns the parsed response. */
   static RestoreStatusResponse getRestoreStatus(final CamundaClient client) {
+    return getRestoreStatus(client, null);
+  }
+
+  /**
+   * GETs the given physical tenant's current restore status from its {@code v2/restore} and returns
+   * the parsed response. Fails the calling assertion while no restore is in progress for the
+   * tenant, which the endpoint answers with a 404.
+   */
+  static RestoreStatusResponse getRestoreStatus(
+      final CamundaClient client, final String physicalTenantId) {
     try (final var httpClient = HttpClient.newHttpClient()) {
-      final var uri =
-          URI.create("%sv2/restore".formatted(client.getConfiguration().getRestAddress()));
+      final var uri = URI.create("%sv2/restore".formatted(restBase(client, physicalTenantId)));
       final var request = HttpRequest.newBuilder(uri).GET().build();
       final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       assertThat(response.statusCode())
@@ -208,11 +247,24 @@ public final class InProcessRestoreTestUtil {
    */
   public static long changeMode(
       final CamundaClient client, final String mode, final boolean dryRun) {
+    return changeMode(client, null, mode, dryRun);
+  }
+
+  /**
+   * Triggers a mode change to the given mode over the given physical tenant's {@code v2/mode},
+   * asserting the request is accepted (200), and returns the id of the cluster configuration change
+   * it started.
+   */
+  public static long changeMode(
+      final CamundaClient client,
+      final String physicalTenantId,
+      final String mode,
+      final boolean dryRun) {
     try (final var httpClient = HttpClient.newHttpClient()) {
       final var uri =
           URI.create(
               "%sv2/mode?mode=%s&dryRun=%s"
-                  .formatted(client.getConfiguration().getRestAddress(), mode, dryRun));
+                  .formatted(restBase(client, physicalTenantId), mode, dryRun));
       final var request =
           HttpRequest.newBuilder(uri).method("PATCH", HttpRequest.BodyPublishers.noBody()).build();
       final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -405,6 +457,19 @@ public final class InProcessRestoreTestUtil {
   }
 
   /**
+   * GETs the given physical tenant's topology from its {@code v2/topology} and returns the raw
+   * response, so a caller can assert on which partitions each broker reports for that tenant.
+   *
+   * <p>Addressed by REST path rather than through {@code CamundaClient#newTopologyRequest} so that
+   * the tenant a request is scoped to is visible in the test, and never silently the default one.
+   */
+  static HttpResponse<String> sendTopologyRequest(
+      final CamundaClient client, final String physicalTenantId) {
+    final var uri = URI.create("%sv2/topology".formatted(restBase(client, physicalTenantId)));
+    return send(HttpRequest.newBuilder(uri).GET().build());
+  }
+
+  /**
    * Takes a snapshot of every partition of the given physical tenant on every broker of the
    * cluster, and waits for each to be persisted. A restore reads each broker's own backup of its
    * own replica, so a snapshot taken on one broker alone would leave the others' backups behind the
@@ -490,6 +555,19 @@ public final class InProcessRestoreTestUtil {
       Thread.currentThread().interrupt();
       throw new RuntimeException("Interrupted while sending request " + request.uri(), e);
     }
+  }
+
+  /**
+   * The directory the given broker keeps its copy of the given partition in, under its working
+   * directory. Tests that corrupt a replica on disk mutate what is under here.
+   */
+  static Path partitionDirectory(
+      final Path workingDirectory, final String partitionGroup, final int partitionId) {
+    return workingDirectory
+        .resolve(BROKER_DATA_DIRECTORY)
+        .resolve(partitionGroup)
+        .resolve("partitions")
+        .resolve(String.valueOf(partitionId));
   }
 
   /**
