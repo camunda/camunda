@@ -61,10 +61,10 @@ function getVariants(
   }
 
   const expiresAt =
-    license.expiresAt === null ? undefined : Date.parse(license.expiresAt);
+    license.expiresAt === null ? NaN : Date.parse(license.expiresAt);
   const now = Date.now();
 
-  if (expiresAt !== undefined && expiresAt < now) {
+  if (!Number.isNaN(expiresAt) && expiresAt < now) {
     variants.push({
       key: "non-commercial-expired",
       label: t("licenseNonCommercialExpiredLabel"),
@@ -72,7 +72,7 @@ function getVariants(
       description: t("licenseNonCommercialExpiredDescription"),
     });
   } else if (
-    expiresAt !== undefined &&
+    !Number.isNaN(expiresAt) &&
     expiresAt - EXPIRY_WARNING_THRESHOLD_MS < now
   ) {
     const daysLeft = Math.max(0, Math.floor((expiresAt - now) / DAY_MS));
