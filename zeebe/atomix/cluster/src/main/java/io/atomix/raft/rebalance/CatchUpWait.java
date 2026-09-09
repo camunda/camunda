@@ -81,9 +81,8 @@ final class CatchUpWait implements TransferPhase {
     }
 
     replication = leader.awaitReplication(desiredLeader, targetIndex);
-    replication.whenComplete(
+    replication.whenCompleteAsync(
         (ignored, error) -> {
-          raft.checkThread();
           if (completed) {
             return;
           }
@@ -98,7 +97,8 @@ final class CatchUpWait implements TransferPhase {
                 error);
             failWith(LeadershipTransferResult.LEADER_CHANGED);
           }
-        });
+        },
+        raft.getThreadContext());
 
     if (!completed) {
       final var remaining = Duration.ofMillis(deadlineMs - System.currentTimeMillis());
