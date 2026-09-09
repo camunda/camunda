@@ -304,6 +304,11 @@ test.describe('Process Instances Filters', () => {
       ).toBeVisible();
       await operateFiltersPanelPage.cancelVariableFilterModal();
       await operateFiltersPanelPage.cancelVariableFilterModal();
+      // The second Cancel closes the modal via a route change. Without waiting
+      // for it to fully unmount, the next step's openVariableFilterModal() can
+      // observe the still-closing dialog as "visible", skip re-opening it, and
+      // then time out looking for the operator control once the close settles.
+      await expect(operateFiltersPanelPage.variableFilterDialog).toBeHidden();
     });
 
     await test.step('Edit condition to use oneOf operator for multiple values', async () => {
@@ -886,6 +891,13 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         },
       });
+
+      // The process-instance-key filter is written to the URL on a debounce.
+      // Opening the variable filter modal navigates using the current URL, so
+      // opening it before that write commits drops the key from the query and
+      // the combined filter then matches the wrong result set. Wait for the URL
+      // to carry the key before leaving this filter.
+      await expect(page).toHaveURL(/[?&]processInstanceKey=/);
 
       await operateFiltersPanelPage.displayOptionalFilter('Variables');
       await operateFiltersPanelPage.openVariableFilterModal();
