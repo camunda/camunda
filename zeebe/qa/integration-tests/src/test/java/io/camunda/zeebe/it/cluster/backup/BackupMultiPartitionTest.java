@@ -56,15 +56,18 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
+@EnableRuleMigrationSupport
 class BackupMultiPartitionTest {
   @Container private static final MinioContainer S3 = new MinioContainer();
   private static final String JOB_TYPE = "test";
@@ -83,7 +86,6 @@ class BackupMultiPartitionTest {
   private BackupStore s3BackupStore;
   private S3BackupConfig s3ClientConfig;
   private String bucketName = null;
-  private GrpcClientRule client;
   private BackupRequestHandler backupRequestHandler;
   private BackupActuator backupActuator;
 
@@ -96,8 +98,15 @@ class BackupMultiPartitionTest {
           .withBrokerConfig(b -> b.withBrokerConfig(this::configureBackupStore))
           .build();
 
-  private void configureBackupStore(final BrokerCfg config) {
+  @Rule
+  public final GrpcClientRule client =
+      new GrpcClientRule(
+          builder -> {
+            final var gateway = cluster.availableGateway();
+            builder.restAddress(gateway.restAddress()).grpcAddress(gateway.grpcAddress());
+          });
 
+  private void configureBackupStore(final BrokerCfg config) {
     final var backupConfig = config.getData().getBackup();
     backupConfig.setStore(BackupStoreType.S3);
 
@@ -139,7 +148,6 @@ class BackupMultiPartitionTest {
 
   @BeforeEach
   void setup() {
-    client = new GrpcClientRule(cluster.newClientBuilder().build());
     backupActuator = BackupActuator.of(cluster.anyGateway());
     backupRequestHandler = new BackupRequestHandler(cluster.anyGateway().bean(BrokerClient.class));
     createBackupStoreForTest();
@@ -147,8 +155,7 @@ class BackupMultiPartitionTest {
 
   @AfterEach
   void close() {
-    // Create bucket before for storing backups
-    s3BackupStore.closeAsync();
+    s3BackupStore.closeAsync().join();
     // reset so that each test can use a different bucket name
     bucketName = null;
   }
