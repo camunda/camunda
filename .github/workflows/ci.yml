@@ -2720,8 +2720,12 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - name: Install test dependencies
-        run: python3 -m pip install --quiet pytest uv==0.8.22 -r .github/actions/read-db-versions/requirements.txt
+      - name: Install repository script test dependencies
+        if: needs.detect-changes.outputs.scripts-changes == 'true'
+        run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
+      - name: Install load-test script test dependencies
+        if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
+        run: python3 -m pip install --quiet uv==0.8.22
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions
