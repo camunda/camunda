@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.exporter.analytics.sampling.HashSampler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -87,6 +88,43 @@ class OtelSdkManagerTest {
 
     releaseLatch.countDown();
     manager.close();
+  }
+
+  /**
+   * The configured connect timeout, request timeout, and retry policy are applied to both OTLP
+   * exporters.
+   */
+  @Test
+  void shouldConfigureExplicitTimeoutAndRetryPolicyOnExporters() {
+    // given
+    final var config =
+        new AnalyticsExporterConfig()
+            .setHttpConnectTimeout("PT4S")
+            .setHttpRequestTimeout("PT7S")
+            .setHttpMaxRetryAttempts(2);
+    final var context =
+        AnalyticsExporterContext.create(
+            "test-license", "test-cluster", 1, "test-physical-tenant", "");
+    final var bridge = new MicrometerMeterProvider(new SimpleMeterRegistry());
+    final var manager = new OtelSdkManager();
+
+    // when
+    final var logExporter = manager.createLogExporter(config, context, bridge);
+    final var metricExporter = manager.createMetricExporter(config, context, bridge);
+
+    // then — toString() is the only way to observe the builder's applied timeout/retry settings
+    final var expectedConnectTimeoutNanos = config.getHttpConnectTimeout().toNanos();
+    final var expectedTimeoutNanos = config.getHttpRequestTimeout().toNanos();
+    final var expectedMaxAttempts = config.getHttpMaxRetryAttempts();
+
+    assertThat(logExporter.toString())
+        .contains("connectTimeoutNanos=" + expectedConnectTimeoutNanos)
+        .contains("timeoutNanos=" + expectedTimeoutNanos)
+        .contains("maxAttempts=" + expectedMaxAttempts);
+    assertThat(metricExporter.toString())
+        .contains("connectTimeoutNanos=" + expectedConnectTimeoutNanos)
+        .contains("timeoutNanos=" + expectedTimeoutNanos)
+        .contains("maxAttempts=" + expectedMaxAttempts);
   }
 
   /** Real OTLP transport to a refused port doesn't block or throw. */
@@ -335,7 +373,7 @@ class OtelSdkManagerTest {
   @Test
   void shouldExposeOtelSdkLogCreatedMetricInMicrometer() {
     // given
-    final var micrometerRegistry = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+    final var micrometerRegistry = new SimpleMeterRegistry();
     final var logExporter =
         io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter.create();
     final var manager = TestOtelSdkManager.inMemoryWithRegistry(logExporter, micrometerRegistry);
