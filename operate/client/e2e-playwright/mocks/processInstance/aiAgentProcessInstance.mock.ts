@@ -243,6 +243,9 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         metrics: {
           inputTokens: 1100,
           outputTokens: 120,
+          cacheCreationTokenCount: 900,
+          cacheReadTokenCount: 700,
+          reasoningTokenCount: 60,
           modelCalls: 2,
           toolCalls: 1,
         },
@@ -292,6 +295,9 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         metrics: {
           inputTokens: 650,
           outputTokens: 60,
+          cacheCreationTokenCount: 600,
+          cacheReadTokenCount: 500,
+          reasoningTokenCount: 30,
           durationMs: 2340,
         },
         commitStatus: 'COMMITTED',
@@ -393,6 +399,9 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         metrics: {
           inputTokens: 450,
           outputTokens: 60,
+          cacheCreationTokenCount: 300,
+          cacheReadTokenCount: 200,
+          reasoningTokenCount: 30,
           durationMs: 1340,
         },
         commitStatus: 'COMMITTED',
@@ -628,6 +637,9 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
         metrics: {
           inputTokens: 0,
           outputTokens: 0,
+          cacheCreationTokenCount: 0,
+          cacheReadTokenCount: 0,
+          reasoningTokenCount: 0,
           modelCalls: 0,
           toolCalls: 0,
         },
@@ -654,6 +666,9 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
         metrics: {
           inputTokens: 0,
           outputTokens: 0,
+          cacheCreationTokenCount: 0,
+          cacheReadTokenCount: 0,
+          reasoningTokenCount: 0,
           modelCalls: 0,
           toolCalls: 0,
         },

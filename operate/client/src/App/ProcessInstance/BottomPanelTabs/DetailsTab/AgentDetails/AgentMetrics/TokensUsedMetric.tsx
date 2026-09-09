@@ -7,17 +7,27 @@
  */
 
 import {LimitIndicator, MetricCard} from './MetricCard';
-import {TokenBreakdownContainer, TokenBreakdown} from './styled';
+import {
+  TokenBreakdownContainer,
+  TokenBreakdown,
+  TokenBreakdownColumn,
+} from './styled';
 
 type TokensUsedMetricProps = {
   inputTokens: number;
   outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  reasoningTokens: number;
   maxTokens: number;
 };
 
 const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
   inputTokens,
   outputTokens,
+  cacheReadTokens,
+  cacheCreationTokens,
+  reasoningTokens,
   maxTokens,
 }) => {
   const totalTokens = inputTokens + outputTokens;
@@ -26,14 +36,36 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
     <MetricCard title="Tokens Used" value={totalTokens}>
       <LimitIndicator current={totalTokens} limit={maxTokens} />
       <TokenBreakdownContainer>
-        <TokenBreakdown $dotColor="var(--cds-interactive)">
-          <span>Input</span>
-          <span>{inputTokens.toLocaleString()}</span>
-        </TokenBreakdown>
-        <TokenBreakdown $dotColor="var(--cds-support-warning)">
-          <span>Output</span>
-          <span>{outputTokens.toLocaleString()}</span>
-        </TokenBreakdown>
+        <TokenBreakdownColumn>
+          <TokenBreakdown $dotColor="var(--cds-interactive)">
+            <span>Input</span>
+            <span>{inputTokens.toLocaleString()}</span>
+          </TokenBreakdown>
+          <TokenBreakdown $dotColor="var(--cds-support-warning)">
+            <span>Output</span>
+            <span>{outputTokens.toLocaleString()}</span>
+          </TokenBreakdown>
+          {reasoningTokens > 0 && (
+            <TokenBreakdown $dotColor="var(--cds-status-gray)">
+              <span>Reasoning</span>
+              <span>{reasoningTokens.toLocaleString()}</span>
+            </TokenBreakdown>
+          )}
+        </TokenBreakdownColumn>
+        <TokenBreakdownColumn>
+          {cacheReadTokens > 0 && (
+            <TokenBreakdown $dotColor="var(--cds-status-gray)">
+              <span>Cache read</span>
+              <span>{cacheReadTokens.toLocaleString()}</span>
+            </TokenBreakdown>
+          )}
+          {cacheCreationTokens > 0 && (
+            <TokenBreakdown $dotColor="var(--cds-status-gray)">
+              <span>Cache write</span>
+              <span>{cacheCreationTokens.toLocaleString()}</span>
+            </TokenBreakdown>
+          )}
+        </TokenBreakdownColumn>
       </TokenBreakdownContainer>
     </MetricCard>
   );
