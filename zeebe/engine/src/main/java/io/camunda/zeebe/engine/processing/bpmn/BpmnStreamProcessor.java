@@ -457,6 +457,7 @@ public final class BpmnStreamProcessor
                   eventTrigger.getEventKey(),
                   context.getProcessDefinitionKey(),
                   eventTrigger.getProcessInstanceKey(),
+                  context.getStorageOrdinalKey(),
                   context.getTenantId(),
                   context.getElementInstanceKey(),
                   eventTrigger.getElementId());
