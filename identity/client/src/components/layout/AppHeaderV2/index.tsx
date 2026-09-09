@@ -16,6 +16,7 @@ import {
   AppSidebar,
   CamundaLogo,
   Text,
+  useIsMobile,
   type GlobalActionButton,
   type UserMenuItem,
 } from "@camunda/design-system";
@@ -85,6 +86,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
   const { t } = useTranslate("authentication");
   const { t: tNav } = useTranslate("navigation");
   const { pathname, search } = useLocation();
+  const isMobile = useIsMobile();
 
   const logoutWithNotification = useCallback(() => {
     enqueueNotification({
@@ -187,7 +189,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
           </ForwardRefLink>
         }
         breadcrumb={breadcrumb}
-        trailing={<LicenseBadges license={license} />}
+        trailing={isMobile ? undefined : <LicenseBadges license={license} />}
         globalActions={globalActions}
         actions={
           camundaUser === undefined ? undefined : (
