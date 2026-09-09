@@ -180,7 +180,10 @@ test.describe.parallel('Get User Task Form Tests', () => {
   test('Get user task form - not found - non existing user task', async ({
     request,
   }) => {
-    const nonExistingUserTaskKey = '2251799813711183';
+    // Partition 1 with a counter value the suite can never allocate, so this
+    // key cannot collide with a real (possibly form-less) user task created
+    // during the run — a collision would return 204 instead of the expected 404.
+    const nonExistingUserTaskKey = '4503599627370495';
     await expect(async () => {
       const res = await request.get(
         buildUrl('/user-tasks/{userTaskKey}/form', {
