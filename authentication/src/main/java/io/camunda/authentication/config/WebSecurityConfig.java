@@ -869,14 +869,12 @@ public class WebSecurityConfig {
         final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
       final var clientRegistrations = extractClientRegistrations(clientRegistrationRepository);
 
-      final var additionalJwkSetUrisByIssuer =
-          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
-
       if (clientRegistrations.size() == 1) {
         final var clientRegistration = clientRegistrations.getFirst();
-        final var additionalUris =
-            additionalJwkSetUrisByIssuer.get(
-                clientRegistration.getProviderDetails().getIssuerUri());
+        final var oidcConfig =
+            oidcProviderRepository.getOidcAuthenticationConfigurationById(
+                clientRegistration.getRegistrationId());
+        final var additionalUris = oidcConfig != null ? oidcConfig.getAdditionalJwkSetUris() : null;
         LOG.info(
             "Create Access Token JWT Decoder for OIDC Provider: {}",
             clientRegistration.getRegistrationId());
@@ -885,6 +883,8 @@ public class WebSecurityConfig {
                 oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
                     clientRegistration, additionalUris));
       } else {
+        final var additionalJwkSetUrisByIssuer =
+            buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
             clientRegistrations.stream()
