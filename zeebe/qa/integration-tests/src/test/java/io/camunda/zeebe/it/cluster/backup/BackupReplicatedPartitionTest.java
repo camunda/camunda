@@ -17,7 +17,7 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.it.cluster.clustering.ClusteringRuleExtension;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.test.testcontainers.MinioContainer;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -38,7 +38,7 @@ class BackupReplicatedPartitionTest {
   @Container private static final MinioContainer S3 = new MinioContainer();
   private static final String JOB_TYPE = "test";
   private String bucketName = null;
-  private GrpcClientRule client;
+  private ZeebeResourcesHelper resourcesHelper;
   private BackupRequestHandler backupRequestHandler;
 
   @RegisterExtension
@@ -71,7 +71,7 @@ class BackupReplicatedPartitionTest {
 
   @BeforeEach
   void setup() {
-    client = new GrpcClientRule(clusteringRule.getClient());
+    resourcesHelper = new ZeebeResourcesHelper(clusteringRule.getClient());
     backupRequestHandler = new BackupRequestHandler(clusteringRule.getGateway().getBrokerClient());
     // Create bucket before for storing backups
     final var s3ClientConfig =
@@ -99,7 +99,7 @@ class BackupReplicatedPartitionTest {
   void shouldQueryStatusOfBackupAfterLeaderChange()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given
-    client.createSingleJob(JOB_TYPE);
+    resourcesHelper.createSingleJob(JOB_TYPE);
     final long backupId = 1;
     backup(backupId);
     waitUntilBackupIsCompleted(backupId);
@@ -122,7 +122,7 @@ class BackupReplicatedPartitionTest {
   @Timeout(value = 120)
   void shouldTakeNewBackupAfterLeaderChange() {
     // given
-    client.createSingleJob(JOB_TYPE);
+    resourcesHelper.createSingleJob(JOB_TYPE);
     final long backupId = 1;
     backup(backupId);
     waitUntilBackupIsCompleted(backupId);
@@ -137,7 +137,7 @@ class BackupReplicatedPartitionTest {
             .orElseThrow();
     clusteringRule.forceNewLeaderForPartition(anyFollower, 1);
 
-    client.createSingleJob(JOB_TYPE);
+    resourcesHelper.createSingleJob(JOB_TYPE);
 
     // then
     final var newBackupId = 2;
