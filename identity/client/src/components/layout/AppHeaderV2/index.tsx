@@ -7,7 +7,6 @@
  */
 
 import {
-  C3LicenseTag,
   preview_C3ToolsArea as C3ToolsArea,
   preview_useCamundaTools as useCamundaTools,
   type UseCamundaToolsOptions,
@@ -20,7 +19,6 @@ import {
   type GlobalActionButton,
   type UserMenuItem,
 } from "@camunda/design-system";
-import type { License as LicenseDto } from "@camunda/camunda-api-zod-schemas/8.10";
 import { useCallback, useMemo, type MouseEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -34,6 +32,7 @@ import { authenticationQueries } from "src/utility/api/authentication/queries.ts
 
 import { ForwardRefLink } from "./ForwardRefLink";
 import { InfoMenu } from "./InfoMenu";
+import { LicenseBadges } from "./LicenseBadges";
 import { LogoutAwareUserMenu } from "./LogoutAwareUserMenu";
 import { ThemeSelector } from "./ThemeSelector";
 import { useBreadcrumbs } from "./useBreadcrumbs";
@@ -172,8 +171,6 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     [tNav],
   );
 
-  const licenseTag = getLicenseTag(license);
-
   return (
     <ToolsProvider>
       <AppHeader
@@ -190,17 +187,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
           </ForwardRefLink>
         }
         breadcrumb={breadcrumb}
-        trailing={
-          licenseTag.show ? (
-            <div className="flex items-center">
-              <C3LicenseTag
-                isProductionLicense={licenseTag.isProductionLicense}
-                isCommercial={licenseTag.isCommercial}
-                expiresAt={licenseTag.expiresAt}
-              />
-            </div>
-          ) : undefined
-        }
+        trailing={<LicenseBadges license={license} />}
         globalActions={globalActions}
         actions={
           camundaUser === undefined ? undefined : (
@@ -231,23 +218,5 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     </ToolsProvider>
   );
 };
-
-function getLicenseTag(license: LicenseDto | null | undefined) {
-  if (license === undefined || license === null) {
-    return {
-      show: true,
-      isProductionLicense: false,
-      isCommercial: false,
-      expiresAt: undefined,
-    };
-  }
-
-  return {
-    show: license.licenseType === undefined || license.licenseType != "saas",
-    isProductionLicense: license.validLicense,
-    isCommercial: license.isCommercial,
-    expiresAt: license.expiresAt ?? undefined,
-  };
-}
 
 export default AppHeaderV2;
