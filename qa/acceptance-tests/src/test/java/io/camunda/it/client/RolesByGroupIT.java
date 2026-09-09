@@ -15,6 +15,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.UUID;
@@ -35,6 +36,7 @@ public class RolesByGroupIT {
     createRole(EXISTING_ROLE_ID, "ARoleName", "description");
 
     Awaitility.await("Role is created and exported")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -120,6 +122,7 @@ public class RolesByGroupIT {
 
     // then
     Awaitility.await("Role was deleted and unassigned")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(() -> assertThat(searchRolesByGroupId(groupId).items()).isEmpty());
   }
@@ -140,6 +143,7 @@ public class RolesByGroupIT {
         .join();
 
     Awaitility.await("Group is assigned to the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -156,6 +160,7 @@ public class RolesByGroupIT {
 
     // then
     Awaitility.await("Group is unassigned from the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(() -> assertThat(searchRolesByGroupId(groupId).items()).isEmpty());
   }
@@ -355,6 +360,7 @@ public class RolesByGroupIT {
         .join();
 
     Awaitility.await("Group is assigned to the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -371,6 +377,7 @@ public class RolesByGroupIT {
 
     // then
     Awaitility.await("Group is unassigned from the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(() -> assertThat(searchRolesByGroupId(groupId).items()).isEmpty());
   }
@@ -399,6 +406,7 @@ public class RolesByGroupIT {
 
   private static void assertRoleAssignedToGroup(final String roleId, final String groupId) {
     Awaitility.await("Group is assigned to the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->

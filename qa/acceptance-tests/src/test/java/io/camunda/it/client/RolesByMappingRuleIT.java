@@ -15,6 +15,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -34,6 +35,7 @@ public class RolesByMappingRuleIT {
     createRole(EXISTING_ROLE_ID, "ARoleName", "description");
 
     Awaitility.await("Role is created and exported")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -94,6 +96,7 @@ public class RolesByMappingRuleIT {
 
     // then
     Awaitility.await("Mapping rule is unassigned from the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(() -> assertThat(searchMappingRuleByRole(roleId).items()).isEmpty());
   }
@@ -121,6 +124,7 @@ public class RolesByMappingRuleIT {
 
     // then
     Awaitility.await("Mapping rule is unassigned from deleted role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(() -> assertThat(searchMappingRuleByRole(roleId).items()).isEmpty());
   }
@@ -279,6 +283,7 @@ public class RolesByMappingRuleIT {
         .join();
     // when / then
     Awaitility.await("Mapping rule should be found by role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -352,6 +357,7 @@ public class RolesByMappingRuleIT {
         .join();
 
     Awaitility.await("Mapping rules are sorted by name")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -403,6 +409,7 @@ public class RolesByMappingRuleIT {
         .join();
 
     Awaitility.await("Mapping rules are sorted by claimName")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -454,6 +461,7 @@ public class RolesByMappingRuleIT {
         .join();
 
     Awaitility.await("Mapping rules are sorted by claimValue")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -503,6 +511,7 @@ public class RolesByMappingRuleIT {
         .join();
 
     Awaitility.await("Mapping rule is filtered by name")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -552,6 +561,7 @@ public class RolesByMappingRuleIT {
         .join();
 
     Awaitility.await("Mapping rule is filtered by claimName")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -600,6 +610,7 @@ public class RolesByMappingRuleIT {
         .join();
 
     Awaitility.await("Mapping rule is filtered by claimValue")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -634,6 +645,7 @@ public class RolesByMappingRuleIT {
   private static void verifyRoleIsAssignedToMappingRule(
       final String roleId, final String mappingRuleId) {
     Awaitility.await("Mapping rule is assigned to the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
