@@ -357,7 +357,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "@zeebe-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "text": "@distributed-systems-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                   }
                 }
               ]
