@@ -808,9 +808,27 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
-          STATE="$(gh api repos/camunda/c8-cross-component-e2e-tests/actions/workflows/playwright_saas_pr_trigger_monorepo.yml --jq .state)"
-          echo "Downstream workflow state: $STATE"
-          if [[ "$STATE" != "active" ]]; then
+          # Fail CLOSED on the gate (see the two dispatch/wait steps below,
+          # which require enabled == 'true' explicitly) but fail OPEN on
+          # inability to determine state: a transient API blip here must not
+          # silently skip real SaaS coverage on an otherwise-normal PR, so a
+          # retry-exhausted check falls back to the pre-this-PR behavior
+          # (dispatch as usual) rather than skipping.
+          STATE=""
+          for attempt in 1 2 3; do
+            if STATE="$(gh api repos/camunda/c8-cross-component-e2e-tests/actions/workflows/playwright_saas_pr_trigger_monorepo.yml --jq .state 2>&1)"; then
+              break
+            fi
+            echo "::warning::Attempt ${attempt}/3 to read downstream workflow state failed: $STATE" >&2
+            STATE=""
+            [[ $attempt -lt 3 ]] && sleep $((attempt * 5))
+          done
+
+          if [[ -z "$STATE" ]]; then
+            echo "::warning::Could not determine downstream workflow state after 3 attempts -- defaulting to enabled so a transient API issue doesn't silently skip real SaaS coverage."
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$STATE" != "active" ]]; then
+            echo "Downstream workflow state: $STATE"
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             {
               echo "### SaaS E2E tests skipped"
@@ -818,11 +836,12 @@ jobs:
               echo "The downstream workflow (\`playwright_saas_pr_trigger_monorepo.yml\` in camunda/c8-cross-component-e2e-tests) is currently **${STATE}**, not active -- skipping dispatch instead of waiting up to 35 minutes for a run that will never start."
             } >> "$GITHUB_STEP_SUMMARY"
           else
+            echo "Downstream workflow state: $STATE"
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Trigger repository_dispatch for SaaS Monorepo
-        if: steps.check-downstream.outputs.enabled != 'false'
+        if: steps.check-downstream.outputs.enabled == 'true'
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
@@ -854,7 +873,7 @@ jobs:
 
       - name: Wait for downstream workflow to finish
         id: wait-downstream
-        if: steps.check-downstream.outputs.enabled != 'false'
+        if: steps.check-downstream.outputs.enabled == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
