@@ -385,6 +385,7 @@ public final class CatchEventBehavior {
 
     final long processInstanceKey = context.getProcessInstanceKey();
     final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
+    final int storageOrdinalKey = context.getStorageOrdinalKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = context.getProcessDefinitionKey();
@@ -409,6 +410,7 @@ public final class CatchEventBehavior {
     subscription.setInterrupting(event.isInterrupting());
     subscription.setTenantId(context.getTenantId());
     subscription.setRootProcessInstanceKey(rootProcessInstanceKey);
+    subscription.setStorageOrdinalKey(storageOrdinalKey);
     subscription.setBusinessId(businessId);
     subscription.setElementType(event.getElementType());
 
@@ -429,6 +431,7 @@ public final class CatchEventBehavior {
         businessId,
         event.getId(),
         rootProcessInstanceKey,
+        storageOrdinalKey,
         event.getElementType());
 
     final String subscriptionMessageName = subscription.getMessageName();
@@ -666,6 +669,7 @@ public final class CatchEventBehavior {
     final String messageNameString = subscription.getRecord().getMessageName();
     final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
+    final int storageOrdinalKey = subscription.getRecord().getStorageOrdinalKey();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
     final long processDefinitionKey = subscription.getRecord().getProcessDefinitionKey();
     final String tenantId = subscription.getRecord().getTenantId();
@@ -683,6 +687,7 @@ public final class CatchEventBehavior {
     sendCloseMessageSubscriptionCommand(
         subscriptionPartitionId,
         processInstanceKey,
+        storageOrdinalKey,
         elementInstanceKey,
         processDefinitionKey,
         messageName,
@@ -703,6 +708,7 @@ public final class CatchEventBehavior {
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
       final long processInstanceKey,
+      final int storageOrdinalKey,
       final long elementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer messageName,
@@ -711,6 +717,7 @@ public final class CatchEventBehavior {
     return subscriptionCommandSender.closeMessageSubscription(
         subscriptionPartitionId,
         processInstanceKey,
+        storageOrdinalKey,
         elementInstanceKey,
         processDefinitionKey,
         messageName,
@@ -731,6 +738,7 @@ public final class CatchEventBehavior {
       final DirectBuffer businessId,
       final DirectBuffer elementId,
       final long rootProcessInstanceKey,
+      final int storageOrdinalKey,
       final BpmnElementType elementType) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
@@ -745,6 +753,7 @@ public final class CatchEventBehavior {
         businessId,
         elementId,
         rootProcessInstanceKey,
+        storageOrdinalKey,
         elementType);
   }
 

@@ -167,6 +167,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         .setElementId(subscriptionRecord.getElementIdBuffer())
         .setInterrupting(subscriptionRecord.isInterrupting())
         .setRootProcessInstanceKey(subscriptionRecord.getRootProcessInstanceKey())
+        .setStorageOrdinalKey(subscriptionRecord.getStorageOrdinalKey())
         // The correlate command sent from the message partition does not carry the businessId; it
         // was captured from the subscribing process instance at subscription-open time and
         // persisted on the subscription.
@@ -255,7 +256,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getProcessDefinitionKey(),
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageNameBuffer(),
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        subscription.getStorageOrdinalKey());
   }
 
   private void sendRejectionCommand(final ProcessMessageSubscriptionRecord subscription) {
@@ -269,7 +271,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getMessageNameBuffer(),
         subscription.getCorrelationKeyBuffer(),
         subscription.getTenantId(),
-        subscription.getSubscriptionKey());
+        subscription.getSubscriptionKey(),
+        subscription.getStorageOrdinalKey());
   }
 
   @Override
