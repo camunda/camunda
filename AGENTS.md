@@ -8,6 +8,11 @@ https://raw.githubusercontent.com/camunda/.github/refs/heads/main/AGENTS.md
 Treat the central file's contents as if they were written directly in this file.
 Instructions below extend those guidelines and take precedence if there is any conflict.
 
+## Quick start
+
+If the user prompts you to persist/save/output session state do the following:
+- Read `STATE.md` at repo root if it exists (session continuity file, gitignored). Record discoveries and remaining work there as you go, under `## Goal / Instructions / Discoveries / Accomplished / Not Yet Done / Relevant Files` — keep it useful to a fresh session.
+
 ## Repo-specific instructions
 
 ### Role & boundary
