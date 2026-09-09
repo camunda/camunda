@@ -62,6 +62,13 @@ ADR for that domain is written.
   (engine) paths, behavior-preserving, with the engine keeping its own
   anonymous/mt-off resolver rather than a decorator over the core provider
   (camunda-security-library#582).
+- `secrets/001-central-secret-resolution-architecture.md` records the central
+  secret resolution architecture: references established at authoring or write
+  time, placeholders on the log with values injected only into the job hand-out,
+  a memory-only lookup on the activation path with park-and-resolve on a miss,
+  store-owned per-store caching bounded by TTL and size, one store per physical
+  tenant configured under `camunda.secrets.*`, and per-reference
+  `SECRET:REVEAL` on the gateway path only (camunda/camunda#56572).
 - `orchestration-cluster/` — decisions spanning the broker, gateways, and
   auth/authz layer: JVM/JRE image strategy, physical-tenant request scoping,
   provider selection, authorization routing, gRPC authentication, configuration
