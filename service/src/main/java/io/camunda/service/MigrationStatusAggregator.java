@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +41,16 @@ public class MigrationStatusAggregator {
     final var physicalTenants = new LinkedHashMap<String, Map<String, MigrationConditionStatus>>();
 
     // Poll every provider concurrently rather than one at a time, so a slow provider doesn't add
-    // its own timeout on top of every other provider's.
+    // its own timeout on top of every other provider's. Explicitly named rather than the
+    // executor-less overload: this class must stay constructible on broker-only nodes with no
+    // ApiServicesExecutorProvider bean (the managed executor io.camunda.service normally requires),
+    // so it names the common pool that overload would have used anyway.
     final var pendingStatusesByProvider =
         providers.stream()
-            .map(provider -> CompletableFuture.supplyAsync(() -> safeGetMigrationStatus(provider)))
+            .map(
+                provider ->
+                    CompletableFuture.supplyAsync(
+                        () -> safeGetMigrationStatus(provider), ForkJoinPool.commonPool()))
             .toList();
     CompletableFuture.allOf(pendingStatusesByProvider.toArray(CompletableFuture<?>[]::new)).join();
 
