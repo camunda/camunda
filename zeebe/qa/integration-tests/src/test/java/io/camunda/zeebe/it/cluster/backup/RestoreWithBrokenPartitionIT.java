@@ -423,8 +423,7 @@ final class RestoreWithBrokenPartitionIT {
    * the other brokers' copies alone would satisfy every other assertion in this test, since they
    * hold the same data; only this one is about the replica that was broken.
    */
-  private static void awaitPartitionRestored(
-      final CamundaClient client, final String physicalTenantId) {
+  private void awaitPartitionRestored(final CamundaClient client, final String physicalTenantId) {
     Awaitility.await("the restored partition is healthy again on broker " + BROKEN_BROKER_ID)
         .atMost(Duration.ofMinutes(2))
         .untilAsserted(
@@ -432,14 +431,26 @@ final class RestoreWithBrokenPartitionIT {
                 assertThat(partitionsOfBrokenBroker(client, physicalTenantId))
                     .containsEntry(BROKEN_PARTITION_ID, "healthy")
                     .containsEntry(HEALTHY_PARTITION_ID, "healthy"));
+
+    // and - the broker's own partitions actuator serves them too. The recovery round trip replaced
+    // the partition manager twice, so this holds only while the admin service resolves the current
+    // manager per request rather than answering from the one captured at broker startup.
+    final var partitions = PartitionsActuator.of(brokenByBroker());
+    Awaitility.await("the partitions actuator answers from the post-restore partition manager")
+        .atMost(Duration.ofMinutes(1))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(partitions.query(physicalTenantId))
+                    .containsKeys(HEALTHY_PARTITION_ID, BROKEN_PARTITION_ID));
   }
 
   /**
    * The health the broken broker reports for each partition it holds of the given tenant, keyed by
-   * partition id. Read from the tenant's own topology rather than from the broker's partitions
-   * actuator: that actuator answers from the partition manager captured when the broker started
-   * ({@code BrokerAdminServiceStep}), so it reports nothing once a mode change has replaced the
-   * manager - which is exactly what this test does before every assertion that matters.
+   * partition id. Read from the tenant's own topology: it is fed by what each broker gossips about
+   * itself, so it observes the broken broker without depending on that broker's actuator plumbing.
+   * The actuator view is asserted separately in {@link #awaitPartitionRestored}, where it guards
+   * the admin service resolving the current partition manager rather than the boot-time one.
    */
   private static Map<Integer, String> partitionsOfBrokenBroker(
       final CamundaClient client, final String physicalTenantId) {

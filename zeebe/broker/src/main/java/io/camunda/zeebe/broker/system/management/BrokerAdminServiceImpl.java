@@ -22,12 +22,14 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthReport;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -40,10 +42,17 @@ import org.slf4j.Logger;
 public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private final PartitionManager partitionManager;
+  private final Supplier<PartitionManager> partitionManager;
 
-  public BrokerAdminServiceImpl(final PartitionManager partitionManager) {
+  public BrokerAdminServiceImpl(final Supplier<PartitionManager> partitionManager) {
     this.partitionManager = partitionManager;
+  }
+
+  private Collection<ZeebePartition> zeebePartitions() {
+    final var currentPartitionManager = partitionManager.get();
+    return currentPartitionManager == null
+        ? List.of()
+        : currentPartitionManager.getZeebePartitions();
   }
 
   @Override
@@ -71,12 +80,6 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     throw exportingControlRemoved();
   }
 
-  private static UnsupportedOperationException exportingControlRemoved() {
-    return new UnsupportedOperationException(
-        "This operation is no longer supported. Use the /actuator/exporting endpoint, or the"
-            + " /v2/exporting and /cluster/v2/exporting REST endpoints instead");
-  }
-
   @Override
   public void takeSnapshot() {
     actor.call(this::takeSnapshotOnAllPartitions);
@@ -86,7 +89,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   public Map<Integer, PartitionStatus> getPartitionStatus() {
     final CompletableFuture<Map<Integer, PartitionStatus>> future = new CompletableFuture<>();
     final Map<Integer, PartitionStatus> partitionStatuses = new ConcurrentHashMap<>();
-    final var partitions = partitionManager.getZeebePartitions();
+    final var partitions = zeebePartitions();
     actor.call(
         () -> {
           if (partitions.isEmpty()) {
@@ -117,6 +120,12 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
       LOG.warn("Error when querying partition status", e);
       return Map.of();
     }
+  }
+
+  private static UnsupportedOperationException exportingControlRemoved() {
+    return new UnsupportedOperationException(
+        "This operation is no longer supported. Use the /actuator/exporting endpoint, or the"
+            + " /v2/exporting and /cluster/v2/exporting REST endpoints instead");
   }
 
   private CompletableFuture<PartitionStatus> getPartitionStatus(final ZeebePartition partition) {
@@ -153,7 +162,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   private Map<Integer, HealthReport> getPartitionHealth() {
-    return partitionManager.getZeebePartitions().stream()
+    return zeebePartitions().stream()
         .collect(Collectors.toMap(ZeebePartition::getPartitionId, ZeebePartition::getHealthReport));
   }
 
@@ -225,7 +234,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private ActorFuture<List<Void>> pauseStreamProcessingOnAllPartitions() {
     LOG.info("Pausing StreamProcessor on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
+    return zeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::pauseProcessing)
         .collect(new ActorFutureCollector<>(actor));
@@ -233,7 +242,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private ActorFuture<List<Void>> resumeStreamProcessingOnAllPartitions() {
     LOG.info("Resume StreamProcessor on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
+    return zeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::resumeProcessing)
         .collect(new ActorFutureCollector<>(actor));
@@ -241,7 +250,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private ActorFuture<List<Void>> takeSnapshotOnAllPartitions() {
     LOG.info("Triggering Snapshots on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
+    return zeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::takeSnapshot)
         .collect(new ActorFutureCollector<>(actor));
