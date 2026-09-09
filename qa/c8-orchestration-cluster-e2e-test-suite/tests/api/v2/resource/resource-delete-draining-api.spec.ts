@@ -26,7 +26,6 @@ import {
   expectProcessInstanceCount,
   findUserTask,
   RESOURCE_DELETION_ENDPOINT,
-  searchProcessDefinitionItems,
   searchProcessInstances,
 } from '@requestHelpers';
 import {
@@ -82,6 +81,9 @@ async function historyBatchOperations(
     headers: jsonHeaders(),
     data: {
       filter: {operationType: 'DELETE_PROCESS_INSTANCE'},
+      // Newest first, so the operation this test is looking for is on the
+      // first page however many a shared cluster has already accumulated.
+      sort: [{field: 'startDate', order: 'DESC'}],
       page: {limit: DEFAULT_PAGE_LIMIT},
     },
   });
@@ -291,13 +293,10 @@ test.describe('Process Definition Draining Deletion API', () => {
       200,
     );
 
+    // Reaching DELETED at all is the assertion: camunda#60472 left the RDBMS
+    // row stuck at DRAINING while the engine finalized, so the poll times out
+    // rather than observing the terminal state.
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
-
-    expect(
-      await searchProcessDefinitionItems(request, {
-        filter: {processDefinitionId, state: 'DRAINING'},
-      }),
-    ).toHaveLength(0);
   });
 
   test('A call activity raises an incident when the child definition is draining', async ({
