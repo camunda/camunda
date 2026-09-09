@@ -1,7 +1,6 @@
 ---
-name: Set up Docker Buildx with retry
-
 # owner: @camunda/engineering-operations
+name: Set up Docker Buildx with retry
 
 description: >
   Runs `docker/setup-buildx-action` with retries: booting the builder pulls
