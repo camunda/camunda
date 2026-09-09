@@ -28,6 +28,7 @@ import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.Duration;
@@ -266,7 +267,7 @@ public class AgentHistoryCommitLifecycleIT {
 
     // then
     Awaitility.await("resent history item deduped, not double-applied")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -444,7 +445,7 @@ public class AgentHistoryCommitLifecycleIT {
 
     // then
     Awaitility.await("resent history item deduped across job activations, not double-applied")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -547,7 +548,7 @@ public class AgentHistoryCommitLifecycleIT {
     // Without this, the baseline check below could pass purely because it ran before the write
     // was even indexed, not because the CONFIGURATION change is genuinely deferred until commit.
     Awaitility.await("CONFIGURATION history item indexed as PENDING")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -600,7 +601,7 @@ public class AgentHistoryCommitLifecycleIT {
     camundaClient.newCompleteCommand(activatedJob).execute();
 
     Awaitility.await("agent instance definition reflects committed CONFIGURATION change")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -770,7 +771,7 @@ public class AgentHistoryCommitLifecycleIT {
   private void awaitHistoryStatuses(
       final long agentInstanceKey, final String description, final Tuple... expected) {
     Awaitility.await(description)
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {

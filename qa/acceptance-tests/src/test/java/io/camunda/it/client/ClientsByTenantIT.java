@@ -17,6 +17,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -54,6 +55,7 @@ public class ClientsByTenantIT {
 
     // then
     Awaitility.await("Clients are assigned to the tenant and can be searched")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

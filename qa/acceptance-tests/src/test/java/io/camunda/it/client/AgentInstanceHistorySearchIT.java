@@ -23,6 +23,7 @@ import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.Duration;
@@ -591,7 +592,7 @@ public class AgentInstanceHistorySearchIT {
       final Consumer<AgentInstanceHistoryFilter> filter,
       final int expectedCount) {
     Awaitility.await("agent history indexed")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
