@@ -1208,6 +1208,151 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
+  public void shouldRejectCreateWhenJobNotLeased() {
+    // given — the job is activated without a lease at all; a nonblank jobLease supplied on the
+    // command can never match a lease the job never held, so this must be rejected before the
+    // lease-mismatch check is even reached.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease("some-nonblank-lease-token")
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-1")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi"))))
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to update agent instance related to job with key '%d', but job has no "
+                    .formatted(jobKey)
+                + "lease token. The job must be activated with a lease before it can be "
+                + "referenced.");
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenJobNotLeased() {
+    // given — jobKey1 is activated with a lease and creates the agent instance, exactly like any
+    // other CREATE. jobKey2 belongs to a second process instance of the same job type and is
+    // activated without a lease: once a job has ever carried a lease token, JobBatchCollector
+    // skips it for any later lease-less activation (SKIPPED_LEASED), so a job can only end up
+    // ACTIVATED with no lease token at all by never having been leased in the first place. The
+    // UPDATE command below references jobKey2 to exercise that state; validateJobContext checks
+    // the referenced job's own lease before it ever compares elementInstanceKey, so jobKey2 not
+    // actually belonging to elementInstanceKey1 doesn't stand in the way of reaching that check.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey1 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey1 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey1)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var leasedBatch = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobKey1 =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey1)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var leasedToken =
+        leasedBatch
+            .getValue()
+            .getJobs()
+            .get(leasedBatch.getValue().getJobKeys().indexOf(jobKey1))
+            .getLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey1)
+            .withJobKey(jobKey1)
+            .withJobLease(leasedToken)
+            .create()
+            .getKey();
+
+    final var processInstanceKey2 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey2 =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey2)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey1)
+            .withJobKey(jobKey2)
+            .withJobLease("some-nonblank-lease-token")
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to update agent instance related to job with key '%d', but job has no "
+                    .formatted(jobKey2)
+                + "lease token. The job must be activated with a lease before it can be "
+                + "referenced.");
+  }
+
+  @Test
   public void shouldAcceptUpdateWithSupersededJobLeaseAndAccumulateItsMetrics() {
     // given
     ENGINE
