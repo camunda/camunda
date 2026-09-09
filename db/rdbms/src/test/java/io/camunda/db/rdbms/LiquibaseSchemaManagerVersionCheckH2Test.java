@@ -121,12 +121,12 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
   // ---- Acceptance criterion 5: Feature introduction in version 8.10 ----
 
   @Test
-  void shouldInferVersionFromExporterPositionTableWhenNoVersionTableExists() throws Exception {
+  void shouldSeedPreVersioningSchemaVersionWhenNoVersionTableExists() throws Exception {
     // given: create only EXPORTER_POSITION (simulating a pre-8.10 database that does NOT yet have
     // RDBMS_SCHEMA_VERSION)
     createExporterPositionTable();
 
-    // when: start app with 8.10.0 (valid upgrade from inferred 8.9.0)
+    // when: start app with 8.10.0 (valid upgrade from the seeded 8.9.0)
     final var manager = buildSchemaManager("8.10.0");
     manager.initialize();
 
@@ -139,14 +139,48 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     // given: create only EXPORTER_POSITION (simulating a pre-8.10 database)
     createExporterPositionTable();
 
-    // when: start app with 8.11.0 (inferred schema=8.9.0, skips 8.10)
+    // when: start app with 8.11.0 (seeded schema=8.9.0, skips 8.10)
     final var manager = buildSchemaManager("8.11.0");
 
     // then: startup fails
     assertThatThrownBy(manager::initialize)
         .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
-        .hasMessageContaining(RdbmsSchemaVersionStore.INFERRED_PRE_VERSIONING_SCHEMA_VERSION)
+        .hasMessageContaining("8.9.0")
         .hasMessageContaining("8.11.0");
+  }
+
+  // ---- #62554: a schema being created must never read as a pre-versioning one ----
+
+  @Test
+  void shouldRecordSchemaVersionBeforeCreatingAnyMigratedTable() throws Exception {
+    // given: a completely fresh database
+
+    // when: only the schema-version seed step has run, which is the earliest point at which any
+    // node — this one or a peer starting alongside it — can observe this schema
+    buildSchemaManager("8.11.0").seedSchemaVersion();
+
+    // then: the version table is already there, and none of the migrated tables are. A peer can
+    // therefore never see EXPORTER_POSITION without RDBMS_SCHEMA_VERSION, which is the shape it
+    // used to mistake for a pre-versioning 8.9.x database.
+    assertThat(tableExists("RDBMS_SCHEMA_VERSION")).isTrue();
+    assertThat(tableExists("EXPORTER_POSITION")).isFalse();
+    // and no version is claimed for a schema that has not been migrated yet
+    assertThat(readSchemaVersion()).isNull();
+  }
+
+  @Test
+  void shouldNotSeedPreVersioningVersionWhenSchemaIsAlreadyPast8_10() throws Exception {
+    // given: a schema migrated to 8.10 but carrying no recorded version — a database from a build
+    // that predates the seed run, whose version write did not land
+    runMasterChangelogOnly();
+    assertThat(readSchemaVersion()).isNull();
+
+    // when: start app with 8.11.0
+    buildSchemaManager("8.11.0").initialize();
+
+    // then: the tables 8.10 creates are positive evidence that this is not a pre-versioning
+    // schema, so nothing is seeded and the upgrade is not refused as a skipped minor
+    assertThat(readSchemaVersion()).isEqualTo("8.11.0");
   }
 
   // ---- helpers ----
@@ -182,6 +216,25 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
               + "LAST_UPDATED TIMESTAMP, "
               + "CONSTRAINT PK_EXPORTER_POSITION PRIMARY KEY (PARTITION_ID)"
               + ")");
+    }
+  }
+
+  /**
+   * Applies the master changelog on its own, without the schema-version seed run and without
+   * recording a version — what a build from before #62554 left behind if its version write failed.
+   */
+  private void runMasterChangelogOnly() throws Exception {
+    final var manager = buildSchemaManager("8.10.0");
+    manager.performMigration(manager.buildRunner());
+  }
+
+  private boolean tableExists(final String tableName) throws Exception {
+    try (final var conn = dataSource.getConnection();
+        final var rs =
+            conn.getMetaData()
+                .getTables(
+                    conn.getCatalog(), conn.getSchema(), tableName, new String[] {"TABLE"})) {
+      return rs.next();
     }
   }
 

@@ -40,13 +40,6 @@ import org.slf4j.LoggerFactory;
 public class RdbmsSchemaVersionStore {
 
   /**
-   * The schema version that is inferred when the {@code RDBMS_SCHEMA_VERSION} table does not yet
-   * exist but the {@code EXPORTER_POSITION} table is present. This indicates an existing database
-   * that was created before version tracking was introduced (i.e. a 8.9.x database).
-   */
-  protected static final String INFERRED_PRE_VERSIONING_SCHEMA_VERSION = "8.9.0";
-
-  /**
    * The table that tracks the RDBMS schema version applied by this application. An entry is
    * written/updated after every successful Liquibase migration run.
    */
@@ -80,13 +73,10 @@ public class RdbmsSchemaVersionStore {
    *       RdbmsSchemaVersionIndeterminateException}.
    *   <li>If the data source is {@code null}, startup is aborted with an {@link
    *       RdbmsSchemaVersionIndeterminateException}.
-   *   <li>If the {@code RDBMS_SCHEMA_VERSION} table does not exist or contains no row (fresh DB or
-   *       pre-versioning database):
-   *       <ul>
-   *         <li>If {@code EXPORTER_POSITION} table exists → infer schema version as {@link
-   *             #INFERRED_PRE_VERSIONING_SCHEMA_VERSION} (an existing 8.9.x database).
-   *         <li>Otherwise → fresh database; skip the check entirely.
-   *       </ul>
+   *   <li>If the {@code RDBMS_SCHEMA_VERSION} table does not exist or contains no row, the schema
+   *       is new and has no upgrade path to validate; skip the check entirely. A schema that
+   *       predates version tracking is not one of those cases: it arrives here with 8.9.0 already
+   *       recorded by {@code schema-version-seed.xml}. See {@link #readSchemaVersion}.
    *   <li>Validates the transition. Only same-version, patch-upgrade, and next-minor-upgrade paths
    *       allow startup to continue. Incompatible paths throw a {@link
    *       RdbmsSchemaVersionIncompatibleException}. An indeterminate path (e.g. the stored schema
@@ -107,9 +97,9 @@ public class RdbmsSchemaVersionStore {
     }
 
     try (final var connection = dataSource.getConnection()) {
-      final var currentSchemaVersion = resolveCurrentSchemaVersion(connection, prefix);
+      final var currentSchemaVersion = readSchemaVersion(connection, prefix);
       if (currentSchemaVersion == null) {
-        // Fresh database – no version check needed.
+        // A new schema, with no recorded version and so no upgrade path to validate.
         return;
       }
 
@@ -169,7 +159,7 @@ public class RdbmsSchemaVersionStore {
     }
 
     try (final var connection = dataSource.getConnection()) {
-      final var currentSchemaVersion = resolveCurrentSchemaVersion(connection, prefix);
+      final var currentSchemaVersion = readSchemaVersion(connection, prefix);
       if (currentSchemaVersion == null) {
         return CurrentSchemaVersion.freshDatabase(prefix);
       }
@@ -252,39 +242,19 @@ public class RdbmsSchemaVersionStore {
   }
 
   /**
-   * Resolves the current schema version. Returns:
+   * Reads the schema version from {@code RDBMS_SCHEMA_VERSION}, which is the only thing this class
+   * will believe about a schema's version. Returns {@code null} if the table does not exist or
+   * contains no rows, and the caller skips the check either way, because neither shape belongs to a
+   * schema whose version is knowable: no table means nothing has migrated this schema yet, and an
+   * empty table means {@code LiquibaseSchemaManager} has created it but the first migration has not
+   * finished recording a version. Both are new schemas, and a new schema has no upgrade path to
+   * refuse. Propagates any unexpected {@link SQLException}.
    *
-   * <ul>
-   *   <li>The version string from {@code RDBMS_SCHEMA_VERSION} if the table exists and has a row.
-   *   <li>{@link #INFERRED_PRE_VERSIONING_SCHEMA_VERSION} if the {@code EXPORTER_POSITION} table
-   *       exists but {@code RDBMS_SCHEMA_VERSION} does not (existing 8.9.x database).
-   *   <li>{@code null} for a completely fresh database (no known tables).
-   * </ul>
-   */
-  @VisibleForTesting
-  protected String resolveCurrentSchemaVersion(final Connection connection, final String prefix)
-      throws SQLException {
-    final var versionFromTable = readSchemaVersion(connection, prefix);
-    if (versionFromTable != null) {
-      return versionFromTable;
-    }
-
-    // No version in table (table may not exist yet). Check for pre-versioning database.
-    if (tableExists(connection, prefix + "EXPORTER_POSITION")) {
-      LOG.info(
-          "[RDBMS Schema] RDBMS_SCHEMA_VERSION table not found but EXPORTER_POSITION exists. "
-              + "Inferring schema version as {} (pre-versioning database).",
-          INFERRED_PRE_VERSIONING_SCHEMA_VERSION);
-      return INFERRED_PRE_VERSIONING_SCHEMA_VERSION;
-    }
-
-    // Fresh database.
-    return null;
-  }
-
-  /**
-   * Reads the schema version from {@code RDBMS_SCHEMA_VERSION}. Returns {@code null} if the table
-   * does not exist or contains no rows. Propagates any unexpected {@link SQLException}.
+   * <p>A schema that predates version tracking does have a knowable version, and it is knowable
+   * here because {@code schema-version-seed.xml} records 8.9.0 for it before this is ever read.
+   * Deducing it here instead — from {@code EXPORTER_POSITION} being present while {@code
+   * RDBMS_SCHEMA_VERSION} was not — is what #62554 was: on a fresh database that is also, for
+   * almost the whole of a first migration, precisely what a peer node sees.
    */
   @VisibleForTesting
   protected String readSchemaVersion(final Connection connection, final String prefix)
