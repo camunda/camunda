@@ -25,9 +25,11 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <!--
-    Same table as create_rdbms_schema_version_table in changesets/8.10.0.xml, created here first;
-    whichever run gets there first wins and the other marks its changeset ran. The master changelog
-    stays the definition of record — it always runs after this one, so it applies any later columns.
+    The same table as create_rdbms_schema_version_table in changesets/8.10.0.xml. Whichever run
+    reaches it first creates the table and the other marks its changeset ran, so the two definitions
+    have to stay identical. Neither can be edited once released anyway — Liquibase checksums make an
+    executed changeset immutable — so changing this table later means a new addColumn changeset in
+    changesets/, which applies however the table was created.
   -->
   <changeSet id="create_rdbms_schema_version_table_before_migration" author="camunda">
     <preConditions onFail="MARK_RAN">
@@ -47,18 +49,28 @@
 
   <!--
     Records 8.9.0 for a schema that predates version tracking — the one case the check cannot
-    otherwise know about, since an 8.9.x database carries no version row. DEPLOYED_RESOURCE is the
-    first table changesets/8.10.0.xml creates, so EXPORTER_POSITION without it means pre-8.10 code
-    built this schema. That signal is only trustworthy because the changelog lock is held here: a
-    fresh database has neither table yet and a migrated one has both, so both mark this ran.
+    otherwise know about, since an 8.9.x database carries no version row.
+
+    IDX_AUDIT_LOG_ACTOR_ID is the artifact of the last changeset in changesets/8.9.0.xml and shipped
+    before 8.9.0 GA, so its presence means every pre-8.10 changeset ran. DEPLOYED_RESOURCE is the
+    first table changesets/8.10.0.xml creates, so its absence means none of 8.10's did. Together
+    they identify a schema that pre-8.10 code finished, which a first migration interrupted part-way
+    is not — that one is left unseeded so the master run can resume it instead of being refused as
+    an upgrade that skips a minor. Presence is only a trustworthy signal at all because this runs
+    inside the changelog lock, where no peer can be part-way through creating what it reads.
+
+    The row count keeps the insert idempotent. Liquibase commits a changeset's changes before it
+    records the changeset, so a crash in between would otherwise retry into a primary-key violation
+    on ID = 1.
   -->
   <changeSet id="seed_pre_versioning_schema_version" author="camunda">
     <preConditions onFail="MARK_RAN">
       <and>
-        <tableExists tableName="${prefix}EXPORTER_POSITION"/>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_ACTOR_ID" tableName="${prefix}AUDIT_LOG"/>
         <not>
           <tableExists tableName="${prefix}DEPLOYED_RESOURCE"/>
         </not>
+        <sqlCheck expectedResult="0">SELECT COUNT(*) FROM ${prefix}RDBMS_SCHEMA_VERSION</sqlCheck>
       </and>
     </preConditions>
     <insert tableName="${prefix}RDBMS_SCHEMA_VERSION">
