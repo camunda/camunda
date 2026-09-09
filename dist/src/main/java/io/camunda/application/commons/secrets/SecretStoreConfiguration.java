@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,9 +187,20 @@ public class SecretStoreConfiguration {
     // sequential backend calls it issues: wrapping a noop, container, or already-single-call store
     // would only add a thread hop with nothing to overlap. Threads are virtual (one per chunk, not
     // one per permit), so the semaphore alone bounds how many backend calls are in flight at once;
-    // the pool itself holds no threads to leak if it is never explicitly shut down.
-    if (maxConcurrency > 1
-        && stores.values().stream().anyMatch(store -> store.namesPerCall() < Integer.MAX_VALUE)) {
+    // the pool itself holds no threads to leak if it is never explicitly shut down. It is also
+    // never shut down on the happy path: it is owned by this Spring singleton bean, so it lives for
+    // the application's lifetime, the same as the registry it backs. The only effect of that is
+    // that in-flight resolutions are not interrupted at shutdown, which is acceptable for calls
+    // this
+    // short-lived.
+    // computed once, rather than calling namesPerCall() again per store below, since a store
+    // answers with the same value for the life of this method
+    final var concurrencyEligibleIds =
+        stores.entrySet().stream()
+            .filter(entry -> entry.getValue().namesPerCall() < Integer.MAX_VALUE)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
+    if (maxConcurrency > 1 && !concurrencyEligibleIds.isEmpty()) {
       final var pool =
           Executors.newThreadPerTaskExecutor(
               Thread.ofVirtual().name("secret-resolution-" + tenantId + "-", 0).factory());
@@ -196,7 +208,7 @@ public class SecretStoreConfiguration {
       final var semaphore = new Semaphore(maxConcurrency, true);
       stores.replaceAll(
           (id, store) ->
-              store.namesPerCall() < Integer.MAX_VALUE
+              concurrencyEligibleIds.contains(id)
                   ? new ConcurrentSecretStore(store, pool, semaphore)
                   : store);
     }
