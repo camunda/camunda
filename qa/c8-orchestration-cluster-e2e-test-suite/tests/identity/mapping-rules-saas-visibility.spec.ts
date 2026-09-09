@@ -12,6 +12,7 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {LOGIN_CREDENTIALS} from 'utils/constants';
 import {mockOIDCModeUI} from 'utils/mockOIDCModeUI';
+import {relativizePath, Paths} from 'utils/relativizePath';
 
 test.describe('mapping rules visibility on SaaS', () => {
   test.afterEach(async ({page}, testInfo) => {
@@ -35,6 +36,8 @@ test.describe('mapping rules visibility on SaaS', () => {
       LOGIN_CREDENTIALS.password,
     );
 
+    // Anchor on an unconditional nav item: toBeHidden() alone also passes if the sidebar never renders.
+    await expect(identityMappingRulesPage.rolesNavItem).toBeVisible();
     await expect(identityMappingRulesPage.mappingRulesNavItem).toBeHidden();
   });
 
@@ -54,8 +57,16 @@ test.describe('mapping rules visibility on SaaS', () => {
       LOGIN_CREDENTIALS.password,
     );
 
+    // Regression guard: unhiding the route must not change the index redirect.
+    await expect(page).not.toHaveURL(relativizePath(Paths.mappingRules()));
+
     await expect(identityMappingRulesPage.mappingRulesNavItem).toBeVisible();
     await identityMappingRulesPage.mappingRulesNavItem.click();
-    await expect(identityMappingRulesPage.mappingRulesList).toBeVisible();
+
+    // URL + Create button hold whether or not rules already exist on this shared cluster.
+    await expect(page).toHaveURL(relativizePath(Paths.mappingRules()));
+    await expect(
+      identityMappingRulesPage.createMappingRuleButton,
+    ).toBeVisible();
   });
 });
