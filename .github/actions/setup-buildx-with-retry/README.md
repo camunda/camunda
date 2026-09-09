@@ -42,6 +42,15 @@ needs them. The builder it creates becomes the active one for the job, which is 
 - **Three attempts, 10s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
   composite action has no loop, so `max_attempts` would have to change the number of steps in the
   file. Change the count by adding or removing an attempt block.
+- **The whole retry window is ~22 seconds, and almost all of it is sleep.** Measured in
+  [run 34330823597](https://github.com/camunda/camunda/actions/runs/34330823597): an unreachable
+  registry fails the boot in 0.7–0.9s, so three attempts plus two 10s gaps gave up 22.3s after the
+  step started. This is the narrowest window of the three retry actions, because this is the
+  fastest-failing wrapped action. It protects against a blip, **not an outage.** The throttling
+  window behind INC-7723 lasted 30 minutes; neither this configuration nor the
+  `Wandalen/wretry.action` one it replaced (identical `attempt_limit: 3` / `attempt_delay: 10000`)
+  would have saved a single one of those jobs. What fixes that failure mode is that nothing is
+  fetched at runtime any more — see below.
 - **Editing one attempt means editing all three.** The `with:` blocks must stay identical, including
   the pinned `docker/setup-buildx-action` SHA. A mismatch means an attempt silently boots a different
   builder from its predecessor.
@@ -50,13 +59,30 @@ needs them. The builder it creates becomes the active one for the job, which is 
 - **Gating on the immediate predecessor is enough.** A skipped step reports `outcome: skipped`, never
   `failure`, so attempt 3 can only run if attempt 2 ran and failed — which in turn required attempt 1
   to fail. No cumulative `&&` chain is needed.
-- **What a retried boot leaves behind is not fully characterised.** `setup-buildx-action` names its
-  builder itself and registers a `post:` teardown; whether a partly-booted builder from a failed
-  attempt is cleaned up, and whether the retry leaves more than one registered, has not been probed.
-  It has not caused a problem, but do not assume the state is clean if you are debugging a builder
-  that behaves oddly after a retry.
-- **A failed attempt still emits its error annotations.** They stay in the job log even when a later
-  attempt succeeds, so a green job can contain red annotations from this action.
+- **A retry leaves one builder per attempt registered for the rest of the job, and all of them are
+  torn down.** Each attempt calls `docker buildx create` with its own generated name, and each
+  registers its own `post:` hook — including attempts that failed. Observed in
+  [run 34330823597](https://github.com/camunda/camunda/actions/runs/34330823597), where three
+  attempts produced three builders and post-job cleanup removed all three:
+
+  ```
+  docker buildx rm builder-c05196a0-…  removed   (attempt 3)
+  docker buildx rm builder-8c43ea87-…  removed   (attempt 2)
+  docker buildx rm builder-cb0753dc-…  removed   (attempt 1)
+  ```
+
+  So nothing leaks, but `docker buildx ls` is not a reliable way to identify *which* builder a
+  later step used after a retry — the last successful attempt's builder is the active one, and the
+  dead ones from earlier attempts are still listed alongside it.
+
+- **A failed attempt still emits its error annotations.** `continue-on-error` absorbs the *step*, but
+  the annotation is already published to the check run and annotations have no notion of being
+  absorbed — so a green job can carry red annotations from this action.
+  [`post-ci-failure-reasons`](../post-ci-failure-reasons) filters on job conclusion before it reads
+  annotations, so a job that recovered produces no PR comment. The residual effect: if the job later
+  fails for an unrelated reason, that comment will list these already-retried errors alongside the
+  real one.
+
 - No failure classification: a genuine error (bad `driver-opts`, a missing `endpoint` context) costs
   all three attempts before the job reports red.
 
