@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Experimental Gradle build integration in CI | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Experimental Gradle build integration in CI | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Carlo Sana"><meta data-rh="true" property="og:description" content="DRI: Carlo Sana"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-52869/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-52869/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-52869/assets/js/runtime~main.6ba6678d.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-52869/assets/js/main.d165bca4.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-52869/assets/js/runtime~main.72f70416.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-52869/assets/js/main.2979728b.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -27,14 +27,17 @@ it can drift whenever <code>pom.xml</code> files or Java sources change.</p>
 replacing Maven&#x27;s authoritative application tests. The Gradle compilation check is additive and
 runs in Unified CI for pull requests, merge groups, and protected branch pushes. It compiles both
 production and test sources with <code>./gradlew testClasses</code>.</p>
-<p>The full Gradle test path is selected automatically for a pull request whose complete change set
-consists of Gradle build inputs. A mixed pull request must continue to use Maven for the application
-test path, even when it also contains Gradle changes.</p>
+<p>The experimental Gradle application test path is selected automatically for pure Gradle-only pull
+requests. Other non-Java, non-Maven pull requests can opt in through the <code>gradle-build</code> label,
+allowing CI-only changes to exercise the Gradle path without allowing Java, Maven-build,
+merge-queue, or push runs to select Gradle. Unlabeled and non-PR runs continue to use Maven.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
-<p><strong>D1. Maven remains authoritative for code and Maven-build changes.</strong></p>
-<p>For every pull request that changes Java sources or Maven build inputs, Maven remains the
-authoritative application test path. The Gradle compilation check is additive and must not replace,
-skip, or gate those Maven tests.</p>
+<p><strong>D1. Maven remains the default and the landing-gate authority.</strong></p>
+<p>Maven remains the authoritative application test path for unlabeled pull requests, pull requests
+with Java or Maven-build changes, merge groups, and pushes. Pure Gradle-only pull requests select the
+experimental Gradle application path automatically; other non-Java, non-Maven pull requests may opt
+in with the <code>gradle-build</code> label. This does not change the Maven requirement for Java or Maven-build
+changes or the merge queue, which always selects Maven.</p>
 <p>The Gradle compilation check also runs for pull requests that change Gradle build inputs. For this
 ADR, Gradle build inputs are:</p>
 <ul>
@@ -44,15 +47,14 @@ ADR, Gradle build inputs are:</p>
 <li class="">files below <code>gradle/</code>; and</li>
 <li class="">files below <code>buildSrc/</code>.</li>
 </ul>
-<p><strong>D2. Gradle full-test CI is selected for Gradle-only pull requests.</strong></p>
-<p>A pull request whose complete change set consists of the Gradle build inputs listed above selects the
-full Gradle test path. A pull request containing Java, Maven, CI, documentation, or any other
-non-Gradle change must use Maven for the application test path.</p>
-<p>The Gradle-only restriction is enforced by change classification.
-This prevents a mixed pull request from silently replacing Maven coverage with the experimental
-Gradle path.</p>
-<p>In non-PR contexts, including <code>push</code> and <code>merge_group</code>, the build tool remains Maven. The Gradle
-compilation check described in D3 is still run in those contexts.</p>
+<p><strong>D2. Gradle application tests are selected only for labeled pull requests.</strong></p>
+<p>A pure Gradle-only pull request selects the Gradle application test path automatically. Other
+non-Java, non-Maven pull requests can select it with the <code>gradle-build</code> label, making it possible to
+exercise Gradle when the pull request changes CI configuration rather than Java sources or Maven
+build inputs. Any Java or Maven-build change forces Maven, regardless of the label.</p>
+<p>In non-PR contexts, including <code>push</code> and <code>merge_group</code>, and on unlabeled, Java, or Maven-build pull
+requests, the build tool remains Maven. The Gradle compilation check described in D3 is still run in
+those contexts when its change filters match.</p>
 <p><strong>D3. Add a relevant Gradle compilation check to Unified CI.</strong></p>
 <p>The <code>Gradle / Test Classes</code> job runs when the change set contains Java/resource sources, Maven build
 inputs, Gradle build inputs, or CI inputs that can change build behavior. It runs:</p>
@@ -62,10 +64,11 @@ inputs, Gradle build inputs, or CI inputs that can change build behavior. It run
 requests and merge groups when Gradle compilation fails. Protected branch pushes run the same check
 to provide post-merge health feedback and warm the shared Gradle cache; a push failure cannot prevent
 the commit that triggered it from having already landed.</p>
-<p><strong>D4. Build-tool selection defaults to Maven outside pure Gradle pull requests.</strong></p>
-<p>Maven is the default build tool. A pull request with only Gradle build inputs selects Gradle.
-Pushes, merge groups, schedules, manually dispatched workflows, and mixed pull requests use Maven
-for the application test path.</p>
+<p><strong>D4. Build-tool selection defaults to Maven outside labeled pull requests.</strong></p>
+<p>Maven is the default build tool. Pure Gradle-only pull requests select Gradle automatically; other
+non-Java, non-Maven pull requests need the <code>gradle-build</code> label. Pushes, merge groups, schedules,
+manually dispatched workflows, unlabeled pull requests, and all pull requests with Java or Maven
+build changes use Maven for the application test path.</p>
 <p><strong>D5. The Gradle compilation check and Maven jobs are independently gated.</strong></p>
 <p>The Gradle compilation job is a member of the Unified CI result gate, but Maven test jobs must not
 depend on it. A Gradle compilation failure may fail <code>check-results</code> and prevent a merge-group
@@ -108,8 +111,9 @@ Maven-only until their infrastructure and ownership are migrated separately.</li
 <li class=""><strong>Run Gradle compilation only in pull requests.</strong> Rejected: merge groups need the same direct
 production-and-test compilation signal, and protected pushes should warm the shared cache and
 provide post-merge health feedback.</li>
-<li class=""><strong>Use Gradle as the replacement for Maven on any labeled PR.</strong> Rejected: mixed PRs must retain
-Maven&#x27;s authoritative application test path.</li>
+<li class=""><strong>Select Gradle automatically for Gradle-only PRs.</strong> Rejected: an explicit label makes it
+possible to validate the experimental path for CI-only or mixed changes while keeping Maven as
+the default.</li>
 <li class=""><strong>Run the Gradle compilation check only for Java changes.</strong> Rejected: Gradle-only and Maven-only
 build changes can independently break Gradle compilation and must also be covered.</li>
 <li class=""><strong>Make Maven test jobs depend on the Gradle compilation job.</strong> Rejected: a Gradle failure must
@@ -125,7 +129,9 @@ merge-group signals and their ownership model are stable.</li>
 <li class="">Merge groups are blocked when relevant Gradle production or test sources do not compile.</li>
 <li class="">Protected pushes provide post-merge Gradle health feedback and warm the shared cache.</li>
 <li class="">Maven remains the authoritative application test path for Java and Maven changes.</li>
-<li class="">A mixed PR cannot select the full Gradle test path because non-Gradle changes force Maven.</li>
+<li class="">Pure Gradle-only PRs select the experimental Gradle application path automatically; other
+non-Java, non-Maven PRs need the label for mixed or CI-only changes. Java or Maven-build changes,
+merge-queue runs, and push runs always use Maven.</li>
 <li class="">Maven jobs remain independently runnable when the Gradle compilation job fails.</li>
 <li class="">Gradle and Maven use the same CI retry budget, while local Gradle runs remain retry-disabled by
 default.</li>
