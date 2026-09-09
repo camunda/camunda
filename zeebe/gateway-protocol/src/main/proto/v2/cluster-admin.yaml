@@ -2188,6 +2188,7 @@ components:
             - NO_RESPONSE
             - CANCELLED
             - PHYSICAL_TENANT_DISABLED
+            - PHYSICAL_TENANT_RECOVERING
 
     ClusterCompletedRebalance:
       description: >-
