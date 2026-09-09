@@ -19,8 +19,6 @@
   <packaging>jar</packaging>
   <name>Dynamic NodeId Provider</name>
   <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencies>
