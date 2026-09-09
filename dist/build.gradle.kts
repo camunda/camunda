@@ -5,10 +5,10 @@ import javax.inject.Inject
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.file.FileTree
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
-import org.gradle.api.file.FileTree
 import org.gradle.jvm.tasks.Jar
 import org.gradle.process.ExecOperations
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
@@ -69,47 +69,53 @@ private fun GenerateTask.configureCommonOpenApiGeneration(
   inputPropertyName: String,
 ) {
   generatorName.set("spring")
-  inputs.files(inputFiles).withPropertyName(inputPropertyName).withPathSensitivity(PathSensitivity.RELATIVE)
+  inputs
+    .files(inputFiles)
+    .withPropertyName(inputPropertyName)
+    .withPathSensitivity(PathSensitivity.RELATIVE)
   globalProperties.set(mapOf("models" to "", "apis" to "false", "supportingFiles" to "false"))
   skipValidateSpec.set(false)
   configOptions.set(commonOpenApiConfigOptions)
 }
 
-val openApiGenerateBackups = tasks.register<GenerateTask>("openApiGenerateBackups") {
-  configureCommonOpenApiGeneration(
-    fileTree("$projectDir/src/main/resources/api") {
-      include("backup-management-api.yaml", "**/*.yaml", "**/*.yml")
-    },
-    "backupOpenApiSpecs",
-  )
-  inputSpec.set("$projectDir/src/main/resources/api/backup-management-api.yaml")
-  outputDir.set(openApiBackupsOutputDir)
-  modelPackage.set("io.camunda.management.backups")
-}
+val openApiGenerateBackups =
+  tasks.register<GenerateTask>("openApiGenerateBackups") {
+    configureCommonOpenApiGeneration(
+      fileTree("$projectDir/src/main/resources/api") {
+        include("backup-management-api.yaml", "**/*.yaml", "**/*.yml")
+      },
+      "backupOpenApiSpecs",
+    )
+    inputSpec.set("$projectDir/src/main/resources/api/backup-management-api.yaml")
+    outputDir.set(openApiBackupsOutputDir)
+    modelPackage.set("io.camunda.management.backups")
+  }
 
-val openApiGenerateCluster = tasks.register<GenerateTask>("openApiGenerateCluster") {
-  configureCommonOpenApiGeneration(
-    fileTree("$projectDir/src/main/resources/api/cluster") { include("**/*.yaml", "**/*.yml") },
-    "clusterOpenApiSpecs",
-  )
-  inputSpec.set("$projectDir/src/main/resources/api/cluster/cluster-api.yaml")
-  outputDir.set(openApiClusterOutputDir)
-  modelPackage.set("io.camunda.zeebe.management.cluster")
-  ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
-  openapiNormalizer.set(mapOf("SIMPLIFY_ONEOF_ANYOF" to "false"))
-  configOptions.set(commonOpenApiConfigOptions + ("useSealed" to "true"))
-}
+val openApiGenerateCluster =
+  tasks.register<GenerateTask>("openApiGenerateCluster") {
+    configureCommonOpenApiGeneration(
+      fileTree("$projectDir/src/main/resources/api/cluster") { include("**/*.yaml", "**/*.yml") },
+      "clusterOpenApiSpecs",
+    )
+    inputSpec.set("$projectDir/src/main/resources/api/cluster/cluster-api.yaml")
+    outputDir.set(openApiClusterOutputDir)
+    modelPackage.set("io.camunda.zeebe.management.cluster")
+    ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
+    openapiNormalizer.set(mapOf("SIMPLIFY_ONEOF_ANYOF" to "false"))
+    configOptions.set(commonOpenApiConfigOptions + ("useSealed" to "true"))
+  }
 
-val openApiGenerateExporter = tasks.register<GenerateTask>("openApiGenerateExporter") {
-  configureCommonOpenApiGeneration(
-    fileTree("$projectDir/src/main/resources/api/cluster") { include("**/*.yaml", "**/*.yml") },
-    "exporterOpenApiSpecs",
-  )
-  inputSpec.set("$projectDir/src/main/resources/api/cluster/exporter-api.yaml")
-  outputDir.set(openApiExporterOutputDir)
-  modelPackage.set("io.camunda.zeebe.management.cluster")
-  ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
-}
+val openApiGenerateExporter =
+  tasks.register<GenerateTask>("openApiGenerateExporter") {
+    configureCommonOpenApiGeneration(
+      fileTree("$projectDir/src/main/resources/api/cluster") { include("**/*.yaml", "**/*.yml") },
+      "exporterOpenApiSpecs",
+    )
+    inputSpec.set("$projectDir/src/main/resources/api/cluster/exporter-api.yaml")
+    outputDir.set(openApiExporterOutputDir)
+    modelPackage.set("io.camunda.zeebe.management.cluster")
+    ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
+  }
 
 val openApiGenerateUpgradeReadiness =
   tasks.register<GenerateTask>("openApiGenerateUpgradeReadiness") {
@@ -162,19 +168,18 @@ val elasticsearchVersion =
 val distName = "camunda-zeebe"
 val distVersion = project.version.toString()
 val distDirectory = layout.buildDirectory.dir(distName)
-val parentPom = providers.fileContents(rootProject.layout.projectDirectory.file("parent/pom.xml"))
+val parentPom = providers.fileContents(layout.settingsDirectory.file("parent/pom.xml"))
 val distPom = providers.fileContents(layout.projectDirectory.file("pom.xml"))
 val jvmModuleOpens =
-  parsePomProperties(parentPom.asText.get())
-    .getValue("jvm.module.opens")
-    .split(Regex("\\s+"))
+  parsePomProperties(parentPom.asText.get()).getValue("jvm.module.opens").split(Regex("\\s+"))
 val defaultJvmOpts =
-  parsePomElement(distPom.asText.get(), "extraJvmArguments")
-    .split(Regex("\\s+"))
-    .filterNot { it == "\${jvm.module.opens}" }
+  parsePomElement(distPom.asText.get(), "extraJvmArguments").split(Regex("\\s+")).filterNot {
+    it == "\${jvm.module.opens}"
+  }
 
 fun jvmOptsFor(baseDir: String) =
   defaultJvmOpts.map { it.replace("@BASEDIR@", baseDir) } + jvmModuleOpens
+
 val startupPrograms =
   mapOf(
     "broker" to "io.camunda.application.StandaloneBroker",
@@ -215,8 +220,7 @@ val generateDistScripts =
               "REPO" to "lib",
               "CLASSPATH" to "\"\$BASEDIR\"/config:\"\$REPO\"/*",
               "ENDORSED_DIR" to "driver-lib",
-              "EXTRA_JVM_ARGUMENTS" to
-                jvmOptsFor("\"\$BASEDIR\"").joinToString(" "),
+              "EXTRA_JVM_ARGUMENTS" to jvmOptsFor("\"\$BASEDIR\"").joinToString(" "),
               "APP_NAME" to applicationName,
               "MAINCLASS" to mainClass,
               "APP_ARGUMENTS" to "",
@@ -237,8 +241,7 @@ val generateDistScripts =
               "REPO" to "lib",
               "CLASSPATH" to "\"%BASEDIR%\"\\config;\"%REPO%\"\\*",
               "ENDORSED_DIR" to "driver-lib",
-              "EXTRA_JVM_ARGUMENTS" to
-                jvmOptsFor("\"%BASEDIR%\"").joinToString(" "),
+              "EXTRA_JVM_ARGUMENTS" to jvmOptsFor("\"%BASEDIR%\"").joinToString(" "),
               "APP_NAME" to applicationName,
               "MAINCLASS" to mainClass,
               "APP_ARGUMENTS" to "",
@@ -281,8 +284,8 @@ val assembleDist =
     }) {
       into("lib")
     }
-    from(rootProject.file("licenses"))
-    from(rootProject.file("NOTICE.txt"))
+    from(layout.settingsDirectory.dir("licenses"))
+    from(layout.settingsDirectory.file("NOTICE.txt"))
     from(generateDistReadme)
 
     doLast {
@@ -295,16 +298,12 @@ val assembleDist =
   }
 
 // npm builds only run when producing a dist artifact, not during tests or compilation.
-val npmBuildTasks =
-  listOf(
-      project(":identity-webjar").tasks.findByName("npmBuild"),
-      project(":operate-webjar").tasks.findByName("npmBuild"),
-      project(":webapp-webjar").tasks.findByName("npmBuild"),
-    )
-    .filterNotNull()
-
 tasks.named("assembleDist") {
-  dependsOn(npmBuildTasks)
+  dependsOn(
+    ":identity-webjar:npmBuild",
+    ":operate-webjar:npmBuild",
+    ":webapp-webjar:npmBuild",
+  )
 }
 
 val distTar =

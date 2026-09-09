@@ -71,26 +71,3 @@ extensions.configure<SpotlessExtension> {
 tasks.withType<com.diffplug.gradle.spotless.SpotlessTask>().configureEach {
   enabled = !quickly.get()
 }
-
-// The general unit-test CI job runs `test` across the whole build and excludes the modules that
-// have dedicated jobs via `-x :<module>:test`. Aggregator projects (Maven packaging=pom) apply no
-// Java convention and therefore have no `test`/`it` task, which makes `-x :<module>:test` fail
-// with "Task 'test' not found". Register no-op placeholders on any project missing them so the
-// exclusion always resolves. Runs in afterEvaluate so it never collides with the real tasks
-// defined by buildlogic.java-conventions.
-allprojects {
-  afterEvaluate {
-    if (tasks.findByName("test") == null) {
-      tasks.register("test") {
-        group = "verification"
-        description = "No-op placeholder (module has no unit tests)"
-      }
-    }
-    if (tasks.findByName("it") == null) {
-      tasks.register("it") {
-        group = "verification"
-        description = "No-op placeholder (module has no integration tests)"
-      }
-    }
-  }
-}

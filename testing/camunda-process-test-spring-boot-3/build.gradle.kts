@@ -11,6 +11,7 @@ plugins {
 }
 
 java { disableAutoTargetJvm() }
+
 tasks.withType<JavaCompile>().configureEach { options.release.set(17) }
 
 dependencies {
@@ -47,8 +48,8 @@ publishing {
 tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
   archiveClassifier.set("")
   dependsOn(
-    project(":camunda-process-test-java").tasks.named("shadowJar"),
-    project(":camunda-spring-boot-3-starter").tasks.named("shadowJar"),
+    ":camunda-process-test-java:shadowJar",
+    ":camunda-spring-boot-3-starter:shadowJar",
   )
   dependencies { include(project(":camunda-process-test-spring")) }
   mergeServiceFiles()
