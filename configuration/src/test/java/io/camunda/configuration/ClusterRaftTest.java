@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -30,6 +31,21 @@ import org.springframework.util.unit.DataSize;
 })
 @ActiveProfiles("broker")
 public class ClusterRaftTest {
+
+  @Test
+  void shouldRejectFlushCoalescedCombinedWithFlushDelay() {
+    // given
+    final var raft = new Raft();
+    raft.setFlushCoalesced(true);
+    raft.setFlushDelay(Duration.ofSeconds(5));
+
+    // when / then
+    assertThatThrownBy(raft::isFlushCoalesced)
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("camunda.cluster.raft.flush-coalesced")
+        .hasMessageContaining("camunda.cluster.raft.flush-delay");
+  }
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -280,6 +296,46 @@ public class ClusterRaftTest {
           .returns(5, ExperimentalRaftCfg::getMinStepDownFailureCount)
           .returns(110, ExperimentalRaftCfg::getPreferSnapshotReplicationThreshold)
           .returns(false, ExperimentalRaftCfg::isPreallocateSegmentFiles);
+    }
+  }
+
+  /**
+   * Coalesced flushing needs its own property sets: it is mutually exclusive with a flush delay, so
+   * it cannot be added to the sets above, which all configure a flush delay.
+   */
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // new
+        "camunda.cluster.raft.flush-coalesced=true",
+        // legacy
+        "zeebe.broker.cluster.raft.flush.coalesced=false"
+      })
+  class WithFlushCoalescedSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithFlushCoalescedSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetFlushCoalescedFromNew() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().coalesced()).isTrue();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"zeebe.broker.cluster.raft.flush.coalesced=true"})
+  class WithOnlyLegacyFlushCoalescedSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyLegacyFlushCoalescedSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetFlushCoalescedFromLegacy() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().coalesced()).isTrue();
     }
   }
 }

@@ -20,7 +20,6 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.ReplicatableJournalRecord;
-import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
@@ -30,6 +29,8 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,16 @@ public final class RaftLog implements Closeable {
   private final RaftLogFlusher flusher;
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
+
+  // The highest commit index a leader announced to this member, which can be ahead of
+  // commitIndex: a follower only advances its commit index once the records it acknowledges are
+  // durable, but it must never delete records which the leader already declared committed, not even
+  // while the flush covering them is still in progress. Only used to guard truncations;
+  // commitIndex keeps its stricter meaning of "committed and durable" for committed readers.
+  private long announcedCommitIndex;
+
+  // Counts how often records were removed from this log, see #getTruncationGeneration().
+  private long truncationGeneration;
 
   RaftLog(final Journal journal, final RaftLogFlusher flusher) {
     this.journal = journal;
@@ -110,8 +121,38 @@ public final class RaftLog implements Closeable {
     commitIndex = index;
   }
 
+  /**
+   * Announces that a leader considers all entries up to the given index committed. Unlike {@link
+   * #setCommitIndex(long)}, this may be called before those entries are durable, and it does not
+   * make them visible to committed readers. It only ensures that {@link #reset(long)} and {@link
+   * #deleteAfter(long)} keep refusing to delete entries which a leader already declared committed,
+   * even while the flush covering them is still in progress. The announced index never decreases.
+   *
+   * <p>Only called on the thread which appends to and truncates the log, i.e. the Raft thread.
+   *
+   * @param index the highest index a leader declared committed
+   */
+  public void announceCommitIndex(final long index) {
+    announcedCommitIndex = Math.max(announcedCommitIndex, index);
+  }
+
+  /**
+   * Returns the highest commit index announced by a leader. This can be ahead of {@link
+   * #getCommitIndex()}, which only covers entries which are also durable.
+   *
+   * @see #announceCommitIndex(long)
+   */
+  public long getAnnouncedCommitIndex() {
+    return announcedCommitIndex;
+  }
+
+  /**
+   * Returns true if the configured flusher flushes synchronously and immediately, i.e. everything
+   * requested to be flushed is on disk once {@link #flush(long)} returns. See {@link
+   * RaftLogFlusher#flushesDirectly()}.
+   */
   public boolean flushesDirectly() {
-    return flusher.isDirect();
+    return flusher.flushesDirectly();
   }
 
   public long getFirstIndex() {
@@ -120,6 +161,14 @@ public final class RaftLog implements Closeable {
 
   public long getLastIndex() {
     return journal.getLastIndex();
+  }
+
+  /**
+   * Returns the index of the last record which is known to be flushed to persistent storage. See
+   * {@link Journal#getLastFlushedIndex()}.
+   */
+  public long getLastFlushedIndex() {
+    return journal.getLastFlushedIndex();
   }
 
   public IndexedRaftLogEntry getLastEntry() {
@@ -169,8 +218,23 @@ public final class RaftLog implements Closeable {
     return lastAppendedEntry;
   }
 
+  /**
+   * Returns how often records were removed from this log, i.e. how often {@link #reset(long)} or
+   * {@link #deleteAfter(long)} was called. Operations which cover specific records but complete
+   * asynchronously can capture this before they start and compare it afterwards, to detect that the
+   * records they cover may have ceased to exist. Comparing indexes instead is not enough: a
+   * truncation followed by new appends can restore the same last index with different records.
+   *
+   * <p>Only read and updated on the thread which appends to and truncates the log, i.e. the Raft
+   * thread.
+   */
+  public long getTruncationGeneration() {
+    return truncationGeneration;
+  }
+
   public void reset(final long index) {
-    if (index < commitIndex) {
+    final long committedIndex = Math.max(commitIndex, announcedCommitIndex);
+    if (index < committedIndex) {
       throw new IllegalStateException(
           String.format(
               """
@@ -178,14 +242,18 @@ public final class RaftLog implements Closeable {
                Deleting committed entries can lead to inconsistencies and is prohibited.\
                This can happen if a quorum of nodes has experienced data loss and became leader.\
                This situation probably requires manual intervention to resume operations""",
-              index, commitIndex));
+              index, committedIndex));
     }
+    // pending flush results for the deleted records must fail, they can never become durable
+    flusher.onLogTruncation(index - 1);
+    truncationGeneration++;
     journal.reset(index);
     lastAppendedEntry = null;
   }
 
   public void deleteAfter(final long index) throws FlushException {
-    if (index < commitIndex) {
+    final long committedIndex = Math.max(commitIndex, announcedCommitIndex);
+    if (index < committedIndex) {
       throw new IllegalStateException(
           String.format(
               """
@@ -193,21 +261,56 @@ public final class RaftLog implements Closeable {
                  Deleting committed entries can lead to inconsistencies and is prohibited.\
                This can happen if a quorum of nodes has experienced data loss and became leader.\
                This situation probably requires manual intervention to resume operations""",
-              index, commitIndex));
+              index, committedIndex));
     }
+    // pending flush results for the deleted records must fail, they can never become durable
+    flusher.onLogTruncation(index);
+    truncationGeneration++;
     journal.deleteAfter(index);
     lastAppendedEntry = null;
 
-    // we have to flush here to ensure the truncated log is represented properly
-    flush();
+    // we have to flush right away, bypassing the configured flush strategy, to ensure the
+    // truncation itself is durable: the journal already lowered its flush watermark, so records
+    // beyond it would otherwise be treated as valid partial writes on restart even though they
+    // were already acknowledged based on an earlier flush. Deployments which disabled flushing
+    // entirely opted out of durability on the write path, so we don't flush - and possibly fail the
+    // truncation because of an I/O error - on their behalf.
+    if (flusher.flushesEventually()) {
+      forceFlush();
+    }
   }
 
   /**
-   * Flushes the underlying journal using the configured flushing strategy. For guarantees, refer to
-   * the configured {@link RaftLogFlusher}.
+   * Requests that the journal is durable at least up to the given index, using the configured
+   * flushing strategy. For guarantees, refer to the configured {@link RaftLogFlusher}.
+   *
+   * @param index the index up to which durability is requested
+   * @return a future which completes once the configured flusher's durability guarantee holds for
+   *     the given index; it may complete on a different thread
    */
-  public void flush() throws FlushException {
-    flusher.flush(journal);
+  public CompletableFuture<Void> flush(final long index) {
+    return flusher.flush(journal, index);
+  }
+
+  /**
+   * Same as {@link #flush(long)}, but blocks until the flush result is completed.
+   *
+   * @param index the index up to which durability is requested
+   * @throws FlushException if the flush failed
+   */
+  public void flushSync(final long index) throws FlushException {
+    try {
+      flush(index).join();
+    } catch (final CompletionException e) {
+      final var cause = e.getCause();
+      if (cause instanceof final FlushException flushException) {
+        throw flushException;
+      }
+      if (cause instanceof final RuntimeException runtimeException) {
+        throw runtimeException;
+      }
+      throw new FlushException("Flush failed for an unexpected reason", cause);
+    }
   }
 
   /**
@@ -218,7 +321,7 @@ public final class RaftLog implements Closeable {
    * guarantees are required.
    */
   public void forceFlush() throws FlushException {
-    Factory.DIRECT.flush(journal);
+    journal.flush();
   }
 
   @Override

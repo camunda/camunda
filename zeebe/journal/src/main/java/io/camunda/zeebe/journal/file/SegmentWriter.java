@@ -52,7 +52,14 @@ final class SegmentWriter {
   private final long firstIndex;
   private final long firstAsqn;
   private long lastAsqn;
-  private @Nullable JournalRecord lastEntry;
+
+  // Volatile because flushing threads read it via Segment#lastIndex() to decide how far a flush
+  // reached, and that index is reported as durable afterwards. Publishing the record here, once all
+  // of its bytes were written to the mapped buffer, is the release which pairs with their acquiring
+  // read: a thread which sees this record is guaranteed to see all of its bytes, and therefore
+  // flushes them.
+  private volatile @Nullable JournalRecord lastEntry;
+
   private int lastEntryPosition;
   private final JournalRecordReaderUtil recordUtil;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
@@ -94,7 +101,8 @@ final class SegmentWriter {
   }
 
   long getLastIndex() {
-    return lastEntry != null ? lastEntry.index() : segment.index() - 1;
+    final var entry = lastEntry;
+    return entry != null ? entry.index() : segment.index() - 1;
   }
 
   int getLastEntryPosition() {
@@ -106,8 +114,9 @@ final class SegmentWriter {
   }
 
   long getNextIndex() {
-    if (lastEntry != null) {
-      return lastEntry.index() + 1;
+    final var entry = lastEntry;
+    if (entry != null) {
+      return entry.index() + 1;
     } else {
       return firstIndex;
     }
@@ -249,9 +258,12 @@ final class SegmentWriter {
     final int nextEntryOffset = startPosition + frameLength + metadataLength + recordLength;
     invalidateNextEntry(nextEntryOffset);
 
-    final var record =
-        updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    final var record = readWrittenRecord(startPosition, frameLength, metadataLength, recordLength);
+    // the frame version is written last, so a record only becomes valid on recovery once all of its
+    // bytes are written
     FrameUtil.writeVersion(buffer, startPosition);
+    // publish the record only now that all of its bytes are in the buffer, see #lastEntry
+    updateLastWrittenEntry(record, startPosition);
 
     final int appendedBytes = frameLength + metadataLength + recordLength;
     buffer.position(startPosition + appendedBytes);
@@ -259,7 +271,12 @@ final class SegmentWriter {
     return record;
   }
 
-  private JournalRecord updateLastWrittenEntry(
+  /**
+   * Reads back the record just written to the buffer, verifying it creates no gap in the log.
+   *
+   * @return the record written at the given position
+   */
+  private JournalRecord readWrittenRecord(
       final int startPosition,
       final int frameLength,
       final int metadataLength,
@@ -268,17 +285,23 @@ final class SegmentWriter {
     final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
     verifyNoIndexGap(data.index(), getNextIndex());
 
-    lastEntry =
-        new PersistedJournalRecord(
-            metadata,
-            data,
-            new UnsafeBuffer(
-                writeBuffer, startPosition + frameLength + metadataLength, recordLength),
-            frameLength + metadataLength + recordLength);
-    updateLastAsqn(lastEntry.asqn());
-    index.index(lastEntry, startPosition);
+    return new PersistedJournalRecord(
+        metadata,
+        data,
+        new UnsafeBuffer(writeBuffer, startPosition + frameLength + metadataLength, recordLength),
+        frameLength + metadataLength + recordLength);
+  }
+
+  /**
+   * Publishes the given record as the last written entry and indexes it. Must only be called after
+   * all of the record's bytes were written to the buffer: publishing the record is what makes them
+   * visible to concurrently flushing threads.
+   */
+  private void updateLastWrittenEntry(final JournalRecord record, final int startPosition) {
+    lastEntry = record;
+    updateLastAsqn(record.asqn());
+    index.index(record, startPosition);
     lastEntryPosition = startPosition;
-    return lastEntry;
   }
 
   private void updateLastAsqn(final long asqn) {
@@ -364,10 +387,8 @@ final class SegmentWriter {
   private void advanceToNextEntry(final long nextIndex) {
     final int position = buffer.position();
     FrameUtil.readVersion(buffer);
-    lastEntry = recordUtil.read(buffer, nextIndex, FrameUtil.getLength());
-    updateLastAsqn(lastEntry.asqn());
-    lastEntryPosition = position;
-    index.index(lastEntry, position);
+    final var entry = recordUtil.read(buffer, nextIndex, FrameUtil.getLength());
+    updateLastWrittenEntry(entry, position);
     buffer.mark();
   }
 

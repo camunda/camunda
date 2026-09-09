@@ -95,7 +95,8 @@ final class Segment implements AutoCloseable, FlushableSegment {
   }
 
   /**
-   * Returns the last index in the segment.
+   * Returns the last index in the segment. May be called concurrently with appends, e.g. by a
+   * flushing thread; see {@link SegmentWriter} for the visibility guarantees.
    *
    * @return The last index in the segment.
    */

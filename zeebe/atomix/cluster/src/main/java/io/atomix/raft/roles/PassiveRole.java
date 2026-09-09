@@ -112,8 +112,13 @@ public class PassiveRole extends InactiveRole {
   }
 
   private void truncateUncommittedEntries() throws CheckedJournalException {
-    if (role() == RaftServer.Role.PASSIVE && raft.getLog().getLastIndex() > raft.getCommitIndex()) {
-      raft.getLog().deleteAfter(raft.getCommitIndex());
+    // Entries which the leader announced as committed are not uncommitted, even if the local commit
+    // index does not cover them yet because the flush covering them is still in progress. Deleting
+    // them would be refused by the log anyway.
+    final long committedIndex =
+        Math.max(raft.getCommitIndex(), raft.getLog().getAnnouncedCommitIndex());
+    if (role() == RaftServer.Role.PASSIVE && raft.getLog().getLastIndex() > committedIndex) {
+      raft.getLog().deleteAfter(committedIndex);
     }
   }
 
@@ -882,14 +887,20 @@ public class PassiveRole extends InactiveRole {
 
         final boolean failedToAppend = tryToAppend(future, entry, index, lastEntry);
         if (failedToAppend) {
-          try {
-            flush(lastLogIndex - 1, request.prevLogIndex());
-          } catch (final Exception e) {
-            log.warn(
-                "Failed to flush when append failed: lastFlushedIndex={}, prevEntryIndex={}",
-                lastLogIndex - 1,
-                request.prevLogIndex());
-          }
+          // the request was already completed by tryToAppend; still try to persist what was
+          // appended so far, but only on a best-effort basis
+          final long appendedIndex = lastLogIndex - 1;
+          flush(appendedIndex, request.prevLogIndex())
+              .whenComplete(
+                  (ignored, error) -> {
+                    if (error != null) {
+                      log.warn(
+                          "Failed to flush partially appended records up to index {} (previous entry index {})",
+                          appendedIndex,
+                          request.prevLogIndex(),
+                          error);
+                    }
+                  });
           return;
         }
 
@@ -926,15 +937,60 @@ public class PassiveRole extends InactiveRole {
         role() == RaftServer.Role.PASSIVE ? raft.getLog().getLastIndex() : lastLogIndex;
     raft.setFirstCommitIndex(request.commitIndex(), agreedPersistedIndex);
 
-    try {
-      //     Make sure all entries are flushed before ack to ensure we have persisted what we
-      //     acknowledge
-      flush(lastLogIndex, request.prevLogIndex());
-    } catch (final Exception e) {
+    // Tell the log which entries the leader declared committed, before waiting for durability: the
+    // context's commit index can only be advanced once they are durable, but they must not be
+    // deleted by a conflicting append handled in the meantime either.
+    raft.getLog().announceCommitIndex(commitIndex);
+
+    // Make sure all entries are flushed before ack to ensure we have persisted what we
+    // acknowledge. Depending on the configured flush strategy the flush may complete
+    // asynchronously, in which case the response is also completed asynchronously, once a flush
+    // covering the appended entries completed.
+    final long appendedIndex = lastLogIndex;
+    // If the log is truncated while the flush is in progress, the appended entries ceased to exist
+    // and must not be acknowledged, see completeAppendOnceFlushed.
+    final long truncationGeneration = raft.getLog().getTruncationGeneration();
+    final var flushResult = flush(appendedIndex, request.prevLogIndex());
+    if (flushResult.isDone()) {
+      // fast path for flush strategies which complete synchronously, e.g. the default direct
+      // strategy; this keeps handling the request a single, synchronous step
+      completeAppendOnceFlushed(
+          flushResult, request, appendedIndex, commitIndex, truncationGeneration, future);
+      return;
+    }
+
+    flushResult.whenCompleteAsync(
+        (ignored, error) ->
+            completeAppendOnceFlushed(
+                flushResult, request, appendedIndex, commitIndex, truncationGeneration, future),
+        raft.getThreadContext());
+  }
+
+  private void completeAppendOnceFlushed(
+      final CompletableFuture<Void> flushResult,
+      final InternalAppendRequest request,
+      final long lastLogIndex,
+      final long commitIndex,
+      final long truncationGeneration,
+      final CompletableFuture<AppendResponse> future) {
+    final var flushError = unwrapError(flushResult);
+    if (flushError != null) {
       log.warn(
           "Failed to flush appended entries to the log, cannot guarantee durability; leader will retry the append operation",
-          e);
+          flushError);
       // Flush failed, return error to the leader so we can retry.
+      failAppend(request.prevLogIndex(), future);
+      return;
+    }
+
+    if (raft.getLog().getTruncationGeneration() != truncationGeneration) {
+      // The log was truncated while the flush was in progress, e.g. by a conflicting append which
+      // was handled in the meantime. The records this response would acknowledge may no longer
+      // exist, so the leader must not count them as replicated; it retries the append instead.
+      log.debug(
+          "Rejected {}: the log was truncated while flushing the appended entries up to index {}",
+          request,
+          lastLogIndex);
       failAppend(request.prevLogIndex(), future);
       return;
     }
@@ -949,11 +1005,31 @@ public class PassiveRole extends InactiveRole {
     succeedAppend(lastLogIndex, future);
   }
 
-  private void flush(final long lastFlushedIndex, final long previousEntryIndex)
-      throws FlushException {
-    if (lastFlushedIndex > previousEntryIndex) {
-      raft.getLog().flush();
+  private CompletableFuture<Void> flush(final long lastLogIndex, final long previousEntryIndex) {
+    if (lastLogIndex > previousEntryIndex) {
+      // this request appended new records, which must be flushed before acknowledging them
+      return raft.getLog().flush(lastLogIndex);
     }
+
+    if (lastLogIndex <= 0 || lastLogIndex <= raft.getLog().getLastFlushedIndex()) {
+      // nothing was appended, and the response acknowledges nothing that could be lost: either it
+      // acknowledges no records at all (e.g. a heartbeat at the start of an empty log), or
+      // everything it acknowledges is already durable. The latter is the common case for empty
+      // appends, as with a synchronous flush strategy every appended record is flushed before the
+      // next request is handled.
+      return CompletableFuture.completedFuture(null);
+    }
+
+    // nothing was appended, but records acknowledged by this response are not durable yet, e.g. an
+    // empty append while the flush for a previous append request is still in progress. A success
+    // response acknowledges everything up to its last log index, so it must wait for durability
+    // like the append it is concurrent with; otherwise the leader could count this replica for
+    // commit based on records which a crash may still lose.
+    return raft.getLog().flush(lastLogIndex);
+  }
+
+  private static Throwable unwrapError(final CompletableFuture<Void> completedResult) {
+    return completedResult.isCompletedExceptionally() ? completedResult.exceptionNow() : null;
   }
 
   private boolean tryToAppend(

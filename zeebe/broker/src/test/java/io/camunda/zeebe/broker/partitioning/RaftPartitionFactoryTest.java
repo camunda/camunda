@@ -8,13 +8,20 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.storage.log.CoalescedFlusher;
+import io.atomix.raft.storage.log.DelayedFlusher;
+import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -209,6 +216,64 @@ public final class RaftPartitionFactoryTest {
     // then
     assertThat(partition.getPartitionConfig().getPreferSnapshotReplicationThreshold())
         .isEqualTo(1000);
+  }
+
+  @Test
+  void shouldUseDirectFlushByDefault() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    final var flusherFactory = partition.getPartitionConfig().getStorageConfig().flusherFactory();
+    assertThat(flusherFactory.createFlusher(() -> mock(ThreadContext.class)))
+        .isInstanceOf(DirectFlusher.class);
+  }
+
+  @Test
+  void shouldUseCoalescedFlusherWhenConfigured() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().getRaft().setFlush(new FlushConfig(true, Duration.ZERO, true));
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    final var flusherFactory = partition.getPartitionConfig().getStorageConfig().flusherFactory();
+    final var flusher = flusherFactory.createFlusher(() -> mock(ThreadContext.class));
+    assertThat(flusher).isInstanceOf(CoalescedFlusher.class);
+    flusher.close();
+  }
+
+  @Test
+  void shouldUseDelayedFlusherWhenDelayTimeConfigured() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().getRaft().setFlush(new FlushConfig(true, Duration.ofSeconds(1), false));
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    final var flusherFactory = partition.getPartitionConfig().getStorageConfig().flusherFactory();
+    final var flusher = flusherFactory.createFlusher(() -> mock(ThreadContext.class));
+    assertThat(flusher).isInstanceOf(DelayedFlusher.class);
+    flusher.close();
+  }
+
+  @Test
+  void shouldRejectCoalescedFlushCombinedWithFlushDelay() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().getRaft().setFlush(new FlushConfig(true, Duration.ofSeconds(1), true));
+
+    // when - then
+    assertThatThrownBy(() -> buildRaftPartition(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("coalesced");
   }
 
   @ParameterizedTest
