@@ -548,6 +548,15 @@ public class UnifiedConfigurationHelper {
         return newValue;
       }
 
+      if (newValue == null) {
+        // The unified property has no value at all - neither declared nor defaulted - so there is
+        // nothing for the legacy value to conflict with. Fall back to the legacy value instead of
+        // failing startup, which is what a deployment that only configures the legacy property
+        // expects.
+        LOGGER.warn(warningMessage);
+        return legacyValue;
+      }
+
       final String errorMessage =
           String.format(
               "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
