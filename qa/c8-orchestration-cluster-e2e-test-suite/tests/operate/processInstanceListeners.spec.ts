@@ -129,13 +129,26 @@ test.describe('Process Instance Listeners', () => {
         id: processInstanceKey,
       });
 
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
-        'Service Task B',
-      );
-      await operateProcessInstancePage.openListenersTab();
-      await expect(
-        operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(1);
+      // Select the flow node instance from the instance history rather than the
+      // diagram: a diagram click can highlight the node in the canvas without
+      // selecting its flow node instance while the page is still loading,
+      // leaving the bottom panel reporting "This element has no execution
+      // listeners". The history selection reliably scopes the listeners list to
+      // the instance, matching how the other listener tests select it.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.clickInstanceHistoryElement(
+            /service task b/i,
+          );
+          await operateProcessInstancePage.openListenersTab();
+          await expect(
+            operateProcessInstancePage.getListenerRows('execution'),
+          ).toHaveCount(1, {timeout: 5000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Add a new flow node instance', async () => {
