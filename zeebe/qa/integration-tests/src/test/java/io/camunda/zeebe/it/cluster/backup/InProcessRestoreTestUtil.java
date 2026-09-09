@@ -20,6 +20,10 @@ import io.camunda.client.protocol.rest.RestoreStatusResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -398,6 +402,94 @@ public final class InProcessRestoreTestUtil {
             "jobs are activated from every partition, proving partition data was actually restored")
         .containsExactlyInAnyOrderElementsOf(
             IntStream.rangeClosed(1, partitionsCount).boxed().toList());
+  }
+
+  /**
+   * Takes a snapshot of every partition of the given physical tenant on every broker of the
+   * cluster, and waits for each to be persisted. A restore reads each broker's own backup of its
+   * own replica, so a snapshot taken on one broker alone would leave the others' backups behind the
+   * work being captured.
+   *
+   * <p>Snapshotting is asynchronous, and a tenant may already carry a snapshot from an earlier call
+   * here, so the wait is for each partition's snapshot ID to <em>change</em>: merely waiting for a
+   * non-null ID would return immediately on the second call and let the backup be taken before the
+   * work it is meant to capture is snapshotted.
+   */
+  static void takeSnapshotOnEveryBroker(final TestCluster cluster, final String physicalTenantId) {
+    cluster
+        .brokers()
+        .values()
+        .forEach(
+            broker -> {
+              final var partitions = PartitionsActuator.of(broker);
+              final var previousSnapshotIds = new HashMap<Integer, String>();
+              partitions
+                  .query(physicalTenantId)
+                  .forEach((id, status) -> previousSnapshotIds.put(id, status.snapshotId()));
+              partitions.takeSnapshot(physicalTenantId);
+              Awaitility.await(
+                      "a new snapshot is taken for tenant %s on broker %s"
+                          .formatted(physicalTenantId, broker.nodeId()))
+                  .atMost(Duration.ofSeconds(60))
+                  .untilAsserted(
+                      () ->
+                          assertThat(partitions.query(physicalTenantId))
+                              .allSatisfy(
+                                  (partitionId, status) ->
+                                      assertThat(status.snapshotId())
+                                          .isNotNull()
+                                          .isNotEqualTo(previousSnapshotIds.get(partitionId))));
+            });
+  }
+
+  /**
+   * Takes a backup of the given physical tenant's primary storage and waits for it to complete, so
+   * a restore of that id has something to read. Goes through the tenant-scoped REST API rather than
+   * {@code BackupActuator}, whose actuator endpoint is node-scoped and always hits the default
+   * tenant.
+   */
+  static void takeBackup(
+      final TestCluster cluster, final String physicalTenantId, final long backupId) {
+    final var uri = backupsUri(cluster.availableGateway(), physicalTenantId);
+    final var take =
+        HttpRequest.newBuilder(uri)
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString("{\"backupId\": " + backupId + "}"))
+            .build();
+    assertThat(send(take).statusCode())
+        .describedAs("take backup %d for tenant %s", backupId, physicalTenantId)
+        .isEqualTo(202);
+
+    Awaitility.await("backup %d for tenant %s completes".formatted(backupId, physicalTenantId))
+        .atMost(Duration.ofSeconds(120))
+        .ignoreExceptions() // 404 NOT_FOUND until the backup is registered
+        .untilAsserted(
+            () -> {
+              final var status =
+                  send(HttpRequest.newBuilder(URI.create(uri + "/" + backupId)).GET().build());
+              assertThat(status.statusCode()).isEqualTo(200);
+              assertThat(OBJECT_MAPPER.readTree(status.body()).path("state").asText())
+                  .isEqualTo("COMPLETED");
+            });
+  }
+
+  private static URI backupsUri(final TestGateway<?> gateway, final String physicalTenantId) {
+    final var base = gateway.restAddress().toString().replaceAll("/+$", "");
+    return URI.create(
+        PhysicalTenantsITHelper.DEFAULT_TENANT_ID.equals(physicalTenantId)
+            ? base + "/v2/backups/runtime"
+            : base + "/physical-tenants/" + physicalTenantId + "/v2/backups/runtime");
+  }
+
+  private static HttpResponse<String> send(final HttpRequest request) {
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to send request " + request.uri(), e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted while sending request " + request.uri(), e);
+    }
   }
 
   /**
