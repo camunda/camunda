@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.es;
 
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -24,10 +23,10 @@ import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Locale;
 import java.util.Map;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -48,7 +47,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @ExtendWith(SpringExtension.class)
@@ -75,17 +73,12 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
   private static final String ES_ADMIN_USER = "elastic";
   private static final String ES_ADMIN_PASSWORD = "changeme";
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer(
-              "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
+      TestSearchContainers.createDefeaultElasticsearchContainer()
           .withEnv(Map.of("xpack.security.enabled", "true", "ELASTIC_PASSWORD", ES_ADMIN_PASSWORD))
           .withExposedPorts(9200)
           .waitingFor(
-              Wait.forHttp("/_cluster/health?wait_for_status=yellow")
-                  .forPort(9200)
-                  .withBasicCredentials(ES_ADMIN_USER, ES_ADMIN_PASSWORD)
-                  .forStatusCode(200)
-                  .forResponsePredicate(
-                      response -> !response.toLowerCase(Locale.ROOT).contains("\"red\"")));
+              TestSearchContainers.waitForClusterHealth()
+                  .withBasicCredentials(ES_ADMIN_USER, ES_ADMIN_PASSWORD));
   private static final String TASKLIST_ES_USER = "tasklist_user";
   private static final String TASKLIST_ES_PASSWORD = "tasklist_pwd";
   @Autowired RestHighLevelClient tasklistEsClient;
