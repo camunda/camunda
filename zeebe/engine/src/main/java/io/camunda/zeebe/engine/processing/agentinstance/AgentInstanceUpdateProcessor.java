@@ -367,11 +367,11 @@ public final class AgentInstanceUpdateProcessor
 
   @Override
   public SuspensionAction onSuspended(final TypedRecord<AgentInstanceRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+    return SuspensionAware.bufferInternalOnly(record);
   }
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
+    return SuspensionAware.processInternalOnly(record);
   }
 }

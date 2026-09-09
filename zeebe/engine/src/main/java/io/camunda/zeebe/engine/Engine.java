@@ -196,20 +196,14 @@ public class Engine implements RecordProcessor {
       }
 
       final var suspension = suspensionBehavior.process(typedCommand, currentProcessor);
-      final boolean shouldProcess =
-          switch (suspension.outcome()) {
-            case REJECT -> {
-              rejectSuspendedInstanceCommand(typedCommand, suspension.processInstanceKey());
-              yield false;
-            }
-            case BUFFER -> {
-              bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
-              yield false;
-            }
-            case PROCESS -> true;
-          };
-      if (shouldProcess) {
-        currentProcessor.processRecord(record, processingResultBuilder);
+      switch (suspension.outcome()) {
+        case REJECT -> {
+          rejectSuspendedInstanceCommand(typedCommand, suspension.processInstanceKey());
+        }
+        case BUFFER -> {
+          bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
+        }
+        default -> currentProcessor.processRecord(record, processingResultBuilder);
       }
     }
     return processingResultBuilder.build();

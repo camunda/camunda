@@ -268,21 +268,25 @@ public final class VariableDocumentUpdateProcessor
         .writeAcceptedResponseOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 
-  /**
-   * Allow variable updates while suspended for recovery. Reject only Camunda user-task scopes: that
-   * path can start an {@code UPDATING} task listener, which cannot complete while suspended.
-   */
   @Override
   public SuspensionAction onSuspended(final TypedRecord<VariableDocumentRecord> record) {
-    final var scope = elementInstanceState.getInstance(record.getValue().getScopeKey());
-    return scope != null && isCamundaUserTask(scope)
-        ? SuspensionAction.REJECT
-        : SuspensionAction.PROCESS;
+    return getActionForSuspension(record);
   }
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<VariableDocumentRecord> record) {
-    return onSuspended(record);
+    return getActionForSuspension(record);
+  }
+
+  /**
+   * Allow variable updates while suspended for recovery. Reject only Camunda user-task scopes: that
+   * path can start an {@code UPDATING} task listener, which cannot complete while suspended.
+   */
+  private SuspensionAction getActionForSuspension(
+      final TypedRecord<VariableDocumentRecord> record) {
+    final var scope = elementInstanceState.getInstance(record.getValue().getScopeKey());
+    final boolean canBeProcessedWhileSuspended = scope == null || !isCamundaUserTask(scope);
+    return canBeProcessedWhileSuspended ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
   }
 
   public static void mergeVariables(

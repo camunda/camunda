@@ -34,12 +34,12 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
   SuspensionAction onSuspended(final TypedRecord<T> record);
 
   /**
-   * Handles the command while the target instance is {@code RESUMING}, instead of processing it.
+   * Handles the command when the target instance is {@code RESUMING}, instead of processing it.
    * Write any events that must accompany this outcome (for example {@code Timer.RESUMED} before a
    * drained trigger runs), then return how the gate should treat the command.
    *
-   * <p>The returned action should match {@link #onSuspended} for command execution, except {@link
-   * SuspensionAction#BUFFER} is not allowed: buffered commands must drain, not re-buffer.
+   * <p>The returned action be compatible {@link #onSuspended} for command execution. {@link
+   * SuspensionAction#BUFFER} is not allowed: buffered commands must drain.
    *
    * @param record the command being handled
    * @return {@link SuspensionAction#PROCESS} or {@link SuspensionAction#REJECT}; never {@code null}
@@ -47,15 +47,20 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
    */
   SuspensionAction onResuming(final TypedRecord<T> record);
 
+  static SuspensionAction bufferInternalOnly(final TypedRecord<?> record) {
+    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+  }
+
+  static SuspensionAction processInternalOnly(final TypedRecord<?> record) {
+    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
+  }
+
   enum SuspensionAction {
     /** Process the command immediately, regardless of the suspension marker. */
     PROCESS,
     /** Reject the command while any suspension marker (SUSPENDED or RESUMING) is present. */
     REJECT,
-    /**
-     * Buffer the command while {@code SUSPENDED}. Must not be returned from {@link #onResuming};
-     * the gate throws {@link IllegalStateException} if it is.
-     */
+    /** Buffer the command while {@code SUSPENDED}. Must not be returned by {@link #onResuming}. */
     BUFFER
   }
 }

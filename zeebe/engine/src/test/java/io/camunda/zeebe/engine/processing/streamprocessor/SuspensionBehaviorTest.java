@@ -138,6 +138,19 @@ final class SuspensionBehaviorTest {
   }
 
   @Test
+  void shouldResumeWhenProcessorIsNotSuspensionAware() {
+    // given - a suspended instance and a processor that does not opt into suspension handling
+    markerIs(State.RESUMING);
+
+    // when
+    final var result = suspensionBehavior.process(command(), plainProcessor());
+
+    // then - non-aware processors are never gated, and the key is not even resolved
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    assertThat(result.processInstanceKey()).isEqualTo(-1);
+  }
+
+  @Test
   void shouldFlipBufferToProcessWhileResuming() {
     // given
     markerIs(State.RESUMING);

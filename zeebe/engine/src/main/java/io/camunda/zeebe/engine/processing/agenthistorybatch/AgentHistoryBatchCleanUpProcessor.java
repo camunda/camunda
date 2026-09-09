@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.agenthistorybatch;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -95,6 +94,11 @@ public final class AgentHistoryBatchCleanUpProcessor
     }
   }
 
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
+  }
+
   private boolean collectUpToChunkSize(
       final HashSet<String> idsToDelete, final AtomicBoolean hasMore, final String id) {
     // An id already collected from the other column family doesn't need a new budget slot: check
@@ -116,12 +120,12 @@ public final class AgentHistoryBatchCleanUpProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryBatchRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<AgentHistoryBatchRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   @Override
-  public boolean shouldProcessResultsInSeparateBatches() {
-    return true;
+  public SuspensionAction onResuming(final TypedRecord<AgentHistoryBatchRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

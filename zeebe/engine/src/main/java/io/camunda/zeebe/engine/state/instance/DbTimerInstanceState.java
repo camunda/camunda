@@ -90,19 +90,17 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
-  public void restoreDueDate(
-      final long elementInstanceKey, final long timerKey, final long dueDate) {
+  public void suspend(final long elementInstanceKey, final long timerKey, final long dueDate) {
+    wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
+    dueDateColumnFamily.deleteIfExists(dueDateCompositeKey);
+  }
+
+  @Override
+  public void resume(final long elementInstanceKey, final long timerKey, final long dueDate) {
     if (get(elementInstanceKey, timerKey) != null) {
       wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
       dueDateColumnFamily.upsert(dueDateCompositeKey, DbNil.INSTANCE);
     }
-  }
-
-  @Override
-  public void removeDueDate(
-      final long elementInstanceKey, final long timerKey, final long dueDate) {
-    wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
-    dueDateColumnFamily.deleteIfExists(dueDateCompositeKey);
   }
 
   private void wrapDueDateKey(
@@ -162,15 +160,5 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     this.timerKey.wrapLong(timerKey);
 
     return timerInstanceColumnFamily.get(elementAndTimerKey);
-  }
-
-  @Override
-  public boolean hasDueDateEntry(final long elementInstanceKey, final long timerKey) {
-    final TimerInstance timerInstance = get(elementInstanceKey, timerKey);
-    if (timerInstance == null) {
-      return false;
-    }
-    wrapDueDateKey(elementInstanceKey, timerKey, timerInstance.getDueDate());
-    return dueDateColumnFamily.exists(dueDateCompositeKey);
   }
 }

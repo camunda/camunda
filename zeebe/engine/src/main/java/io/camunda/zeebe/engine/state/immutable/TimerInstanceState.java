@@ -27,8 +27,6 @@ public interface TimerInstanceState {
 
   TimerInstance get(long elementInstanceKey, long timerKey);
 
-  boolean hasDueDateEntry(long elementInstanceKey, long timerKey);
-
   @FunctionalInterface
   interface TimerVisitor {
 

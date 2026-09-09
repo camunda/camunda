@@ -178,7 +178,7 @@ public final class BpmnStreamProcessor
     // is rejected; internal forward-progress element events are buffered instead.
     return switch ((ProcessInstanceIntent) record.getIntent()) {
       case TERMINATE_ELEMENT, CONTINUE_TERMINATING_ELEMENT -> SuspensionAction.PROCESS;
-      default -> record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+      default -> SuspensionAware.bufferInternalOnly(record);
     };
   }
 
@@ -186,7 +186,7 @@ public final class BpmnStreamProcessor
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
     return switch ((ProcessInstanceIntent) record.getIntent()) {
       case TERMINATE_ELEMENT, CONTINUE_TERMINATING_ELEMENT -> SuspensionAction.PROCESS;
-      default -> record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
+      default -> SuspensionAware.processInternalOnly(record);
     };
   }
 

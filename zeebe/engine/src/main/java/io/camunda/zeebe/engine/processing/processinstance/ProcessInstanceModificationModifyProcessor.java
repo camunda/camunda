@@ -1525,12 +1525,12 @@ public final class ProcessInstanceModificationModifyProcessor
 
   @Override
   public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceModificationRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+    return SuspensionAware.bufferInternalOnly(record);
   }
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceModificationRecord> record) {
-    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
+    return SuspensionAware.processInternalOnly(record);
   }
 
   /**
