@@ -137,7 +137,7 @@ class AgentInstanceAuthorizationIT {
         .execute();
     // Complete job1 so JobCompleteProcessor emits AGENT_HISTORY:COMMIT, transitioning
     // the history item to COMMITTED so it becomes searchable.
-    adminClient.newCompleteCommand(jobKey1).execute();
+    adminClient.newCompleteCommand(jobKey1).withLeaseToken(result1.jobLease()).execute();
 
     agentInstanceKey2 = createAgentInstance(adminClient, PROCESS_ID_2).agentInstanceKey();
     final var result3 = createAgentInstance(adminClient, PROCESS_ID_3);
