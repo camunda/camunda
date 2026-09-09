@@ -32,9 +32,10 @@ Four constraints shape every decision below.
 2. **A secret value must never become durable.** The log is replicated, snapshotted, replayed and
    exported. A value that reaches it is a value in backups, in secondary storage and in support
    bundles.
-3. **A reference must never be taken from runtime data.** If a request-body variable or a JSON
-   payload could name a secret, any user who can set a variable can exfiltrate any secret the
-   cluster holds.
+3. **A reference the engine resolves must never be taken from runtime data.** If a request-body
+   variable or a JSON payload could name a secret, any user who can set a variable can exfiltrate
+   any secret the cluster holds, because the engine path grants no permission per reference (D9).
+   The gateway path takes the caller's own references and checks a permission on each instead.
 4. **A cluster hosts several physical tenants.** Stores, credentials and caches belong to a tenant,
    and one tenant must never resolve against another tenant's store.
 
@@ -54,28 +55,46 @@ resolve what those expressions referenced, under its own permissions.
 
 The evaluate-expression endpoint bridges the two: it reports the references an evaluation touched
 (`EvaluateExpressionResponse.getReferencedSecrets()`), and the caller then resolves them itself
-through `/v2/secrets/resolve`. It reports only references from trusted sources, see D2.
+through `/v2/secrets/resolve`. It reports only what the engine itself recognised as a reference,
+never one a `JSON` cluster variable happened to spell out, see D2.
 
-### D2. A reference is established at authoring or write time, never from runtime data
+### D2. The engine resolves only references established at authoring or write time
 
-`camunda.secrets.<name>` is recognised in exactly three places, and each one is a place the cluster
-already trusts:
+`camunda.secrets.<name>` is recognised in exactly three places:
 
-- **an input mapping or a `zeebe:property` value**, detected on the parsed FEEL AST rather than raw
-  text (`SecretReference.parse`). A reference inside a string literal stays a literal, so a runtime
-  value that merely looks like a reference is never resolved.
+- **an input mapping source**, detected on the parsed FEEL AST rather than raw text
+  (`SecretReference.parse`, reached only from `VariableMappingTransformer`) and pinned onto the
+  element with the JSON pointer of the leaf it belongs to. A reference inside a string literal
+  stays a literal, so a runtime value that merely looks like a reference is never resolved.
 - **a `SECRET_REFERENCE`-kind cluster variable**, scanned once at write time
   (`ClusterVariableSecretReferenceScanner`) and pinned onto the record with the JSON pointer of the
   leaf it was found in. A `JSON`-kind cluster variable contributes nothing even if its value spells
   out a reference.
 - **an expression evaluated through the expression endpoint**, where `ReferencedSecretCollector`
-  records only the two trusted sources above.
+  records what the caller's own expression names, plus whatever a `SECRET_REFERENCE` cluster
+  variable the expression read carried in. A `JSON`-kind variable contributes nothing here either.
 
-Two deploy-time validators keep authored references unambiguous and resolvable:
+The first two are provenance: the engine resolves a reference because of where it was written, and
+a worker receives the value without holding any secret permission (D9). The third is not, and must
+not be read as if it were. An expression endpoint caller names its own references, which is runtime
+data by any measure, and what stands in for provenance there is authorization: the caller resolves
+them through `/v2/secrets/resolve` under a per-reference `SECRET:REVEAL` check, and could have
+called that endpoint directly with the same names. The collector's job on that path is narrower
+than it looks, and is about the second source rather than the first: it stops an expression from
+laundering an untrusted reference out of a `JSON` cluster variable and having it come back as a
+reported one. Constraint 3 above is therefore the rule for the engine path. The gateway path
+substitutes a permission check for it.
+
+Two deploy-time validators keep authored references unambiguous and resolvable.
 `SecretReferenceLiteralValidator` rejects a quoted reference in a source the engine may evaluate,
-and `SecretReferenceLeafPrecisionValidator` rejects the shapes (a FEEL list literal, a context
-literal produced by a branch) that would record the reference at an enclosing path instead of its
-own leaf and therefore could never resolve.
+covering both a `zeebe:input` source and a `zeebe:property` value. A `zeebe:property` is never
+scanned for references at all, so one written there resolves nowhere and would reach a worker as
+raw text; the guard is what stops that from shipping silently.
+`SecretReferenceLeafPrecisionValidator` rejects the shapes (a FEEL list literal, a context literal
+produced by a branch) that would record the reference at an enclosing path instead of its own leaf
+and therefore could never resolve. It runs on `zeebe:input` only, and covers those two shapes
+rather than every way a FEEL expression can produce a container, with `JobSecretInjector`'s runtime
+guard as the safety net for the rest.
 
 The reference name is a single token of `[\p{Alnum}_-]+`, at most 256 characters. The same string is
 the FEEL identifier, the authorization resource id and the store lookup key, never one of them
