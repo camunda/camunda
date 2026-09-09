@@ -80,12 +80,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles({"starter", "worker", "it"})
 class AgentVisibilityWorkerIT {
 
+  @Container
+  static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
+
   private static final String TOOL_LOOKUP_ACCOUNT = "tool-lookup-account";
   private static final String TOOL_CALCULATE_SCORE = "tool-calculate-score";
   private static final String TOOL_SEND_NOTIFICATION = "tool-send-notification";
-
-  @Container
-  static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
 
   @Autowired private CamundaClient client;
 

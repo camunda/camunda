@@ -228,10 +228,6 @@ class WorkerTest {
     verify(completeStep).send();
   }
 
-  /** One round's outcome: which tool elements were activated, and the final completion flag. */
-  private record AdHocSubProcessRoundResult(
-      List<String> activatedElements, boolean completionConditionFulfilled) {}
-
   /**
    * Drives a single {@link Worker#handleJob} invocation for an ad-hoc-sub-process orchestrator job
    * on the given process instance, capturing the {@code JobResult} function passed to {@link
@@ -405,4 +401,8 @@ class WorkerTest {
     when(completeStep.send()).thenReturn((CamundaFuture) future);
     return completeStep;
   }
+
+  /** One round's outcome: which tool elements were activated, and the final completion flag. */
+  private record AdHocSubProcessRoundResult(
+      List<String> activatedElements, boolean completionConditionFulfilled) {}
 }
