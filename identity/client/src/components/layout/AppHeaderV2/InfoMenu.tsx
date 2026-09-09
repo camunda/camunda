@@ -8,12 +8,12 @@
 
 import { HelpCircle } from "@camunda/design-system/icons";
 import {
-  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  IconButton,
 } from "@camunda/design-system";
 
 import useTranslate from "src/utility/localization";
@@ -42,14 +42,12 @@ const InfoMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
+        <IconButton
           type="button"
           variant="ghost"
-          size="icon"
-          aria-label={t("info")}
-        >
-          <HelpCircle aria-hidden className="size-4" />
-        </Button>
+          label={t("info")}
+          icon={HelpCircle}
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel>{t("info")}</DropdownMenuLabel>

@@ -8,12 +8,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Button,
   cn,
   Command,
   CommandInput,
   CommandItem,
   CommandList,
+  IconButton,
   Popover,
   PopoverAnchor,
   PopoverContent,
@@ -122,16 +122,15 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
               className={cn(search && "pr-8")}
             />
             {search && (
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="sm"
                 className="absolute inset-y-0 right-1 my-auto"
-                aria-label={t("clearSearch")}
+                label={t("clearSearch")}
+                icon={XIcon}
                 onClick={handleClear}
-              >
-                <XIcon aria-hidden="true" />
-              </Button>
+              />
             )}
           </div>
         </PopoverAnchor>

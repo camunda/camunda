@@ -15,9 +15,10 @@ import {
   useState,
 } from "react";
 import {
-  Button,
   CharacterCount,
+  IconButton,
   Input,
+  NavIcon,
   Textarea,
 } from "@camunda/design-system";
 import { Eye, EyeOff } from "@camunda/design-system/icons";
@@ -25,7 +26,7 @@ import useTranslate from "src/utility/localization";
 import FormField from "./FormField";
 
 type ActionButtonProps = {
-  icon: ReactNode;
+  icon: NavIcon;
   label: string;
   onClick: () => void;
   ariaHasPopup?: AriaAttributes["aria-haspopup"];
@@ -168,23 +169,16 @@ const TextField: FC<TextFieldProps> = ({
                 type={passwordVisible ? "text" : "password"}
                 className="pr-10"
               />
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="sm"
                 className="absolute top-0.5 right-0.5"
-                aria-label={
-                  passwordVisible ? t("hidePassword") : t("showPassword")
-                }
+                label={passwordVisible ? t("hidePassword") : t("showPassword")}
+                icon={passwordVisible ? EyeOff : Eye}
                 aria-pressed={passwordVisible}
                 onClick={() => setPasswordVisible((visible) => !visible)}
-              >
-                {passwordVisible ? (
-                  <EyeOff aria-hidden="true" />
-                ) : (
-                  <Eye aria-hidden="true" />
-                )}
-              </Button>
+              />
             </div>
           );
         }
@@ -210,18 +204,17 @@ const TextField: FC<TextFieldProps> = ({
           return (
             <div className="relative">
               <Input {...commonProps} type={type} className="pr-9" />
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="sm"
                 className="absolute top-0.5 right-0.5"
-                aria-label={actionButton.label}
+                label={actionButton.label}
+                icon={actionButton.icon}
                 aria-haspopup={actionButton.ariaHasPopup}
                 aria-expanded={actionButton.ariaExpanded}
                 onClick={actionButton.onClick}
-              >
-                {actionButton.icon}
-              </Button>
+              />
             </div>
           );
         }

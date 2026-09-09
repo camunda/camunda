@@ -65,7 +65,7 @@ const DateRangeField: React.FC<Props> = ({
         readOnly
         onClick={handleClick}
         actionButton={{
-          icon: <Calendar aria-hidden="true" />,
+          icon: Calendar,
           label: "Open date range modal",
           onClick: handleClick,
           ariaHasPopup: "dialog",
