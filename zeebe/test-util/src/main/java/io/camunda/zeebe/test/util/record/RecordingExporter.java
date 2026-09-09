@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
@@ -375,6 +377,16 @@ public final class RecordingExporter implements Exporter {
 
   public static AgentHistoryRecordStream agentHistoryRecords(final AgentHistoryIntent intent) {
     return agentHistoryRecords().withIntent(intent);
+  }
+
+  public static AgentHistoryBatchRecordStream agentHistoryBatchRecords() {
+    return new AgentHistoryBatchRecordStream(
+        records(ValueType.AGENT_HISTORY_BATCH, AgentHistoryBatchRecordValue.class));
+  }
+
+  public static AgentHistoryBatchRecordStream agentHistoryBatchRecords(
+      final AgentHistoryBatchIntent intent) {
+    return agentHistoryBatchRecords().withIntent(intent);
   }
 
   public static SecretReferenceRecordStream secretReferenceRecords() {
