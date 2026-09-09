@@ -135,7 +135,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ benchmark-data, run-variant ]
     if: always()
-    timeout-minutes: 5
+    # 20 minutes covers the pre-existing fast artifact/merge steps plus the GCS auth
+    # (3-minute timeout) and upload (retried up to 5x at a 2-minute timeout each) steps below.
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: read
@@ -210,6 +212,10 @@ jobs:
           # overwriting another's.
       - name: Authenticate to GCS load-test-results
         timeout-minutes: 3 # fail fast on a Vault/WIF hang instead of consuming the job's whole timeout
+        # Best-effort: GCS persistence is a long-term archive on top of the GH artifact uploaded
+        # above, so a Vault/GCS hiccup here must not fail this job and block the Slack summary
+        # notify-results depends on (needs.aggregate-metrics.result == 'success').
+        continue-on-error: true
         uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
@@ -217,6 +223,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           secret-path: secret/data/products/camunda/ci/load-test-results/load-test-results-sa
       - name: Upload results to GCS
+        continue-on-error: true # see the auth step above
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
           BENCHMARK: ${{ needs.benchmark-data.outputs.benchmark }}

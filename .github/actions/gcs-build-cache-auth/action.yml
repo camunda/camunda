@@ -1,5 +1,5 @@
 # owner: @camunda/engineering-operations
-name: GCS build-cache auth
+name: GCS auth via Workload Identity Federation
 description: >-
   Vault-fetch a GCS service account and authenticate gcloud via Workload
   Identity Federation. After this action, `gcloud storage` commands can
