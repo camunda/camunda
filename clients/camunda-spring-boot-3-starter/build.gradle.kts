@@ -11,6 +11,7 @@ plugins {
 }
 
 java { disableAutoTargetJvm() }
+
 tasks.withType<JavaCompile>().configureEach { options.release.set(17) }
 
 publishing {
@@ -36,10 +37,15 @@ val shadowBaseStarter =
   }
 
 configurations.named("compileClasspath") { extendsFrom(shadowBaseStarter) }
+
 configurations.named("testCompileClasspath") { extendsFrom(shadowBaseStarter) }
+
 configurations.named("testRuntimeClasspath") { extendsFrom(shadowBaseStarter) }
 
-val baseStarterProjectDir = project(":camunda-spring-boot-starter").projectDir
+val baseStarterProjectDir =
+  layout.settingsDirectory.dir("clients/camunda-spring-boot-starter").asFile
+val baseStarterBuildDirectory =
+  layout.settingsDirectory.dir("clients/camunda-spring-boot-starter/build")
 val generatedTestSourcesDir = layout.buildDirectory.dir("generated-test-sources/java")
 
 val testSourceGenerator =
@@ -144,8 +150,6 @@ tasks.named<Jar>("jar") { enabled = false }
 // ResourceUtils.getFile("classpath:...") requires real filesystem paths — it cannot resolve
 // resources from inside a JAR. The base starter's main output must appear as directories on the
 // test classpath rather than being consumed via its published JAR.
-val baseStarter = project(":camunda-spring-boot-starter")
-
 tasks.named<Test>("test") {
   dependsOn(
     ":camunda-spring-boot-starter:compileJava",
@@ -154,8 +158,8 @@ tasks.named<Test>("test") {
   // Append these directories so the SB3 overrides in this module take precedence over SB4 classes.
   classpath +=
     files(
-      baseStarter.layout.buildDirectory.dir("classes/java/main"),
-      baseStarter.layout.buildDirectory.dir("resources/main"),
+      baseStarterBuildDirectory.dir("classes/java/main"),
+      baseStarterBuildDirectory.dir("resources/main"),
     )
 }
 
