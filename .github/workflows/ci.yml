@@ -75,6 +75,8 @@ jobs:
       deps-changed: ${{ steps.filter.outputs.deps-changed }}
       load-test-setup-changes: ${{ steps.filter.outputs.load-test-setup-changes }}
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
+      build-tool: ${{ steps.filter.outputs.build-tool }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -207,6 +209,55 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw spotless:check
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  gradle-compile-check:
+    if: >-
+      github.event_name != 'schedule' &&
+      (
+        needs.detect-changes.outputs.gradle-changes == 'true' ||
+        needs.detect-changes.outputs.build-tool == 'gradle'
+      )
+    name: "Gradle / Test Classes"
+    needs: [ detect-changes ]
+    runs-on: gcp-perf-core-16-default
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: gradle-compile
+          skip-maven-cache: "true"
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Only main and stable pushes warm the shared cache; all other runs only read it.
+          cache-read-only: >-
+            ${{
+              !(
+                github.event_name == 'push' &&
+                (
+                  github.ref == 'refs/heads/main' ||
+                  startsWith(github.ref, 'refs/heads/stable/')
+                )
+              )
+            }}
+      - run: ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2761,6 +2812,7 @@ jobs:
       - docker-checks
       - general-unit-tests
       - generate-db-versions
+      - gradle-compile-check
       - history-tests
       - identity-frontend-tests
       - identity-tests
