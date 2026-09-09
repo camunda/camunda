@@ -103,7 +103,10 @@ public final class ClockTest {
     final var record = clockClient.pinAt(fakeNow);
     // required to ensure we have updated the state
     ENGINE.awaitProcessingOf(record);
-    assertThat(ENGINE.hasReachedEnd()).isTrue();
+    // awaitProcessingOf only awaits the pin command's own processing, not that the state machine
+    // has fully caught up on the log, so this must be polled rather than asserted once
+    Awaitility.await("until the engine has reached the end of the log after pinning")
+        .until(ENGINE::hasReachedEnd);
 
     // when
     ENGINE.snapshot();
