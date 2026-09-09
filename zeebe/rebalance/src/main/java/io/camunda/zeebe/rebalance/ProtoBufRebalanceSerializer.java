@@ -318,6 +318,8 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
       case CANCELLED -> Rebalance.PartitionRebalance.Outcome.CANCELLED;
       case PHYSICAL_TENANT_DISABLED ->
           Rebalance.PartitionRebalance.Outcome.PHYSICAL_TENANT_DISABLED;
+      case PHYSICAL_TENANT_RECOVERING ->
+          Rebalance.PartitionRebalance.Outcome.PHYSICAL_TENANT_RECOVERING;
     };
   }
 
@@ -344,6 +346,7 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
       case NO_RESPONSE -> PartitionRebalanceOutcome.NO_RESPONSE;
       case CANCELLED -> PartitionRebalanceOutcome.CANCELLED;
       case PHYSICAL_TENANT_DISABLED -> PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED;
+      case PHYSICAL_TENANT_RECOVERING -> PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING;
       case OUTCOME_UNSPECIFIED, UNRECOGNIZED ->
           throw new DecodingFailed(
               "Partition rebalance outcome is missing or unrecognized: " + outcome);
