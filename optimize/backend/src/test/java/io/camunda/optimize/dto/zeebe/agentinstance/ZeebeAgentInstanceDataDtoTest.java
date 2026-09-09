@@ -17,6 +17,52 @@ import org.junit.jupiter.api.Test;
 
 class ZeebeAgentInstanceDataDtoTest {
 
+  // ── history/limits deserialization (regression for #62414) ────────────────
+
+  @Test
+  void shouldDeserializeRealExporterRecordWithEmptyHistoryAndLimits() throws Exception {
+    // given — a record shaped like the one the Elasticsearch exporter actually writes:
+    // value.history
+    // present as an empty array, value.limits present as an object, alongside the other fields
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final String json =
+        "{"
+            + "\"agentInstanceKey\":1,"
+            + "\"elementInstanceKey\":2,"
+            + "\"elementInstanceKeys\":[2],"
+            + "\"elementId\":\"agent\","
+            + "\"processInstanceKey\":3,"
+            + "\"rootProcessInstanceKey\":3,"
+            + "\"bpmnProcessId\":\"myProcess\","
+            + "\"processDefinitionKey\":4,"
+            + "\"processDefinitionVersion\":1,"
+            + "\"tenantId\":\"<default>\","
+            + "\"jobKey\":5,"
+            + "\"jobLease\":\"lease-1\","
+            + "\"status\":\"COMPLETED\","
+            + "\"definition\":{\"model\":\"gpt\",\"provider\":\"openai\"},"
+            + "\"limits\":{\"maxTokens\":1000,\"maxModelCalls\":10,\"maxToolCalls\":10},"
+            + "\"metrics\":{\"inputTokens\":100,\"outputTokens\":50},"
+            + "\"tools\":[{\"name\":\"my-tool\",\"description\":\"does something\",\"elementId\":\"tool1\"}],"
+            + "\"changedAttributes\":[],"
+            + "\"history\":[]"
+            + "}";
+
+    // when — deserialization must not fail on the setterless 'history' getter
+    final ZeebeAgentInstanceDataDto dto =
+        objectMapper.readValue(json, ZeebeAgentInstanceDataDto.class);
+
+    // then — the fields Optimize actually consumes are correctly mapped
+    assertThat(dto.getAgentInstanceKey()).isEqualTo(1L);
+    assertThat(dto.getDefinition().getModel()).isEqualTo("gpt");
+    assertThat(dto.getDefinition().getProvider()).isEqualTo("openai");
+    assertThat(dto.getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(dto.getMetrics().getOutputTokens()).isEqualTo(50L);
+    assertThat(dto.getTools()).hasSize(1);
+    assertThat(dto.getTools().get(0).getName()).isEqualTo("my-tool");
+    assertThat(dto.getHistory()).isNull();
+  }
+
   // ── changedAttributes deserialization ─────────────────────────────────────
 
   @Test
