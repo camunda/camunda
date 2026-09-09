@@ -22,9 +22,6 @@
   </modules>
 
   <properties>
-    <maven.compiler.target>21</maven.compiler.target>
-    <maven.compiler.source>21</maven.compiler.source>
-
     <skipSurefire>false</skipSurefire>
     <testForkCount>${env.LIMITS_CPU}</testForkCount>
     <maven.javadoc.skip>true</maven.javadoc.skip>
