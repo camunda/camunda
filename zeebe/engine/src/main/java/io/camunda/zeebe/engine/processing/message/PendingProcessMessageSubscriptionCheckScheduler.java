@@ -113,6 +113,7 @@ public final class PendingProcessMessageSubscriptionCheckScheduler
         subscription.getRecord().getBusinessIdBuffer(),
         subscription.getRecord().getElementIdBuffer(),
         subscription.getRecord().getRootProcessInstanceKey(),
+        subscription.getRecord().getStorageOrdinalKey(),
         subscription.getRecord().getElementType());
   }
 
@@ -124,6 +125,7 @@ public final class PendingProcessMessageSubscriptionCheckScheduler
         subscription.getRecord().getProcessDefinitionKey(),
         subscription.getRecord().getMessageNameBuffer(),
         subscription.getRecord().getTenantId(),
-        subscription.getRecord().getSubscriptionKey());
+        subscription.getRecord().getSubscriptionKey(),
+        subscription.getRecord().getStorageOrdinalKey());
   }
 }
