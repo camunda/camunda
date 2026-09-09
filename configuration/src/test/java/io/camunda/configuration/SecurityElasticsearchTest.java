@@ -167,4 +167,51 @@ public class SecurityElasticsearchTest {
           .returns(true, io.camunda.operate.property.SslProperties::isSelfSigned);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        // certificate path, legacy only: the unified property has no default, so it stays unset
+        "camunda.database.security.certificatePath=certificatePath",
+        "camunda.tasklist.elasticsearch.ssl.certificatePath=certificatePath",
+        "camunda.operate.elasticsearch.ssl.certificatePath=certificatePath",
+        "zeebe.broker.exporters.camundaexporter.args.connect.security.certificatePath=certificatePath"
+      })
+  class WithOnlyLegacyCertificatePathSet {
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+    final BrokerBasedProperties brokerBasedProperties;
+    final OperateProperties operateProperties;
+
+    WithOnlyLegacyCertificatePathSet(
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final OperateProperties operateProperties) {
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.operateProperties = operateProperties;
+    }
+
+    @Test
+    void shouldFallBackToLegacyCertificatePathInSearchEngineConnectProperties() {
+      assertThat(searchEngineConnectProperties.getSecurity())
+          .returns("certificatePath", SecurityConfiguration::getCertificatePath);
+    }
+
+    @Test
+    void shouldFallBackToLegacyCertificatePathInExporterProperties() {
+      final ExporterConfiguration exporterConfiguration =
+          getExporterConfiguration(brokerBasedProperties);
+
+      assertThat(exporterConfiguration.getConnect().getSecurity())
+          .returns("certificatePath", SecurityConfiguration::getCertificatePath);
+    }
+
+    @Test
+    void shouldFallBackToLegacyCertificatePathInOperateProperties() {
+      assertThat(operateProperties.getElasticsearch().getSsl())
+          .returns(
+              "certificatePath", io.camunda.operate.property.SslProperties::getCertificatePath);
+    }
+  }
 }
