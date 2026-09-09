@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -38,9 +39,14 @@ import org.junit.jupiter.api.Test;
 @MultiDbTest
 public class AgentInstanceMigrationIT {
 
-  private static final String AGENT_JOB_TYPE = "agent-task";
-
   private static CamundaClient client;
+
+  private String agentJobType;
+
+  @BeforeEach
+  void setUp() {
+    agentJobType = uniqueAgentJobType();
+  }
 
   @Test
   void shouldMigrateOrphanedButActiveAgentInstanceOfServiceTask() {
@@ -57,8 +63,7 @@ public class AgentInstanceMigrationIT {
             Bpmn.createExecutableProcess("migration-agent-service-task_v1")
                 .startEvent()
                 .serviceTask(
-                    sourceElementId,
-                    t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    sourceElementId, t -> t.zeebeJobType(agentJobType).zeebeAiAgentTaskDefinition())
                 .userTask(sourceNextElementId)
                 .endEvent()
                 .done(),
@@ -69,8 +74,7 @@ public class AgentInstanceMigrationIT {
             Bpmn.createExecutableProcess("migration-agent-service-task_v2")
                 .startEvent()
                 .serviceTask(
-                    targetElementId,
-                    t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    targetElementId, t -> t.zeebeJobType(agentJobType).zeebeAiAgentTaskDefinition())
                 .userTask(targetNextElementId)
                 .endEvent()
                 .done(),
@@ -82,7 +86,7 @@ public class AgentInstanceMigrationIT {
     final long sourceAgentDefinitionKey =
         client.newAgentInstanceGetRequest(agentInstanceKey).execute().getAgentDefinitionKey();
 
-    activateAndCompleteJobs(client, AGENT_JOB_TYPE, "test-worker", 1);
+    activateAndCompleteJobs(client, agentJobType, "test-worker", 1);
     waitForElementInstances(
         client, f -> f.elementId(sourceNextElementId).processInstanceKey(processInstanceKey), 1);
 
@@ -115,7 +119,7 @@ public class AgentInstanceMigrationIT {
             Bpmn.createExecutableProcess("migration-agent-ahsp_v1")
                 .startEvent()
                 .adHocSubProcess(sourceElementId, p -> p.task("agentTask"))
-                .zeebeJobType(AGENT_JOB_TYPE)
+                .zeebeJobType(agentJobType)
                 .zeebeAiAgentSubProcessDefinition()
                 .endEvent()
                 .done(),
@@ -126,7 +130,7 @@ public class AgentInstanceMigrationIT {
             Bpmn.createExecutableProcess("migration-agent-ahsp_v2")
                 .startEvent()
                 .adHocSubProcess(targetElementId, p -> p.task("agentTask2"))
-                .zeebeJobType(AGENT_JOB_TYPE)
+                .zeebeJobType(agentJobType)
                 .zeebeAiAgentSubProcessDefinition()
                 .endEvent()
                 .done(),
@@ -172,7 +176,7 @@ public class AgentInstanceMigrationIT {
     final var activatedJob =
         client
             .newActivateJobsCommand()
-            .jobType(AGENT_JOB_TYPE)
+            .jobType(agentJobType)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
             .send()
@@ -200,6 +204,10 @@ public class AgentInstanceMigrationIT {
 
     waitForAgentInstanceToBeIndexed(client, agentInstanceKey);
     return agentInstanceKey;
+  }
+
+  private static String uniqueAgentJobType() {
+    return "agent-task-" + UUID.randomUUID();
   }
 
   private static AgentInstanceHistoryItem configurationHistoryItem(
