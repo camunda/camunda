@@ -2725,7 +2725,9 @@ jobs:
         run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
       - name: Install load-test script test dependencies
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
-        run: python3 -m pip install --quiet uv==0.8.22
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.8.22"
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions
