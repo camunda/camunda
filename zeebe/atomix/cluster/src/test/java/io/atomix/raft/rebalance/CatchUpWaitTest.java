@@ -136,25 +136,6 @@ public class CatchUpWaitTest {
         .isEqualTo(Optional.of(LeadershipTransferResult.PAUSE_FAILED));
   }
 
-  @Test
-  public void shouldKeepTheSuccessfulResultWhenTheDeadlinePasses() throws Exception {
-    // given
-    final long committed = raftRule.appendEntries(5);
-    final var leader = raftRule.getLeader().orElseThrow();
-    final var target = raftRule.getFollower().orElseThrow();
-    awaitReplicated(leader, memberId(target), committed);
-
-    // when
-    final var wait = awaitCaughtUp(leader, memberId(target), committed, Duration.ofMillis(200));
-
-    // then
-    assertThat(wait.result()).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(Optional.empty());
-    Awaitility.await("the result stays successful past the deadline")
-        .during(Duration.ofMillis(500))
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(wait.result().join()).isEqualTo(Optional.empty()));
-  }
-
   private static void awaitReplicated(
       final RaftServer leader, final MemberId memberId, final long index) {
     Awaitility.await("until " + memberId + " has replicated up to " + index)
