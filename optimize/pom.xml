@@ -88,8 +88,6 @@
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
 
-    <maven.compiler.target>21</maven.compiler.target>
-    <maven.compiler.source>21</maven.compiler.source>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
@@ -454,7 +452,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.16.0</version>
         <configuration>
-          <release>${maven.compiler.target}</release>
+          <release>${version.java}</release>
         </configuration>
       </plugin>
 
