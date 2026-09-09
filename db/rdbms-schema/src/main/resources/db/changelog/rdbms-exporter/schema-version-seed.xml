@@ -48,25 +48,54 @@
   </changeSet>
 
   <!--
-    Records 8.9.0 for a schema that predates version tracking — the one case the check cannot
-    otherwise know about, since an 8.9.x database carries no version row.
+    The two changesets below record the version of a schema that predates version tracking — the one
+    case the check cannot otherwise know about, since an 8.9.x database carries no version row.
 
-    IDX_AUDIT_LOG_ACTOR_ID is the artifact of the last changeset in changesets/8.9.0.xml and shipped
-    before 8.9.0 GA, so its presence means every pre-8.10 changeset ran. DEPLOYED_RESOURCE is the
-    first table changesets/8.10.0.xml creates, so its absence means none of 8.10's did. Together
-    they identify a schema that pre-8.10 code finished, which a first migration interrupted part-way
-    is not — that one is left unseeded so the master run can resume it instead of being refused as
-    an upgrade that skips a minor. Presence is only a trustworthy signal at all because this runs
-    inside the changelog lock, where no peer can be part-way through creating what it reads.
+    Both demand a schema that pre-8.10 code left at a released state, which a migration interrupted
+    part-way is not. The master changelog applies 8.9.0.xml, then 8.9.9.xml, then 8.10.0.xml, so:
 
-    The row count keeps the insert idempotent. Liquibase commits a changeset's changes before it
+      - IDX_AUDIT_LOG_ACTOR_ID is the artifact of the last changeset in 8.9.0.xml, so its presence
+        means all of 8.9.0's changesets ran;
+      - FULL_RESULT and FULL_INPUT_VALUE are the first and last columns 8.9.9.xml adds, so they say
+        whether 8.9.9 finished or never started. Exactly one of them means a run died inside 8.9.9;
+        neither changeset then fires, and the master run resumes the schema instead of the upgrade
+        being refused as a skipped minor;
+      - DEPLOYED_RESOURCE is the first table 8.10.0.xml creates, so its absence means none of 8.10's
+        changesets ran.
+
+    A run interrupted exactly at a file boundary still reads as the release that ends there, because
+    it is byte-for-byte that schema. Only a recorded version separates those two, which is what this
+    changelog starts doing. Presence is a trustworthy signal at all only because this runs inside the
+    changelog lock, where no peer can be part-way through creating what it reads.
+
+    The row count keeps each insert idempotent — Liquibase commits a changeset's changes before it
     records the changeset, so a crash in between would otherwise retry into a primary-key violation
-    on ID = 1.
+    on ID = 1 — and it stops the second insert once the first has run.
   -->
+  <changeSet id="seed_completed_8_9_9_schema_version" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <and>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_ACTOR_ID" tableName="${prefix}AUDIT_LOG"/>
+        <columnExists tableName="${prefix}DECISION_INSTANCE_INPUT" columnName="FULL_INPUT_VALUE"/>
+        <not>
+          <tableExists tableName="${prefix}DEPLOYED_RESOURCE"/>
+        </not>
+        <sqlCheck expectedResult="0">SELECT COUNT(*) FROM ${prefix}RDBMS_SCHEMA_VERSION</sqlCheck>
+      </and>
+    </preConditions>
+    <insert tableName="${prefix}RDBMS_SCHEMA_VERSION">
+      <column name="ID" valueNumeric="1"/>
+      <column name="VERSION" value="8.9.9"/>
+    </insert>
+  </changeSet>
+
   <changeSet id="seed_pre_versioning_schema_version" author="camunda">
     <preConditions onFail="MARK_RAN">
       <and>
         <indexExists indexName="${prefix}IDX_AUDIT_LOG_ACTOR_ID" tableName="${prefix}AUDIT_LOG"/>
+        <not>
+          <columnExists tableName="${prefix}DECISION_INSTANCE" columnName="FULL_RESULT"/>
+        </not>
         <not>
           <tableExists tableName="${prefix}DEPLOYED_RESOURCE"/>
         </not>
