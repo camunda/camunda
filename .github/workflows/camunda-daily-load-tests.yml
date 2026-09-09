@@ -210,11 +210,12 @@ jobs:
           # overwriting another's.
       - name: Authenticate to GCS load-test-results
         timeout-minutes: 3 # fail fast on a Vault/WIF hang instead of consuming the job's whole timeout
-        uses: ./.github/actions/gcs-load-test-results-auth
+        uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          secret-path: secret/data/products/camunda/ci/load-test-results/load-test-results-sa
       - name: Upload results to GCS
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
