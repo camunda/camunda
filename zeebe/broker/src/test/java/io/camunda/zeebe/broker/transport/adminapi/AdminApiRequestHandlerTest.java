@@ -16,6 +16,8 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -114,7 +116,7 @@ final class AdminApiRequestHandlerTest {
         @Mock final ClusterConfigurationService clusterConfigurationService) {
       handler =
           new AdminApiRequestHandler(
-              null,
+              new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
               transport,
               adminAccess,
               raftPartition,
@@ -166,7 +168,7 @@ final class AdminApiRequestHandlerTest {
       this.adminAccess = adminAccess;
       handler =
           new AdminApiRequestHandler(
-              null,
+              new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
               transport,
               adminAccess,
               raftPartition,
@@ -225,7 +227,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              null,
+              new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
               transport,
               adminAccess,
               raftPartition,
@@ -316,7 +318,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              null,
+              new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
               transport,
               adminAccess,
               raftPartition,
@@ -397,6 +399,9 @@ final class AdminApiRequestHandlerTest {
     private final AdminApiRequestHandler handler;
     private final RaftPartition raftPartition;
     private final ClusterConfigurationService clusterConfigurationService;
+    private final AtomixServerTransport transport;
+    private final PartitionAdminAccess adminAccess;
+    private final BrokerMemberId memberId = BrokerMemberId.from(1);
 
     StepdownRequest(
         @Mock final AtomixServerTransport transport,
@@ -405,10 +410,16 @@ final class AdminApiRequestHandlerTest {
         @Mock final ClusterConfigurationService clusterConfigurationService) {
       this.raftPartition = raftPartition;
       this.clusterConfigurationService = clusterConfigurationService;
-      final BrokerMemberId memberId = BrokerMemberId.from(1);
+      this.transport = transport;
+      this.adminAccess = adminAccess;
       handler =
           new AdminApiRequestHandler(
-              null, transport, adminAccess, raftPartition, clusterConfigurationService, memberId);
+              new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
+              transport,
+              adminAccess,
+              raftPartition,
+              clusterConfigurationService,
+              memberId);
     }
 
     @BeforeEach
@@ -570,6 +581,47 @@ final class AdminApiRequestHandlerTest {
       // then - should return success even though config retrieval failed
       assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
       verify(raftPartition, Mockito.never()).stepDownForLeaderBalancing();
+    }
+
+    @Test
+    void shouldLookUpPrimaryUsingHandlerPhysicalTenantId() {
+      // given a handler bound to a non-default physical tenant
+      final var nonDefaultTenantId = "tenant-2";
+      final var handlerForNonDefaultTenant =
+          new AdminApiRequestHandler(
+              new PartitionId(nonDefaultTenantId, 1),
+              transport,
+              adminAccess,
+              raftPartition,
+              clusterConfigurationService,
+              memberId);
+      scheduler.submitActor(handlerForNonDefaultTenant);
+      scheduler.workUntilDone();
+
+      when(raftPartition.getRole()).thenReturn(Role.LEADER);
+      final var partitionId = 1;
+      final var clusterConfig = Mockito.mock(CurrentClusterConfiguration.class);
+      final var partitionConfig = Mockito.mock(PartitionGroupConfiguration.class);
+      when(clusterConfig.partitionGroup(any())).thenReturn(partitionConfig);
+      when(partitionConfig.getPrimaryForPartition(partitionId))
+          .thenReturn(java.util.Optional.of(memberId.memberId()));
+      when(clusterConfigurationService.getLatestClusterConfiguration())
+          .thenReturn(
+              io.camunda.zeebe.scheduler.future.CompletableActorFuture.completed(clusterConfig));
+
+      final var request = new AdminRequest();
+      request.setType(AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY);
+      request.setPartitionId(partitionId);
+
+      // when
+      final var responseFuture = handleRequest(request, handlerForNonDefaultTenant);
+      scheduler.workUntilDone();
+
+      // then the primary is looked up against the handler's own tenant, not the default
+      assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+      verify(clusterConfig).partitionGroup(nonDefaultTenantId);
+      verify(clusterConfig, Mockito.never())
+          .partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     }
   }
 }
