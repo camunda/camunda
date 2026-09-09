@@ -1,7 +1,6 @@
 ---
-name: Build Docker image with retry
-
 # owner: @camunda/engineering-operations
+name: Build Docker image with retry
 
 description: >
   Runs `docker/build-push-action` with retries: BuildKit resolves the Dockerfile
@@ -49,8 +48,9 @@ runs:
   #
   # `context`, `provenance`, `push` and `target` are fixed rather than inputs:
   # `build-platform-docker` is the only caller and passes the same values for
-  # all images. `push: false` with an explicit `outputs:` is what makes a
-  # multi-platform build pushable without loading it locally first.
+  # all images. Note that build-push-action's own `push:` stays false even when
+  # pushing -- the push is expressed through `outputs:` instead. That is carried
+  # over from the caller unchanged; see this action's README.
   steps:
     - name: Build Docker image (attempt 1 of 3)
       id: attempt-1
