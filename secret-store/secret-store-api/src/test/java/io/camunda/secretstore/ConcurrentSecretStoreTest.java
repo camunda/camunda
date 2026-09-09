@@ -15,24 +15,26 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class ConcurrentSecretStoreTest {
-
-  private static final Duration PER_NAME_DELAY = Duration.ofMillis(50);
 
   private final ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
 
@@ -42,24 +44,29 @@ class ConcurrentSecretStoreTest {
   }
 
   @Test
-  void shouldFanOutAOneByOneStoreAndRunChunksConcurrently() {
-    // given a store that pays PER_NAME_DELAY per name inside one resolve() call, exactly as a
-    // real one-by-one cloud store would, with more names than the permit count so at least two
-    // chunks must run at once for every name to resolve inside the sleep window
-    final var names = namesUpTo(16);
+  void shouldFanOutAOneByOneStoreAndRunChunksConcurrentlyUpToThePermitCount() {
+    // given a store synchronized on a barrier sized to the permit count: resolve() cannot return
+    // until exactly that many chunks are inside it at once, so the bound is proven by
+    // construction instead of inferred from timing (a serial, or over-concurrent, resolution
+    // would either hang past the barrier's timeout or trip it with the wrong number of parties).
+    // Twice as many chunks as permits, so the bound has to hold across two full rounds, not just
+    // one lucky batch.
+    final var permits = 4;
+    final var names = namesUpTo(permits * 2);
     final var delegate = new FakeOneByOneStore();
     delegate.namesPerCall = 1;
-    delegate.perNameDelay = PER_NAME_DELAY;
-    final var store = new ConcurrentSecretStore(delegate, pool, new Semaphore(8, true));
+    delegate.barrier = new CyclicBarrier(permits);
+    final var store = new ConcurrentSecretStore(delegate, pool, new Semaphore(permits, true));
 
     // when
     final var results = store.resolve(names);
 
     // then every name still resolves...
     names.forEach(name -> assertThat(results.get(name)).isEqualTo(new Resolved(name + "-value")));
-    // ...and more than one chunk was in flight at the same time: a serial (unwrapped) resolution
-    // could never observe more than 1, regardless of how long each chunk takes
-    assertThat(delegate.maxObserved.get()).isGreaterThan(1);
+    // ...and exactly `permits` chunks were in flight at once: a regression that dispatched all
+    // chunks at once, or serialized them, would fail this exact-equality check rather than the
+    // weaker "at least one overlap" a `> 1` assertion allows to pass
+    assertThat(delegate.maxObserved.get()).isEqualTo(permits);
   }
 
   @Test
@@ -193,17 +200,27 @@ class ConcurrentSecretStoreTest {
 
   @Test
   void shouldPropagateStoreUnavailableFromAnyChunk() {
-    // given one of several chunks hits a transient store failure
+    // given one of three chunks hits a transient store failure, held back with a latch until the
+    // other two have actually resolved at the delegate: without this, the failing chunk could
+    // otherwise set the shared flag before either sibling even starts, and the assertion below
+    // would no longer prove anything about discarded successes
     final var names = namesUpTo(9);
     final var delegate = new FakeOneByOneStore();
     delegate.namesPerCall = 3;
     delegate.unavailableNames.add("name-5");
+    delegate.releaseFailureAfter = new CountDownLatch(2);
     final var store = new ConcurrentSecretStore(delegate, pool, new Semaphore(4, true));
 
     // when / then: the whole call fails, exactly as an unwrapped one-by-one store failing
     // mid-batch would; the refs from the succeeded chunks stay pending and are retried next cycle
     assertThatThrownBy(() -> store.resolve(names))
         .isInstanceOf(SecretStoreUnavailableException.class);
+
+    // then the delegate did resolve the two succeeding chunks, proving their results existed and
+    // were discarded by the failing call rather than never having been attempted
+    assertThat(delegate.resolveCalls).hasSize(3);
+    assertThat(delegate.resolveCalls.stream().flatMap(Set::stream))
+        .containsExactlyInAnyOrderElementsOf(names);
   }
 
   @Test
@@ -337,10 +354,19 @@ class ConcurrentSecretStoreTest {
     // very concurrency the fan-out tests exist to prove
     private final List<Set<String>> resolveCalls = new CopyOnWriteArrayList<>();
     private int namesPerCall = Integer.MAX_VALUE;
-    private Duration perNameDelay = Duration.ZERO;
+    // stands in for a real backend's round trip: rather than sleeping, resolve() blocks here until
+    // as many chunks as the barrier has parties are inside it at once, so a fan-out test asserts
+    // the exact peak concurrency deterministically instead of inferring "some overlap happened"
+    // from wall-clock timing
+    private CyclicBarrier barrier;
     private final Set<String> failedNames = new LinkedHashSet<>();
     private final Set<String> unavailableNames = new LinkedHashSet<>();
     private final Set<String> erroringNames = new LinkedHashSet<>();
+    // held by a chunk about to fail with SecretStoreUnavailableException, released once by every
+    // chunk that resolves successfully: lets a test force the succeeding chunks to actually
+    // complete at the delegate before the failing chunk sets the shared flag, so the ordering a
+    // test wants to observe does not depend on how the pool happens to schedule the chunks
+    private CountDownLatch releaseFailureAfter;
     private List<String> listValue = List.of();
     private volatile boolean closed;
 
@@ -359,10 +385,15 @@ class ConcurrentSecretStoreTest {
           throw new FakeStoreError("store failed irrecoverably for " + names);
         }
         if (!unavailableNames.isEmpty() && !Collections.disjoint(names, unavailableNames)) {
+          awaitLatch(releaseFailureAfter);
           throw new SecretStoreUnavailableException("store unavailable for " + names);
         }
-        sleep(perNameDelay.multipliedBy(names.size()));
-        return names.stream().collect(toMap(name -> name, this::resultFor));
+        awaitBarrier();
+        final var result = names.stream().collect(toMap(name -> name, this::resultFor));
+        if (releaseFailureAfter != null) {
+          releaseFailureAfter.countDown();
+        }
+        return result;
       } finally {
         inFlight.decrementAndGet();
       }
@@ -390,15 +421,39 @@ class ConcurrentSecretStoreTest {
       closed = true;
     }
 
-    private static void sleep(final Duration duration) {
-      if (duration.isZero()) {
+    private void awaitBarrier() {
+      if (barrier == null) {
         return;
       }
       try {
-        Thread.sleep(duration.toMillis());
+        barrier.await(5, TimeUnit.SECONDS);
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new SecretStoreUnavailableException("interrupted", e);
+        throw new SecretStoreUnavailableException(
+            "interrupted awaiting the concurrency barrier", e);
+      } catch (final BrokenBarrierException | TimeoutException e) {
+        // fewer parties reached the barrier than expected within the timeout: fail loudly with a
+        // clear cause instead of hanging the remaining chunks (and the test run) indefinitely
+        throw new AssertionError(
+            "Expected "
+                + barrier.getParties()
+                + " chunks in flight at once, but the barrier never tripped within the timeout",
+            e);
+      }
+    }
+
+    private static void awaitLatch(final CountDownLatch latch) {
+      if (latch == null) {
+        return;
+      }
+      try {
+        if (!latch.await(5, TimeUnit.SECONDS)) {
+          throw new AssertionError(
+              "Expected the sibling chunks to resolve within the timeout before this chunk fails");
+        }
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SecretStoreUnavailableException("interrupted awaiting sibling chunks", e);
       }
     }
   }
