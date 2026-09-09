@@ -89,15 +89,20 @@ public class Secrets {
    * store (e.g. AWS's {@code BatchGetSecretValue} mode) is included once its request needs more
    * than one batch.
    *
-   * <p>The permits are shared per node and physical tenant, so the load this puts on the secret
-   * backend is this value times the number of nodes, which is what a provider's request quota sees.
+   * <p>The permits are shared per node and physical tenant, so they bound how many backend calls
+   * this node has in flight for such stores at once. A request small enough to resolve in a single
+   * call (at most {@code namesPerCall()} names) takes no permit, so actual concurrency can exceed
+   * this value by one such call per concurrent caller. The bound is on call concurrency, not
+   * request rate, so it only approximates a provider quota measured in calls per second rather than
+   * guaranteeing it sees at most this value times the node count.
    *
    * <p>Raising it past what one request can use changes nothing, since a request is split into
    * {@code ceil(names / namesPerCall())} chunks and cannot use more permits than it has chunks. The
-   * two callers both cap their request size at 20 names: background resolution at {@code
-   * camunda.processing.engine.secrets.batch-resolution-limit}, and the resolve endpoint at the
-   * {@code maxItems} on its {@code references} array. For a one-by-one store that puts the ceiling
-   * at 20; for a batched store it is 20 divided by the batch size.
+   * resolve endpoint caps its request size at 20 names via the {@code maxItems} on its {@code
+   * references} array; background resolution defaults to the same 20 via {@code
+   * camunda.processing.engine.secrets.batch-resolution-limit}, but that limit is a configurable
+   * default, not a hard cap. For a one-by-one store the endpoint's cap puts the chunk ceiling at
+   * 20; for a batched store it is {@code ceil(20 / batchSize)}.
    *
    * <p>Defaults to twice the available processor count, and never below {@code 8}.
    */
