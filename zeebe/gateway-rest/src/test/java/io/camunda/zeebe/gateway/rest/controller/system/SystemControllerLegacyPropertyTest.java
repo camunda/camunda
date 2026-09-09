@@ -29,7 +29,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 /**
  * Tests that the controller correctly reads cloud config from the injected WebappConfiguration
- * bean. Legacy property fallback (camunda.operate.* / camunda.tasklist.*) is now handled by
+ * bean. Legacy property fallback (including {@code camunda.tasklist.cloud.stage}) is handled by
  * WebappPropertiesOverride in the configuration module; the controller itself simply reads the
  * already-resolved WebappConfiguration.
  */

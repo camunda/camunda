@@ -21,9 +21,6 @@ import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.tasklist.TasklistPropertiesOverride;
-import io.camunda.tasklist.property.TasklistElasticsearchProperties;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -36,11 +33,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@ActiveProfiles({"broker", "tasklist", "operate"})
+@ActiveProfiles({"broker", "operate"})
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
-  TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
   SearchEngineConnectPropertiesOverride.class,
@@ -186,19 +182,16 @@ public class SecondaryStorageElasticsearchTest {
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final SearchEngineIndexProperties searchEngineIndexProperties;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.searchEngineIndexProperties = searchEngineIndexProperties;
@@ -230,30 +223,6 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
       assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
           .isEqualTo(EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT);
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageTasklistProperties() {
-      final String expectedTasklistDatabaseType = "elasticsearch";
-      final String expectedUrl = "http://expected-url:4321";
-
-      assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
-
-      assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
-      assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(tasklistProperties.getElasticsearch().getClusterName())
-          .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(tasklistProperties.getElasticsearch().getIndexPrefix())
-          .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(tasklistProperties.getElasticsearch().getDateFormat())
-          .isEqualTo(EXPECTED_DATE_FORMAT);
-      assertThat(tasklistProperties.getElasticsearch().getSocketTimeout())
-          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
-      assertThat(tasklistProperties.getElasticsearch().getConnectTimeout())
-          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
-      assertThat(tasklistProperties.getBackup().getRepositoryName())
-          .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
     }
 
     @Test
@@ -550,25 +519,23 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.backup.snapshot-timeout="
             + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
         "camunda.data.secondary-storage.elasticsearch.backup.incomplete-check-timeout=10s",
+        "camunda.tasklist.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
         "camunda.operate.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
         "camunda.operate.backup.snapshotTimeout=" + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
         "camunda.operate.backup.incompleteCheckTimeoutInSeconds=10",
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final SearchEngineIndexProperties searchEngineIndexProperties;
 
     WithNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.searchEngineIndexProperties = searchEngineIndexProperties;
@@ -600,30 +567,6 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
       assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
           .isEqualTo(EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT);
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageTasklistProperties() {
-      final String expectedTasklistDatabaseType = "elasticsearch";
-      final String expectedUrl = "http://matching-url:4321";
-
-      assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
-
-      assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
-      assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(tasklistProperties.getElasticsearch().getIndexPrefix())
-          .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(tasklistProperties.getElasticsearch().getClusterName())
-          .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(tasklistProperties.getElasticsearch().getDateFormat())
-          .isEqualTo(EXPECTED_DATE_FORMAT);
-      assertThat(tasklistProperties.getElasticsearch().getSocketTimeout())
-          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
-      assertThat(tasklistProperties.getElasticsearch().getConnectTimeout())
-          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
-      assertThat(tasklistProperties.getBackup().getRepositoryName())
-          .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
     }
 
     @Test
@@ -716,17 +659,14 @@ public class SecondaryStorageElasticsearchTest {
       })
   class ExporterTestWithoutArgs {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
     ExporterTestWithoutArgs(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
@@ -938,17 +878,14 @@ public class SecondaryStorageElasticsearchTest {
   @Nested
   class WithoutNewAndLegacySet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithoutNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
@@ -960,15 +897,6 @@ public class SecondaryStorageElasticsearchTest {
               OperateElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
               OperateElasticsearchProperties::getSocketTimeout)
           .returns(null, OperateElasticsearchProperties::getConnectTimeout);
-    }
-
-    @Test
-    void shouldUseTasklistPropertiesDefaults() {
-      assertThat(tasklistProperties.getElasticsearch())
-          .returns(
-              TasklistElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
-              TasklistElasticsearchProperties::getSocketTimeout)
-          .returns(null, TasklistElasticsearchProperties::getConnectTimeout);
     }
 
     @Test
@@ -1007,17 +935,14 @@ public class SecondaryStorageElasticsearchTest {
         List.of("http://node1:9200", "http://node2:9200", "http://node3:9200");
 
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithUrlsConfigured(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
@@ -1027,13 +952,6 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(operateProperties.getElasticsearch().getUrls()).isEqualTo(EXPECTED_URLS);
       assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-    }
-
-    @Test
-    void testUrlsPropagatedToTasklistProperties() {
-      assertThat(tasklistProperties.getElasticsearch().getUrls()).isEqualTo(EXPECTED_URLS);
-      assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
 
     @Test
@@ -1077,17 +995,14 @@ public class SecondaryStorageElasticsearchTest {
     private static final String EXPECTED_PROXY_PASSWORD = "proxyPass";
 
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithProxyConfigured(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
@@ -1095,18 +1010,6 @@ public class SecondaryStorageElasticsearchTest {
     @Test
     void testProxyPropagatedToOperateProperties() {
       final var proxy = operateProperties.getElasticsearch().getProxy();
-      assertThat(proxy).isNotNull();
-      assertThat(proxy.isEnabled()).isTrue();
-      assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);
-      assertThat(proxy.getPort()).isEqualTo(EXPECTED_PROXY_PORT);
-      assertThat(proxy.isSslEnabled()).isTrue();
-      assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
-      assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
-    }
-
-    @Test
-    void testProxyPropagatedToTasklistProperties() {
-      final var proxy = tasklistProperties.getElasticsearch().getProxy();
       assertThat(proxy).isNotNull();
       assertThat(proxy.isEnabled()).isTrue();
       assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);

@@ -108,6 +108,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>webapps-backup</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapp-server</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
