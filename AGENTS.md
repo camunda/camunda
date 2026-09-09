@@ -302,6 +302,13 @@ read it. If you can't name both, don't write it.
 - Always tear down resources you create (indices, containers, clients, clusters), even on failure, to
   avoid cross-run flakiness.
 - Use JUnit 5. Migrate JUnit 4 tests when modifying them.
+- Do not add a class-level `@DisplayName` to a new `@Nested` test class while the repo is on
+  Surefire 3.5.x (`plugin.version.surefire` in `parent/pom.xml`) — a Surefire regression
+  reports such classes under their flattened display name instead of their fully-qualified name in
+  the XML test report, breaking FQN-based tooling (flaky-test tracking, CI report parsing). Method-
+  level `@DisplayName` (on `@Test`/`@ParameterizedTest`) is unaffected. Existing occurrences were
+  commented out rather than deleted — leave that pattern in place until Surefire is upgraded past
+  the regression.
 - Detailed guide: `docs/testing.md` and `docs/testing/`.
 - Reference example: `qa/acceptance-tests/src/test/java/io/camunda/it/StandaloneCamundaTest.java`
 

@@ -62,7 +62,8 @@ final class StateQueryServiceTest {
   }
 
   @Nested
-  @DisplayName("getBpmnProcessIdForProcess(processKey)")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("getBpmnProcessIdForProcess(processKey)")
   final class GetBpmnProcessIdForProcess {
 
     @Test
@@ -94,7 +95,8 @@ final class StateQueryServiceTest {
   }
 
   @Nested
-  @DisplayName("getBpmnProcessIdForProcessInstance(processInstanceKey)")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("getBpmnProcessIdForProcessInstance(processInstanceKey)")
   final class GetBpmnProcessIdForProcessInstance {
 
     @Test
@@ -128,7 +130,8 @@ final class StateQueryServiceTest {
   }
 
   @Nested
-  @DisplayName("getBpmnProcessIdForJob(jobKey)")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("getBpmnProcessIdForJob(jobKey)")
   class GetBpmnProcessIdForJob {
 
     @Test
