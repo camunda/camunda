@@ -45,7 +45,6 @@ test.describe('Process Instance Batch Modification', () => {
   test('Move Operation', async ({
     page,
     operateProcessesPage,
-    operateFiltersPanelPage,
     operateDiagramPage,
     operateProcessModificationModePage,
   }) => {
@@ -120,6 +119,9 @@ test.describe('Process Instance Batch Modification', () => {
 
       await waitForAssertion({
         assertion: async () => {
+          await expect(page).toHaveURL(/elementId=shipArticles/, {
+            timeout: 3000,
+          });
           await expect(
             page.getByText(`${NUM_SELECTED_PROCESS_INSTANCES} results`),
           ).toBeVisible({
@@ -127,8 +129,19 @@ test.describe('Process Instance Batch Modification', () => {
           });
         },
         onFailure: async () => {
-          await page.reload();
+          // Leaving modification mode re-renders the processes diagram, and a
+          // flow node click issued during that re-render is dropped so the
+          // element filter never reaches the URL. Re-select shipArticles only
+          // when it is not already applied; otherwise reload to let the
+          // filtered results settle, so a successful selection is never toggled
+          // back off.
+          if (!page.url().includes('elementId=shipArticles')) {
+            await operateDiagramPage.clickFlowNode('shipArticles');
+          } else {
+            await page.reload();
+          }
         },
+        maxRetries: 5,
       });
     });
 

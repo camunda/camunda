@@ -222,7 +222,16 @@ export class OperateFiltersPanelPage {
   }
 
   async selectFlowNode(option: string) {
-    await this.flowNodeFilter.click();
+    // A process/version switch reloads the diagram and its flow node list
+    // asynchronously. A single click on the element combobox issued while the
+    // definition is still switching opens an empty (not-yet-populated) menu,
+    // so retry opening until the requested option is actually rendered.
+    await expect(async () => {
+      await this.flowNodeFilter.click();
+      await expect(this.getOptionByName(option, false)).toBeVisible({
+        timeout: 5000,
+      });
+    }).toPass({timeout: 30000});
     await this.getOptionByName(option, false).click();
   }
 
