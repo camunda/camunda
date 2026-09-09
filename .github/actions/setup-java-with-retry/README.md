@@ -37,6 +37,14 @@ nested composite action exactly as it does for a top-level step.
 - **Three attempts, 10s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
   composite action has no loop, so `max_attempts` would have to change the number of steps in the
   file. Change the count by adding or removing an attempt block.
+- **The whole retry window is ~39 seconds.** Measured in
+  [run 34333710709](https://github.com/camunda/camunda/actions/runs/34333710709): a failing
+  `setup-java` takes ~6.2s per attempt, so three attempts plus two 10s gaps give up 39s after the
+  step started. This protects against a blip, **not an outage.** The throttling window behind
+  INC-7723 lasted 30 minutes; neither this configuration nor the `Wandalen/wretry.action` one it
+  replaced (identical `attempt_limit: 3` / `attempt_delay: 10000`) would have saved a single one of
+  those jobs. What fixes that failure mode is that nothing is fetched at runtime any more — see
+  below. Do not reach for these actions expecting them to absorb a sustained outage.
 - **Editing one attempt means editing all three.** The `with:` blocks must stay identical, including
   the pinned `actions/setup-java` SHA. A mismatch means an attempt silently installs something
   different from its predecessor.
@@ -45,8 +53,13 @@ nested composite action exactly as it does for a top-level step.
 - **Gating on the immediate predecessor is enough.** A skipped step reports `outcome: skipped`, never
   `failure`, so attempt 3 can only run if attempt 2 ran and failed — which in turn required attempt 1
   to fail. No cumulative `&&` chain is needed.
-- **A failed attempt still emits its error annotations.** They stay in the job log even when a later
-  attempt succeeds, so a green job can contain red annotations from this action.
+- **A failed attempt still emits its error annotations.** `continue-on-error` absorbs the *step*, but
+  the annotation is already published to the check run and annotations have no notion of being
+  absorbed — so a green job can carry red annotations from this action.
+  [`post-ci-failure-reasons`](../post-ci-failure-reasons) filters on job conclusion before it reads
+  annotations, so a job that recovered produces no PR comment. The residual effect: if the job later
+  fails for an unrelated reason, that comment will list these already-retried errors alongside the
+  real one.
 - No failure classification: a genuine error (a bad `java-version`, say) costs all three attempts
   before the job reports red.
 
