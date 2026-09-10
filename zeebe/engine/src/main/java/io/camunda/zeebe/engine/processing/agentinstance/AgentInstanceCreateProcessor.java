@@ -360,7 +360,12 @@ public final class AgentInstanceCreateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 }

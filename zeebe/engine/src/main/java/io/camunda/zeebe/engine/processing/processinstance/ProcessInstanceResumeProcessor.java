@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -94,8 +93,13 @@ public final class ProcessInstanceResumeProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   private Either<Rejection, ElementInstance> validateNotFound(
