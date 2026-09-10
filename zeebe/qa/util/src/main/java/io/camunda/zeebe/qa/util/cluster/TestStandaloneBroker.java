@@ -284,13 +284,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public TestStandaloneBroker start() {
-    rewriteSecretStoreDirectory();
+    recreateSecretStoreDirectoryIfMissing();
     return super.start();
   }
 
   /**
    * Re-creates the secret store directory when a previous {@link #close()} has deleted it, so this
-   * broker starts against the secrets it was configured with however often it is restarted.
+   * broker starts against the secrets it was configured with however often it is restarted. A
+   * directory that is still there is left exactly as it is, contents included.
    *
    * <p>Without this, only the first start of a given instance has a store to read. A test class
    * that is re-run in the same JVM — Surefire's {@code rerunFailingTestsCount}, which CI sets — has
@@ -299,7 +300,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * every secret lookup fails the whole request with "Failed to read the configured secret store"
    * instead of retrying whatever actually flaked.
    */
-  private void rewriteSecretStoreDirectory() {
+  private void recreateSecretStoreDirectoryIfMissing() {
     // only on a start that actually boots the broker: start() is idempotent, and a test that has
     // taken the directory away to exercise an unavailable store (SecretStoreUnavailableIT) must
     // not have it handed back by an incidental start() call on the running broker
@@ -310,8 +311,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
       Files.createDirectories(secretStoreDirectory);
       secretsWriter.writeTo(secretStoreDirectory);
     } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to rewrite the file-based secret store", e);
+      throw new UncheckedIOException("Failed to recreate the file-based secret store", e);
     }
+    // logged because this only happens on a restart of an instance whose directory was already
+    // deleted, which in practice means a rerun of a failed test: whoever is reading those logs is
+    // triaging the first failure and needs to know the store was rebuilt between the attempts
+    LOGGER.info(
+        "Recreated the deleted secret store directory {} before restarting the broker",
+        secretStoreDirectory);
   }
 
   /**
@@ -341,7 +348,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
       LOGGER.warn("Failed to delete the secret store directory {}", secretStoreDirectory, e);
     }
     // the path itself is kept, unlike the directory: the configuration still names it, and a
-    // restart of this instance rebuilds the directory there. See rewriteSecretStoreDirectory().
+    // restart of this instance rebuilds the directory there. See
+    // recreateSecretStoreDirectoryIfMissing().
   }
 
   /**
