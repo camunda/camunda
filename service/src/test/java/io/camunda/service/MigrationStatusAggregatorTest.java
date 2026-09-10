@@ -14,7 +14,9 @@ import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +38,27 @@ final class MigrationStatusAggregatorTest {
 
     // then - both providers reported their status, so neither call was left waiting forever
     assertThat(physicalTenants.get("default")).hasSize(2);
+  }
+
+  @Test
+  void shouldPollOnTheGivenExecutorInsteadOfTheCommonPool() {
+    // given - a dedicated single-thread executor with a recognizable thread name, so a poll
+    // routed through the common pool instead would be caught rather than passing by coincidence
+    final var executor =
+        Executors.newSingleThreadExecutor(r -> new Thread(r, "aggregate-test-executor"));
+    final var observedThreadNames = new CopyOnWriteArrayList<String>();
+    final var aggregator =
+        new MigrationStatusAggregator(List.of(threadRecordingProvider("a", observedThreadNames)));
+
+    try {
+      // when
+      aggregator.aggregate(executor);
+
+      // then
+      assertThat(observedThreadNames).containsExactly("aggregate-test-executor");
+    } finally {
+      executor.shutdown();
+    }
   }
 
   @Test
@@ -205,6 +228,23 @@ final class MigrationStatusAggregatorTest {
           Thread.currentThread().interrupt();
           throw new RuntimeException(e);
         }
+        return Map.of("default", migrated(name + " done"));
+      }
+    };
+  }
+
+  /** A provider that records the name of the thread {@code getMigrationStatus()} ran on. */
+  private static MigrationStatusProvider threadRecordingProvider(
+      final String name, final List<String> observedThreadNames) {
+    return new MigrationStatusProvider() {
+      @Override
+      public String conditionName() {
+        return name;
+      }
+
+      @Override
+      public Map<String, MigrationConditionStatus> getMigrationStatus() {
+        observedThreadNames.add(Thread.currentThread().getName());
         return Map.of("default", migrated(name + " done"));
       }
     };
