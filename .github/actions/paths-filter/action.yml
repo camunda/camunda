@@ -368,6 +368,7 @@ runs:
           - '**/src/test/**'
           - '**/src/it/**'
           - '!buildSrc/**'
+          - '**/src/build/**'
 
         maven-change:
           - 'bom/**'
