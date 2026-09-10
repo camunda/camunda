@@ -435,6 +435,8 @@
         FROM ${prefix}PROCESS_DEFINITION pd
         WHERE pd.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID
             AND pd.TENANT_ID = pi.TENANT_ID
+        <!-- keyset-order-by-exempt: picks the highest version for this one row, it does not order
+             the paged result, so it stays DESC in both paging directions -->
         ORDER BY pd.VERSION DESC
       <choose>
         <when test="_databaseId == 'mssql'">
