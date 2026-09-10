@@ -3,8 +3,16 @@
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
-ARG BASE_DIGEST="sha256:fb962d5ea0de9f2044d01607d1f29235670031fef2f2fe973d1e902f70c49203"
+# Echo equivalent of Minimus openjre-base:25-dev. Echo's floating tags (:25)
+# are the maintained ones and are rebuilt continuously; the dated tags are
+# immutable snapshots that go stale. Pin the digest of a floating tag and bump
+# it deliberately, rather than pinning a dated tag.
+ARG BASE_IMAGE="reg.echohq.com/eclipse-temurin-jre:25"
+ARG BASE_DIGEST="sha256:6d8ba575867b286c5c06065605ac408c659a45f71af238ece341e5407abfd36a"
+ARG JDK_IMAGE="reg.echohq.com/eclipse-temurin:25.0.4-20260819"
+ARG JDK_DIGEST="sha256:a8cc4cb7276f43bd438e921646b9f4c656f87caa7a82928f02a99fe3d33ee2c3"
+ARG CURL_IMAGE="reg.echohq.com/curl:8.22.0-20260907"
+ARG CURL_DIGEST="sha256:1ea8abbf714a807c32b9ee808bab2fba58d4f016883c3c819ab9d5f462d79fdb"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -14,12 +22,35 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.4_7-jre-noble"
 ARG BASE_DIGEST_PUBLIC="sha256:1e80201efc21b839ebc9b448b1f9b16aa5f036dd2885148282fe5dae38684fe1"
+# The jattach and distball stages run on every build, including fork PRs that
+# cannot authenticate to Echo, so they need public counterparts selected by the
+# same BASE switch. curlimages/curl matches Echo's curl image closely enough
+# that one RUN body works on both: curl is preinstalled and the default user is
+# unprivileged.
+ARG JDK_IMAGE_PUBLIC="eclipse-temurin:25-jdk-noble"
+ARG JDK_DIGEST_PUBLIC="sha256:264fafc3390db78c93dc51da0109a0d66ad1fb59f7a893f12b7e3df1f15e52da"
+ARG CURL_IMAGE_PUBLIC="curlimages/curl:8.18.0"
+ARG CURL_DIGEST_PUBLIC="sha256:d94d07ba9e7d6de898b6d96c1a072f6f8266c687af78a74f380087a0addf5d17"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
 
 ### Base Application Image ###
+# No packages are added on top. Echo's Temurin JRE image already supplies the
+# JRE, tzdata and ca-certificates, plus a shell and coreutils - which covers
+# everything the appassembler entrypoint calls (sh, env, dirname, expr, ls,
+# uname, which; see dist/src/main/scripts/unixBinTemplate).
+#
+# The four extras Minimus's openjre-base bundled are deliberately NOT carried
+# over, because none of them apply to this image:
+#   busybox        - only needed for start/health checks on the non-"dev"
+#                    openjre flavor (Identity); this base already has a shell.
+#   wget           - only used by the Identity healthcheck.
+#   netcat-openbsd - only used by wait-for-it.sh in Optimize.
+#   tzdata         - required, and already present in this base.
+# No camunda service defines a container healthcheck, and the shipped scripts
+# shell out to nothing beyond the seven commands listed above.
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
 
@@ -42,7 +73,12 @@ RUN --mount=type=cache,target=/root/.m2,rw \
 
 ### jattach download stage ###
 # hadolint ignore=DL3006,DL3007
-FROM alpine AS jattach
+# hadolint ignore=DL3006
+FROM ${CURL_IMAGE}@${CURL_DIGEST} AS jattach-hardened
+# hadolint ignore=DL3006
+FROM ${CURL_IMAGE_PUBLIC}@${CURL_DIGEST_PUBLIC} AS jattach-public
+# hadolint ignore=DL3006
+FROM jattach-${BASE} AS jattach
 ARG TARGETARCH
 ARG JATTACH_VERSION
 ARG JATTACH_CHECKSUM_AMD64
@@ -52,9 +88,12 @@ ARG JATTACH_CHECKSUM_ARM64
 # connection to github.com. On its own --retry covers a timeout and the HTTP
 # 408, 429, 500, 502, 503 and 504 responses, none of which an SSL connect error
 # (exit 35) is, so without it the download fails on the first attempt.
-# hadolint ignore=DL4006,DL3018
-RUN apk add -q --no-cache curl && \
-    if [ "${TARGETARCH}" = "amd64" ]; then \
+# Echo's curl image defaults to the unprivileged `curl_user`; this stage writes
+# to / so it needs root. Only the jattach binary reaches the final image.
+# hadolint ignore=DL3002
+USER root
+# hadolint ignore=DL4006
+RUN if [ "${TARGETARCH}" = "amd64" ]; then \
       BINARY="linux-x64"; \
       CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
     else  \
@@ -73,7 +112,12 @@ RUN apk add -q --no-cache curl && \
 # Use eclipse-temurin JDK (not JRE) so `jar` is available for repacking JARs,
 # avoiding a runtime dependency on external package servers for (un)zip.
 # hadolint ignore=DL3006,DL3007
-FROM eclipse-temurin:25-jdk-noble AS distball
+# hadolint ignore=DL3006
+FROM ${JDK_IMAGE}@${JDK_DIGEST} AS distball-hardened
+# hadolint ignore=DL3006
+FROM ${JDK_IMAGE_PUBLIC}@${JDK_DIGEST_PUBLIC} AS distball-public
+# hadolint ignore=DL3006
+FROM distball-${BASE} AS distball
 
 # hadolint ignore=DL3002
 USER root
@@ -164,14 +208,19 @@ ENV PATH="${CAMUNDA_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
 # We know there's no need to check for musl on this image
 ENV ROCKSDB_MUSL_LIBC=false
+# Minimus's openjre-base set this; Debian leaves it unset. OpenSSL's built-in
+# default is the same path, but non-JVM clients that read the variable
+# explicitly would otherwise see a behaviour change. The Helm chart overrides
+# it when global.tls.caBundle is configured.
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR ${CAMUNDA_HOME}
 EXPOSE 8080 26500 26501 26502
 
 # Switch to root to allow setting up our own user
 USER root
-RUN addgroup --gid 1001 camunda && \
-    adduser -S -G camunda -u 1001 -h ${CAMUNDA_HOME} camunda && \
+RUN groupadd -g 1001 camunda && \
+    useradd -g camunda -u 1001 -d ${CAMUNDA_HOME} -s /usr/sbin/nologin camunda && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
