@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskActions;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -33,8 +34,6 @@ import java.util.List;
 import java.util.Optional;
 
 public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
-
-  private static final String DEFAULT_ACTION = "claim";
 
   private static final String INVALID_USER_TASK_ASSIGNEE_MESSAGE =
       "Expected to claim user task with key '%d', but it has already been assigned";
@@ -88,7 +87,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
       userTaskRecord.setAssignee(newAssignee);
       userTaskRecord.setAssigneeChanged();
     }
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(UserTaskActions.CLAIM));
 
     stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.CLAIMING, userTaskRecord);
   }

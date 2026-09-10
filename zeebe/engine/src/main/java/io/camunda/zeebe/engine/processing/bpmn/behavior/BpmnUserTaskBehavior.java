@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskActions;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
@@ -199,7 +200,8 @@ public final class BpmnUserTaskBehavior {
             .setCreationTimestamp(clock.millis())
             .setTags(getTagsFromProcessInstance(context))
             .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
-            .setBusinessId(getBusinessIdFromProcessInstance(context));
+            .setBusinessId(getBusinessIdFromProcessInstance(context))
+            .setAction(UserTaskActions.CREATE);
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
@@ -456,6 +458,7 @@ public final class BpmnUserTaskBehavior {
 
     rejectOngoingRequestsForUserTaskBeforeCancellation(userTask);
 
+    userTask.setAction(UserTaskActions.CANCEL);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
     return Optional.of(userTask);
   }
@@ -524,6 +527,7 @@ public final class BpmnUserTaskBehavior {
       userTaskRecord.setAssignee(assignee);
       userTaskRecord.setAssigneeChanged();
     }
+    userTaskRecord.setAction(UserTaskActions.ASSIGN);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 

@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskActions;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -35,8 +36,6 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 
 public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor {
-
-  private static final String DEFAULT_ACTION = "complete";
 
   private final ElementInstanceState elementInstanceState;
   private final AsyncRequestState asyncRequestState;
@@ -84,7 +83,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
 
     userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(UserTaskActions.COMPLETE));
 
     stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.COMPLETING, userTaskRecord);
   }
