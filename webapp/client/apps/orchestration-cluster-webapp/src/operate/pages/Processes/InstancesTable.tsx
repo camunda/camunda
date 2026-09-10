@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect, type ReactNode} from 'react';
+import {useMachine} from '@xstate/react';
 import {useTranslation} from 'react-i18next';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {DataTableSkeleton, SkeletonText} from '@carbon/react';
 import type {
 	BatchOperationItem,
@@ -30,9 +32,14 @@ import {batchOperationItemsQueryOptions} from './batchOperationItems.queries';
 import {InstanceOperations} from './InstanceOperations';
 import type {ProcessesSearch} from './processesFilter';
 import {InstancesTableContainer, ProcessName, InstanceLink, VisuallyHiddenStatus} from './styled';
+import {useProcessInstancesSelection, type ProcessInstancesSelection} from './useProcessInstancesSelection';
+import {ProcessesToolbar} from './ProcessesToolbar';
+import {processBulkOperationMachine} from './processBulkOperationMachine';
 
 type Props = {
 	search: ProcessesSearch;
+	isActionMode?: boolean;
+	renderActions?: (selection: ProcessInstancesSelection) => ReactNode;
 };
 
 function getDisplayState(instance: ProcessInstance): ProcessInstanceState | 'INCIDENT' {
@@ -69,7 +76,7 @@ function getActiveOperationsByInstance(items: BatchOperationItem[]) {
 	}, new Map<string, BatchOperationType[]>());
 }
 
-const InstancesTable: React.FC<Props> = ({search}) => {
+const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) => {
 	const {t} = useTranslation();
 	const {
 		processInstances,
@@ -85,6 +92,17 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		hasNextPage,
 		fetchNextPage,
 	} = useProcessInstancesSearch(search);
+	const selection = useProcessInstancesSelection(search, processInstances, totalCount, hasMoreTotalItems);
+	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient: useQueryClient()}});
+	const isSubmitting = operation.matches('submitting');
+	const {acceptedKey, acceptedIdentity} = operation.context;
+	const {reset, filterIdentity} = selection;
+	useEffect(() => {
+		if (acceptedKey !== null && acceptedIdentity === filterIdentity) {
+			reset();
+		}
+	}, [acceptedKey, acceptedIdentity, filterIdentity, reset]);
+	const canSelect = status === 'success' && !isPlaceholderData && !isSubmitting;
 
 	// The operation-state column only exists while the list is filtered by a batch operation —
 	// outside that filter there is no operation for a row to report on. Truthiness, as in legacy,
@@ -274,6 +292,18 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
+			{status === 'success' && (
+				<ProcessesToolbar
+					key={filterIdentity}
+					selection={selection}
+					isSubmitting={isSubmitting}
+					isActionMode={isActionMode}
+					additionalActions={renderActions?.(selection)}
+					onSubmit={(action) =>
+						send({type: 'submit', action, body: selection.getRequest(action), filterIdentity: selection.filterIdentity})
+					}
+				/>
+			)}
 			{isLoadingOperationItems && (
 				<VisuallyHiddenStatus role="status" aria-live="polite">
 					{t('operate.processes.instancesTable.operationStateLoading')}
@@ -286,6 +316,22 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 					columns={columns}
 					rows={processInstances}
 					rowKey={(row) => row.processInstanceKey}
+					selectionType="checkbox"
+					selectAllLabel={t('operate.processes.toolbar.selectAll')}
+					selectRowLabel={(key) => t('operate.processes.toolbar.selectRow', {key})}
+					checkIsAllSelected={() => selection.isAllSelected}
+					checkIsIndeterminate={() => !selection.isAllSelected && selection.selectedCount > 0}
+					checkIsRowSelected={selection.isSelected}
+					onSelectAll={() => {
+						if (canSelect && totalCount > 0) {
+							selection.selectAll();
+						}
+					}}
+					onSelect={(key) => {
+						if (canSelect) {
+							selection.toggle(key);
+						}
+					}}
 					// `isPlaceholderData` keeps the overlay to filter and sort changes, where the rows on
 					// screen are stale. A background poll refetches the same key and must not dim the table.
 					isFetching={isFetching && isPlaceholderData && !isFetchingPreviousPage && !isFetchingNextPage}

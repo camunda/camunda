@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {format, parseISO} from 'date-fns';
-import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
-
-function formatStartDate(startDate: string | null | undefined): string {
-	return startDate ? format(parseISO(startDate), 'yyyy-MM-dd HH:mm:ss') : '--';
+function formatOperationType(type: string): string {
+	return type
+		.split('_')
+		.map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+		.join(' ');
 }
 
-export {formatOperationType, formatStartDate};
+export {formatOperationType};
