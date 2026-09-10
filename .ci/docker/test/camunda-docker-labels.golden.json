@@ -1,10 +1,17 @@
 {
+  "ai.echo.image.name": "eclipse-temurin-jre",
+  "ai.echo.image.tag": "25",
+  "ai.echo.image.upstream.tag": "25-jre",
+  "ai.echo.image.upstream.uri": "docker.io/library/eclipse-temurin",
+  "com.echohq.image.name": "eclipse-temurin-jre",
+  "com.echohq.image.tag": "25",
   "io.k8s.description": "Camunda platform: the universal process orchestrator",
   "io.openshift.min-cpu": "1",
   "io.openshift.min-memory": "512Mi",
   "io.openshift.non-scalable": "false",
   "io.openshift.tags": "bpmn,orchestration,workflow,operate,tasklist",
   "io.openshift.wants": "elasticsearch",
+  "org.opencontainers.image.author": "echohq.com",
   "org.opencontainers.image.authors": "community@camunda.com",
   "org.opencontainers.image.base.digest": $DIGEST,
   "org.opencontainers.image.base.name": $BASE_IMAGE,
@@ -12,12 +19,11 @@
   "org.opencontainers.image.description": "Camunda platform: the universal process orchestrator",
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/about-self-managed/",
   "org.opencontainers.image.licenses": "(Apache-2.0 AND LicenseRef-Camunda-License-1.0)",
-  "org.opencontainers.image.ref.name": "reg.mini.dev/1212/openjre-base:25-dev",
+  "org.opencontainers.image.ref.name": "reg.echohq.com/eclipse-temurin-jre:25",
   "org.opencontainers.image.revision": $REVISION,
   "org.opencontainers.image.source": "https://github.com/camunda/camunda",
   "org.opencontainers.image.title": "Camunda Platform",
   "org.opencontainers.image.url": "https://camunda.com/platform/",
   "org.opencontainers.image.vendor": "Camunda Services GmbH",
-  "org.opencontainers.image.version": $VERSION,
-  "io.minimus.images.line": "25"
+  "org.opencontainers.image.version": $VERSION
 }
