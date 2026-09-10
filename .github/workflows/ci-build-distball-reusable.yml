@@ -79,15 +79,19 @@ jobs:
             --exclude='*.repositories' \
             -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" .
           ls -lh m2-installed.tar
-      # docker-checks (GitHub-hosted, ci.yml only) consumes these via the artifact API.
+      # docker-checks and Gradle distribution parity (GitHub-hosted, ci.yml only) consume
+      # these via the artifact API. Upload both Maven archive formats so the Gradle job can
+      # compare its ZIP with the Maven ZIP without rebuilding Maven in that job.
       - name: Upload distball (artifact)
         if: ${{ !inputs.skip-artifact-upload }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: distball-${{ github.run_id }}
-          path: ${{ steps.build-zeebe.outputs.distball }}
+          path: |
+            ${{ steps.build-zeebe.outputs.distball }}
+            dist/target/camunda-zeebe-*.zip
           retention-days: 2
-          compression-level: 0  # tarball is already gzipped
+          compression-level: 0  # archives are already compressed
           if-no-files-found: error
       - name: Upload local Maven SNAPSHOT artifacts (artifact)
         if: ${{ !inputs.skip-artifact-upload }}
