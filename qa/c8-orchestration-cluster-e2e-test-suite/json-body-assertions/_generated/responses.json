@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "9180fe3b62b2680f6347dbf9f5fb790a65081a24",
-    "generatedAt": "2026-09-03T12:13:21.479Z",
+    "commit": "465ba2338d9bc76ffeddefc61a4c512397026741",
+    "generatedAt": "2026-09-10T12:12:20.274Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "0337491861b0af59d15f98de112b8b580e21da9f0989d990dd287feb3b962fe0"
+    "specSha256": "8d4b7719f29bd84af9e3667ec3972eeda0c2e4630d1f044c8d8912a68326dedd"
   },
   "responses": [
     {
@@ -10767,7 +10767,8 @@
                           "NO_LEADER",
                           "NO_RESPONSE",
                           "CANCELLED",
-                          "PHYSICAL_TENANT_DISABLED"
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -10898,7 +10899,8 @@
                           "NO_LEADER",
                           "NO_RESPONSE",
                           "CANCELLED",
-                          "PHYSICAL_TENANT_DISABLED"
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -11000,7 +11002,8 @@
                           "NO_LEADER",
                           "NO_RESPONSE",
                           "CANCELLED",
-                          "PHYSICAL_TENANT_DISABLED"
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -11131,7 +11134,8 @@
                           "NO_LEADER",
                           "NO_RESPONSE",
                           "CANCELLED",
-                          "PHYSICAL_TENANT_DISABLED"
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
