@@ -2,6 +2,9 @@ plugins {
   `kotlin-dsl`
 }
 
+group = "io.camunda.gradle"
+version = "0.0.0"
+
 repositories {
   mavenCentral()
 }
