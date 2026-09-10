@@ -49,3 +49,45 @@ jobs:
     with:
       ref: ${{ inputs.ref }}
       os_version: ${{ matrix.os_version }}
+
+  # Auto-retry when a matrix leg failed because its self-hosted runner was
+  # terminated mid-job (spot preemption / autoscaler scale-down / node eviction)
+  # rather than a real test failure. The reusable action only re-runs the failed
+  # jobs when one of the runner-shutdown messages is present in the run logs, so
+  # genuine test failures are never masked. It re-runs failed jobs only
+  # (rerun-whole-workflow defaults to false), so a shutdown in the 2.19 chain
+  # leaves the already-green 3.7 chain untouched. Capped at two retries via
+  # run_attempt.
+  rerun-failed-jobs:
+    name: "Rerun jobs killed by runner shutdown"
+    needs: run-aws-opensearch-tests
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Rerun failed jobs on runner shutdown
+        uses: camunda/infra-global-github-actions/rerun-failed-run@475528365f4010480dccff71ccac554cc3352e7c # rerun-failed-run-1.1.2
+        with:
+          error-messages: |
+            The runner has received a shutdown signal
+            lost communication with the server
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
