@@ -11,9 +11,9 @@ fun optVersion(key: String) = pomVersion(optimizePom, key)
 
 configurations.all {
   resolutionStrategy.force(
-    // Versions hardcoded in optimize/backend/pom.xml <dependency> blocks (no pom property exists)
+    // Versions hardcoded in optimize/backend/pom.xml <dependency> blocks
     "com.github.sisyphsu:dateparser:1.0.11",
-    "com.icegreen:greenmail:2.1.8",
+    "com.icegreen:greenmail:${optVersion("greenmail.version")}",
     "com.opencsv:opencsv:5.12.0",
     "com.sun.mail:jakarta.mail:2.0.2",
     "com.tdunning:t-digest:3.3",
