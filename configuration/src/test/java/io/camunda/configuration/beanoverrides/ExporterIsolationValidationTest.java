@@ -119,6 +119,44 @@ final class ExporterIsolationValidationTest {
   }
 
   @Test
+  void shouldFailWhenGenericExporterSharesUsageMetricsLifecyclePolicyWithSecondaryStorage() {
+    // given
+    final Camunda camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    camunda.getData().getSecondaryStorage().getRetention().setEnabled(true);
+    final String usageMetricsPolicyName =
+        camunda
+            .getData()
+            .getSecondaryStorage()
+            .getElasticsearch()
+            .getHistory()
+            .getUsageMetricsPolicyName();
+
+    final Map<String, ExporterCfg> exporters = new LinkedHashMap<>();
+    exporters.put("elasticsearch", exporterCfg("io.camunda.zeebe.exporter.ElasticsearchExporter"));
+
+    final List<ExporterConfigMerger> mergers =
+        List.of(
+            merger(
+                "io.camunda.zeebe.exporter.ElasticsearchExporter",
+                claim(
+                    "lifecycle-policy",
+                    Map.of(
+                        "engine",
+                        "elasticsearch",
+                        "connection",
+                        List.of("http://localhost:9200"),
+                        "policyName",
+                        usageMetricsPolicyName))));
+
+    // when - then
+    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, camunda, mergers))
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("elasticsearch")
+        .hasMessageContaining("secondary-storage");
+  }
+
+  @Test
   void shouldNotFailWhenSecondaryStorageRetentionIsDisabled() {
     // given
     final Camunda camunda = new Camunda();
