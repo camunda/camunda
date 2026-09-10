@@ -344,13 +344,18 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.dateFormat = dateFormat;
   }
 
+  /**
+   * See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. The field is
+   * unset by default, so comparing a legacy timeout against the unified {@code null} would fail
+   * startup.
+   */
   public Duration getSocketTimeout() {
     final var socketTimeout =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".socket-timeout",
             this.socketTimeout != null ? Math.toIntExact(this.socketTimeout.toMillis()) : null,
             Integer.class,
-            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            BackwardsCompatibilityMode.SUPPORTED,
             legacySocketTimeoutProperties());
     return socketTimeout != null ? Duration.ofMillis(socketTimeout) : null;
   }
@@ -359,13 +364,18 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.socketTimeout = socketTimeout;
   }
 
+  /**
+   * See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. The field is
+   * unset by default, so comparing a legacy timeout against the unified {@code null} would fail
+   * startup.
+   */
   public Duration getConnectionTimeout() {
     final var connectionTimeoutInt =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".connection-timeout",
             connectionTimeout != null ? Math.toIntExact(connectionTimeout.toMillis()) : null,
             Integer.class,
-            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            BackwardsCompatibilityMode.SUPPORTED,
             legacyConnectionTimeoutProperties());
     return connectionTimeoutInt != null ? Duration.ofMillis(connectionTimeoutInt) : null;
   }
