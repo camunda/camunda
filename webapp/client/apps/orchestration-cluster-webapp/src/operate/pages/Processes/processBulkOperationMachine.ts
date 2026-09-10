@@ -15,6 +15,8 @@ import type {
 	CreateCancellationBatchOperationResponseBody,
 	CreateDeletionBatchOperationResponseBody,
 	CreateIncidentResolutionBatchOperationResponseBody,
+	SuspendProcessInstancesBatchOperationResponseBody,
+	ResumeProcessInstancesBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {endpoints} from '#/shared/http/endpoints';
 import {request, requestErrorSchema} from '#/shared/http/request';
@@ -31,12 +33,16 @@ type Submission = {
 type SubmissionResponse =
 	| CreateCancellationBatchOperationResponseBody
 	| CreateDeletionBatchOperationResponseBody
-	| CreateIncidentResolutionBatchOperationResponseBody;
+	| CreateIncidentResolutionBatchOperationResponseBody
+	| SuspendProcessInstancesBatchOperationResponseBody
+	| ResumeProcessInstancesBatchOperationResponseBody;
 type TrackingInput = {queryClient: QueryClient; batchOperationKey: string};
 const REQUESTS = {
 	delete: endpoints.createDeletionBatchOperation,
 	cancel: endpoints.createCancellationBatchOperation,
 	retry: endpoints.createIncidentResolutionBatchOperation,
+	suspend: endpoints.createSuspensionBatchOperation,
+	resume: endpoints.createResumptionBatchOperation,
 };
 
 function refresh(queryClient: QueryClient) {

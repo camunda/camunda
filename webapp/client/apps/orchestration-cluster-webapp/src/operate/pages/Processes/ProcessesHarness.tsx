@@ -31,6 +31,7 @@ function ProcessesHarness() {
 				incidents={search.incidents === undefined ? true : Boolean(search.incidents)}
 				completed={Boolean(search.completed)}
 				canceled={Boolean(search.canceled)}
+				suspended={search.suspended === undefined ? true : Boolean(search.suspended)}
 				tenantId={toOptionalString(search.tenantId)}
 				processInstanceKey={toOptionalString(search.processInstanceKey)}
 				parentProcessInstanceKey={toOptionalString(search.parentProcessInstanceKey)}

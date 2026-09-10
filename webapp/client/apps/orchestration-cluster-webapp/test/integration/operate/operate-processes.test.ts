@@ -104,7 +104,13 @@ test.describe('Operate processes page', () => {
 		);
 		await page.getByRole('dialog').getByRole('button', {name: 'Apply'}).click();
 		expect((await submitted).postDataJSON()).toEqual({
-			filter: {$or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}]},
+			filter: {
+				$or: [
+					{state: {$eq: 'ACTIVE'}, hasIncident: false},
+					{state: {$eq: 'SUSPENDED'}},
+					{hasIncident: true, state: {$neq: 'SUSPENDED'}},
+				],
+			},
 		});
 		await expect(page.getByText('The batch operation "Cancel Process Instance" has been started')).toBeVisible();
 		await expect(page.getByRole('checkbox', {name: 'Select all items'})).not.toBeChecked();

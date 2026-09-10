@@ -23,6 +23,8 @@ import {
 	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateIncidentResolutionBatchOperationEndpoint,
 	mockCreateDeletionBatchOperationEndpoint,
+	mockCreateSuspensionBatchOperationEndpoint,
+	mockCreateResumptionBatchOperationEndpoint,
 	mockGetBatchOperationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
@@ -44,6 +46,7 @@ const SEARCH: ProcessesSearch = {
 	incidents: true,
 	completed: true,
 	canceled: true,
+	suspended: true,
 	tenantId: 'tenant-a',
 	process: 'orders',
 	version: 2,
@@ -105,6 +108,8 @@ describe('Processes bulk toolbar', () => {
 		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
 		await expect.element(screen.getByRole('button', {name: 'Delete', exact: true})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Retry', exact: true})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: 'Suspend', exact: true})).toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: 'Resume', exact: true})).toBeDisabled();
 		await select(screen, '2');
 		await select(screen, '3');
 		await expect.element(screen.getByRole('button', {name: 'Retry', exact: true})).toBeEnabled();
@@ -113,6 +118,8 @@ describe('Processes bulk toolbar', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Discard'}));
 		await select(screen, '5');
 		await expect.element(screen.getByRole('button', {name: 'Retry', exact: true})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: 'Suspend', exact: true})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: 'Resume', exact: true})).toBeEnabled();
 	});
 
 	for (const [action, mock, keys, message, batchOperationType, operationLabel] of [
@@ -139,6 +146,14 @@ describe('Processes bulk toolbar', () => {
 			'Instances without an incident in your selection will be ignored.',
 			'RESOLVE_INCIDENT',
 			'Resolve Incident',
+		],
+		[
+			'Suspend',
+			mockCreateSuspensionBatchOperationEndpoint,
+			['1', '2'],
+			"Instances that aren't active in your selection will be ignored.",
+			'SUSPEND_PROCESS_INSTANCE',
+			'Suspend Process Instance',
 		],
 	] as const) {
 		it(`should confirm and submit ${action} with eligible keys and tenant/definition filters`, async ({worker}) => {
@@ -173,6 +188,37 @@ describe('Processes bulk toolbar', () => {
 			await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1', exact: true})).not.toBeChecked();
 		});
 	}
+
+	it('should confirm and submit Resume for the checked suspended instance only', async ({worker}) => {
+		const received = vi.fn(() => true);
+		worker.use(
+			list(),
+			completed('RESUME_PROCESS_INSTANCE'),
+			mockCreateResumptionBatchOperationEndpoint({
+				schema: z.custom(received),
+				successResponse: accepted('RESUME_PROCESS_INSTANCE'),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		const screen = await renderTable();
+		for (const key of ['1', '5']) {
+			await select(screen, key);
+		}
+		await userEvent.click(screen.getByRole('button', {name: 'Resume', exact: true}));
+		const modal = screen.getByRole('dialog');
+		await expect
+			.element(modal.getByText("Instances that aren't suspended in your selection will be ignored.", {exact: false}))
+			.toBeVisible();
+		await userEvent.click(modal.getByRole('button', {name: 'Apply', exact: true}));
+		await expect
+			.element(screen.getByText('The batch operation "Resume Process Instance" has been started'))
+			.toBeVisible();
+		expect(received).toHaveBeenCalledWith({
+			filter: {...mapProcessInstancesFilter(SEARCH), processInstanceKey: {$in: ['5']}},
+		});
+		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
+		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 5', exact: true})).not.toBeChecked();
+	});
 
 	it('should apply filter-wide selection and exclusions with a truncated count', async ({worker}) => {
 		const received = vi.fn(() => true);
@@ -218,6 +264,8 @@ describe('Processes bulk toolbar', () => {
 		['Delete', mockCreateDeletionBatchOperationEndpoint, 'DELETE_PROCESS_INSTANCE'],
 		['Cancel', mockCreateCancellationBatchOperationEndpoint, 'CANCEL_PROCESS_INSTANCE'],
 		['Retry', mockCreateIncidentResolutionBatchOperationEndpoint, 'RESOLVE_INCIDENT'],
+		['Suspend', mockCreateSuspensionBatchOperationEndpoint, 'SUSPEND_PROCESS_INSTANCE'],
+		['Resume', mockCreateResumptionBatchOperationEndpoint, 'RESUME_PROCESS_INSTANCE'],
 	] as const) {
 		it(`should never widen an instance-key filter when excluding rows for ${action}`, async ({worker}) => {
 			const received = vi.fn(() => true);
@@ -377,7 +425,14 @@ describe('Processes bulk toolbar', () => {
 	}
 
 	it('should keep an absent filter identity stable and clear selection across filter transitions', async () => {
-		const emptySearch = {...SEARCH, active: false, incidents: false, completed: false, canceled: false};
+		const emptySearch = {
+			...SEARCH,
+			active: false,
+			incidents: false,
+			completed: false,
+			canceled: false,
+			suspended: false,
+		};
 		const received = vi.fn();
 		function Harness() {
 			const [search, setSearch] = useState(emptySearch);

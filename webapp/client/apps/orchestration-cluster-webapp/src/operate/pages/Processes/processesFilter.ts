@@ -35,6 +35,7 @@ type ProcessesSearch = {
 	incidents: boolean;
 	completed: boolean;
 	canceled: boolean;
+	suspended: boolean;
 	sort?: string;
 };
 
@@ -69,22 +70,30 @@ function buildStateCriterion(states: ProcessInstanceState[]): ProcessInstancesFi
 
 /**
  * `incidents` is never scoped to a state: an instance keeps its incident regardless of the state
- * it is in, so it must stay visible even when only non-active states are selected. Mirrors
+ * it is in, so it must stay visible even when only non-active states are selected. `suspended` is
+ * its own branch rather than a member of `getSelectedStates` because a suspended instance must
+ * stay visible independently of the active/completed/canceled selection, and is excluded from the
+ * incidents branch to avoid asserting two contradictory states for the same instance. Mirrors
  * legacy's `buildStateFilter`.
  */
 function buildStateFilter(search: ProcessesSearch): ProcessInstancesFilter {
 	const states = getSelectedStates(search);
+	const branches: ProcessInstancesFilter[] = [];
 
-	if (search.incidents && states.length > 0) {
-		return {$or: [{state: {$in: states}}, {hasIncident: true}]};
+	if (states.length > 0) {
+		branches.push({state: buildStateCriterion(states), hasIncident: false});
+	}
+	if (search.suspended) {
+		branches.push({state: {$eq: 'SUSPENDED'}});
 	}
 	if (search.incidents) {
-		return {hasIncident: true};
+		branches.push(search.suspended ? {hasIncident: true, state: {$neq: 'SUSPENDED'}} : {hasIncident: true});
 	}
-	if (states.length > 0) {
-		return {state: buildStateCriterion(states), hasIncident: false};
+
+	if (branches.length === 0) {
+		return {};
 	}
-	return {};
+	return branches.length === 1 ? branches[0]! : {$or: branches};
 }
 
 function buildElementFilter(elementId: string, matchActiveElement: boolean): ProcessInstancesFilter {
@@ -107,6 +116,11 @@ function buildMixedStateElementFilter(search: ProcessesSearch, elementId: string
 	if (search.active) {
 		branches.push({...buildElementFilter(elementId, true), state: {$eq: 'ACTIVE'}, hasIncident: false});
 	}
+	// A suspended instance's element is still active — the token is merely paused there — so it
+	// belongs to the same "active element" bucket as `active`, not the finished-element bucket.
+	if (search.suspended) {
+		branches.push({...buildElementFilter(elementId, true), state: {$eq: 'SUSPENDED'}});
+	}
 	if (finishedStates.length > 0) {
 		branches.push({
 			...buildElementFilter(elementId, false),
@@ -115,7 +129,11 @@ function buildMixedStateElementFilter(search: ProcessesSearch, elementId: string
 		});
 	}
 	if (search.incidents) {
-		branches.push({...buildElementFilter(elementId, true), hasIncident: true});
+		branches.push({
+			...buildElementFilter(elementId, true),
+			hasIncident: true,
+			...(search.suspended ? {state: {$neq: 'SUSPENDED' as const}} : {}),
+		});
 	}
 
 	return {$or: branches};
@@ -129,7 +147,7 @@ function buildStateAndElementFilter(search: ProcessesSearch): ProcessInstancesFi
 	}
 
 	const hasFinishedStateFilter = search.completed || search.canceled;
-	const hasActiveElementStateFilter = search.active || search.incidents;
+	const hasActiveElementStateFilter = search.active || search.incidents || search.suspended;
 
 	if (hasFinishedStateFilter && hasActiveElementStateFilter) {
 		return buildMixedStateElementFilter(search, search.elementId);
@@ -144,7 +162,7 @@ function buildStateAndElementFilter(search: ProcessesSearch): ProcessInstancesFi
  * caller skips the request entirely, mirroring legacy's `parseProcessInstancesSearchFilter`.
  */
 function mapProcessInstancesFilter(search: ProcessesSearch): ProcessInstancesFilter | undefined {
-	const hasStateFilters = search.active || search.incidents || search.completed || search.canceled;
+	const hasStateFilters = search.active || search.incidents || search.completed || search.canceled || search.suspended;
 
 	if (!hasStateFilters && !search.batchOperationKey && !search.elementId) {
 		return undefined;

@@ -20,7 +20,12 @@ import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import {TenantField} from '#/operate/shared/TenantField/TenantField';
-import {RadioButtonChecked, WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled';
+import {
+	RadioButtonChecked,
+	WarningFilled,
+	CheckmarkOutline,
+	PauseOutlineFilled,
+} from '#/operate/shared/StateIcon/styled';
 import {IndentedGroup, CanceledIcon} from './styled';
 import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
 import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
@@ -36,6 +41,7 @@ type Props = {
 	incidents: boolean;
 	completed: boolean;
 	canceled: boolean;
+	suspended: boolean;
 	sort?: string;
 } & FiltersFormValues;
 
@@ -49,6 +55,7 @@ const Processes: React.FC<Props> = ({
 	incidents,
 	completed,
 	canceled,
+	suspended,
 	tenantId,
 	processInstanceKey,
 	parentProcessInstanceKey,
@@ -143,8 +150,8 @@ const Processes: React.FC<Props> = ({
 		return definition === undefined ? {kind: 'no-match'} : {kind: 'single-version', definition};
 	}, [data, process, version]);
 
-	const runningChecked = active && incidents;
-	const runningIndeterminate = !runningChecked && (active || incidents);
+	const runningChecked = active && incidents && suspended;
+	const runningIndeterminate = !runningChecked && (active || incidents || suspended);
 	const finishedChecked = completed && canceled;
 	const finishedIndeterminate = !finishedChecked && (completed || canceled);
 
@@ -154,6 +161,7 @@ const Processes: React.FC<Props> = ({
 	const isResetDisabled =
 		active &&
 		incidents &&
+		suspended &&
 		!completed &&
 		!canceled &&
 		!process &&
@@ -277,7 +285,7 @@ const Processes: React.FC<Props> = ({
 													onChange={(_, {checked}) => {
 														void navigate({
 															to: '.',
-															search: (prev) => ({...prev, active: checked, incidents: checked}),
+															search: (prev) => ({...prev, active: checked, incidents: checked, suspended: checked}),
 														});
 													}}
 												/>
@@ -306,6 +314,19 @@ const Processes: React.FC<Props> = ({
 														checked={incidents}
 														onChange={(_, {checked}) => {
 															void navigate({to: '.', search: (prev) => ({...prev, incidents: checked})});
+														}}
+													/>
+													<Checkbox
+														id="filter-suspended"
+														labelText={
+															<Stack orientation="horizontal" gap={3}>
+																<PauseOutlineFilled size={20} />
+																<div>{t('operate.processes.filters.suspended')}</div>
+															</Stack>
+														}
+														checked={suspended}
+														onChange={(_, {checked}) => {
+															void navigate({to: '.', search: (prev) => ({...prev, suspended: checked})});
 														}}
 													/>
 												</IndentedGroup>
@@ -402,6 +423,7 @@ const Processes: React.FC<Props> = ({
 						incidents,
 						completed,
 						canceled,
+						suspended,
 						sort,
 					}}
 				/>

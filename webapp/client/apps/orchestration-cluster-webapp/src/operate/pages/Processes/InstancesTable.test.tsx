@@ -36,7 +36,13 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {InstancesTable} from './InstancesTable';
 import type {ProcessesSearch} from './processesFilter';
 
-const BASE_SEARCH: ProcessesSearch = {active: true, incidents: true, completed: false, canceled: false};
+const BASE_SEARCH: ProcessesSearch = {
+	active: true,
+	incidents: true,
+	completed: false,
+	canceled: false,
+	suspended: true,
+};
 
 function renderInstancesTable(search: ProcessesSearch = BASE_SEARCH) {
 	return renderWithRouter(
@@ -199,10 +205,30 @@ describe('<InstancesTable />', () => {
 			incidents: false,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
 		await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+	});
+
+	it('should not show the "select a state" hint when suspended alone is selected and empty', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: HttpResponse.json(createQueryProcessInstancesResponse())}),
+		);
+
+		const screen = await renderInstancesTable({
+			active: false,
+			incidents: false,
+			completed: false,
+			canceled: false,
+			suspended: true,
+		});
+
+		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
+		await expect
+			.element(screen.getByText('To see some results, select at least one Instance state'))
+			.not.toBeInTheDocument();
 	});
 
 	it('should still render when a hand-edited URL carries an unparseable date', async ({worker}) => {
@@ -239,6 +265,7 @@ describe('<InstancesTable />', () => {
 			incidents: false,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 		await expect.element(screen.getByText('Order Process')).toBeVisible();
 
@@ -352,6 +379,40 @@ describe('<InstancesTable />', () => {
 		await vi.advanceTimersByTimeAsync(5000);
 
 		await expect.element(screen.getByText('COMPLETED')).toBeVisible();
+	});
+
+	it('should keep polling a suspended-only view, since a resume elsewhere can change it', async ({worker}) => {
+		vi.useFakeTimers({shouldAdvanceTime: true});
+		let searchRequests = 0;
+		worker.events.on('request:start', ({request}) => {
+			if (request.method === 'POST' && request.url.includes('/process-instances/search')) {
+				searchRequests++;
+			}
+		});
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})],
+					}),
+				),
+			}),
+		);
+
+		await renderInstancesTable({
+			...BASE_SEARCH,
+			active: false,
+			incidents: false,
+			completed: false,
+			canceled: false,
+			suspended: true,
+		});
+		await expect.poll(() => searchRequests).toBe(1);
+
+		await vi.advanceTimersByTimeAsync(5000);
+
+		await expect.poll(() => searchRequests).toBe(2);
+		worker.events.removeAllListeners('request:start');
 	});
 
 	it('should report an operation item request failure instead of an empty state', async ({worker}) => {
