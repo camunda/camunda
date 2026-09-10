@@ -44,12 +44,12 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `create-issue`                 | Create a GitHub issue with the correct template, component label, and parent link                              |
 | `design-system-migrator`       | Migrate OC webapp routes and components from Carbon to the Camunda design system                               |
 | `engine-expert`                | Implement or fix capabilities in the Zeebe workflow engine (`zeebe/engine/`)                                   |
-| `frontend-feature`             | Build new pages, components, or features in the orchestration cluster webapp                                   |
+| `frontend-feature`             | Build non-Operate features in the orchestration cluster webapp                                                 |
 | `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp                  |
-| `frontend-migrator`            | Migrate or port legacy frontend code to the OC webapp                                                          |
-| `frontend-operate-migrator`    | End-to-end ticket-driven Operate migration, fidelity review, draft PR, and CI convergence                      |
+| `frontend-operate-migrator`    | Port a page from legacy `operate/client/` to the Operate pod: inventory, store decomposition, fidelity review  |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
-| `operate-frontend`             | Fix bugs or make changes in the Operate legacy frontend at `operate/client/`                                   |
+| `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
+| `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
 | `tasklist-frontend`            | Build or change Tasklist pod features in the OC webapp at `src/tasklist/`                                      |
 
 ## Adding a new skill
