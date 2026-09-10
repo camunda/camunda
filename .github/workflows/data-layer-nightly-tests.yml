@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(github.event_name == 'schedule' && '["stable/8.9","main"]' || format('[{0}]', toJSON(github.event.pull_request.head.ref || github.ref_name))) }}
+        branch: ${{ fromJSON(github.event_name == 'schedule' && '["stable/8.9","stable/8.10","main"]' || format('[{0}]', toJSON(github.event.pull_request.head.ref || github.ref_name))) }}
     # Run fixed branches on schedule, or the current branch for manual dispatch and PR label runs
     if: |
       github.event_name == 'schedule' ||
