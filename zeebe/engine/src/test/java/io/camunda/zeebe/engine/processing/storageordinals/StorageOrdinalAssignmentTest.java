@@ -12,15 +12,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -37,9 +43,17 @@ public final class StorageOrdinalAssignmentTest {
 
   private static final int FIXED_ORDINAL = 1234;
 
+  /**
+   * Runs with a single command per batch so every follow-up command reaches the log before it is
+   * processed. With the default batching, a follow-up command is processed in the same batch from
+   * the live record object, so a processor that re-stamps the ordinal (e.g. the ad-hoc sub-process
+   * ACTIVATE/COMPLETE processors) would already be visible on the logged command and hide a missing
+   * assignment in the producing processor.
+   */
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
+          .maxCommandsInBatch(1)
           .withEngineConfig(
               c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinal(FIXED_ORDINAL));
 
@@ -362,5 +376,144 @@ public final class StorageOrdinalAssignmentTest {
             .withJobKey(jobKey)
             .getFirst();
     assertThat(incidentCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToAdHocSubProcessInstructionActivatedRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("ahsp-activate-process")
+                .startEvent()
+                .adHocSubProcess("ad-hoc", adHocSubProcess -> adHocSubProcess.task("A"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("ahsp-activate-process").create();
+    final long adHocSubProcessInstanceKey = adHocSubProcessInstanceKeyOf(processInstanceKey);
+
+    // when - the command arrives from outside the engine, carrying no ordinal of its own
+    engine
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
+        .withElementIds("A")
+        .activate();
+
+    // then
+    final var activated =
+        RecordingExporter.adHocSubProcessInstructionRecords()
+            .withIntent(AdHocSubProcessInstructionIntent.ACTIVATED)
+            .getFirst();
+    assertThat(activated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToAdHocSubProcessInstructionCompletedRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("ahsp-complete-process")
+                .startEvent()
+                .adHocSubProcess("ad-hoc", adHocSubProcess -> adHocSubProcess.task("A"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("ahsp-complete-process").create();
+    final long adHocSubProcessInstanceKey = adHocSubProcessInstanceKeyOf(processInstanceKey);
+
+    // when - the command arrives from outside the engine, carrying no ordinal of its own
+    engine.writeRecords(
+        RecordToWrite.command()
+            .adHocSubProcessInstruction(
+                AdHocSubProcessInstructionIntent.COMPLETE,
+                new AdHocSubProcessInstructionRecord()
+                    .setAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)));
+
+    // then
+    final var completed =
+        RecordingExporter.adHocSubProcessInstructionRecords()
+            .withIntent(AdHocSubProcessInstructionIntent.COMPLETED)
+            .getFirst();
+    assertThat(completed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToJobDrivenAdHocSubProcessInstructionRecords() {
+    // given
+    final var jobType = "ahsp-job-type";
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("ahsp-job-process")
+                .startEvent()
+                .adHocSubProcess("ad-hoc", adHocSubProcess -> adHocSubProcess.task("A"))
+                .zeebeJobType(jobType)
+                .endEvent()
+                .done())
+        .deploy();
+    engine.processInstance().ofBpmnProcessId("ahsp-job-process").create();
+
+    // when - the ad-hoc sub-process job worker activates an element
+    completeAdHocSubProcessJob(jobType, 1, false, new JobResultActivateElement().setElementId("A"));
+
+    // then - the job-emitted command itself must carry the ordinal, not only the event
+    final var activateCommand =
+        RecordingExporter.adHocSubProcessInstructionRecords()
+            .withIntent(AdHocSubProcessInstructionIntent.ACTIVATE)
+            .onlyCommands()
+            .getFirst();
+    assertThat(activateCommand.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    final var activated =
+        RecordingExporter.adHocSubProcessInstructionRecords()
+            .withIntent(AdHocSubProcessInstructionIntent.ACTIVATED)
+            .getFirst();
+    assertThat(activated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    // when - the job created after A completed reports the completion condition as fulfilled
+    completeAdHocSubProcessJob(jobType, 2, true);
+
+    // then
+    final var completeCommand =
+        RecordingExporter.adHocSubProcessInstructionRecords()
+            .withIntent(AdHocSubProcessInstructionIntent.COMPLETE)
+            .onlyCommands()
+            .getFirst();
+    assertThat(completeCommand.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    final var completed =
+        RecordingExporter.adHocSubProcessInstructionRecords()
+            .withIntent(AdHocSubProcessInstructionIntent.COMPLETED)
+            .getFirst();
+    assertThat(completed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  private long adHocSubProcessInstanceKeyOf(final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+        .getFirst()
+        .getKey();
+  }
+
+  private void completeAdHocSubProcessJob(
+      final String jobType,
+      final long jobCounter,
+      final boolean completionConditionFulfilled,
+      final JobResultActivateElement... activateElements) {
+    // follow-up commands reach the log one at a time, so wait for the job before completing it
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType(jobType)
+            .skip(jobCounter - 1)
+            .getFirst()
+            .getKey();
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(List.of(activateElements))
+            .setCompletionConditionFulfilled(completionConditionFulfilled);
+    engine.job().withKey(jobKey).withResult(jobResult).complete();
   }
 }

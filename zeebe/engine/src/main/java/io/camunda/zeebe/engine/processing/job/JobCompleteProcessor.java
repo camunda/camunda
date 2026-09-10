@@ -376,7 +376,8 @@ public final class JobCompleteProcessor
         new AdHocSubProcessInstructionRecord()
             .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey())
             .setCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
-            .setCancelRemainingInstances(jobResult.isCancelRemainingInstances());
+            .setCancelRemainingInstances(jobResult.isCancelRemainingInstances())
+            .setStorageOrdinal(adHocSubProcessInstance.getValue().getStorageOrdinal());
 
     if (!jobResult.getActivateElements().isEmpty()) {
       jobResult.getActivateElements().stream()
