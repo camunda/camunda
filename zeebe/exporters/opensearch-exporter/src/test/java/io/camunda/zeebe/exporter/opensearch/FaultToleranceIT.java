@@ -42,7 +42,8 @@ final class FaultToleranceIT {
               random -> null);
   private final ExporterTestController controller = new ExporterTestController();
   private final OpensearchExporter exporter = new OpensearchExporter();
-  private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
+  private final RecordIndexRouter indexRouter =
+      new RecordIndexRouter(config.index, index -> config.index.getNumberOfShards());
 
   @Test
   void shouldExportEvenIfOpensearchNotInitiallyReachable() {

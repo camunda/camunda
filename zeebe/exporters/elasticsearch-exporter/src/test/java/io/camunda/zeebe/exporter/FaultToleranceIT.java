@@ -43,7 +43,8 @@ final class FaultToleranceIT {
               random -> null);
   private final ExporterTestController controller = new ExporterTestController();
   private final ElasticsearchExporter exporter = new ElasticsearchExporter();
-  private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
+  private final RecordIndexRouter indexRouter =
+      new RecordIndexRouter(config.index, index -> config.index.getNumberOfShards());
 
   @Test
   void shouldExportEvenIfElasticNotInitiallyReachable() {

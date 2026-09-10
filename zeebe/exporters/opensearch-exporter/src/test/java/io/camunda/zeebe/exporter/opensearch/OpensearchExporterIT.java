@@ -113,7 +113,7 @@ final class OpensearchExporterIT {
     config = new OpensearchExporterConfiguration();
     controller = new ExporterTestController();
     exporter = new OpensearchExporter();
-    indexRouter = new RecordIndexRouter(config.index);
+    indexRouter = new RecordIndexRouter(config.index, index -> config.index.getNumberOfShards());
 
     config.url = CONTAINER.getHttpHostAddress();
     config.setIncludeEnabledRecords(true);
@@ -164,7 +164,7 @@ final class OpensearchExporterIT {
         .containsExactly(
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
+            indexRouter.routingFor(record, indexRouter.indexFor(record)),
             record);
   }
 
@@ -413,7 +413,7 @@ final class OpensearchExporterIT {
           .containsExactly(
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()));
+              indexRouter.routingFor(record, indexRouter.indexFor(record)));
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(OpenSearchException.class)

@@ -105,7 +105,7 @@ final class ExporterFilterIT {
     TestSupport.provideValueTypes()
         .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
 
-    indexRouter = new RecordIndexRouter(config.index);
+    indexRouter = new RecordIndexRouter(config.index, index -> config.index.getNumberOfShards());
     testClient = new TestClient(config, indexRouter);
   }
 
