@@ -1,0 +1,37 @@
+# TEMPORARY PROBE - delete with the branch yf-probe-rerun-failed-matrix-reusable.
+# Structural clone of zeebe-aws-os-dispatch-tests.yml: an outer matrix of
+# reusable-workflow calls with secrets: inherit, plus a trailing job that depends
+# on them and is gated the same way the runner-shutdown retry job is.
+name: PROBE C matrix plus nested reusable
+on:
+  push:
+    branches:
+      - yf-probe-rerun-failed-matrix-reusable
+
+jobs:
+  legs:
+    name: "ver ${{ matrix.os_version }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: ["2.19", "3.7"]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/probe-rerun-c-callee.yml
+    secrets: inherit
+    with:
+      os_version: ${{ matrix.os_version }}
+      # Only the 3.7 chain fails, so a partial re-run has one outer leg to target
+      # while the 2.19 chain stays green, mirroring the real failure.
+      mode: ${{ matrix.os_version == '3.7' && 'fail' || 'pass' }}
+
+  trailing-job:
+    name: "Trailing job gated like the retry"
+    needs: legs
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - run: echo "attempt=${{ github.run_attempt }}"

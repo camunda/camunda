@@ -1,0 +1,74 @@
+# TEMPORARY PROBE - delete with the branch yf-probe-rerun-failed-matrix-reusable.
+# Structural clone of zeebe-aws-os-integration-tests-reusable.yml: a needs chain,
+# job-level concurrency groups keyed on the input, an inner matrix nested inside
+# the caller's outer matrix, and a disabled trailing notification job. Probe A
+# was flat and re-ran fine, so this adds back the features it was missing.
+name: PROBE C callee
+on:
+  workflow_call:
+    inputs:
+      os_version:
+        required: true
+        type: string
+      mode:
+        required: true
+        type: string
+
+jobs:
+  pre-one:
+    name: "[PRE] first. ver.${{ inputs.os_version }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: aws-probe-${{ inputs.os_version }}
+    steps:
+      - run: echo "pre-one ${{ inputs.os_version }}"
+
+  pre-two:
+    name: "[PRE] second. ver.${{ inputs.os_version }}"
+    needs: pre-one
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: aws-probe-${{ inputs.os_version }}
+    steps:
+      - run: echo "pre-two ${{ inputs.os_version }}"
+
+  integration-tests:
+    name: "[IT] ${{ matrix.name }}. ver.${{ inputs.os_version }}"
+    needs: pre-two
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: aws-probe-${{ inputs.os_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: group-alpha
+            group: alpha
+          - name: group-beta
+            group: beta
+    steps:
+      - name: Pass or fail based on mode and group
+        env:
+          MODE: ${{ inputs.mode }}
+          GROUP: ${{ matrix.group }}
+        run: |
+          echo "mode=${MODE} group=${GROUP}"
+          if [ "${MODE}" = "fail" ] && [ "${GROUP}" = "beta" ]; then
+            echo "failing on purpose so this inner leg can be re-run"
+            exit 1
+          fi
+          echo "passing"
+
+  send-slack-notificaion:
+    name: "Send slack notification on fail. ver.${{ inputs.os_version }}"
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Always false, mirroring the real workflow's `if: false`, but written as an
+    # expression because actionlint rejects a constant condition.
+    if: fromJSON(github.run_number) < 0
+    steps:
+      - run: echo "disabled, mirrors the real workflow"
