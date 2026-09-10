@@ -17,20 +17,21 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.boot.actuate.endpoint.annotation.Selector;
+import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
+import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
+import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
-@RestControllerEndpoint(id = "exporters")
+@WebEndpoint(id = "exporters")
+@NullMarked
 public class ExportersEndpoint {
 
   private final ClusterConfigurationManagementRequestSender requestSender;
@@ -45,11 +46,33 @@ public class ExportersEndpoint {
    * disabled in every physical tenant that has it configured, keeping the whole-cluster meaning the
    * operation always had. With the parameter, only the given physical tenant is affected.
    */
-  @PostMapping(path = "/{exporterId}/disable")
+  @WriteOperation
+  public WebEndpointResponse<?> updateExporter(
+      @Selector final String exporterId,
+      @Selector final String operation,
+      final @Nullable String initializeFrom,
+      final @Nullable Boolean dryRun,
+      final @Nullable String physicalTenant) {
+    final var isDryRun = Boolean.TRUE.equals(dryRun);
+    return switch (operation) {
+      case "disable" ->
+          toWebEndpointResponse(disableExporter(exporterId, isDryRun, physicalTenant).join());
+      case "enable" ->
+          toWebEndpointResponse(
+              enableExporter(
+                      exporterId,
+                      initializeFrom == null ? null : new InitializationInfo(initializeFrom),
+                      isDryRun,
+                      physicalTenant)
+                  .join());
+      default ->
+          new WebEndpointResponse<>(
+              "Unknown exporter operation: " + operation, WebEndpointResponse.STATUS_BAD_REQUEST);
+    };
+  }
+
   public CompletableFuture<ResponseEntity<?>> disableExporter(
-      @PathVariable("exporterId") final String exporterId,
-      @RequestParam(defaultValue = "false") final boolean dryRun,
-      @RequestParam(required = false) final @Nullable String physicalTenant) {
+      final String exporterId, final boolean dryRun, final @Nullable String physicalTenant) {
 
     return requestSender
         .disableExporter(new ExporterDisableRequest(exporterId, nonBlank(physicalTenant), dryRun))
@@ -61,12 +84,11 @@ public class ExportersEndpoint {
    * in every physical tenant, keeping the whole-cluster meaning the operation always had. With the
    * parameter, only the given physical tenant is affected.
    */
-  @PostMapping(path = "/{exporterId}/enable")
   public CompletableFuture<ResponseEntity<?>> enableExporter(
-      @PathVariable("exporterId") final String exporterId,
-      @RequestBody(required = false) final InitializationInfo initializeInfo,
-      @RequestParam(defaultValue = "false") final boolean dryRun,
-      @RequestParam(required = false) final @Nullable String physicalTenant) {
+      final String exporterId,
+      final @Nullable InitializationInfo initializeInfo,
+      final boolean dryRun,
+      final @Nullable String physicalTenant) {
     return requestSender
         .enableExporter(
             new ExporterEnableRequest(
@@ -82,11 +104,17 @@ public class ExportersEndpoint {
    * from every physical tenant that has it configured, keeping the whole-cluster meaning the
    * operation always had. With the parameter, only the given physical tenant is affected.
    */
-  @DeleteMapping(path = "/{exporterId}")
+  @DeleteOperation
+  public WebEndpointResponse<?> deleteExporterOperation(
+      @Selector final String exporterId,
+      final @Nullable Boolean dryRun,
+      final @Nullable String physicalTenant) {
+    return toWebEndpointResponse(
+        deleteExporter(exporterId, Boolean.TRUE.equals(dryRun), physicalTenant).join());
+  }
+
   public CompletableFuture<ResponseEntity<?>> deleteExporter(
-      @PathVariable("exporterId") final String exporterId,
-      @RequestParam(defaultValue = "false") final boolean dryRun,
-      @RequestParam(required = false) final @Nullable String physicalTenant) {
+      final String exporterId, final boolean dryRun, final @Nullable String physicalTenant) {
 
     return requestSender
         .deleteExporter(new ExporterDeleteRequest(exporterId, nonBlank(physicalTenant), dryRun))
@@ -98,23 +126,21 @@ public class ExportersEndpoint {
    * {@code physicalTenant} query parameter. Each entry names the tenant it belongs to — see {@link
    * ClusterApiUtils#aggregateExporterState}.
    */
-  @GetMapping(produces = "application/json")
-  public CompletableFuture<ResponseEntity<?>> listExporters(
-      @RequestParam(required = false) final @Nullable String physicalTenant) {
+  @ReadOperation(produces = "application/json")
+  public WebEndpointResponse<?> listExportersOperation(final @Nullable String physicalTenant) {
+    return toWebEndpointResponse(listExporters(physicalTenant).join());
+  }
+
+  public CompletableFuture<ResponseEntity<?>> listExporters(final @Nullable String physicalTenant) {
     final var tenant = nonBlank(physicalTenant);
-    return requestSender
-        .getTopology()
-        .handle((response, throwable) -> mapQueryResponse(tenant, response, throwable));
+    final CompletableFuture<ResponseEntity<?>> topologyResponse =
+        requestSender.getTopology().thenApply(response -> mapQueryResponse(tenant, response));
+    return topologyResponse.exceptionally(ClusterApiUtils::mapError);
   }
 
   private ResponseEntity<?> mapQueryResponse(
       final Optional<String> physicalTenant,
-      final Either<ErrorResponse, CurrentClusterConfiguration> response,
-      final Throwable throwable) {
-    if (throwable != null) {
-      return ClusterApiUtils.mapError(throwable);
-    }
-
+      final Either<ErrorResponse, CurrentClusterConfiguration> response) {
     if (response.isLeft()) {
       return ClusterApiUtils.mapErrorResponse(response.getLeft());
     }
@@ -138,6 +164,10 @@ public class ExportersEndpoint {
 
   private static Optional<String> nonBlank(final @Nullable String value) {
     return Optional.ofNullable(value).filter(s -> !s.isBlank());
+  }
+
+  private static WebEndpointResponse<?> toWebEndpointResponse(final ResponseEntity<?> response) {
+    return new WebEndpointResponse<>(response.getBody(), response.getStatusCode().value());
   }
 
   private record InitializationInfo(String initializeFrom) {}
