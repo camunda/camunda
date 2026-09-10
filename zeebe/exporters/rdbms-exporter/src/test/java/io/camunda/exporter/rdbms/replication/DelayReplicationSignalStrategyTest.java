@@ -63,10 +63,12 @@ class DelayReplicationSignalStrategyTest {
     when(clock.millis()).thenReturn(5_000L);
     final var strategy = createStrategy();
 
-    // when / then - ignores statuses entirely; combined with a marker of flushTime + delay, this
-    // reproduces "releaseTimeMs <= now" without any replica signal
-    assertThat(strategy.computeConfirmedMarker(List.of())).isEqualTo(5_000L);
-    assertThat(strategy.computeConfirmedMarker(List.of(new ReplicationLagStatus("r1", 0L))))
+    // when / then - ignores statuses/currentPrimaryRegion entirely; combined with a marker of
+    // flushTime + delay, this reproduces "releaseTimeMs <= now" without any replica signal
+    assertThat(strategy.computeConfirmedMarker(List.of(), Optional.empty())).isEqualTo(5_000L);
+    assertThat(
+            strategy.computeConfirmedMarker(
+                List.of(new ReplicationLagStatus("r1", 0L)), Optional.empty()))
         .isEqualTo(5_000L);
   }
 
@@ -76,8 +78,11 @@ class DelayReplicationSignalStrategyTest {
     final var strategy = createStrategy();
 
     // when / then
-    assertThat(strategy.computePauseLag(List.of(), Optional.empty())).isEqualTo(Duration.ZERO);
-    assertThat(strategy.computePauseLag(List.of(), Optional.of(Duration.ofDays(365))))
+    assertThat(strategy.computePauseLag(List.of(), Optional.empty(), Optional.empty()))
+        .isEqualTo(Duration.ZERO);
+    assertThat(
+            strategy.computePauseLag(
+                List.of(), Optional.of(Duration.ofDays(365)), Optional.empty()))
         .isEqualTo(Duration.ZERO);
   }
 

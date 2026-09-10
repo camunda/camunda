@@ -148,12 +148,16 @@ public final class DefaultReplicationController implements ReplicationController
     try {
       final List<? extends ReplicationStatus> statuses = strategy.fetchStatuses();
       final int connectedReplicas = statuses.size();
+      // resolved once here and reused below, instead of once per call - all three calls concern
+      // the exact same point in time, this one check.
+      final Optional<String> currentPrimaryRegion = strategy.resolveCurrentPrimaryRegion();
 
-      final long confirmedMarker = strategy.computeConfirmedMarker(statuses);
+      final long confirmedMarker = strategy.computeConfirmedMarker(statuses, currentPrimaryRegion);
       final QueuedPosition confirmedEntry = drainConfirmed(confirmedMarker);
 
       final Optional<Duration> queueHeadAge = queueHeadAge();
-      final Duration pauseLag = strategy.computePauseLag(statuses, queueHeadAge);
+      final Duration pauseLag =
+          strategy.computePauseLag(statuses, queueHeadAge, currentPrimaryRegion);
 
       log.debug(
           "[RDBMS Exporter P{}] connectedReplicas={}, confirmedMarker={}, pauseLag={}, statuses={}",
@@ -167,7 +171,7 @@ public final class DefaultReplicationController implements ReplicationController
           config.isPauseOnMaxLagExceeded() && pauseLag.compareTo(config.getMaxLag()) > 0,
           pauseLag,
           connectedReplicas,
-          () -> strategy.regionsBelowQuorum(statuses));
+          () -> strategy.regionsBelowQuorum(statuses, currentPrimaryRegion));
 
       if (confirmedEntry != null) {
         acknowledge(confirmedEntry, pauseLag, connectedReplicas);

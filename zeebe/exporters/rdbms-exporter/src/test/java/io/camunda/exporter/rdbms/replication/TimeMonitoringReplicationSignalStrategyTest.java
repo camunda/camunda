@@ -82,7 +82,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
       final var strategy = createStrategy();
 
       // when
-      final long asOfMs = strategy.computeConfirmedMarker(List.of());
+      final long asOfMs = strategy.computeConfirmedMarker(List.of(), Optional.empty());
 
       // then
       assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
@@ -96,7 +96,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
       final var statuses = List.of(new ReplicationLagStatus("r1", 5_000L, 20_000L));
 
       // when
-      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+      final long asOfMs = strategy.computeConfirmedMarker(statuses, Optional.empty());
 
       // then
       assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
@@ -115,7 +115,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
               new ReplicationLagStatus("r3", 10_000L, 10_000L));
 
       // when
-      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+      final long asOfMs = strategy.computeConfirmedMarker(statuses, Optional.empty());
 
       // then - top 2 by as-of are r1 (20_000) and r3 (10_000); the straggler r2 (5_000) is outside
       // the required quorum and must not be able to block confirmation
@@ -133,7 +133,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
               new ReplicationLagStatus("r2", 5_000L, null));
 
       // when
-      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+      final long asOfMs = strategy.computeConfirmedMarker(statuses, Optional.empty());
 
       // then
       assertThat(asOfMs).isEqualTo(20_000L);
@@ -151,7 +151,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
               new ReplicationLagStatus("r2", 5_000L, null));
 
       // when
-      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+      final long asOfMs = strategy.computeConfirmedMarker(statuses, Optional.empty());
 
       // then
       assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
@@ -165,8 +165,10 @@ class TimeMonitoringReplicationSignalStrategyTest {
       // with zero real replicas
       final var strategy = createStrategy();
 
-      // when
-      final long asOfMs = strategy.computeConfirmedMarker(List.of());
+      // when - resolveCurrentPrimaryRegion() is exercised for real here, exactly as
+      // DefaultReplicationController would call it once and pass the result along
+      final long asOfMs =
+          strategy.computeConfirmedMarker(List.of(), strategy.resolveCurrentPrimaryRegion());
 
       // then
       assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
@@ -182,7 +184,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
       final var strategy = createStrategy();
 
       // when
-      final Duration lag = strategy.computePauseLag(List.of(), Optional.empty());
+      final Duration lag = strategy.computePauseLag(List.of(), Optional.empty(), Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(ReplicationSignalStrategy.PAUSE_WORST_CASE);
@@ -196,7 +198,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
       final var statuses = List.of(new ReplicationLagStatus("r1", 1_000L, 0L));
 
       // when
-      final Duration lag = strategy.computePauseLag(statuses, Optional.empty());
+      final Duration lag = strategy.computePauseLag(statuses, Optional.empty(), Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(ReplicationSignalStrategy.PAUSE_WORST_CASE);
@@ -212,7 +214,8 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
       // when - a replica shortage is graced by queueHeadAge (and so, ultimately, by maxLag)
       // instead of forcing an immediate worst-case pause
-      final Duration lag = strategy.computePauseLag(statuses, Optional.of(Duration.ofSeconds(5)));
+      final Duration lag =
+          strategy.computePauseLag(statuses, Optional.of(Duration.ofSeconds(5)), Optional.empty());
 
       // then - queueHeadAge wins over the partial replica-reported lag
       assertThat(lag).isEqualTo(Duration.ofSeconds(5));
@@ -227,7 +230,9 @@ class TimeMonitoringReplicationSignalStrategyTest {
       // when - must not silently reduce to Duration.ZERO just because statuses is empty; the
       // shared controller compares this against maxLag itself, so a pause happens once this
       // queue-head age actually exceeds maxLag, not immediately
-      final Duration lag = strategy.computePauseLag(List.of(), Optional.of(Duration.ofSeconds(10)));
+      final Duration lag =
+          strategy.computePauseLag(
+              List.of(), Optional.of(Duration.ofSeconds(10)), Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(Duration.ofSeconds(10));
@@ -247,7 +252,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
               new ReplicationLagStatus("r3", 10_000L));
 
       // when
-      final Duration lag = strategy.computePauseLag(statuses, Optional.empty());
+      final Duration lag = strategy.computePauseLag(statuses, Optional.empty(), Optional.empty());
 
       // then - top 2 by lowest lag are r1 (5_000) and r3 (10_000); the straggler r2 (20_000) is
       // outside the required quorum and must not be able to force a pause on its own
@@ -261,7 +266,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
       final var statuses = List.of(new ReplicationLagStatus("r1", null));
 
       // when
-      final Duration lag = strategy.computePauseLag(statuses, Optional.empty());
+      final Duration lag = strategy.computePauseLag(statuses, Optional.empty(), Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(Duration.ofMillis(Long.MAX_VALUE));
@@ -275,9 +280,10 @@ class TimeMonitoringReplicationSignalStrategyTest {
       final var statuses = List.of(new ReplicationLagStatus("r1", 5_000L));
 
       // when
-      final Duration lagWithNoQueueAge = strategy.computePauseLag(statuses, Optional.empty());
+      final Duration lagWithNoQueueAge =
+          strategy.computePauseLag(statuses, Optional.empty(), Optional.empty());
       final Duration lagWithHugeQueueAge =
-          strategy.computePauseLag(statuses, Optional.of(Duration.ofDays(365)));
+          strategy.computePauseLag(statuses, Optional.of(Duration.ofDays(365)), Optional.empty());
 
       // then
       assertThat(lagWithNoQueueAge)
@@ -305,7 +311,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
               new ReplicationLagStatus("r2", 1_000L, 20_000L, "us-west-1"));
 
       // when
-      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+      final long asOfMs = strategy.computeConfirmedMarker(statuses, Optional.empty());
 
       // then
       assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
@@ -323,7 +329,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
               new ReplicationLagStatus("r3", 1_000L, 5_000L, "us-west-1"));
 
       // when
-      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+      final long asOfMs = strategy.computeConfirmedMarker(statuses, Optional.empty());
 
       // then
       assertThat(asOfMs).isEqualTo(5_000L);
@@ -331,20 +337,32 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldCreditThePrimaryRegionWhenComputingTheConfirmedMarker() {
-      // given - us-east hosts the primary and needs 2 nodes total; the primary's own label, read
-      // live from its connection every check (never from static config, since it can move after
-      // a failover), resolves to us-east, so its single real secondary determines the region's
-      // result
-      when(statusProvider.getCurrentReplicaLabel()).thenReturn("us-east-primary");
+      // given - us-east hosts the primary and needs 2 nodes total; DefaultReplicationController
+      // resolves the primary's region once per check and passes it in here - crediting us-east
+      // means its single real secondary determines the region's result
       config.setRegions(List.of(region("us-east", "us-east-.*", 2)));
       final var strategy = createStrategy();
       final var statuses = List.of(new ReplicationLagStatus("r1", 1_000L, 30_000L, "us-east-1"));
 
       // when
-      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+      final long asOfMs = strategy.computeConfirmedMarker(statuses, Optional.of("us-east"));
 
       // then
       assertThat(asOfMs).isEqualTo(30_000L);
+    }
+
+    @Test
+    void shouldResolvePrimaryRegionFromItsLiveLabel() {
+      // given - resolveCurrentPrimaryRegion() is what DefaultReplicationController calls once per
+      // check; it must delegate to the provider's live label, not any static config
+      when(statusProvider.getCurrentReplicaLabel()).thenReturn("us-east-primary");
+      final var strategy = createStrategy();
+
+      // when
+      final var result = strategy.resolveCurrentPrimaryRegion();
+
+      // then
+      assertThat(result).contains("us-east");
     }
 
     @Test
@@ -359,7 +377,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
               new ReplicationLagStatus("r3", 500L, 0L, "us-west-1"));
 
       // when
-      final Duration lag = strategy.computePauseLag(statuses, Optional.empty());
+      final Duration lag = strategy.computePauseLag(statuses, Optional.empty(), Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(Duration.ofMillis(2_000L));
@@ -375,7 +393,8 @@ class TimeMonitoringReplicationSignalStrategyTest {
               new ReplicationLagStatus("r2", 1_000L, 0L, "us-east-2"));
 
       // when
-      final Duration lag = strategy.computePauseLag(statuses, Optional.of(Duration.ofSeconds(4)));
+      final Duration lag =
+          strategy.computePauseLag(statuses, Optional.of(Duration.ofSeconds(4)), Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(Duration.ofSeconds(4));

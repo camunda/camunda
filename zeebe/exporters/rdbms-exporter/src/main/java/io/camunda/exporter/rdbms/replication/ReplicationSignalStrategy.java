@@ -39,17 +39,21 @@ public interface ReplicationSignalStrategy<T extends ReplicationStatus> {
 
   /**
    * The confirmation threshold: an entry is confirmed once {@code entry.marker() <=
-   * computeConfirmedMarker(statuses)}. Returns {@link #UNCONFIRMED} when nothing is confirmed.
+   * computeConfirmedMarker(statuses, currentPrimaryRegion)}. Returns {@link #UNCONFIRMED} when
+   * nothing is confirmed. {@code currentPrimaryRegion} is {@link #resolveCurrentPrimaryRegion()}'s
+   * result for this same check - resolved once per tick by the caller, not re-resolved here.
    */
-  long computeConfirmedMarker(List<T> statuses);
+  long computeConfirmedMarker(List<T> statuses, Optional<String> currentPrimaryRegion);
 
   /**
    * The current replication lag, compared against {@code maxLag} to decide whether to pause. {@code
    * queueHeadAge} is the age of the oldest still-unconfirmed queued entry, or {@link
    * Optional#empty()} when the queue is empty. Returns {@link #PAUSE_WORST_CASE} when quorum is not
-   * met.
+   * met. {@code currentPrimaryRegion} is {@link #resolveCurrentPrimaryRegion()}'s result for this
+   * same check - resolved once per tick by the caller, not re-resolved here.
    */
-  Duration computePauseLag(List<T> statuses, Optional<Duration> queueHeadAge);
+  Duration computePauseLag(
+      List<T> statuses, Optional<Duration> queueHeadAge, Optional<String> currentPrimaryRegion);
 
   /** The delay before the next periodic check. Defaults to {@code pollingInterval} unchanged. */
   default Duration nextCheckDelay(
@@ -58,11 +62,24 @@ public interface ReplicationSignalStrategy<T extends ReplicationStatus> {
   }
 
   /**
+   * The region hosting the primary right now, resolved fresh from its live connection every call
+   * (never from static config, never cached) so it reflects a failover promptly - see {@code
+   * getCurrentReplicaLabel()} on the {@code db/rdbms} providers. Called once per periodic check and
+   * the result threaded into {@link #computeConfirmedMarker}, {@link #computePauseLag}, and {@link
+   * #regionsBelowQuorum}, so a single tick only pays for the underlying DB read once. Defaults to
+   * empty for strategies with no region concept.
+   */
+  default Optional<String> resolveCurrentPrimaryRegion() {
+    return Optional.empty();
+  }
+
+  /**
    * The names of mandatory regions currently short of their own {@code minReplicas}, for diagnostic
    * logging when the exporter pauses. Empty when region awareness is disabled or every declared
    * region meets its own quorum. Defaults to always-empty for strategies with no region concept.
    */
-  default List<String> regionsBelowQuorum(final List<T> statuses) {
+  default List<String> regionsBelowQuorum(
+      final List<T> statuses, final Optional<String> currentPrimaryRegion) {
     return List.of();
   }
 }
