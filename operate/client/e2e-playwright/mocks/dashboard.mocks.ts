@@ -1428,7 +1428,7 @@ const mockHealthyIncidentsByError: IncidentByErrorDto[] = [
   {
     errorMessage: 'Cannot connect to server delivery05',
     incidentErrorHashCode: 2101,
-    instancesWithErrorCount: 8,
+    instancesWithErrorCount: 5,
     processes: [
       {
         processId: '2251799813687188',
@@ -1437,7 +1437,7 @@ const mockHealthyIncidentsByError: IncidentByErrorDto[] = [
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
         errorMessage: 'Cannot connect to server delivery05',
-        instancesWithActiveIncidentsCount: 8,
+        instancesWithActiveIncidentsCount: 5,
         activeInstancesCount: 0,
       },
     ],
@@ -1451,7 +1451,7 @@ const mockHealthyIncidentsByError: IncidentByErrorDto[] = [
         processId: '2251799813686116',
         tenantId: '<default>',
         version: 1,
-        name: null,
+        name: 'Loan process',
         bpmnProcessId: 'loanProcess',
         errorMessage: 'Loan request does not contain all the required data',
         instancesWithActiveIncidentsCount: 4,
