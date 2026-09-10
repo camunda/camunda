@@ -67,6 +67,7 @@ val standaloneJar =
       exclude(project(":zeebe-protocol"))
       exclude(project(":zeebe-util"))
       exclude(dependency("org.slf4j:slf4j-api"))
+      exclude(dependency("io.micrometer:micrometer-core"))
     }
     relocate("io.opentelemetry", "io.camunda.shaded.otel")
     mergeServiceFiles()
