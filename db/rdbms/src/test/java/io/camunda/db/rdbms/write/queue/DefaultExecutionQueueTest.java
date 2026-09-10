@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
@@ -31,6 +33,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 class DefaultExecutionQueueTest {
@@ -577,6 +580,67 @@ class DefaultExecutionQueueTest {
     final var inOrder = Mockito.inOrder(session);
     inOrder.verify(session).update(eq("ms.update"), any());
     inOrder.verify(session).update(eq("ms.createIfNotExists"), any());
+  }
+
+  @Test
+  public void shouldFragmentJdbcBatchesWhenPreserveOrderInterleavesStatementIds() {
+    // given - message-correlation-style traffic on a preserveOrder: true context type
+    final int itemCount = 6;
+    for (int i = 0; i < itemCount; i++) {
+      final var statementId = i % 2 == 0 ? "ms.correlate" : "ms.createIfNotExists";
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.MESSAGE_SUBSCRIPTION, // preserveOrder: true
+              WriteStatementType.UPDATE,
+              (long) i,
+              statementId,
+              "parameter" + i));
+    }
+
+    // when
+    executionQueue.flush();
+
+    // then - preserveOrder keeps the alternating order, so every item is its own single-statement
+    // batch
+    final var statementIds = ArgumentCaptor.forClass(String.class);
+    verify(session, times(itemCount)).update(statementIds.capture(), any());
+    assertThat(countBatchFragments(statementIds.getAllValues())).isEqualTo(itemCount);
+  }
+
+  @Test
+  public void shouldNotFragmentJdbcBatchesWhenOrderIsNotPreserved() {
+    // given - the same alternating-statement-ID traffic, but on a preserveOrder: false context
+    // type
+    final int itemCount = 6;
+    for (int i = 0; i < itemCount; i++) {
+      final var statementId = i % 2 == 0 ? "job.a" : "job.b";
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.JOB, // preserveOrder: false
+              WriteStatementType.UPDATE,
+              (long) i,
+              statementId,
+              "parameter" + i));
+    }
+
+    // when
+    executionQueue.flush();
+
+    // then - sorting groups every "job.a" together and every "job.b" together into one batch each
+    final var statementIds = ArgumentCaptor.forClass(String.class);
+    verify(session, times(itemCount)).update(statementIds.capture(), any());
+    assertThat(countBatchFragments(statementIds.getAllValues())).isEqualTo(2);
+  }
+
+  /** Counts maximal runs of consecutive equal statement IDs, i.e. the number of JDBC batches. */
+  private static int countBatchFragments(final List<String> statementIds) {
+    int fragments = 1;
+    for (int i = 1; i < statementIds.size(); i++) {
+      if (!statementIds.get(i).equals(statementIds.get(i - 1))) {
+        fragments++;
+      }
+    }
+    return fragments;
   }
 
   @Test
