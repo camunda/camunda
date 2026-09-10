@@ -192,7 +192,6 @@ public final class AgentInstanceCreateProcessor
             commandValue.getJobKey(),
             commandValue.getJobLease(),
             commandValue.getElementInstanceKey(),
-            commandValue.getHistory(),
             LeaseMismatchHandling.REJECT);
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();

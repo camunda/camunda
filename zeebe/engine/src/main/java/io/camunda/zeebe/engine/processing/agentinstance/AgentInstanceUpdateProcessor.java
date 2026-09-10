@@ -211,7 +211,6 @@ public final class AgentInstanceUpdateProcessor
             commandValue.getJobKey(),
             commandValue.getJobLease(),
             commandValue.getElementInstanceKey(),
-            commandValue.getHistory(),
             LeaseMismatchHandling.ALLOW_STALE);
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();
