@@ -44,8 +44,8 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class PersistedCurrentClusterConfiguration {
 
+  public static final byte VERSION = 2;
   static final byte VERSION_LEGACY = 1;
-  static final byte VERSION = 2;
   private static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
 
   private final Path configurationFile;
