@@ -23,6 +23,7 @@ import {
   expectProcessDefinitionDeleted,
   expectProcessDefinitionPurged,
   expectProcessDefinitionState,
+  expectBatchState,
   expectProcessInstanceCount,
   findUserTask,
   RESOURCE_DELETION_ENDPOINT,
@@ -67,32 +68,19 @@ async function startedInstanceOf(
   return res.json();
 }
 
-type HistoryBatchOperation = {batchOperationKey: string; state: string};
-
-/**
- * Every history-deletion batch operation currently known. The item names no
- * process definition, so the one a purge creates is only identifiable by
- * diffing against a snapshot taken before the delete.
- */
-async function historyBatchOperations(
+// Matched on the item, since parallel specs create DELETE_PROCESS_INSTANCE too.
+async function historyBatchOperationKeyFor(
   request: APIRequestContext,
-): Promise<HistoryBatchOperation[]> {
-  const res = await request.post(buildUrl('/batch-operations/search'), {
+  processInstanceKey: string,
+): Promise<string | undefined> {
+  const res = await request.post(buildUrl('/batch-operation-items/search'), {
     headers: jsonHeaders(),
-    data: {
-      filter: {operationType: 'DELETE_PROCESS_INSTANCE'},
-      // Newest first, so the operation this test is looking for is on the
-      // first page however many a shared cluster has already accumulated.
-      sort: [{field: 'startDate', order: 'DESC'}],
-      page: {limit: DEFAULT_PAGE_LIMIT},
-    },
+    data: {filter: {processInstanceKey}, page: {limit: DEFAULT_PAGE_LIMIT}},
   });
   await assertStatusCode(res, 200);
-  const items: HistoryBatchOperation[] = (await res.json()).items ?? [];
-  return items.map((item) => ({
-    batchOperationKey: String(item.batchOperationKey),
-    state: item.state,
-  }));
+  const items: Array<{batchOperationKey: string}> =
+    (await res.json()).items ?? [];
+  return items.length === 0 ? undefined : String(items[0]!.batchOperationKey);
 }
 
 async function partitionsCount(request: APIRequestContext): Promise<number> {
@@ -138,7 +126,7 @@ test.describe('Process Definition Draining Deletion API', () => {
   // reuses it, so every instance started here has to be terminated.
   test.afterEach(async () => {
     for (const processInstanceKey of instancesToCancel.filter(Boolean)) {
-      await cancelProcessInstance(processInstanceKey);
+      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
     }
   });
 
@@ -561,7 +549,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     await cancelProcessInstance(instance.processInstanceKey);
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
 
-    expect(await instanceCountFor(request, processDefinitionId)).toBe(1);
+    await expectProcessInstanceCount(request, {processDefinitionId}, 1);
   });
 
   test('With deleteHistory the instance history is purged by a batch operation once the drain finishes', async ({
@@ -572,12 +560,6 @@ test.describe('Process Definition Draining Deletion API', () => {
       await deployUserTaskProcess(processDefinitionId);
     const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
-
-    const batchOperationKeysBefore = new Set(
-      (await historyBatchOperations(request)).map(
-        (item) => item.batchOperationKey,
-      ),
-    );
 
     const deletion = await deleteProcessDefinition(
       request,
@@ -593,7 +575,7 @@ test.describe('Process Definition Draining Deletion API', () => {
       'DRAINING',
     );
     // History is retained for as long as the definition is draining.
-    expect(await instanceCountFor(request, processDefinitionId)).toBe(1);
+    await expectProcessInstanceCount(request, {processDefinitionId}, 1);
 
     await cancelProcessInstance(instance.processInstanceKey);
 
@@ -608,15 +590,14 @@ test.describe('Process Definition Draining Deletion API', () => {
       extendedAssertionOptions,
     );
 
-    // The purge runs as a batch operation, and it has to reach COMPLETED —
-    // otherwise history lingers with nothing left to retry. Only the snapshot
-    // diff identifies it, so "created exactly once" stays a manual check.
+    // Must reach COMPLETED, or history lingers with nothing left to retry.
     await expect(async () => {
-      const created = (await historyBatchOperations(request)).filter(
-        (item) => !batchOperationKeysBefore.has(item.batchOperationKey),
+      const batchOperationKey = await historyBatchOperationKeyFor(
+        request,
+        instance.processInstanceKey,
       );
-      expect(created.length).toBeGreaterThan(0);
-      expect(created.map((item) => item.state)).toContain('COMPLETED');
+      expect(batchOperationKey).not.toBeUndefined();
+      await expectBatchState(request, batchOperationKey!, 'COMPLETED');
     }).toPass(extendedAssertionOptions);
   });
 
