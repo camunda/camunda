@@ -57,6 +57,7 @@ class ReplicationLsnProviderFactoryTest {
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
     final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAzureSqlDatabase()).thenReturn(false);
     when(mapper.hasRequiredPrivileges()).thenReturn(true);
     final var factory = new ReplicationLsnProviderFactory(vendorDatabaseProperties, mapper);
 
@@ -73,6 +74,7 @@ class ReplicationLsnProviderFactoryTest {
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
     final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAzureSqlDatabase()).thenReturn(false);
     when(mapper.hasRequiredPrivileges()).thenReturn(false);
     final var factory = new ReplicationLsnProviderFactory(vendorDatabaseProperties, mapper);
 
@@ -80,6 +82,22 @@ class ReplicationLsnProviderFactoryTest {
     assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("VIEW SERVER STATE");
+  }
+
+  @Test
+  void shouldFailForMssqlWhenAzureSqlDetected() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
+    final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAzureSqlDatabase()).thenReturn(true);
+    final var factory = new ReplicationLsnProviderFactory(vendorDatabaseProperties, mapper);
+
+    // when / then
+    assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("LSN-based replication monitoring")
+        .hasMessageContaining("not supported on Azure SQL Database");
   }
 
   @Test

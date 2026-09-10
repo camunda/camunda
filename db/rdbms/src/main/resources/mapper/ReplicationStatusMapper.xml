@@ -20,6 +20,15 @@
     </constructor>
   </resultMap>
 
+  <resultMap id="replicationLagStatusResultMap"
+    type="io.camunda.db.rdbms.read.replication.ReplicationLagStatus">
+    <constructor>
+      <arg column="replicaId" javaType="java.lang.String" name="replicaId"/>
+      <arg column="replicationLagMs" javaType="java.lang.Long" name="replicationLagMs"/>
+      <arg column="replicatedUntilMs" javaType="java.lang.Long" name="replicatedUntilMs"/>
+    </constructor>
+  </resultMap>
+
   <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="postgresql">
     SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')::bigint last_lsn
   </select>
@@ -224,6 +233,51 @@
                                      AS replicatedUntilMs
     FROM information_schema.aurora_global_db_instance_status
     WHERE SESSION_ID != 'MASTER_SESSION_ID'
+  </select>
+
+  <!--
+    Azure SQL Geo-Replication: queries sys.dm_geo_replication_link_status for the replication lag
+    in seconds reported by each geo-replica link. Azure SQL Database does not expose an LSN for
+    tracking; replication currency is measured only in elapsed seconds (replication_lag_sec).
+    replicaId is the stable link_guid cast to a string. replicatedUntilMs is derived as the
+    primary's own clock minus the lag, mirroring the Aurora Global Database pattern above; neither
+    column is coalesced when replication_lag_sec is NULL, so an unmeasured link is never mistaken
+    for one that is perfectly caught up.
+
+    Only primary-side rows (role = 0) whose link is actively catching up (replication_state = 2)
+    are included. replication_lag_sec is only populated for those rows; a replica that is still
+    seeding (replication_state = 1) or suspended (replication_state = 4) is intentionally excluded
+    rather than reported as zero lag, so it correctly counts as disconnected for quorum purposes
+    instead of appearing falsely in sync.
+  -->
+  <select id="getAzureGeoReplicationStatus" resultMap="replicationLagStatusResultMap"
+    databaseId="mssql">
+    SELECT CONVERT(nvarchar(36), link_guid) AS replicaId,
+           replication_lag_sec * 1000       AS replicationLagMs,
+           DATEDIFF_BIG(millisecond, '19700101', SYSUTCDATETIME()) - (replication_lag_sec * 1000)
+                                             AS replicatedUntilMs
+    FROM sys.dm_geo_replication_link_status
+    WHERE role = 0 AND replication_state = 2
+  </select>
+
+  <!--
+    Azure SQL Database has no Always On availability group to read the primary's clock from (see
+    getCurrentDbTime above, which is scoped to sys.dm_hadr_database_replica_states), so this reads
+    the database's own system clock directly via SYSUTCDATETIME(), which is available on every SQL
+    Server edition including Azure SQL Database.
+  -->
+  <select id="getAzureCurrentDbTime" resultType="java.lang.Long" databaseId="mssql">
+    SELECT DATEDIFF_BIG(millisecond, '19700101', SYSUTCDATETIME())
+  </select>
+
+  <!--
+    Detects whether the connected MSSQL instance is genuinely Azure SQL Database. SERVERPROPERTY
+    always exists on every SQL Server edition; EngineEdition = 5 identifies Azure SQL Database,
+    distinguishing it from on-prem/containerized SQL Server (2/3/4), Azure SQL Managed Instance (8),
+    and Azure SQL Edge (9). Safe to run on any mssql-compatible database; never throws.
+  -->
+  <select id="isAzureSqlDatabase" resultType="boolean" databaseId="mssql">
+    SELECT CAST(SERVERPROPERTY('EngineEdition') AS int) = 5
   </select>
 
 </mapper>
