@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.qa.util.auth.Authenticated;
@@ -29,6 +30,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -101,10 +103,13 @@ public class JobStreamAuthorizationIT {
 
   @AfterEach
   void cleanUp() {
-    // cancel all process instances to ensure no jobs are left in the system
-    STARTED_PROCESS_INSTANCES.forEach(
-        processInstanceKey -> cancelProcessInstance(adminClient, processInstanceKey));
+    // cancel all process instances to ensure no jobs are left in the system.
+    // Take a snapshot and clear up front: if a cancellation fails, the keys must not stay
+    // behind, or every later test in this class fails in tear-down on the same stale key.
+    final var startedProcessInstances = List.copyOf(STARTED_PROCESS_INSTANCES);
     STARTED_PROCESS_INSTANCES.clear();
+    startedProcessInstances.forEach(
+        processInstanceKey -> cancelProcessInstance(adminClient, processInstanceKey));
   }
 
   @Disabled("We don't have a broker mechanism to reject unauthorized job streams yet")
@@ -136,7 +141,7 @@ public class JobStreamAuthorizationIT {
       @Authenticated(USER1_USERNAME) final CamundaClient user1Client) {
     // given
     // a job set for collecting jobs in the client
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final Set<ActivatedJob> jobCollector = ConcurrentHashMap.newKeySet();
     // and a job stream created by the user1 client, with their authorizations
     final var stream =
         user1Client
@@ -167,7 +172,7 @@ public class JobStreamAuthorizationIT {
       @Authenticated(USER2_USERNAME) final CamundaClient user2Client) {
     // given
     // a job set for collecting jobs in the client
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final Set<ActivatedJob> jobCollector = ConcurrentHashMap.newKeySet();
     // and a job stream created by the user2 client, with their authorizations
     final var stream =
         user2Client
@@ -175,9 +180,10 @@ public class JobStreamAuthorizationIT {
             .jobType(JOB_TYPE)
             .consumer(
                 job -> {
-                  user2Client.newCompleteCommand(job).send().join();
+                  // record before completing: the test waits on the completed job being
+                  // exported, which must not be observable before the job is collected
                   jobCollector.add(job);
-                  STARTED_PROCESS_INSTANCES.remove(job.getProcessInstanceKey());
+                  user2Client.newCompleteCommand(job).send().join();
                 })
             .tenantIds(TENANT_A, TENANT_B)
             .send();
@@ -248,7 +254,15 @@ public class JobStreamAuthorizationIT {
 
   private static void cancelProcessInstance(
       final CamundaClient camundaClient, final long processInstanceKey) {
-    camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+    try {
+      camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+    } catch (final ProblemException e) {
+      // A test that completes a streamed job runs its instance to completion, so by tear-down
+      // there is nothing left to cancel. Any other rejection is a real failure.
+      if (e.code() != 404) {
+        throw e;
+      }
+    }
   }
 
   private static void waitForJobsBeingExported(
