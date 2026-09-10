@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.support;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -22,6 +23,10 @@ public final class IndexPrefixValidation {
 
   private IndexPrefixValidation() {}
 
+  public static boolean isEmpty(final @Nullable String prefix) {
+    return prefix == null || prefix.isEmpty();
+  }
+
   public static boolean hasInvalidCharacters(final @Nullable String prefix) {
     return prefix != null && INVALID_CHARACTERS.matcher(prefix).find();
   }
@@ -32,6 +37,10 @@ public final class IndexPrefixValidation {
             || prefix.startsWith("+")
             || prefix.startsWith("-")
             || prefix.startsWith("_"));
+  }
+
+  public static boolean hasUppercaseCharacters(final @Nullable String prefix) {
+    return prefix != null && !prefix.equals(prefix.toLowerCase(Locale.ROOT));
   }
 
   public static boolean exceedsMaxLength(final @Nullable String prefix) {

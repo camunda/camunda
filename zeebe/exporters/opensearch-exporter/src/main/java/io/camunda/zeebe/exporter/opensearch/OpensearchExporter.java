@@ -179,6 +179,9 @@ public class OpensearchExporter implements Exporter {
 
   private void validate(final OpensearchExporterConfiguration configuration) {
     final String prefix = configuration.index.prefix;
+    if (IndexPrefixValidation.isEmpty(prefix)) {
+      throw new ExporterException("Opensearch prefix must not be empty.");
+    }
     if (IndexPrefixValidation.hasInvalidCharacters(prefix)) {
       throw new ExporterException(
           String.format(
@@ -191,6 +194,12 @@ public class OpensearchExporter implements Exporter {
       throw new ExporterException(
           String.format(
               "Opensearch prefix must not begin with invalid characters [. + - _]. Current value: %s",
+              prefix));
+    }
+    if (IndexPrefixValidation.hasUppercaseCharacters(prefix)) {
+      throw new ExporterException(
+          String.format(
+              "Opensearch prefix must not contain uppercase characters. Current value: %s",
               prefix));
     }
     if (IndexPrefixValidation.exceedsMaxLength(prefix)) {
