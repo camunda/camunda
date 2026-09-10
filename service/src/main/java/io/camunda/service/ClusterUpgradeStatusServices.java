@@ -33,7 +33,7 @@ public final class ClusterUpgradeStatusServices {
   }
 
   public CompletableFuture<MigrationState> getStatus() {
-    return CompletableFuture.supplyAsync(() -> fold(aggregator.aggregate()), executor);
+    return CompletableFuture.supplyAsync(() -> fold(aggregator.aggregate(executor)), executor);
   }
 
   private static MigrationState fold(
