@@ -328,7 +328,7 @@ dependencyResolutionManagement {
       version("org-junit-jupiter-junit-jupiter-migrationsupport-x1", "6.0.1")
       version("org-junit-jupiter-junit-jupiter-params-x1", "6.0.1")
       version("org-junit-platform-junit-platform-commons-x1", "1.14.2")
-      version("org-testcontainers-testcontainers-junit-jupiter-x1", "2.0.2")
+      version("org-testcontainers-testcontainers-junit-jupiter-x1", pomVersion("version.testcontainers"))
       version("org-junit-vintage-junit-vintage-engine-x1", "6.0.1")
       version("org-xmlunit-xmlunit-core", pomVersion("version.xmlunit-core"))
       version("org-yaml-snakeyaml", pomVersion("version.snakeyaml"))

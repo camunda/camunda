@@ -41,7 +41,11 @@ dependencies {
 
 publishing {
   publications.named<MavenPublication>("maven") {
-    pom.withXml(OptionalDependenciesPomAction(setOf("io.camunda:camunda-process-test-spring")))
+    pom.withXml(
+      OptionalDependenciesPomAction(
+        mapOf("io.camunda:camunda-process-test-spring" to project.version.toString())
+      )
+    )
   }
 }
 
