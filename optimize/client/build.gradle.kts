@@ -54,7 +54,10 @@ val yarnBuild =
     args.set(listOf("build"))
   }
 
-tasks.named("processResources") { mustRunAfter(yarnBuild) }
+tasks.named("processResources") {
+  dependsOn(yarnBuild)
+  mustRunAfter(yarnBuild)
+}
 
 group = "io.camunda.optimize"
 
