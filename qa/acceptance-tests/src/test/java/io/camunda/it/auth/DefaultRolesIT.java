@@ -7,14 +7,13 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.MembershipVisibility;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -29,7 +28,6 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -78,36 +76,17 @@ final class DefaultRolesIT {
         .username(CONNECTORS_USERNAME)
         .send()
         .join();
-    awaitConnectorsRoleMembershipVisible();
-  }
-
-  /**
-   * Waits until the membership assigned above is readable from secondary storage, which the
-   * command's own completion does not imply: it is acknowledged once the engine has processed it,
-   * while the exporter writes and indexes the record afterwards.
-   *
-   * <p>{@link #shouldResolveSecrets} needs that, and {@link #shouldCreateProcessInstances} does
-   * not, because the two are authorized in different places. Creating a process instance is
-   * authorized inside the engine, against engine state the command has already reached by the time
-   * it is acknowledged. Resolving a secret is authorized in the gateway by {@code SecretServices},
-   * which asks an {@code AuthorizationChecker} backed by the authorization index — so an unindexed
-   * membership reads as no grant at all, and the reference comes back {@code ACCESS_DENIED} rather
-   * than resolved. That surfaces as a plain unresolved response, not an error, so without this wait
-   * the race fails the assertion instead of the request.
-   */
-  private static void awaitConnectorsRoleMembershipVisible() {
-    Awaitility.await("until the connectors role membership is visible in secondary storage")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        adminClient
-                            .newUsersByRoleSearchRequest(DefaultRole.CONNECTORS.getId())
-                            .send()
-                            .join()
-                            .items())
-                    .extracting(RoleUser::getUsername)
-                    .contains(CONNECTORS_USERNAME));
+    // {@link #shouldResolveSecrets} needs the membership to be readable from secondary storage,
+    // and {@link #shouldCreateProcessInstances} does not, because the two are authorized in
+    // different places. Creating a process instance is authorized inside the engine, against state
+    // the command has already reached by the time it is acknowledged. Resolving a secret is
+    // authorized in the gateway by SecretServices, which asks an AuthorizationChecker backed by the
+    // authorization index -- so an unindexed membership reads as no grant at all, and the reference
+    // comes back ACCESS_DENIED rather than resolved. That surfaces as a plain unresolved response
+    // rather than an error, so without this wait the race fails the assertion instead of the
+    // request.
+    MembershipVisibility.awaitUsersVisibleInRole(
+        adminClient, DefaultRole.CONNECTORS.getId(), CONNECTORS_USERNAME);
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/38751")
