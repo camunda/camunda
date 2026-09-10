@@ -6,14 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useQuery} from '@tanstack/react-query';
 import {DataTableSkeleton, SkeletonText} from '@carbon/react';
 import type {
 	BatchOperationItem,
 	BatchOperationItemState,
+	BatchOperationType,
 	ProcessInstance,
 	ProcessInstanceState,
+	QueryBatchOperationItemsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
@@ -24,7 +26,8 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
-import {useOperationItemsForInstances} from './batchOperationItems.queries';
+import {batchOperationItemsQueryOptions} from './batchOperationItems.queries';
+import {InstanceOperations} from './InstanceOperations';
 import type {ProcessesSearch} from './processesFilter';
 import {InstancesTableContainer, ProcessName, InstanceLink, VisuallyHiddenStatus} from './styled';
 
@@ -40,10 +43,11 @@ function getDisplayState(instance: ProcessInstance): ProcessInstanceState | 'INC
 }
 
 const OPERATION_STATE_ORDER: BatchOperationItemState[] = ['FAILED', 'ACTIVE', 'CANCELED', 'SKIPPED', 'COMPLETED'];
+const ACTIVE_ITEMS_REFETCH_INTERVAL_MS = 5000;
 
-function getOperationStatesByInstance(items: BatchOperationItem[] | undefined) {
+function getOperationStatesByInstance(items: BatchOperationItem[]) {
 	const statesByInstance = new Map<string, Set<BatchOperationItemState>>();
-	for (const item of items ?? []) {
+	for (const item of items) {
 		const states = statesByInstance.get(item.processInstanceKey) ?? new Set<BatchOperationItemState>();
 		states.add(item.state);
 		statesByInstance.set(item.processInstanceKey, states);
@@ -55,6 +59,14 @@ function getOperationStatesByInstance(items: BatchOperationItem[] | undefined) {
 			OPERATION_STATE_ORDER.filter((state) => states.has(state)).join(', '),
 		]),
 	);
+}
+
+function getActiveOperationsByInstance(items: BatchOperationItem[]) {
+	return items.reduce((operationsByInstance, item) => {
+		const operations = operationsByInstance.get(item.processInstanceKey) ?? [];
+		operationsByInstance.set(item.processInstanceKey, [...operations, item.operationType]);
+		return operationsByInstance;
+	}, new Map<string, BatchOperationType[]>());
 }
 
 const InstancesTable: React.FC<Props> = ({search}) => {
@@ -80,12 +92,37 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const batchOperationKey = search.batchOperationKey || undefined;
 	const isOperationStateColumnVisible = batchOperationKey !== undefined;
 	const processInstanceKeys = processInstances.map((instance) => instance.processInstanceKey);
+	const operationItemsRequestBody = {
+		filter: {
+			batchOperationKey: batchOperationKey === undefined ? undefined : {$eq: batchOperationKey},
+			processInstanceKey: {$in: processInstanceKeys},
+		},
+		page: {limit: processInstanceKeys.length},
+	} satisfies QueryBatchOperationItemsRequestBody;
 	const {
-		data: operationItems,
+		data: operationItemsByInstance,
 		isLoading: isLoadingOperationItems,
 		isError: isOperationItemsError,
-	} = useOperationItemsForInstances(batchOperationKey, processInstanceKeys);
-	const operationItemsByInstance = useMemo(() => getOperationStatesByInstance(operationItems), [operationItems]);
+	} = useQuery({
+		...batchOperationItemsQueryOptions(operationItemsRequestBody),
+		enabled: isOperationStateColumnVisible && processInstanceKeys.length > 0,
+		select: ({items}) => getOperationStatesByInstance(items),
+		refetchInterval: (query) =>
+			query.state.data?.items.some(({state}) => state === 'ACTIVE') ? ACTIVE_ITEMS_REFETCH_INTERVAL_MS : false,
+	});
+	const activeOperationItemsRequestBody = {
+		filter: {
+			processInstanceKey: {$in: processInstanceKeys},
+			state: {$eq: 'ACTIVE'},
+		},
+		page: {limit: processInstanceKeys.length},
+	} satisfies QueryBatchOperationItemsRequestBody;
+	const {data: activeOperationsByInstance} = useQuery({
+		...batchOperationItemsQueryOptions(activeOperationItemsRequestBody),
+		enabled: processInstanceKeys.length > 0,
+		select: ({items}) => getActiveOperationsByInstance(items),
+		refetchInterval: (query) => ((query.state.data?.items.length ?? 0) > 0 ? ACTIVE_ITEMS_REFETCH_INTERVAL_MS : false),
+	});
 	const isTenantColumnVisible =
 		getClientConfig().deployment.isMultiTenancyEnabled && !isSpecificTenant(search.tenantId);
 	const hasVersionTags = processInstances.some(({processDefinitionVersionTag}) => Boolean(processDefinitionVersionTag));
@@ -117,7 +154,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 							) : isOperationItemsError ? (
 								t('operate.shared.errorMessage.message')
 							) : (
-								(operationItemsByInstance.get(row.processInstanceKey) ?? '--')
+								(operationItemsByInstance?.get(row.processInstanceKey) ?? '--')
 							),
 					},
 				]
@@ -203,6 +240,16 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				) : (
 					t('operate.processes.instancesTable.none')
 				),
+		},
+		{
+			key: 'operations',
+			label: t('operate.processes.instancesTable.operations.header'),
+			render: (row: ProcessInstance) => (
+				<InstanceOperations
+					processInstance={row}
+					activeOperations={activeOperationsByInstance?.get(row.processInstanceKey) ?? []}
+				/>
+			),
 		},
 	];
 
