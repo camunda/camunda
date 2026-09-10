@@ -83,17 +83,17 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 The examples above assume the exporter class is already on the broker's classpath, which is
 the case starting with Camunda 8.10, where the exporter ships in-tree. On any version where
 that is not true, you can still load a self-built exporter jar the same way Zeebe loads any
-external exporter: point `jarPath` at the jar and use the classic
-`zeebe.broker.exporters.<name>` configuration style instead of the unified `camunda.data.exporters.<name>`
-style used above:
+external exporter, by adding a `jar-path` argument pointing at the jar — the unified
+`camunda.data.exporters.<name>` style used above supports `jar-path` directly, no need to
+switch to the classic `zeebe.broker.exporters.<name>` style just for this:
 
 ```yaml
-zeebe:
-  broker:
+camunda:
+  data:
     exporters:
       analytics:
-        className: io.camunda.exporter.analytics.AnalyticsExporter
-        jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
+        class-name: io.camunda.exporter.analytics.AnalyticsExporter
+        jar-path: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
         args:
           endpoint: https://telemetry.camunda.io
           categories:
@@ -101,11 +101,11 @@ zeebe:
             - optional
 ```
 
-The same `args` keys as the [configuration reference](#configuration-reference) apply, and the
-equivalent environment variables are available under `ZEEBE_BROKER_EXPORTERS_ANALYTICS_*` (e.g.
-`ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT`). This section only covers configuring the
-broker directly; it makes no claim about whether or how a particular deployment tool (an
-operator, a Helm chart, etc.) exposes `jarPath` for you — check that tool's own documentation.
+The classic `zeebe.broker.exporters.<name>` style (with `className`/`jarPath`) and its
+`ZEEBE_BROKER_EXPORTERS_ANALYTICS_*` environment variables also still work, if you're already
+using that style elsewhere. Either way, this section only covers configuring the broker
+directly; it makes no claim about whether or how a particular deployment tool (an operator, a
+Helm chart, etc.) exposes `jar-path` for you — check that tool's own documentation.
 
 ### Verify the exporter is running
 
