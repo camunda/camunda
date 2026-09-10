@@ -34,7 +34,8 @@ import {Name} from './NewVariableModification/Name';
 import {Value} from './NewVariableModification/Value';
 import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
-import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
+import {useCanEditVariables} from 'modules/queries/processInstance/useCanEditVariables';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {useDebouncedValue} from 'modules/hooks/useDebouncedValue';
 import {VariableValueCell} from './VariableValueCell';
@@ -54,7 +55,12 @@ const VariablesTable: React.FC<Props> = ({
   isModificationModeEnabled,
   isVariableModificationAllowed,
 }) => {
-  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+  const {resolvedElementInstance, hasSelection} =
+    useProcessInstanceElementSelection();
+  const {data: canEditVariables} = useCanEditVariables(
+    resolvedElementInstance?.type,
+    hasSelection && !resolvedElementInstance,
+  );
   const {initialValues} = useFormState<VariableFormValues>();
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
@@ -96,7 +102,7 @@ const VariablesTable: React.FC<Props> = ({
   }, [variablesData, showDocumentsOnly]);
 
   const isEditMode = (variableName: string) =>
-    (initialValues?.name === variableName && isProcessInstanceRunning) ||
+    (initialValues?.name === variableName && canEditVariables) ||
     isVariableModificationAllowed;
 
   const rows = processedVariables.map(
@@ -129,7 +135,7 @@ const VariablesTable: React.FC<Props> = ({
               documentResult={documentResult}
               isTruncated={isTruncated}
               isModificationModeEnabled={isModificationModeEnabled}
-              isProcessInstanceRunning={isProcessInstanceRunning}
+              isProcessInstanceRunning={canEditVariables}
             />
           ),
           width: 'auto',
@@ -142,9 +148,7 @@ const VariablesTable: React.FC<Props> = ({
                 variableKey={variableKey}
                 variableValue={value}
                 mode={isEditMode(name) ? 'edit' : 'show'}
-                canEdit={
-                  !isModificationModeEnabled && !!isProcessInstanceRunning
-                }
+                canEdit={!isModificationModeEnabled && !!canEditVariables}
               />
               {(() => {
                 if (documentResult !== null) {
@@ -174,7 +178,7 @@ const VariablesTable: React.FC<Props> = ({
                   );
                 }
 
-                if (isModificationModeEnabled || !isProcessInstanceRunning) {
+                if (isModificationModeEnabled || !canEditVariables) {
                   return null;
                 }
 
