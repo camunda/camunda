@@ -24,6 +24,7 @@ const ring = (color: string) => css`
   inset: 0;
   outline: 2px solid ${color};
   outline-offset: -2px;
+  border-radius: inherit;
   pointer-events: none;
   z-index: 1;
 `;
@@ -154,6 +155,7 @@ const ReadOnlyEditorContent = styled.pre`
   font-family: ${EDITOR_FONT_FAMILY};
   tab-size: 2;
   text-wrap: wrap;
+  overflow-wrap: anywhere;
 
   &:focus-visible {
     outline: 2px solid var(--cds-focus);
