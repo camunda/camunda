@@ -199,14 +199,18 @@ final class LeadershipTransferAttempt {
         .whenComplete(
             (failureReason, ignored) -> {
               activePhase = null;
-              failureReason.ifPresentOrElse(this::finish, this::promote);
+              failureReason.ifPresentOrElse(this::finish, () -> promote(targetIndex));
             });
   }
 
-  private void promote() {
+  private void promote(final long targetIndex) {
     final var promotion =
         new TimeoutNowPromotion(
-            raft, leader::isRunning, desiredLeader, configuration.maxTransferAttempts());
+            raft,
+            leader::isRunning,
+            desiredLeader,
+            configuration.maxTransferAttempts(),
+            targetIndex);
     activePhase = promotion;
     promotion
         .start()

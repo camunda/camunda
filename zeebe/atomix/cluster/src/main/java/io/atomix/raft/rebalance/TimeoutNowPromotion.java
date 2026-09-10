@@ -45,6 +45,7 @@ final class TimeoutNowPromotion implements TransferPhase {
   private final BooleanSupplier leaderRunning;
   private final MemberId target;
   private final int maxAttempts;
+  private final long targetIndex;
   private final CompletableFuture<LeadershipTransferResult> result = new CompletableFuture<>();
   private @Nullable Scheduled retryTimer;
   private @Nullable Consumer<RaftMember> leaderListener;
@@ -55,11 +56,18 @@ final class TimeoutNowPromotion implements TransferPhase {
       final RaftContext raft,
       final BooleanSupplier leaderRunning,
       final MemberId target,
-      final int maxAttempts) {
+      final int maxAttempts,
+      final long targetIndex) {
     this.raft = raft;
     this.leaderRunning = leaderRunning;
     this.target = target;
     this.maxAttempts = maxAttempts;
+    this.targetIndex = targetIndex;
+  }
+
+  private long matchIndexOfTarget() {
+    final var member = raft.getCluster().getMemberContext(target);
+    return member == null ? -1 : member.getMatchIndex();
   }
 
   CompletableFuture<LeadershipTransferResult> start() {
@@ -73,10 +81,15 @@ final class TimeoutNowPromotion implements TransferPhase {
     raft.addLeaderElectionListener(leaderListener);
 
     LOG.info(
-        "Starting TimeoutNow leadership transfer to {} (up to {} attempts, resending every {})",
+        "Starting TimeoutNow leadership transfer to {} (up to {} attempts, resending every {}); "
+            + "caught up to index {}, target matchIndex {}, leader lastIndex {}, commitIndex {}",
         target,
         maxAttempts,
-        raft.getHeartbeatInterval());
+        raft.getHeartbeatInterval(),
+        targetIndex,
+        matchIndexOfTarget(),
+        raft.getLog().getLastIndex(),
+        raft.getCommitIndex());
 
     attemptTimeoutNow();
     return result;
@@ -101,11 +114,16 @@ final class TimeoutNowPromotion implements TransferPhase {
       return;
     }
     if (attempts >= maxAttempts) {
-      LOG.info(
+      LOG.warn(
           "TimeoutNow transfer to {} did not move leadership within {} attempts while still "
-              + "leader; giving up",
+              + "leader; giving up. Caught up to index {}, target matchIndex now {}, leader "
+              + "lastIndex now {}, commitIndex {}",
           target,
-          attempts);
+          attempts,
+          targetIndex,
+          matchIndexOfTarget(),
+          raft.getLog().getLastIndex(),
+          raft.getCommitIndex());
       complete(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
       return;
     }
