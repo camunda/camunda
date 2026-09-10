@@ -1670,570 +1670,306 @@ dependencyResolutionManagement {
   }
 }
 
-include(":camunda-search")
-
-include(":operate-common")
-
-include(":zeebe-gateway-grpc")
-
-if (!quickly) {
-  include(":camunda-optimize")
-  include(":optimize-commons")
-  include(":optimize-backend")
-  include(":upgrade-optimize")
-  include(":optimize-client")
-  include(":optimize-util")
-  project(":camunda-optimize").projectDir = file("optimize-distro")
-  project(":optimize-commons").projectDir = file("optimize/util/optimize-commons")
-  project(":optimize-backend").projectDir = file("optimize/backend")
-  project(":upgrade-optimize").projectDir = file("optimize/upgrade")
-  project(":optimize-client").projectDir = file("optimize/client")
-  project(":optimize-util").projectDir = file("optimize/util")
+private fun org.gradle.api.initialization.Settings.registerProject(
+  name: String,
+  directory: String,
+) {
+  include(name)
+  project(name).projectDir = settingsDir.resolve(directory)
 }
 
-include(":zeebe-qa-update-tests")
+registerProject(":camunda-search", "search")
 
-include(":camunda-spring-boot-starter-virtual-threads")
+registerProject(":operate-common", "operate/common")
 
-include(":zeebe-gateway")
+registerProject(":zeebe-gateway-grpc", "zeebe/gateway-grpc")
 
-include(":camunda-spring-boot-3-starter")
+if (!quickly) {
+  registerProject(":camunda-optimize", "optimize-distro")
+  registerProject(":optimize-commons", "optimize/util/optimize-commons")
+  registerProject(":optimize-backend", "optimize/backend")
+  registerProject(":upgrade-optimize", "optimize/upgrade")
+  registerProject(":optimize-client", "optimize/client")
+  registerProject(":optimize-util", "optimize/util")
+}
 
-include(":identity-parent")
+registerProject(":zeebe-qa-update-tests", "zeebe/qa/update-tests")
 
-include(":camunda-gateway-model")
+registerProject(
+  ":camunda-spring-boot-starter-virtual-threads",
+  "clients/camunda-spring-boot-starter-virtual-threads",
+)
 
-include(":zeebe-parent")
+registerProject(":zeebe-gateway", "zeebe/gateway")
 
-include(":operate-parent")
+registerProject(":camunda-spring-boot-3-starter", "clients/camunda-spring-boot-3-starter")
 
-include(":optimize-parent")
+registerProject(":identity-parent", "identity")
 
-include(":zeebe-protocol-asserts")
+registerProject(":camunda-gateway-model", "gateways/gateway-model")
 
-include(":zeebe-dmn")
+registerProject(":zeebe-parent", "parent")
 
-include(":camunda-search-test-utils")
+registerProject(":operate-parent", "operate")
 
-include(":zeebe-gateway-protocol")
+registerProject(":optimize-parent", "optimize")
 
-include(":zeebe-protocol-impl")
+registerProject(":zeebe-protocol-asserts", "zeebe/protocol-asserts")
 
-include(":zeebe-exporter-filter")
+registerProject(":zeebe-dmn", "zeebe/dmn")
 
-include(":camunda-exporter")
+registerProject(":camunda-search-test-utils", "search/search-test-utils")
 
-include(":analytics-exporter")
+registerProject(":zeebe-gateway-protocol", "zeebe/gateway-protocol")
 
-include(":camunda-security-services")
+registerProject(":zeebe-protocol-impl", "zeebe/protocol-impl")
 
-include(":camunda-security-core")
+registerProject(":zeebe-exporter-filter", "zeebe/exporter-filter")
 
-include(":camunda-process-test-json-test-cases")
+registerProject(":camunda-exporter", "zeebe/exporters/camunda-exporter")
 
-include(":camunda-process-test-langchain4j")
+registerProject(":analytics-exporter", "zeebe/exporters/analytics-exporter")
 
-include(":camunda-process-test-spring-boot-3")
+registerProject(":camunda-security-services", "security/security-services")
 
-include(":camunda-process-test-spring-boot-4")
+registerProject(":camunda-security-core", "security/security-core")
 
-include(":zeebe-atomix-utils")
+registerProject(
+  ":camunda-process-test-json-test-cases",
+  "testing/camunda-process-test-json-test-cases",
+)
 
-include(":camunda-process-test-spring")
+registerProject(":camunda-process-test-langchain4j", "testing/camunda-process-test-langchain4j")
 
-include(":camunda-qa")
+registerProject(":camunda-process-test-spring-boot-3", "testing/camunda-process-test-spring-boot-3")
 
-include(":zeebe-backup-store-s3")
+registerProject(":camunda-process-test-spring-boot-4", "testing/camunda-process-test-spring-boot-4")
 
-include(":camunda-search-client-reader")
+registerProject(":zeebe-atomix-utils", "zeebe/atomix/utils")
 
-include(":camunda-service")
+registerProject(":camunda-process-test-spring", "testing/camunda-process-test-spring")
 
-include(":zeebe-exporter-api")
+registerProject(":camunda-qa", "qa")
 
-include(":camunda-process-test-example")
+registerProject(":zeebe-backup-store-s3", "zeebe/backup-stores/s3")
 
-include(":camunda-load-tester")
+registerProject(":camunda-search-client-reader", "search/search-client-reader")
 
-include(":zeebe-protocol")
+registerProject(":camunda-service", "service")
 
-include(":zeebe-scheduler")
+registerProject(":zeebe-exporter-api", "zeebe/exporter-api")
 
-include(":zeebe-cluster-config")
+registerProject(":camunda-process-test-example", "testing/camunda-process-test-example")
 
-include(":zeebe-qa-integration-tests")
+registerProject(":camunda-load-tester", "load-tests/load-tester")
 
-include(":dynamic-node-id-provider")
+registerProject(":zeebe-protocol", "zeebe/protocol")
 
-include(":camunda-process-test-java")
+registerProject(":zeebe-scheduler", "zeebe/scheduler")
 
-include(":camunda-process-test-coverage")
+registerProject(":zeebe-cluster-config", "zeebe/dynamic-config")
+
+registerProject(":zeebe-qa-integration-tests", "zeebe/qa/integration-tests")
+
+registerProject(":dynamic-node-id-provider", "zeebe/dynamic-node-id-provider")
+
+registerProject(":camunda-process-test-java", "testing/camunda-process-test-java")
+
+registerProject(":camunda-process-test-coverage", "testing/camunda-process-test-coverage")
 
 include(":webapps-schema")
 
-include(":identity-webjar")
+registerProject(":identity-webjar", "identity/client")
 
-include(":zeebe-broker-client")
+registerProject(":zeebe-broker-client", "zeebe/broker-client")
 
-include(":camunda-zeebe")
+registerProject(":camunda-zeebe", "dist")
 
-include(":zeebe-util")
+registerProject(":zeebe-util", "zeebe/util")
 
-include(":camunda-qa-compatibility-test")
+registerProject(":camunda-qa-compatibility-test", "qa/compatibility-test")
 
 include(":webapps-common")
 
-include(":operate-qa")
+registerProject(":operate-qa", "operate/qa")
 
-include(":camunda-authentication")
+registerProject(":camunda-authentication", "authentication")
 
-include(":document-parent")
+registerProject(":document-parent", "document")
 
-include(":camunda-search-client-plugin")
+registerProject(":camunda-search-client-plugin", "search/search-client-plugin")
 
-include(":zeebe-expression-language")
+registerProject(":zeebe-expression-language", "zeebe/expression-language")
 
-include(":zeebe-backup-testkit")
+registerProject(":zeebe-backup-testkit", "zeebe/backup-stores/testkit")
 
-include(":zeebe-workflow-engine")
+registerProject(":zeebe-workflow-engine", "zeebe/engine")
 
-include(":document-api")
+registerProject(":document-api", "document/api")
 
-include(":zeebe-journal")
+registerProject(":zeebe-journal", "zeebe/journal")
 
-include(":camunda-search-domain")
+registerProject(":camunda-search-domain", "search/search-domain")
 
-include(":operate-qa-it-tests")
+registerProject(":operate-qa-it-tests", "operate/qa/integration-tests")
 
-include(":operate-webapp")
+registerProject(":operate-webapp", "operate/webapp")
 
-include(":camunda-spring-boot-4-starter")
+registerProject(":camunda-spring-boot-4-starter", "clients/camunda-spring-boot-4-starter")
 
-include(":zeebe-gateway-rest")
+registerProject(":zeebe-gateway-rest", "zeebe/gateway-rest")
 
-include(":camunda-security-protocol")
+registerProject(":camunda-security-protocol", "security/security-protocol")
 
-include(":camunda-qa-acceptance-tests")
+registerProject(":camunda-qa-acceptance-tests", "qa/acceptance-tests")
 
-include(":camunda-qa-util")
+registerProject(":camunda-qa-util", "qa/util")
 
-include(":camunda-spring-boot-starter")
+registerProject(":camunda-spring-boot-starter", "clients/camunda-spring-boot-starter")
 
-include(":zeebe-protocol-jackson")
+registerProject(":zeebe-protocol-jackson", "zeebe/protocol-jackson")
 
-include(":camunda-search-client-opensearch")
+registerProject(":camunda-search-client-opensearch", "search/search-client-opensearch")
 
-include(":camunda-testing")
+registerProject(":camunda-testing", "testing")
 
-include(":camunda-db-rdbms")
+registerProject(":camunda-db-rdbms", "db/rdbms")
 
-include(":camunda-search-client-elasticsearch")
+registerProject(":camunda-search-client-elasticsearch", "search/search-client-elasticsearch")
 
-include(":zeebe-atomix-cluster")
+registerProject(":zeebe-atomix-cluster", "zeebe/atomix/cluster")
 
-include(":zeebe-msgpack-value")
+registerProject(":zeebe-msgpack-value", "zeebe/msgpack-value")
 
-include(":zeebe-qa-util")
+registerProject(":zeebe-qa-util", "zeebe/qa/util")
 
-include(":camunda-schema-manager")
+registerProject(":camunda-schema-manager", "schema-manager")
 
-include(":zeebe-auth")
+registerProject(":zeebe-auth", "zeebe/auth")
 
-include(":zeebe-gateway-protocol-impl")
+registerProject(":zeebe-gateway-protocol-impl", "zeebe/gateway-protocol-impl")
 
-include(":camunda-spring-utils")
+registerProject(":camunda-spring-utils", "spring-utils")
 
 include(":configuration")
 
-include(":zeebe-snapshots")
+registerProject(":zeebe-snapshots", "zeebe/snapshot")
 
-include(":zeebe-backup-store-filesystem")
+registerProject(":zeebe-backup-store-filesystem", "zeebe/backup-stores/filesystem")
 
-include(":zeebe-protocol-test-util")
+registerProject(":zeebe-protocol-test-util", "zeebe/protocol-test-util")
 
-include(":zeebe-broker")
+registerProject(":zeebe-broker", "zeebe/broker")
 
-include(":camunda-security-validation")
+registerProject(":camunda-security-validation", "security/security-validation")
 
-include(":zeebe-root")
+registerProject(":zeebe-root", "zeebe")
 
 include(":webapps-backup")
 
-include(":zeebe-feel-integration")
+registerProject(":zeebe-feel-integration", "zeebe/feel")
 
-include(":zeebe-restore")
+registerProject(":zeebe-restore", "zeebe/restore")
 
-include(":zeebe-restore-standalone")
+registerProject(":zeebe-restore-standalone", "zeebe/restore-standalone")
 
-include(":zeebe-qa")
+registerProject(":zeebe-qa", "zeebe/qa")
 
-include(":camunda-search-client-connect")
+registerProject(":camunda-search-client-connect", "search/search-client-connect")
 
-include(":zeebe-feel-tagged-parameters")
+registerProject(":zeebe-feel-tagged-parameters", "zeebe/feel-tagged-parameters")
 
 include(":debug-cli")
 
-include(":zeebe-opensearch-exporter")
+registerProject(":zeebe-opensearch-exporter", "zeebe/exporters/opensearch-exporter")
 
-include(":zeebe-msgpack-core")
+registerProject(":zeebe-msgpack-core", "zeebe/msgpack-core")
 
-include(":camunda-db")
+registerProject(":camunda-db", "db")
 
-include(":zeebe-backup-store-common")
+registerProject(":zeebe-backup-store-common", "zeebe/backup-stores/common")
 
-include(":zeebe-backup")
+registerProject(":zeebe-backup", "zeebe/backup")
 
-include(":zeebe-backup-store-azure")
+registerProject(":zeebe-backup-store-azure", "zeebe/backup-stores/azure")
 
-include(":zeebe-logstreams")
+registerProject(":zeebe-logstreams", "zeebe/logstreams")
 
-include(":camunda-microbenchmarks")
+registerProject(":camunda-microbenchmarks", "microbenchmarks")
 
-include(":zeebe-stream-platform")
+registerProject(":zeebe-stream-platform", "zeebe/stream-platform")
 
-include(":camunda-testcontainer")
+registerProject(":camunda-testcontainer", "qa/testcontainer")
 
-include(":zeebe-exporter-common")
+registerProject(":zeebe-exporter-common", "zeebe/exporter-common")
 
-include(":zeebe-exporter-config-support")
+registerProject(":zeebe-exporter-config-support", "zeebe/exporter-config-support")
 
-include(":zeebe-backup-store-gcs")
+registerProject(":zeebe-backup-store-gcs", "zeebe/backup-stores/gcs")
 
-include(":camunda-db-rdbms-schema")
+registerProject(":camunda-db-rdbms-schema", "db/rdbms-schema")
 
-include(":camunda-search-client")
+registerProject(":camunda-search-client", "search/search-client")
 
-include(":camunda-client-java")
+registerProject(":camunda-client-java", "clients/java")
 
-include(":rdbms-exporter")
+registerProject(":rdbms-exporter", "zeebe/exporters/rdbms-exporter")
 
-include(":operate-webjar")
+registerProject(":operate-webjar", "operate/client")
 
-include(":webapp-parent")
+registerProject(":webapp-parent", "webapp")
 
-include(":webapp-webjar")
+registerProject(":webapp-webjar", "webapp/client")
 
-include(":webapp-server")
+registerProject(":webapp-server", "webapp/server")
 
-include(":app-integrations-exporter")
+registerProject(":app-integrations-exporter", "zeebe/exporters/app-integrations-exporter")
 
-include(":document-store")
+registerProject(":document-store", "document/store")
 
-include(":zeebe-transport")
+registerProject(":zeebe-transport", "zeebe/transport")
 
-include(":camunda-gateway-mcp")
+registerProject(":camunda-gateway-mcp", "gateways/gateway-mcp")
 
-include(":zeebe-build-tools")
+registerProject(":zeebe-build-tools", "build-tools")
 
-include(":zeebe-elasticsearch-exporter")
+registerProject(":zeebe-elasticsearch-exporter", "zeebe/exporters/elasticsearch-exporter")
 
-include(":camunda-search-client-query-transformer")
+registerProject(
+  ":camunda-search-client-query-transformer",
+  "search/search-client-query-transformer",
+)
 
-include(":camunda-archunit-tests")
+registerProject(":camunda-archunit-tests", "qa/archunit-tests")
 
-include(":zeebe-exporter-test")
+registerProject(":zeebe-exporter-test", "zeebe/exporter-test")
 
-include(":zeebe-db")
+registerProject(":zeebe-db", "zeebe/zb-db")
 
-include(":camunda-library-parent")
+registerProject(":camunda-library-parent", "library-parent")
 
-include(":operate-data-generator")
+registerProject(":operate-data-generator", "operate/data-generator")
 
-include(":zeebe-bpmn-model")
+registerProject(":zeebe-bpmn-model", "zeebe/bpmn-model")
 
-include(":zeebe-atomix-parent")
+registerProject(":zeebe-atomix-parent", "zeebe/atomix")
 
-include(":camunda-security")
+registerProject(":camunda-security", "security")
 
-include(":camunda-secret-store")
+registerProject(":camunda-secret-store", "secret-store")
 
-include(":camunda-secret-store-api")
+registerProject(":camunda-secret-store-api", "secret-store/secret-store-api")
 
-include(":camunda-secret-store-file")
+registerProject(":camunda-secret-store-file", "secret-store/secret-store-file")
 
-include(":camunda-secret-store-aws")
+registerProject(":camunda-secret-store-aws", "secret-store/secret-store-aws")
 
-include(":camunda-secret-store-gcp")
+registerProject(":camunda-secret-store-gcp", "secret-store/secret-store-gcp")
 
-include(":zeebe-rebalance")
+registerProject(":zeebe-rebalance", "zeebe/rebalance")
 
-include(":zeebe-test-util")
+registerProject(":zeebe-test-util", "zeebe/test-util")
 
-include(":camunda-gateway-mapping-http")
+registerProject(":camunda-gateway-mapping-http", "gateways/gateway-mapping-http")
 
-include(":camunda-cluster")
-
-project(":camunda-search").projectDir = file("search")
-
-project(":operate-common").projectDir = file("operate/common")
-
-project(":zeebe-gateway-grpc").projectDir = file("zeebe/gateway-grpc")
-
-project(":zeebe-qa-update-tests").projectDir = file("zeebe/qa/update-tests")
-
-project(":camunda-spring-boot-starter-virtual-threads").projectDir =
-  file("clients/camunda-spring-boot-starter-virtual-threads")
-
-project(":zeebe-gateway").projectDir = file("zeebe/gateway")
-
-project(":camunda-spring-boot-3-starter").projectDir = file("clients/camunda-spring-boot-3-starter")
-
-project(":identity-parent").projectDir = file("identity")
-
-project(":camunda-gateway-model").projectDir = file("gateways/gateway-model")
-
-project(":zeebe-parent").projectDir = file("parent")
-
-project(":operate-parent").projectDir = file("operate")
-
-project(":optimize-parent").projectDir = file("optimize")
-
-project(":zeebe-protocol-asserts").projectDir = file("zeebe/protocol-asserts")
-
-project(":zeebe-dmn").projectDir = file("zeebe/dmn")
-
-project(":camunda-search-test-utils").projectDir = file("search/search-test-utils")
-
-project(":zeebe-gateway-protocol").projectDir = file("zeebe/gateway-protocol")
-
-project(":zeebe-protocol-impl").projectDir = file("zeebe/protocol-impl")
-
-project(":zeebe-exporter-filter").projectDir = file("zeebe/exporter-filter")
-
-project(":camunda-exporter").projectDir = file("zeebe/exporters/camunda-exporter")
-
-project(":analytics-exporter").projectDir = file("zeebe/exporters/analytics-exporter")
-
-project(":camunda-security-services").projectDir = file("security/security-services")
-
-project(":camunda-security-core").projectDir = file("security/security-core")
-
-project(":camunda-process-test-json-test-cases").projectDir =
-  file("testing/camunda-process-test-json-test-cases")
-
-project(":camunda-process-test-langchain4j").projectDir =
-  file("testing/camunda-process-test-langchain4j")
-
-project(":camunda-process-test-spring-boot-3").projectDir =
-  file("testing/camunda-process-test-spring-boot-3")
-
-project(":camunda-process-test-spring-boot-4").projectDir =
-  file("testing/camunda-process-test-spring-boot-4")
-
-project(":zeebe-atomix-utils").projectDir = file("zeebe/atomix/utils")
-
-project(":camunda-process-test-spring").projectDir = file("testing/camunda-process-test-spring")
-
-project(":camunda-qa").projectDir = file("qa")
-
-project(":zeebe-backup-store-s3").projectDir = file("zeebe/backup-stores/s3")
-
-project(":camunda-search-client-reader").projectDir = file("search/search-client-reader")
-
-project(":camunda-service").projectDir = file("service")
-
-project(":zeebe-exporter-api").projectDir = file("zeebe/exporter-api")
-
-project(":camunda-process-test-example").projectDir = file("testing/camunda-process-test-example")
-
-project(":camunda-load-tester").projectDir = file("load-tests/load-tester")
-
-project(":zeebe-protocol").projectDir = file("zeebe/protocol")
-
-project(":zeebe-scheduler").projectDir = file("zeebe/scheduler")
-
-project(":zeebe-cluster-config").projectDir = file("zeebe/dynamic-config")
-
-project(":zeebe-qa-integration-tests").projectDir = file("zeebe/qa/integration-tests")
-
-project(":dynamic-node-id-provider").projectDir = file("zeebe/dynamic-node-id-provider")
-
-project(":camunda-process-test-java").projectDir = file("testing/camunda-process-test-java")
-
-project(":camunda-process-test-coverage").projectDir = file("testing/camunda-process-test-coverage")
-
-project(":identity-webjar").projectDir = file("identity/client")
-
-project(":zeebe-broker-client").projectDir = file("zeebe/broker-client")
-
-project(":camunda-zeebe").projectDir = file("dist")
-
-project(":zeebe-util").projectDir = file("zeebe/util")
-
-project(":camunda-qa-compatibility-test").projectDir = file("qa/compatibility-test")
-
-project(":operate-qa").projectDir = file("operate/qa")
-
-project(":camunda-authentication").projectDir = file("authentication")
-
-project(":document-parent").projectDir = file("document")
-
-project(":camunda-search-client-plugin").projectDir = file("search/search-client-plugin")
-
-project(":zeebe-expression-language").projectDir = file("zeebe/expression-language")
-
-project(":zeebe-backup-testkit").projectDir = file("zeebe/backup-stores/testkit")
-
-project(":zeebe-workflow-engine").projectDir = file("zeebe/engine")
-
-project(":document-api").projectDir = file("document/api")
-
-project(":zeebe-journal").projectDir = file("zeebe/journal")
-
-project(":camunda-search-domain").projectDir = file("search/search-domain")
-
-project(":operate-qa-it-tests").projectDir = file("operate/qa/integration-tests")
-
-project(":operate-webapp").projectDir = file("operate/webapp")
-
-project(":camunda-spring-boot-4-starter").projectDir = file("clients/camunda-spring-boot-4-starter")
-
-project(":zeebe-gateway-rest").projectDir = file("zeebe/gateway-rest")
-
-project(":camunda-security-protocol").projectDir = file("security/security-protocol")
-
-project(":camunda-qa-acceptance-tests").projectDir = file("qa/acceptance-tests")
-
-project(":camunda-qa-util").projectDir = file("qa/util")
-
-project(":camunda-spring-boot-starter").projectDir = file("clients/camunda-spring-boot-starter")
-
-project(":zeebe-protocol-jackson").projectDir = file("zeebe/protocol-jackson")
-
-project(":camunda-search-client-opensearch").projectDir = file("search/search-client-opensearch")
-
-project(":camunda-testing").projectDir = file("testing")
-
-project(":camunda-db-rdbms").projectDir = file("db/rdbms")
-
-project(":camunda-search-client-elasticsearch").projectDir =
-  file("search/search-client-elasticsearch")
-
-project(":zeebe-atomix-cluster").projectDir = file("zeebe/atomix/cluster")
-
-project(":zeebe-msgpack-value").projectDir = file("zeebe/msgpack-value")
-
-project(":zeebe-qa-util").projectDir = file("zeebe/qa/util")
-
-project(":camunda-schema-manager").projectDir = file("schema-manager")
-
-project(":zeebe-auth").projectDir = file("zeebe/auth")
-
-project(":zeebe-gateway-protocol-impl").projectDir = file("zeebe/gateway-protocol-impl")
-
-project(":camunda-spring-utils").projectDir = file("spring-utils")
-
-project(":zeebe-snapshots").projectDir = file("zeebe/snapshot")
-
-project(":zeebe-backup-store-filesystem").projectDir = file("zeebe/backup-stores/filesystem")
-
-project(":zeebe-protocol-test-util").projectDir = file("zeebe/protocol-test-util")
-
-project(":zeebe-broker").projectDir = file("zeebe/broker")
-
-project(":camunda-security-validation").projectDir = file("security/security-validation")
-
-project(":zeebe-root").projectDir = file("zeebe")
-
-project(":zeebe-feel-integration").projectDir = file("zeebe/feel")
-
-project(":zeebe-restore").projectDir = file("zeebe/restore")
-
-project(":zeebe-restore-standalone").projectDir = file("zeebe/restore-standalone")
-
-project(":zeebe-qa").projectDir = file("zeebe/qa")
-
-project(":camunda-search-client-connect").projectDir = file("search/search-client-connect")
-
-project(":zeebe-feel-tagged-parameters").projectDir = file("zeebe/feel-tagged-parameters")
-
-project(":zeebe-opensearch-exporter").projectDir = file("zeebe/exporters/opensearch-exporter")
-
-project(":zeebe-msgpack-core").projectDir = file("zeebe/msgpack-core")
-
-project(":camunda-db").projectDir = file("db")
-
-project(":zeebe-backup-store-common").projectDir = file("zeebe/backup-stores/common")
-
-project(":zeebe-backup").projectDir = file("zeebe/backup")
-
-project(":zeebe-backup-store-azure").projectDir = file("zeebe/backup-stores/azure")
-
-project(":zeebe-logstreams").projectDir = file("zeebe/logstreams")
-
-project(":camunda-microbenchmarks").projectDir = file("microbenchmarks")
-
-project(":zeebe-stream-platform").projectDir = file("zeebe/stream-platform")
-
-project(":camunda-testcontainer").projectDir = file("qa/testcontainer")
-
-project(":zeebe-exporter-common").projectDir = file("zeebe/exporter-common")
-
-project(":zeebe-exporter-config-support").projectDir = file("zeebe/exporter-config-support")
-
-project(":zeebe-backup-store-gcs").projectDir = file("zeebe/backup-stores/gcs")
-
-project(":camunda-db-rdbms-schema").projectDir = file("db/rdbms-schema")
-
-project(":camunda-search-client").projectDir = file("search/search-client")
-
-project(":camunda-client-java").projectDir = file("clients/java")
-
-project(":rdbms-exporter").projectDir = file("zeebe/exporters/rdbms-exporter")
-
-project(":operate-webjar").projectDir = file("operate/client")
-
-project(":webapp-parent").projectDir = file("webapp")
-
-project(":webapp-webjar").projectDir = file("webapp/client")
-
-project(":webapp-server").projectDir = file("webapp/server")
-
-project(":app-integrations-exporter").projectDir = file("zeebe/exporters/app-integrations-exporter")
-
-project(":document-store").projectDir = file("document/store")
-
-project(":zeebe-transport").projectDir = file("zeebe/transport")
-
-project(":camunda-gateway-mcp").projectDir = file("gateways/gateway-mcp")
-
-project(":zeebe-build-tools").projectDir = file("build-tools")
-
-project(":zeebe-elasticsearch-exporter").projectDir = file("zeebe/exporters/elasticsearch-exporter")
-
-project(":camunda-search-client-query-transformer").projectDir =
-  file("search/search-client-query-transformer")
-
-project(":camunda-archunit-tests").projectDir = file("qa/archunit-tests")
-
-project(":zeebe-exporter-test").projectDir = file("zeebe/exporter-test")
-
-project(":zeebe-db").projectDir = file("zeebe/zb-db")
-
-project(":camunda-library-parent").projectDir = file("library-parent")
-
-project(":operate-data-generator").projectDir = file("operate/data-generator")
-
-project(":zeebe-bpmn-model").projectDir = file("zeebe/bpmn-model")
-
-project(":zeebe-atomix-parent").projectDir = file("zeebe/atomix")
-
-project(":camunda-security").projectDir = file("security")
-
-project(":camunda-secret-store").projectDir = file("secret-store")
-
-project(":camunda-secret-store-api").projectDir = file("secret-store/secret-store-api")
-
-project(":camunda-secret-store-file").projectDir = file("secret-store/secret-store-file")
-
-project(":camunda-secret-store-aws").projectDir = file("secret-store/secret-store-aws")
-
-project(":camunda-secret-store-gcp").projectDir = file("secret-store/secret-store-gcp")
-
-project(":zeebe-rebalance").projectDir = file("zeebe/rebalance")
-
-project(":zeebe-test-util").projectDir = file("zeebe/test-util")
-
-project(":camunda-gateway-mapping-http").projectDir = file("gateways/gateway-mapping-http")
-
-project(":camunda-cluster").projectDir = file("cluster")
+registerProject(":camunda-cluster", "cluster")
