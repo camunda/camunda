@@ -1,0 +1,134 @@
+# type: CI Helper - ChatOps
+# owner: @camunda/engineering-operations
+---
+name: chatops-command-pull-in
+
+on:
+  repository_dispatch:
+    types: [pull-in-command]
+
+jobs:
+  chatops-command-pull-in:
+    permissions:
+      contents: write       # for git push of the internal copy branch
+      pull-requests: write  # for gh pr create/edit
+      issues: write         # for comment reactions (Issues API backs PR comments)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create URL to the run output
+        id: vars
+        run: |
+          {
+            echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        with:
+          github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the internal copy branch.
+        # zizmor: ignore[artipacked]
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Resolve source PR and validate
+        id: pr
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.client_payload.pull_request.number }}
+        run: |
+          if [[ -z "$PR_NUMBER" ]]; then
+            echo "::error::Command was not executed on a PR"; exit 1
+          fi
+          # Derive PR data from the API — not from attacker-controlled client_payload.
+          PR_DATA=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")
+          HEAD_REPO=$(echo "$PR_DATA" | jq -r '.head.repo.full_name')
+          if [[ "$HEAD_REPO" == "$GITHUB_REPOSITORY" ]]; then
+            echo "::error::PR #$PR_NUMBER already lives in $GITHUB_REPOSITORY, nothing to pull in"; exit 1
+          fi
+          {
+            echo "number=$PR_NUMBER"
+            echo "base_ref=$(echo "$PR_DATA" | jq -r '.base.ref')"
+            echo "title=$(echo "$PR_DATA" | jq -r '.title')"
+            echo "author=$(echo "$PR_DATA" | jq -r '.user.login')"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Cherry-pick commits onto an internal branch
+        id: cherry-pick
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          BASE_REF: ${{ steps.pr.outputs.base_ref }}
+        run: |
+          git config user.name "monorepo-devops-automation[bot]"
+          git config user.email "monorepo-devops-automation[bot]@users.noreply.github.com"
+          BRANCH="internal/pr-$PR_NUMBER"
+          git fetch origin \
+            "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF" \
+            "+refs/pull/$PR_NUMBER/head:refs/remotes/origin/pr-$PR_NUMBER-head"
+          git checkout -B "$BRANCH" "origin/$BASE_REF"
+          git cherry-pick "origin/$BASE_REF..origin/pr-$PR_NUMBER-head"
+          git push --force origin "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Open internal PR
+        id: open-pr
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          BASE_REF: ${{ steps.pr.outputs.base_ref }}
+          BRANCH: ${{ steps.cherry-pick.outputs.branch }}
+          TITLE: ${{ steps.pr.outputs.title }}
+          AUTHOR: ${{ steps.pr.outputs.author }}
+          REQUESTER: ${{ github.event.client_payload.github.payload.comment.user.login }}
+        run: |
+          EXISTING=$(gh pr list --head "$BRANCH" --base "$BASE_REF" --json number --jq '.[0].number')
+          if [[ -n "$EXISTING" ]]; then
+            gh pr comment "$EXISTING" --body "Updated with the latest commits from #$PR_NUMBER."
+            echo "internal_pr=$EXISTING" >> "$GITHUB_OUTPUT"
+          else
+            PR_URL=$(gh pr create --base "$BASE_REF" --head "$BRANCH" \
+              --title "$TITLE (internal copy of #$PR_NUMBER)" \
+              --body "Internal copy of #$PR_NUMBER, opened to run CI. Original author: @$AUTHOR." \
+              --assignee "$REQUESTER" --reviewer "$REQUESTER")
+            echo "internal_pr=${PR_URL##*/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Link back on the original PR
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          INTERNAL_PR: ${{ steps.open-pr.outputs.internal_pr }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body "Opened internal PR #$INTERNAL_PR to run CI: https://github.com/$GITHUB_REPOSITORY/pull/$INTERNAL_PR"
+
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reactions: "+1"
+          reactions-edit-mode: replace
+
+      - name: Update comment in case of failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            > Had issues fulfilling your command, check the [logs](${{ steps.vars.outputs.run_url }})
+          reactions: confused
