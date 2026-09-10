@@ -28,7 +28,7 @@ import {
 	Skeleton,
 	Switch,
 } from '@camunda/design-system';
-import {Plus, X} from 'lucide-react';
+import {Plus, X} from '@camunda/design-system/icons';
 import {ErrorBoundary} from 'react-error-boundary';
 import {Field, Form, type FieldInputProps} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';

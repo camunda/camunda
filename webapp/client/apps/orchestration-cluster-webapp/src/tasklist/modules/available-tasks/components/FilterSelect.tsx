@@ -19,7 +19,7 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from '@camunda/design-system';
-import {Check, ChevronDown, EllipsisVertical, Plus} from 'lucide-react';
+import {Check, ChevronDown, EllipsisVertical, Plus} from '@camunda/design-system/icons';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';

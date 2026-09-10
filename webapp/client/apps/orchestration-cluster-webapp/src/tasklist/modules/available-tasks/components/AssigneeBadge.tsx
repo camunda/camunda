@@ -8,7 +8,7 @@
 
 import {Badge} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
-import {CircleDashed, CircleUserRound, UserRound} from 'lucide-react';
+import {CircleDashed, CircleUserRound, UserRound} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 
 type Props = {
@@ -24,10 +24,7 @@ const AssigneeBadge: React.FC<Props> = ({currentUser, assignee, isShortFormat = 
 
 	if (!isAssigned) {
 		return (
-			<Badge
-				className="border-transparent bg-transparent text-neutral-foreground-subtle"
-				title={t('tasklist.assigneeTagUnassignedTitle')}
-			>
+			<Badge title={t('tasklist.assigneeTagUnassignedTitle')}>
 				<CircleDashed aria-hidden />
 				{t('tasklist.assigneeTagUnassigned')}
 			</Badge>
@@ -36,10 +33,7 @@ const AssigneeBadge: React.FC<Props> = ({currentUser, assignee, isShortFormat = 
 
 	if (isAssignedToCurrentUser) {
 		return (
-			<Badge
-				className="border-transparent bg-neutral-background-strong text-neutral-foreground-strong"
-				title={t('tasklist.assigneeTagAssignedToMeAria')}
-			>
+			<Badge title={t('tasklist.assigneeTagAssignedToMeAria')}>
 				<CircleUserRound aria-hidden />
 				{isShortFormat ? t('tasklist.assigneeTagAssignedToMeShortForm') : t('tasklist.assigneeTagAssignedToMe')}
 			</Badge>
@@ -47,10 +41,7 @@ const AssigneeBadge: React.FC<Props> = ({currentUser, assignee, isShortFormat = 
 	}
 
 	return (
-		<Badge
-			className="border-transparent bg-transparent text-neutral-foreground-strong"
-			title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}
-		>
+		<Badge title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}>
 			<UserRound aria-hidden />
 			{isShortFormat ? assignee : t('tasklist.assigneeTagAssignedToX', {assignee})}
 		</Badge>

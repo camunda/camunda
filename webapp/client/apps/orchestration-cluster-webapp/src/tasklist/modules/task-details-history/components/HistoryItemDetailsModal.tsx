@@ -15,7 +15,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@camunda/design-system';
-import {CalendarClock, CircleUser, X} from 'lucide-react';
+import {CalendarClock, CircleUser, X} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatHistoryDate} from '#/tasklist/modules/task-details-history/formatHistoryDate';

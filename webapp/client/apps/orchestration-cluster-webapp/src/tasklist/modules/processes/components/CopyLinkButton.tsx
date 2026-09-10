@@ -8,7 +8,7 @@
 
 import {Button} from '@camunda/design-system';
 import {useActorRef, useSelector} from '@xstate/react';
-import {Check, Link as LinkIcon} from 'lucide-react';
+import {Check, Link as LinkIcon} from '@camunda/design-system/icons';
 import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {assign, fromPromise, setup} from 'xstate';

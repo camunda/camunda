@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ShieldAlert} from 'lucide-react';
+import {ShieldAlert} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {PageEmptyState} from './PageEmptyState';
 

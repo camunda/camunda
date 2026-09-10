@@ -8,7 +8,7 @@
 
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Badge, Button, Card, CardContent, Heading} from '@camunda/design-system';
-import {ArrowRight, List} from 'lucide-react';
+import {ArrowRight, List} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import type {StartProcessStatus} from '#/tasklist/modules/processes/startProcessMachine';
 

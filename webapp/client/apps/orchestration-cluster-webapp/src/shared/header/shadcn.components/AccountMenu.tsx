@@ -8,7 +8,7 @@
 
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
-import {LogOut} from 'lucide-react';
+import {LogOut} from '@camunda/design-system/icons';
 import {
 	Avatar,
 	Button,

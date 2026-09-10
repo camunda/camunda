@@ -21,7 +21,7 @@ import {
 } from '@camunda/design-system';
 import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useTranslation} from 'react-i18next';
-import {Info, X} from 'lucide-react';
+import {Info, X} from '@camunda/design-system/icons';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 import {cn} from '#/shared/cn';
 import {Aside} from './Aside';

@@ -16,7 +16,7 @@ import {
 } from '@camunda/design-system';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate, useSearch} from '@tanstack/react-router';
-import {ArrowDownWideNarrow} from 'lucide-react';
+import {ArrowDownWideNarrow} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {tasklistIndexSearchSchema, type TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
 import {useCallback, useState} from 'react';

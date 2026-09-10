@@ -7,7 +7,7 @@
  */
 
 import {Button} from '@camunda/design-system';
-import {Compass} from 'lucide-react';
+import {Compass} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {PageEmptyState} from './PageEmptyState';
 

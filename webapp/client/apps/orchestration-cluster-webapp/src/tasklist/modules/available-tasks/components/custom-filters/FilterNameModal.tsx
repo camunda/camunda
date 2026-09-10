@@ -8,7 +8,7 @@
 
 import {Field, Form} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
-import {X} from 'lucide-react';
+import {X} from '@camunda/design-system/icons';
 import {
 	Button,
 	Dialog,

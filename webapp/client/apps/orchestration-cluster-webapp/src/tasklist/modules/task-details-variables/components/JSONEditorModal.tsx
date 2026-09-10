@@ -17,7 +17,7 @@ import {
 } from '@camunda/design-system';
 import Editor from '@monaco-editor/react';
 import type {editor} from 'monaco-editor';
-import {X} from 'lucide-react';
+import {X} from '@camunda/design-system/icons';
 import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {themeStore} from '#/shared/theme/theme';

@@ -8,7 +8,7 @@
 
 import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {X} from 'lucide-react';
+import {X} from '@camunda/design-system/icons';
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
 	Alert,
