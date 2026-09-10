@@ -12,11 +12,22 @@ fun <T> parsePom(xml: String, reader: (Element) -> T): T {
   return reader(root.documentElement)
 }
 
+fun Element.directChild(name: String): Element? {
+  val children = childNodes
+  for (i in 0 until children.length) {
+    val child = children.item(i)
+    if (child is Element && child.tagName == name) {
+      return child
+    }
+  }
+  return null
+}
+
 fun parsePomProperties(xml: String): Map<String, String> =
   parsePom(xml) { root ->
     val result = mutableMapOf<String, String>()
-    val properties = root.getElementsByTagName("properties").item(0) as? Element
-    val nodes = properties?.childNodes ?: return@parsePom result
+    val properties = root.directChild("properties") ?: return@parsePom result
+    val nodes = properties.childNodes
     for (i in 0 until nodes.length) {
       val node = nodes.item(i)
       if (node is Element) result[node.tagName] = node.textContent.trim()
@@ -26,25 +37,26 @@ fun parsePomProperties(xml: String): Map<String, String> =
 
 fun parsePomProjectVersion(xml: String): String? =
   parsePom(xml) { root ->
-    val parentVersion =
-      (root.getElementsByTagName("parent").item(0) as? Element)
-        ?.getElementsByTagName("version")
-        ?.item(0)
-        ?.textContent
-        ?.trim()
-    if (!parentVersion.isNullOrBlank()) {
-      return@parsePom parentVersion
-    }
-
-    val childNodes = root.childNodes
-    for (i in 0 until childNodes.length) {
-      val node = childNodes.item(i)
-      if (node is Element && node.tagName == "version") {
-        return@parsePom node.textContent.trim()
-      }
-    }
-    null
+    root.directChild("version")?.textContent?.trim()?.takeIf { it.isNotBlank() }
+      ?: root.directChild("parent")?.directChild("version")?.textContent?.trim()
   }
+
+private val pomPropertyReference = Regex("""\$\{([^}]+)}""")
+
+fun resolvePomProperty(
+  key: String,
+  properties: Map<String, String>,
+  resolving: Set<String> = emptySet(),
+): String {
+  if (key in resolving) {
+    error("Cyclic POM property reference: ${(resolving + key).joinToString(" -> ")}")
+  }
+
+  val value = properties[key] ?: error("Missing POM property: $key")
+  return pomPropertyReference.replace(value) { match ->
+    resolvePomProperty(match.groupValues[1], properties, resolving + key)
+  }
+}
 
 val pomVersions: Map<String, String> =
   parsePomProperties(
@@ -63,8 +75,10 @@ val testingCamundaProcessTestLangchain4jPomVersions: Map<String, String> =
   )
 
 val langchain4jVersion =
-  testingCamundaProcessTestLangchain4jPomVersions["version.langchain4j"]
-    ?: error("Missing Maven property: version.langchain4j")
+  resolvePomProperty(
+    "version.langchain4j",
+    pomVersions + testingCamundaProcessTestLangchain4jPomVersions,
+  )
 
 val optimizePomVersions: Map<String, String> =
   parsePomProperties(
@@ -79,18 +93,36 @@ val camundaSpringBootStarterPomVersions: Map<String, String> =
       .get()
   )
 
+val camundaSpringBoot3StarterPomVersions: Map<String, String> =
+  parsePomProperties(
+    providers
+      .fileContents(layout.rootDirectory.file("clients/camunda-spring-boot-3-starter/pom.xml"))
+      .asText
+      .get()
+  )
+
 val rootPomVersion =
   parsePomProjectVersion(providers.fileContents(layout.rootDirectory.file("pom.xml")).asText.get())
     ?: error("Missing Maven project version from pom.xml")
 
-fun pomVersion(key: String) =
-  pomVersions[key] ?: bomPomVersions[key] ?: error("Missing POM property: $key")
+fun pomVersion(key: String) = resolvePomProperty(key, bomPomVersions + pomVersions)
 
-fun optimizePomVersion(key: String) =
-  optimizePomVersions[key] ?: error("Missing Optimize POM property: $key")
+fun optimizePomVersion(key: String) = resolvePomProperty(key, pomVersions + optimizePomVersions)
 
-fun starterPomVersion(key: String) =
-  camundaSpringBootStarterPomVersions[key] ?: error("Missing starter POM property: $key")
+fun starterPomVersion(key: String): String {
+  val baseStarterVersion =
+    resolvePomProperty(key, pomVersions + camundaSpringBootStarterPomVersions)
+  val springBoot3StarterVersion =
+    resolvePomProperty(key, pomVersions + camundaSpringBoot3StarterPomVersions)
+  if (baseStarterVersion != springBoot3StarterVersion) {
+    error(
+      "Mismatched starter POM property $key: " +
+        "$baseStarterVersion in camunda-spring-boot-starter and " +
+        "$springBoot3StarterVersion in camunda-spring-boot-3-starter"
+    )
+  }
+  return baseStarterVersion
+}
 
 fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
   value.isEmpty() || value.toBoolean()
@@ -173,6 +205,10 @@ dependencyResolutionManagement {
         "co-elastic-clients-elasticsearch-java",
         pomVersion("version.elasticsearch-java-client"),
       )
+      version(
+        "optimize-elasticsearch-java-client",
+        optimizePomVersion("version.elasticsearch-java-client"),
+      )
       version("azure-sdk", pomVersion("version.azure-sdk"))
       version("com-cronutils-cron-utils", pomVersion("version.cron-utils"))
       version("com-esotericsoftware-kryo", pomVersion("version.kryo"))
@@ -216,6 +252,10 @@ dependencyResolutionManagement {
       version("dmn-scala", pomVersion("version.dmn-scala"))
       version("docker-java-api", pomVersion("version.docker-java-api"))
       version("elasticsearch", pomVersion("version.elasticsearch.client"))
+      version(
+        "optimize-elasticsearch-client",
+        optimizePomVersion("version.elasticsearch.client"),
+      )
       version("feign", pomVersion("version.feign"))
       version("grpc", pomVersion("version.grpc"))
       version("gson", pomVersion("version.gson"))
@@ -373,6 +413,12 @@ dependencyResolutionManagement {
 
       library("co-elastic-clients-elasticsearch-java", "co.elastic.clients", "elasticsearch-java")
         .versionRef("co-elastic-clients-elasticsearch-java")
+      library(
+          "co-elastic-clients-elasticsearch-java-optimize",
+          "co.elastic.clients",
+          "elasticsearch-java",
+        )
+        .versionRef("optimize-elasticsearch-java-client")
       library("com-auth0-java-jwt", "com.auth0", "java-jwt").versionRef("java-jwt")
       library("com-azure-azure-sdk-bom", "com.azure", "azure-sdk-bom").versionRef("azure-sdk")
       library("com-azure-azure-core", "com.azure", "azure-core").withoutVersion()
@@ -959,6 +1005,12 @@ dependencyResolutionManagement {
           "elasticsearch-rest-client",
         )
         .versionRef("elasticsearch")
+      library(
+          "org-elasticsearch-client-elasticsearch-rest-client-optimize",
+          "org.elasticsearch.client",
+          "elasticsearch-rest-client",
+        )
+        .versionRef("optimize-elasticsearch-client")
       // version managed by buildlogic.optimize-conventions
       library("org-elasticsearch-elasticsearch", "org.elasticsearch", "elasticsearch")
         .withoutVersion()
