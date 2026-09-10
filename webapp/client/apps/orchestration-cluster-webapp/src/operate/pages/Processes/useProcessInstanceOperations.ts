@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useState} from 'react';
-import {useQueryClient, type QueryClient} from '@tanstack/react-query';
+import {useMutation, useQueryClient, type QueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {BatchOperation, BatchOperationType, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {ForbiddenError} from '#/shared/errors';
@@ -96,93 +95,94 @@ async function waitForInstanceToFinish(queryClient: QueryClient, processInstance
 function useProcessInstanceOperations(processInstanceKey: string) {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
-	// A set rather than a single slot: an instance can offer two actions at once, and each button
-	// must stay disabled for the life of its own command rather than until any command finishes.
-	const [pendingOperations, setPendingOperations] = useState<ReadonlySet<OperationType>>(new Set());
 
-	const run = useCallback(
-		async (operationType: OperationType, send: () => Promise<void>, errorTitle: string) => {
-			setPendingOperations((current) => new Set(current).add(operationType));
-			try {
-				await send();
-				await queryClient.invalidateQueries({queryKey: ['processInstances']});
-			} catch (error) {
-				const isForbiddenIncidentRetry = operationType === 'RESOLVE_INCIDENT' && error instanceof ForbiddenError;
-				notificationsStore.displayNotification({
-					kind: isForbiddenIncidentRetry ? 'warning' : 'error',
-					title: isForbiddenIncidentRetry
-						? t('operate.processes.instancesTable.operations.forbiddenTitle')
-						: errorTitle,
-					subtitle: isForbiddenIncidentRetry
-						? t('operate.processes.instancesTable.operations.forbiddenSubtitle')
-						: getOperationErrorSubtitle(error),
-					isDismissable: true,
-				});
-			} finally {
-				setPendingOperations((current) => {
-					const next = new Set(current);
-					next.delete(operationType);
-					return next;
-				});
+	const invalidateProcessInstances = () => queryClient.invalidateQueries({queryKey: ['processInstances']});
+
+	const showOperationError = (operationType: OperationType, error: unknown, errorTitle: string) => {
+		const isForbiddenIncidentRetry = operationType === 'RESOLVE_INCIDENT' && error instanceof ForbiddenError;
+		notificationsStore.displayNotification({
+			kind: isForbiddenIncidentRetry ? 'warning' : 'error',
+			title: isForbiddenIncidentRetry ? t('operate.processes.instancesTable.operations.forbiddenTitle') : errorTitle,
+			subtitle: isForbiddenIncidentRetry
+				? t('operate.processes.instancesTable.operations.forbiddenSubtitle')
+				: getOperationErrorSubtitle(error),
+			isDismissable: true,
+		});
+	};
+
+	const resolveIncidents = useMutation({
+		mutationFn: async () => {
+			const {response, error} = await request(endpoints.resolveProcessInstanceIncidents(processInstanceKey));
+			if (error !== null) {
+				throw mapQueryError(error);
 			}
+			const {batchOperationKey} = (await response.json()) as {batchOperationKey: string};
+			await waitForBatchOperation(queryClient, batchOperationKey);
 		},
-		[queryClient, t],
-	);
-
-	const resolveIncidents = useCallback(
-		() =>
-			run(
+		onSuccess: invalidateProcessInstances,
+		onError: (error) =>
+			showOperationError(
 				'RESOLVE_INCIDENT',
-				async () => {
-					const {response, error} = await request(endpoints.resolveProcessInstanceIncidents(processInstanceKey));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					const {batchOperationKey} = (await response.json()) as {batchOperationKey: string};
-					await waitForBatchOperation(queryClient, batchOperationKey);
-				},
+				error,
 				t('operate.processes.instancesTable.operations.resolveIncidentsFailed'),
 			),
-		[processInstanceKey, queryClient, run, t],
-	);
+	});
 
-	const cancel = useCallback(
-		() =>
-			run(
+	const cancel = useMutation({
+		mutationFn: async () => {
+			const {error} = await request(endpoints.cancelProcessInstance(processInstanceKey));
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			await waitForInstanceToFinish(queryClient, processInstanceKey);
+		},
+		onSuccess: invalidateProcessInstances,
+		onError: (error) =>
+			showOperationError(
 				'CANCEL_PROCESS_INSTANCE',
-				async () => {
-					const {error} = await request(endpoints.cancelProcessInstance(processInstanceKey));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					await waitForInstanceToFinish(queryClient, processInstanceKey);
-				},
+				error,
 				t('operate.processes.instancesTable.operations.cancelFailed'),
 			),
-		[processInstanceKey, queryClient, run, t],
-	);
+	});
 
-	const remove = useCallback(
-		() =>
-			run(
+	const remove = useMutation({
+		mutationFn: async () => {
+			const {error} = await request(endpoints.deleteProcessInstance(processInstanceKey));
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			notificationsStore.displayNotification({
+				kind: 'info',
+				title: t('operate.processes.instancesTable.operations.deleteScheduled'),
+				isDismissable: true,
+			});
+		},
+		onSuccess: invalidateProcessInstances,
+		onError: (error) =>
+			showOperationError(
 				'DELETE_PROCESS_INSTANCE',
-				async () => {
-					const {error} = await request(endpoints.deleteProcessInstance(processInstanceKey));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					notificationsStore.displayNotification({
-						kind: 'info',
-						title: t('operate.processes.instancesTable.operations.deleteScheduled'),
-						isDismissable: true,
-					});
-				},
+				error,
 				t('operate.processes.instancesTable.operations.deleteFailed'),
 			),
-		[processInstanceKey, run, t],
-	);
+	});
 
-	return {pendingOperations, resolveIncidents, cancel, remove};
+	const pendingOperations = new Set<OperationType>();
+	if (resolveIncidents.isPending) {
+		pendingOperations.add('RESOLVE_INCIDENT');
+	}
+	if (cancel.isPending) {
+		pendingOperations.add('CANCEL_PROCESS_INSTANCE');
+	}
+	if (remove.isPending) {
+		pendingOperations.add('DELETE_PROCESS_INSTANCE');
+	}
+
+	return {
+		pendingOperations,
+		resolveIncidents: resolveIncidents.mutate,
+		cancel: cancel.mutate,
+		remove: remove.mutate,
+	};
 }
 
 export {useProcessInstanceOperations};
