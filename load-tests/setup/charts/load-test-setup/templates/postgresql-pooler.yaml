@@ -21,6 +21,12 @@ spec:
     name: {{ .Values.postgresql.clusterName }}
   instances: {{ .Values.postgresql.pooler.instances }}
   type: rw
+  # The Pooler has no `inheritedMetadata` field (unlike Cluster); its pod
+  # labels are set directly via the pod template instead.
+  template:
+    metadata:
+      labels:
+        camunda.io/created-by: "{{ .Values.author }}"
   pgbouncer:
     poolMode: transaction
     parameters:
