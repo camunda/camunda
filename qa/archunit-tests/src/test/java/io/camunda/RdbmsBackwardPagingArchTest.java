@@ -12,13 +12,13 @@ import static com.tngtech.archunit.lang.SimpleConditionEvent.violated;
 import com.tngtech.archunit.core.domain.JavaCall;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaModifier;
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
-import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  */
 @AnalyzeClasses(
     packages = "io.camunda.db.rdbms.read",
-    importOptions = DoNotIncludeTestsOrTestJars.class)
+    importOptions = ImportOption.DoNotIncludeTests.class)
 public final class RdbmsBackwardPagingArchTest {
 
   private static final String READER_PACKAGE = "io.camunda.db.rdbms.read.service";
