@@ -73,6 +73,18 @@ public class ConfigValidatorTest {
         .isInstanceOf(ExporterException.class);
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"Prefix", "Test-Prefix", "TEST-PREFIX", "test-Prefix"})
+  void shouldNotAllowUppercaseCharactersInIndexPrefix(final String testPrefix) {
+    // given
+    config.getConnect().setIndexPrefix(testPrefix);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .hasMessageContaining("CamundaExporter index.prefix must not contain uppercase characters")
+        .isInstanceOf(ExporterException.class);
+  }
+
   @Test
   void shouldNotAllowIndexPrefixExceedingMaxLength() {
     // given
