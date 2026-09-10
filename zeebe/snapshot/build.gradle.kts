@@ -22,7 +22,7 @@ dependencies {
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(project(":zeebe-scheduler", configuration = "tests"))
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.org.mockito.mockito.core)
 }

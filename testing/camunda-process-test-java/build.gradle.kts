@@ -82,9 +82,9 @@ dependencies {
   implementation(project(":camunda-process-test-coverage"))
   api(libs.org.testcontainers.testcontainers)
   api(libs.org.testcontainers.testcontainers.elasticsearch)
-  api(libs.org.junit.jupiter.junit.jupiter.api.x1)
-  api(libs.org.junit.platform.junit.platform.commons.x1)
-  api(libs.org.junit.jupiter.junit.jupiter.params.x1)
+  api(libs.org.junit.jupiter.junit.jupiter.api)
+  api(libs.org.junit.platform.junit.platform.commons)
+  api(libs.org.junit.jupiter.junit.jupiter.params)
   implementation(libs.org.slf4j.slf4j.api)
   api(project(":camunda-client-java"))
   api(libs.org.assertj.assertj.core)
@@ -102,7 +102,7 @@ dependencies {
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)
   testImplementation(libs.org.wiremock.wiremock.standalone)
-  testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter.x1)
+  testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
 }
 
 description = "Camunda Process Test Java"

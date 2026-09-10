@@ -41,7 +41,7 @@ dependencies {
   implementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jdk8)
   implementation(libs.io.github.openfeign.feign.jackson)
   implementation(libs.org.agrona.agrona)
-  implementation(libs.org.junit.platform.junit.platform.commons.x1)
+  implementation(libs.org.junit.platform.junit.platform.commons)
   implementation(libs.org.assertj.assertj.core)
   implementation(project(":zeebe-opensearch-exporter"))
   implementation(project(":camunda-search-client-connect"))

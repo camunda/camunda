@@ -61,7 +61,7 @@ dependencies {
   testImplementation(libs.org.apache.logging.log4j.log4j.api)
   testImplementation(libs.org.apache.logging.log4j.log4j.core)
   testImplementation(libs.org.awaitility.awaitility)
-  testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
+  testImplementation(libs.org.junit.platform.junit.platform.commons)
   testImplementation(libs.org.openjdk.jmh.jmh.core)
   testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
   testImplementation(libs.org.instancio.instancio.core)

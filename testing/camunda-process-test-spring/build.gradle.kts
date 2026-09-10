@@ -35,7 +35,7 @@ dependencies {
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)
   testImplementation(libs.org.wiremock.integrations.wiremock.spring.boot)
-  testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter.x1)
+  testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
   testImplementation(libs.org.testcontainers.testcontainers)
   testImplementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
 }

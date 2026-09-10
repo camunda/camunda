@@ -57,7 +57,7 @@ dependencies {
   implementation(libs.commons.io.commons.io)
   compileOnly(libs.org.immutables.value)
   annotationProcessor(libs.org.immutables.value)
-  testImplementation(libs.org.junit.jupiter.junit.jupiter.api.x1)
+  testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
   testImplementation(libs.org.assertj.assertj.core)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)

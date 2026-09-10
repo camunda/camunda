@@ -9,7 +9,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.annotations)
   api(project(":zeebe-protocol"))
   api(libs.io.camunda.security.library.api)
-  testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
+  testImplementation(libs.org.junit.platform.junit.platform.commons)
   testImplementation(libs.org.reflections.reflections)
   testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
 }

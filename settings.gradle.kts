@@ -233,8 +233,8 @@ dependencyResolutionManagement {
       version("jackson3", pomVersion("version.jackson3"))
       version("jakarta-annotation", pomVersion("version.jakarta-annotation"))
       version("jakarta-json", pomVersion("version.jakarta.json"))
-      // override version from spring BOM
-      version("jakarta-servlet-jakarta-servlet-api-x1", "6.1.0")
+      // Optimize explicitly overrides Spring Boot's managed version in optimize/backend/pom.xml.
+      version("jakarta-servlet-jakarta-servlet-api-optimize", "6.1.0")
       version("jakarta-validation-jakarta-validation-api", pomVersion("version.validation-api"))
       version("jakarta-ws-rs-jakarta-ws-rs-api", "4.0.0")
       version("jakarta-xml-bind-jakarta-xml-bind-api", pomVersion("version.bind-api"))
@@ -323,13 +323,6 @@ dependencyResolutionManagement {
       version("spring-retry", "2.0.12")
       // community Spring AI MCP library; not in Spring AI BOM
       version("org-springaicommunity-mcp-annotations", "0.8.0")
-      version("org-junit-jupiter-junit-jupiter-api-x1", "6.0.1")
-      version("org-junit-jupiter-junit-jupiter-engine-x1", "6.0.1")
-      version("org-junit-jupiter-junit-jupiter-migrationsupport-x1", "6.0.1")
-      version("org-junit-jupiter-junit-jupiter-params-x1", "6.0.1")
-      version("org-junit-platform-junit-platform-commons-x1", "1.14.2")
-      version("org-testcontainers-testcontainers-junit-jupiter-x1", pomVersion("version.testcontainers"))
-      version("org-junit-vintage-junit-vintage-engine-x1", "6.0.1")
       version("org-xmlunit-xmlunit-core", pomVersion("version.xmlunit-core"))
       version("org-yaml-snakeyaml", pomVersion("version.snakeyaml"))
       version("parsson", pomVersion("version.parsson"))
@@ -784,8 +777,8 @@ dependencyResolutionManagement {
       library("jakarta-mail-jakarta-mail-api", "jakarta.mail", "jakarta.mail-api").withoutVersion()
       library("jakarta-servlet-jakarta-servlet-api", "jakarta.servlet", "jakarta.servlet-api")
         .withoutVersion()
-      library("jakarta-servlet-jakarta-servlet-api-x1", "jakarta.servlet", "jakarta.servlet-api")
-        .versionRef("jakarta-servlet-jakarta-servlet-api-x1")
+      library("jakarta-servlet-jakarta-servlet-api-optimize", "jakarta.servlet", "jakarta.servlet-api")
+        .versionRef("jakarta-servlet-jakarta-servlet-api-optimize")
       library(
           "jakarta-validation-jakarta-validation-api",
           "jakarta.validation",
@@ -991,36 +984,16 @@ dependencyResolutionManagement {
       library("org-jspecify-jspecify", "org.jspecify", "jspecify").versionRef("jspecify")
       library("org-junit-jupiter-junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api")
         .withoutVersion()
-      library("org-junit-jupiter-junit-jupiter-api-x1", "org.junit.jupiter", "junit-jupiter-api")
-        .versionRef("org-junit-jupiter-junit-jupiter-api-x1")
       library("org-junit-jupiter-junit-jupiter-engine", "org.junit.jupiter", "junit-jupiter-engine")
         .withoutVersion()
-      library(
-          "org-junit-jupiter-junit-jupiter-engine-x1",
-          "org.junit.jupiter",
-          "junit-jupiter-engine",
-        )
-        .versionRef("org-junit-jupiter-junit-jupiter-engine-x1")
       library(
           "org-junit-jupiter-junit-jupiter-migrationsupport",
           "org.junit.jupiter",
           "junit-jupiter-migrationsupport",
         )
         .withoutVersion()
-      library(
-          "org-junit-jupiter-junit-jupiter-migrationsupport-x1",
-          "org.junit.jupiter",
-          "junit-jupiter-migrationsupport",
-        )
-        .versionRef("org-junit-jupiter-junit-jupiter-migrationsupport-x1")
       library("org-junit-jupiter-junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params")
         .withoutVersion()
-      library(
-          "org-junit-jupiter-junit-jupiter-params-x1",
-          "org.junit.jupiter",
-          "junit-jupiter-params",
-        )
-        .versionRef("org-junit-jupiter-junit-jupiter-params-x1")
       library(
           "org-junit-platform-junit-platform-commons",
           "org.junit.platform",
@@ -1028,17 +1001,11 @@ dependencyResolutionManagement {
         )
         .withoutVersion()
       library(
-          "org-junit-platform-junit-platform-commons-x1",
-          "org.junit.platform",
-          "junit-platform-commons",
-        )
-        .versionRef("org-junit-platform-junit-platform-commons-x1")
-      library(
           "org-junit-platform-junit-platform-launcher",
           "org.junit.platform",
           "junit-platform-launcher",
         )
-        .versionRef("org-junit-platform-junit-platform-commons-x1")
+        .withoutVersion()
       library(
           "org-junit-platform-junit-platform-suite",
           "org.junit.platform",
@@ -1059,12 +1026,6 @@ dependencyResolutionManagement {
         .withoutVersion()
       library("org-junit-vintage-junit-vintage-engine", "org.junit.vintage", "junit-vintage-engine")
         .withoutVersion()
-      library(
-          "org-junit-vintage-junit-vintage-engine-x1",
-          "org.junit.vintage",
-          "junit-vintage-engine",
-        )
-        .versionRef("org-junit-vintage-junit-vintage-engine-x1")
       library("org-junit-junit-bom", "org.junit", "junit-bom").versionRef("junit")
       library("org-keycloak-keycloak-admin-client", "org.keycloak", "keycloak-admin-client")
         .versionRef("keycloak-client")
@@ -1538,12 +1499,6 @@ dependencyResolutionManagement {
           "testcontainers-junit-jupiter",
         )
         .withoutVersion()
-      library(
-          "org-testcontainers-testcontainers-junit-jupiter-x1",
-          "org.testcontainers",
-          "testcontainers-junit-jupiter",
-        )
-        .versionRef("org-testcontainers-testcontainers-junit-jupiter-x1")
       library(
           "org-testcontainers-testcontainers-localstack",
           "org.testcontainers",

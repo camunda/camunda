@@ -32,7 +32,7 @@ dependencies {
   api(libs.io.netty.netty.buffer)
   api(libs.org.awaitility.awaitility)
   api(libs.org.junit.jupiter.junit.jupiter.api)
-  api(libs.org.junit.platform.junit.platform.commons.x1)
+  api(libs.org.junit.platform.junit.platform.commons)
   api(libs.org.testcontainers.testcontainers)
   api(libs.org.testcontainers.testcontainers.elasticsearch)
   api(libs.org.testcontainers.testcontainers.jdbc)
@@ -47,7 +47,7 @@ dependencies {
   api(libs.org.opensearch.opensearch.testcontainers)
   api(libs.org.opensearch.client.opensearch.rest.client)
   api(libs.org.openjdk.jmh.jmh.core)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
 }
 
 description = "Zeebe Test Util"
