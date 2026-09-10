@@ -7,9 +7,15 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Api {
+
+  private static final String PREFIX = "camunda.api";
+  private static final Set<String> LEGACY_ENABLED_PROPERTIES =
+      Set.of("zeebe.broker.gateway.enable");
 
   /** Configuration for long-polling behavior */
   @NestedConfigurationProperty private LongPolling longPolling = new LongPolling();
@@ -19,6 +25,13 @@ public class Api {
 
   /** Configuration for rest behavior */
   @NestedConfigurationProperty private Rest rest = new Rest();
+
+  /**
+   * Enables the gateway (gRPC and REST API) that is embedded in the broker process. Only relevant
+   * when running as a broker with an embedded gateway; standalone gateway processes are always
+   * enabled by virtue of being started.
+   */
+  private boolean enabled = true;
 
   public LongPolling getLongPolling() {
     return longPolling;
@@ -42,5 +55,18 @@ public class Api {
 
   public void setRest(final Rest rest) {
     this.rest = rest;
+  }
+
+  public boolean isEnabled() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".enabled",
+        enabled,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_ENABLED_PROPERTIES);
+  }
+
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
   }
 }

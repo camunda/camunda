@@ -38,6 +38,8 @@ public class RocksDb {
       Set.of("zeebe.broker.experimental.rocksdb.disableWal");
   private static final Set<String> LEGACY_ENABLE_SST_PARTITIONING_PROPERTIES =
       Set.of("zeebe.broker.experimental.rocksdb.enableSstPartitioning");
+  private static final Set<String> LEGACY_MAX_MEMORY_FRACTION_PROPERTIES =
+      Set.of("zeebe.broker.experimental.rocksdb.maxMemoryFraction");
 
   /**
    * Specify custom column family options overwriting Zeebe's own defaults. WARNING: This setting
@@ -82,6 +84,14 @@ public class RocksDb {
    * of 0.1 means 10% of total system memory will be allocated to RocksDB.
    */
   private double memoryFraction = 0.1;
+
+  /**
+   * Configures the maximum fraction of total system memory that RocksDB is allowed to use, as a
+   * safety cap independent of the configured {@link #memoryAllocationStrategy}. The value must be
+   * between 0 and 1 (exclusive), or -1 to disable the check (the default). For example, a value of
+   * 0.5 means RocksDB is never allowed to use more than 50% of total system memory.
+   */
+  private double maxMemoryFraction = -1;
 
   /**
    * Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
@@ -199,6 +209,19 @@ public class RocksDb {
     this.memoryFraction = memoryFraction;
   }
 
+  public double getMaxMemoryFraction() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".max-memory-fraction",
+        maxMemoryFraction,
+        Double.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_MAX_MEMORY_FRACTION_PROPERTIES);
+  }
+
+  public void setMaxMemoryFraction(final double maxMemoryFraction) {
+    this.maxMemoryFraction = maxMemoryFraction;
+  }
+
   public int getMaxOpenFiles() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-open-files",
@@ -288,6 +311,8 @@ public class RocksDb {
         + accessMetrics
         + ", memoryLimit="
         + memoryLimit
+        + ", maxMemoryFraction="
+        + maxMemoryFraction
         + ", maxOpenFiles="
         + maxOpenFiles
         + ", maxWriteBufferNumber="

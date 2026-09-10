@@ -98,8 +98,11 @@ final class PhysicalTenantOverridePolicyValidation {
               // camunda.license.* — one license per installation
               "license.key",
               // camunda.api.* — a broker process has exactly one embedded gateway; a per-tenant
-              // override of its bind address/port/SSL/long-polling settings is silently ignored
-              // (#56648)
+              // override of whether it runs at all, or of its bind address/port/SSL/long-polling
+              // settings, is silently ignored (#56648): BrokerStartupProcess reads
+              // getGateway().isEnable() once from the root BrokerCfg at broker startup, before any
+              // per-tenant config exists.
+              "api.enabled",
               "api.rest.executor",
               "api.grpc",
               "api.long-polling",
@@ -116,12 +119,15 @@ final class PhysicalTenantOverridePolicyValidation {
               "data.primary-storage.disk",
               // #56648: RocksDbResources sizes one shared block-cache/write-buffer pool from the
               // root config by design ("adding physical tenants does not multiply RocksDB memory
-              // usage") — a per-tenant override of these three is silently ignored; sibling
+              // usage") — a per-tenant override of these is silently ignored; sibling
               // rocks-db.* knobs (column-family-options, max-open-files, ...) remain overridable
               // since they are applied per partition
               "data.primary-storage.rocks-db.memory-limit",
               "data.primary-storage.rocks-db.memory-allocation-strategy",
               "data.primary-storage.rocks-db.memory-fraction",
+              // safety cap on the same shared memory pool as memory-fraction above, not a
+              // per-partition setting
+              "data.primary-storage.rocks-db.max-memory-fraction",
               // camunda.security.* — identity-security settings that must apply uniformly
               "security.authentication.method",
               "security.authentication.unprotected-api",
