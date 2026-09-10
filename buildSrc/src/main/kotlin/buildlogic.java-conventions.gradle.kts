@@ -2,6 +2,7 @@ import com.diffplug.gradle.spotless.SpotlessExtension
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.provider.Provider
+import org.gradle.jvm.tasks.Jar
 
 fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
   value.isEmpty() || value.toBoolean()
@@ -56,6 +57,19 @@ extensions.configure<SpotlessExtension> {
 }
 
 publishing { publications.create<MavenPublication>("maven") { from(components["java"]) } }
+
+tasks.withType<Jar>().configureEach {
+  manifest {
+    attributes(
+      "Created-By" to "Gradle ${gradle.gradleVersion}",
+      "Java-Version" to java.targetCompatibility.majorVersion,
+      "Build-Jdk-Spec" to JavaVersion.current().majorVersion,
+      "Implementation-Title" to (project.description ?: project.name),
+      "Implementation-Version" to project.version.toString(),
+      "Implementation-Vendor" to "Camunda Services GmbH",
+    )
+  }
+}
 
 tasks.withType<JavaCompile>().configureEach {
   options.encoding = "utf-8"
