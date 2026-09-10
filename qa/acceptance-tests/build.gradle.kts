@@ -118,7 +118,7 @@ dependencies {
   testImplementation(libs.io.github.openfeign.feign.core)
   testImplementation(libs.org.apache.commons.commons.lang3)
   testImplementation(project(":zeebe-backup-store-azure"))
-  testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
+  testImplementation(libs.org.junit.platform.junit.platform.commons)
   testImplementation(libs.com.auth0.java.jwt)
   testImplementation(libs.com.nimbusds.nimbus.jose.jwt)
   testImplementation(libs.io.netty.netty.handler)
