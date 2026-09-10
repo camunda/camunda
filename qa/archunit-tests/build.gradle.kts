@@ -39,7 +39,7 @@ dependencies {
   testImplementation(libs.org.opensearch.client.opensearch.java)
   testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
   testImplementation(libs.jakarta.validation.jakarta.validation.api)
-  testImplementation(libs.org.springaicommunity.mcp.annotations)
+  testImplementation(libs.org.springframework.ai.spring.ai.mcp.annotations)
   testImplementation(libs.org.immutables.value)
 }
 

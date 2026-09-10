@@ -6,42 +6,45 @@ import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element
 import org.xml.sax.InputSource
 
-fun parsePomProperties(xml: String): Map<String, String> {
-  val db = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-  val result = mutableMapOf<String, String>()
-  val nodes =
-    (db.parse(InputSource(xml.reader())).documentElement.getElementsByTagName("properties").item(0)
-        as? Element)
-      ?.childNodes ?: return result
-  for (i in 0 until nodes.length) {
-    val n = nodes.item(i)
-    if (n is Element) result[n.tagName] = n.textContent.trim()
-  }
-  return result
+fun <T> parsePom(xml: String, reader: (Element) -> T): T {
+  val root =
+    DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(InputSource(xml.reader()))
+  return reader(root.documentElement)
 }
 
-fun parsePomProjectVersion(xml: String): String? {
-  val db = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-  val root = db.parse(InputSource(xml.reader())).documentElement
-  val parentVersion =
-    (root.getElementsByTagName("parent").item(0) as? Element)
-      ?.getElementsByTagName("version")
-      ?.item(0)
-      ?.textContent
-      ?.trim()
-  if (!parentVersion.isNullOrBlank()) {
-    return parentVersion
-  }
-
-  val childNodes = root.childNodes
-  for (i in 0 until childNodes.length) {
-    val node = childNodes.item(i)
-    if (node is Element && node.tagName == "version") {
-      return node.textContent.trim()
+fun parsePomProperties(xml: String): Map<String, String> =
+  parsePom(xml) { root ->
+    val result = mutableMapOf<String, String>()
+    val properties = root.getElementsByTagName("properties").item(0) as? Element
+    val nodes = properties?.childNodes ?: return@parsePom result
+    for (i in 0 until nodes.length) {
+      val node = nodes.item(i)
+      if (node is Element) result[node.tagName] = node.textContent.trim()
     }
+    result
   }
-  return null
-}
+
+fun parsePomProjectVersion(xml: String): String? =
+  parsePom(xml) { root ->
+    val parentVersion =
+      (root.getElementsByTagName("parent").item(0) as? Element)
+        ?.getElementsByTagName("version")
+        ?.item(0)
+        ?.textContent
+        ?.trim()
+    if (!parentVersion.isNullOrBlank()) {
+      return@parsePom parentVersion
+    }
+
+    val childNodes = root.childNodes
+    for (i in 0 until childNodes.length) {
+      val node = childNodes.item(i)
+      if (node is Element && node.tagName == "version") {
+        return@parsePom node.textContent.trim()
+      }
+    }
+    null
+  }
 
 val pomVersions: Map<String, String> =
   parsePomProperties(
@@ -49,15 +52,12 @@ val pomVersions: Map<String, String> =
   )
 
 val bomPomVersions: Map<String, String> =
-  parsePomProperties(
-    providers.fileContents(layout.rootDirectory.file("bom/pom.xml")).asText.get()
-  )
+  parsePomProperties(providers.fileContents(layout.rootDirectory.file("bom/pom.xml")).asText.get())
 
 val testingCamundaProcessTestLangchain4jPomVersions: Map<String, String> =
   parsePomProperties(
-    providers.fileContents(
-        layout.rootDirectory.file("testing/camunda-process-test-langchain4j/pom.xml")
-      )
+    providers
+      .fileContents(layout.rootDirectory.file("testing/camunda-process-test-langchain4j/pom.xml"))
       .asText
       .get()
   )
@@ -71,6 +71,14 @@ val optimizePomVersions: Map<String, String> =
     providers.fileContents(layout.rootDirectory.file("optimize/pom.xml")).asText.get()
   )
 
+val camundaSpringBootStarterPomVersions: Map<String, String> =
+  parsePomProperties(
+    providers
+      .fileContents(layout.rootDirectory.file("clients/camunda-spring-boot-starter/pom.xml"))
+      .asText
+      .get()
+  )
+
 val rootPomVersion =
   parsePomProjectVersion(providers.fileContents(layout.rootDirectory.file("pom.xml")).asText.get())
     ?: error("Missing Maven project version from pom.xml")
@@ -80,6 +88,9 @@ fun pomVersion(key: String) =
 
 fun optimizePomVersion(key: String) =
   optimizePomVersions[key] ?: error("Missing Optimize POM property: $key")
+
+fun starterPomVersion(key: String) =
+  camundaSpringBootStarterPomVersions[key] ?: error("Missing starter POM property: $key")
 
 fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
   value.isEmpty() || value.toBoolean()
@@ -147,7 +158,7 @@ dependencyResolutionManagement {
       version("asm", pomVersion("version.asm"))
       version("archunit", pomVersion("version.archunit"))
       // used in camunda-spring-boot-starter and camunda-spring-boot-3-starter test dependencies
-      version("aspectjweaver", "1.9.25.1")
+      version("aspectjweaver", starterPomVersion("version.aspectjweaver"))
       version("assertj", pomVersion("version.assertj"))
       version("assertj-assertions-generator", pomVersion("version.assertj-assertions-generator"))
       version("auth0", pomVersion("version.auth0"))
@@ -196,8 +207,7 @@ dependencyResolutionManagement {
       version("com-networknt-json-schema-validator", pomVersion("version.json-schema-validator"))
       version("com-nimbusds-nimbus-jose-jwt", pomVersion("version.nimbus-jose-jwt"))
       version("com-nimbusds-oauth2-oidc-sdk", pomVersion("version.nimbus-sdk"))
-      // Oracle JDBC driver; not in parent/pom.xml or Spring Boot BOM
-      version("com-oracle-database-jdbc-ojdbc8", "23.9.0.25.07")
+      // Oracle JDBC is managed by the Spring Boot BOM.
       version("com-unboundid-unboundid-ldapsdk", pomVersion("version.unboundid-ldapsdk"))
       version("commons-codec", pomVersion("version.commons-codec"))
       version("commons-logging", pomVersion("version.commons-logging"))
@@ -215,16 +225,15 @@ dependencyResolutionManagement {
       version("httpcomponents", pomVersion("version.httpcomponents"))
       version("identity", pomVersion("version.identity"))
       version("immutables", pomVersion("version.immutables"))
-      // from debug-cli/pom.xml
-      version("info-picocli-picocli", "4.7.7")
+      // from parent/pom.xml
+      version("info-picocli-picocli", pomVersion("version.picocli"))
       version("instancio", pomVersion("version.instancio"))
       version("io-camunda-security-library-api", pomVersion("version.camunda-security-library"))
       version(
         "io-github-acm19-aws-request-signing-apache-interceptor",
         pomVersion("version.aws-signing"),
       )
-      // BoringSSL native bindings; separate versioning from netty BOM
-      version("io-netty-netty-tcnative-boringssl-static", "2.0.75.Final")
+      // BoringSSL native bindings are managed by the Netty BOM.
       version(
         "io-swagger-core-v3-swagger-annotations-jakarta",
         pomVersion("version.swagger-annotations"),
@@ -234,9 +243,11 @@ dependencyResolutionManagement {
       version("jakarta-annotation", pomVersion("version.jakarta-annotation"))
       version("jakarta-json", pomVersion("version.jakarta.json"))
       // Optimize explicitly overrides Spring Boot's managed version in optimize/backend/pom.xml.
-      version("jakarta-servlet-jakarta-servlet-api-optimize", "6.1.0")
+      version(
+        "jakarta-servlet-jakarta-servlet-api-optimize",
+        optimizePomVersion("version.servlet-api-optimize"),
+      )
       version("jakarta-validation-jakarta-validation-api", pomVersion("version.validation-api"))
-      version("jakarta-ws-rs-jakarta-ws-rs-api", "4.0.0")
       version("jakarta-xml-bind-jakarta-xml-bind-api", pomVersion("version.bind-api"))
       version("java", pomVersion("version.java"))
       version("javassist", pomVersion("version.javassist"))
@@ -277,7 +288,6 @@ dependencyResolutionManagement {
       version("opensearch", pomVersion("version.opensearch.client"))
       version("opensearch-java", pomVersion("version.opensearch-java"))
       // from clients/camunda-spring-boot-starter/pom.xml
-      version("org-aspectj-aspectjweaver", "1.9.25.1")
       version("org-apache-commons-commons-collections", pomVersion("version.commons-collections"))
       version("org-apache-commons-commons-collections4", pomVersion("version.commons-collections4"))
       version("org-apache-commons-commons-compress", pomVersion("version.commons-compress"))
@@ -289,8 +299,14 @@ dependencyResolutionManagement {
       version("org-apache-httpcomponents-httpasyncclient", pomVersion("version.httpasyncclient"))
       version("org-apache-httpcomponents-httpclient", pomVersion("version.httpclient"))
       // from build-tools/pom.xml (Maven uses plugin.version.surefire separately)
-      version("org-apache-maven-surefire-maven-surefire-common", pomVersion("version.maven-surefire-common"))
-      version("org-apache-maven-surefire-surefire-myextensions-api", pomVersion("version.surefire-extensions-api"))
+      version(
+        "org-apache-maven-surefire-maven-surefire-common",
+        pomVersion("version.maven-surefire-common"),
+      )
+      version(
+        "org-apache-maven-surefire-surefire-myextensions-api",
+        pomVersion("version.surefire-extensions-api"),
+      )
       version("org-camunda-bpm-camunda-license-check", pomVersion("version.camunda-license-check"))
       version("org-camunda-feel-feel-engine", pomVersion("version.feel-scala"))
       version("org-checkerframework-checker-qual", pomVersion("version.checker-qual"))
@@ -319,10 +335,6 @@ dependencyResolutionManagement {
       )
       version("org-reactivestreams-reactive-streams", pomVersion("version.reactive-streams"))
       version("org-rocksdb-rocksdbjni", pomVersion("version.rocksdbjni"))
-      // not in Spring Boot 4 BOM
-      version("spring-retry", "2.0.12")
-      // community Spring AI MCP library; not in Spring AI BOM
-      version("org-springaicommunity-mcp-annotations", "0.8.0")
       version("org-xmlunit-xmlunit-core", pomVersion("version.xmlunit-core"))
       version("org-yaml-snakeyaml", pomVersion("version.snakeyaml"))
       version("parsson", pomVersion("version.parsson"))
@@ -524,7 +536,7 @@ dependencyResolutionManagement {
       // version managed by buildlogic.optimize-conventions
       library("com-opencsv-opencsv", "com.opencsv", "opencsv").withoutVersion()
       library("com-oracle-database-jdbc-ojdbc8", "com.oracle.database.jdbc", "ojdbc8")
-        .versionRef("com-oracle-database-jdbc-ojdbc8")
+        .withoutVersion()
       // version managed by buildlogic.optimize-conventions
       library("com-sun-mail-jakarta-mail", "com.sun.mail", "jakarta.mail").withoutVersion()
       // version managed by buildlogic.optimize-conventions
@@ -549,8 +561,7 @@ dependencyResolutionManagement {
       library("com-vdurmont-semver4j", "com.vdurmont", "semver4j").withoutVersion()
       library("com-uber-nullaway-nullaway", "com.uber.nullaway", "nullaway")
         .versionRef("com-uber-nullaway-nullaway")
-      library("com-zaxxer-hikaricp", "com.zaxxer", "HikariCP")
-        .versionRef("com-zaxxer-hikaricp")
+      library("com-zaxxer-hikaricp", "com.zaxxer", "HikariCP").versionRef("com-zaxxer-hikaricp")
       library("commons-codec-commons-codec", "commons-codec", "commons-codec")
         .versionRef("commons-codec")
       library("commons-io-commons-io", "commons-io", "commons-io").versionRef("commons-io")
@@ -680,7 +691,7 @@ dependencyResolutionManagement {
           "io.netty",
           "netty-tcnative-boringssl-static",
         )
-        .versionRef("io-netty-netty-tcnative-boringssl-static")
+        .withoutVersion()
       library("io-netty-netty-transport", "io.netty", "netty-transport").withoutVersion()
       library("io-netty-netty-transport-classes-epoll", "io.netty", "netty-transport-classes-epoll")
         .withoutVersion()
@@ -777,7 +788,11 @@ dependencyResolutionManagement {
       library("jakarta-mail-jakarta-mail-api", "jakarta.mail", "jakarta.mail-api").withoutVersion()
       library("jakarta-servlet-jakarta-servlet-api", "jakarta.servlet", "jakarta.servlet-api")
         .withoutVersion()
-      library("jakarta-servlet-jakarta-servlet-api-optimize", "jakarta.servlet", "jakarta.servlet-api")
+      library(
+          "jakarta-servlet-jakarta-servlet-api-optimize",
+          "jakarta.servlet",
+          "jakarta.servlet-api",
+        )
         .versionRef("jakarta-servlet-jakarta-servlet-api-optimize")
       library(
           "jakarta-validation-jakarta-validation-api",
@@ -786,7 +801,7 @@ dependencyResolutionManagement {
         )
         .versionRef("jakarta-validation-jakarta-validation-api")
       library("jakarta-ws-rs-jakarta-ws-rs-api", "jakarta.ws.rs", "jakarta.ws.rs-api")
-        .versionRef("jakarta-ws-rs-jakarta-ws-rs-api")
+        .withoutVersion()
       library("jakarta-xml-bind-jakarta-xml-bind-api", "jakarta.xml.bind", "jakarta.xml.bind-api")
         .versionRef("jakarta-xml-bind-jakarta-xml-bind-api")
       library("javax-annotation-javax-annotation-api", "javax.annotation", "javax.annotation-api")
@@ -1127,8 +1142,6 @@ dependencyResolutionManagement {
       library("org-scala-lang-scala-library", "org.scala-lang", "scala-library").versionRef("scala")
       library("org-skyscreamer-jsonassert", "org.skyscreamer", "jsonassert").withoutVersion()
       library("org-slf4j-slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j")
-      library("org-springaicommunity-mcp-annotations", "org.springaicommunity", "mcp-annotations")
-        .versionRef("org-springaicommunity-mcp-annotations")
       library(
           "org-springdoc-springdoc-openapi-starter-common",
           "org.springdoc",
@@ -1393,8 +1406,6 @@ dependencyResolutionManagement {
           "spring-boot-jdbc",
         )
         .versionRef("spring-boot")
-      library("org-springframework-retry-spring-retry", "org.springframework.retry", "spring-retry")
-        .versionRef("spring-retry")
       library(
           "org-springframework-security-spring-security-config",
           "org.springframework.security",

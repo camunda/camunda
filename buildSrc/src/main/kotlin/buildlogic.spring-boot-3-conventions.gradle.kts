@@ -1,7 +1,13 @@
-val springBoot3Version = "3.5.16"
-val spring6Version = "6.2.19"
+import buildlogic.parsePomProperties
+import buildlogic.pomVersion
+
+val projectPomVersions =
+  parsePomProperties(providers.fileContents(layout.projectDirectory.file("pom.xml")).asText.get())
+val springBoot3Version = pomVersion(projectPomVersions, "version.spring-boot")
+val spring6Version = pomVersion(projectPomVersions, "version.spring")
 
 extra["springBoot3Version"] = springBoot3Version
+
 extra["spring6Version"] = spring6Version
 
 configurations.all {
