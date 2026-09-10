@@ -79,8 +79,7 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing password (#1)', async ({request}) => {
+  test('createAdminUser - Missing password (#1)', async ({request}) => {
     const requestBody = {
       username: null,
     };
@@ -94,8 +93,7 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing password (#2)', async ({request}) => {
+  test('createAdminUser - Missing password (#2)', async ({request}) => {
     const requestBody = {
       username: 'x',
     };
@@ -109,8 +107,7 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing username', async ({request}) => {
+  test('createAdminUser - Missing username', async ({request}) => {
     const requestBody = {
       password: 'x',
     };
@@ -134,8 +131,7 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing combo username,password', async ({
+  test('createAdminUser - Missing combo username,password', async ({
     request,
   }) => {
     const requestBody = {};
