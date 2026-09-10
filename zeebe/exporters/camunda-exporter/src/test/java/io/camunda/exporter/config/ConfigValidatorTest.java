@@ -95,7 +95,7 @@ public class ConfigValidatorTest {
     assertThatCode(() -> ConfigValidator.validate(config))
         .hasMessageContaining(
             String.format(
-                "CamundaExporter index.prefix must not exceed %d characters",
+                "CamundaExporter index.prefix must not exceed %d bytes",
                 IndexPrefixValidation.MAX_PREFIX_LENGTH))
         .isInstanceOf(ExporterException.class);
   }
@@ -108,6 +108,16 @@ public class ConfigValidatorTest {
 
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldNotAllowMultibyteIndexPrefixExceedingMaxLengthInBytes() {
+    // given - each 'é' is 2 UTF-8 bytes, so this has string length 120 but 240 bytes
+    final String testPrefix = "é".repeat(120);
+    config.getConnect().setIndexPrefix(testPrefix);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
   }
 
   @ParameterizedTest(name = "{0}")

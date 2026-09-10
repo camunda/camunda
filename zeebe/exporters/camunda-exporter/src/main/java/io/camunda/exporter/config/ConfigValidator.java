@@ -9,6 +9,7 @@ package io.camunda.exporter.config;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Predicate;
@@ -69,12 +70,12 @@ public final class ConfigValidator {
     if (IndexPrefixValidation.exceedsMaxLength(configuredPrefix)) {
       throw new ExporterException(
           String.format(
-              "CamundaExporter index.prefix must not exceed %d characters, to keep generated "
-                  + "index names within Elasticsearch/OpenSearch's 255-character limit. Current "
-                  + "value: '%s' (%d characters)",
+              "CamundaExporter index.prefix must not exceed %d bytes (UTF-8), to keep generated "
+                  + "index names within Elasticsearch/OpenSearch's 255-byte limit. Current "
+                  + "value: '%s' (%d bytes)",
               IndexPrefixValidation.MAX_PREFIX_LENGTH,
               configuredPrefix,
-              configuredPrefix.length()));
+              configuredPrefix.getBytes(StandardCharsets.UTF_8).length));
     }
 
     final Integer numberOfShards = configuration.getIndex().getNumberOfShards();
