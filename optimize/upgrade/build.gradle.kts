@@ -11,10 +11,10 @@ plugins {
 dependencies {
   implementation(project(":camunda-search-client-connect"))
   implementation(libs.io.github.netmikey.logunit.logunit.log4j2)
-  implementation(libs.co.elastic.clients.elasticsearch.java)
+  implementation(libs.co.elastic.clients.elasticsearch.java.optimize)
   implementation(libs.org.springframework.spring.context)
   implementation(libs.com.fasterxml.jackson.core.jackson.databind)
-  implementation(libs.org.elasticsearch.client.elasticsearch.rest.client)
+  implementation(libs.org.elasticsearch.client.elasticsearch.rest.client.optimize)
   implementation(libs.org.opensearch.client.opensearch.java) {
     exclude(group = "commons-logging", module = "commons-logging")
   }

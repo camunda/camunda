@@ -9,11 +9,22 @@ fun <T> parsePom(xml: String, reader: (Element) -> T): T {
   return reader(root.documentElement)
 }
 
+private fun Element.directChild(name: String): Element? {
+  val children = childNodes
+  for (i in 0 until children.length) {
+    val child = children.item(i)
+    if (child is Element && child.tagName == name) {
+      return child
+    }
+  }
+  return null
+}
+
 fun parsePomProperties(xml: String): Map<String, String> =
   parsePom(xml) { root ->
     val result = mutableMapOf<String, String>()
-    val properties = root.getElementsByTagName("properties").item(0) as? Element
-    val nodes = properties?.childNodes ?: return@parsePom result
+    val properties = root.directChild("properties") ?: return@parsePom result
+    val nodes = properties.childNodes
     for (i in 0 until nodes.length) {
       val node = nodes.item(i)
       if (node is Element) result[node.tagName] = node.textContent.trim()
@@ -21,8 +32,22 @@ fun parsePomProperties(xml: String): Map<String, String> =
     result
   }
 
-fun pomVersion(versions: Map<String, String>, key: String) =
-  versions[key] ?: error("Missing POM property: $key")
+private val pomPropertyReference = Regex("""\$\{([^}]+)}""")
+
+fun pomVersion(versions: Map<String, String>, key: String): String {
+  fun resolve(property: String, resolving: Set<String> = emptySet()): String {
+    if (property in resolving) {
+      error("Cyclic POM property reference: ${(resolving + property).joinToString(" -> ")}")
+    }
+
+    val value = versions[property] ?: error("Missing POM property: $property")
+    return pomPropertyReference.replace(value) { match ->
+      resolve(match.groupValues[1], resolving + property)
+    }
+  }
+
+  return resolve(key)
+}
 
 fun parsePomElement(xml: String, elementName: String): String =
   parsePom(xml) { root ->

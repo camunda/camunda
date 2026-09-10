@@ -4,14 +4,19 @@ import org.xml.sax.InputSource
 
 fun parsePomProperties(xml: String): Map<String, String> {
   val db = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+  val root = db.parse(InputSource(xml.reader())).documentElement
+  val properties =
+    (0 until root.childNodes.length)
+      .asSequence()
+      .map { root.childNodes.item(it) }
+      .filterIsInstance<Element>()
+      .firstOrNull { it.tagName == "properties" } ?: return emptyMap()
   val result = mutableMapOf<String, String>()
-  val nodes =
-    (db.parse(InputSource(xml.reader())).documentElement.getElementsByTagName("properties").item(0)
-        as? Element)
-      ?.childNodes ?: return result
-  for (i in 0 until nodes.length) {
-    val n = nodes.item(i)
-    if (n is Element) result[n.tagName] = n.textContent.trim()
+  for (i in 0 until properties.childNodes.length) {
+    val property = properties.childNodes.item(i)
+    if (property is Element) {
+      result[property.tagName] = property.textContent.trim()
+    }
   }
   return result
 }
@@ -21,7 +26,22 @@ val pomVersions: Map<String, String> =
     providers.fileContents(layout.projectDirectory.file("../parent/pom.xml")).asText.get()
   )
 
-fun pomVersion(key: String) = pomVersions[key] ?: error("Missing POM property: $key")
+private val pomPropertyReference = Regex("""\$\{([^}]+)}""")
+
+fun pomVersion(key: String): String {
+  fun resolve(property: String, resolving: Set<String> = emptySet()): String {
+    if (property in resolving) {
+      error("Cyclic POM property reference: ${(resolving + property).joinToString(" -> ")}")
+    }
+
+    val value = pomVersions[property] ?: error("Missing POM property: $property")
+    return pomPropertyReference.replace(value) { match ->
+      resolve(match.groupValues[1], resolving + property)
+    }
+  }
+
+  return resolve(key)
+}
 
 plugins { `kotlin-dsl` }
 
