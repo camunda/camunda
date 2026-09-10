@@ -42,7 +42,12 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Maximum number of connections allowed per route in the ES and OS connector connection pool. */
   private Integer maxConnectionsPerRoute;
 
-  /** How many shards the search engine database uses for all indices. */
+  /**
+   * How many shards the search engine database uses for indices that do not pin a shard count of
+   * their own. In practice that is the process-instance-volume indices; the remaining indices
+   * default to a single shard whatever this is set to. Use number-of-shards-per-index to override
+   * an individual index.
+   */
   private int numberOfShards = 1;
 
   /** How many replicas the search engine database uses for all indices. */
@@ -58,7 +63,8 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private Map<String, Integer> numberOfReplicasPerIndex = new HashMap<>();
 
   /** Per-index shard overrides. */
-  private Map<String, Integer> numberOfShardsPerIndex = new HashMap<>();
+  @NestedConfigurationProperty
+  private NumberOfShardsPerIndex numberOfShardsPerIndex = new NumberOfShardsPerIndex();
 
   /** Per-index refresh interval overrides. */
   private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
@@ -431,8 +437,10 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   /**
-   * Validates that a connection-pool limit, when set, is a positive value. A value of zero or less
-   * is a misconfiguration that would otherwise fail later with a cryptic Apache HttpClient error.
+   * Validates that a value, when set, is positive. Zero or less is a misconfiguration that would
+   * otherwise surface far from its cause — a cryptic Apache HttpClient error for a connection-pool
+   * limit, or a rejected schema creation naming neither the property nor the index for a shard
+   * count.
    *
    * @throws IllegalArgumentException if the value is set and not positive
    */
@@ -490,16 +498,28 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
   }
 
-  public Map<String, Integer> getNumberOfShardsPerIndex() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        prefix() + ".number-of-shards-per-index",
-        numberOfShardsPerIndex,
-        ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyShardsByIndexNameProperties());
+  /**
+   * @throws IllegalArgumentException if any index is configured with fewer than one shard
+   */
+  public NumberOfShardsPerIndex getNumberOfShardsPerIndex() {
+    final var shardsPerIndex =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            prefix() + ".number-of-shards-per-index",
+            numberOfShardsPerIndex,
+            NumberOfShardsPerIndex.class,
+            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            legacyShardsByIndexNameProperties());
+
+    shardsPerIndex
+        .toIndexNameMap()
+        .forEach(
+            (indexName, shards) ->
+                validatePositive(".number-of-shards-per-index." + indexName, shards));
+
+    return shardsPerIndex;
   }
 
-  public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
+  public void setNumberOfShardsPerIndex(final NumberOfShardsPerIndex numberOfShardsPerIndex) {
     this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 

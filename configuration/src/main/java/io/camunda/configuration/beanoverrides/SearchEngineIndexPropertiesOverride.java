@@ -68,8 +68,9 @@ public class SearchEngineIndexPropertiesOverride {
     if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
       override.setReplicasByIndexName(database.getNumberOfReplicasPerIndex());
     }
-    if (!database.getNumberOfShardsPerIndex().isEmpty()) {
-      override.setShardsByIndexName(database.getNumberOfShardsPerIndex());
+    final var shardsByIndexName = database.getNumberOfShardsPerIndex().toIndexNameMap();
+    if (!shardsByIndexName.isEmpty()) {
+      override.setShardsByIndexName(shardsByIndexName);
     }
     if (!database.getRefreshIntervalByIndexName().isEmpty()) {
       override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());

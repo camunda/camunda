@@ -27,6 +27,7 @@ import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexTemplate;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
@@ -227,6 +228,36 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               utils.listIndicesByAlias(indexDescriptors));
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public Map<String, Integer> getNumberOfShards(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfShards)
+                      .map(shards -> Map.entry(entry.getKey(), Integer.parseInt(shards)))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | ElasticsearchException e) {
+      // Deliberately not logged here: this read only ever backs a best-effort startup diagnostic,
+      // and logging at ERROR would page an operator about a failure the caller goes on to ignore.
+      // The caller owns the severity.
+      throw new SearchEngineException(
+          String.format("Failed to retrieve shard counts for indices '%s'", indexNames), e);
     }
   }
 

@@ -67,6 +67,7 @@ import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexTemplate;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
@@ -242,6 +243,36 @@ public class OpensearchEngineClient implements SearchEngineClient {
               utils.listIndicesByAlias(indexDescriptors));
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public Map<String, Integer> getNumberOfShards(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfShards)
+                      .map(shards -> Map.entry(entry.getKey(), shards))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | OpenSearchException e) {
+      // Deliberately not logged here: this read only ever backs a best-effort startup diagnostic,
+      // and logging at ERROR would page an operator about a failure the caller goes on to ignore.
+      // The caller owns the severity.
+      throw new SearchEngineException(
+          String.format("Failed to retrieve shard counts for indices '%s'", indexNames), e);
     }
   }
 

@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.convert.ApplicationConversionService;
@@ -670,6 +671,12 @@ public class UnifiedConfigurationHelper {
     final Class<?> rawClass = expectedType.resolve();
     final ResolvableType[] generics = expectedType.getGenerics();
 
+    // structured types with no generics: a legacy property whose value is spread over sub-keys
+    // (foo.bar=1, foo.baz=2) rather than held at the key itself, so there is no string to convert.
+    if (isBindablePojo(expectedType)) {
+      return bindFromEnvironment(legacyProperty, rawClass);
+    }
+
     // simple types
     if (generics.length == 0) {
       final String strValue = getEnvironmentProperty(legacyProperty);
@@ -733,10 +740,37 @@ public class UnifiedConfigurationHelper {
       return !getCollectionFromEnvironment(property).isEmpty();
     } else if (isPropertyMap(expectedType)) {
       return !getMapFromEnvironment(property).isEmpty();
+    } else if (isBindablePojo(expectedType)) {
+      // Nothing is set at the key itself, so presence means "at least one sub-key binds".
+      return bindFromEnvironment(property, expectedType.resolve()) != null;
     } else {
       return environment.containsProperty(property)
           || environment.containsProperty(toDottedKebabCase(property));
     }
+  }
+
+  /**
+   * Whether the expected type has to be assembled from sub-keys rather than parsed from a single
+   * value.
+   *
+   * <p>Scalars, enums and anything else the conversion service can build from a string keep the
+   * plain {@code getProperty} path. Collections and maps have their own branches. What is left is a
+   * structured type — a POJO whose fields come from {@code <property>.<field>} entries — which the
+   * string path can only ever resolve to {@code null}, because no property exists at the bare key.
+   */
+  private static boolean isBindablePojo(final ResolvableType expectedType) {
+    final Class<?> rawClass = expectedType.resolve();
+    return rawClass != null
+        && !rawClass.isEnum()
+        && !isPropertyCollection(expectedType)
+        && !isPropertyMap(expectedType)
+        && !CONVERSION_SERVICE.canConvert(String.class, rawClass);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> T bindFromEnvironment(final String property, final Class<?> rawClass) {
+    final var normalizedProperty = ConfigurationPropertyName.adapt(property, '.').toString();
+    return (T) Binder.get(environment).bind(normalizedProperty, Bindable.of(rawClass)).orElse(null);
   }
 
   private static boolean isPropertyCollection(final ResolvableType expectedType) {
