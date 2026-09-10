@@ -127,6 +127,7 @@ jobs:
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
       ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      tooling-ref: ${{ github.event.pull_request.head.sha || inputs.ref || github.event.inputs.ref || github.ref_name }}
       scenario: realistic
       secondary-storage-type: elasticsearch
       # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
@@ -161,10 +162,9 @@ jobs:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
 
   # ---------------------------------------------------------------------------
-  # Upgrade chain: deploys base-ref's setup code (the version already on main
-  # before this PR), then updates it to the PR ref. This exercises upgrading
-  # from an older setup-code version, which the install chain above cannot
-  # catch since it only ever deploys the PR's own code.
+  # Upgrade chain: deploys base-ref setup code, then updates it to the PR ref.
+  # This exercises setup-code upgrades, while the install chain only deploys
+  # the PR's own code.
   # ---------------------------------------------------------------------------
 
   smoke-upgrade-install:
@@ -175,6 +175,7 @@ jobs:
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
       ref: ${{ inputs.base-ref || 'main' }}
+      tooling-ref: ${{ github.event.pull_request.head.sha || inputs.ref || github.event.inputs.ref || github.ref_name }}
       scenario: realistic
       secondary-storage-type: elasticsearch
       ttl: 1
@@ -200,6 +201,7 @@ jobs:
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
       ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      tooling-ref: ${{ github.event.pull_request.head.sha || inputs.ref || github.event.inputs.ref || github.ref_name }}
       scenario: realistic
       secondary-storage-type: elasticsearch
       ttl: 1

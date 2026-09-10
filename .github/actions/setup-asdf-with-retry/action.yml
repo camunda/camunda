@@ -1,0 +1,50 @@
+# owner: @camunda/engineering-operations
+name: Setup asdf with retry
+
+description: >
+  Installs asdf and asdf plugins with retries, so a transient network failure
+  while downloading asdf or a tool version does not fail the whole job.
+  The asdf install flow runs as shell so nick-fields/retry can wrap it.
+
+inputs:
+  plugins:
+    description: Space or newline separated asdf plugin names to add, read from `.tool-versions`.
+    required: true
+  working-directory:
+    description: Directory containing `.tool-versions`.
+    required: false
+    default: "."
+  asdf_version:
+    description: asdf release version to install.
+    required: false
+    default: "0.20.0"
+  max_attempts:
+    description: Maximum number of attempts before giving up.
+    required: false
+    default: "3"
+  retry_wait_seconds:
+    description: Seconds to wait between attempts.
+    required: false
+    default: "60"
+  timeout_minutes:
+    description: Timeout per attempt in minutes.
+    required: false
+    default: "2"
+
+runs:
+  using: composite
+  steps:
+    - name: Install asdf tools
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      env:
+        ASDF_VERSION: ${{ inputs.asdf_version }}
+        PLUGINS: ${{ inputs.plugins }}
+        WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        SETUP_ASDF_WITH_RETRY_ACTION_PATH: ${{ github.action_path }}
+      with:
+        max_attempts: ${{ inputs.max_attempts }}
+        retry_wait_seconds: ${{ inputs.retry_wait_seconds }}
+        timeout_minutes: ${{ inputs.timeout_minutes }}
+        shell: bash
+        on_retry_command: rm -rf "${HOME}/.asdf"
+        command: '"${SETUP_ASDF_WITH_RETRY_ACTION_PATH}/install-asdf-tools.sh"'
