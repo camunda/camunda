@@ -87,7 +87,7 @@ test.describe('Process Definition Draining Deletion — work already in flight',
 
   test.afterEach(async () => {
     for (const processInstanceKey of instancesToCancel.filter(Boolean)) {
-      await cancelProcessInstance(processInstanceKey);
+      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
     }
   });
 

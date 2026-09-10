@@ -77,7 +77,7 @@ test.afterAll(async () => {
   // Teardown stays best-effort: a beforeAll that fails before the instance
   // exists would otherwise throw here and mask the original failure.
   if (processInstanceKey) {
-    await cancelProcessInstance(processInstanceKey);
+    await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
   }
 });
 
@@ -254,7 +254,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
     for (const processInstanceKey of instancesToCancel.filter(Boolean)) {
-      await cancelProcessInstance(processInstanceKey);
+      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
     }
   });
 

@@ -52,7 +52,7 @@ test.describe('Process Definition Draining State', () => {
   // of the run, blocking every later test that resolves it.
   test.afterEach(async () => {
     for (const processInstanceKey of instancesToCancel.filter(Boolean)) {
-      await cancelProcessInstance(processInstanceKey);
+      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
     }
   });
 

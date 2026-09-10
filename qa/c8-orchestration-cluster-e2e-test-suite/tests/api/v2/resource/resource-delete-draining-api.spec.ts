@@ -108,7 +108,7 @@ test.describe('Process Definition Draining Deletion API', () => {
   // reuses it, so every instance started here has to be terminated.
   test.afterEach(async () => {
     for (const processInstanceKey of instancesToCancel.filter(Boolean)) {
-      await cancelProcessInstance(processInstanceKey);
+      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
     }
   });
 
