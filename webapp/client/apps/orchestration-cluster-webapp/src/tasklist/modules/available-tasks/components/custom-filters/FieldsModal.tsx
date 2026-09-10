@@ -599,7 +599,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 										</>
 									) : (
 										<>
-											<Button variant="secondary" onClick={() => onDelete(values?.name ?? '')} type="button">
+											<Button variant="destructive" onClick={() => onDelete(values?.name ?? '')} type="button">
 												{t('tasklist.customFiltersModalDeleteButton')}
 											</Button>
 											<Button variant="secondary" onClick={onClose} type="button">

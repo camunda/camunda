@@ -30,7 +30,7 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search
 
 	if (auditLogs.length === 0) {
 		return (
-			<div className="flex h-full min-h-0 w-full flex-col pt-4" data-testid="history-tab-content">
+			<div className="flex h-full min-h-0 w-full flex-col" data-testid="history-tab-content">
 				<div className="min-h-0 w-full flex-1 overflow-auto px-4 pb-4">
 					<HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={search} />
 				</div>
@@ -39,7 +39,7 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search
 	}
 
 	return (
-		<div className="flex h-full min-h-0 w-full flex-col pt-4" data-testid="history-tab-content">
+		<div className="flex h-full min-h-0 w-full flex-col" data-testid="history-tab-content">
 			<div
 				className="min-h-0 w-full flex-1 overflow-auto px-4 pb-4"
 				data-testid="history-scroll-container"

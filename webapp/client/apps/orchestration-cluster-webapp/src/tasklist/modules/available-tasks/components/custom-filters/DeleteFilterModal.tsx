@@ -16,7 +16,7 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	Button,
+	buttonVariants,
 } from '@camunda/design-system';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {useCallback} from 'react';
@@ -63,10 +63,8 @@ const DeleteFilterModal: React.FC<Props> = ({isOpen, onClose, onDelete, filterId
 				</AlertDialogDescription>
 				<AlertDialogFooter>
 					<AlertDialogCancel>{t('tasklist.tasksFiltersModalCancelButtonLabel')}</AlertDialogCancel>
-					<AlertDialogAction asChild>
-						<Button type="button" variant="destructive" onClick={handleDelete}>
-							{t('tasklist.customFiltersModalConfirmDeletionButton')}
-						</Button>
+					<AlertDialogAction className={buttonVariants({variant: 'destructive'})} onClick={handleDelete}>
+						{t('tasklist.customFiltersModalConfirmDeletionButton')}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

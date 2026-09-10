@@ -122,6 +122,10 @@ class TaskDetailPage extends BasePage {
 		return this.detailsHeader.getByRole('button', {name: 'Assign to me'});
 	}
 
+	get assignmentButton() {
+		return this.detailsHeader.getByRole('button', {name: /^(Assign to me|Unassign)$/});
+	}
+
 	get unassignButton() {
 		return this.detailsHeader.getByRole('button', {name: 'Unassign'});
 	}

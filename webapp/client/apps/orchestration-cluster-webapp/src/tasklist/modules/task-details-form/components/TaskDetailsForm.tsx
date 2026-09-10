@@ -81,9 +81,9 @@ const TaskDetailsForm: React.FC<Props> = ({
 
 	return (
 		<div className="h-full min-h-0 w-full" data-testid="task-tab-content">
-			<div className="h-full w-full overflow-y-auto" data-testid="embedded-form" tabIndex={-1}>
+			<div className="h-full w-full" data-testid="embedded-form" tabIndex={-1}>
 				<div className="flex min-h-full w-full flex-col items-center">
-					<div className="mt-8 w-full px-4 pb-4">
+					<div className="w-full px-4 pb-4">
 						<Card className="pt-0">
 							<CardContent>
 								<CamundaFormRenderer

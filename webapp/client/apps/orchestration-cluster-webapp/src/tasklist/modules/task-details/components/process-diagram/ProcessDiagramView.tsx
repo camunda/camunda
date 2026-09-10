@@ -21,9 +21,9 @@ const ProcessDiagramView: React.FC<Props> = ({xml, elementId, processName, proce
 	const {t} = useTranslation();
 
 	return (
-		<div className="flex h-full w-full flex-col p-4">
-			<Card className="min-h-0 w-full flex-1 gap-0 py-0">
-				<CardHeader className="border-b border-border py-4">
+		<div className="flex h-full w-full flex-col p-4 pt-0">
+			<Card className="min-h-0 w-full flex-1">
+				<CardHeader>
 					<CardTitle>{processName}</CardTitle>
 					<CardAction>
 						<Badge variant="neutral">{t('tasklist.processViewProcessVersion', {version: processVersion})}</Badge>
