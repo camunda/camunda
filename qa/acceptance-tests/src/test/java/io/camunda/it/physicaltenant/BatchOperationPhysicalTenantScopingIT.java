@@ -332,8 +332,6 @@ final class BatchOperationPhysicalTenantScopingIT {
     action.accept(tenantB());
   }
 
-  private record Bystander(String label, CamundaClient admin) {}
-
   // --- shared assertions ---------------------------------------------------------------
 
   /**
@@ -431,14 +429,18 @@ final class BatchOperationPhysicalTenantScopingIT {
 
   // --- counts --------------------------------------------------------------------------
 
+  // These read page().totalItems() rather than items().size(). A leak makes a count too high, and
+  // items().size() is capped at the page limit — so the one direction that matters here is exactly
+  // the one a page-limited count would clamp back into looking correct.
+
   private static long instanceCount(final CamundaClient admin, final String processId) {
     return admin
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()
-        .items()
-        .size();
+        .page()
+        .totalItems();
   }
 
   private static long activeElementCount(
@@ -452,8 +454,8 @@ final class BatchOperationPhysicalTenantScopingIT {
                     .state(ElementInstanceState.ACTIVE))
         .send()
         .join()
-        .items()
-        .size();
+        .page()
+        .totalItems();
   }
 
   private static long jobCount(
@@ -469,8 +471,8 @@ final class BatchOperationPhysicalTenantScopingIT {
             })
         .send()
         .join()
-        .items()
-        .size();
+        .page()
+        .totalItems();
   }
 
   private static long activeIncidentCount(final CamundaClient admin, final String processId) {
@@ -479,8 +481,8 @@ final class BatchOperationPhysicalTenantScopingIT {
         .filter(f -> f.processDefinitionId(processId).state(IncidentState.ACTIVE))
         .send()
         .join()
-        .items()
-        .size();
+        .page()
+        .totalItems();
   }
 
   private static long decisionInstanceCount(final CamundaClient admin, final String decisionId) {
@@ -489,8 +491,8 @@ final class BatchOperationPhysicalTenantScopingIT {
         .filter(f -> f.decisionDefinitionId(decisionId))
         .send()
         .join()
-        .items()
-        .size();
+        .page()
+        .totalItems();
   }
 
   // --- awaits --------------------------------------------------------------------------
@@ -546,4 +548,7 @@ final class BatchOperationPhysicalTenantScopingIT {
         .ignoreExceptions()
         .untilAsserted(() -> assertThat(count.getAsLong()).isEqualTo(expected));
   }
+
+  /** A tenant that did not create the batch and whose data must therefore not change. */
+  private record Bystander(String label, CamundaClient admin) {}
 }
