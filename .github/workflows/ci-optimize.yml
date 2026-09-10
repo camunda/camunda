@@ -126,8 +126,16 @@ jobs:
         # zizmor: ignore[artipacked]
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Transient GitHub HTTP/2 cancels fail this fetch with exit 128; retry
+      # in-step so the 30m job is not spent on a one-shot RPC flake.
       - name: Fetch main branch
-        run: git fetch origin main:refs/remote/origin/main
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          shell: bash
+          command: git fetch origin main:refs/remote/origin/main
 
       - name: Setup Maven
         uses: ./.github/actions/setup-build
@@ -225,8 +233,16 @@ jobs:
         # zizmor: ignore[artipacked]
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Transient GitHub HTTP/2 cancels fail this fetch with exit 128; retry
+      # in-step so the 30m job is not spent on a one-shot RPC flake.
       - name: Fetch main branch
-        run: git fetch origin main:refs/remote/origin/main
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          shell: bash
+          command: git fetch origin main:refs/remote/origin/main
 
       - name: Setup Maven
         uses: ./.github/actions/setup-build
