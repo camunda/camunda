@@ -50,12 +50,13 @@ public final class LsnReplicationSignalStrategy
    * position, or if quorum isn't met.
    */
   @Override
-  public long computeConfirmedMarker(final List<ReplicationLsnStatus> statuses) {
+  public long computeConfirmedMarker(
+      final List<ReplicationLsnStatus> statuses, final Optional<String> currentPrimaryRegion) {
     return RegionAwareQuorum.evaluate(
             statuses,
             config,
             regionResolver,
-            resolveCurrentPrimaryRegion(),
+            currentPrimaryRegion,
             ReplicationLsnStatus::logStatus,
             true)
         .orElse(UNCONFIRMED);
@@ -69,11 +70,12 @@ public final class LsnReplicationSignalStrategy
    */
   @Override
   public Duration computePauseLag(
-      final List<ReplicationLsnStatus> statuses, final Optional<Duration> queueHeadAge) {
+      final List<ReplicationLsnStatus> statuses,
+      final Optional<Duration> queueHeadAge,
+      final Optional<String> currentPrimaryRegion) {
     final boolean quorumNotMet =
         queueHeadAge.isEmpty()
-            && !RegionAwareQuorum.quorumMet(
-                statuses, config, regionResolver, resolveCurrentPrimaryRegion());
+            && !RegionAwareQuorum.quorumMet(statuses, config, regionResolver, currentPrimaryRegion);
     if (quorumNotMet) {
       return PAUSE_WORST_CASE;
     }
@@ -81,16 +83,18 @@ public final class LsnReplicationSignalStrategy
   }
 
   @Override
-  public List<String> regionsBelowQuorum(final List<ReplicationLsnStatus> statuses) {
+  public List<String> regionsBelowQuorum(
+      final List<ReplicationLsnStatus> statuses, final Optional<String> currentPrimaryRegion) {
     return RegionAwareQuorum.regionsBelowQuorum(
-        statuses, config, regionResolver, resolveCurrentPrimaryRegion());
+        statuses, config, regionResolver, currentPrimaryRegion);
   }
 
   /**
    * Resolved fresh on every call from the primary's live connection (never from static config), so
    * it reflects whichever region currently hosts the primary, including after a failover.
    */
-  private Optional<String> resolveCurrentPrimaryRegion() {
+  @Override
+  public Optional<String> resolveCurrentPrimaryRegion() {
     return regionResolver.resolve(lsnProvider.getCurrentReplicaLabel());
   }
 }

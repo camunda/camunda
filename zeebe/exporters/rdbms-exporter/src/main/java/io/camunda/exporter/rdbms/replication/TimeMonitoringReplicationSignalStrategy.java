@@ -50,12 +50,13 @@ public final class TimeMonitoringReplicationSignalStrategy
    * quorum isn't met.
    */
   @Override
-  public long computeConfirmedMarker(final List<ReplicationLagStatus> statuses) {
+  public long computeConfirmedMarker(
+      final List<ReplicationLagStatus> statuses, final Optional<String> currentPrimaryRegion) {
     return RegionAwareQuorum.evaluate(
             statuses,
             config,
             regionResolver,
-            resolveCurrentPrimaryRegion(),
+            currentPrimaryRegion,
             s -> s.replicatedUntilMs() != null ? s.replicatedUntilMs() : UNCONFIRMED,
             true)
         .orElse(UNCONFIRMED);
@@ -71,13 +72,15 @@ public final class TimeMonitoringReplicationSignalStrategy
    */
   @Override
   public Duration computePauseLag(
-      final List<ReplicationLagStatus> statuses, final Optional<Duration> queueHeadAge) {
+      final List<ReplicationLagStatus> statuses,
+      final Optional<Duration> queueHeadAge,
+      final Optional<String> currentPrimaryRegion) {
     final OptionalLong worstLagMs =
         RegionAwareQuorum.evaluate(
             statuses,
             config,
             regionResolver,
-            resolveCurrentPrimaryRegion(),
+            currentPrimaryRegion,
             s -> s.replicationLagMs() != null ? s.replicationLagMs() : Long.MAX_VALUE,
             false);
     if (worstLagMs.isEmpty()) {
@@ -87,16 +90,18 @@ public final class TimeMonitoringReplicationSignalStrategy
   }
 
   @Override
-  public List<String> regionsBelowQuorum(final List<ReplicationLagStatus> statuses) {
+  public List<String> regionsBelowQuorum(
+      final List<ReplicationLagStatus> statuses, final Optional<String> currentPrimaryRegion) {
     return RegionAwareQuorum.regionsBelowQuorum(
-        statuses, config, regionResolver, resolveCurrentPrimaryRegion());
+        statuses, config, regionResolver, currentPrimaryRegion);
   }
 
   /**
    * Resolved fresh on every call from the primary's live connection (never from static config), so
    * it reflects whichever region currently hosts the primary, including after a failover.
    */
-  private Optional<String> resolveCurrentPrimaryRegion() {
+  @Override
+  public Optional<String> resolveCurrentPrimaryRegion() {
     return regionResolver.resolve(statusProvider.getCurrentReplicaLabel());
   }
 }
