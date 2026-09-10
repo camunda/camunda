@@ -1,6 +1,6 @@
-# Minimal isolation stack: Elasticsearch (camunda's required secondary storage) + camunda only.
-# No Keycloak / Identity / frontend / backend — used to isolate whether the camunda image
-# itself reaches readiness, independent of the surrounding Optimize smoke stack.
+# Isolation stack: Elasticsearch + Keycloak + Identity + camunda (no frontend / backend).
+# Adds the two auth JVMs (Keycloak, Identity) back on top of the camunda-only baseline to
+# test whether their startup contention is what tips camunda past the readiness gate.
 #
 # Knobs (override via env when running):
 #   CAMUNDA_IMAGE            image to run (default camunda/camunda:SNAPSHOT; set to camunda/camunda:current-test for a source build)
@@ -37,6 +37,56 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+  keycloak:
+    container_name: keycloak
+    image: camunda/keycloak:quay-26@sha256:3eba2912da4668619c8a7b6cdc00138d20a1f293ce3fcba980ce70ec2ed7f8d0
+    command: [start]
+    ports:
+      - '18080:8080'
+    healthcheck:
+      test: bash -c "echo -e 'GET /auth HTTP/1.0\r\n\r\n' >/dev/tcp/127.0.0.1/8080 || exit 1"
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: dev-file
+      KC_CACHE: ispn
+      KC_HTTP_ENABLED: 'true'
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HEALTH_ENABLED: 'true'
+      KC_HOSTNAME_STRICT: 'false'
+      JAVA_OPTS_APPEND: '-Dquarkus.http.http2=false'
+  identity:
+    depends_on:
+      - keycloak
+    restart: on-failure
+    container_name: identity
+    image: camunda/identity:${CAMUNDA_VERSION:-SNAPSHOT}
+    ports:
+      - '8081:8081'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--tries=1', '--spider', 'http://localhost:8082/actuator/health']
+      interval: 5s
+      timeout: 15s
+      retries: 30
+      start_period: 60s
+    environment:
+      SERVER_PORT: 8081
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:3000
+      KEYCLOAK_USERS_0_USERNAME: 'demo'
+      KEYCLOAK_USERS_0_PASSWORD: 'demo'
+      KEYCLOAK_USERS_0_EMAIL: 'demo@example.com'
+      KEYCLOAK_USERS_0_FIRST_NAME: 'demo'
+      KEYCLOAK_USERS_0_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_0_ROLES_1: 'ManagementIdentity'
   camunda:
     image: ${CAMUNDA_IMAGE:-camunda/camunda:SNAPSHOT}
     pull_policy: ${CAMUNDA_PULL_POLICY:-missing}
