@@ -80,20 +80,19 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 
 ### Configuring as an external JAR
 
-The examples above assume the exporter class is already on the broker's classpath, which is
-the case starting with Camunda 8.10, where the exporter ships in-tree. The unified
-`camunda.data.exporters.<name>` configuration used above supports `jar-path` directly. For
-earlier versions, where the exporter is not included in the broker, you can still load a
-self-built exporter jar using `jar-path` under the classic `zeebe.broker.exporters.<name>`
-configuration, just as you would for any external Zeebe exporter:
+By default, configuring the exporter assumes its class is already on the broker's classpath,
+which is the case starting with Camunda 8.10, where the exporter ships in-tree. On any
+earlier version, where the exporter is not included in the broker, load it the same way you
+would any external Zeebe exporter: point `jarPath` at a self-built jar under the classic
+`zeebe.broker.exporters.<name>` configuration:
 
 ```yaml
-camunda:
-  data:
+zeebe:
+  broker:
     exporters:
       analytics:
-        class-name: io.camunda.exporter.analytics.AnalyticsExporter
-        jar-path: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
+        className: io.camunda.exporter.analytics.AnalyticsExporter
+        jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
         args:
           endpoint: https://telemetry.camunda.io
           categories:
@@ -102,10 +101,12 @@ camunda:
 ```
 
 The classic style also has an environment-variable form (`ZEEBE_BROKER_EXPORTERS_ANALYTICS_*`
-with `CLASSNAME`/`JARPATH`), for anyone already using that style elsewhere. Either way, this
-section only covers configuring the broker directly; it makes no claim about whether or how a
-particular deployment tool (an operator, a Helm chart, etc.) exposes `jar-path` for you —
-check that tool's own documentation.
+with `CLASSNAME`/`JARPATH`), for anyone already using that style elsewhere. The unified
+`camunda.data.exporters.<name>` style (used in the sections above) supports `jar-path`
+directly too, with the same `args`, in case you need to point at a self-built jar on 8.10+
+for some other reason. Either way, this section only covers configuring the broker directly;
+it makes no claim about whether or how a particular deployment tool (an operator, a Helm
+chart, etc.) exposes `jarPath`/`jar-path` for you — check that tool's own documentation.
 
 ### Verify the exporter is running
 
