@@ -221,13 +221,15 @@ jobs:
 
   gradle-compile-check:
     if: >-
+      always() &&
+      needs.build-distball.result == 'success' &&
       github.event_name != 'schedule' &&
       (
         needs.detect-changes.outputs.gradle-changes == 'true' ||
         needs.detect-changes.outputs.build-tool == 'gradle'
       )
     name: "Gradle / Test Classes"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, build-distball ]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -257,7 +259,70 @@ jobs:
                 )
               )
             }}
-      - run: ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses
+      # Build the distribution in the same Gradle invocation as testClasses so the archive
+      # reuses the compilation output instead of compiling the repository again.
+      - name: Compile and package Gradle distribution
+        run: >-
+          ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build
+          testClasses :camunda-zeebe:distZip
+      - name: Upload Gradle distribution
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gradle-dist-${{ github.run_id }}
+          path: dist/build/distributions/camunda-zeebe-*.zip
+          retention-days: 2
+          compression-level: 0  # archive is already compressed
+          if-no-files-found: error
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  gradle-dist-parity:
+    if: >-
+      always() &&
+      needs.build-distball.result == 'success' &&
+      needs.gradle-compile-check.result == 'success' &&
+      github.event_name != 'schedule' &&
+      (
+        needs.detect-changes.outputs.gradle-changes == 'true' ||
+        needs.detect-changes.outputs.build-tool == 'gradle'
+      )
+    name: "Gradle / Distribution Parity"
+    needs: [ detect-changes, build-distball, gradle-compile-check ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Download Gradle distribution
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: gradle-dist-${{ github.run_id }}
+          path: dist/build/distributions/
+      - name: Download Maven distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: distball-${{ github.run_id }}
+          path: dist/target/
+      - name: Compare Gradle and Maven distributions
+        run: |
+          set -euo pipefail
+          gradle_zip=$(find dist/build/distributions -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
+          maven_zip=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
+          test -n "$gradle_zip" && test -n "$maven_zip"
+          python3 .claude/skills/gradle-build-parity/compare-dist.py "$gradle_zip" "$maven_zip"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -563,8 +628,16 @@ jobs:
     # workflows can share it too. See #52693 and #56931.
     # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
     # frontend-changes is included because the webapp back-end UTs run on it; rdbms-integration-tests
-    # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    # is included because its filter is a superset of java-code-changes (adds rdbms-change).
+    # Gradle changes are included because the Gradle distribution parity job consumes the Maven ZIP.
+    # See #52693.
+    if: >-
+      needs.detect-changes.outputs.camunda-docker-tests == 'true' ||
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
+      needs.detect-changes.outputs.gradle-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle'
     needs: [ detect-changes ]
     permissions:
       contents: read
@@ -2813,6 +2886,7 @@ jobs:
       - general-unit-tests
       - generate-db-versions
       - gradle-compile-check
+      - gradle-dist-parity
       - history-tests
       - identity-frontend-tests
       - identity-tests
