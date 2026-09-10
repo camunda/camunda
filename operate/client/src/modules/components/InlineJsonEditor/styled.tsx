@@ -24,7 +24,6 @@ const ring = (color: string) => css`
   inset: 0;
   outline: 2px solid ${color};
   outline-offset: -2px;
-  border-radius: inherit;
   pointer-events: none;
   z-index: 1;
 `;
