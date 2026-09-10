@@ -19,8 +19,12 @@ import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAM
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.ClusterHelper;
 import io.camunda.container.cluster.BrokerNode;
@@ -433,6 +437,17 @@ final class SecondaryStorageRollingUpdateIT {
 
   private static CamundaClient newClient(final GatewayNode<?> gateway) {
     return CamundaClient.newClientBuilder()
+        .withJsonMapper(
+            new CamundaObjectMapper(
+                new ObjectMapper()
+                    // so we can use this with older gateways (e.g. previous version)
+                    // we will avoid including output for arrays that are empty
+                    // as that helps reduce the likelihood of us including unknown fields
+                    // that we are not even using
+                    .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
+                    // otherwise use same defaults as normal
+                    .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
         .preferRestOverGrpc(false)
         .grpcAddress(gateway.getGrpcAddress())
         .restAddress(gateway.getRestAddress())
