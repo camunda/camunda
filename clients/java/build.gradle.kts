@@ -17,7 +17,10 @@ publishing {
   publications.named<MavenPublication>("maven") {
     pom.withXml(
       OptionalDependenciesPomAction(
-        setOf("io.micrometer:micrometer-core", "io.micrometer:micrometer-commons")
+        mapOf(
+          "io.micrometer:micrometer-core" to libs.versions.micrometer.get(),
+          "io.micrometer:micrometer-commons" to libs.versions.micrometer.get(),
+        )
       )
     )
   }
