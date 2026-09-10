@@ -7,16 +7,19 @@ import buildlogic.OptionalDependenciesPomAction
 plugins { id("buildlogic.client-conventions") }
 
 java { disableAutoTargetJvm() }
+
 tasks.withType<JavaCompile>().configureEach { options.release.set(17) }
 
 publishing {
   publications.named<MavenPublication>("maven") {
     pom.withXml(
       OptionalDependenciesPomAction(
-        setOf(
-          "tools.jackson.core:jackson-databind",
-          "tools.jackson.core:jackson-core",
-          "io.micrometer:micrometer-core",
+        mapOf(
+          "tools.jackson.core:jackson-databind" to
+            libs.tools.jackson.core.jackson.databind.get().versionConstraint.requiredVersion,
+          "tools.jackson.core:jackson-core" to
+            libs.tools.jackson.core.jackson.core.get().versionConstraint.requiredVersion,
+          "io.micrometer:micrometer-core" to libs.versions.micrometer.get(),
         )
       )
     )
@@ -93,7 +96,7 @@ dependencies {
   add(testSourceGenerator.implementationConfigurationName, libs.org.jboss.forge.roaster.roaster.api)
   add(
     testSourceGenerator.runtimeOnlyConfigurationName,
-    "org.jboss.forge.roaster:roaster-jdt:2.31.0.Final",
+    libs.org.jboss.forge.roaster.roaster.jdt,
   )
 }
 

@@ -18,9 +18,10 @@ publishing {
   publications.named<MavenPublication>("maven") {
     pom.withXml(
       OptionalDependenciesPomAction(
-        setOf(
-          "io.micrometer:micrometer-core",
-          "org.springframework.boot:spring-boot-actuator-autoconfigure",
+        mapOf(
+          "io.micrometer:micrometer-core" to libs.versions.micrometer.get(),
+          "org.springframework.boot:spring-boot-actuator-autoconfigure" to
+            (extra["springBoot3Version"] as String),
         )
       )
     )
