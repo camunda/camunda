@@ -19,13 +19,6 @@ import {BatchItemsTable} from './BatchItemsTable';
 
 const BATCH_OPERATION_KEY = 'migrate-operation-123';
 
-function renderTable(batchOperationType: Parameters<typeof BatchItemsTable>[0]['batchOperationType']) {
-	return renderWithRouter(
-		() => <BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType={batchOperationType} />,
-		{path: '/operate/batch-operations'},
-	);
-}
-
 describe('<BatchItemsTable />', () => {
 	it('should render the empty state when there are no items', async ({worker}) => {
 		worker.use(
@@ -34,7 +27,10 @@ describe('<BatchItemsTable />', () => {
 			}),
 		);
 
-		const screen = await renderTable('CANCEL_PROCESS_INSTANCE');
+		const screen = await renderWithRouter(
+			() => <BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="CANCEL_PROCESS_INSTANCE" />,
+			{path: '/operate/batch-operations'},
+		);
 
 		await expect.element(screen.getByText('No items found')).toBeVisible();
 	});
@@ -51,7 +47,10 @@ describe('<BatchItemsTable />', () => {
 			}),
 		);
 
-		const screen = await renderTable('CANCEL_PROCESS_INSTANCE');
+		const screen = await renderWithRouter(
+			() => <BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="CANCEL_PROCESS_INSTANCE" />,
+			{path: '/operate/batch-operations'},
+		);
 
 		const link = screen.getByRole('link', {name: 'View process instance 2251799813685250'});
 		await expect.element(link).toBeVisible();
@@ -70,7 +69,10 @@ describe('<BatchItemsTable />', () => {
 			}),
 		);
 
-		const screen = await renderTable('CANCEL_PROCESS_INSTANCE');
+		const screen = await renderWithRouter(
+			() => <BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="CANCEL_PROCESS_INSTANCE" />,
+			{path: '/operate/batch-operations'},
+		);
 
 		await expect.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'})).toBeVisible();
 	});
@@ -93,7 +95,10 @@ describe('<BatchItemsTable />', () => {
 			}),
 		);
 
-		const screen = await renderTable('DELETE_PROCESS_INSTANCE');
+		const screen = await renderWithRouter(
+			() => <BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="DELETE_PROCESS_INSTANCE" />,
+			{path: '/operate/batch-operations'},
+		);
 
 		await expect.element(screen.getByText('2251799813685250')).toBeVisible();
 		await expect.element(screen.getByRole('link')).not.toBeInTheDocument();
@@ -117,7 +122,10 @@ describe('<BatchItemsTable />', () => {
 			}),
 		);
 
-		const screen = await renderTable('DELETE_DECISION_INSTANCE');
+		const screen = await renderWithRouter(
+			() => <BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="DELETE_DECISION_INSTANCE" />,
+			{path: '/operate/batch-operations'},
+		);
 
 		await expect.element(screen.getByRole('columnheader', {name: 'Decision instance key'})).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: 'View decision instance item-1'})).toBeVisible();
@@ -142,7 +150,10 @@ describe('<BatchItemsTable />', () => {
 			}),
 		);
 
-		const screen = await renderTable('RESOLVE_INCIDENT');
+		const screen = await renderWithRouter(
+			() => <BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="RESOLVE_INCIDENT" />,
+			{path: '/operate/batch-operations'},
+		);
 
 		await expect.element(screen.getByRole('columnheader', {name: 'Incident key'})).toBeVisible();
 		await expect.element(screen.getByText('incident-key-1')).toBeVisible();
@@ -161,7 +172,10 @@ describe('<BatchItemsTable />', () => {
 			}),
 		);
 
-		const screen = await renderTable('CANCEL_PROCESS_INSTANCE');
+		const screen = await renderWithRouter(
+			() => <BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="CANCEL_PROCESS_INSTANCE" />,
+			{path: '/operate/batch-operations'},
+		);
 
 		await expect.element(screen.getByText(/^Failed$/)).toBeVisible();
 	});

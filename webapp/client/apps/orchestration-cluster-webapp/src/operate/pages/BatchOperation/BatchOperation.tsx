@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
+import {useEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {IconButton, SkeletonText, InlineNotification} from '@carbon/react';
@@ -79,6 +79,40 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 		}
 	}, [isNotFound, batchOperationKey, navigate, t]);
 
+	const operationType = formatOperationType(data?.batchOperationType ?? '');
+
+	const tileData = useMemo(
+		() => [
+			{
+				label: t('operate.batchOperation.tiles.state'),
+				content: data ? <BatchStateIndicator state={data.state} /> : null,
+			},
+			{
+				label: t('operate.batchOperation.tiles.summaryOfItems'),
+				content: (
+					<BatchItemsCount
+						totalCount={data?.operationsTotalCount ?? 0}
+						completedCount={data?.operationsCompletedCount ?? 0}
+						failedCount={data?.operationsFailedCount ?? 0}
+					/>
+				),
+			},
+			{
+				label: t('operate.batchOperation.tiles.startDate'),
+				content: formatDate(data?.startDate),
+			},
+			{
+				label: t('operate.batchOperation.tiles.endDate'),
+				content: formatDate(data?.endDate),
+			},
+			{
+				label: t('operate.batchOperation.tiles.actor'),
+				content: data?.actorId ?? '--',
+			},
+		],
+		[data, t],
+	);
+
 	if (isUnauthorized) {
 		return (
 			<EmptyState
@@ -92,37 +126,6 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 			/>
 		);
 	}
-
-	const operationType = formatOperationType(data?.batchOperationType ?? '');
-
-	const tileData = [
-		{
-			label: t('operate.batchOperation.tiles.state'),
-			content: data ? <BatchStateIndicator state={data.state} /> : null,
-		},
-		{
-			label: t('operate.batchOperation.tiles.summaryOfItems'),
-			content: (
-				<BatchItemsCount
-					totalCount={data?.operationsTotalCount ?? 0}
-					completedCount={data?.operationsCompletedCount ?? 0}
-					failedCount={data?.operationsFailedCount ?? 0}
-				/>
-			),
-		},
-		{
-			label: t('operate.batchOperation.tiles.startDate'),
-			content: formatDate(data?.startDate),
-		},
-		{
-			label: t('operate.batchOperation.tiles.endDate'),
-			content: formatDate(data?.endDate),
-		},
-		{
-			label: t('operate.batchOperation.tiles.actor'),
-			content: data?.actorId ?? '--',
-		},
-	];
 
 	return (
 		<PageContainer gap={5}>
