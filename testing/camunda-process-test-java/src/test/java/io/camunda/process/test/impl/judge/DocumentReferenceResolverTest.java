@@ -32,6 +32,7 @@ import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
+import io.camunda.process.test.utils.Jackson3JsonMapper;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
@@ -120,6 +121,39 @@ class DocumentReferenceResolverTest {
     assertThat(captor.getValue().getDocumentId()).isEqualTo("doc-1");
     assertThat(captor.getValue().getStoreId()).isEqualTo("store-1");
     assertThat(captor.getValue().getContentHash()).isEqualTo("hash-1");
+  }
+
+  @Test
+  void shouldResolveReferenceWithJackson3JsonMapper() {
+    // given a client configured with a Jackson 3 JsonMapper, as Spring Boot 4 defaults to
+    when(client.newDocumentContentGetRequest(any(DocumentReferenceResponse.class)))
+        .thenReturn(request);
+    when(request.send()).thenReturn(future);
+    when(future.join()).thenReturn(new ByteArrayInputStream(new byte[] {1, 2, 3}));
+
+    final DocumentReferenceResolver jackson3Resolver =
+        new DocumentReferenceResolver(
+            new CamundaDataSource(client), new CamundaAssertJsonMapper(new Jackson3JsonMapper()));
+
+    final String json =
+        "{\"camunda.document.type\": \"camunda\","
+            + " \"documentId\": \"doc-1\","
+            + " \"contentHash\": \"hash-1\","
+            + " \"storeId\": \"store-1\","
+            + " \"metadata\": {\"fileName\": \"a.png\", \"contentType\": \"image/png\"}}";
+
+    // when
+    final List<ResolvedDocument> resolved = jackson3Resolver.resolve(json);
+
+    // then
+    assertThat(resolved).hasSize(1);
+    final ResolvedDocument doc = resolved.get(0);
+    assertThat(doc.getDocumentId()).isEqualTo("doc-1");
+    assertThat(doc.getStoreId()).isEqualTo("store-1");
+    assertThat(doc.getContentHash()).isEqualTo("hash-1");
+    assertThat(doc.getFileName()).isEqualTo("a.png");
+    assertThat(doc.getContentType()).isEqualTo("image/png");
+    assertThat(doc.getContent()).containsExactly(1, 2, 3);
   }
 
   @Test
