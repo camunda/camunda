@@ -342,7 +342,7 @@ export const AddModal: FC<
                   as="p"
                   variant="helper"
                   role="alert"
-                  className="text-danger-action-default"
+                  className="text-danger-foreground-subtle"
                 >
                   {!hasPermissions
                     ? t("permissionsUnavailable")

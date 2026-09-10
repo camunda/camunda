@@ -287,13 +287,13 @@ const List: FC = () => {
                 log.result === "SUCCESS" ? (
                   <CircleCheck
                     role="img"
-                    className="h-5 w-5 text-success-action-default"
+                    className="h-5 w-5 text-success-foreground-subtle"
                     aria-label={spaceAndCapitalize(log.result)}
                   />
                 ) : (
                   <XCircle
                     role="img"
-                    className="h-5 w-5 text-danger-action-default"
+                    className="h-5 w-5 text-danger-foreground-subtle"
                     aria-label={spaceAndCapitalize(log.result)}
                   />
                 ),
