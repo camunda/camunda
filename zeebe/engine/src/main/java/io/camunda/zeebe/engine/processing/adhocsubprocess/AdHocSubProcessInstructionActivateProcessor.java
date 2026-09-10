@@ -42,8 +42,6 @@ public class AdHocSubProcessInstructionActivateProcessor
 
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
-  private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE =
-      "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE =
       "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
 
@@ -89,7 +87,7 @@ public class AdHocSubProcessInstructionActivateProcessor
           command,
           RejectionType.INVALID_STATE,
           String.format(
-              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE,
+              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE,
               command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
@@ -108,16 +106,8 @@ public class AdHocSubProcessInstructionActivateProcessor
       return;
     }
 
-    if (!adHocSubProcessElementInstance.isActive()) {
-      writeRejectionError(
-          command,
-          RejectionType.INVALID_STATE,
-          String.format(
-              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE,
-              command.getValue().getAdHocSubProcessInstanceKey()));
-
-      return;
-    }
+    final int storageOrdinalKey = adHocSubProcessElementInstance.getValue().getStorageOrdinalKey();
+    command.getValue().setStorageOrdinalKey(storageOrdinalKey);
 
     final var activateElements =
         command.getValue().activateElements().stream()
