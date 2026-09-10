@@ -11,7 +11,6 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
@@ -34,6 +33,7 @@ public class AdminApiRequestHandler
   private final RaftPartition raftPartition;
   private final ClusterConfigurationService clusterConfigurationService;
   private final BrokerMemberId memberId;
+  private final String physicalTenantId;
 
   public AdminApiRequestHandler(
       final PartitionId partitionId,
@@ -49,6 +49,7 @@ public class AdminApiRequestHandler
     this.raftPartition = raftPartition;
     this.clusterConfigurationService = clusterConfigurationService;
     this.memberId = memberId;
+    physicalTenantId = partitionId.group();
   }
 
   @Override
@@ -239,9 +240,7 @@ public class AdminApiRequestHandler
                     }
 
                     final var primaryMember =
-                        config
-                            .partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
-                            .getPrimaryForPartition(partitionId);
+                        config.partitionGroup(physicalTenantId).getPrimaryForPartition(partitionId);
                     if (primaryMember.isEmpty()) {
                       LOG.debug(
                           "No primary member found for partition {}, skipping step-down",
