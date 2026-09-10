@@ -396,9 +396,13 @@ class TaskDetailsPage {
       },
       onFailure: async () => {
         // The completed-task view sometimes renders form fields lazily after
-        // first paint; reload to force a fresh load on retry.
+        // first paint; reload to force a fresh load on retry. A fixed sleep
+        // isn't a bound on when the form is actually ready (run 34435455486:
+        // 3 internal retries plus both Playwright attempts all still read an
+        // empty value), so wait on the form's own visibility instead --
+        // same fix already present in this method on main.
         await this.page.reload();
-        await sleep(2000);
+        await expect(this.form).toBeVisible({timeout: 30000});
       },
     });
   }
