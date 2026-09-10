@@ -1,0 +1,200 @@
+# description: Deploys a load test using exactly what is committed to
+#              load-tests/setup/<target-version>/ at the triggering ref. Runs
+#              `make install-stable` directly, using the versions defined in
+#              the versioned code.
+# called-by: triggerable manually via workflow_dispatch for ad-hoc or release load tests
+# monitoring: https://dashboard.benchmark.camunda.cloud/
+# type: CI
+# owner: @camunda/reliability-testing
+name: "Load Test: deploy Camunda Release as versioned"
+run-name: "Load Test: deploy release ${{ inputs.target-version }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      target-version:
+        description: Release
+        required: true
+        type: choice
+        options:
+          - 8.7
+          - 8.8
+          - 8.9
+      scenario:
+        description: Workload scenario to run.
+        required: true
+        type: choice
+        default: realistic
+        options:
+          - latency
+          - realistic
+          - typical
+          - max
+          - archiver
+      secondary-storage-type:
+        description: Secondary database backend for Camunda Platform
+        required: true
+        type: choice
+        default: elasticsearch
+        options:
+        - elasticsearch
+        - opensearch
+        - postgresql
+        - mysql
+        - mariadb
+        - mssql
+        - oracle
+        - none
+      ttl:
+        description: Days before the load test is auto-deleted
+        required: true
+        type: number
+        default: 60
+      name:
+        description: Optional name for the load test. If not provided, a name will be generated based on the target version.
+        required: false
+        type: string
+
+concurrency:
+  group: load-test-as-versioned-${{ inputs.target-version }}
+  cancel-in-progress: false
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
+  CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
+
+  SCENARIO: ${{ inputs.scenario }}
+  SECONDARY_STORAGE_TYPE: ${{ inputs.secondary-storage-type }}
+  TARGET_VERSION: ${{ inputs.target-version }}
+  TTL: ${{ inputs.ttl }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      namespace: ${{ steps.meta.outputs.namespace }}
+      setup-version: ${{ steps.meta.outputs.setup-version }}
+    steps:
+      - name: Compute values
+        id: meta
+        env:
+          NAME: ${{ inputs.name }}
+          VERSION: ${{ inputs.target-version }}
+        run: |-
+          if [[ -n "$NAME" ]]; then
+            namespace="$NAME"
+          else
+            namespace="release-${VERSION//./-}-x"
+          fi
+
+          # Ensure the namespace starts with c8- ; this is mostly for the
+          # summary step below, newLoadTest.sh will automatically add this
+          # prefix if not present.
+          if [[ ! "$namespace" =~ ^c8- ]]; then
+            namespace="c8-$namespace"
+          fi
+
+          echo "namespace=${namespace}" >> "$GITHUB_OUTPUT"
+
+          # newLoadTest.sh identifies a release setup folder as "stable-<major><minor>"
+          # (e.g. stable-87), not the dotted release version used in the workflow input.
+          echo "setup-version=stable-${VERSION//./}" >> "$GITHUB_OUTPUT"
+
+      - name: Show summary
+        env:
+          NAMESPACE: ${{ steps.meta.outputs.namespace }}
+        run: |-
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Load test: \`${NAMESPACE}\`
+
+          > 📊 **[Open Grafana Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${NAMESPACE})**
+
+          | Input | Value |
+          |-------|-------|
+          | Target version | \`${TARGET_VERSION}\` |
+          | Scenario | \`${SCENARIO}\` |
+          | Secondary storage | \`${SECONDARY_STORAGE_TYPE}\` |
+          | TTL (days) | \`${TTL}\` |
+          EOF
+
+  deploy:
+    name: Deploy cluster
+    needs: [setup]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      NAMESPACE: ${{ needs.setup.outputs.namespace }}
+      SETUP_VERSION: ${{ needs.setup.outputs.setup-version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+
+      # Authenticate with Teleport
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Print tool versions
+        run: .github/scripts/load-test-print-tool-versions.sh
+
+      - name: Scaffold load-test folder
+        env:
+          ENABLE_OPTIMIZE: "true"
+        run: |-
+          cd load-tests/setup
+          # The namespace label created-by will not be able resolve the actual user which triggered
+          # the GitHub action by default. We need to correctly configure the git user here to make it work
+          git config user.name "${GITHUB_ACTOR}"
+          ./newLoadTest.sh --target-version "${SETUP_VERSION}" "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
+
+      - name: Install latest Camunda Platform
+        working-directory: load-tests/setup/${{ needs.setup.outputs.namespace }}
+        shell: bash --noprofile --norc -exo pipefail {0}
+        run: make install-stable scenario="${SCENARIO}"
+
+      - name: Annotate namespace with workflow run URL
+        run: |
+          # Traceability annotation, applied after the namespace has been created.
+          kubectl annotate namespace "${NAMESPACE}" \
+            "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --overwrite
+
+      - name: Summarize load test deployment
+        if: success()
+        run: .github/scripts/load-test-summary.sh "${NAMESPACE}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
