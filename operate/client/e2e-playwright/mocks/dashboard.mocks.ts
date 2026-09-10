@@ -1443,33 +1443,54 @@ const mockHealthyIncidentsByError: IncidentByErrorDto[] = [
     ],
   },
   {
-    errorMessage: 'Loan request does not contain all the required data',
+    errorMessage:
+      "Expected to evaluate decision 'invoiceAssignApprover', but failed to evaluate expression 'amount': no variable found for name 'amount'",
     incidentErrorHashCode: 2102,
     instancesWithErrorCount: 4,
     processes: [
       {
-        processId: '2251799813686116',
+        processId: '2251799813686130',
         tenantId: '<default>',
         version: 1,
-        name: 'Loan process',
-        bpmnProcessId: 'loanProcess',
-        errorMessage: 'Loan request does not contain all the required data',
+        name: 'DMN invoice',
+        bpmnProcessId: 'invoice',
+        errorMessage:
+          "Expected to evaluate decision 'invoiceAssignApprover', but failed to evaluate expression 'amount': no variable found for name 'amount'",
         instancesWithActiveIncidentsCount: 4,
         activeInstancesCount: 0,
       },
     ],
   },
   {
-    errorMessage: 'No space left on device.',
+    errorMessage:
+      "Expected process with BPMN process id 'called-process' to be deployed, but not found.",
     incidentErrorHashCode: 2103,
+    instancesWithErrorCount: 3,
+    processes: [
+      {
+        processId: '2251799813686145',
+        tenantId: '<default>',
+        version: 1,
+        name: 'Call Activity Process',
+        bpmnProcessId: 'call-activity-process',
+        errorMessage:
+          "Expected process with BPMN process id 'called-process' to be deployed, but not found.",
+        instancesWithActiveIncidentsCount: 3,
+        activeInstancesCount: 0,
+      },
+    ],
+  },
+  {
+    errorMessage: 'No space left on device.',
+    incidentErrorHashCode: 2104,
     instancesWithErrorCount: 2,
     processes: [
       {
-        processId: '2251799813685301',
+        processId: '2251799813687190',
         tenantId: '<default>',
         version: 2,
-        name: 'Only Incidents Process',
-        bpmnProcessId: 'onlyIncidentsProcess',
+        name: 'Flight registration',
+        bpmnProcessId: 'flightRegistration',
         errorMessage: 'No space left on device.',
         instancesWithActiveIncidentsCount: 2,
         activeInstancesCount: 0,
