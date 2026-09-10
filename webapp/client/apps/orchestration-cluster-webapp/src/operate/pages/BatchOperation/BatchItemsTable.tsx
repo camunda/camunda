@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {BatchOperationItem, BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
@@ -39,7 +40,7 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 		isFetchingNextPage,
 	} = useBatchOperationItems(batchOperationKey);
 
-	const columns = (() => {
+	const columns = useMemo(() => {
 		const state = {
 			key: 'state',
 			label: t('operate.batchOperation.itemsTable.state'),
@@ -125,7 +126,7 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 		}
 
 		return [processInstanceKey, state, processedDate];
-	})();
+	}, [batchOperationType, t]);
 
 	const emptyState =
 		status === 'error' ? (
