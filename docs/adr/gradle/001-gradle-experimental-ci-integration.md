@@ -71,7 +71,8 @@ outputs:
 
 The job uploads the Gradle ZIP as artifact. A separate `Gradle / Distribution Parity` job waits for both this
 job and `build-distball`, downloads the Gradle and Maven ZIPs, and compares their versioned roots
-and bundled JAR names and versions.
+and bundled JAR names and versions. Other file paths and byte contents are not compared. In general, the jar bytes
+differ (for example manifest metadata)
 
 Both jobs are included in Unified CI's `check-results` gate. They therefore block relevant pull
 requests and merge groups when Gradle compilation, packaging, or distribution parity fails.
