@@ -95,7 +95,6 @@ export function setupProcessInstanceForTests(
   };
 }
 
-
 /**
  * Retries until exactly one job of the given type is activatable for the process
  * instance and returns its key.

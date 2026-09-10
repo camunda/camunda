@@ -12,6 +12,7 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {DEFAULT_PAGE_LIMIT, defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
+import {validateResponse} from 'json-body-assertions';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -195,30 +196,6 @@ export async function expectProcessState(
     expect(json.items).toHaveLength(1);
     expect(json.items[0].state).toBe(state);
   }).toPass(assertionOptions);
-}
-
-export async function clearAllProcessInstances(
-  request: APIRequestContext,
-): Promise<void> {
-  // Cancel all active instances first.
-  if ((await countProcessInstances(request, 'ACTIVE')) > 0) {
-    await runBatchAndWaitForCompletion(
-      request,
-      '/process-instances/cancellation',
-      {state: 'ACTIVE'},
-    );
-  }
-  // Cancellation moves instances to TERMINATED; delete each terminal state
-  // individually to avoid relying on $or in the search pre-check.
-  for (const state of ['COMPLETED', 'TERMINATED']) {
-    if ((await countProcessInstances(request, state)) > 0) {
-      await runBatchAndWaitForCompletion(
-        request,
-        '/process-instances/deletion',
-        {state},
-      );
-    }
-  }
 }
 
 export type ProcessInstanceItem = {

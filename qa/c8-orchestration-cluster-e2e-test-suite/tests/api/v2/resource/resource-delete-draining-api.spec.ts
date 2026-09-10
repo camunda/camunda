@@ -17,22 +17,20 @@ import {validateResponse} from '../../../../json-body-assertions';
 import {
   completeUserTask,
   createInstanceOnceDeployed,
+  DELETE_RESOURCE_STATUS,
   deleteProcessDefinition,
   deployUserTaskProcess,
   drainProcessDefinition,
   expectProcessDefinitionDeleted,
-  expectProcessDefinitionPurged,
   expectProcessDefinitionState,
   expectProcessInstanceCount,
   findUserTask,
-  RESOURCE_DELETION_ENDPOINT,
   searchProcessInstances,
 } from '@requestHelpers';
 import {
   DEFAULT_PAGE_LIMIT,
   defaultAssertionOptions,
   uniquePrefixedId,
-  extendedAssertionOptions,
 } from '../../../../utils/constants';
 
 const CALL_ACTIVITY_CHILD_MODEL_ID = 'childProcess';
@@ -65,34 +63,6 @@ async function startedInstanceOf(
     res,
   );
   return res.json();
-}
-
-type HistoryBatchOperation = {batchOperationKey: string; state: string};
-
-/**
- * Every history-deletion batch operation currently known. The item names no
- * process definition, so the one a purge creates is only identifiable by
- * diffing against a snapshot taken before the delete.
- */
-async function historyBatchOperations(
-  request: APIRequestContext,
-): Promise<HistoryBatchOperation[]> {
-  const res = await request.post(buildUrl('/batch-operations/search'), {
-    headers: jsonHeaders(),
-    data: {
-      filter: {operationType: 'DELETE_PROCESS_INSTANCE'},
-      // Newest first, so the operation this test is looking for is on the
-      // first page however many a shared cluster has already accumulated.
-      sort: [{field: 'startDate', order: 'DESC'}],
-      page: {limit: DEFAULT_PAGE_LIMIT},
-    },
-  });
-  await assertStatusCode(res, 200);
-  const items: HistoryBatchOperation[] = (await res.json()).items ?? [];
-  return items.map((item) => ({
-    batchOperationKey: String(item.batchOperationKey),
-    state: item.state,
-  }));
 }
 
 async function partitionsCount(request: APIRequestContext): Promise<number> {
@@ -157,14 +127,9 @@ test.describe('Process Definition Draining Deletion API', () => {
       'CREATED',
     );
 
-    const deleteRes = await deleteProcessDefinition(
-      request,
-      processDefinitionKey,
-    );
-    await assertStatusCode(deleteRes, 200);
-    await validateResponse(
-      {path: RESOURCE_DELETION_ENDPOINT, method: 'POST', status: '200'},
-      deleteRes,
+    await assertStatusCode(
+      await deleteProcessDefinition(request, processDefinitionKey),
+      DELETE_RESOURCE_STATUS,
     );
 
     await expectProcessDefinitionState(
@@ -288,7 +253,7 @@ test.describe('Process Definition Draining Deletion API', () => {
 
     await assertStatusCode(
       await deleteProcessDefinition(request, processDefinitionKey),
-      200,
+      DELETE_RESOURCE_STATUS,
     );
 
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
@@ -538,23 +503,17 @@ test.describe('Process Definition Draining Deletion API', () => {
     );
   });
 
-  test('Without deleteHistory the instance history survives the deletion', async ({
-    request,
-  }) => {
+  test('Instance history survives the deletion', async ({request}) => {
     const processDefinitionId = uniquePrefixedId('draining-keephistory');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
     const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
 
-    const deletion = await deleteProcessDefinition(
-      request,
-      processDefinitionKey,
+    await assertStatusCode(
+      await deleteProcessDefinition(request, processDefinitionKey),
+      DELETE_RESOURCE_STATUS,
     );
-    await assertStatusCode(deletion, 200);
-    // A process definition still in runtime state reports no batch operation,
-    // whether or not history deletion was requested.
-    expect((await deletion.json()).batchOperation).toBeNull();
 
     // Cancelling keeps the test off the user-task index, the slowest propagation
     // path.
@@ -562,62 +521,6 @@ test.describe('Process Definition Draining Deletion API', () => {
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
 
     expect(await instanceCountFor(request, processDefinitionId)).toBe(1);
-  });
-
-  test('With deleteHistory the instance history is purged by a batch operation once the drain finishes', async ({
-    request,
-  }) => {
-    const processDefinitionId = uniquePrefixedId('draining-purgehistory');
-    const {processDefinitionKey} =
-      await deployUserTaskProcess(processDefinitionId);
-    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
-    instancesToCancel.push(instance.processInstanceKey);
-
-    const batchOperationKeysBefore = new Set(
-      (await historyBatchOperations(request)).map(
-        (item) => item.batchOperationKey,
-      ),
-    );
-
-    const deletion = await deleteProcessDefinition(
-      request,
-      processDefinitionKey,
-      true,
-    );
-    await assertStatusCode(deletion, 200);
-    expect((await deletion.json()).batchOperation).toBeNull();
-
-    await expectProcessDefinitionState(
-      request,
-      processDefinitionKey,
-      'DRAINING',
-    );
-    // History is retained for as long as the definition is draining.
-    expect(await instanceCountFor(request, processDefinitionId)).toBe(1);
-
-    await cancelProcessInstance(instance.processInstanceKey);
-
-    // The purge takes the definition record with it, so there is nothing left to
-    // read back.
-    await expectProcessDefinitionPurged(request, processDefinitionKey);
-
-    await expectProcessInstanceCount(
-      request,
-      {processDefinitionId},
-      0,
-      extendedAssertionOptions,
-    );
-
-    // The purge runs as a batch operation, and it has to reach COMPLETED —
-    // otherwise history lingers with nothing left to retry. Only the snapshot
-    // diff identifies it, so "created exactly once" stays a manual check.
-    await expect(async () => {
-      const created = (await historyBatchOperations(request)).filter(
-        (item) => !batchOperationKeysBefore.has(item.batchOperationKey),
-      );
-      expect(created.length).toBeGreaterThan(0);
-      expect(created.map((item) => item.state)).toContain('COMPLETED');
-    }).toPass(extendedAssertionOptions);
   });
 
   test('Deleting a definition with running instances leaves the deployment queue usable', async ({

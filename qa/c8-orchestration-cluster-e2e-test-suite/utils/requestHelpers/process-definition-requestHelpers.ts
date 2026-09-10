@@ -17,6 +17,7 @@ import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {sleep} from '../sleep';
 import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
 import {validateResponse} from 'json-body-assertions';
+import {isForwardCompat} from '../http';
 import {deleteResource} from './resource-requestHelpers';
 
 const PROCESS_DEFINITION_SEARCH_ENDPOINT = '/process-definitions/search';
@@ -86,33 +87,15 @@ export async function expectProcessDefinitionDeleted(
   );
 }
 
-/**
- * Terminal state for a deletion with `deleteHistory: true`: the `DELETED`
- * record other deletions leave behind is itself purged, so waiting for
- * `DELETED` would only ever pass by catching the state before the purge.
- */
-export async function expectProcessDefinitionPurged(
-  request: APIRequestContext,
-  processDefinitionKey: string,
-): Promise<void> {
-  await expect(async () => {
-    const items = await searchProcessDefinitionItems(request, {
-      filter: {processDefinitionKey},
-    });
-    expect(items).toHaveLength(0);
-  }).toPass(extendedAssertionOptions);
-}
+// This line takes no `deleteHistory`, and a successful delete answers 204 --
+// 200 only when the suite runs against a newer server, which isForwardCompat marks.
+export const DELETE_RESOURCE_STATUS = isForwardCompat ? 200 : 204;
 
-/**
- * Returns the raw response — the same request answers 200, 404 and 409
- * depending on the definition's state.
- */
 export function deleteProcessDefinition(
   request: APIRequestContext,
   processDefinitionKey: string,
-  deleteHistory = false,
 ): Promise<APIResponse> {
-  return deleteResource(request, processDefinitionKey, {data: {deleteHistory}});
+  return deleteResource(request, processDefinitionKey);
 }
 
 /**
@@ -124,24 +107,17 @@ export function deleteProcessDefinition(
 export async function drainProcessDefinition(
   request: APIRequestContext,
   processDefinitionKey: string,
-  deleteHistory = false,
 ): Promise<void> {
   await assertStatusCode(
-    await deleteProcessDefinition(request, processDefinitionKey, deleteHistory),
-    200,
+    await deleteProcessDefinition(request, processDefinitionKey),
+    DELETE_RESOURCE_STATUS,
   );
   await expectProcessDefinitionState(request, processDefinitionKey, 'DRAINING');
 }
 
 /**
  * Starts an instance of a specific version, retrying while the create is
- * rejected `NOT_FOUND`.
- *
- * A deployment reaches the partitions asynchronously, so a create issued right
- * after one can land on a partition that has not applied it yet and be refused
- * as if the definition did not exist. Only that rejection is retried — a
- * `NOT_FOUND` from a definition already deleted would surface once the budget
- * runs out, and every other rejection is raised immediately.
+ * rejected `NOT_FOUND` — a deployment reaches the partitions asynchronously.
  */
 export async function createInstanceOnceDeployed(
   processDefinitionId: string,

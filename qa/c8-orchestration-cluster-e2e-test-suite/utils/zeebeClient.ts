@@ -175,6 +175,36 @@ const waitForLatestProcessVersion = async (
   );
 };
 
+const deployWithSubstitutions = async (
+  filePath: string,
+  substitutions: Record<string, string>,
+) => {
+  let content = readFileSync(filePath, 'utf-8');
+  for (const [placeholder, replacement] of Object.entries(substitutions)) {
+    if (!content.includes(placeholder)) {
+      throw new Error(
+        `Placeholder '${placeholder}' not found in resource file '${filePath}'`,
+      );
+    }
+    content = content.split(placeholder).join(replacement);
+  }
+  const name = basename(filePath);
+  try {
+    return await zeebe.deployResources([{content, name}]);
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    throw error;
+  }
+};
+
+const setVariables = async (
+  elementInstanceKey: string,
+  variables: Record<string, unknown>,
+  local: boolean = false,
+): Promise<void> => {
+  await zeebeGrpc.setVariables({elementInstanceKey, variables, local});
+};
+
 export {
   deploy,
   waitForLatestProcessVersion,
@@ -186,4 +216,6 @@ export {
   searchByProcessInstanceKey,
   checkUpdateOnVersion,
   createWorker,
+  deployWithSubstitutions,
+  setVariables,
 };

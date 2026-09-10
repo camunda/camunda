@@ -9,7 +9,7 @@
 import {test} from 'fixtures';
 import {expect, type Locator, type Page} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToAppHome, tooltipWithText} from '@pages/UtilitiesPage';
+import {navigateToApp, tooltipWithText} from '@pages/UtilitiesPage';
 import {
   activateSingleJob,
   createInstanceOnceDeployed,
@@ -39,16 +39,15 @@ const processDefinitionId = uniquePrefixedId('draining-ui');
 
 let processInstanceKey: string;
 
-/**
- * Opens Operate and waits for its shell, retrying the navigation once: the app
- * occasionally takes longer than the default expect timeout to come up on a
- * loaded runner, which would fail a test before it asserts anything.
- */
+// Operate is unauthenticated per test on this branch, so the login has to come
+// before any app chrome exists.
 async function openOperateHome(
   page: Page,
+  loginPage: {login: (user: string, password: string) => Promise<void>},
   operateHomePage: {operateBanner: Locator},
 ) {
-  await navigateToAppHome(page, 'operate');
+  await navigateToApp(page, 'operate');
+  await loginPage.login('demo', 'demo');
   await waitForAssertion({
     assertion: async () => {
       await expect(operateHomePage.operateBanner).toBeVisible({
@@ -56,7 +55,7 @@ async function openOperateHome(
       });
     },
     onFailure: async () => {
-      await navigateToAppHome(page, 'operate');
+      await page.reload();
     },
   });
 }
@@ -90,10 +89,11 @@ test.describe('Operate Process Definition Draining', () => {
 
   test('Dashboard marks the draining definition with a draining indicator', async ({
     page,
+    loginPage,
     operateHomePage,
     operateDashboardPage,
   }) => {
-    await openOperateHome(page, operateHomePage);
+    await openOperateHome(page, loginPage, operateHomePage);
 
     const item =
       operateDashboardPage.instancesByProcessItemByName(processDefinitionId);
@@ -112,11 +112,12 @@ test.describe('Operate Process Definition Draining', () => {
 
   test('Processes page shows a draining tag for the selected draining version', async ({
     page,
+    loginPage,
     operateHomePage,
     operateProcessesPage,
     operateFiltersPanelPage,
   }) => {
-    await openOperateHome(page, operateHomePage);
+    await openOperateHome(page, loginPage, operateHomePage);
     await operateHomePage.clickProcessesTab();
 
     // The tag replaces the delete action in the diagram panel header, which only
@@ -138,8 +139,11 @@ test.describe('Operate Process Definition Draining', () => {
 
   test('Process instance header shows a draining tag for the running instance', async ({
     page,
+    loginPage,
+    operateHomePage,
     operateProcessInstancePage,
   }) => {
+    await openOperateHome(page, loginPage, operateHomePage);
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
     });
@@ -160,6 +164,7 @@ test.describe('Operate Process Definition Draining', () => {
 
   test('The draining marker carries the same wording on the dashboard, the processes page and the instance view', async ({
     page,
+    loginPage,
     operateHomePage,
     operateDashboardPage,
     operateProcessesPage,
@@ -168,7 +173,7 @@ test.describe('Operate Process Definition Draining', () => {
   }) => {
     // The per-view tests above only prove the marker renders; this one pins down
     // what it says, so a reworded or half-migrated view is caught.
-    await openOperateHome(page, operateHomePage);
+    await openOperateHome(page, loginPage, operateHomePage);
 
     const item =
       operateDashboardPage.instancesByProcessItemByName(processDefinitionId);
@@ -256,6 +261,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
   test('The definition leaves the dashboard once the drain has finished', async ({
     page,
     request,
+    loginPage,
     operateHomePage,
     operateDashboardPage,
   }) => {
@@ -272,7 +278,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
 
     await drainProcessDefinition(request, processDefinitionKey);
 
-    await openOperateHome(page, operateHomePage);
+    await openOperateHome(page, loginPage, operateHomePage);
 
     const item = operateDashboardPage.instancesByProcessItemByName(
       deletedProcessDefinitionId,
@@ -306,6 +312,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
   test('A draining definition still reports its incident and active instance counts', async ({
     page,
     request,
+    loginPage,
     operateHomePage,
     operateDashboardPage,
   }) => {
@@ -345,7 +352,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
 
     await drainProcessDefinition(request, processDefinitionKey);
 
-    await openOperateHome(page, operateHomePage);
+    await openOperateHome(page, loginPage, operateHomePage);
 
     const item = operateDashboardPage.instancesByProcessItemByName(
       incidentProcessDefinitionId,
@@ -368,72 +375,5 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
         await page.reload();
       },
     });
-  });
-
-  test('The instance view keeps the draining tag while the instance is suspended', async ({
-    page,
-    request,
-    operateProcessInstancePage,
-  }) => {
-    const suspendedProcessDefinitionId = uniquePrefixedId(
-      'draining-ui-suspended',
-    );
-    const {processDefinitionKey} = await deployUserTaskProcess(
-      suspendedProcessDefinitionId,
-    );
-    const instance = await createInstanceOnceDeployed(
-      suspendedProcessDefinitionId,
-      1,
-    );
-    instancesToCancel.push(instance.processInstanceKey);
-    await findUserTask(request, instance.processInstanceKey, 'CREATED');
-
-    await drainProcessDefinition(request, processDefinitionKey);
-
-    await assertStatusCode(
-      await request.post(
-        buildUrl('/process-instances/{processInstanceKey}/suspension', {
-          processInstanceKey: instance.processInstanceKey,
-        }),
-        {headers: jsonHeaders()},
-      ),
-      204,
-    );
-
-    await operateProcessInstancePage.gotoProcessInstancePage({
-      id: instance.processInstanceKey,
-    });
-    await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
-
-    // Confirms the suspension reached this view, so the draining assertion below
-    // cannot pass against an instance that is merely running.
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(operateProcessInstancePage.suspendedStateIcon).toBeVisible(
-          {timeout: UI_REFRESH_TIMEOUT},
-        );
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-
-    // Suspending changes the instance's state, not its definition's — otherwise
-    // the one instance blocking the deletion is also the view that hides why.
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(operateProcessInstancePage.drainingTag).toBeVisible({
-          timeout: UI_REFRESH_TIMEOUT,
-        });
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-    await expect(operateProcessInstancePage.drainingTag).toHaveText(
-      DRAINING_TAG_LABEL,
-    );
-    await operateProcessInstancePage.drainingTag.hover();
-    await expect(tooltipWithText(page, DRAINING_TOOLTIP_VERSION)).toBeVisible();
   });
 });
