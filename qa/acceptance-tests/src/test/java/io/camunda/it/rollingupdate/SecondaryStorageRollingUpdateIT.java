@@ -19,12 +19,18 @@ import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAM
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.protocol.rest.RoleFilter;
+import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.ClusterHelper;
 import io.camunda.container.cluster.BrokerNode;
@@ -205,7 +211,7 @@ final class SecondaryStorageRollingUpdateIT {
 
       LOGGER.info("Started brokers");
 
-      try (final var client = newClient(gateway0)) {
+      try (final var client = newLegacyClient(gateway0)) {
         LOGGER.info("Deploying process definition");
         deployProcessAndWaitForIt(client, RICH_PROCESS, "rolling-update-process.bpmn")
             .getProcessDefinitionKey();
@@ -437,6 +443,14 @@ final class SecondaryStorageRollingUpdateIT {
 
   private static CamundaClient newClient(final GatewayNode<?> gateway) {
     return CamundaClient.newClientBuilder()
+        .preferRestOverGrpc(false)
+        .grpcAddress(gateway.getGrpcAddress())
+        .restAddress(gateway.getRestAddress())
+        .build();
+  }
+
+  private static CamundaClient newLegacyClient(final GatewayNode<?> gateway) {
+    return CamundaClient.newClientBuilder()
         .withJsonMapper(
             new CamundaObjectMapper(
                 new ObjectMapper()
@@ -445,6 +459,9 @@ final class SecondaryStorageRollingUpdateIT {
                     // as that helps reduce the likelihood of us including unknown fields
                     // that we are not even using
                     .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
+                    // also there was a change to how role filters are serialized by the client
+                    // this can be removed once the legacy version is 8.10 (non-alpha)
+                    .addMixIn(RoleFilter.class, LegacyRoleFilterMixin.class)
                     // otherwise use same defaults as normal
                     .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
@@ -468,6 +485,24 @@ final class SecondaryStorageRollingUpdateIT {
           logBuffer);
     } catch (final RuntimeException logFailure) {
       LOGGER.error("Failed to log {} container logs", brokerName, logFailure);
+    }
+  }
+
+  static class LegacyRoleFilterMixin {
+    @JsonSerialize(using = StringFilterPropertyAsStringSerializer.class)
+    public StringFilterProperty roleId;
+  }
+
+  // force a StringFilterProperty to serialize as a string instead of a more complex object
+  static class StringFilterPropertyAsStringSerializer extends JsonSerializer<StringFilterProperty> {
+
+    @Override
+    public void serialize(
+        final StringFilterProperty value,
+        final JsonGenerator gen,
+        final SerializerProvider serializers)
+        throws IOException {
+      gen.writeString(value.get$Eq());
     }
   }
 
