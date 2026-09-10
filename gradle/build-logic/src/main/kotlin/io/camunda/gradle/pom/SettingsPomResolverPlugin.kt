@@ -22,7 +22,7 @@ open class SettingsPomResolver(private val settings: Settings) {
       ?: error("Missing Maven project version from $relativePath")
 
   fun resolveProperty(propertyName: String, vararg propertyMaps: Map<String, String>): String =
-    PomResolver("<project />").resolveProperty(propertyName, *propertyMaps)
+    resolvePomProperty(propertyName, *propertyMaps)
 
   fun resolveProperty(propertyName: String, propertyMaps: List<Map<String, String>>): String =
     resolveProperty(propertyName, *propertyMaps.toTypedArray())
