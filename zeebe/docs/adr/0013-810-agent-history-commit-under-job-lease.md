@@ -22,7 +22,7 @@ activation and three from the live one. The record would assert a conversation t
 [0005](0005-810-job-lease.md) provides the missing identity: an opaque token identifying one activation
 of one job. Agent history is its first consumer. This ADR covers what agent history does with it, and
 the durability rules that follow; the token's own guarantees stay in 0005, and why agent execution is
-recorded in the engine at all stays in [0009](0009-810-agent-execution-in-engine-records.md).
+recorded in the engine at all stays in [0010](0010-810-agent-execution-in-engine-records.md).
 
 ## Decision
 
@@ -78,7 +78,7 @@ at commit time, not whether the command is allowed.
 **D6. Duplicates are skipped silently by client-supplied item id; ordering and omission are the
 writer's contract.** An item whose id already exists for this agent instance — committed, or pending
 under the same lease — is skipped entirely and echoed back marked as a duplicate, applying none of its
-effects, which is what makes D7 of [0011](0011-810-agent-instance-written-by-agent-runtime.md)'s delta
+effects, which is what makes D7 of [0012](0012-810-agent-instance-written-by-agent-runtime.md)'s delta
 metrics safe to retry. A pending item under a *different* lease is never a duplicate; it belongs to an
 attempt that may still lose. The engine does not check that a writer sends items in order or sends
 them all: a writer that reorders or omits items produces a record that differs from its own view and
@@ -117,7 +117,7 @@ processor.
 
 - A history item that never reaches a terminal state leaks primary storage and shows as pending
   forever. This has happened once during development, when the engine could not recognise an external
-  agent's job as agentic — see [0010](0010-810-agent-definition-from-bpmn-marker.md).
+  agent's job as agentic — see [0011](0011-810-agent-definition-from-bpmn-marker.md).
 - Writers must supply a job key and that job's lease token whenever they attach history. Enforcement
   of that requirement in the validator and clients is still being completed (camunda/camunda#60864);
   until it is, the unleased commit path in D2 stays reachable.

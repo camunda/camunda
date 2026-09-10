@@ -20,13 +20,13 @@ execution data therefore needs an anchor of its own: something that outlives an 
 that every history item and every metric can hang off, and that Operate can show as one run.
 
 The agent runtime — the Camunda AI Agent Connector, or a user's own job worker — is the only party
-that knows what the agent is doing. Under [0009](0009-810-agent-execution-in-engine-records.md) that
+that knows what the agent is doing. Under [0010](0010-810-agent-execution-in-engine-records.md) that
 data has to reach secondary storage through the engine, so the runtime pushes it in through a command
 API. This scopes the work to visibility and leaves how agents actually execute untouched.
 
 What the runtime reports is not durable the moment it arrives. A history item is stored pending,
 attributed to the job activation that reported it, and becomes committed or discarded when that job
-ends, whether it completes or is destroyed; [0012](0012-810-agent-history-commit-under-job-lease.md)
+ends, whether it completes or is destroyed; [0013](0013-810-agent-history-commit-under-job-lease.md)
 owns that lifecycle. D6 and D8 below rely on it.
 
 ## Decision
@@ -45,7 +45,7 @@ instance instead. What counts as one run follows the runtime's own continuity.
 
 **D2. The agent runtime writes the agent instance through a public command API.**
 Creating an instance, moving it through its statuses, reporting metrics, and appending history are all
-client commands. The engine does not derive any of it. Under 0009 the runtime already had to get this
+client commands. The engine does not derive any of it. Under 0010 the runtime already had to get this
 data into secondary storage somehow; routing it through the engine's API was the chosen way, and it
 keeps the engine out of the business of running agents.
 
@@ -97,7 +97,7 @@ operationally important fact about a failed run.
 **D8. One element instance may write to an agent instance at a time.**
 A parallel multi-instance agent task can otherwise land two jobs on one agent instance before either
 commits. Neither job can see the other's pending items, so both accept the same item and both commit
-it — and the duplicate bookkeeping in [0012](0012-810-agent-history-commit-under-job-lease.md) holds
+it — and the duplicate bookkeeping in [0013](0013-810-agent-history-commit-under-job-lease.md) holds
 only one entry per item. The active writer is judged by its job, not its element instance, because an
 element instance can stay active after its job can no longer write.
 

@@ -44,7 +44,7 @@ without changing how any agent actually runs. Nothing forecloses moving the agen
 engine later, but that would mean storing content in the engine rather than passing it through (D3),
 and query APIs that read it back with strong rather than eventual consistency. Both are hard
 problems, and neither had to be solved to gain agent visibility, so they were deliberately left out —
-see D3 of [0011](0011-810-agent-instance-written-by-agent-runtime.md).
+see D3 of [0012](0012-810-agent-instance-written-by-agent-runtime.md).
 
 **D3. Content passes through the engine; primary storage keeps only what command processing needs.**
 A record carries its content far enough to reach secondary storage through the exporter, and primary
@@ -108,7 +108,7 @@ defined; agent indices inherit the platform default like every other process-ins
   no per-consumer integration work.
 - Because history is never read back into execution, a writer that reports something other than what
   it actually sent produces a misleading record and the engine will not detect it. Fidelity is the
-  writer's contract; see [0012](0012-810-agent-history-commit-under-job-lease.md).
+  writer's contract; see [0013](0013-810-agent-history-commit-under-job-lease.md).
 - Query APIs over agent data are eventually consistent, like all secondary-storage reads.
 - Agent history has no independent retention control. Operators who need a different retention for
   agent data than for process instance data have no way to express it today.

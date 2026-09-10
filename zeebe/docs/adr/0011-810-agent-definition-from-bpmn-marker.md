@@ -26,7 +26,7 @@ and the element template ID are user-editable, so neither can carry engine-inter
 
 An agent is therefore declared in the model and turned into a real entity at deploy time. That
 entity is the deploy-time half of the agent records introduced in
-[0009](0009-810-agent-execution-in-engine-records.md).
+[0010](0010-810-agent-execution-in-engine-records.md).
 
 ## Decision
 
