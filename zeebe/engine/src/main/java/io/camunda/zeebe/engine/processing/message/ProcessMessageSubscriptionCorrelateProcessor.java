@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -143,7 +142,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       // Race window: SUSPEND already deleted the message-side subscription, but this CORRELATE
       // was already in flight. Reject to release the message-side lock — another active
       // subscriber can then correlate, or the message returns 404. Gated on exact SUSPENDED, not
-      // isSuspended(); see suspensionBehavior() below for why RESUMING must fall through instead.
+      // isSuspended(); see onSuspended() below for why RESUMING must fall through instead.
       // Checked last so a stale or duplicate correlate goes through those paths instead, without
       // releasing a live replacement's correlation lock.
       rejectCommand(command, RejectionType.INVALID_STATE, SUSPENDED_PI_MESSAGE);
@@ -273,13 +272,17 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessMessageSubscriptionRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<ProcessMessageSubscriptionRecord> record) {
     // Process unconditionally — buffering would keep the message-partition lock held
     // indefinitely while the instance is suspended or resuming. The exact-SUSPENDED check
     // inside processRecord rejects a CORRELATE that arrives during the narrow suspend/close
     // race window. During RESUMING it must fall through instead: an early reopened subscription
     // can correlate a still-buffered message while later REOPEN commands are still draining.
-    return SuspensionBehavior.PROCESS;
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessMessageSubscriptionRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

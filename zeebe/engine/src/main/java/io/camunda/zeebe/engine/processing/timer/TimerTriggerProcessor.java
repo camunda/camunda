@@ -15,15 +15,14 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -53,7 +52,7 @@ public final class TimerTriggerProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
-  private final MutableTimerInstanceState timerInstanceState;
+  private final TimerInstanceState timerInstanceState;
   private final ExpressionProcessor expressionProcessor;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -204,9 +203,17 @@ public final class TimerTriggerProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<TimerRecord> record) {
-    // firing a timer advances the token, so reject while suspended. Rejecting does not remove the
-    // due timer, so it may strand or re-trigger until firing is suppressed and re-armed on resume.
-    return SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
+    stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.SUSPENDED, record.getValue());
+    return SuspensionAction.BUFFER;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
+    final long timerKey = record.getKey();
+    final var timer = record.getValue();
+    // RESUMED restores a missing due-date entry before the drained TRIGGER removes the timer.
+    stateWriter.appendFollowUpEvent(timerKey, TimerIntent.RESUMED, timer);
+    return SuspensionAction.PROCESS;
   }
 }

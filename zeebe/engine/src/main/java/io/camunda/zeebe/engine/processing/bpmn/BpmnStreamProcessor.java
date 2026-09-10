@@ -173,12 +173,20 @@ public final class BpmnStreamProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
     // Termination must complete even on a suspended instance. Any other externally issued command
     // is rejected; internal forward-progress element events are buffered instead.
     return switch ((ProcessInstanceIntent) record.getIntent()) {
-      case TERMINATE_ELEMENT, CONTINUE_TERMINATING_ELEMENT -> SuspensionBehavior.PROCESS;
-      default -> record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+      case TERMINATE_ELEMENT, CONTINUE_TERMINATING_ELEMENT -> SuspensionAction.PROCESS;
+      default -> SuspensionAware.bufferInternalOnly(record);
+    };
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return switch ((ProcessInstanceIntent) record.getIntent()) {
+      case TERMINATE_ELEMENT, CONTINUE_TERMINATING_ELEMENT -> SuspensionAction.PROCESS;
+      default -> SuspensionAware.processInternalOnly(record);
     };
   }
 

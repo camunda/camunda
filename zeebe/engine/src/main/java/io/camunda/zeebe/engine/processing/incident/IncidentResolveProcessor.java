@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -95,8 +94,7 @@ public final class IncidentResolveProcessor
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     this.incidentMetrics = incidentMetrics;
-    this.bannedInstanceCheck =
-        new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
+    bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
   @Override
@@ -314,7 +312,12 @@ public final class IncidentResolveProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<IncidentRecord> record) {
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<IncidentRecord> record) {
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<IncidentRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 }
