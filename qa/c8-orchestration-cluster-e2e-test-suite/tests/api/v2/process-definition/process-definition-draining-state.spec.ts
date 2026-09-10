@@ -85,7 +85,9 @@ test.describe('Process Definition Draining State', () => {
       [],
     );
 
-    await cancelProcessInstance(instance.processInstanceKey);
+    await cancelProcessInstance(instance.processInstanceKey, {
+      ignoreNotFound: false,
+    });
 
     await expectDefinitionKeysForState(
       request,
@@ -136,7 +138,9 @@ test.describe('Process Definition Draining State', () => {
       expect(items[0]!.state).toBe('DRAINING');
     }).toPass(defaultAssertionOptions);
 
-    await cancelProcessInstance(instance.processInstanceKey);
+    await cancelProcessInstance(instance.processInstanceKey, {
+      ignoreNotFound: false,
+    });
     await expectProcessDefinitionDeleted(request, v2.processDefinitionKey);
   });
 });
