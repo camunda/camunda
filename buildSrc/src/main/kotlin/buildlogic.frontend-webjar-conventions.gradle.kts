@@ -56,7 +56,8 @@ val npmVersionPackage =
     )
     inputs.property("projectVersion", project.version)
     outputs.file(layout.projectDirectory.file("package.json"))
-    outputs.cacheIf { true }
+    // This task mutates a source-tree file, so caching it could restore a stale package.json.
+    outputs.cacheIf { false }
   }
 
 val npmCi =
