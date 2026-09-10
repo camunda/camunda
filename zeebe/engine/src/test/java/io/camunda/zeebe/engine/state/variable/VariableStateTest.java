@@ -479,20 +479,101 @@ public final class VariableStateTest {
             tuple(keyVariableC, child, wrapString("c"), wrapString("3")));
   }
 
+  @Test
+  public void shouldCollectVariablesSetAfterRemovingAllVariablesOfScope() {
+    // given
+    declareScope(parent);
+    declareScope(parent, child);
+
+    setVariableLocal(child, wrapString("a"), asMsgPack("1"));
+    variableState.removeAllVariables(child);
+
+    // when
+    setVariableLocal(child, wrapString("b"), asMsgPack("2"));
+
+    // then
+    assertEquality(variableState.getVariablesAsDocument(child), "{'b': 2}");
+    assertEquality(variableState.getVariablesLocalAsDocument(child), "{'b': 2}");
+    assertEquality(variableState.getVariable(child, wrapString("b")), "2");
+  }
+
+  @Test
+  public void shouldCollectVariablesFromGrandparentWhenIntermediateScopesAreEmpty() {
+    // given
+    final long grandparent = parent;
+    final long parent = child;
+    final long child = child2;
+    declareScope(grandparent);
+    declareScope(grandparent, parent);
+    declareScope(parent, child);
+
+    setVariableLocal(grandparent, wrapString("a"), asMsgPack("1"));
+
+    // when
+    final DirectBuffer variablesDocument = variableState.getVariablesAsDocument(child);
+
+    // then
+    assertEquality(variablesDocument, "{'a': 1}");
+    assertEquality(variableState.getVariable(child, wrapString("a")), "1");
+  }
+
+  @Test
+  public void shouldCollectVariablesSetBeforeTheScopeWasCreated() {
+    // given - the create-instance payload, modification variable instructions and call activity
+    // propagation all write variables before the element instance of that scope exists
+    declareScope(parent);
+    setVariableLocal(parent, wrapString("a"), asMsgPack("1"));
+    setVariableLocal(child, wrapString("b"), asMsgPack("2"));
+
+    // when the scope is created with the flag the activating record carries
+    declareScope(parent, child, true);
+
+    // then
+    assertEquality(variableState.getVariablesLocalAsDocument(child), "{'b': 2}");
+    assertEquality(variableState.getVariablesAsDocument(child), "{'a': 1, 'b': 2}");
+    assertEquality(variableState.getVariable(child, wrapString("b")), "2");
+    assertEquality(variableState.getVariable(child, wrapString("a")), "1");
+    assertThat(variableState.getParentScopeKey(child)).isEqualTo(parent);
+  }
+
+  @Test
+  public void shouldGetVariableFromParentScopeThatWasNotCreatedYet() {
+    // given
+    setVariableLocal(parent, wrapString("a"), asMsgPack("1"));
+    variableState.createScope(child, parent, false);
+
+    try {
+      // when
+      final DirectBuffer variable = variableState.getVariable(child, wrapString("a"));
+
+      // then
+      assertEquality(variable, "1");
+    } finally {
+      variableState.removeScope(child);
+      variableState.removeScope(parent);
+    }
+  }
+
   private void declareScope(final long key) {
     declareScope(-1, key);
   }
 
   private void declareScope(final long parentKey, final long key) {
+    declareScope(parentKey, key, false);
+  }
+
+  private void declareScope(final long parentKey, final long key, final boolean hasVariables) {
     final ElementInstance parent = elementInstanceState.getInstance(parentKey);
 
-    final TypedRecord<ProcessInstanceRecord> record = mockTypedRecord(key, parentKey);
+    final TypedRecord<ProcessInstanceRecord> record = mockTypedRecord(key, parentKey, hasVariables);
     elementInstanceState.newInstance(
         parent, key, record.getValue(), ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  private TypedRecord<ProcessInstanceRecord> mockTypedRecord(final long key, final long parentKey) {
-    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord(parentKey);
+  private TypedRecord<ProcessInstanceRecord> mockTypedRecord(
+      final long key, final long parentKey, final boolean hasVariables) {
+    final ProcessInstanceRecord processInstanceRecord =
+        createProcessInstanceRecord(parentKey, hasVariables);
 
     final TypedRecord<ProcessInstanceRecord> typedRecord = mock(TypedRecord.class);
     when(typedRecord.getKey()).thenReturn(key);
@@ -501,8 +582,10 @@ public final class VariableStateTest {
     return typedRecord;
   }
 
-  private ProcessInstanceRecord createProcessInstanceRecord(final long parentKey) {
+  private ProcessInstanceRecord createProcessInstanceRecord(
+      final long parentKey, final boolean hasVariables) {
     final ProcessInstanceRecord processInstanceRecord = new ProcessInstanceRecord();
+    processInstanceRecord.setHasVariables(hasVariables);
 
     if (parentKey >= 0) {
       processInstanceRecord.setFlowScopeKey(parentKey);
