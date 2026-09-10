@@ -144,7 +144,7 @@ func (c *secretsCommand) set(store *localsecrets.Store, args []string) error {
 
 	if !c.isTerminal() {
 		if os.Getenv("MSYSTEM") != "" {
-			return errors.New("Git Bash does not expose its terminal directly; run with winpty or use --stdin")
+			return errors.New("git Bash does not expose its terminal directly; run with winpty or use --stdin")
 		}
 		return errors.New("interactive input requires a terminal; use --stdin for automation")
 	}
@@ -324,7 +324,7 @@ func (c *secretsCommand) importDotenv(store *localsecrets.Store, args []string) 
 		var metadataInfo os.FileInfo
 		var metadataErr error
 		if metadataOpenErr == nil {
-			defer metadataFile.Close()
+			defer func() { _ = metadataFile.Close() }()
 			metadataInfo, metadataErr = metadataFile.Stat()
 		}
 		if importErr != nil {
@@ -335,7 +335,7 @@ func (c *secretsCommand) importDotenv(store *localsecrets.Store, args []string) 
 			_ = file.Close()
 			return errors.New("c8run secrets refuses to import the c8run .env file because it contains runtime and packaging configuration; use a dedicated secrets dotenv file")
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		reader = file
 	}
 
