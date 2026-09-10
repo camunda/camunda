@@ -2,15 +2,18 @@
 
 ## Intro
 
-Authenticates `gcloud` against the run-scoped GCS build-cache bucket
-(`camunda-monorepo-ci-artifacts`) used to share the Zeebe distball and the
-locally-installed `m2` SNAPSHOT tarball across jobs (see #52693).
+Authenticates `gcloud` against a GCS bucket via Vault-fetched service account
+credentials and Workload Identity Federation. Defaults to the run-scoped GCS
+build-cache bucket (`camunda-monorepo-ci-artifacts`) used to share the Zeebe
+distball and the locally-installed `m2` SNAPSHOT tarball across jobs (see issue
+52693). Pass `secret-path` to authenticate against a different bucket's
+service account instead (e.g. the load-test-results bucket).
 
-It bundles the four steps every build-cache consumer repeated verbatim:
+It bundles the four steps every consumer would otherwise repeat verbatim:
 
 1. Detect fork PRs (via [`is-fork`](../is-fork)) and skip Vault/WIF auth entirely
    when running on one, since secrets aren't available there.
-2. Fetch the `monorepo-build-cache-sa` service account from Vault (WIF provider +
+2. Fetch the service account at `secret-path` from Vault (WIF provider +
    service account, no long-lived key).
 3. Authenticate via `google-github-actions/auth` using Workload Identity Federation.
 4. Install the gcloud CLI via `google-github-actions/setup-gcloud`.
@@ -41,11 +44,12 @@ Always set `timeout-minutes` (e.g. `3`) on the call site.
 
 ### Inputs
 
-|      Input      |                     Description                     | Required | Default |
-|-----------------|-----------------------------------------------------|----------|---------|
-| vault-addr      | Vault address (`secrets.VAULT_ADDR`)                | true     |         |
-| vault-role-id   | Vault AppRole role id (`secrets.VAULT_ROLE_ID`)     | true     |         |
-| vault-secret-id | Vault AppRole secret id (`secrets.VAULT_SECRET_ID`) | true     |         |
+|      Input      |                            Description                            | Required |                                Default                                |
+|-----------------|-------------------------------------------------------------------|----------|-----------------------------------------------------------------------|
+| vault-addr      | Vault address (`secrets.VAULT_ADDR`)                              | true     |                                                                       |
+| vault-role-id   | Vault AppRole role id (`secrets.VAULT_ROLE_ID`)                   | true     |                                                                       |
+| vault-secret-id | Vault AppRole secret id (`secrets.VAULT_SECRET_ID`)               | true     |                                                                       |
+| secret-path     | Vault path to the SERVICE_ACCOUNT/WORKLOAD_IDENTITY_PROVIDER pair | false    | `secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa` |
 
 ### Outputs
 
@@ -76,5 +80,18 @@ jobs:
           gcloud storage cp \
             "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" \
             "${RUNNER_TEMP}/m2-installed.tar"
+```
+
+Non-default bucket, via `secret-path`:
+
+```yaml
+- name: Authenticate to GCS load-test-results
+  timeout-minutes: 3
+  uses: ./.github/actions/gcs-build-cache-auth
+  with:
+    vault-addr: ${{ secrets.VAULT_ADDR }}
+    vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+    vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+    secret-path: secret/data/products/camunda/ci/load-test-results/load-test-results-sa
 ```
 
