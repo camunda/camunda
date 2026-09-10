@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-62261/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-62261/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-62261/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-62261/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-62261/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-62261/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-62261/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-62261/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-62261/assets/js/runtime~main.81385dc9.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-62261/assets/js/main.6b4d3978.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-62261/assets/js/runtime~main.30b66577.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-62261/assets/js/main.19e17316.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -334,6 +334,18 @@ and <code>stable</code> branches should stay free of errors.</p>
 runs weekly on Mondays to verify that preview environment deployments are working correctly. A
 failure indicates a potential issue with the preview environment infrastructure that could affect
 developers using the <code>deploy-preview</code> label on their PRs.</p>
+<blockquote>
+<p><strong>Note — a job for an unreleased version is skipped on purpose:</strong> The <code>deploy-&lt;version&gt;</code> job for a
+minor that hasn&#x27;t been released yet is set up to run only when someone starts the workflow by hand.
+This is because its smoke tests often don&#x27;t exist yet in
+<a href="https://github.com/camunda/c8-cross-component-e2e-tests" target="_blank" rel="noopener noreferrer" class=""><code>camunda/c8-cross-component-e2e-tests</code></a>.
+If that job did run on schedule, it would fail every Monday with <code>No tests found</code> and page
+<code>monorepo-ci-medic</code> for something no one can fix.</p>
+<p><strong>So:</strong> don&#x27;t turn on a version&#x27;s job (or move the smoke tests to a new version) until that minor is
+released and its tests exist — see the <a class="" href="/camunda/pr-preview/pr-62261/release/release-monorepo/">minor-release checklist</a>. If the
+Monday run fails only on a version that isn&#x27;t released yet, that&#x27;s expected. Skip that job instead of
+treating it as a real infra failure.</p>
+</blockquote>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="troubleshooting-9">Troubleshooting<a href="#troubleshooting-9" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting" translate="no">​</a></h4>
 <ol>
 <li class="">Check the failed workflow run linked in the Slack notification:<!-- -->
