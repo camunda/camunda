@@ -250,14 +250,23 @@ get_jobs_after_checkresults_without_ifalways(jobInput) = jobs_after_checkresults
         }
         count(job_needs_checkresults) == 1
 
-        # check that the job declares an `if: ...` condition and it contains `always()`
+        # check that the job declares an `if: ...` condition that guards on check-results
         #
         # this is important because GHA by default skips execution of jobs that itself
         # depend on jobs (transitively) that were skipped - which happens a lot in Unified CI
         # and we want to avoid accidentally skipping deploy jobs or similar
         #
+        # `always()` keeps GHA from skipping the job once the gate fails, and requiring
+        # it to be conjoined with a `needs.check-results.result` test forces the job to
+        # state which gate outcome it runs on. Pinning the comparison to `== 'success'`
+        # as well would forbid a job that legitimately runs *because* the gate failed,
+        # such as the runner-shutdown retry, so the outcome itself is left open.
+        #
+        # This is a substring match, so the two must appear in exactly this form; an
+        # `if` that only mentions both separately (e.g. joined by `||`) still runs
+        # unconditionally and is correctly rejected.
         job_if := object.get(job, "if", "")  # get with empty default value
-        not contains(job_if, "always() && needs.check-results.result == 'success'")
+        not contains(job_if, "always() && needs.check-results.result")
     }
 }
 
