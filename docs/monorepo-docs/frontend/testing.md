@@ -25,21 +25,23 @@ entrypoints depending on the test type:
 
 Both use `createEndpointMock` from
 `#/shared-test-modules/mock-endpoint` to build typed request handlers.
-All endpoint mocks are defined in `#/shared-test-modules/endpoints` as
-a shared dictionary, so every test (unit and Playwright) reuses the
-same mock definitions.
+All endpoint mocks are individually named exports from
+`#/shared-test-modules/mock-handlers`, so every test (unit and Playwright)
+reuses the same mock definitions. Reusable response factories live under
+`#/shared-test-modules/api-mocks/`.
 
 Unit test example:
 
 ```ts
-import { it } from "#/vitest-modules/test-extend";
-import { endpoints } from "#/shared-test-modules/endpoints";
-import { HttpResponse } from "msw";
+import {HttpResponse} from 'msw';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
+import {it} from '#/vitest-modules/test-extend';
 
-it("should render users", async ({ worker }) => {
+it('should render the current user', async ({worker}) => {
   worker.use(
-    endpoints.users({
-      successResponse: HttpResponse.json([{ name: "Alice" }]),
+    mockCurrentUserEndpoint({
+      successResponse: HttpResponse.json(createCurrentUser()),
     }),
   );
   // render and assert...
@@ -49,18 +51,17 @@ it("should render users", async ({ worker }) => {
 Playwright test example:
 
 ```ts
-import { test, expect } from "#/pw-modules/test-extend";
-import { endpoints } from "#/shared-test-modules/endpoints";
-import { HttpResponse } from "msw";
+import {HttpResponse} from 'msw';
+import {test} from '#/pw-modules/test-extend';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
 
-test("should render users", async ({ network, page }) => {
+test.beforeEach(({network}) => {
   network.use(
-    endpoints.users({
-      successResponse: HttpResponse.json([{ name: "Alice" }]),
+    mockCurrentUserEndpoint({
+      successResponse: HttpResponse.json(createCurrentUser()),
     }),
   );
-  await page.goto("/users");
-  await expect(page.getByText("Alice")).toBeVisible();
 });
 ```
 

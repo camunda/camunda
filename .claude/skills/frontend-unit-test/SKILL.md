@@ -45,32 +45,9 @@ The `worker` fixture is injected by the custom `it` and auto-resets between test
 
 ### Testing a standalone component (no routing context)
 
-```tsx
-import {render} from 'vitest-browser-react';
-import {it} from '#/vitest-modules/test-extend';
-import {mockUsersEndpoint} from '#/shared-test-modules/mock-handlers';
-import {describe, expect} from 'vitest';
-import {HttpResponse} from 'msw';
-import {UserList} from './UserList';
-
-describe('<UserList />', () => {
-  it('should render users from the API', async ({worker}) => {
-    worker.use(
-      mockUsersEndpoint({
-        successResponse: HttpResponse.json([
-          {name: 'Alice'},
-          {name: 'Bob'},
-        ]),
-      }),
-    );
-
-    const screen = await render(<UserList />);
-
-    await expect.element(screen.getByRole('cell', {name: 'Alice'})).toBeVisible();
-    await expect.element(screen.getByRole('cell', {name: 'Bob'})).toBeVisible();
-  });
-});
-```
+See `src/operate/shared/TenantField/TenantField.test.tsx` for a complete example that registers
+`mockCurrentUserEndpoint`, renders a standalone component with providers, interacts through
+`userEvent`, and asserts through `expect.element()`.
 
 ### Testing a page or component that needs routing context
 
@@ -171,6 +148,8 @@ Format changed files via `npm run prettier:format` from `webapp/client/` and typ
 ## Template references
 
 - `src/shared/pages/LoginPage.test.tsx` — page-level test using `renderWithRouter`.
+- `src/operate/shared/TenantField/TenantField.test.tsx` — standalone component test using a shared
+  endpoint mock.
 - `src/shared/mock-test.test.tsx` — component test with MSW mocking.
 - `src/vitest-modules/test-extend.ts` — custom `it` fixture source.
 - `src/vitest-modules/render-with-router.tsx` — `renderWithRouter` utility source.

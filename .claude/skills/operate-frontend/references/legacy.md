@@ -20,8 +20,9 @@ src/
 
 Components use `index.tsx`, `styled.ts`, and `index.test.tsx`; some tests live in `tests/`.
 
-Routes use React Router v6 `createBrowserRouter` in `src/App/index.tsx` and are lazy-loaded. Use
-`Paths` and `Locations` from `modules/Routes.tsx`; never hardcode paths. Use
+Routes use React Router v7 through its v6-compatible `createBrowserRouter` API in
+`src/App/index.tsx` and are lazy-loaded. Use `Paths` and `Locations` from `modules/Routes.tsx`;
+never hardcode paths. Use
 `useProcessInstancePageParams` on process-instance detail pages and `useParams` elsewhere. Filters
 live in URL search params through `useFilters`, not MobX. Authenticated routes inherit the dashboard
 guards, and the root `PageErrorBoundary` handles page errors; do not duplicate either.
