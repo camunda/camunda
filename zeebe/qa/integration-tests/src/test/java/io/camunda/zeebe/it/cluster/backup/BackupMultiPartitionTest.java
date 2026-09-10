@@ -34,6 +34,8 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -93,6 +95,7 @@ class BackupMultiPartitionTest {
   private ZeebeResourcesHelper resourcesHelper;
   private BackupRequestHandler backupRequestHandler;
   private BackupActuator backupActuator;
+  private int lastSeenDistributionRecordCount = -1;
 
   @TestZeebe
   private final TestCluster cluster =
@@ -359,6 +362,7 @@ class BackupMultiPartitionTest {
   void canRetrieveCheckpointStateFromPartialPartitions()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given
+    awaitCommandDistributionsDrained();
     final long processKey = resourcesHelper.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
     createProcessInstanceOnPartitionOne(processKey);
 
@@ -475,6 +479,40 @@ class BackupMultiPartitionTest {
                 .limit(1)
                 .findFirst())
         .isPresent();
+  }
+
+  private void awaitCommandDistributionsDrained() {
+    lastSeenDistributionRecordCount = -1;
+    Awaitility.await("no command distribution is in flight")
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(100))
+        .during(Duration.ofSeconds(5))
+        .until(this::commandDistributionsDrained);
+  }
+
+  private boolean commandDistributionsDrained() {
+    final var distributionRecords =
+        RecordingExporter.getRecords().stream()
+            .filter(record -> record.getValueType() == ValueType.COMMAND_DISTRIBUTION)
+            .toList();
+
+    final var unchanged = distributionRecords.size() == lastSeenDistributionRecordCount;
+    lastSeenDistributionRecordCount = distributionRecords.size();
+    if (!unchanged) {
+      return false;
+    }
+
+    final Set<Long> pending = new HashSet<>();
+    final Set<Long> finished = new HashSet<>();
+    for (final var record : distributionRecords) {
+      if (record.getIntent() == CommandDistributionIntent.STARTED) {
+        pending.add(record.getKey());
+      } else if (record.getIntent() == CommandDistributionIntent.FINISHED) {
+        finished.add(record.getKey());
+      }
+    }
+    pending.removeAll(finished);
+    return pending.isEmpty();
   }
 
   private void createProcessInstanceOnPartitionOne(final long processKey) {
