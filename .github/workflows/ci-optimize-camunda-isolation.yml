@@ -86,12 +86,15 @@ jobs:
           version: current-test
           distball: ${{ steps.build-camunda.outputs.distball }}
 
-      - name: Start Camunda (Elasticsearch + camunda only)
+      - name: Start services (real smoke compose, self-managed)
         uses: ./.github/actions/compose
         with:
-          compose_file: optimize/client/docker-compose.camunda-only.yml
+          compose_file: optimize/client/docker-compose.yml
           project_name: camunda-isolation
+          additional_flags: "--profile self-managed"
           timeout: ${{ github.event.inputs.startup_timeout || '300' }}
+        env:
+          CAMUNDA_VERSION: SNAPSHOT
 
       - name: Report camunda readiness
         if: always()
