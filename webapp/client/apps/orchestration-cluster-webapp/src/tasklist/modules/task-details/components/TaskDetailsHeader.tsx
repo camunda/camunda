@@ -9,7 +9,7 @@
 import {Button, Text, useIsMobile} from '@camunda/design-system';
 import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useNavigate} from '@tanstack/react-router';
-import {ArrowLeft, CircleCheck, LoaderCircle} from 'lucide-react';
+import {ArrowLeft, CircleCheck, LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {AssigneeBadge} from '#/tasklist/modules/available-tasks/components/AssigneeBadge';
 
@@ -32,7 +32,7 @@ const RightPanel: React.FC<RightPanelProps> = ({taskState, assignee, user, assig
 					title={t('tasklist.taskDetailsTaskCompletedBy')}
 				>
 					<span className="flex items-center gap-1">
-						<CircleCheck className="size-4 text-success-action-default" aria-hidden />
+						<CircleCheck className="size-4 text-success-foreground-subtle" aria-hidden />
 						{assignee ? `${t('tasklist.taskDetailsTaskCompletedBy')} ` : t('tasklist.taskAssignmentStatusCompleted')}
 					</span>
 					{assignee ? (

@@ -7,7 +7,7 @@
  */
 
 import {Button} from '@camunda/design-system';
-import {ExternalLink, ShieldAlert} from 'lucide-react';
+import {ExternalLink, ShieldAlert} from '@camunda/design-system/icons';
 import {Trans, useTranslation} from 'react-i18next';
 import {PageEmptyState} from './PageEmptyState';
 

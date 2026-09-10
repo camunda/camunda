@@ -7,7 +7,7 @@
  */
 
 import {EmptyState} from '@camunda/design-system';
-import {Search} from 'lucide-react';
+import {Search} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 
 const NoTasks: React.FC = () => {

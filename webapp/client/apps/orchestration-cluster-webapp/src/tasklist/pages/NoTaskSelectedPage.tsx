@@ -7,7 +7,7 @@
  */
 
 import {Button, EmptyState} from '@camunda/design-system';
-import {Check, ListTodo} from 'lucide-react';
+import {Check, ListTodo} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
 

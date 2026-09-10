@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CircleAlert, SignalHigh, SignalLow, SignalMedium} from 'lucide-react';
+import {CircleAlert, SignalHigh, SignalLow, SignalMedium} from '@camunda/design-system/icons';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
 import {LabelWithTooltip, type Align} from './LabelWithTooltip';
 

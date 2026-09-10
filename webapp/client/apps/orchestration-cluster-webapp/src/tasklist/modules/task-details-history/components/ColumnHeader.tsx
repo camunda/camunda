@@ -7,7 +7,7 @@
  */
 
 import {Button, TableHead} from '@camunda/design-system';
-import {ArrowDown, ArrowUp, ArrowUpDown} from 'lucide-react';
+import {ArrowDown, ArrowUp, ArrowUpDown} from '@camunda/design-system/icons';
 import {useNavigate} from '@tanstack/react-router';
 import {
 	getNextSortSearchValue,

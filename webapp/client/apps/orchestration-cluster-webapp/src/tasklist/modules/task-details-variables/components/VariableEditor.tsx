@@ -19,7 +19,7 @@ import {
 } from '@camunda/design-system';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useVirtualizer} from '@tanstack/react-virtual';
-import {Maximize2, X} from 'lucide-react';
+import {Maximize2, X} from '@camunda/design-system/icons';
 import {type RefObject, useEffect} from 'react';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';

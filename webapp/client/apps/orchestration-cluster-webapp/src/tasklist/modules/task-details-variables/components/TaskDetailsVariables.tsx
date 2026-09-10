@@ -26,7 +26,7 @@ import {type InfiniteData, useQueryClient} from '@tanstack/react-query';
 import arrayMutators from 'final-form-arrays';
 import get from 'lodash/get';
 import intersection from 'lodash/intersection';
-import {CircleAlert, Plus} from 'lucide-react';
+import {CircleAlert, Plus} from '@camunda/design-system/icons';
 import {lazy, Suspense, useCallback, useMemo, useRef, useState} from 'react';
 import {Form} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
