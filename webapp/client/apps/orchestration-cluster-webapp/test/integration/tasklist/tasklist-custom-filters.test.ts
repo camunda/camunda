@@ -59,9 +59,7 @@ test.describe('Custom filters', () => {
 		await expect(tasklistIndexPage.customFiltersModal.heading).toBeVisible();
 	});
 
-	test('should open the custom filters modal from the collapsed panel filter button', async ({
-		tasklistIndexPage,
-	}) => {
+	test('should open the custom filters modal from the collapsed panel filter button', async ({tasklistIndexPage}) => {
 		await tasklistIndexPage.goto();
 
 		await tasklistIndexPage.filterTasksButton.click();
@@ -163,10 +161,7 @@ test.describe('Custom filters', () => {
 		await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
 	});
 
-	test('should include tenantId in the URL for a custom filter with a tenant', async ({
-		page,
-		tasklistIndexPage,
-	}) => {
+	test('should include tenantId in the URL for a custom filter with a tenant', async ({page, tasklistIndexPage}) => {
 		await tasklistIndexPage.seedCustomFilters({custom: {assignee: 'all', status: 'all', tenant: '<default>'}});
 
 		await tasklistIndexPage.goto();
@@ -179,9 +174,7 @@ test.describe('Custom filters', () => {
 		expect(params.get('tenantId')).toBe('<default>');
 	});
 
-	test('should populate the process select in the modal from process definitions', async ({
-		tasklistIndexPage,
-	}) => {
+	test('should populate the process select in the modal from process definitions', async ({tasklistIndexPage}) => {
 		await tasklistIndexPage.goto();
 		await tasklistIndexPage.expandFilters();
 		await tasklistIndexPage.newFilterButton.click();

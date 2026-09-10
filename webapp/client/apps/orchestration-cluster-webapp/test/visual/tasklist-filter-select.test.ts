@@ -89,9 +89,7 @@ test('should match snapshot with the filter select open', async ({tasklistIndexP
 	await expect(tasklistIndexPage.filterOption('All open tasks')).toBeVisible();
 	await expect(tasklistIndexPage.filterOption('Custom')).toBeVisible();
 	await expect(tasklistIndexPage.filterOption('Completed orders')).toBeVisible();
-	await expect(
-		tasklistIndexPage.filterOption('Assigned finance tasks with a very long filter name'),
-	).toBeVisible();
+	await expect(tasklistIndexPage.filterOption('Assigned finance tasks with a very long filter name')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

@@ -83,11 +83,7 @@ test.describe('Task completion', () => {
 		await expect(page).toHaveURL(/\/tasklist$/);
 	});
 
-	test('should navigate to the next open task when auto-select is enabled', async ({
-		network,
-		taskDetailPage,
-		page,
-	}) => {
+	test('should navigate to the next open task when auto-select is enabled', async ({network, taskDetailPage, page}) => {
 		const assigningTask = createUserTask({
 			userTaskKey: '2251799813685283',
 			name: 'Assigning purchase request after auto-select',
@@ -190,9 +186,7 @@ test.describe('Task completion', () => {
 			}),
 		);
 
-		await expect(
-			taskDetailPage.header.notifications.getByNotificationTitle('Task completion delayed'),
-		).toBeVisible();
+		await expect(taskDetailPage.header.notifications.getByNotificationTitle('Task completion delayed')).toBeVisible();
 		await expect(taskDetailPage.header.notifications.getByNotificationTitle('Task completed')).toBeVisible();
 		await expect(page).toHaveURL(/\/tasklist$/);
 	});

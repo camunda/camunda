@@ -67,11 +67,7 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should have no accessibility violations on task history', async ({
-	network,
-	taskDetailPage,
-	makeAxeBuilder,
-}) => {
+test('should have no accessibility violations on task history', async ({network, taskDetailPage, makeAxeBuilder}) => {
 	network.use(
 		mockQueryUserTaskAuditLogsEndpoint({
 			successResponse: HttpResponse.json(createQueryUserTaskAuditLogsResponse({items: historyEntries})),

@@ -148,11 +148,7 @@ test('should match the task history loading error', async ({network, taskDetailP
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the task history permission error', async ({
-	network,
-	taskDetailPage,
-	page,
-}) => {
+test('should match the task history permission error', async ({network, taskDetailPage, page}) => {
 	network.use(
 		mockQueryUserTaskAuditLogsEndpoint({
 			successResponse: new HttpResponse(null, {status: 403}),
