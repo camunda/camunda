@@ -8,7 +8,7 @@
 
 import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import {ListTodo, Workflow} from 'lucide-react';
+import {ListTodo, Workflow} from '@camunda/design-system/icons';
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {hasComponentAccess} from '#/shared/componentAccess';

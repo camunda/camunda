@@ -28,7 +28,7 @@ import {
 	Skeleton,
 	Switch,
 } from '@camunda/design-system';
-import {Plus, X} from 'lucide-react';
+import {Plus, X} from '@camunda/design-system/icons';
 import {ErrorBoundary} from 'react-error-boundary';
 import {Field, Form, type FieldInputProps} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
@@ -599,7 +599,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 										</>
 									) : (
 										<>
-											<Button variant="secondary" onClick={() => onDelete(values?.name ?? '')} type="button">
+											<Button variant="destructive" onClick={() => onDelete(values?.name ?? '')} type="button">
 												{t('tasklist.customFiltersModalDeleteButton')}
 											</Button>
 											<Button variant="secondary" onClick={onClose} type="button">

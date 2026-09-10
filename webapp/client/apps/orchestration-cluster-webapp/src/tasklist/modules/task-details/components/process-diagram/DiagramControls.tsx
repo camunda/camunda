@@ -7,7 +7,7 @@
  */
 
 import {Button, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
-import {Crosshair, ZoomIn, ZoomOut} from 'lucide-react';
+import {Crosshair, ZoomIn, ZoomOut} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 
 type Props = {

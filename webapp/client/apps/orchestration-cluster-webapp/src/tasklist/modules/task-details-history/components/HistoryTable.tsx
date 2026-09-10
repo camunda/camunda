@@ -8,7 +8,7 @@
 
 import {useMemo} from 'react';
 import {Button, EmptyState, Table, TableBody, TableCell, TableHeader, TableRow} from '@camunda/design-system';
-import {Info} from 'lucide-react';
+import {Info} from '@camunda/design-system/icons';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';

@@ -26,7 +26,7 @@ import {type InfiniteData, useQueryClient} from '@tanstack/react-query';
 import arrayMutators from 'final-form-arrays';
 import get from 'lodash/get';
 import intersection from 'lodash/intersection';
-import {CircleAlert, Plus} from 'lucide-react';
+import {CircleAlert, Plus} from '@camunda/design-system/icons';
 import {lazy, Suspense, useCallback, useMemo, useRef, useState} from 'react';
 import {Form} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
@@ -155,7 +155,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 
 				return (
 					<div className="flex h-full min-h-0 w-full flex-col gap-2">
-						<div className="mt-4 flex min-h-8 w-full items-center px-4">
+						<div className="flex min-h-8 w-full items-center px-4">
 							<Heading as="h2" variant="heading-lg" className="sr-only">
 								{t('tasklist.variablesTitle')}
 							</Heading>

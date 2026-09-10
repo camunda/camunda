@@ -7,7 +7,7 @@
  */
 
 import {useLayoutEffect, useRef} from 'react';
-import {LoaderCircle} from 'lucide-react';
+import {LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {TextInput} from './TextInput';
 

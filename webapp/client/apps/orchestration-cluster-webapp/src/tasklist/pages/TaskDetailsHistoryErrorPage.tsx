@@ -7,7 +7,7 @@
  */
 
 import {Button} from '@camunda/design-system';
-import {ExternalLink} from 'lucide-react';
+import {ExternalLink} from '@camunda/design-system/icons';
 import {useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {Trans, useTranslation} from 'react-i18next';
 import {ForbiddenError} from '#/shared/errors';
