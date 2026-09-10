@@ -128,9 +128,12 @@ public final class DocumentReferenceResolver {
   private DocumentReferenceResponse parseReference(final Map<String, Object> referenceNode) {
     final DocumentReferenceResponse reference;
     try {
+      // Deserialize the protocol type rather than DocumentReferenceResponseImpl: the latter is
+      // only constructible through a Jackson 2 @JsonDeserialize hook, which a Jackson 3 mapper
+      // ignores. DocumentReference carries plain jackson-annotations, understood by both.
       reference =
-          jsonMapper.readJson(
-              jsonMapper.toJson(referenceNode), DocumentReferenceResponseImpl.class);
+          new DocumentReferenceResponseImpl(
+              jsonMapper.readJson(jsonMapper.toJson(referenceNode), DocumentReference.class));
     } catch (final CamundaAssertJsonMapper.JsonMappingException e) {
       throw new IllegalStateException(
           "Failed to parse Camunda document reference: " + e.getMessage(), e);
