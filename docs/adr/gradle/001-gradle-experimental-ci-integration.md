@@ -15,7 +15,8 @@ workflows.
 ## Context
 
 The monorepo builds with Maven. A parallel Gradle build exists and can already run most of CI, but
-it can drift whenever `pom.xml` files or Java sources change.
+it can drift whenever `pom.xml` files or Java sources change: most of those problems should surface as
+compilation failures, but sometime they might make a test failing instead.
 
 We want to surface Gradle regressions during pull requests and protect the merge queue without
 replacing Maven's authoritative application tests. The Gradle compilation check is additive and
@@ -46,7 +47,7 @@ ADR, Gradle build inputs are:
 - files below `gradle/`; and
 - files below `buildSrc/`.
 
-**D2. Gradle application tests are selected only for labeled pull requests.**
+**D2. Gradle application tests are selected only for gradle only pull requests**
 
 A pure Gradle-only pull request selects the Gradle application test path automatically. Other
 non-Java, non-Maven pull requests can select it with the `gradle-build` label, making it possible to
@@ -63,15 +64,18 @@ The `Gradle / Test Classes` job runs when the change set contains Java/resource 
 inputs, Gradle build inputs, or CI inputs that can change build behavior. It runs:
 
 ```text
-./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses
+./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses :camunda-zeebe:distZip
 ```
 
-The `testClasses` task compiles production and test sources without running tests.
+The `testClasses` task compiles production and test sources without running tests. The job uploads the
+Gradle ZIP as an artifact. A separate `Gradle / Distribution Parity` job waits for both this job and
+`build-distball`, downloads the Gradle and Maven ZIPs, and compares their versioned roots and bundled
+JAR names and versions.
 
-The job is included in Unified CI's `check-results` gate. It therefore blocks relevant pull
-requests and merge groups when Gradle compilation fails. Protected branch pushes run the same check
-to provide post-merge health feedback and warm the shared Gradle cache; a push failure cannot prevent
-the commit that triggered it from having already landed.
+Both jobs are included in Unified CI's `check-results` gate. They therefore block relevant pull
+requests and merge groups when Gradle compilation, packaging, or distribution parity fails. Protected
+branch pushes run the same checks to provide post-merge health feedback and warm the shared Gradle
+cache; a push failure cannot prevent the commit that triggered it from having already landed.
 
 **D4. Build-tool selection defaults to Maven outside labeled pull requests.**
 
@@ -124,20 +128,10 @@ this workflow structure simple.
 The following work is intentionally excluded from this change:
 
 - **Nightly Gradle validation.** A scheduled Gradle test run requires a confirmed alerting model.
-- **Nightly Maven/Gradle artifact parity.** A scheduled job will build the relevant distribution
-  with both Maven and Gradle and compare packaged JAR inventories and versions.
 - **Automated Gradle repair.** Repair automation will be designed after the CI signal is stable.
-- **Standalone database workflow migration.** The dedicated RDBMS and search workflow callers remain
-  Maven-only until their infrastructure and ownership are migrated separately.
 
 ## Alternatives considered
 
-- **Run Gradle compilation only in pull requests.** Rejected: merge groups need the same direct
-  production-and-test compilation signal, and protected pushes should warm the shared cache and
-  provide post-merge health feedback.
-- **Select Gradle automatically for Gradle-only PRs.** Rejected: an explicit label makes it
-  possible to validate the experimental path for CI-only or mixed changes while keeping Maven as
-  the default.
 - **Run the Gradle compilation check only for Java changes.** Rejected: Gradle-only and Maven-only
   build changes can independently break Gradle compilation and must also be covered.
 - **Make Maven test jobs depend on the Gradle compilation job.** Rejected: a Gradle failure must
