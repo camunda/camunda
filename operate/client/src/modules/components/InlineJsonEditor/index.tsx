@@ -166,6 +166,15 @@ const InlineJsonEditor: React.FC<Props> = observer(
       [onBlur],
     );
 
+    const handleKeyDown = useCallback(
+      (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === 'Escape' && event.target instanceof HTMLElement) {
+          event.target.blur();
+        }
+      },
+      [],
+    );
+
     const editorId = id === undefined ? undefined : `${id}-editor`;
     const extensions = useMemo(
       () => [
@@ -215,14 +224,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
                 placeholder={placeholder}
                 autoFocus={autoFocus}
                 onChange={handleChange}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === 'Escape' &&
-                    event.target instanceof HTMLElement
-                  ) {
-                    event.target.blur();
-                  }
-                }}
+                onKeyDown={handleKeyDown}
                 extensions={extensions}
                 basicSetup={basicSetup}
                 indentWithTab={false}

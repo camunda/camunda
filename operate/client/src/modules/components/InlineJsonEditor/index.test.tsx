@@ -51,6 +51,16 @@ describe('<InlineJsonEditor />', () => {
     expect(screen.queryByTestId('code-mirror-editor')).not.toBeInTheDocument();
   });
 
+  it('should wrap long unbroken read-only values', () => {
+    render(
+      <InlineJsonEditor value={`"${'1234567890'.repeat(20)}"`} readOnly />,
+    );
+
+    expect(screen.getByTestId('json-editor-readonly')).toHaveStyle({
+      overflowWrap: 'anywhere',
+    });
+  });
+
   it('should render editable and call onChange', async () => {
     const mockOnChange = vi.fn();
 
