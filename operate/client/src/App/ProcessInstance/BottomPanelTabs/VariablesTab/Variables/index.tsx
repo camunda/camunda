@@ -19,7 +19,7 @@ import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
 import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
-import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
+import {useCanEditVariables} from 'modules/queries/processInstance/useCanEditVariables';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useVariableScopeKey} from 'modules/hooks/variables';
@@ -36,7 +36,10 @@ const Variables: React.FC<Props> = observer(
     const {selectedElementId, resolvedElementInstance, hasSelection} =
       useProcessInstanceElementSelection();
     const newScopeKeyForElement = useNewScopeKeyForElement(selectedElementId);
-    const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+    const {data: canEditVariables} = useCanEditVariables(
+      resolvedElementInstance?.type,
+      hasSelection && !resolvedElementInstance,
+    );
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
 
@@ -73,7 +76,7 @@ const Variables: React.FC<Props> = observer(
       const isSelectedElementInstanceRunning =
         resolvedElementInstance?.state === 'ACTIVE';
 
-      if (!isProcessInstanceRunning) {
+      if (!canEditVariables) {
         setFooterVariant('disabled');
         return;
       }
@@ -90,7 +93,7 @@ const Variables: React.FC<Props> = observer(
 
       setFooterVariant('initial');
     }, [
-      isProcessInstanceRunning,
+      canEditVariables,
       initialValues,
       isViewMode,
       hasSelection,
