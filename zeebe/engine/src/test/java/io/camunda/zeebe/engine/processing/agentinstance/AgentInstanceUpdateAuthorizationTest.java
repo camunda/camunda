@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -101,6 +102,8 @@ public final class AgentInstanceUpdateAuthorizationTest {
             .withAgentInstanceKey(instance.agentInstanceKey())
             .withElementInstanceKey(instance.elementInstanceKey())
             .withStatus(AgentInstanceStatus.THINKING)
+            .withJobKey(instance.jobKey())
+            .withJobLease(instance.jobLease())
             .update(user.getUsername());
 
     // then
@@ -185,15 +188,36 @@ public final class AgentInstanceUpdateAuthorizationTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
+    final var jobBatch =
+        engine
+            .jobs()
+            .withType("agent")
+            .withTenantIds(List.of(tenantId))
+            .withLease()
+            .activate(DEFAULT_USER.getUsername());
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var agentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withAuthorizedTenantIds(tenantId)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create(DEFAULT_USER.getUsername())
             .getValue()
             .getAgentInstanceKey();
-    return new AgentInstanceRef(agentInstanceKey, elementInstanceKey);
+    return new AgentInstanceRef(agentInstanceKey, elementInstanceKey, jobKey, jobLease);
   }
 
   private void assignUserToTenant(final String tenantId, final String username) {
@@ -234,5 +258,6 @@ public final class AgentInstanceUpdateAuthorizationTest {
         .create(DEFAULT_USER.getUsername());
   }
 
-  private record AgentInstanceRef(long agentInstanceKey, long elementInstanceKey) {}
+  private record AgentInstanceRef(
+      long agentInstanceKey, long elementInstanceKey, long jobKey, String jobLease) {}
 }

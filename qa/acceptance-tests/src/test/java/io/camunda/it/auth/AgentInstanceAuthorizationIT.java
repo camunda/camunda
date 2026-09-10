@@ -111,6 +111,7 @@ class AgentInstanceAuthorizationIT {
   private static long elementInstanceKey3;
   private static long jobKey1;
   private static long jobKey3;
+  private static String jobLease3;
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
@@ -125,7 +126,7 @@ class AgentInstanceAuthorizationIT {
         .newUpdateAgentInstanceCommand(agentInstanceKey1)
         .elementInstanceKey(elementInstanceKey1)
         .jobKey(jobKey1)
-        .jobLease("test-job-lease")
+        .jobLease(result1.jobLease())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -137,7 +138,7 @@ class AgentInstanceAuthorizationIT {
         .execute();
     // Complete job1 so JobCompleteProcessor emits AGENT_HISTORY:COMMIT, transitioning
     // the history item to COMMITTED so it becomes searchable.
-    adminClient.newCompleteCommand(jobKey1).execute();
+    adminClient.newCompleteCommand(jobKey1).withLeaseToken(result1.jobLease()).execute();
 
     agentInstanceKey2 = createAgentInstance(adminClient, PROCESS_ID_2).agentInstanceKey();
     final var result3 = createAgentInstance(adminClient, PROCESS_ID_3);
@@ -145,6 +146,7 @@ class AgentInstanceAuthorizationIT {
     agentInstanceKey3 = result3.agentInstanceKey();
     elementInstanceKey3 = result3.elementInstanceKey();
     jobKey3 = result3.jobKey();
+    jobLease3 = result3.jobLease();
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey1);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey2);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey3);
@@ -317,7 +319,7 @@ class AgentInstanceAuthorizationIT {
                     .newUpdateAgentInstanceCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
                     .jobKey(jobKey3)
-                    .jobLease("test-job-lease")
+                    .jobLease(jobLease3)
                     .execute());
   }
 
@@ -363,7 +365,7 @@ class AgentInstanceAuthorizationIT {
                     .newUpdateAgentInstanceCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
                     .jobKey(jobKey3)
-                    .jobLease("test-job-lease")
+                    .jobLease(jobLease3)
                     .history(
                         List.of(
                             new AgentInstanceHistoryItem()
@@ -448,6 +450,7 @@ class AgentInstanceAuthorizationIT {
             .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
+            .withLease(true)
             .send()
             .join()
             .getJobs();
@@ -455,20 +458,21 @@ class AgentInstanceAuthorizationIT {
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
     final long jobKey = activatedJobs.get(0).getKey();
+    final String jobLease = activatedJobs.get(0).getLeaseToken();
 
     final var agentInstanceKey =
         adminClient
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .jobLease("test-job-lease")
+            .jobLease(jobLease)
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
             .execute()
             .getAgentInstanceKey();
 
-    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
+    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey, jobLease);
   }
 
   private static AgentInstanceHistoryItem configurationHistoryItem(
@@ -485,5 +489,5 @@ class AgentInstanceAuthorizationIT {
   }
 
   private record AgentInstanceCreationResult(
-      long agentInstanceKey, long elementInstanceKey, long jobKey) {}
+      long agentInstanceKey, long elementInstanceKey, long jobKey, String jobLease) {}
 }

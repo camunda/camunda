@@ -37,9 +37,16 @@ public final class AgentHistoryBatchCleanUpProcessor
     implements TypedRecordProcessor<AgentHistoryBatchRecord>,
         SuspensionAware<AgentHistoryBatchRecord> {
 
-  // number of history-item ids deleted, combined across the committed and metrics-accumulated
-  // indexes, per AGENT_HISTORY_BATCH:CLEANED cycle
-  public static final int CHUNK_SIZE = 1000;
+  /**
+   * Number of history-item ids deleted, combined across the committed and metrics-accumulated
+   * indexes, per {@code AGENT_HISTORY_BATCH:CLEANED} cycle. Each history-item id is capped at 256
+   * characters, and a single character can take up to 4 bytes in UTF-8, so the extreme worst case
+   * (every character an emoji) is 100 items * 256 chars * 4 bytes * 100 commands per processing
+   * batch = ~10 MB. Under normal conditions (assuming ~1.5 bytes per character on average, which
+   * still allows for the occasional non-Latin character) that same batch is only 100 items * 256
+   * chars * ~1.5 bytes * 100 commands = ~3.84 MB — comfortably within the default max message size.
+   */
+  public static final int CHUNK_SIZE = 100;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;

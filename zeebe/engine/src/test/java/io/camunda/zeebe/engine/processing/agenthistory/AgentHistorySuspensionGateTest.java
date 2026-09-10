@@ -53,9 +53,13 @@ public class AgentHistorySuspensionGateTest {
     final long elementInstanceKey = serviceTaskActivated.getKey();
     final long processInstanceKey = serviceTaskActivated.getValue().getProcessInstanceKey();
 
-    final long agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
-    final long jobKey = activateJobForProcessInstance(processInstanceKey);
-    final long historyItemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey);
+    final var jobLease = activateJobForProcessInstance(processInstanceKey);
+    final long agentInstanceKey =
+        createAgentInstance(elementInstanceKey, jobLease.jobKey(), jobLease.leaseToken()).getKey();
+    final long jobKey = jobLease.jobKey();
+    final long historyItemKey =
+        createHistoryItem(
+            agentInstanceKey, jobLease.jobKey(), jobLease.leaseToken(), elementInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -85,9 +89,13 @@ public class AgentHistorySuspensionGateTest {
     final long elementInstanceKey = serviceTaskActivated.getKey();
     final long processInstanceKey = serviceTaskActivated.getValue().getProcessInstanceKey();
 
-    final long agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
-    final long jobKey = activateJobForProcessInstance(processInstanceKey);
-    final long historyItemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey);
+    final var jobLease = activateJobForProcessInstance(processInstanceKey);
+    final long agentInstanceKey =
+        createAgentInstance(elementInstanceKey, jobLease.jobKey(), jobLease.leaseToken()).getKey();
+    final long jobKey = jobLease.jobKey();
+    final long historyItemKey =
+        createHistoryItem(
+            agentInstanceKey, jobLease.jobKey(), jobLease.leaseToken(), elementInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -129,29 +137,47 @@ public class AgentHistorySuspensionGateTest {
         .getFirst();
   }
 
-  private static Record<?> createAgentInstance(final long elementInstanceKey) {
-    return ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create();
+  private static Record<?> createAgentInstance(
+      final long elementInstanceKey, final long jobKey, final String jobLease) {
+    return ENGINE
+        .agentInstances()
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLease(jobLease)
+        .create();
   }
 
-  private static long activateJobForProcessInstance(final long processInstanceKey) {
-    ENGINE.jobs().withType(JOB_TYPE).activate();
-    return RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withType(JOB_TYPE)
-        .getFirst()
-        .getKey();
+  private static JobLease activateJobForProcessInstance(final long processInstanceKey) {
+    final var jobBatch = ENGINE.jobs().withType(JOB_TYPE).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var leaseToken =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    return new JobLease(jobKey, leaseToken);
   }
 
   // AGENT_HISTORY:CREATE is dead; AGENT_INSTANCE:UPDATE with a history batch is the only live
   // path that produces AGENT_HISTORY:CREATED events, so this seeds the item through it.
   private static long createHistoryItem(
-      final long agentInstanceKey, final long jobKey, final long elementInstanceKey) {
+      final long agentInstanceKey,
+      final long jobKey,
+      final String jobLease,
+      final long elementInstanceKey) {
     final var historyItemId = Strings.newRandomValidBpmnId();
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
+        .withJobLease(jobLease)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -169,4 +195,6 @@ public class AgentHistorySuspensionGateTest {
         .getFirst()
         .getKey();
   }
+
+  private record JobLease(long jobKey, String leaseToken) {}
 }
