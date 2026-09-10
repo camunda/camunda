@@ -317,6 +317,7 @@ processing.engine.secrets.retry-initial-delay
 processing.engine.secrets.retry-max-attempts
 processing.engine.secrets.retry-max-delay
 processing.engine.secrets.wake-delay
+processing.engine.startup.rpa-reexport-migration-enabled
 processing.engine.storage-ordinals.enable-archiverless
 processing.engine.storage-ordinals.fixed-storage-ordinal-key
 processing.engine.validators.results-output-max-size
@@ -421,6 +422,7 @@ security.saas
 security.saas.cluster-id
 security.saas.organization-id
 system.clock-controlled
+system.query-api.enabled
 webapps.identity.enabled
 webapps.identity.ui-enabled
 webapps.operate.enabled

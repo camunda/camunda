@@ -46,6 +46,9 @@ public class Engine {
   /** Configuration properties for the engine's mapping resolution strategy. */
   @NestedConfigurationProperty private EngineMappings mappings = new EngineMappings();
 
+  /** Configuration properties applied by the engine on startup. */
+  @NestedConfigurationProperty private EngineStartup startup = new EngineStartup();
+
   /**
    * Configures the maximum depth of nested call activities allowed before an incident is raised, to
    * guard against unbounded process recursion.
@@ -82,6 +85,14 @@ public class Engine {
 
   public void setCaches(final EngineCaches caches) {
     this.caches = caches;
+  }
+
+  public EngineStartup getStartup() {
+    return startup;
+  }
+
+  public void setStartup(final EngineStartup startup) {
+    this.startup = startup;
   }
 
   public EngineMessages getMessages() {
