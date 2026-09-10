@@ -80,11 +80,12 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 
 ### Configuring as an external JAR
 
-By default, configuring the exporter assumes its class is already on the broker's classpath,
-which is the case starting with Camunda 8.10, where the exporter ships in-tree. On any
-earlier version, where the exporter is not included in the broker, load it the same way you
-would any external Zeebe exporter: point `jarPath` at a self-built jar under the classic
-`zeebe.broker.exporters.<name>` configuration:
+**This section applies to Camunda 8.10 and later only.** The examples above assume the
+exporter class is already on the broker's classpath, which is the case from 8.10 onward,
+where the exporter ships in-tree. If you need to load a different build of the exporter jar
+than the in-tree one — for example, a locally built jar with a fix or customization — point
+`jarPath` at it under the classic `zeebe.broker.exporters.<name>` configuration, the same way
+you would for any external Zeebe exporter:
 
 ```yaml
 zeebe:
@@ -100,13 +101,22 @@ zeebe:
             - optional
 ```
 
+**Not supported on Camunda 8.9 and earlier.** The exporter module was intentionally reverted
+from both the `stable/8.8` and `stable/8.9` branches (#59298) and is not tested against those
+brokers. It also depends on the broker context exposing the license key
+(`AnalyticsExporter#resolveLicenseKey`, which throws if `Context#getLicenseKey()` returns
+null or blank, with no environment-variable fallback of its own) — older brokers that don't
+populate that context field will fail the exporter at startup. Loading a self-built jar on
+8.9 or earlier is expected to hit that failure; running the exporter there would be a product
+decision to make separately, not something this doc enables.
+
 The classic style also has an environment-variable form (`ZEEBE_BROKER_EXPORTERS_ANALYTICS_*`
 with `CLASSNAME`/`JARPATH`), for anyone already using that style elsewhere. The unified
 `camunda.data.exporters.<name>` style (used in the sections above) supports `jar-path`
-directly too, with the same `args`, in case you need to point at a self-built jar on 8.10+
-for some other reason. Either way, this section only covers configuring the broker directly;
-it makes no claim about whether or how a particular deployment tool (an operator, a Helm
-chart, etc.) exposes `jarPath`/`jar-path` for you — check that tool's own documentation.
+directly too, with the same `args`. Either way, this section only covers configuring the
+broker directly; it makes no claim about whether or how a particular deployment tool (an
+operator, a Helm chart, etc.) exposes `jarPath`/`jar-path` for you — check that tool's own
+documentation.
 
 ### Verify the exporter is running
 
