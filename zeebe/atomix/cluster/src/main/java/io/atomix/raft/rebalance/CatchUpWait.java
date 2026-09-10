@@ -50,6 +50,7 @@ final class CatchUpWait implements TransferPhase {
   private @Nullable CompletableFuture<Void> replication;
   private @Nullable Scheduled deadlineTimer;
   private boolean completed;
+  private long startMs;
 
   CatchUpWait(
       final RaftContext raft,
@@ -66,6 +67,7 @@ final class CatchUpWait implements TransferPhase {
 
   CompletableFuture<Optional<LeadershipTransferResult>> start() {
     raft.checkThread();
+    startMs = System.currentTimeMillis();
 
     if (!leader.isRunning()) {
       failWith(LeadershipTransferResult.LEADER_CHANGED);
@@ -137,6 +139,15 @@ final class CatchUpWait implements TransferPhase {
 
   /** The desired leader reached the frozen log head, so the transfer can carry on. */
   private void succeed() {
+    final var member = raft.getCluster().getMemberContext(desiredLeader);
+    LOG.info(
+        "Desired leader {} reached index {} after {}ms; its matchIndex is {}, leader lastIndex "
+            + "is {}",
+        desiredLeader,
+        targetIndex,
+        System.currentTimeMillis() - startMs,
+        member == null ? -1 : member.getMatchIndex(),
+        raft.getLog().getLastIndex());
     complete(Optional.empty());
   }
 
