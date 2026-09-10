@@ -62,6 +62,10 @@ jobs:
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
     # Budget = one normal run (~25m) + one retry on hang (~30m) + small scheduling margin.
     timeout-minutes: 65
+    # FOSSA injects a Gradle init script that accesses Task.project at execution time.
+    # Keep configuration cache enabled for regular Gradle builds, but disable it for this scan.
+    env:
+      GRADLE_OPTS: -Dorg.gradle.configuration-cache=false
     strategy:
       fail-fast: false
       # The matrix is necessary to run separate analyses
