@@ -48,6 +48,10 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Tasklist
   CLIENT_DIR: tasklist/client
+  # Capped at 3 rather than the usual 7 on stable/*: the container-based ITs below take ~5 minutes
+  # per failing attempt, so more retries would exceed their 30 minute job timeout and turn a plain
+  # failure into a timeout. ci.md asks for 3-5 retries "while staying in the timeout".
+  FLAKY_TEST_RERUN_COUNT: 3
 
 jobs:
   # run this test every time the workflow is triggered
@@ -395,6 +399,7 @@ jobs:
           -DskipTests=false
           -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
           -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
@@ -479,6 +484,7 @@ jobs:
             -Dspring.profiles.active=docker-test \
             -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
             -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} \
+            -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} \
             test
       - name: Upload Test Report
         if: failure()
