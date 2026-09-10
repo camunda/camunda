@@ -79,6 +79,7 @@
     <mockserver.version>7.6.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
     <logunit.version>2.0.0</logunit.version>
+    <greenmail.version>2.1.13</greenmail.version>
     <google-java-format.plugin.version>1.36.1</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
