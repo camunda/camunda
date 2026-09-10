@@ -495,6 +495,34 @@ final class ElasticsearchExporterTest {
     }
 
     @Test
+    void shouldNotAllowEmptyIndexPrefix() {
+      // given
+      config.index.prefix = "";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowNullIndexPrefix() {
+      // given
+      config.index.prefix = null;
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Prefix", "Test-Prefix", "TEST-PREFIX", "test-Prefix"})
+    void shouldNotAllowUppercaseCharactersInIndexPrefix(final String testPrefix) {
+      // given
+      config.index.prefix = testPrefix;
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
     void shouldNotAllowIndexPrefixExceedingMaxLength() {
       // given
       config.index.prefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH + 1);

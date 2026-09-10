@@ -60,6 +60,12 @@ public final class ConfigValidator {
       throw new ExporterException(
           "CamundaExporter index.prefix must not begin with invalid characters [. + - _].");
     }
+    if (IndexPrefixValidation.hasUppercaseCharacters(configuredPrefix)) {
+      throw new ExporterException(
+          String.format(
+              "CamundaExporter index.prefix must not contain uppercase characters. Current value: '%s'",
+              configuredPrefix));
+    }
     if (IndexPrefixValidation.exceedsMaxLength(configuredPrefix)) {
       throw new ExporterException(
           String.format(
