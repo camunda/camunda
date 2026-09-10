@@ -56,7 +56,7 @@ public final class ExporterIsolationValidation {
     exporters.forEach(
         (exporterId, exporter) ->
             claimsOf(mergers, exporterId, exporter)
-                .forEach(claim -> accumulator.add(exporterId, claim)));
+                .forEach(claim -> accumulator.add(exporterOwnerId(exporterId), claim)));
     secondaryStorageLifecyclePolicyClaims(camunda)
         .forEach(claim -> accumulator.add(SECONDARY_STORAGE_OWNER_ID, claim));
 
@@ -69,6 +69,12 @@ public final class ExporterIsolationValidation {
               + "shares a cluster a distinct index prefix and lifecycle-policy name. Conflicts: "
               + String.join("; ", collisions));
     }
+  }
+
+  // namespace the exporterId so a user-defined exporter named "secondary-storage"
+  // can never collide, string-for-string, with "secondary-storage" synthetic owner
+  private static String exporterOwnerId(final String exporterId) {
+    return String.format("exporter '%s'", exporterId);
   }
 
   private static Set<ExporterIsolationClaim> claimsOf(
