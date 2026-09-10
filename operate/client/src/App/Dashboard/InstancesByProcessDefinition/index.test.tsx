@@ -223,7 +223,7 @@ describe('InstancesByProcessDefinition', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      `${Paths.processes()}?processDefinitionId=loanProcess&processDefinitionVersion=1&active=true&incidents=true`,
+      `${Paths.processes()}?processDefinitionId=loanProcess&processDefinitionVersion=all&active=true&incidents=true`,
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -286,7 +286,7 @@ describe('InstancesByProcessDefinition', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?processDefinitionId=loanProcess&processDefinitionVersion=1&active=true&incidents=true$/,
+        /^\?processDefinitionId=loanProcess&processDefinitionVersion=all&active=true&incidents=true$/,
       ),
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
