@@ -62,6 +62,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/data-layer'
   AWS_REGION: eu-west-1
   TF_DIR: .github/terraform/aurora-replication-it
   TF_IN_AUTOMATION: 'true'
