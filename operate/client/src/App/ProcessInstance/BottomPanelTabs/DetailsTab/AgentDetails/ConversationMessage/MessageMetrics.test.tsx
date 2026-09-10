@@ -13,6 +13,9 @@ import {MessageMetrics} from './MessageMetrics';
 const FULL_METRICS: AgentInstanceHistoryItemMetrics = {
   inputTokens: 12345,
   outputTokens: 456,
+  cacheCreationTokenCount: 10000,
+  cacheReadTokenCount: 7000,
+  reasoningTokenCount: 200,
   durationMs: 2500,
 };
 
@@ -25,7 +28,14 @@ describe('<MessageMetrics />', () => {
   it('should render nothing when every metric field is null', () => {
     const {container} = render(
       <MessageMetrics
-        metrics={{inputTokens: null, outputTokens: null, durationMs: null}}
+        metrics={{
+          inputTokens: null,
+          outputTokens: null,
+          cacheCreationTokenCount: null,
+          cacheReadTokenCount: null,
+          reasoningTokenCount: null,
+          durationMs: null,
+        }}
       />,
     );
     expect(container).toBeEmptyDOMElement();
@@ -42,15 +52,23 @@ describe('<MessageMetrics />', () => {
     );
 
     await user.hover(screen.getByTestId('message-token-metric'));
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'Input: 12,345 · Output: 456',
-    );
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('Input: 12,345 (7,000 cached)');
+    expect(tooltip).toHaveTextContent('Output: 456 (200 reasoning)');
+    expect(tooltip).toHaveTextContent('Cache write: 10,000');
   });
 
   it('should render token and duration tags when all metrics are 0', async () => {
     const {user} = render(
       <MessageMetrics
-        metrics={{inputTokens: 0, outputTokens: 0, durationMs: 0}}
+        metrics={{
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheCreationTokenCount: 0,
+          cacheReadTokenCount: 0,
+          reasoningTokenCount: 0,
+          durationMs: 0,
+        }}
       />,
     );
 
@@ -62,14 +80,21 @@ describe('<MessageMetrics />', () => {
     );
 
     await user.hover(screen.getByTestId('message-token-metric'));
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'Input: 0 · Output: 0',
-    );
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('Input: 0 (0 cached)');
+    expect(tooltip).toHaveTextContent('Output: 0 (0 reasoning)');
+    expect(tooltip).toHaveTextContent('Cache write: 0');
   });
 
   it('should treat a null inputTokens as 0 but show --- in the tooltip', async () => {
     const {user} = render(
-      <MessageMetrics metrics={{...FULL_METRICS, inputTokens: null}} />,
+      <MessageMetrics
+        metrics={{
+          ...FULL_METRICS,
+          inputTokens: null,
+          cacheReadTokenCount: null,
+        }}
+      />,
     );
 
     expect(screen.getByTestId('message-token-metric')).toHaveTextContent(
@@ -77,14 +102,18 @@ describe('<MessageMetrics />', () => {
     );
 
     await user.hover(screen.getByTestId('message-token-metric'));
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'Input: --- · Output: 456',
-    );
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Input: ---');
   });
 
   it('should treat a null outputTokens as 0 but show --- in the tooltip', async () => {
     const {user} = render(
-      <MessageMetrics metrics={{...FULL_METRICS, outputTokens: null}} />,
+      <MessageMetrics
+        metrics={{
+          ...FULL_METRICS,
+          outputTokens: null,
+          reasoningTokenCount: null,
+        }}
+      />,
     );
 
     expect(screen.getByTestId('message-token-metric')).toHaveTextContent(
@@ -92,9 +121,28 @@ describe('<MessageMetrics />', () => {
     );
 
     await user.hover(screen.getByTestId('message-token-metric'));
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'Input: 12,345 · Output: ---',
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Output: ---');
+  });
+
+  it('should omit the cached/reasoning/cache write hints when their metrics are null', async () => {
+    const {user} = render(
+      <MessageMetrics
+        metrics={{
+          ...FULL_METRICS,
+          cacheReadTokenCount: null,
+          reasoningTokenCount: null,
+          cacheCreationTokenCount: null,
+        }}
+      />,
     );
+
+    await user.hover(screen.getByTestId('message-token-metric'));
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('Input: 12,345');
+    expect(tooltip).not.toHaveTextContent('cached');
+    expect(tooltip).toHaveTextContent('Output: 456');
+    expect(tooltip).not.toHaveTextContent('reasoning');
+    expect(tooltip).not.toHaveTextContent('Cache write');
   });
 
   it('should not render the token tag when both inputTokens and outputTokens are null', () => {
