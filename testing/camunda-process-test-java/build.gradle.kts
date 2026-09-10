@@ -3,37 +3,30 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import java.io.ByteArrayOutputStream
-import javax.inject.Inject
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
-import org.gradle.process.ExecOperations
 
 plugins {
   id("buildlogic.server-conventions")
   id("com.gradleup.shadow")
 }
 
-abstract class GenerateGitPropertiesTask
-@Inject
-constructor(private val execOperations: ExecOperations) : DefaultTask() {
+abstract class GenerateGitPropertiesTask : DefaultTask() {
+  @get:Input abstract val gitRef: Property<String>
   @get:OutputFile abstract val outputFile: RegularFileProperty
 
   @TaskAction
   fun generate() {
-    val stdout = ByteArrayOutputStream()
-    execOperations.exec {
-      commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
-      standardOutput = stdout
-    }
     outputFile.get().asFile.apply {
       parentFile.mkdirs()
-      writeText("git.branch=${stdout.toString().trim()}\n")
+      writeText("git.branch=${gitRef.get()}\n")
     }
   }
 }
@@ -44,6 +37,13 @@ tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
 
 val generateGitProperties =
   tasks.register<GenerateGitPropertiesTask>("generateGitProperties") {
+    gitRef.set(
+      providers
+        .exec { commandLine("git", "rev-parse", "--abbrev-ref", "HEAD") }
+        .standardOutput
+        .asText
+        .map(String::trim)
+    )
     outputFile.set(layout.buildDirectory.file("generated/resources/git.properties"))
   }
 

@@ -306,6 +306,15 @@ tasks.named("assembleDist") {
   )
 }
 
+// Keep the opt-in frontend builds ahead of the webjar JARs only when packaging the distribution.
+listOf(":identity-webjar", ":operate-webjar", ":webapp-webjar").forEach { webjarProject ->
+  project(webjarProject).pluginManager.withPlugin("java") {
+    project(webjarProject).tasks.named("jar") {
+      mustRunAfter(project(webjarProject).tasks.named("npmBuild"))
+    }
+  }
+}
+
 val distTar =
   tasks.register<Tar>("distTar") {
     group = "build"
