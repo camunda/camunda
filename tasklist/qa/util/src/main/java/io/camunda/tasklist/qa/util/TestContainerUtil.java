@@ -47,6 +47,7 @@ import org.springframework.stereotype.Component;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -266,6 +267,9 @@ public class TestContainerUtil {
                 .withNetwork(Network.SHARED)
                 .withEnv("path.repo", "~/")
                 .withNetworkAliases(OS_NETWORK_ALIAS)
+                // attached before start() so that a container which dies during boot still leaves
+                // its output in the build log — followOutput() after start() would capture nothing
+                .withLogConsumer(new Slf4jLogConsumer(LOGGER))
                 .withExposedPorts(OS_PORT);
     osContainer.setWaitStrategy(
         new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
@@ -294,6 +298,7 @@ public class TestContainerUtil {
             .withEnv("path.repo", "~/")
             .withEnv("action.destructive_requires_name", "false")
             .withNetworkAliases(ELS_NETWORK_ALIAS)
+            .withLogConsumer(new Slf4jLogConsumer(LOGGER))
             .withExposedPorts(ELS_PORT);
     elsContainer.setWaitStrategy(
         new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
