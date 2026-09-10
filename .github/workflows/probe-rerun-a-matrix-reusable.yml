@@ -1,0 +1,22 @@
+# TEMPORARY PROBE - delete with the branch yf-probe-rerun-failed-matrix-reusable.
+# Suspect shape: a matrixed job whose body is a reusable-workflow call, matching
+# run-aws-opensearch-tests in zeebe-aws-os-dispatch-tests.yml. One leg fails so
+# `gh run rerun --failed` has something to target.
+name: PROBE A matrix plus reusable
+on:
+  push:
+    branches:
+      - yf-probe-rerun-failed-matrix-reusable
+
+jobs:
+  legs:
+    name: "leg ${{ matrix.mode }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [pass, fail]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/probe-rerun-reusable.yml
+    with:
+      mode: ${{ matrix.mode }}

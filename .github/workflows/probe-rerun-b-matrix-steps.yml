@@ -1,0 +1,32 @@
+# TEMPORARY PROBE - delete with the branch yf-probe-rerun-failed-matrix-reusable.
+# Control shape: same matrix, same failing leg, but the job runs steps directly
+# instead of calling a reusable workflow. If A fails to restart and B restarts
+# cleanly, the reusable-workflow call is what breaks partial re-runs.
+name: PROBE B matrix plus steps
+on:
+  push:
+    branches:
+      - yf-probe-rerun-failed-matrix-reusable
+
+jobs:
+  legs:
+    name: "leg ${{ matrix.mode }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [pass, fail]
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pass or fail based on mode
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          echo "mode=${MODE}"
+          if [ "${MODE}" = "fail" ]; then
+            echo "failing on purpose so the leg can be re-run"
+            exit 1
+          fi
+          echo "passing"

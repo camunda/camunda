@@ -1,0 +1,27 @@
+# TEMPORARY PROBE - delete with the branch yf-probe-rerun-failed-matrix-reusable.
+# Callee used by the two probe callers to reproduce a startup_failure seen when
+# `gh run rerun --failed` targets a matrixed reusable-workflow call.
+name: PROBE callee
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+
+jobs:
+  inner:
+    name: "inner (${{ inputs.mode }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pass or fail based on mode
+        env:
+          MODE: ${{ inputs.mode }}
+        run: |
+          echo "mode=${MODE}"
+          if [ "${MODE}" = "fail" ]; then
+            echo "failing on purpose so the leg can be re-run"
+            exit 1
+          fi
+          echo "passing"
