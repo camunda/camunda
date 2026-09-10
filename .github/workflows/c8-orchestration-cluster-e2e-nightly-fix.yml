@@ -331,7 +331,56 @@ jobs:
           )
 
           cd "${ws_dir}"
-          claude -p "$prompt" --dangerously-skip-permissions
+
+          # --output-format stream-json (requires --verbose alongside --print) streams
+          # every tool call and its result to stdout as it happens, instead of only the
+          # agent's final summary text -- so the actual docker/playwright commands run
+          # during the Live Docker Verify loop (AGENTS.md) are visible in this step's
+          # log. The filter renders each event as one or more human-readable lines; the
+          # raw JSONL is also kept (uploaded as an artifact below) for anything it drops.
+          cat > /tmp/claude-stream-filter.jq <<'JQEOF'
+          def text_of(c):
+            if (c | type) == "string" then c
+            elif (c | type) == "array" then
+              ([c[]? | select(.type == "text") | .text] | join("\n"))
+            else (c | tostring)
+            end;
+
+          def clip(s):
+            if (s | length) > 1500 then s[0:1500] + "\n... [truncated]" else s end;
+
+          (try fromjson catch null) as $e
+          | if $e == null then empty
+            else
+              try (
+                if $e.type == "assistant" then
+                  ($e.message.content[]? |
+                    if .type == "text" then "> " + .text
+                    elif .type == "tool_use" then
+                      "$ " + .name + ": " + (
+                        if .input.command then .input.command
+                        elif .input.file_path then .input.file_path
+                        else (.input | tostring)
+                        end
+                      )
+                    else empty
+                    end)
+                elif $e.type == "user" then
+                  ($e.message.content[]? | select(.type == "tool_result") |
+                    "  -> " + clip(text_of(.content)))
+                elif $e.type == "result" then
+                  "\n=== AGENT RESULT (" + ($e.subtype // "unknown") + ") ===\n" + ($e.result // "(no result text)")
+                else
+                  empty
+                end
+              ) catch empty
+            end
+          JQEOF
+
+          claude -p "$prompt" --dangerously-skip-permissions \
+              --output-format stream-json --verbose \
+            | tee /tmp/claude-stream.jsonl \
+            | jq -R -r --unbuffered -f /tmp/claude-stream-filter.jq
 
       - name: Trigger on-demand verification runs and patch PR body
         if: always()
@@ -568,6 +617,7 @@ jobs:
           path: |
             /tmp/test_specs.json
             /tmp/fix-meta.json
+            /tmp/claude-stream.jsonl
           retention-days: 14
           if-no-files-found: warn
 
