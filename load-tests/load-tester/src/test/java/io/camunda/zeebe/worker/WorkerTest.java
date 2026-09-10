@@ -147,6 +147,39 @@ class WorkerTest {
   }
 
   @Test
+  void shouldReuseRoundWhenTheSameJobIsRedelivered() {
+    // given — a single worker instance; Zeebe job workers are at-least-once, so the broker can
+    // redeliver the same job (same ActivatedJob#getKey()) while the original delivery is still
+    // being handled, e.g. if its activation lease expires while queued behind other jobs
+    final var jobClient = mock(JobClient.class);
+    final var worker = newWorker(mock(CamundaClient.class), zeroDelayProperties());
+    final long processInstanceKey = 888L;
+    final long elementInstanceKey = 444L;
+
+    // round 1, first delivery
+    var round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 301L, "lease-1");
+    assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+
+    // round 1, redelivered — same job key as above; a bare incrementing counter would
+    // wrongly advance to round 2 here, desyncing from the process instance's real progress
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 301L, "lease-1");
+    assertThat(round.activatedElements())
+        .describedAs("a redelivered job must reuse its already-assigned round, not advance past it")
+        .containsExactly("tool-lookup-account");
+
+    // round 2, a genuinely new job — progression continues correctly afterward
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 302L, "lease-2");
+    assertThat(round.activatedElements())
+        .containsExactly("tool-calculate-score", "tool-send-notification");
+  }
+
+  @Test
   void shouldSimulateAgentInstanceOnlyWhenEnabledWithoutChangingToolActivations() {
     // given — the same fixed schedule as the disabled case, but with agent-instance
     // simulation turned on
