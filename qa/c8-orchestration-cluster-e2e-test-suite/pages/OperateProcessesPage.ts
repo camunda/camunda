@@ -61,6 +61,7 @@ class OperateProcessesPage {
     rowIndex?: number,
     cellIndex?: number,
   ) => Locator;
+  readonly drainingTag: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -183,6 +184,7 @@ class OperateProcessesPage {
         .nth(rowIndex)
         .getByRole('cell')
         .nth(cellIndex);
+    this.drainingTag = page.getByTestId('draining-tag');
   }
 
   async filterByProcessName(name: string): Promise<void> {

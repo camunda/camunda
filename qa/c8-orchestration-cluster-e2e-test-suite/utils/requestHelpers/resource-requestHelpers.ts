@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
-import {APIRequestContext} from 'playwright-core';
+import type {APIRequestContext, APIResponse} from 'playwright-core';
 import {assertStatusCode, buildUrl, defaultHeaders} from '../http';
 
 export function validateProcessDefinitionDeployment(
@@ -236,4 +236,15 @@ export async function deployResourceAndGetMetadata(
   }
 
   throw new Error(`Unknown deployment type: ${JSON.stringify(deployment)}`);
+}
+
+export const RESOURCE_DELETION_ENDPOINT = '/resources/{resourceKey}/deletion';
+
+export function deleteResource(
+  request: APIRequestContext,
+  resourceKey: string,
+): Promise<APIResponse> {
+  return request.post(buildUrl(RESOURCE_DELETION_ENDPOINT, {resourceKey}), {
+    headers: defaultHeaders(),
+  });
 }

@@ -18,6 +18,7 @@ export class OperateDashboardPage {
   readonly instancesByProcess: Locator;
   readonly incidentsByError: Locator;
   readonly instancesByProcessItem: (index: number) => Locator;
+  readonly instancesByProcessItemByName: (name: string) => Locator;
   readonly incidentsByErrorItem: (index: number) => Locator;
   readonly activeInstancesBadge: Locator;
   readonly incidentInstancesBadge: Locator;
@@ -30,6 +31,7 @@ export class OperateDashboardPage {
   readonly expandRowButton: () => Locator;
   readonly incidentBadgeFromItem: (item: Locator) => Locator;
   readonly activeBadgeFromItem: (item: Locator) => Locator;
+  readonly drainingIndicatorFromItem: (item: Locator) => Locator;
   readonly expandRowButtonFromItem: (item: Locator) => Locator;
   readonly firstLinkFromItem: (item: Locator) => Locator;
 
@@ -47,6 +49,10 @@ export class OperateDashboardPage {
 
     this.instancesByProcessItem = (index: number) =>
       page.getByTestId(`instances-by-process-${index}`);
+    this.instancesByProcessItemByName = (name: string) =>
+      this.instancesByProcess
+        .locator('[data-testid^="instances-by-process-"]')
+        .filter({hasText: name});
 
     this.incidentsByErrorItem = (index: number) =>
       page.getByTestId(`incident-byError-${index}`);
@@ -84,6 +90,9 @@ export class OperateDashboardPage {
 
     this.activeBadgeFromItem = (item) =>
       item.getByTestId('active-instances-badge');
+
+    this.drainingIndicatorFromItem = (item) =>
+      item.getByTestId('draining-indicator');
 
     this.expandRowButtonFromItem = (item) =>
       item.getByRole('button', {

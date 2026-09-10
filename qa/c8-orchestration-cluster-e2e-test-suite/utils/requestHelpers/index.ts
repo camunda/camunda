@@ -10,6 +10,7 @@ export * from './element-instance-requestHelpers';
 export * from './resource-requestHelpers';
 export * from './user-task-requestHelpers';
 export * from './process-instance-requestHelpers';
+export * from './process-definition-requestHelpers';
 export * from './get-value-from-state-requestHelpers';
 export * from './batch-operation-requestHelpers';
 export {createRoleAndStoreResponseFields} from './role-requestHelpers';
@@ -52,15 +53,18 @@ export {
   type Authorization,
   expectAuthorizationCanNotBeFound,
 } from './authorization-requestHelpers';
+export {searchVariableByNameAndProcessInstanceKey} from './variable-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {setupProcessInstanceForTests} from './job-requestHelpers';
 export {activateJobToObtainAValidJobKey} from './job-requestHelpers';
+export {searchIncidentByPIK} from './incident-requestHelpers';
 export {createProcessInstanceWithAJob} from './incident-requestHelpers';
 export {createSingleIncidentProcessInstance} from './incident-requestHelpers';
 export {createTwoIncidentsInOneProcess} from './incident-requestHelpers';
 export {createIncidentsInTwoProcesses} from './incident-requestHelpers';
 export {createTwoDifferentIncidentsInOneProcess} from './incident-requestHelpers';
+export {activateSingleJob, completeJob} from './job-requestHelpers';
 export {
   deployMammalDecisionAndStoreResponse,
   deployTwoSimpleDecisionsAndStoreResponse,

@@ -51,6 +51,20 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
     });
 
     state['expectedForm'] = readFileSync(formPath, 'utf-8');
+    // The form version comes from the deployment rather than being assumed to
+    // be 1: deploying the same form again on a cluster that already has it
+    // mints a new version, so a hardcoded 1 fails on every run after the first.
+    const deployedForm = deployment.forms.find(
+      (form) => form.formId === 'sign_up_form',
+    );
+    if (deployedForm === undefined) {
+      throw new Error(
+        `Deployment did not contain the 'sign_up_form' form: ${JSON.stringify(
+          deployment.forms,
+        )}`,
+      );
+    }
+    state['expectedFormVersion'] = deployedForm.version;
   });
 
   test('Get Process Definition Start Form - Success 200', async ({request}) => {
@@ -72,7 +86,7 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
         body,
       );
       expect(body.formId).toBe('sign_up_form');
-      expect(body.version).toBe(1);
+      expect(body.version).toBe(state['expectedFormVersion']);
       expect(body.formKey).toBeDefined();
       expect(body.tenantId).toBe('<default>');
       expect(body.schema).toBe(state['expectedForm']);

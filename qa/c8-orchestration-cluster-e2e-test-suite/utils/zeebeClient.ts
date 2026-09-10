@@ -119,12 +119,25 @@ const createSingleInstance = async (
 ) => {
   return zeebe.createProcessInstance({
     processDefinitionId,
+    processDefinitionVersion,
     variables: {...(variables ?? {})},
   });
 };
 
-const cancelProcessInstance = async (processInstanceKey: string) => {
-  return zeebe.cancelProcessInstance({processInstanceKey});
+// `ignoreNotFound` is for teardown, where the instance has often finished on
+// its own. A cancellation that drives the test forward leaves it off, so a 404
+// there surfaces instead of passing the assertion vacuously.
+const cancelProcessInstance = async (
+  processInstanceKey: string,
+  {ignoreNotFound = false}: {ignoreNotFound?: boolean} = {},
+) => {
+  return zeebe.cancelProcessInstance({processInstanceKey}).catch((e) => {
+    const status = e?.status ?? e?.code ?? e?.response?.status;
+    if (ignoreNotFound && (status === 404 || status === 'NOT_FOUND')) {
+      return;
+    }
+    throw e;
+  });
 };
 
 async function searchByProcessInstanceKey(processInstanceKey: string) {
@@ -175,6 +188,36 @@ const waitForLatestProcessVersion = async (
   );
 };
 
+const deployWithSubstitutions = async (
+  filePath: string,
+  substitutions: Record<string, string>,
+) => {
+  let content = readFileSync(filePath, 'utf-8');
+  for (const [placeholder, replacement] of Object.entries(substitutions)) {
+    if (!content.includes(placeholder)) {
+      throw new Error(
+        `Placeholder '${placeholder}' not found in resource file '${filePath}'`,
+      );
+    }
+    content = content.split(placeholder).join(replacement);
+  }
+  const name = basename(filePath);
+  try {
+    return await zeebe.deployResources([{content, name}]);
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    throw error;
+  }
+};
+
+const setVariables = async (
+  elementInstanceKey: string,
+  variables: Record<string, unknown>,
+  local: boolean = false,
+): Promise<void> => {
+  await zeebeGrpc.setVariables({elementInstanceKey, variables, local});
+};
+
 export {
   deploy,
   waitForLatestProcessVersion,
@@ -186,4 +229,6 @@ export {
   searchByProcessInstanceKey,
   checkUpdateOnVersion,
   createWorker,
+  deployWithSubstitutions,
+  setVariables,
 };
