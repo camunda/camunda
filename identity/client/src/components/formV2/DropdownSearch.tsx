@@ -109,7 +109,7 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
           <div
             className={cn(
               "relative",
-              invalid && "ring-2 ring-inset ring-danger-action-default",
+              invalid && "ring-2 ring-inset ring-danger-foreground-subtle",
             )}
           >
             <CommandInput

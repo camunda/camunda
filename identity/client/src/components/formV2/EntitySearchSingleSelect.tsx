@@ -98,7 +98,7 @@ const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
         />
       )}
       {isEmpty && (
-        <p className="mt-1 text-xs text-danger-action-default">
+        <p className="mt-1 text-xs text-danger-foreground-subtle">
           {requiredText}
         </p>
       )}
