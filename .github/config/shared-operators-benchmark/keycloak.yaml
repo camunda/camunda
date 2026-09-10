@@ -1,0 +1,33 @@
+# Keycloak CR for the shared-operators showcase on camunda-benchmark.
+# Unlike Elasticsearch and CNPG (which teams self-serve in their own c8-* namespaces),
+# the Keycloak operator only watches the shared `keycloak-operator` namespace, so this
+# CR is created there with a unique, namespace-prefixed name to avoid collisions.
+# The database below is a throwaway placeholder -- the showcase only verifies that the
+# operator reconciles this CR into a StatefulSet, it never serves traffic.
+# The image is pulled through the benchmark GAR cache for quay.io.
+# See infra-core docs/shared-operators.md.
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: c8-shared-operators-test-kc
+  namespace: keycloak-operator
+  annotations:
+    janitor/ttl: 1h # backstop: the workflow trap-deletes on exit; this catches leaked runs
+spec:
+  instances: 1
+  image: europe-west1-docker.pkg.dev/camunda-benchmark/quayio/keycloak/keycloak:26.2.5
+  http:
+    httpEnabled: true
+  hostname:
+    strict: false
+    hostname: c8-shared-operators-test-kc.benchmark.camunda.cloud
+  db:
+    vendor: postgres
+    host: c8-shared-operators-test-kc-db
+    database: keycloak
+    usernameSecret:
+      name: c8-shared-operators-test-kc-db-credentials
+      key: username
+    passwordSecret:
+      name: c8-shared-operators-test-kc-db-credentials
+      key: password
