@@ -101,7 +101,7 @@ class ReplicationLagProviderFactoryTest {
   }
 
   @Test
-  void shouldFailForUnsupportedDatabase() {
+  void shouldDeriveLagProviderFromLsnProviderForOracle() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("oracle");
@@ -109,9 +109,25 @@ class ReplicationLagProviderFactoryTest {
         new ReplicationLagProviderFactory(
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
+    // when
+    final var provider = factory.create();
+
+    // then
+    assertThat(provider).isInstanceOf(LsnBackedReplicationLagProvider.class);
+  }
+
+  @Test
+  void shouldFailForUnsupportedDatabase() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("h2");
+    final var factory =
+        new ReplicationLagProviderFactory(
+            vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
+
     // when / then
     assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("unknown database id oracle");
+        .hasMessageContaining("unknown database id h2");
   }
 }

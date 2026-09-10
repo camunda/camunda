@@ -17,6 +17,7 @@ public final class ReplicationLsnProviderFactory {
   public static final String POSTGRESQL_DATABASE_ID = "postgresql";
   public static final String MSSQL_DATABASE_ID = "mssql";
   public static final String MYSQL_DATABASE_ID = "mysql";
+  public static final String ORACLE_DATABASE_ID = "oracle";
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationLsnProviderFactory.class);
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final ReplicationStatusMapper replicationStatusMapper;
@@ -33,6 +34,7 @@ public final class ReplicationLsnProviderFactory {
       case POSTGRESQL_DATABASE_ID -> createPostgresOrAuroraProvider();
       case MYSQL_DATABASE_ID -> createMysqlAuroraProvider();
       case MSSQL_DATABASE_ID -> createMssqlProvider();
+      case ORACLE_DATABASE_ID -> new DefaultReplicationLsnProvider(replicationStatusMapper);
       case null ->
           throw new IllegalArgumentException(
               "Cannot create ReplicationLsnProvider for null database id");
