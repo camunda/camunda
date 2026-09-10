@@ -18,6 +18,16 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>{@code elementId} is kept as a {@link DirectBuffer} to avoid a String allocation on every
  * activation; the conversion happens only when this context is included in a log message.
+ *
+ * @param scopeKey the element's own scope, used to evaluate mapping source expressions
+ * @param mergeTargetScopeKey the scope the resolved result will be merged into: the element's own
+ *     scope for an input mapping, or the flow-scope key for an output mapping (unless the element
+ *     is an inner multi-instance activity, where it is again the element's own scope). Only {@code
+ *     OrderedOutputMappingResolver} reads this field, to seed a nested output target's merge from
+ *     the value already in that target scope instead of from the completing element's own,
+ *     about-to-be-discarded scope — see <a
+ *     href="https://github.com/camunda/camunda/issues/35251">#35251</a>. Every other resolver
+ *     ({@code CombinedOutputMappingResolver} and both input-mapping resolvers) ignores it.
  */
 @NullMarked
 public record MappingContext(
@@ -25,7 +35,8 @@ public record MappingContext(
     long scopeKey,
     long processInstanceKey,
     long processDefinitionKey,
-    String tenantId) {
+    String tenantId,
+    long mergeTargetScopeKey) {
 
   @Override
   public String toString() {
@@ -39,6 +50,8 @@ public record MappingContext(
         + processDefinitionKey
         + ", tenantId="
         + tenantId
+        + ", mergeTargetScopeKey="
+        + mergeTargetScopeKey
         + "]";
   }
 }

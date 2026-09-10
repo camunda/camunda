@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,12 +22,21 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@link MappingResultBuilder} for output mappings: a nested target merges with the existing scope
- * variable at every path level while accumulating — a context that is absent or holds a plain value
- * is seeded from the current scope value at that path. A scope value that is not a context cannot
- * be merged into, so the entry is poisoned to null, matching FEEL's {@code context
- * merge(<non-context>, {...})} behavior. Reads are not layered — the merge is already in the
- * document.
+ * {@link MappingResultBuilder} for output mappings.
+ *
+ * <p>{@link #getVariable(String)} answers purely from what mappings explicitly wrote so far in this
+ * evaluation pass — a nested target is a plain accumulated structure, never merged with any
+ * external value. This is what lets a later mapping's source expression read back an earlier,
+ * still-partial nested target without seeing branches that were never mapped (see {@code
+ * VariableOutputMappingTransformerTest#shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference}).
+ *
+ * <p>{@link #toDocument()} builds a separate, throwaway tree by replaying the writes in the order
+ * they happened, this time merging each nested target with the value already at that path in the
+ * scope the result will be merged into: a level that is absent or holds a plain value is seeded
+ * from that scope value; a scope value that is not a context poisons the level to null, matching
+ * FEEL's {@code context merge(<non-context>, {...})} behavior. Replaying (rather than reusing the
+ * live tree) is what keeps this merge from ever seeing a branch that was never written — see <a
+ * href="https://github.com/camunda/camunda/issues/35251">#35251</a>.
  */
 @NullMarked
 public final class OutputMappingResultBuilder extends MappingResultBuilder {
@@ -40,39 +50,50 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
   private static final ContextValue NIL =
       new ContextValue.MsgPack(new UnsafeBuffer(new byte[] {MsgPackCodes.NIL}));
 
+  /**
+   * What mappings explicitly wrote, structured by target path. Never merged with any external value
+   * — see the class doc.
+   */
   private final Map<String, Entry> entries = new LinkedHashMap<>();
 
-  /** Resolves a target-path prefix to the scope value to seed a context from. */
-  private final Function<List<String>, @Nullable DirectBuffer> scopeValueResolver;
+  /**
+   * Every {@link #put} call, insertion-ordered, replayed by {@link #toDocument()} against {@link
+   * #mergeTargetResolver} so the emitted document merges with the scope it is written into instead
+   * of whatever this builder's own live tree happens to hold.
+   */
+  private final List<Map.Entry<List<String>, ContextValue>> writes = new ArrayList<>();
 
   /**
-   * @param scopeValueResolver resolves a target-path prefix to the current scope value at that
-   *     path, or {@code null} when there is none; invoked only when a context must be (re)created
+   * Resolves a target-path prefix to the value at that path in the scope the result is merged into.
+   */
+  private final Function<List<String>, @Nullable DirectBuffer> mergeTargetResolver;
+
+  /**
+   * @param mergeTargetResolver resolves a target-path prefix to the value the scope the result is
+   *     merged into gives it, or {@code null} when there is none; invoked only when a level must be
+   *     (re)created while replaying writes for {@link #toDocument()}
    */
   public OutputMappingResultBuilder(
-      final Function<List<String>, @Nullable DirectBuffer> scopeValueResolver) {
-    this.scopeValueResolver = scopeValueResolver;
+      final Function<List<String>, @Nullable DirectBuffer> mergeTargetResolver) {
+    this.mergeTargetResolver = mergeTargetResolver;
   }
 
   @Override
   public void put(final List<String> targetPath, final ContextValue value) {
+    final var copy = copyIfMsgPack(value);
+    writes.add(Map.entry(targetPath, copy));
+
     Map<String, Entry> current = entries;
     for (int i = 0; i < targetPath.size() - 1; i++) {
-      final var next = getOrSeedContext(current, targetPath.subList(0, i + 1));
-      if (next == null) {
-        return; // entry is poisoned: the mapped value is discarded, the entry stays null
-      }
-      current = next.entries();
+      current = descendInto(current, targetPath.get(i)).entries();
     }
-    current.put(targetPath.getLast(), new Entry.Value(copyIfMsgPack(value)));
+    current.put(targetPath.getLast(), new Entry.Value(copy));
   }
 
   /**
    * Returns the accumulated value of the given top-level variable, or {@code null} if no mapping
-   * has produced it yet. A nested structure is materialized on lookup — output reads are not
-   * layered, the merge is already in the document. A poisoned top-level entry returns {@link #NIL}
-   * (not Java {@code null}, which would let the caller fall back to the scope lookup instead of
-   * seeing the poisoned null).
+   * has produced it yet — {@code null} tells the caller to fall back to the scope lookup. Never
+   * merged with any external value: a nested target is exactly what mappings wrote so far.
    */
   @Override
   public @Nullable ContextValue getVariable(final String name) {
@@ -81,25 +102,61 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
       return null;
     } else if (entry instanceof Entry.Value(final var value)) {
       return value;
-    } else if (entry instanceof Entry.Poisoned) {
-      return NIL;
     } else {
       final var context = (Entry.Context) entry;
       return materialize(context.entries());
     }
   }
 
+  /**
+   * Descends into the nested context at the given key, creating a fresh (never seeded) one if the
+   * current entry is absent or a plain value — an earlier mapping that assigned this whole path a
+   * plain value is discarded structurally, last-wins, exactly like {@link
+   * InputMappingResultBuilder}. Never consults any external scope: that only happens later, when
+   * {@link #toDocument()} replays the writes.
+   */
+  private Entry.Context descendInto(final Map<String, Entry> parent, final String key) {
+    final var entry = parent.get(key);
+    if (entry instanceof final Entry.Context context) {
+      return context;
+    }
+    final var fresh = new Entry.Context(new LinkedHashMap<>());
+    parent.put(key, fresh);
+    return fresh;
+  }
+
   @Override
   protected ContextValue.Structure snapshot() {
-    return materialize(entries);
+    final Map<String, Entry> emitted = new LinkedHashMap<>();
+    for (final var write : writes) {
+      applyToReplay(emitted, write.getKey(), write.getValue());
+    }
+    return materialize(emitted);
   }
 
   /**
-   * Returns the context at the given path prefix, creating it if the current entry is absent or a
-   * plain value. A newly created context is seeded with the top-level entries of the existing scope
-   * value at that path (its entries stay opaque {@link ContextValue.MsgPack} values); a scope value
-   * that is not a context poisons the entry instead. Returns {@code null} when the entry is (or
-   * becomes) poisoned.
+   * Replays one recorded write into {@code root}, merging nested targets with the merge-target
+   * scope.
+   */
+  private void applyToReplay(
+      final Map<String, Entry> root, final List<String> targetPath, final ContextValue value) {
+    Map<String, Entry> current = root;
+    for (int i = 0; i < targetPath.size() - 1; i++) {
+      final var next = getOrSeedContext(current, targetPath.subList(0, i + 1));
+      if (next == null) {
+        return; // entry is poisoned: the mapped value is discarded, the entry stays null
+      }
+      current = next.entries();
+    }
+    current.put(targetPath.getLast(), new Entry.Value(value));
+  }
+
+  /**
+   * Returns the context at the given path prefix (within the replay tree being built by {@link
+   * #snapshot()}), creating it if the current entry is absent or a plain value. A newly created
+   * context is seeded with the top-level entries of the merge-target scope value at that path (its
+   * entries stay opaque {@link ContextValue.MsgPack} values); a scope value that is not a context
+   * poisons the entry instead. Returns {@code null} when the entry is (or becomes) poisoned.
    */
   private Entry.@Nullable Context getOrSeedContext(
       final Map<String, Entry> parent, final List<String> pathPrefix) {
@@ -111,9 +168,10 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
     if (entry instanceof final Entry.Context context) {
       return context;
     }
-    // Absent, or a plain value from an earlier mapping. Either way the context is (re)created from
-    // scratch, seeded from the SCOPE value rather than whatever that earlier mapping assigned.
-    final var scopeValue = scopeValueResolver.apply(pathPrefix);
+    // Absent, or a plain value from an earlier replayed write. Either way the context is
+    // (re)created from scratch, seeded from the merge-target scope rather than whatever that
+    // earlier write assigned.
+    final var scopeValue = mergeTargetResolver.apply(pathPrefix);
     if (scopeValue == null || isNil(scopeValue)) {
       final var fresh = new Entry.Context(new LinkedHashMap<>());
       parent.put(key, fresh);
@@ -141,13 +199,12 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
   }
 
   /**
-   * Materializes a context (and its nested contexts) as an immutable snapshot. Not layered — the
-   * merge with the scope value already happened while accumulating, so reading it back is a plain
-   * copy. It is iterative for the same reason {@link MappingResultBuilder}'s writer is — a {@code
-   * zeebe:output} target path can have an unbounded number of '.'-separated segments
-   * (ZeebeExpressionValidator's path pattern doesn't cap it), and plain recursion here previously
-   * let a deeply-nested target throw an uncaught StackOverflowError before NestingDepthValidator
-   * ever got a chance to reject the document gracefully.
+   * Materializes a context (and its nested contexts) as an immutable snapshot. It is iterative for
+   * the same reason {@link MappingResultBuilder}'s writer is — a {@code zeebe:output} target path
+   * can have an unbounded number of '.'-separated segments (ZeebeExpressionValidator's path pattern
+   * doesn't cap it), and plain recursion here previously let a deeply-nested target throw an
+   * uncaught StackOverflowError before NestingDepthValidator ever got a chance to reject the
+   * document gracefully.
    */
   private static ContextValue.Structure materialize(final Map<String, Entry> rootEntries) {
     final Map<String, ContextValue> root = new LinkedHashMap<>();
@@ -173,29 +230,25 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
   }
 
   /**
-   * One entry of the accumulated tree: either a value at a whole name, a nested context built by
-   * one or more dotted targets and merged with any scope value it was seeded from, or an entry
-   * whose scope value was not a context and so could not be merged into.
+   * One entry of an accumulated tree: either a value at a whole name, a nested context built by one
+   * or more dotted targets, or (only in a replay tree — see {@link #getOrSeedContext}) an entry
+   * whose merge-target scope value was not a context and so could not be merged into.
    */
   private sealed interface Entry {
     record Value(ContextValue value) implements Entry {}
 
     /**
-     * No flag recording whether this context replaced a plain value: unlike input mappings, output
-     * never falls through to a shadowed value on read, so nothing would ever read it.
-     *
      * @param entries the context's own entries: a nested {@link Context} or a {@link Value}
      */
     record Context(Map<String, Entry> entries) implements Entry {}
 
-    /** An entry whose scope value was not a context — see {@link #NIL}. */
+    /** An entry whose merge-target scope value was not a context — see {@link #NIL}. */
     record Poisoned() implements Entry {}
   }
 
   /**
    * One context still to be copied: the accumulated entries to read, and the map to write them
-   * into. Nothing is layered here — output merges the scope value in while accumulating, so a read
-   * is a plain copy.
+   * into.
    *
    * <p>{@code into} is installed in its parent before the copy is queued, so a parent's key order
    * is fixed when a nested context is <em>discovered</em>, not when it is filled — which is why
