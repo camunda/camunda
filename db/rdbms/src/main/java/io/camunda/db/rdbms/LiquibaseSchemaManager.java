@@ -54,6 +54,14 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   private static final String CHANGE_LOG = "db/changelog/rdbms-exporter/changelog-master.xml";
 
   /**
+   * Applied as a run of its own before {@link #CHANGE_LOG}, and deliberately not included by it.
+   * See the changelog's own comment for why the schema version has to be recorded before the schema
+   * is migrated rather than inferred from it afterwards.
+   */
+  private static final String SCHEMA_VERSION_SEED_CHANGE_LOG =
+      "db/changelog/rdbms-exporter/schema-version-seed.xml";
+
+  /**
    * Forces Liquibase runs in this JVM to execute one at a time, because two of them overlapping
    * corrupts each other's lock bookkeeping — even against entirely separate databases.
    *
@@ -157,10 +165,30 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
     LOG.info("[RDBMS Schema] Running Liquibase migration with prefix '{}'.", prefix);
     final var runner = buildRunner();
     releaseStaleLockIfPresent();
+    seedSchemaVersion();
     versionStore.checkCompatibility();
     performMigrationWithRetry(runner);
     versionStore.recordCurrentVersion();
     LOG.debug("[RDBMS Schema] Liquibase migration completed for prefix '{}'.", prefix);
+  }
+
+  /**
+   * Records the version this schema is already at, so that {@link
+   * RdbmsSchemaVersionStore#checkCompatibility()} reads a recorded fact instead of deducing one
+   * from which tables the schema happens to have.
+   *
+   * <p>A run of its own, ahead of the schema's: the check cannot read a row written by the
+   * migration it guards, and only Liquibase's changelog lock keeps a peer from being part-way
+   * through creating the tables the legacy-or-fresh decision is read from. Deducing it outside that
+   * lock is what #62554 was.
+   *
+   * <p>The extra run costs an extra changelog lock once per schema — on initial creation, or on the
+   * upgrade from 8.9. Both of its changesets are recorded in {@code DATABASECHANGELOG} after that,
+   * so Liquibase's fast check finds nothing to run and returns without taking the lock at all.
+   */
+  @VisibleForTesting
+  protected void seedSchemaVersion() throws Exception {
+    performMigrationWithRetry(buildRunner(SCHEMA_VERSION_SEED_CHANGE_LOG));
   }
 
   /**
@@ -197,9 +225,17 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
 
   @VisibleForTesting
   protected SpringLiquibase buildRunner() {
+    return buildRunner(CHANGE_LOG);
+  }
+
+  /**
+   * A runner for one changelog, against this tenant's data source and bookkeeping tables. Every
+   * changelog shares those tables, so a changeset applied by one run is skipped by the next.
+   */
+  private SpringLiquibase buildRunner(final String changeLog) {
     final var runner = new SpringLiquibase();
     runner.setDataSource(dataSource);
-    runner.setChangeLog(CHANGE_LOG);
+    runner.setChangeLog(changeLog);
     runner.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
     runner.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
     runner.setChangeLogParameters(
