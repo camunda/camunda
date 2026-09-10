@@ -79,6 +79,16 @@
     <mockserver.version>7.6.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
     <logunit.version>2.0.0</logunit.version>
+    <version.dateparser>1.0.11</version.dateparser>
+    <version.elasticsearch>7.17.29</version.elasticsearch>
+    <version.jakarta-mail>2.0.2</version.jakarta-mail>
+    <version.jakarta-mail-angus>2.0.5</version.jakarta-mail-angus>
+    <version.jersey>4.0.2</version.jersey>
+    <version.lucene>8.11.3</version.lucene>
+    <version.opencsv>5.12.0</version.opencsv>
+    <version.semver4j>3.1.0</version.semver4j>
+    <version.servlet-api-optimize>6.1.0</version.servlet-api-optimize>
+    <version.t-digest>3.3</version.t-digest>
     <greenmail.version>2.1.13</greenmail.version>
     <google-java-format.plugin.version>1.36.1</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
