@@ -313,9 +313,7 @@ test('should load a start form directly from its URL', async ({network, tasklist
 	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
 
 	await expect(tasklistProcessesPage.startProcessDialog).toHaveAccessibleName('Start process invoice-review');
-	await expect(
-		tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
 });
 
 test('should start a process with a form and selected tenant', async ({network, tasklistProcessesPage, page}) => {
@@ -388,9 +386,7 @@ test('should start a process with a form and selected tenant', async ({network, 
 	});
 	await tasklistProcessesPage.startProcessFormButton.click();
 
-	await expect(
-		tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started'),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started')).toBeVisible();
 	await expect(page).toHaveURL('/tasklist/processes?tenantId=tenant-a');
 	await expect(tasklistProcessesPage.startProcessDialog).not.toBeVisible();
 });
@@ -414,11 +410,7 @@ test('should prevent process creation when form validation fails', async ({netwo
 	);
 });
 
-test('should close the form and notify after submission failure', async ({
-	network,
-	tasklistProcessesPage,
-	page,
-}) => {
+test('should close the form and notify after submission failure', async ({network, tasklistProcessesPage, page}) => {
 	const processDefinitionKey = '2251799813685279';
 	network.use(
 		mockGetProcessDefinitionEndpoint({
@@ -438,9 +430,7 @@ test('should close the form and notify after submission failure', async ({
 
 	await expect(page).toHaveURL('/tasklist/processes');
 	await expect(tasklistProcessesPage.startProcessDialog).not.toBeVisible();
-	await expect(
-		tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed'),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed')).toBeVisible();
 });
 
 test('should show non-retryable errors for missing, form-less, forbidden, and invalid-schema processes', async ({
@@ -472,9 +462,7 @@ test('should show non-retryable errors for missing, form-less, forbidden, and in
 
 	network.use(mockGetProcessDefinitionEndpoint({successResponse: new HttpResponse(null, {status: 403})}));
 	await page.reload();
-	await expect(tasklistProcessesPage.startProcessFormError).toContainText(
-		"You don't have the necessary permissions.",
-	);
+	await expect(tasklistProcessesPage.startProcessFormError).toContainText("You don't have the necessary permissions.");
 	await expect(tasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'})).toHaveCount(0);
 
 	network.use(
@@ -509,9 +497,7 @@ test('should retry after a transient start-form loading failure', async ({networ
 	);
 	await tasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'}).click();
 
-	await expect(
-		tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
 });
 
 test('should start a process without a form using the selected tenant and open its task', async ({
@@ -573,9 +559,7 @@ test('should start a process without a form using the selected tenant and open i
 	await tasklistProcessesPage.goto('?tenantId=tenant-a');
 	await tasklistProcessesPage.startProcessButton.click();
 
-	await expect(
-		tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started'),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started')).toBeVisible();
 	network.use(
 		mockQueryUserTasksEndpoint({
 			successResponse: HttpResponse.json(createQueryUserTasksResponse({items: [task]})),

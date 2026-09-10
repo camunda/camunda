@@ -97,9 +97,7 @@ test('should match the start-process form modal snapshot', async ({network, task
 	);
 
 	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
-	await expect(
-		tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -150,9 +148,7 @@ test('should match the start-process form validation and submission-error notifi
 
 	await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
 	await tasklistProcessesPage.startProcessFormButton.click();
-	await expect(
-		tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed'),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed')).toBeVisible();
 	await expect(page).toHaveScreenshot('start-process-form-submission-error.png');
 });
 
@@ -220,11 +216,7 @@ test('should match the forbidden processes page snapshot', async ({
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the generic processes error page snapshot', async ({
-	network,
-	tasklistProcessesPage,
-	page,
-}) => {
+test('should match the generic processes error page snapshot', async ({network, tasklistProcessesPage, page}) => {
 	network.use(mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
 
 	await tasklistProcessesPage.goto();

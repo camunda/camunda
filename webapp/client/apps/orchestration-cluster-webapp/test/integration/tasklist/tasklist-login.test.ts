@@ -55,12 +55,7 @@ test('should redirect the Tasklist index to Tasklist login and return after logi
 	await expect(tasklistIndexPage.noTasksMessage).toBeVisible();
 });
 
-test('should preserve a Tasklist URL through login', async ({
-	network,
-	page,
-	tasklistIndexPage,
-	tasklistLoginPage,
-}) => {
+test('should preserve a Tasklist URL through login', async ({network, page, tasklistIndexPage, tasklistLoginPage}) => {
 	await tasklistLoginPage.gotoTasklist('?filter=assigned');
 
 	await expect(page).toHaveURL((url) => {

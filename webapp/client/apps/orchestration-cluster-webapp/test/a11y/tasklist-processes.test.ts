@@ -137,9 +137,7 @@ test.skip('should have no accessibility violations in the start-process form mod
 	);
 
 	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
-	await expect(
-		tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().analyze();
 	expect(accessibilityScanResults.violations).toEqual([]);

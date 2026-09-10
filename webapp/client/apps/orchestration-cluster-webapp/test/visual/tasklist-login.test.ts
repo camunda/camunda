@@ -19,11 +19,7 @@ test('should match theTasklist login page snapshot', async ({network, page, task
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the Tasklist login page validation error state', async ({
-	network,
-	page,
-	tasklistLoginPage,
-}) => {
+test('should match the Tasklist login page validation error state', async ({network, page, tasklistLoginPage}) => {
 	network.use(mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
 
 	await tasklistLoginPage.goto();

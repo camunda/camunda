@@ -80,11 +80,7 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Task details history', () => {
-	test('should show task history when the user opens it', async ({
-		network,
-		taskDetailPage,
-		page,
-	}) => {
+	test('should show task history when the user opens it', async ({network, taskDetailPage, page}) => {
 		network.use(
 			mockQueryUserTaskAuditLogsEndpoint({
 				successResponse: HttpResponse.json(createQueryUserTaskAuditLogsResponse({items: historyEntries})),
@@ -125,11 +121,7 @@ test.describe('Task details history', () => {
 		await expect(taskDetailPage.historyDetailsModal).not.toBeVisible();
 	});
 
-	test('should let the user change the history order', async ({
-		network,
-		taskDetailPage,
-		page,
-	}) => {
+	test('should let the user change the history order', async ({network, taskDetailPage, page}) => {
 		network.use(
 			mockQueryUserTaskAuditLogsEndpoint({
 				successResponse: HttpResponse.json(createQueryUserTaskAuditLogsResponse({items: historyEntries})),
@@ -152,11 +144,7 @@ test.describe('Task details history', () => {
 		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe(null);
 	});
 
-	test('should open a history entry from a direct link', async ({
-		network,
-		taskDetailPage,
-		page,
-	}) => {
+	test('should open a history entry from a direct link', async ({network, taskDetailPage, page}) => {
 		const auditLog = createAuditLog({
 			auditLogKey: 'direct-link-log',
 			operationType: 'ASSIGN',
@@ -186,11 +174,7 @@ test.describe('Task details history', () => {
 		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history\?sort=timestamp%2Basc/);
 	});
 
-	test('should help the user recover when task history cannot be loaded', async ({
-		network,
-		taskDetailPage,
-		page,
-	}) => {
+	test('should help the user recover when task history cannot be loaded', async ({network, taskDetailPage, page}) => {
 		network.use(
 			mockQueryUserTaskAuditLogsEndpoint({
 				successResponse: new HttpResponse(null, {status: 500}),

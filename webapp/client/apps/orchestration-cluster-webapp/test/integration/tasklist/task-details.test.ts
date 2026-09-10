@@ -139,10 +139,7 @@ test.describe('Task details page', () => {
 		await expect(taskDetailPage.taskTabContent).toBeAttached();
 	});
 
-	test('should keep task details visible when process access is forbidden', async ({
-		network,
-		taskDetailPage,
-	}) => {
+	test('should keep task details visible when process access is forbidden', async ({network, taskDetailPage}) => {
 		network.use(
 			mockGetProcessDefinitionXmlEndpoint({
 				successResponse: new HttpResponse(null, {status: 403}),
