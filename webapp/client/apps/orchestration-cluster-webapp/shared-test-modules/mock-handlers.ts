@@ -217,7 +217,25 @@ const mockGetProcessInstanceCallHierarchyEndpoint = createEndpointMock({
 	method: endpoints.getProcessInstanceCallHierarchy.method,
 });
 
+const mockCreateCancellationBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.createCancellationBatchOperation.getUrl(),
+	method: endpoints.createCancellationBatchOperation.method,
+});
+
+const mockCreateIncidentResolutionBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.createIncidentResolutionBatchOperation.getUrl(),
+	method: endpoints.createIncidentResolutionBatchOperation.method,
+});
+
+const mockCreateDeletionBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.createDeletionBatchOperation.getUrl(),
+	method: endpoints.createDeletionBatchOperation.method,
+});
+
 export {
+	mockCreateCancellationBatchOperationEndpoint,
+	mockCreateIncidentResolutionBatchOperationEndpoint,
+	mockCreateDeletionBatchOperationEndpoint,
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
 	mockLogoutEndpoint,

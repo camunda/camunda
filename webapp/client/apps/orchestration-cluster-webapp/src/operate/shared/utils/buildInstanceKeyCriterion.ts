@@ -6,11 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {format, parseISO} from 'date-fns';
-import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
-
-function formatStartDate(startDate: string | null | undefined): string {
-	return startDate ? format(parseISO(startDate), 'yyyy-MM-dd HH:mm:ss') : '--';
+function buildInstanceKeyCriterion(includeIds: string[], excludeIds: string[]) {
+	if (includeIds.length > 0) {
+		return {$in: includeIds};
+	}
+	if (excludeIds.length > 0) {
+		return {$notIn: excludeIds};
+	}
+	return undefined;
 }
 
-export {formatOperationType, formatStartDate};
+export {buildInstanceKeyCriterion};
