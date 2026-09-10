@@ -93,4 +93,9 @@ public class SpringBeanInfoTest {
     @JobWorker(tenantIds = "tenant-1")
     public void handle() {}
   }
+
+  public static class WithLease {
+    @JobWorker(type = "leaseType", withLease = true)
+    public void handle() {}
+  }
 }
