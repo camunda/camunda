@@ -51,7 +51,7 @@ export class OperateDashboardPage {
       page.getByTestId(`instances-by-process-${index}`);
     this.instancesByProcessItemByName = (name: string) =>
       this.instancesByProcess
-        .locator('[data-testid^="instances-by-process-definition-"]')
+        .locator('[data-testid^="instances-by-process-"]')
         .filter({hasText: name});
 
     this.incidentsByErrorItem = (index: number) =>
