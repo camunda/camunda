@@ -72,9 +72,11 @@ export class OperateDashboardPage {
       });
 
     this.viewInstanceLink = () =>
-      page.getByRole('link', {
-        name: /view instance/i,
-      });
+      page
+        .getByRole('link', {
+          name: /view instance/i,
+        })
+        .first();
 
     this.expandRowButton = () =>
       page.getByRole('button', {

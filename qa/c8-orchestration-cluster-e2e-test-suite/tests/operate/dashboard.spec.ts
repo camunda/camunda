@@ -153,11 +153,32 @@ test.describe('Dashboard', () => {
     operateProcessInstancePage,
   }) => {
     await test.step('Select incident type A and verify details', async () => {
-      await operateDashboardPage.clickIncidentByType(/type a/i);
+      // "Type A" and "Type B" incidents share the same truncated error message
+      // in the UI; the dashboard link disambiguates them by error-hash. The
+      // dashboard is a live, cluster-wide aggregate that concurrent nightly
+      // tests keep mutating, so the exact instance count is not fixed at 1.
+      // Read the Type A badge and assert the filtered heading matches it within
+      // one consistent snapshot, retrying if the two momentarily disagree.
+      await expect(async () => {
+        await operateDashboardPage.gotoDashboardPage();
 
-      await expect(
-        operateDashboardPage.processInstancesHeading(1, false),
-      ).toBeVisible();
+        const incidentCount = Number(
+          await operateDashboardPage
+            .incidentBadgeFromItem(
+              operateDashboardPage.incidentLinkByType(/type a/i),
+            )
+            .innerText(),
+        );
+
+        await operateDashboardPage.clickIncidentByType(/type a/i);
+
+        await expect(
+          operateDashboardPage.processInstancesHeading(
+            incidentCount,
+            incidentCount > 1,
+          ),
+        ).toBeVisible();
+      }).toPass(defaultAssertionOptions);
 
       await operateDashboardPage.clickViewInstanceLink();
       await operateProcessInstancePage.clickVariablesTab();
@@ -167,11 +188,26 @@ test.describe('Dashboard', () => {
     });
 
     await test.step('Select incident type B and verify details', async () => {
-      await operateDashboardPage.gotoDashboardPage();
-      await operateDashboardPage.clickIncidentByType(/type b/i);
-      await expect(
-        operateDashboardPage.processInstancesHeading(1, false),
-      ).toBeVisible();
+      await expect(async () => {
+        await operateDashboardPage.gotoDashboardPage();
+
+        const incidentCount = Number(
+          await operateDashboardPage
+            .incidentBadgeFromItem(
+              operateDashboardPage.incidentLinkByType(/type b/i),
+            )
+            .innerText(),
+        );
+
+        await operateDashboardPage.clickIncidentByType(/type b/i);
+
+        await expect(
+          operateDashboardPage.processInstancesHeading(
+            incidentCount,
+            incidentCount > 1,
+          ),
+        ).toBeVisible();
+      }).toPass(defaultAssertionOptions);
 
       await operateDashboardPage.clickViewInstanceLink();
       await operateProcessInstancePage.clickVariablesTab();
@@ -252,27 +288,34 @@ test.describe('Dashboard', () => {
     operateDashboardPage,
   }) => {
     await test.step('Expand first error and navigate to verify incident count', async () => {
-      await expect(operateDashboardPage.incidentsByError).toBeVisible();
+      // The first error group is a cluster-wide aggregate that concurrent
+      // nightly tests keep mutating, and the incident-statistics badge count
+      // can transiently lag the process-instances search count while instances
+      // are being created. Re-read the badge and assert the heading matches it
+      // within one consistent snapshot, retrying until the two agree.
+      await expect(async () => {
+        await operateDashboardPage.gotoDashboardPage();
+        await expect(operateDashboardPage.incidentsByError).toBeVisible();
 
-      const firstInstanceByError = operateDashboardPage.incidentsByErrorItem(0);
+        const firstInstanceByError =
+          operateDashboardPage.incidentsByErrorItem(0);
 
-      const incidentCount = Number(
-        await operateDashboardPage
-          .incidentBadgeFromItem(firstInstanceByError)
-          .innerText(),
-      );
+        const incidentCount = Number(
+          await operateDashboardPage
+            .incidentBadgeFromItem(firstInstanceByError)
+            .innerText(),
+        );
 
-      await operateDashboardPage.expandItem(firstInstanceByError);
-      await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
+        await operateDashboardPage.expandItem(firstInstanceByError);
+        await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
 
-      // Incident counts can shift between the badge snapshot and navigation
-      // load; allow the heading more time to settle to the expected count.
-      await expect(
-        operateDashboardPage.processInstancesHeading(
-          incidentCount,
-          Number(incidentCount) > 1,
-        ),
-      ).toBeVisible({timeout: 30000});
+        await expect(
+          operateDashboardPage.processInstancesHeading(
+            incidentCount,
+            incidentCount > 1,
+          ),
+        ).toBeVisible();
+      }).toPass(defaultAssertionOptions);
     });
   });
 });
