@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared.management;
+package io.camunda.service;
 
 import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
@@ -16,12 +16,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Collects every registered {@link MigrationStatusProvider} and combines their per-physical-tenant
- * statuses into an {@link UpgradeReadinessResponse}.
+ * statuses into one {@code Map<physicalTenantId, Map<conditionName, MigrationConditionStatus>>}.
  */
 public class MigrationStatusAggregator {
 
@@ -34,7 +36,11 @@ public class MigrationStatusAggregator {
     this.providers = providers;
   }
 
-  public UpgradeReadinessResponse aggregate() {
+  public Map<String, Map<String, MigrationConditionStatus>> aggregate() {
+    return aggregate(ForkJoinPool.commonPool());
+  }
+
+  public Map<String, Map<String, MigrationConditionStatus>> aggregate(final Executor executor) {
     final var conditionNames =
         providers.stream().map(MigrationStatusProvider::conditionName).toList();
     final var physicalTenants = new LinkedHashMap<String, Map<String, MigrationConditionStatus>>();
@@ -43,7 +49,9 @@ public class MigrationStatusAggregator {
     // its own timeout on top of every other provider's.
     final var pendingStatusesByProvider =
         providers.stream()
-            .map(provider -> CompletableFuture.supplyAsync(() -> safeGetMigrationStatus(provider)))
+            .map(
+                provider ->
+                    CompletableFuture.supplyAsync(() -> safeGetMigrationStatus(provider), executor))
             .toList();
     CompletableFuture.allOf(pendingStatusesByProvider.toArray(CompletableFuture<?>[]::new)).join();
 
@@ -60,15 +68,7 @@ public class MigrationStatusAggregator {
 
     backfillMissingPairs(physicalTenants, conditionNames);
 
-    final var upgradeable =
-        !physicalTenants.isEmpty()
-            && physicalTenants.values().stream()
-                .allMatch(
-                    conditions ->
-                        !conditions.isEmpty()
-                            && conditions.values().stream()
-                                .allMatch(status -> status.state() == MigrationState.MIGRATED));
-    return new UpgradeReadinessResponse(upgradeable, physicalTenants);
+    return physicalTenants;
   }
 
   private Map<String, MigrationConditionStatus> safeGetMigrationStatus(

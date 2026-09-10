@@ -49,6 +49,19 @@ public class ClusterStatusController {
   }
 
   /**
+   * Reports one overall upgrade-readiness status for the whole cluster (see the {@code
+   * upgradeReadiness} actuator endpoint for full per-physical-tenant, per-condition detail). Public
+   * and unauthenticated, like {@link #getClusterStatus()} — see camunda/camunda#61619.
+   */
+  @CamundaGetMapping(path = "/status/upgrade")
+  public CompletableFuture<ResponseEntity<Object>> getClusterUpgradeStatus() {
+    return RequestExecutor.executeServiceMethod(
+        serviceRegistry.clusterUpgradeStatusServices()::getStatus,
+        ResponseMapper::toClusterUpgradeStatusResponse,
+        HttpStatus.OK);
+  }
+
+  /**
    * Only {@code DOWN} means the cluster cannot process work; a degraded cluster still serves
    * traffic, so it must not be signalled as unavailable.
    */

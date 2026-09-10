@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared.management;
+package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,7 +14,9 @@ import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
@@ -32,27 +34,47 @@ final class MigrationStatusAggregatorTest {
                 blockingProvider("b", secondStarted, firstStarted)));
 
     // when
-    final var response = aggregator.aggregate();
+    final var physicalTenants = aggregator.aggregate();
 
     // then - both providers reported their status, so neither call was left waiting forever
-    assertThat(response.physicalTenants().get("default")).hasSize(2);
+    assertThat(physicalTenants.get("default")).hasSize(2);
   }
 
   @Test
-  void shouldReportNotUpgradeableWhenNoProviderIsRegistered() {
+  void shouldPollOnTheGivenExecutorInsteadOfTheCommonPool() {
+    // given - a dedicated single-thread executor with a recognizable thread name, so a poll
+    // routed through the common pool instead would be caught rather than passing by coincidence
+    final var executor =
+        Executors.newSingleThreadExecutor(r -> new Thread(r, "aggregate-test-executor"));
+    final var observedThreadNames = new CopyOnWriteArrayList<String>();
+    final var aggregator =
+        new MigrationStatusAggregator(List.of(threadRecordingProvider("a", observedThreadNames)));
+
+    try {
+      // when
+      aggregator.aggregate(executor);
+
+      // then
+      assertThat(observedThreadNames).containsExactly("aggregate-test-executor");
+    } finally {
+      executor.shutdown();
+    }
+  }
+
+  @Test
+  void shouldReportNoPhysicalTenantsWhenNoProviderIsRegistered() {
     // given - staged rollout: not every provider exists yet
     final var aggregator = new MigrationStatusAggregator(List.of());
 
     // when
-    final var response = aggregator.aggregate();
+    final var physicalTenants = aggregator.aggregate();
 
     // then - an empty condition set must never be mistaken for readiness
-    assertThat(response.upgradeable()).isFalse();
-    assertThat(response.physicalTenants()).isEmpty();
+    assertThat(physicalTenants).isEmpty();
   }
 
   @Test
-  void shouldReportUpgradeableOnlyWhenEveryConditionIsMigratedForEveryTenant() {
+  void shouldReportEveryConditionForEveryPhysicalTenant() {
     // given
     final var aggregator =
         new MigrationStatusAggregator(
@@ -61,11 +83,10 @@ final class MigrationStatusAggregatorTest {
                 provider("b", Map.of("default", migrated("b done")))));
 
     // when
-    final var response = aggregator.aggregate();
+    final var physicalTenants = aggregator.aggregate();
 
     // then
-    assertThat(response.upgradeable()).isTrue();
-    assertThat(response.physicalTenants().get("default")).hasSize(2);
+    assertThat(physicalTenants.get("default")).hasSize(2);
   }
 
   @Test
@@ -81,18 +102,16 @@ final class MigrationStatusAggregatorTest {
                         "tenantB", inProgress("b behind")))));
 
     // when
-    final var response = aggregator.aggregate();
+    final var physicalTenants = aggregator.aggregate();
 
     // then
-    assertThat(response.upgradeable()).isFalse();
-    assertThat(response.physicalTenants().get("tenantA").get("a").state())
-        .isEqualTo(MigrationState.MIGRATED);
-    assertThat(response.physicalTenants().get("tenantB").get("a").state())
+    assertThat(physicalTenants.get("tenantA").get("a").state()).isEqualTo(MigrationState.MIGRATED);
+    assertThat(physicalTenants.get("tenantB").get("a").state())
         .isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
   }
 
   @Test
-  void shouldReportNotUpgradeableWhenOneConditionIsNotMigratedForOneTenant() {
+  void shouldKeepEachConditionIndependentPerTenant() {
     // given
     final var aggregator =
         new MigrationStatusAggregator(
@@ -101,11 +120,11 @@ final class MigrationStatusAggregatorTest {
                 provider("b", Map.of("default", inProgress("b behind")))));
 
     // when
-    final var response = aggregator.aggregate();
+    final var physicalTenants = aggregator.aggregate();
 
     // then
-    assertThat(response.upgradeable()).isFalse();
-    assertThat(response.physicalTenants().get("default").get("b").state())
+    assertThat(physicalTenants.get("default").get("a").state()).isEqualTo(MigrationState.MIGRATED);
+    assertThat(physicalTenants.get("default").get("b").state())
         .isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
   }
 
@@ -115,12 +134,11 @@ final class MigrationStatusAggregatorTest {
     final var aggregator = new MigrationStatusAggregator(List.of(throwingProvider("a", "boom")));
 
     // when
-    final var response = aggregator.aggregate();
+    final var physicalTenants = aggregator.aggregate();
 
     // then - a broken provider must never crash the endpoint; with no known tenant, there's
     // simply nothing to report yet
-    assertThat(response.upgradeable()).isFalse();
-    assertThat(response.physicalTenants()).isEmpty();
+    assertThat(physicalTenants).isEmpty();
   }
 
   @Test
@@ -133,11 +151,10 @@ final class MigrationStatusAggregatorTest {
                 throwingProvider("b", "boom")));
 
     // when
-    final var response = aggregator.aggregate();
+    final var physicalTenants = aggregator.aggregate();
 
     // then - "b" must not silently disappear for "default": a gap is UNKNOWN, never omission
-    assertThat(response.upgradeable()).isFalse();
-    final var conditions = response.physicalTenants().get("default");
+    final var conditions = physicalTenants.get("default");
     assertThat(conditions.get("a").state()).isEqualTo(MigrationState.MIGRATED);
     assertThat(conditions.get("b").state()).isEqualTo(MigrationState.UNKNOWN);
     assertThat(conditions.get("b").detail()).contains("no status reported");
@@ -151,14 +168,14 @@ final class MigrationStatusAggregatorTest {
     final var aggregator = new MigrationStatusAggregator(List.of(flakyProvider));
 
     // when - first poll confirms MIGRATED, second poll's provider call fails entirely
-    final var firstResponse = aggregator.aggregate();
-    final var secondResponse = aggregator.aggregate();
+    final var firstPhysicalTenants = aggregator.aggregate();
+    final var secondPhysicalTenants = aggregator.aggregate();
 
     // then - each poll reflects only what it itself observed; a failure is reported as UNKNOWN
     // rather than silently reusing the earlier MIGRATED result, since that could go stale
-    assertThat(firstResponse.physicalTenants().get("default").get("a").state())
+    assertThat(firstPhysicalTenants.get("default").get("a").state())
         .isEqualTo(MigrationState.MIGRATED);
-    assertThat(secondResponse.physicalTenants().get("default").get("a").state())
+    assertThat(secondPhysicalTenants.get("default").get("a").state())
         .isEqualTo(MigrationState.UNKNOWN);
   }
 
@@ -170,10 +187,10 @@ final class MigrationStatusAggregatorTest {
 
     // when
     aggregator.aggregate();
-    final var secondResponse = aggregator.aggregate();
+    final var secondPhysicalTenants = aggregator.aggregate();
 
     // then - nothing from the first poll carries over; the backfill defaults to UNKNOWN
-    assertThat(secondResponse.physicalTenants().get("default").get("a").state())
+    assertThat(secondPhysicalTenants.get("default").get("a").state())
         .isEqualTo(MigrationState.UNKNOWN);
   }
 
@@ -211,6 +228,23 @@ final class MigrationStatusAggregatorTest {
           Thread.currentThread().interrupt();
           throw new RuntimeException(e);
         }
+        return Map.of("default", migrated(name + " done"));
+      }
+    };
+  }
+
+  /** A provider that records the name of the thread {@code getMigrationStatus()} ran on. */
+  private static MigrationStatusProvider threadRecordingProvider(
+      final String name, final List<String> observedThreadNames) {
+    return new MigrationStatusProvider() {
+      @Override
+      public String conditionName() {
+        return name;
+      }
+
+      @Override
+      public Map<String, MigrationConditionStatus> getMigrationStatus() {
+        observedThreadNames.add(Thread.currentThread().getName());
         return Map.of("default", migrated(name + " done"));
       }
     };

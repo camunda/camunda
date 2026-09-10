@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.cluster.migration.MigrationState;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
@@ -30,6 +31,7 @@ import io.camunda.gateway.protocol.model.ClusterBrokerInfo;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse.StatusEnum;
 import io.camunda.gateway.protocol.model.ClusterTopologyResponse;
+import io.camunda.gateway.protocol.model.ClusterUpgradeStatusResponse;
 import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
@@ -949,6 +951,19 @@ public final class ResponseMapper {
               case HEALTHY -> StatusEnum.HEALTHY;
               case DEGRADED -> StatusEnum.DEGRADED;
               case DOWN -> StatusEnum.DOWN;
+            })
+        .build();
+  }
+
+  public static ClusterUpgradeStatusResponse toClusterUpgradeStatusResponse(
+      final MigrationState state) {
+    return ClusterUpgradeStatusResponse.Builder.create()
+        .status(
+            switch (state) {
+              case MIGRATED -> ClusterUpgradeStatusResponse.StatusEnum.MIGRATED;
+              case MIGRATION_IN_PROGRESS ->
+                  ClusterUpgradeStatusResponse.StatusEnum.MIGRATION_IN_PROGRESS;
+              case UNKNOWN -> ClusterUpgradeStatusResponse.StatusEnum.UNKNOWN;
             })
         .build();
   }

@@ -22,6 +22,7 @@ import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterRuntimeBackupServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
+import io.camunda.service.ClusterUpgradeStatusServices;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -112,6 +113,7 @@ public record DefaultServiceRegistry(
     ClusterRebalanceServices clusterRebalanceServices,
     ClusterRecoveryServices clusterRecoveryServices,
     ClusterStatusServices clusterStatusServices,
+    ClusterUpgradeStatusServices clusterUpgradeStatusServices,
     ClusterTopologyServices clusterTopologyServices,
     ClusterExportingServices clusterExportingServices,
     ManagementServices managementServices)
@@ -358,6 +360,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public ClusterUpgradeStatusServices clusterUpgradeStatusServices() {
+    return clusterUpgradeStatusServices;
+  }
+
+  @Override
   public ClusterTopologyServices clusterTopologyServices() {
     return clusterTopologyServices;
   }
@@ -461,6 +468,7 @@ public record DefaultServiceRegistry(
     private ClusterRebalanceServices clusterRebalanceServices;
     private ClusterRecoveryServices clusterRecoveryServices;
     private ClusterStatusServices clusterStatusServices;
+    private ClusterUpgradeStatusServices clusterUpgradeStatusServices;
     private ClusterTopologyServices clusterTopologyServices;
     private ClusterExportingServices clusterExportingServices;
     private ManagementServices managementServices;
@@ -705,6 +713,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder clusterUpgradeStatusServices(final ClusterUpgradeStatusServices service) {
+      clusterUpgradeStatusServices = service;
+      return this;
+    }
+
     public Builder clusterTopologyServices(final ClusterTopologyServices service) {
       clusterTopologyServices = service;
       return this;
@@ -767,6 +780,7 @@ public record DefaultServiceRegistry(
           clusterRebalanceServices,
           clusterRecoveryServices,
           clusterStatusServices,
+          clusterUpgradeStatusServices,
           clusterTopologyServices,
           clusterExportingServices,
           managementServices);
