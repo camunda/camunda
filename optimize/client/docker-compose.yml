@@ -170,7 +170,7 @@ services:
         - >-
           exec 3<>/dev/tcp/127.0.0.1/9600 &&
           printf 'GET /actuator/health/readiness HTTP/1.0\r\n\r\n' >&3 &&
-          grep -q '"status":"UP"' <&3
+          grep -q '"status":"UP","components"' <&3
       interval: 30s
       timeout: 5s
       retries: 5
@@ -216,7 +216,7 @@ services:
         - >-
           exec 3<>/dev/tcp/127.0.0.1/9600 &&
           printf 'GET /actuator/health/readiness HTTP/1.0\r\n\r\n' >&3 &&
-          grep -q '"status":"UP"' <&3
+          grep -q '"status":"UP","components"' <&3
       interval: 30s
       timeout: 5s
       retries: 5
