@@ -142,7 +142,7 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
               as="p"
               variant="helper"
               role="alert"
-              className="text-danger-action-default"
+              className="text-danger-foreground-subtle"
             >
               {errors}
             </Text>

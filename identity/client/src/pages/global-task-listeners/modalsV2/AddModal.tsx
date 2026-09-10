@@ -171,7 +171,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
                     as="p"
                     variant="helper"
                     role="alert"
-                    className="text-danger-action-default"
+                    className="text-danger-foreground-subtle"
                   >
                     {fieldState.error.message}
                   </Text>
