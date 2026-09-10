@@ -155,7 +155,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 
 				return (
 					<div className="flex h-full min-h-0 w-full flex-col gap-2">
-						<div className="mt-4 flex min-h-8 w-full items-center px-4">
+						<div className="flex min-h-8 w-full items-center px-4">
 							<Heading as="h2" variant="heading-lg" className="sr-only">
 								{t('tasklist.variablesTitle')}
 							</Heading>

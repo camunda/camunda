@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CircleAlert, SignalHigh, SignalLow, SignalMedium} from '@camunda/design-system/icons';
+import {ChevronDown, ChevronUp, ChevronsUp, Equal} from '@camunda/design-system/icons';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
 import {LabelWithTooltip, type Align} from './LabelWithTooltip';
 
@@ -16,10 +16,10 @@ type Props = {
 };
 
 const ICON_MAPPINGS = {
-	low: SignalLow,
-	medium: SignalMedium,
-	high: SignalHigh,
-	critical: CircleAlert,
+	low: ChevronDown,
+	medium: Equal,
+	high: ChevronUp,
+	critical: ChevronsUp,
 };
 
 const PriorityLabel: React.FC<Props> = ({priority, align = 'top-end'}) => {
@@ -28,7 +28,7 @@ const PriorityLabel: React.FC<Props> = ({priority, align = 'top-end'}) => {
 
 	return (
 		<LabelWithTooltip title={priorityLabel.long} content={priorityLabel.long} align={align}>
-			<PriorityIcon className="size-4 shrink-0" aria-hidden />
+			<PriorityIcon className="size-4 shrink-0" data-testid={`${priorityLabel.key}-priority-icon`} aria-hidden />
 			{priorityLabel.short}
 		</LabelWithTooltip>
 	);

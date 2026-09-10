@@ -138,7 +138,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									date={secondaryDate.completionDate}
 									relativeLabel={t('tasklist.availableTasksCompletedRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksCompletedAbsoluteLabel')}
-									icon={<CircleCheck className="size-4 shrink-0 text-success-action-default" aria-hidden />}
+									icon={<CircleCheck className="size-4 shrink-0 text-success-foreground-subtle" aria-hidden />}
 									align="top-end"
 								/>
 							)}
