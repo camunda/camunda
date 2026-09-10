@@ -30,6 +30,9 @@ maven:
 
 targets:
   exclude:
+    # Gradle is experimental and is not used to publish Camunda artifacts yet.
+    # Maven remains the source of truth for license analysis.
+    - type: gradle
     # qa
     - type: maven
       path: bom/
