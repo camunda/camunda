@@ -46,9 +46,11 @@ orchestration:
         zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
         zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
         # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-        zeebe.broker.flowControl.write.enabled: "true"
-        zeebe.broker.flowControl.write.limit: 10000
-        zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # Uses the unified `camunda.*` property tree rather than the legacy `zeebe.broker.*` one, because otherwise only the default physical tenant
+        # receives this configuration.
+        camunda.processing.flow-control.write.enabled: "true"
+        camunda.processing.flow-control.write.limit: 10000
+        camunda.processing.flow-control.write.throttle.enabled: "true"
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
