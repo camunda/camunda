@@ -87,7 +87,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
       } else if (!retryLimitExceeded(++retryCount, maxRetries, exception, LOG, currentFuture)) {
         throttledLog.warn(
             "Operation '{}' caught recoverable exception (retry {}/{}), will retry: {}",
-            operationName != null ? operationName : "unknown",
+            operationName != null ? operationName : DEFAULT_OPERATION_NAME,
             retryCount,
             maxRetries,
             exception.getMessage(),
