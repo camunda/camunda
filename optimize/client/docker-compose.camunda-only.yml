@@ -110,13 +110,13 @@ services:
       - "26500:26500"
       - "9600:9600"
       - "8080:8080"
-    # Intentionally more tolerant than the smoke's 1s probe so the gate reflects actual
-    # readiness rather than probe brittleness under CI load.
+    # Matches the Optimize smoke's brittle probe exactly to test whether the 1s timeout is
+    # the culprit (services, image and dev-data are already ruled out).
     healthcheck:
       test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
+      interval: 30s
+      timeout: 1s
+      retries: 5
       start_period: 30s
     depends_on:
       - elasticsearch
