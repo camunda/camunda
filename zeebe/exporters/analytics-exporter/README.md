@@ -81,11 +81,11 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ### Configuring as an external JAR
 
 The examples above assume the exporter class is already on the broker's classpath, which is
-the case starting with Camunda 8.10, where the exporter ships in-tree. On any version where
-that is not true, you can still load a self-built exporter jar the same way Zeebe loads any
-external exporter, by adding a `jar-path` argument pointing at the jar — the unified
-`camunda.data.exporters.<name>` style used above supports `jar-path` directly, no need to
-switch to the classic `zeebe.broker.exporters.<name>` style just for this:
+the case starting with Camunda 8.10, where the exporter ships in-tree. The unified
+`camunda.data.exporters.<name>` configuration used above supports `jar-path` directly. For
+earlier versions, where the exporter is not included in the broker, you can still load a
+self-built exporter jar using `jar-path` under the classic `zeebe.broker.exporters.<name>`
+configuration, just as you would for any external Zeebe exporter:
 
 ```yaml
 camunda:
@@ -101,11 +101,11 @@ camunda:
             - optional
 ```
 
-The classic `zeebe.broker.exporters.<name>` style (with `className`/`jarPath`) and its
-`ZEEBE_BROKER_EXPORTERS_ANALYTICS_*` environment variables also still work, if you're already
-using that style elsewhere. Either way, this section only covers configuring the broker
-directly; it makes no claim about whether or how a particular deployment tool (an operator, a
-Helm chart, etc.) exposes `jar-path` for you — check that tool's own documentation.
+The classic style also has an environment-variable form (`ZEEBE_BROKER_EXPORTERS_ANALYTICS_*`
+with `CLASSNAME`/`JARPATH`), for anyone already using that style elsewhere. Either way, this
+section only covers configuring the broker directly; it makes no claim about whether or how a
+particular deployment tool (an operator, a Helm chart, etc.) exposes `jar-path` for you —
+check that tool's own documentation.
 
 ### Verify the exporter is running
 
