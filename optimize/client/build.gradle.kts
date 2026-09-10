@@ -2,8 +2,8 @@
 //  1. Uses Yarn, not npm (convention uses NpmTask)
 //  2. No webjar packaging — processResources is not wired to copy build output into a JAR
 
-import buildlogic.parsePomProperties
-import buildlogic.pomVersion
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.yarn.task.YarnTask
 import org.gradle.api.provider.Provider
@@ -19,14 +19,13 @@ plugins {
 }
 
 val parentPomVersions =
-  parsePomProperties(
-    providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get()
-  )
+  PomResolver(providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get())
+    .properties()
 
 extensions.configure<NodeExtension> {
   download.set(true)
-  version.set(pomVersion(parentPomVersions, "version.node").removePrefix("v"))
-  yarnVersion.set(pomVersion(parentPomVersions, "version.yarn").removePrefix("v"))
+  version.set(resolvePomProperty("version.node", parentPomVersions).removePrefix("v"))
+  yarnVersion.set(resolvePomProperty("version.yarn", parentPomVersions).removePrefix("v"))
   distBaseUrl.set(null as String?)
   workDir.set(layout.projectDirectory.dir(".node/nodejs"))
   yarnWorkDir.set(layout.projectDirectory.dir(".node/yarn"))
