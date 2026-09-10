@@ -20,4 +20,5 @@ process-execution data path). These are module-scoped decisions; see the
 | [0008](0008-810-suspended-job-state.md)                             | Persisted `SUSPENDED` job state that withholds the jobs of a suspended process instance from hand-out         |
 | [0009](0009-810-suspended-timer-buffering.md)                       | Buffer a due timer trigger while suspended, drop its due-date index, fire it in the drain chain               |
 | [0009](0009-810-agent-execution-in-engine-records.md)               | Agent execution recorded as engine records: storage-independent pipeline, content passes through              |
+| [0010](0010-810-agent-definition-from-bpmn-marker.md)               | Agent definitions derived at deploy time from a `zeebe:agentDefinition` BPMN marker, no marker no agent       |
 
