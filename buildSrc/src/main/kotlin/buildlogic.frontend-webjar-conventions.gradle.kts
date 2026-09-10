@@ -3,6 +3,7 @@ import buildlogic.pomVersion
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.npm.task.NpmTask
 import org.gradle.api.provider.Provider
+import org.gradle.jvm.tasks.Jar
 import org.gradle.language.jvm.tasks.ProcessResources
 
 fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
@@ -103,3 +104,5 @@ val npmBuild =
 tasks.named<ProcessResources>("processResources") {
   from(frontendPackagedDirectory.orElse(frontendBuildDirectory)) { into(resourceTargetPath) }
 }
+
+tasks.named<Jar>("jar") { mustRunAfter(npmBuild) }
