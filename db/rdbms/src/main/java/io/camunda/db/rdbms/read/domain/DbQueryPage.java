@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
+import io.camunda.search.sort.SortOptionsBuilders;
 import io.camunda.search.sort.SortOrder;
 import java.util.List;
 
@@ -56,28 +57,23 @@ public record DbQueryPage(
       }
 
       public KeySetPaginationFieldEntry build() {
+        // Paging backwards over a sort is paging forwards over the reversed sort — the same
+        // equivalence the mapper's ORDER BY relies on (see Commons.orderBy). Flipping the order up
+        // front leaves a single set of comparators to reason about, for both directions.
+        final var seekOrder = isSearchAfter ? order : SortOptionsBuilders.reverseOrder(order);
+
         // NULL ordering is standardized across all supported databases (see Commons.xml orderBy):
-        // ASC sorts NULLs FIRST, DESC sorts NULLs LAST. The strict comparator for a NULL cursor
-        // value therefore depends on the direction: for the boundary where NULLs are on the far
-        // side of the traversal there is no row beyond them, which must yield NO_MATCH rather than
-        // IS_NULL (which would match every NULL row and stall the cursor).
-        final Operator operator;
-        if (isSearchAfter) {
-          operator =
-              order == SortOrder.ASC
-                  // ASC NULLs FIRST: rows after a NULL cursor are the non-NULL rows
-                  ? fieldValue == null ? Operator.IS_NOT_NULL : Operator.GREATER
-                  // DESC NULLs LAST: nothing sorts after a NULL cursor
-                  : fieldValue == null ? Operator.NO_MATCH : Operator.LOWER;
-        } else {
-          // searchBefore: traverse the result set backwards
-          operator =
-              order == SortOrder.ASC
-                  // ASC NULLs FIRST: nothing sorts before a NULL cursor
-                  ? fieldValue == null ? Operator.NO_MATCH : Operator.LOWER
-                  // DESC NULLs LAST: rows before a NULL cursor are the non-NULL rows
-                  : fieldValue == null ? Operator.IS_NOT_NULL : Operator.GREATER;
-        }
+        // ASC sorts NULLs FIRST, DESC sorts NULLs LAST, and reversing the order swaps both halves
+        // of that pairing together. The strict comparator for a NULL cursor value therefore depends
+        // only on the seek order: where the NULLs sit at the far end of the traversal there is no
+        // row beyond them, which must yield NO_MATCH rather than IS_NULL (which would match every
+        // NULL row and stall the cursor).
+        final Operator operator =
+            seekOrder == SortOrder.ASC
+                // ASC NULLs FIRST: the rows beyond a NULL cursor are the non-NULL rows
+                ? fieldValue == null ? Operator.IS_NOT_NULL : Operator.GREATER
+                // DESC NULLs LAST: nothing sorts beyond a NULL cursor
+                : fieldValue == null ? Operator.NO_MATCH : Operator.LOWER;
         return new KeySetPaginationFieldEntry(fieldName, operator, fieldValue);
       }
     }
