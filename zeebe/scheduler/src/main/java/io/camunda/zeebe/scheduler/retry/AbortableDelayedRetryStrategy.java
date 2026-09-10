@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.RetryDelayStrategy;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ public final class AbortableDelayedRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final RetryDelayStrategy delayStrategy;
-  private final String operationName;
+  private final @Nullable String operationName;
 
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier currentTerminateCondition;
@@ -38,11 +39,13 @@ public final class AbortableDelayedRetryStrategy implements RetryStrategy {
 
   public AbortableDelayedRetryStrategy(
       final ActorControl actor, final RetryDelayStrategy delayStrategy) {
-    this(actor, delayStrategy, DEFAULT_OPERATION_NAME);
+    this(actor, delayStrategy, null);
   }
 
   public AbortableDelayedRetryStrategy(
-      final ActorControl actor, final RetryDelayStrategy delayStrategy, final String operationName) {
+      final ActorControl actor,
+      final RetryDelayStrategy delayStrategy,
+      final @Nullable String operationName) {
     this.actor = actor;
     this.delayStrategy = delayStrategy;
     this.operationName = operationName;
@@ -74,8 +77,10 @@ public final class AbortableDelayedRetryStrategy implements RetryStrategy {
       } else if (currentTerminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
       } else {
-        LOG.trace(
-            "Operation '{}' did not complete, scheduling retry {}", operationName, ++retryCount);
+        if (operationName != null) {
+          LOG.trace(
+              "Operation '{}' did not complete, scheduling retry {}", operationName, ++retryCount);
+        }
         backOff();
       }
     } catch (final Exception exception) {

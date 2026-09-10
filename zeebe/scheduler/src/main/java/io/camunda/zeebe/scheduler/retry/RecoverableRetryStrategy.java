@@ -15,6 +15,7 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +26,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
   private final int maxRetries;
-  private final String operationName;
+  private final @Nullable String operationName;
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
@@ -36,11 +37,11 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   }
 
   public RecoverableRetryStrategy(final ActorControl actor, final int maxRetries) {
-    this(actor, maxRetries, DEFAULT_OPERATION_NAME);
+    this(actor, maxRetries, null);
   }
 
   public RecoverableRetryStrategy(
-      final ActorControl actor, final int maxRetries, final String operationName) {
+      final ActorControl actor, final int maxRetries, final @Nullable String operationName) {
     this.actor = actor;
     this.maxRetries = maxRetries;
     this.operationName = operationName;
@@ -70,11 +71,13 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
         if (!retryLimitExceeded(++retryCount, maxRetries, null, LOG, currentFuture)) {
-          LOG.trace(
-              "Operation '{}' did not complete, scheduling retry {}/{}",
-              operationName,
-              retryCount,
-              maxRetries);
+          if (operationName != null) {
+            LOG.trace(
+                "Operation '{}' did not complete, scheduling retry {}/{}",
+                operationName,
+                retryCount,
+                maxRetries);
+          }
           actor.run(this::run);
           actor.yieldThread();
         }
@@ -84,7 +87,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
         if (!retryLimitExceeded(++retryCount, maxRetries, ex, LOG, currentFuture)) {
           throttledLog.warn(
               "Operation '{}' caught recoverable exception (retry {}/{}), will retry: {}",
-              operationName,
+              operationName != null ? operationName : "unknown",
               retryCount,
               maxRetries,
               ex.getMessage(),
