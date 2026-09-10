@@ -1,5 +1,4 @@
-import buildlogic.parsePomElement
-import buildlogic.parsePomProperties
+import io.camunda.gradle.pom.PomResolver
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 import org.apache.tools.ant.filters.ReplaceTokens
@@ -171,9 +170,12 @@ val distDirectory = layout.buildDirectory.dir(distName)
 val parentPom = providers.fileContents(layout.settingsDirectory.file("parent/pom.xml"))
 val distPom = providers.fileContents(layout.projectDirectory.file("pom.xml"))
 val jvmModuleOpens =
-  parsePomProperties(parentPom.asText.get()).getValue("jvm.module.opens").split(Regex("\\s+"))
+  PomResolver(parentPom.asText.get()).properties().getValue("jvm.module.opens").split(Regex("\\s+"))
 val defaultJvmOpts =
-  parsePomElement(distPom.asText.get(), "extraJvmArguments").split(Regex("\\s+")).filterNot {
+  (PomResolver(distPom.asText.get()).elementText("extraJvmArguments")
+      ?: error("Missing POM element: extraJvmArguments"))
+    .split(Regex("\\s+"))
+    .filterNot {
     it == "\${jvm.module.opens}"
   }
 
