@@ -21,4 +21,5 @@ process-execution data path). These are module-scoped decisions; see the
 | [0009](0009-810-suspended-timer-buffering.md)                       | Buffer a due timer trigger while suspended, drop its due-date index, fire it in the drain chain               |
 | [0009](0009-810-agent-execution-in-engine-records.md)               | Agent execution recorded as engine records: storage-independent pipeline, content passes through              |
 | [0010](0010-810-agent-definition-from-bpmn-marker.md)               | Agent definitions derived at deploy time from a `zeebe:agentDefinition` BPMN marker, no marker no agent       |
+| [0011](0011-810-agent-instance-written-by-agent-runtime.md)         | Agent instance as the anchor for one agent run, written by the agent runtime, engine owns completion          |
 
