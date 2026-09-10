@@ -28,9 +28,9 @@ public interface ReplicationClusterContainer extends Startable {
   /** Database password for the primary. */
   String getPassword();
 
-  /** Stops only the replica, leaving the primary running. */
+  /** Stops all replicas, leaving the primary running. */
   Future<Void> stopReplica();
 
-  /** (Re-)starts the replica and waits for it to sync with the primary. */
+  /** (Re-)starts all replicas and waits for them to sync with the primary. */
   Future<Void> startReplica();
 }

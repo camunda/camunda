@@ -7,14 +7,12 @@
  */
 package io.camunda.it.rdbms.db.asyncreplication;
 
-import static io.camunda.it.rdbms.db.util.PostgresRegionAwareReplicationClusterContainer.REGION_A_NODE_1;
-import static io.camunda.it.rdbms.db.util.PostgresRegionAwareReplicationClusterContainer.REGION_B_NODE_1;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.RdbmsAsyncReplication;
 import io.camunda.configuration.RdbmsAsyncReplication.Region;
-import io.camunda.it.rdbms.db.util.PostgresRegionAwareReplicationClusterContainer;
+import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -37,11 +35,17 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestMethodOrder(OrderAnnotation.class)
 class PostgresRegionAwareAsyncReplicationIT
-    extends AbstractAsyncReplicationIT<PostgresRegionAwareReplicationClusterContainer> {
+    extends AbstractAsyncReplicationIT<PostgresReplicationClusterContainer> {
+
+  private static final String REGION_A_PRIMARY_LABEL = "region-a-primary";
+  private static final String REGION_A_NODE_1 = "region-a-1";
+  private static final String REGION_B_NODE_1 = "region-b-1";
+  private static final String REGION_B_NODE_2 = "region-b-2";
 
   @Override
-  protected PostgresRegionAwareReplicationClusterContainer createCluster() {
-    return new PostgresRegionAwareReplicationClusterContainer();
+  protected PostgresReplicationClusterContainer createCluster() {
+    return new PostgresReplicationClusterContainer(
+        List.of(REGION_A_NODE_1, REGION_B_NODE_1, REGION_B_NODE_2), REGION_A_PRIMARY_LABEL);
   }
 
   @Override
