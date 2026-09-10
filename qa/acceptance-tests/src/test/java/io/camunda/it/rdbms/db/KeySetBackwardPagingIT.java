@@ -29,7 +29,7 @@ import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQue
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
-import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
