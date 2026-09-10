@@ -103,14 +103,19 @@ const createSingleInstance = async (
   });
 };
 
-const cancelProcessInstance = async (processInstanceKey: string) => {
+// Defaults to swallowing 404 -- the existing behaviour every other caller in
+// this suite already relies on for teardown. Pass ignoreNotFound: false when
+// the cancellation itself drives the assertion (e.g. finalizing a drain), so a
+// 404 there surfaces instead of letting the next assertion pass vacuously.
+const cancelProcessInstance = async (
+  processInstanceKey: string,
+  {ignoreNotFound = true}: {ignoreNotFound?: boolean} = {},
+) => {
   return zeebe.cancelProcessInstance({processInstanceKey}).catch((e) => {
-    if (e.status === 404) {
-      // an active process with this key was not found. It probably completed already.
-      // we swallow the error, because this is a common cleanup scenario.
+    const status = e?.status ?? e?.code ?? e?.response?.status;
+    if (ignoreNotFound && (status === 404 || status === 'NOT_FOUND')) {
       return;
     }
-    // Something else happened. Throw the error to surface the problem.
     throw e;
   });
 };
