@@ -15,6 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Text,
 } from "@camunda/design-system";
 import { FormModal, UseModalProps } from "src/components/modalV2";
 import useTranslate from "src/utility/localization";
@@ -142,27 +143,40 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           validate: (value) => value.length > 0 || t("eventTypeRequired"),
         }}
         render={({ field, fieldState }) => (
-          <FormField label={t("eventType")} error={fieldState.error?.message}>
+          <FormField label={t("eventType")}>
             {({ id }) => (
-              <MultiSelect
-                id={id}
-                placeholder={t("selectEventTypes")}
-                options={eventTypeOptions}
-                // "all" is a real API value listed next to the individual
-                // events, so the schema order carries meaning and the built-in
-                // select-all row would duplicate the "All events" option.
-                sorted={false}
-                hideSelectAll
-                searchable={false}
-                // Checking "All events" selects every type at once, and the
-                // default cap of 3 would collapse the rest into a "+N more"
-                // chip that hides what is about to be submitted.
-                maxCount={LISTENER_EVENT_TYPES.length}
-                value={field.value}
-                onValueChange={(value) =>
-                  field.onChange(syncAllEventType(value, field.value))
-                }
-              />
+              <>
+                <MultiSelect
+                  id={id}
+                  placeholder={t("selectEventTypes")}
+                  options={eventTypeOptions}
+                  // "all" is a real API value listed next to the individual
+                  // events, so the schema order carries meaning and the built-in
+                  // select-all row would duplicate the "All events" option.
+                  sorted={false}
+                  hideSelectAll
+                  searchable={false}
+                  // Checking "All events" selects every type at once, and the
+                  // default cap of 3 would collapse the rest into a "+N more"
+                  // chip that hides what is about to be submitted.
+                  maxCount={LISTENER_EVENT_TYPES.length}
+                  value={field.value}
+                  onValueChange={(value) =>
+                    field.onChange(syncAllEventType(value, field.value))
+                  }
+                  aria-invalid={!!fieldState.error}
+                />
+                {fieldState.error ? (
+                  <Text
+                    as="p"
+                    variant="helper"
+                    role="alert"
+                    className="text-danger-action-default"
+                  >
+                    {fieldState.error.message}
+                  </Text>
+                ) : null}
+              </>
             )}
           </FormField>
         )}
