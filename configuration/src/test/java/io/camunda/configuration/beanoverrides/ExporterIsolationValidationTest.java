@@ -9,6 +9,8 @@ package io.camunda.configuration.beanoverrides;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
@@ -38,7 +40,7 @@ final class ExporterIsolationValidationTest {
                 claim("index-write-target", Map.of("prefix", "operate-record"))));
 
     // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, mergers))
+    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, new Camunda(), mergers))
         .doesNotThrowAnyException();
   }
 
@@ -59,7 +61,7 @@ final class ExporterIsolationValidationTest {
                 claim("index-write-target", Map.of("prefix", "zeebe-record"))));
 
     // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, mergers))
+    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, new Camunda(), mergers))
         .isInstanceOf(UnifiedConfigurationException.class)
         .hasMessageContaining("elasticsearch")
         .hasMessageContaining("camundaexporter");
@@ -79,7 +81,69 @@ final class ExporterIsolationValidationTest {
                 claim("index-write-target", Map.of("prefix", "operate-record"))));
 
     // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, mergers))
+    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, new Camunda(), mergers))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldFailWhenGenericExporterSharesLifecyclePolicyWithSecondaryStorage() {
+    // given
+    final Camunda camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    camunda.getData().getSecondaryStorage().getRetention().setEnabled(true);
+    final String policyName =
+        camunda.getData().getSecondaryStorage().getElasticsearch().getHistory().getPolicyName();
+
+    final Map<String, ExporterCfg> exporters = new LinkedHashMap<>();
+    exporters.put("elasticsearch", exporterCfg("io.camunda.zeebe.exporter.ElasticsearchExporter"));
+
+    final List<ExporterConfigMerger> mergers =
+        List.of(
+            merger(
+                "io.camunda.zeebe.exporter.ElasticsearchExporter",
+                claim(
+                    "lifecycle-policy",
+                    Map.of(
+                        "engine",
+                        "elasticsearch",
+                        "connection",
+                        List.of("http://localhost:9200"),
+                        "policyName",
+                        policyName))));
+
+    // when - then
+    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, camunda, mergers))
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("elasticsearch")
+        .hasMessageContaining("secondary-storage");
+  }
+
+  @Test
+  void shouldNotFailWhenSecondaryStorageRetentionIsDisabled() {
+    // given
+    final Camunda camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    // retention is disabled by default: the secondary storage creates no lifecycle policy at all
+
+    final Map<String, ExporterCfg> exporters = new LinkedHashMap<>();
+    exporters.put("elasticsearch", exporterCfg("io.camunda.zeebe.exporter.ElasticsearchExporter"));
+
+    final List<ExporterConfigMerger> mergers =
+        List.of(
+            merger(
+                "io.camunda.zeebe.exporter.ElasticsearchExporter",
+                claim(
+                    "lifecycle-policy",
+                    Map.of(
+                        "engine",
+                        "elasticsearch",
+                        "connection",
+                        List.of("http://localhost:9200"),
+                        "policyName",
+                        "camunda-retention-policy"))));
+
+    // when - then
+    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, camunda, mergers))
         .doesNotThrowAnyException();
   }
 
