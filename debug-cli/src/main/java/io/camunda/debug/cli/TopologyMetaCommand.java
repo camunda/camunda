@@ -7,16 +7,23 @@
  */
 package io.camunda.debug.cli;
 
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
+import com.google.protobuf.util.Timestamps;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.Header;
+import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
@@ -95,69 +102,106 @@ public class TopologyMetaCommand extends CommonOptions implements Callable<Integ
     return builder.build();
   }
 
+  public static Topology.CurrentClusterConfiguration parseCurrentClusterConfiguration(
+      final String json) throws InvalidProtocolBufferException {
+    final var builder = Topology.CurrentClusterConfiguration.newBuilder();
+    JsonFormat.parser().merge(json, builder);
+    return builder.build();
+  }
+
+  /**
+   * Saves the input JSON under the header version the file already has, so that an edit hands the
+   * broker back the same format it wrote and a print/edit/save round-trip stays lossless.
+   */
   private void saveFile(final Path file) throws IOException {
     final var json = source == null ? readInputFromStdin() : readInputFromFile();
+    final var version = versionOf(file);
 
-    final var protobuf = parseTopology(json);
+    final Message protobuf =
+        switch (version) {
+          case PersistedClusterConfiguration.VERSION -> parseTopology(json);
+          case PersistedCurrentClusterConfiguration.VERSION ->
+              parseCurrentClusterConfiguration(json);
+          default -> throw unsupportedVersion(file, version);
+        };
 
-    final var bytes = protobuf.toByteArray();
-    PersistedClusterConfiguration.writeToFile(bytes, file);
+    PersistedClusterConfiguration.writeToFile(protobuf.toByteArray(), file, version);
   }
 
   private void printFile(final Path path) throws IOException {
     final var content = Files.readAllBytes(path);
-    final var header = PersistedClusterConfiguration.Header.parseFrom(content, path);
+    final var header = Header.parseAnyVersion(content, path);
     spec.commandLine().getErr().println("Header: " + header);
     final var buffer =
         ByteBuffer.wrap(content, Header.HEADER_LENGTH, content.length - Header.HEADER_LENGTH);
 
-    final var protobuf = Topology.ClusterTopology.parseFrom(buffer);
+    final Message protobuf =
+        switch (header.version()) {
+          case PersistedClusterConfiguration.VERSION -> Topology.ClusterTopology.parseFrom(buffer);
+          case PersistedCurrentClusterConfiguration.VERSION ->
+              Topology.CurrentClusterConfiguration.parseFrom(buffer);
+          default -> throw unsupportedVersion(path, header.version());
+        };
+
     final var json = convertToJson(protobuf);
     spec.commandLine().getOut().println(json);
   }
 
-  public String convertToJson(final Topology.ClusterTopology topology) throws IOException {
-    try {
-      return JsonFormat.printer()
-          .includingDefaultValueFields()
-          .preservingProtoFieldNames()
-          .print(topology);
-    } catch (final IllegalArgumentException e) {
+  private byte versionOf(final Path path) throws IOException {
+    if (!Files.exists(path)) {
+      return PersistedCurrentClusterConfiguration.VERSION;
+    }
+    return Header.parseAnyVersion(Files.readAllBytes(path), path).version();
+  }
+
+  private static IllegalArgumentException unsupportedVersion(final Path path, final byte version) {
+    return new IllegalArgumentException(
+        "Topology file %s has header version '%s', but only versions '%s' and '%s' are supported"
+            .formatted(
+                path,
+                version,
+                PersistedClusterConfiguration.VERSION,
+                PersistedCurrentClusterConfiguration.VERSION));
+  }
+
+  public String convertToJson(final Message message) throws InvalidProtocolBufferException {
+    final var printable = withPrintableTimestamps(message);
+    if (!printable.equals(message)) {
       spec.commandLine()
           .getErr()
-          .println(
-              "Invalid timestamp detected, fixing by setting lastUpdated to 0 for all members");
-
-      final var builder = Topology.ClusterTopology.newBuilder(topology);
-
-      // Create a new members map with lastUpdated set to 0
-      builder.clearMembers();
-      topology
-          .getMembersMap()
-          .forEach(
-              (memberId, memberState) -> {
-                final var fixedMemberState =
-                    Topology.MemberState.newBuilder(memberState)
-                        .setLastUpdated(
-                            com.google.protobuf.Timestamp.newBuilder()
-                                .setSeconds(0)
-                                .setNanos(0)
-                                .build())
-                        .build();
-                builder.putMembers(memberId, fixedMemberState);
-              });
-
-      final var fixedTopology = builder.build();
-
-      try {
-        return JsonFormat.printer()
-            .includingDefaultValueFields()
-            .preservingProtoFieldNames()
-            .print(fixedTopology);
-      } catch (final InvalidProtocolBufferException e2) {
-        throw new IOException("Failed to parse JSON into ClusterTopology: " + e2.getMessage(), e2);
-      }
+          .println("Out-of-range timestamp detected, printing it as the epoch instead");
     }
+
+    return JsonFormat.printer()
+        .includingDefaultValueFields()
+        .preservingProtoFieldNames()
+        .print(printable);
+  }
+
+  private static Message withPrintableTimestamps(final Message message) {
+    if (message instanceof final Timestamp timestamp) {
+      return Timestamps.isValid(timestamp) ? timestamp : Timestamp.getDefaultInstance();
+    }
+
+    final var builder = message.toBuilder();
+    message
+        .getAllFields()
+        .forEach(
+            (field, value) -> {
+              if (field.getJavaType() == JavaType.MESSAGE) {
+                builder.setField(field, withPrintableTimestamps(field, value));
+              }
+            });
+    return builder.build();
+  }
+
+  /** A map field arrives here as its list of entry messages, so map values are covered as well. */
+  private static Object withPrintableTimestamps(final FieldDescriptor field, final Object value) {
+    if (!field.isRepeated()) {
+      return withPrintableTimestamps((Message) value);
+    }
+    return ((List<?>) value)
+        .stream().map(entry -> withPrintableTimestamps((Message) entry)).toList();
   }
 
   private Path validateArguments() {
