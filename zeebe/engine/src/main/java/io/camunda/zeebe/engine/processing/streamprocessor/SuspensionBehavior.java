@@ -68,10 +68,10 @@ public final class SuspensionBehavior {
         switch (marker) {
           case SUSPENDED -> onSuspended(suspensionAware, command);
           case RESUMING -> onResuming(suspensionAware, command);
-          case null -> null;
+          case null -> SuspensionAction.PROCESS;
         };
 
-    // captures onSuspended and onResuming null return values along with null markers
+    // captures onSuspended/onResuming returning null in violation of their contract
     if (action == null) {
       LOG.error(
           "Processor '{}' implements SuspensionAware but returned a null suspension behavior for"
