@@ -37,6 +37,17 @@ inputs:
       Minimus login is automatically disabled for fork PRs.
     required: false
     default: "false"
+  echo:
+    description: |
+      If enabled, logs into Echo (reg.echohq.com) with a CI account.
+      Echo login is automatically disabled for fork PRs.
+      Implied by `minimus` while the Echo migration is in progress:
+      camunda.Dockerfile builds on Echo and optimize.Dockerfile still builds on
+      Minimus, and several workflows build both, so a caller asking for
+      hardened base images needs both registries. Set this on its own once a
+      workflow no longer needs Minimus.
+    required: false
+    default: "false"
   java-distribution:
     description: Java distribution to use
     required: false
@@ -149,6 +160,8 @@ runs:
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
         secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
+        secret/data/products/camunda/ci/github-actions REGISTRY_ECHO_USR | echo-username;
+        secret/data/products/camunda/ci/github-actions REGISTRY_ECHO_PSW | echo-token;
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
@@ -307,3 +320,20 @@ runs:
       command: |
         printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
           --username minimus --password-stdin
+  - name: Logs on to Echo
+    # Echo login is disabled for fork PRs; those build with BASE=public.
+    if: >-
+      steps.is-fork.outputs.is-fork != 'true' &&
+      (inputs.echo == 'true' || inputs.minimus == 'true')
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.echo-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.echo-token }}
+    with:
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login reg.echohq.com \
+          --username "${DOCKER_USERNAME}" --password-stdin
