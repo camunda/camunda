@@ -158,6 +158,20 @@
       <!-- Must be declared before spring-boot-dependencies so this version wins,
            per Maven's first-import-wins BOM merge rule. -->
       <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
+        <version>${jetty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>${jetty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>org.springframework.security</groupId>
         <artifactId>spring-security-bom</artifactId>
         <version>${spring.security.version}</version>
