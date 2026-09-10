@@ -201,9 +201,13 @@ public final class JobSuspensionSecretResumeTest {
     final Record<JobBatchRecordValue> parked =
         engine.jobs().withType(jobType).withRequestStreamId(1).withRequestId(1L).activate();
     assertThat(parked.getValue().getJobs()).isEmpty();
+    // the creation-time warmup already requested this reference too, carrying no job key of its
+    // own (see SecretResolutionWarmupTest) - the poll-driven request that actually parked this
+    // job is whichever one names its key
     final var requested =
         RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
             .withSecretReference(SECRET_NAME)
+            .filter(record -> record.getValue().getJobKeys().contains(jobKey))
             .getFirst();
     assertThat(requested.getValue().getJobKeys()).contains(jobKey);
   }

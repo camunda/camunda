@@ -111,10 +111,13 @@ public final class JobSecretActivationInjectionTest {
     assertThat(activated.getValue().getJobKeys()).isEmpty();
     assertThat(secretActivation.awaitActivationResponse().getJobs()).isEmpty();
 
-    // and - a RESOLUTION_REQUESTED event is written for the missing reference with the job key
+    // and - a RESOLUTION_REQUESTED event is written for the missing reference with the job key.
+    // The creation-time warmup already requested it too, carrying no job key of its own (see
+    // SecretResolutionWarmupTest) - this is the poll-driven one, which parks this job
     final Record<SecretReferenceRecordValue> requested =
         RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
             .withSecretReference("token")
+            .filter(record -> record.getValue().getJobKeys().contains(jobKey))
             .getFirst();
     assertThat(requested.getValue().getStoreId()).isEqualTo(SecretStoreRegistry.DEFAULT_STORE_ID);
     assertThat(requested.getValue().getJobKeys()).containsExactly(jobKey);
@@ -141,10 +144,14 @@ public final class JobSecretActivationInjectionTest {
     // when
     engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
 
-    // then - a single RESOLUTION_REQUESTED event carries both waiting job keys
+    // then - a single RESOLUTION_REQUESTED event carries both waiting job keys. The first job's
+    // creation-time warmup already requested this reference too (see SecretResolutionWarmupTest);
+    // the second job's warmup found it already pending and requested nothing, so only the
+    // poll-driven request below names any job key at all
     final Record<SecretReferenceRecordValue> requested =
         RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
             .withSecretReference("token")
+            .filter(record -> !record.getValue().getJobKeys().isEmpty())
             .getFirst();
     assertThat(requested.getValue().getJobKeys())
         .containsExactlyInAnyOrder(firstJobKey, secondJobKey);
@@ -162,9 +169,12 @@ public final class JobSecretActivationInjectionTest {
     // when
     engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
 
-    // then - one RESOLUTION_REQUESTED event per reference, each carrying the job key
+    // then - one RESOLUTION_REQUESTED event per reference, each carrying the job key. The
+    // creation-time warmup already requested both references too, carrying no job key of their
+    // own (see SecretResolutionWarmupTest) - filtered out here, leaving only the poll-driven pair
     final var requested =
         RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+            .filter(record -> record.getValue().getJobKeys().contains(jobKey))
             .limit(2)
             .asList();
     assertThat(requested)
