@@ -8,6 +8,7 @@ functions:
   - verifyKeyTypesSchemas
   - verifyEventuallyConsistent
   - verifyRequiredPropertiesExist
+  - verifyNoRedundantRequired
   - verifyArrayPropertiesRequired
   - verifyResponsePropertiesRequired
   - verifyDeprecatedEnumMembers
@@ -122,6 +123,14 @@ rules:
     given: "$.components.schemas[*]"
     then:
       function: verifyRequiredPropertiesExist
+
+  no-redundant-required:
+    description: "A schema's own `required` list must not duplicate a field already required by an allOf-composed schema."
+    severity: error
+    given: "$.components.schemas[*]"
+    message: "{{error}}"
+    then:
+      function: verifyNoRedundantRequired
 
   array-properties-must-be-required:
     description: "Response array properties must be `required` and not `nullable`."
