@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class ComparingMappingResolverTest {
 
   private static final MappingContext CONTEXT =
-      new MappingContext(BufferUtil.wrapString("element-1"), 100L, 200L, 300L, "default");
+      new MappingContext(BufferUtil.wrapString("element-1"), 100L, 200L, 300L, "default", 100L);
 
   private static final InputMappings INPUT_MAPPINGS = mock(InputMappings.class);
   private static final MappingExpressionProcessor PROCESSOR =
@@ -306,7 +306,7 @@ final class ComparingMappingResolverTest {
               final String formattedMessage = e.getMessage().getFormattedMessage();
               assertThat(formattedMessage)
                   .contains(
-                      "MappingContext[elementId=element-1, scopeKey=100, processInstanceKey=200, processDefinitionKey=300, tenantId=default]");
+                      "MappingContext[elementId=element-1, scopeKey=100, processInstanceKey=200, processDefinitionKey=300, tenantId=default, mergeTargetScopeKey=100]");
             });
   }
 

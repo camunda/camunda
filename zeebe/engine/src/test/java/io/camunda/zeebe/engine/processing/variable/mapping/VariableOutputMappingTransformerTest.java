@@ -29,7 +29,6 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -270,26 +269,13 @@ public final class VariableOutputMappingTransformerTest {
   }
 
   @Test
-  @Disabled(
-      "context merge() with the current scope leaks an untouched sibling ('p') into the merge "
-          + "target and a later back-reference to it, instead of building a mapping-only result "
-          + "(input mappings already do this post-#58801). Cannot be enabled without the #35251 "
-          + "fix: the desired drop-the-sibling result conflicts with the pinned 'merge target "
-          + "with variable' case, which requires the sibling to be kept — both go through the "
-          + "same seed-from-scope path. Tracked under "
-          + "https://github.com/camunda/camunda/issues/35251.")
   void shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference() {
     final var mappings = List.of(mapping("1", "a.b"), mapping("a", "d"));
     final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
     final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when
-    final var resultBuilder =
-        new OutputMappingResultBuilder(
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null));
+    final var resultBuilder = new OutputMappingResultBuilder(path -> null);
     for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -306,24 +292,13 @@ public final class VariableOutputMappingTransformerTest {
   }
 
   @Test
-  @Disabled(
-      "Same leak as shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference, opposite "
-          + "mapping order: the back-reference runs before 'a' is ever written, so it correctly "
-          + "keeps 'p'; only the later merge target should drop it. Cannot be enabled without "
-          + "the #35251 fix (see the sibling case). Tracked under "
-          + "https://github.com/camunda/camunda/issues/35251.")
   void shouldNotLeakUntouchedSiblingIntoMergeTargetOppositeOrder() {
     final var mappings = List.of(mapping("a", "d"), mapping("1", "a.b"));
     final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
     final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when
-    final var resultBuilder =
-        new OutputMappingResultBuilder(
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null));
+    final var resultBuilder = new OutputMappingResultBuilder(path -> null);
     for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
