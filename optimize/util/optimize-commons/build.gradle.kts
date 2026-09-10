@@ -13,7 +13,7 @@ dependencies {
   api(libs.org.springframework.spring.context) {
     exclude(group = "commons-logging", module = "commons-logging")
   }
-  api(libs.co.elastic.clients.elasticsearch.java)
+  api(libs.co.elastic.clients.elasticsearch.java.optimize)
   api(libs.jakarta.json.jakarta.json.api)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   api(libs.com.fasterxml.jackson.dataformat.jackson.dataformat.yaml)
@@ -42,7 +42,7 @@ dependencies {
   api(libs.org.apache.httpcomponents.httpcore.nio)
   api(libs.org.springframework.spring.core)
   api(libs.org.apache.httpcomponents.httpclient)
-  api(libs.org.elasticsearch.client.elasticsearch.rest.client)
+  api(libs.org.elasticsearch.client.elasticsearch.rest.client.optimize)
   api(libs.com.fasterxml.jackson.core.jackson.annotations)
   api(libs.org.apache.httpcomponents.httpcore)
   api(libs.org.springframework.spring.beans)
