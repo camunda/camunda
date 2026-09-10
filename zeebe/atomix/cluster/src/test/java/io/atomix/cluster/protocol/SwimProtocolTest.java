@@ -43,7 +43,6 @@ import io.atomix.cluster.protocol.SwimMembershipProtocol.SwimMember;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -91,7 +90,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   private Collection<Member> members;
   private Collection<Node> nodes;
   private Map<MemberId, TestGroupMembershipEventListener> listeners = Maps.newConcurrentMap();
-  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private SwimMember member(
       final String id, final String host, final int port, final Version version) {
@@ -411,7 +410,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     return false;
   }
 
-  private SwimMembershipProtocol startProtocol(final Member member) {
+  private SwimMembershipProtocol startProtocol(final SwimMember member) {
     return startProtocol(member, UnaryOperator.identity());
   }
 
@@ -427,8 +426,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                 .setProbeInterval(Duration.ofSeconds(30))
                 .setGossipInterval(Duration.ofSeconds(30))
                 .setSyncInterval(Duration.ofSeconds(30))
-                .setFailureTimeout(Duration.ofSeconds(30)),
-        member.id().toString());
+                .setFailureTimeout(Duration.ofSeconds(30)));
   }
 
   private ImmutableMember aliveUpdate(
@@ -464,12 +462,14 @@ public class SwimProtocolTest extends ConcurrentTestCase {
    * Starts a member which reports no instance ID at all, i.e. one running a version predating the
    * field.
    */
-  private SwimMembershipProtocol startProtocolWithoutInstanceId(
-      final SwimMember member) {
+  private SwimMembershipProtocol startProtocolWithoutInstanceId(final SwimMember member) {
     return startProtocol(
-        member,
-        UnaryOperator.identity(),
-        SwimMembershipProtocol.UNKNOWN_INSTANCE_ID);
+        member, UnaryOperator.identity(), SwimMembershipProtocol.UNKNOWN_INSTANCE_ID);
+  }
+
+  private SwimMembershipProtocol startProtocol(
+      final SwimMember member, final UnaryOperator<SwimMembershipProtocolConfig> configurator) {
+    return startProtocol(member, configurator, null);
   }
 
   private SwimMembershipProtocol startProtocol(
@@ -500,7 +500,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                 .setFailureTimeout(FAILURE_INTERVAL)
                 .setSyncInterval(SYNC_INTERVAL));
     final SwimMembershipProtocol protocol =
-        new SwimMembershipProtocol(config, actorSchedulerName, meterRegistry, instanceId);
+        new SwimMembershipProtocol(config, meterRegistry, instanceId);
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
     protocol.addListener(listener);
@@ -630,8 +630,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     @Test
     public void shouldRemovePreviousRunOfRestartedMember() throws InterruptedException {
       // given
-      startProtocol(member1, member1.id().toString());
-      startProtocol(member2, member2.id().toString());
+      startProtocol(member1);
+      startProtocol(member2);
 
       awaitMembers(member2, member1, member2);
       awaitMembers(member1, member1, member2);
@@ -642,7 +642,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
       // reports it as failed. startProtocol stops the previous run without gossiping anything,
       // which
       // is what a non-graceful kill looks like to the rest of the cluster.
-      startProtocol(member2, "member2-restarted");
+      startProtocol(member2);
 
       // then - member 1 sees the previous run leave and the new one join, so that anything it holds
       // per member is rebuilt for the new run
@@ -655,8 +655,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     @Test
     public void shouldKeepRestartedMemberWhichReportsNoInstanceId() throws InterruptedException {
       // given - a member on a version predating the instance ID
-      startProtocol(member1, member1.id().toString());
-      startProtocolWithoutInstanceId(member2, member2.id().toString());
+      startProtocol(member1);
+      startProtocolWithoutInstanceId(member2);
 
       awaitMembers(member2, member1, member2);
       awaitMembers(member1, member1, member2);
@@ -664,7 +664,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
       clearEvents(member1, member2);
 
       // when - it restarts, still reporting no instance ID
-      startProtocolWithoutInstanceId(member2, "member2-restarted");
+      startProtocolWithoutInstanceId(member2);
 
       // then - member 1 cannot tell the two runs apart, so it keeps the member it has rather than
       // churning through a removal for every update it receives
@@ -675,8 +675,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     public void shouldKeepMemberWhenAnUpdateStopsReportingItsInstanceId()
         throws InterruptedException {
       // given - a member which reports a instance ID
-      startProtocol(member1, member1.id().toString());
-      startProtocol(member2, member2.id().toString());
+      startProtocol(member1);
+      startProtocol(member2);
 
       awaitMembers(member2, member1, member2);
       awaitMembers(member1, member1, member2);
@@ -686,7 +686,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
       // when - the same member is next heard of without one, as happens while a rolling update is
       // in
       // progress and its updates are relayed through a member that drops the field
-      startProtocolWithoutInstanceId(member2, "member2-without-boot-id");
+      startProtocolWithoutInstanceId(member2);
 
       // then - the missing instance ID is read as no information rather than as a different run
       checkNoEvent(member1, Duration.ofSeconds(2));
