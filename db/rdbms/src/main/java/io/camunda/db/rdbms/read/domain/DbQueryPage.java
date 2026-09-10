@@ -18,7 +18,10 @@ import java.util.List;
  *     instead of the rows adjacent to the cursor. The reader restores the display order afterwards.
  */
 public record DbQueryPage(
-    Integer size, Integer from, Integer maxTotalHits, List<KeySetPagination> keySetPagination,
+    Integer size,
+    Integer from,
+    Integer maxTotalHits,
+    List<KeySetPagination> keySetPagination,
     boolean searchBefore) {
 
   public record KeySetPagination(List<KeySetPaginationFieldEntry> entries) {}
