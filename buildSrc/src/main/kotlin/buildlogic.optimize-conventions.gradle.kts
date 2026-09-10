@@ -1,13 +1,13 @@
-import buildlogic.parsePomProperties
-import buildlogic.pomVersion
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 
 // Scoped version overrides for Optimize modules — mirrors Maven parent POM dependency management
 // scoped to optimize/* only, preventing leakage into non-optimize modules.
-val optimizePom = parsePomProperties(rootDir.resolve("optimize/pom.xml").readText())
+val optimizePom = PomResolver(rootDir.resolve("optimize/pom.xml").readText()).properties()
 
-fun optVersion(key: String) = pomVersion(optimizePom, key)
+fun optVersion(key: String) = resolvePomProperty(key, optimizePom)
 
 configurations.all {
   resolutionStrategy.force(
