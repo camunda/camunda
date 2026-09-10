@@ -1,0 +1,99 @@
+# description: Isolation harness for the Optimize smoke. Runs ONLY Elasticsearch + camunda
+# (no Keycloak/Identity/frontend/backend) to determine whether the camunda image itself
+# reaches readiness under CI, separate from the surrounding smoke stack.
+# type: CI
+name: Optimize Camunda Isolation
+
+on:
+  # Pushing the dedicated isolation branch runs it directly (workflow_dispatch only works
+  # once the workflow is on the default branch). Push runs build current-test by default.
+  push:
+    branches:
+      - ci-optimize-camunda-isolation
+  workflow_dispatch:
+    inputs:
+      build_from_source:
+        description: "Build camunda/camunda:current-test from the checked-out ref instead of pulling an image"
+        type: boolean
+        required: false
+        default: true
+      camunda_image:
+        description: "Image to run when build_from_source is false"
+        type: string
+        required: false
+        default: "camunda/camunda:SNAPSHOT"
+      camunda_spring_profiles:
+        description: "Spring profiles for camunda (drop 'dev-data' to remove the demo-data generator load)"
+        type: string
+        required: false
+        default: "broker,operate,tasklist,consolidated-auth,dev-data"
+      startup_timeout:
+        description: "Seconds to wait for camunda to become healthy"
+        type: string
+        required: false
+        default: "300"
+
+permissions: {}
+
+jobs:
+  camunda-isolation:
+    name: "Camunda Isolation"
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions: {}
+    # inputs.* are null on push, so default everything via github.event.inputs with fallbacks.
+    env:
+      BUILD_FROM_SOURCE: ${{ github.event.inputs.build_from_source == 'false' && 'false' || 'true' }}
+      CAMUNDA_IMAGE: ${{ github.event.inputs.build_from_source == 'false' && (github.event.inputs.camunda_image || 'camunda/camunda:SNAPSHOT') || 'camunda/camunda:current-test' }}
+      CAMUNDA_PULL_POLICY: ${{ github.event.inputs.build_from_source == 'false' && 'missing' || 'never' }}
+      CAMUNDA_SPRING_PROFILES: ${{ github.event.inputs.camunda_spring_profiles || 'broker,operate,tasklist,consolidated-auth,dev-data' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Maven
+        if: ${{ env.BUILD_FROM_SOURCE == 'true' }}
+        uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: optimize-camunda-isolation
+          minimus: true
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: ./.github/actions/build-zeebe
+        if: ${{ env.BUILD_FROM_SOURCE == 'true' }}
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
+
+      - name: Build Camunda image under test
+        if: ${{ env.BUILD_FROM_SOURCE == 'true' }}
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: camunda/camunda
+          version: current-test
+          distball: ${{ steps.build-camunda.outputs.distball }}
+
+      - name: Start Camunda (Elasticsearch + camunda only)
+        uses: ./.github/actions/compose
+        with:
+          compose_file: optimize/client/docker-compose.camunda-only.yml
+          project_name: camunda-isolation
+          timeout: ${{ github.event.inputs.startup_timeout || '300' }}
+
+      - name: Report camunda readiness
+        if: always()
+        run: |
+          echo "== docker ps =="
+          docker ps -a
+          echo "== readiness =="
+          curl -s -o /dev/null -w "readiness http=%{http_code}\n" http://localhost:9600/actuator/health/readiness || true
+          curl -s http://localhost:9600/actuator/health | head -c 2000 || true
+
+      - name: Dump camunda logs
+        if: always()
+        run: docker logs camunda 2>&1 | tail -200 || true
