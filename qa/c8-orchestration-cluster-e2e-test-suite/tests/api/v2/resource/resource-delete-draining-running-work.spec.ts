@@ -259,6 +259,8 @@ test.describe('Process Definition Draining Deletion — work already in flight',
       request,
       instance.processInstanceKey,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
 
     await drainProcessDefinition(request, processDefinitionKey);
