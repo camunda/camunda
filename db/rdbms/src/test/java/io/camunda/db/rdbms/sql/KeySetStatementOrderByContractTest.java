@@ -87,14 +87,6 @@ class KeySetStatementOrderByContractTest {
     softly.assertAll();
   }
 
-  /**
-   * A select that pulls in {@code Commons.keySetPageFilter}, with everything the contract needs to
-   * be checked: whether it orders at all, and which literal ORDER BYs are neither direction-aware
-   * nor exempt.
-   */
-  private record KeySetStatement(
-      String id, boolean hasOrdering, List<String> unguardedLiteralOrderBys) {}
-
   private static List<KeySetStatement> keySetStatements() throws Exception {
     final var statements = new ArrayList<KeySetStatement>();
     for (final var mapperFile : mapperFiles()) {
@@ -125,6 +117,60 @@ class KeySetStatementOrderByContractTest {
     }
     return statements;
   }
+
+  private static boolean containsOrderBy(final String text) {
+    return text.toUpperCase(Locale.ROOT).contains("ORDER BY");
+  }
+
+  private static String squash(final String text) {
+    return text.replaceAll("\\s+", " ").trim();
+  }
+
+  private static Map<String, Element> sqlFragmentsById(final Element mapper) {
+    return childElements(mapper, "sql").stream()
+        .collect(
+            Collectors.toMap(
+                fragment -> fragment.getAttribute("id"), fragment -> fragment, (a, b) -> a));
+  }
+
+  private static List<File> mapperFiles() {
+    final var files = new File(MAPPER_DIRECTORY).listFiles((dir, name) -> name.endsWith(".xml"));
+    assertThat(files).as("mapper files under %s", MAPPER_DIRECTORY).isNotNull().isNotEmpty();
+    return List.of(files);
+  }
+
+  private static Element parse(final File mapperFile) throws Exception {
+    final var factory = DocumentBuilderFactory.newInstance();
+    // the mybatis DTD is only referenced here, never needed, and must never be fetched
+    factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+    factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+    factory.setIgnoringComments(false);
+
+    final var builder = factory.newDocumentBuilder();
+    builder.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
+    return builder.parse(mapperFile).getDocumentElement();
+  }
+
+  private static List<Element> childElements(final Node parent, final String tagName) {
+    return childNodes(parent).stream()
+        .filter(Element.class::isInstance)
+        .map(Element.class::cast)
+        .filter(element -> tagName.equals(element.getTagName()))
+        .toList();
+  }
+
+  private static List<Node> childNodes(final Node parent) {
+    final NodeList children = parent.getChildNodes();
+    return IntStream.range(0, children.getLength()).mapToObj(children::item).toList();
+  }
+
+  /**
+   * A select that pulls in {@code Commons.keySetPageFilter}, with everything the contract needs to
+   * be checked: whether it orders at all, and which literal ORDER BYs are neither direction-aware
+   * nor exempt.
+   */
+  private record KeySetStatement(
+      String id, boolean hasOrdering, List<String> unguardedLiteralOrderBys) {}
 
   /**
    * Walks a statement in document order, following {@code <include>}s into the {@code <sql>}
@@ -209,51 +255,5 @@ class KeySetStatementOrderByContractTest {
           && childElements(element, "when").stream()
               .anyMatch(when -> when.getAttribute("test").contains(BACKWARD_FLAG));
     }
-  }
-
-  private static boolean containsOrderBy(final String text) {
-    return text.toUpperCase(Locale.ROOT).contains("ORDER BY");
-  }
-
-  private static String squash(final String text) {
-    return text.replaceAll("\\s+", " ").trim();
-  }
-
-  private static Map<String, Element> sqlFragmentsById(final Element mapper) {
-    return childElements(mapper, "sql").stream()
-        .collect(
-            Collectors.toMap(
-                fragment -> fragment.getAttribute("id"), fragment -> fragment, (a, b) -> a));
-  }
-
-  private static List<File> mapperFiles() {
-    final var files = new File(MAPPER_DIRECTORY).listFiles((dir, name) -> name.endsWith(".xml"));
-    assertThat(files).as("mapper files under %s", MAPPER_DIRECTORY).isNotNull().isNotEmpty();
-    return List.of(files);
-  }
-
-  private static Element parse(final File mapperFile) throws Exception {
-    final var factory = DocumentBuilderFactory.newInstance();
-    // the mybatis DTD is only referenced here, never needed, and must never be fetched
-    factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-    factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-    factory.setIgnoringComments(false);
-
-    final var builder = factory.newDocumentBuilder();
-    builder.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
-    return builder.parse(mapperFile).getDocumentElement();
-  }
-
-  private static List<Element> childElements(final Node parent, final String tagName) {
-    return childNodes(parent).stream()
-        .filter(Element.class::isInstance)
-        .map(Element.class::cast)
-        .filter(element -> tagName.equals(element.getTagName()))
-        .toList();
-  }
-
-  private static List<Node> childNodes(final Node parent) {
-    final NodeList children = parent.getChildNodes();
-    return IntStream.range(0, children.getLength()).mapToObj(children::item).toList();
   }
 }
