@@ -72,6 +72,10 @@ on:
         default: 'stable/8.10'
 
 env:
+  # Default owner for CI-analytics attribution: observe-build-status falls back
+  # to TEST_OWNER when reporting a failing job. Every job here is eng-ops-owned
+  # infra except the smoke-test step itself, which attributes to QA only when
+  # that step fails (see user_description on the test job's observe step).
   TEST_OWNER: '@camunda/engineering-operations'
   E2E_DIR: e2e-tests
 
@@ -343,6 +347,7 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Run Smoke Tests
+        id: run-smoke
         working-directory: ${{ env.E2E_DIR }}
         env:
           LOCAL_TEST: true
@@ -380,6 +385,11 @@ jobs:
         with:
           job_name: "test/${{ matrix.deployment.version }}"
           build_status: ${{ job.status }}
+          # Only a failure of the smoke-test step itself is QA-owned. The rest of
+          # this job (Teleport, token, npm, Playwright install) is infra, so on
+          # any other failing step user_description stays empty and attribution
+          # falls back to the eng-ops TEST_OWNER default.
+          user_description: ${{ steps.run-smoke.outcome == 'failure' && '@camunda/test-automation-team' || '' }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -489,30 +499,59 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
 
-      - name: Get failed jobs
+      - name: Classify failed jobs
         id: failed
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
+          # Split failed/cancelled jobs into two buckets so each red pages
+          # the team that can act on it:
+          #   test   -> a smoke-test job that FAILED. Specs live in
+          #             camunda/c8-cross-component-e2e-tests and the products under
+          #             test are pinned images.
+          #   deploy -> everything else (deploy/health failures, any cancellation
+          #             incl. a cancelled smoke test, which is infra noise rather
+          #             than a spec bug, and any other job).
+          # The jobs endpoint returns 30 jobs per page by default. Without
+          # pagination a run with more matrix jobs than one page would drop the
+          # failed jobs on later pages from the classification, causing missed or
+          # partial paging. --paginate + per_page=100 streams every job across all
+          # pages (--jq '.jobs[]' emits one job object per page entry); jq -s then
+          # slurps the whole stream into a single array to classify.
           # shellcheck disable=SC2016
+          classified=$(gh api --paginate "repos/${REPO}/actions/runs/${RUN_ID}/jobs?per_page=100" --jq '.jobs[]' \
+            | jq -s '
+                map(select(.conclusion == "failure" or .conclusion == "cancelled"))
+                | map(
+                    (try (.name | capture("(?<v>8\\.[0-9]+)").v) // .name) as $ver |
+                    (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
+                    {
+                      bucket: (if $type == "tests" and .conclusion == "failure" then "test" else "deploy" end),
+                      line: "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "cancelled" else "failed" end)>"
+                    }
+                  )
+            ')
+          deploy_lines=$(jq -r '[.[] | select(.bucket == "deploy") | .line] | join("\n")' <<< "$classified")
+          test_lines=$(jq -r '[.[] | select(.bucket == "test") | .line] | join("\n")' <<< "$classified")
+          [ -n "$deploy_lines" ] && has_deploy=true || has_deploy=false
+          [ -n "$test_lines" ] && has_test=true || has_test=false
           {
-            echo "jobs<<EOF"
-            gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs" --jq '
-              .jobs
-              | map(select(.conclusion == "failure" or .conclusion == "cancelled"))
-              | map(
-                  (try (.name | capture("(?<v>8\\.[0-9]+)").v) // .name) as $ver |
-                  (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
-                  "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "cancelled" else "failed" end)>"
-                )
-              | join("\n")
-            '
+            echo "has_deploy=${has_deploy}"
+            echo "has_test=${has_test}"
+            echo "deploy_lines<<EOF"
+            echo "$deploy_lines"
+            echo "EOF"
+            echo "test_lines<<EOF"
+            echo "$test_lines"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Notify Slack on Failure
+      # Deploy / installability failures are eng-ops' domain (ArgoCD sync, chart
+      # version, Teleport tunnel, env health), so they page the monorepo CI medic.
+      - name: Notify on deploy failure
+        if: steps.failed.outputs.has_deploy == 'true'
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
@@ -524,14 +563,44 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: *Preview Environment Smoke Test* failed:\n${{ steps.failed.outputs.jobs }}"
+                    "text": ":alarm: *Preview Environment Smoke Test* — deployment failed:\n${{ steps.failed.outputs.deploy_lines }}"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|workflow run>\n<https://camunda.github.io/camunda/ci-runbooks/#preview-environment-smoke-test-failure|Runbook>"
+                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> It looks like preview-env deploy/installability (ArgoCD sync, chart version, Teleport tunnel, env health).\nplease check <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|workflow run>\n<https://camunda.github.io/camunda/ci-runbooks/#preview-environment-smoke-test-failure|Runbook>"
+                  }
+                }
+              ]
+            }
+
+      # Playwright smoke-spec failures are QA-owned (specs live in
+      # camunda/c8-cross-component-e2e-tests; products under test are pinned
+      # images), so page the test-automation team medic directly in
+      # #top-monorepo-ci (destination + handle agreed with QA).
+      - name: Notify on smoke-test failure
+        if: steps.failed.outputs.has_test == 'true'
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Preview Environment Smoke Test* — smoke tests failed:\n${{ steps.failed.outputs.test_lines }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<!subteam^S09UF0EV0HG|test-automation-team-medic> looks like a Playwright cross-component smoke specs problem. Please take a look and act on the solution.\nplease check <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|workflow run>"
                   }
                 }
               ]
