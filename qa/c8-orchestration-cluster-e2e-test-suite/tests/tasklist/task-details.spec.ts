@@ -544,7 +544,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertItemChecked('Value2');
   });
 
-  // TODO issue #3719
+  // Skipped due to bug 60174: https://github.com/camunda/camunda/issues/60174
   // eslint-disable-next-line playwright/no-skipped-test
   test.skip('task completion with tag list form', async ({
     taskPanelPage,
@@ -569,7 +569,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form.getByText('Value 2')).toBeVisible();
   });
 
-  // TODO issue #3719
+  // Skipped due to bug 60174: https://github.com/camunda/camunda/issues/60174
   // eslint-disable-next-line playwright/no-skipped-test
   test.skip('task completion with text template form', async ({
     taskPanelPage,
