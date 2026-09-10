@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -68,10 +69,10 @@ public final class SuspensionBehavior {
         switch (marker) {
           case SUSPENDED -> onSuspended(suspensionAware, command);
           case RESUMING -> onResuming(suspensionAware, command);
-          case null -> null;
+          case null -> SuspensionAction.PROCESS;
         };
 
-    // captures onSuspended and onResuming null return values along with null markers
+    // captures onSuspended and onResuming null return values
     if (action == null) {
       LOG.error(
           "Processor '{}' implements SuspensionAware but returned a null suspension behavior for"
@@ -163,13 +164,13 @@ public final class SuspensionBehavior {
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private static SuspensionAware.SuspensionAction onSuspended(
+  private static SuspensionAware.@Nullable SuspensionAction onSuspended(
       final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
     return ((SuspensionAware) suspensionAware).onSuspended(command);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private static SuspensionAware.SuspensionAction onResuming(
+  private static SuspensionAware.@Nullable SuspensionAction onResuming(
       final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
     final SuspensionAction action = ((SuspensionAware) suspensionAware).onResuming(command);
     if (action == SuspensionAction.BUFFER) {
