@@ -9,7 +9,8 @@
 import { FC, ReactNode } from "react";
 import useTranslate from "../../utility/localization";
 import { useDocsUrl } from "../documentation/DocsUrlContext";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "@camunda/design-system/icons";
+import { Link } from "@camunda/design-system";
 
 type DocumentationLinkProps = {
   children?: ReactNode;
@@ -31,12 +32,12 @@ export const DocumentationLink: FC<DocumentationLinkProps> = ({
   const docsUrl = useDocsUrl();
 
   return (
-    <a
+    <Link
       href={documentationHref(docsUrl, path)}
       data-test="documentation-link"
       target="_blank"
       rel="noreferrer noopener"
-      className="rounded-sm text-info-action-default underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      inline
     >
       {children || <Translate>documentation</Translate>}
       {withIcon && (
@@ -45,6 +46,6 @@ export const DocumentationLink: FC<DocumentationLinkProps> = ({
           className="ms-1 inline size-4 align-text-bottom"
         />
       )}
-    </a>
+    </Link>
   );
 };
