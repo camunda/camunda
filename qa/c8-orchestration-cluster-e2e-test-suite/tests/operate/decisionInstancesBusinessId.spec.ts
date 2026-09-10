@@ -216,10 +216,17 @@ test.describe('Decision Instances - Business ID', () => {
     });
 
     await test.step('Verify the detail header shows the Business ID', async () => {
-      await expect(operateDecisionInstancePage.instanceHeader).toBeVisible();
+      // The detail page navigation can outlast the default 10s Playwright
+      // timeout under load (run 34434830980: both attempts timed out here at
+      // ~18.7m into an on-demand run), so use the suite's own extended budget
+      // rather than the default -- same as the sibling assertions in this
+      // file (e.g. the empty-list check above).
+      await expect(operateDecisionInstancePage.instanceHeader).toBeVisible({
+        timeout: extendedAssertionOptions.timeout,
+      });
       await expect(
         operateDecisionInstancePage.instanceHeader.getByText(BUSINESS_ID_A),
-      ).toBeVisible();
+      ).toBeVisible({timeout: extendedAssertionOptions.timeout});
     });
   });
 });
