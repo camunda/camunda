@@ -48,6 +48,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp                  |
 | `frontend-operate-migrator`    | Port a page from legacy `operate/client/` to the Operate pod: inventory, store decomposition, fidelity review  |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
+| `gradle-build-parity`          | Edit, fix, or debug the Gradle build to match Maven behavior (deps, test-jars, optional deps)                  |
 | `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
 | `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
 | `session-state`                | Persist and resume Claude Code session progress across restarts, `--resume`/`--continue`, and compaction        |
