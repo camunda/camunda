@@ -102,13 +102,6 @@ final class DefaultRolesIT {
   }
 
   @RegressionTest("https://github.com/camunda/connectors/issues/8222")
-  @DisabledIfSystemProperty(
-      named = "test.integration.camunda.physical-tenant",
-      matches = ".+",
-      disabledReason =
-          "Secret authorization is resolved against root storage under a physical tenant, so the "
-              + "Connectors role grant is not visible in the tenant context; see "
-              + "https://github.com/camunda/camunda/issues/58393")
   void shouldResolveSecrets(@Authenticated(CONNECTORS_USERNAME) final CamundaClient client) {
     // when
     final var response =
