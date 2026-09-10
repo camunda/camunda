@@ -58,7 +58,7 @@ dependencies {
   testImplementation(libs.org.springframework.boot.spring.boot.starter.data.jdbc) {
     exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
   }
-  testImplementation("org.springframework.boot:spring-boot-data-jdbc-test:4.0.6")
+  testImplementation("org.springframework.boot:spring-boot-data-jdbc-test")
   testImplementation(libs.org.springframework.spring.test)
   testImplementation(project(":camunda-zeebe"))
   testImplementation(libs.com.fasterxml.jackson.core.jackson.core)
