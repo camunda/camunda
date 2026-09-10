@@ -111,6 +111,35 @@ class ExporterIsolationValidationTest {
               "camunda.data.secondary-storage.elasticsearch.index-prefix=operate-record")
           .run(context -> assertThat(context).hasNotFailed());
     }
+
+    @Test
+    void shouldFailStartupWhenElasticsearchExporterSharesLifecyclePolicyWithSecondaryStorage() {
+      // given distinct index prefixes, but the legacy exporter's retention policy is
+      // (mis)configured to reuse the secondary storage's own default policy name
+      RUNNER
+          .withPropertyValues(
+              "zeebe.broker.exporters.elasticsearch.class-name="
+                  + "io.camunda.zeebe.exporter.ElasticsearchExporter",
+              "zeebe.broker.exporters.elasticsearch.args.url=http://localhost:9200",
+              "zeebe.broker.exporters.elasticsearch.args.index.prefix=zeebe-record",
+              "zeebe.broker.exporters.elasticsearch.args.retention.enabled=true",
+              "zeebe.broker.exporters.elasticsearch.args.retention.policy-name="
+                  + "camunda-retention-policy",
+              SECONDARY_STORAGE_TYPE_ES,
+              SECONDARY_STORAGE_URL_ES,
+              "camunda.data.secondary-storage.elasticsearch.index-prefix=operate-record",
+              "camunda.data.secondary-storage.retention.enabled=true")
+          .run(
+              context -> {
+                // then
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                    .rootCause()
+                    .isInstanceOf(UnifiedConfigurationException.class)
+                    .hasMessageContaining("elasticsearch")
+                    .hasMessageContaining("secondary-storage");
+              });
+    }
   }
 
   @Nested
@@ -177,6 +206,35 @@ class ExporterIsolationValidationTest {
               SECONDARY_STORAGE_URL_ES,
               "camunda.data.secondary-storage.elasticsearch.index-prefix=operate-record")
           .run(context -> assertThat(context).hasNotFailed());
+    }
+
+    @Test
+    void shouldFailStartupWhenElasticsearchExporterSharesLifecyclePolicyWithSecondaryStorage() {
+      // given distinct index prefixes, but the generic exporter's retention policy is
+      // (mis)configured to reuse the secondary storage's own default policy name
+      RUNNER
+          .withPropertyValues(
+              "camunda.data.exporters.elasticsearch.class-name="
+                  + "io.camunda.zeebe.exporter.ElasticsearchExporter",
+              "camunda.data.exporters.elasticsearch.args.url=http://localhost:9200",
+              "camunda.data.exporters.elasticsearch.args.index.prefix=zeebe-record",
+              "camunda.data.exporters.elasticsearch.args.retention.enabled=true",
+              "camunda.data.exporters.elasticsearch.args.retention.policy-name="
+                  + "camunda-retention-policy",
+              SECONDARY_STORAGE_TYPE_ES,
+              SECONDARY_STORAGE_URL_ES,
+              "camunda.data.secondary-storage.elasticsearch.index-prefix=operate-record",
+              "camunda.data.secondary-storage.retention.enabled=true")
+          .run(
+              context -> {
+                // then
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                    .rootCause()
+                    .isInstanceOf(UnifiedConfigurationException.class)
+                    .hasMessageContaining("elasticsearch")
+                    .hasMessageContaining("secondary-storage");
+              });
     }
   }
 }
