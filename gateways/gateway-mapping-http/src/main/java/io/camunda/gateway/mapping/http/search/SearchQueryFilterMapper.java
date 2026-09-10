@@ -42,6 +42,7 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
 import io.camunda.gateway.protocol.model.RoleFilterFields;
+import io.camunda.gateway.protocol.model.RoleUserFilterRequest;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserFilterFields;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
@@ -86,11 +87,13 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.RoleMemberFilter;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
@@ -852,6 +855,16 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     }
     return builder;
+  }
+
+  static RoleMemberFilter toRoleUserFilter(final @Nullable RoleUserFilterRequest filter) {
+    final var builder = FilterBuilders.roleMember().memberType(EntityType.USER);
+    if (filter != null) {
+      ofNullable(filter.getUsername())
+          .map(mapToStringOperations())
+          .ifPresent(builder::memberIdOperations);
+    }
+    return builder.build();
   }
 
   static MappingRuleFilter toMappingRuleFilter(

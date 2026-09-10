@@ -1104,11 +1104,27 @@ components:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       type: object
       properties:
+        filter:
+          description: The user filter criteria.
+          allOf:
+            - $ref: '#/components/schemas/RoleUserFilterRequest'
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: '#/components/schemas/RoleUserSearchQuerySortRequest'
+      x-properties-added-in-version:
+        - propertyName: "filter"
+          addedInVersion: "8.10"
+
+    RoleUserFilterRequest:
+      description: Role user filter request
+      type: object
+      properties:
+        username:
+          description: The username search filters.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     RoleUserSearchQuerySortRequest:
       type: object

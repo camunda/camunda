@@ -23,6 +23,7 @@ import { LucideIcon, Plus } from "lucide-react";
 import { DocumentationLink } from "src/components/documentationV2";
 import useTranslate from "src/utility/localization";
 import { PageResult, SortConfig } from "src/utility/api";
+import { SearchFilterValue } from "src/utility/api/hooks/usePagination";
 import SearchBar from "./SearchBar";
 
 export type EntityData = {
@@ -63,6 +64,8 @@ type EntityListProps<D extends EntityData> = {
   documentationPath?: string;
   searchPlaceholder?: string;
   searchKey?: string;
+  /** "eq" (default) matches the typed value exactly; "like" matches it as a substring. */
+  searchOperator?: "eq" | "like";
   data: D[] | null | undefined;
   headers: DataTableHeader<D>[];
   addEntityLabel?: string | null;
@@ -90,7 +93,7 @@ type EntityListProps<D extends EntityData> = {
     | ({ pageNumber: number; pageSize: number } & Partial<PageResult>)
     | undefined;
   setSort?: (sort: SortConfig[] | undefined) => void;
-  setSearch?: (search: Record<string, string> | undefined) => void;
+  setSearch?: (search: Record<string, SearchFilterValue> | undefined) => void;
   renderExpandedRow?: (entity: D) => ReactNode;
 };
 
@@ -123,6 +126,7 @@ const EntityList = <D extends EntityData>({
   batchSelection,
   searchPlaceholder,
   searchKey,
+  searchOperator,
   maxDisplayCellLength = 50,
   setPageNumber = () => {},
   setPageSize = () => {},
@@ -283,6 +287,7 @@ const EntityList = <D extends EntityData>({
             <SearchBar
               searchKey={searchKey}
               searchPlaceholder={searchPlaceholder}
+              searchOperator={searchOperator}
               onSearch={setSearch}
             />
           )}

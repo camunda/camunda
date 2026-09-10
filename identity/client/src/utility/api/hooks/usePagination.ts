@@ -32,9 +32,12 @@ export type SortConfig = {
   order: "ASC" | "DESC";
 };
 
+/** A search term, either matched exactly or, wrapped as `{ $like }`, as a substring. */
+export type SearchFilterValue = string | { $like: string };
+
 export type PaginationRequestParams = PageSearchParams & {
   sort?: SortConfig[];
-  filter?: Record<string, string>;
+  filter?: Record<string, SearchFilterValue>;
 };
 
 export type UsePaginationResult = {
@@ -43,23 +46,23 @@ export type UsePaginationResult = {
   setPageNumber: (newPage: number) => void;
   setPageSize: (newPageSize: number) => void;
   setSort: (sort: SortConfig[] | undefined) => void;
-  setSearch: (search: Record<string, string> | undefined) => void;
-  search?: Record<string, string>;
+  setSearch: (search: Record<string, SearchFilterValue> | undefined) => void;
+  search?: Record<string, SearchFilterValue>;
   resetPagination: () => void;
 };
 
 const useSearch = (
   reset = () => {},
 ): [
-  Record<string, string> | undefined,
-  (newSearch: Record<string, string> | undefined) => void,
+  Record<string, SearchFilterValue> | undefined,
+  (newSearch: Record<string, SearchFilterValue> | undefined) => void,
 ] => {
-  const [search, setSearch] = useState<Record<string, string> | undefined>(
-    undefined,
-  );
+  const [search, setSearch] = useState<
+    Record<string, SearchFilterValue> | undefined
+  >(undefined);
 
   const handleSearchChange = useCallback(
-    (newSearch: Record<string, string> | undefined) => {
+    (newSearch: Record<string, SearchFilterValue> | undefined) => {
       setSearch(newSearch);
       reset();
     },
