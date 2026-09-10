@@ -37,22 +37,27 @@ ARG BASE="hardened"
 ARG DIST="distball"
 
 ### Base Application Image ###
-# No packages are added on top. Echo's Temurin JRE image already supplies the
-# JRE, tzdata and ca-certificates, plus a shell and coreutils - which covers
-# everything the appassembler entrypoint calls (sh, env, dirname, expr, ls,
-# uname, which; see dist/src/main/scripts/unixBinTemplate).
+# Echo's Temurin JRE image already supplies the JRE, tzdata, ca-certificates,
+# and a shell plus coreutils, which covers everything the appassembler
+# entrypoint calls (sh, env, dirname, expr, ls, uname, which; see
+# dist/src/main/scripts/unixBinTemplate).
 #
-# The four extras Minimus's openjre-base bundled are deliberately NOT carried
-# over, because none of them apply to this image:
+# Of the four extras Minimus's openjre-base bundled, only wget is carried over:
+#   wget           - required. The camunda service healthcheck in
+#                    optimize/client/docker-compose.yml is
+#                    `wget -O - -q http://localhost:9600/actuator/health/readiness`,
+#                    so dropping it leaves the container permanently unhealthy.
+#   tzdata         - required, and already present in this base.
 #   busybox        - only needed for start/health checks on the non-"dev"
 #                    openjre flavor (Identity); this base already has a shell.
-#   wget           - only used by the Identity healthcheck.
-#   netcat-openbsd - only used by wait-for-it.sh in Optimize.
-#   tzdata         - required, and already present in this base.
-# No camunda service defines a container healthcheck, and the shipped scripts
-# shell out to nothing beyond the seven commands listed above.
+#   netcat-openbsd - only used by wait-for-it.sh in Optimize, which builds from
+#                    optimize.Dockerfile, not this one.
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget && \
+    rm -rf /var/lib/apt/lists/*
 
 ### Base Public Application Image ###
 # hadolint ignore=DL3006
