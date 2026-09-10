@@ -108,4 +108,114 @@ describe('<ConversationMessage />', () => {
       within(modal).getByRole('tab', {name: 'Source'}),
     ).toBeInTheDocument();
   });
+
+  it('should render assistant reasoning content as structured content', () => {
+    render(
+      <ConversationMessage
+        actor="ASSISTANT"
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              provider: 'openai',
+              payload: {
+                id: 'rs_937932',
+                type: 'reasoning',
+                encrypted_content: 'Opaque provider payload',
+              },
+              text: 'Check the policy before estimating the claim.',
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Thinking')).toBeVisible();
+    expect(
+      screen.getByText('Check the policy before estimating the claim.'),
+    ).toBeVisible();
+    expect(
+      screen.queryByText('Opaque provider payload'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not interpret provider-specific reasoning payloads', () => {
+    render(
+      <ConversationMessage
+        actor="ASSISTANT"
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              provider: 'anthropic',
+              payload: {
+                type: 'thinking',
+                signature: 'opaque',
+              },
+              text: 'Use the available evidence.',
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Thinking')).toBeVisible();
+    expect(screen.getByText('Use the available evidence.')).toBeVisible();
+  });
+
+  it('should preserve the generic object fallback for unrecognized content', () => {
+    const {rerender} = render(
+      <ConversationMessage
+        actor="ASSISTANT"
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              type: 'reasoning',
+              text: 'Some structured content',
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText(/"text": "Some structured content"/)).toBeVisible();
+    expect(screen.queryByText('Thinking')).not.toBeInTheDocument();
+
+    rerender(
+      <ConversationMessage
+        actor="ASSISTANT"
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              provider: 'anthropic',
+              payload: {type: 'redacted_thinking', data: 'opaque'},
+              text: '   ',
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText(/"provider": "anthropic"/)).toBeVisible();
+    expect(screen.queryByText('Thinking')).not.toBeInTheDocument();
+  });
+
+  it('should leave thinking XML in ordinary assistant text unstructured', () => {
+    render(
+      <ConversationMessage
+        actor="ASSISTANT"
+        content={[
+          {
+            contentType: 'TEXT',
+            text: '<thinking><context>Temporary context</context><reflection>Temporary reasoning</reflection></thinking>',
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText('Thinking')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reasoning')).not.toBeInTheDocument();
+  });
 });
