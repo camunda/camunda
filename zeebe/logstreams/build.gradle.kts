@@ -25,7 +25,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
   api(libs.com.fasterxml.jackson.core.jackson.annotations)
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.org.awaitility.awaitility)

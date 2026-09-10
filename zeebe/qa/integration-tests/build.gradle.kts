@@ -59,7 +59,7 @@ dependencies {
   testImplementation(project(":zeebe-qa-util"))
   testImplementation(project(":zeebe-broker"))
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.testcontainers.testcontainers)
   testImplementation(libs.org.testcontainers.testcontainers.toxiproxy)
   testImplementation(libs.eu.rekawek.toxiproxy.toxiproxy.java)

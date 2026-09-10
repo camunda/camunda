@@ -13,7 +13,7 @@ dependencies {
   api(libs.io.micrometer.micrometer.core)
   testImplementation(project(":camunda-cluster"))
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
 }
 
 description = "Zeebe Exporter API"

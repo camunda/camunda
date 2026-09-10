@@ -36,7 +36,7 @@ dependencies {
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":zeebe-scheduler", configuration = "tests"))
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
 }
 
