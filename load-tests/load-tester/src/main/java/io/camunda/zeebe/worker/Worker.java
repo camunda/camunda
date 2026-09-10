@@ -72,12 +72,20 @@ public class Worker {
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
 
-  // Per-process-instance round counter for the ad-hoc-sub-process orchestration path, keyed by
-  // ActivatedJob#getProcessInstanceKey(). In-memory and per-worker-pod: exact with the scenario's
-  // default single orchestrator replica; approximate (rounds could interleave across pods) if
-  // that role is ever scaled beyond one replica. Entries are evicted once the final round
-  // completes, to keep this bounded over long-running soak tests.
-  private final ConcurrentHashMap<Long, AtomicInteger> adHocSubProcessRounds =
+  // Per-process-instance round tracking for the ad-hoc-sub-process orchestration path, keyed by
+  // ActivatedJob#getProcessInstanceKey(). Each RoundTracker assigns a distinct round number to
+  // every distinct ActivatedJob#getKey() it sees, so a redelivered job - which Zeebe job workers
+  // permit even with stream-enabled=false, since job workers are at-least-once, not
+  // exactly-once - reuses its already-assigned round instead of advancing past it. A bare
+  // incrementing counter (the previous implementation) double-counts a redelivered job as a new
+  // round, desyncing the round number from the process instance's actual physical progress and
+  // corrupting adHocSubProcessAgentInstanceKeys below; see
+  // ctxt/results/2026-09-09-run2-treatment-then-baseline.md for the discovered failure mode.
+  // In-memory and per-worker-pod: exact with the scenario's default single orchestrator replica;
+  // approximate (rounds could interleave across pods) if that role is ever scaled beyond one
+  // replica. Entries are evicted once the final round completes, to keep this bounded over
+  // long-running soak tests.
+  private final ConcurrentHashMap<Long, RoundTracker> adHocSubProcessRounds =
       new ConcurrentHashMap<>();
 
   // Caches the AgentInstance key returned by the round-1 CREATE, keyed by process instance key,
@@ -188,17 +196,20 @@ public class Worker {
     final long processInstanceKey = job.getProcessInstanceKey();
     final int round =
         adHocSubProcessRounds
-            .computeIfAbsent(processInstanceKey, key -> new AtomicInteger(0))
-            .getAndIncrement();
+            .computeIfAbsent(processInstanceKey, key -> new RoundTracker())
+            .roundFor(job.getKey());
     final boolean isFinalRound = round == AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.size() - 1;
     final var toolsToActivate = AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.get(round);
 
-    if (isFinalRound) {
-      adHocSubProcessRounds.remove(processInstanceKey);
-    }
-
     if (workerCfg.isAgentInstanceSimulationEnabled()) {
       simulateAgentInstance(job, round, isFinalRound);
+    }
+
+    // Evicted only after this round's work (including the AgentInstance command above) has
+    // fully run, not before - evicting earlier would let a redelivered copy of this same final
+    // round see a fresh, empty RoundTracker and get miscategorized back to round 0.
+    if (isFinalRound) {
+      adHocSubProcessRounds.remove(processInstanceKey);
     }
 
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
@@ -257,28 +268,43 @@ public class Worker {
               .join();
       adHocSubProcessAgentInstanceKeys.put(processInstanceKey, response.getAgentInstanceKey());
     } else {
-      final long agentInstanceKey = adHocSubProcessAgentInstanceKeys.get(processInstanceKey);
-      final var assistantItem =
-          new AgentInstanceHistoryItem()
-              .historyItemId("agent-visibility-round-" + (round + 1))
-              .loopIteration(round + 1)
-              .role(AgentInstanceHistoryRole.ASSISTANT)
-              .content(
-                  List.of(
-                      AgentInstanceHistoryContent.text(
-                          "Synthetic assistant message for round " + (round + 1) + ".")))
-              .producedAt(OffsetDateTime.now());
+      final Long agentInstanceKey = adHocSubProcessAgentInstanceKeys.get(processInstanceKey);
+      if (agentInstanceKey == null) {
+        // Defensive only - RoundTracker (see adHocSubProcessRounds) and the reordered eviction
+        // above should prevent this for any redelivered job, but a cache miss here must never
+        // throw: an uncaught exception leaves the job unable to complete, and (per the discovery
+        // in ctxt/results/2026-09-09-run2-treatment-then-baseline.md) the framework's own FAIL
+        // fallback can itself be rejected by a concurrent redelivery holding the lease,
+        // permanently stranding the job. Skipping the UPDATE lets the round schedule below still
+        // complete the job normally; only this one AgentHistory item is missed.
+        THROTTLED_LOGGER.warn(
+            "No cached AgentInstance key for processInstanceKey={} at round={}; skipping "
+                + "AgentInstance UPDATE",
+            processInstanceKey,
+            round);
+      } else {
+        final var assistantItem =
+            new AgentInstanceHistoryItem()
+                .historyItemId("agent-visibility-round-" + (round + 1))
+                .loopIteration(round + 1)
+                .role(AgentInstanceHistoryRole.ASSISTANT)
+                .content(
+                    List.of(
+                        AgentInstanceHistoryContent.text(
+                            "Synthetic assistant message for round " + (round + 1) + ".")))
+                .producedAt(OffsetDateTime.now());
 
-      client
-          .newUpdateAgentInstanceCommand(agentInstanceKey)
-          .elementInstanceKey(job.getElementInstanceKey())
-          .status(
-              isFinalRound ? AgentInstanceUpdateStatus.IDLE : AgentInstanceUpdateStatus.THINKING)
-          .jobKey(job.getKey())
-          .jobLease(job.getLeaseToken())
-          .history(List.of(assistantItem))
-          .send()
-          .join();
+        client
+            .newUpdateAgentInstanceCommand(agentInstanceKey)
+            .elementInstanceKey(job.getElementInstanceKey())
+            .status(
+                isFinalRound ? AgentInstanceUpdateStatus.IDLE : AgentInstanceUpdateStatus.THINKING)
+            .jobKey(job.getKey())
+            .jobLease(job.getLeaseToken())
+            .history(List.of(assistantItem))
+            .send()
+            .join();
+      }
     }
 
     if (isFinalRound) {
@@ -330,6 +356,21 @@ public class Worker {
           "Interrupted during completion delay sleep of {} ms", completionDelay, e);
     } catch (final Exception e) {
       THROTTLED_LOGGER.error("Exception on sleep with completion delay {}", completionDelay, e);
+    }
+  }
+
+  // Assigns each distinct ActivatedJob#getKey() exactly one round number for a given process
+  // instance. Zeebe job workers are at-least-once, not exactly-once, so the same job can be
+  // delivered more than once; computeIfAbsent guarantees the round-generating lambda runs at
+  // most once per job key even under concurrent redelivery, so a redelivered job always reuses
+  // its already-assigned round instead of advancing past it.
+  private static final class RoundTracker {
+
+    private final ConcurrentHashMap<Long, Integer> roundsByJobKey = new ConcurrentHashMap<>();
+    private final AtomicInteger nextRound = new AtomicInteger(0);
+
+    int roundFor(final long jobKey) {
+      return roundsByJobKey.computeIfAbsent(jobKey, key -> nextRound.getAndIncrement());
     }
   }
 }
