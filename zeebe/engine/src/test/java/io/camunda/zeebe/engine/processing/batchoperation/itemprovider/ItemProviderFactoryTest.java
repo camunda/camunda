@@ -46,8 +46,38 @@ class ItemProviderFactoryTest {
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
-    assertThat(usedFilter.parentProcessInstanceKeyOperations()).contains(Operation.exists(false));
-    assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.exists(false));
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.in("ACTIVE", "SUSPENDED"));
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldOverrideFiltersForCancelProcessInstance() {
+    // given
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .states("COMPLETED")
+            .parentProcessInstanceKeys(12345L)
+            .processInstanceKeys(67890L)
+            .build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType())
+        .thenReturn(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // when
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // then
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
+
+    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.exists(false));
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.in("ACTIVE", "SUSPENDED"));
+    assertThat(usedFilter.processInstanceKeyOperations()).containsExactly(Operation.eq(67890L));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
 
