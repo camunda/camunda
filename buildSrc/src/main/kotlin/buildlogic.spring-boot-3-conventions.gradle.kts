@@ -1,10 +1,11 @@
-import buildlogic.parsePomProperties
-import buildlogic.pomVersion
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 
 val projectPomVersions =
-  parsePomProperties(providers.fileContents(layout.projectDirectory.file("pom.xml")).asText.get())
-val springBoot3Version = pomVersion(projectPomVersions, "version.spring-boot")
-val spring6Version = pomVersion(projectPomVersions, "version.spring")
+  PomResolver(providers.fileContents(layout.projectDirectory.file("pom.xml")).asText.get())
+    .properties()
+val springBoot3Version = resolvePomProperty("version.spring-boot", projectPomVersions)
+val spring6Version = resolvePomProperty("version.spring", projectPomVersions)
 
 extra["springBoot3Version"] = springBoot3Version
 

@@ -1,5 +1,5 @@
-import buildlogic.parsePomProperties
-import buildlogic.pomVersion
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.npm.task.NpmTask
 import org.gradle.api.provider.Provider
@@ -27,14 +27,13 @@ val frontendPackagedDirectory = frontendWebjar.frontendPackagedDirectory
 val resourceTargetPath = frontendWebjar.resourceTargetPath
 
 val parentPomVersions =
-  parsePomProperties(
-    providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get()
-  )
+  PomResolver(providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get())
+    .properties()
 
 extensions.configure<NodeExtension> {
   download.set(true)
-  version.set(pomVersion(parentPomVersions, "version.node").removePrefix("v"))
-  npmVersion.set(pomVersion(parentPomVersions, "version.npm"))
+  version.set(resolvePomProperty("version.node", parentPomVersions).removePrefix("v"))
+  npmVersion.set(resolvePomProperty("version.npm", parentPomVersions))
   distBaseUrl.set(null as String?)
   workDir.set(layout.settingsDirectory.dir(".gradle/nodejs/${project.name}"))
   npmWorkDir.set(layout.settingsDirectory.dir(".gradle/npm/${project.name}"))
