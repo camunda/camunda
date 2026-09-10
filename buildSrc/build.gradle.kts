@@ -1,47 +1,19 @@
-import javax.xml.parsers.DocumentBuilderFactory
-import org.w3c.dom.Element
-import org.xml.sax.InputSource
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 
-fun parsePomProperties(xml: String): Map<String, String> {
-  val db = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-  val root = db.parse(InputSource(xml.reader())).documentElement
-  val properties =
-    (0 until root.childNodes.length)
-      .asSequence()
-      .map { root.childNodes.item(it) }
-      .filterIsInstance<Element>()
-      .firstOrNull { it.tagName == "properties" } ?: return emptyMap()
-  val result = mutableMapOf<String, String>()
-  for (i in 0 until properties.childNodes.length) {
-    val property = properties.childNodes.item(i)
-    if (property is Element) {
-      result[property.tagName] = property.textContent.trim()
-    }
+buildscript {
+  dependencies {
+    classpath("io.camunda.gradle:pom-resolution:0.0.0")
   }
-  return result
 }
 
 val pomVersions: Map<String, String> =
-  parsePomProperties(
-    providers.fileContents(layout.projectDirectory.file("../parent/pom.xml")).asText.get()
-  )
+  PomResolver(
+      providers.fileContents(layout.projectDirectory.file("../parent/pom.xml")).asText.get()
+    )
+    .properties()
 
-private val pomPropertyReference = Regex("""\$\{([^}]+)}""")
-
-fun pomVersion(key: String): String {
-  fun resolve(property: String, resolving: Set<String> = emptySet()): String {
-    if (property in resolving) {
-      error("Cyclic POM property reference: ${(resolving + property).joinToString(" -> ")}")
-    }
-
-    val value = pomVersions[property] ?: error("Missing POM property: $property")
-    return pomPropertyReference.replace(value) { match ->
-      resolve(match.groupValues[1], resolving + property)
-    }
-  }
-
-  return resolve(key)
-}
+fun pomVersion(key: String): String = resolvePomProperty(key, pomVersions)
 
 plugins { `kotlin-dsl` }
 
@@ -51,6 +23,7 @@ repositories {
 }
 
 dependencies {
+  implementation("io.camunda.gradle:pom-resolution:0.0.0")
   implementation("com.diffplug.spotless:spotless-plugin-gradle:8.8.0")
   implementation("com.github.node-gradle:gradle-node-plugin:7.1.0")
   implementation("net.ltgt.gradle:gradle-errorprone-plugin:4.3.0")
