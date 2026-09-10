@@ -60,6 +60,14 @@ outputs:
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
+  java-source-changes:
+    description: Output whether Java source, test, or resource files changed
+    value: >-
+      ${{ steps.filter-common.outputs.java-code-change == 'true' }}
+  maven-build-changes:
+    description: Output whether Maven build inputs changed
+    value: >-
+      ${{ steps.filter-common.outputs.maven-change == 'true' }}
   identity-frontend-tests:
     description: Output whether Identity frontend tests should be run based on GitHub event and files changed
     value: >-
@@ -290,7 +298,17 @@ outputs:
         steps.filter-common.outputs.gradle-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
-
+  gradle-build-changes:
+    description: Output whether Gradle build inputs changed
+    value: >-
+      ${{ steps.filter-common.outputs.gradle-change == 'true' }}
+  gradle-only-changes:
+    description: Output whether a pull request changes only Gradle build inputs
+    value: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        steps.gradle-only.outputs.gradle-only == 'true'
+      }}
 runs:
   using: composite
   steps:
@@ -300,7 +318,12 @@ runs:
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      list-files: json
+      predicate-quantifier: some-with-excludes
       filters: |
+        all-change:
+          - '**'
+
         actionlint-related-change:
           - '.github/actions/**'
           - '.github/workflows/**'
@@ -335,6 +358,7 @@ runs:
           - '**/src/main/**'
           - '**/src/test/**'
           - '**/src/it/**'
+          - '!buildSrc/**'
 
         maven-change:
           - 'bom/**'
@@ -344,6 +368,7 @@ runs:
           - '**/pom.xml'
           - '.mvn/**'
           - '.ci/db-versions.yml'
+          - '!**/*.gradle.kts'
 
         gradle-change:
           - '**/*.gradle.kts'
@@ -405,6 +430,25 @@ runs:
         - 'zeebe/exporters/rdbms-exporter/**'
         - 'qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/asyncreplication/**'
         - 'qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/util/**'
+
+  - id: gradle-only
+    shell: bash
+    env:
+      CHANGED_FILES: ${{ steps.filter-common.outputs.all-change_files }}
+    run: |
+      gradle_only=true
+      changed_file=false
+      while IFS= read -r file; do
+        changed_file=true
+        case "$file" in
+          *.gradle.kts|gradle.properties|gradlew|gradlew.bat|gradle/*|buildSrc/*) ;;
+          *) gradle_only=false; break ;;
+        esac
+      done < <(jq -r '.[]' <<< "$CHANGED_FILES")
+      if [[ "$changed_file" == "false" ]]; then
+        gradle_only=false
+      fi
+      echo "gradle-only=$gradle_only" >> "$GITHUB_OUTPUT"
 
   - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-github-actions
