@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {
-  mockIncidentsByError,
-  mockIncidentsByProcess,
-  mockStatistics as mockDashboardStatistics,
+  mockHealthyIncidentsByError,
+  mockHealthyIncidentsByProcess,
+  mockHealthyStatistics as mockDashboardStatistics,
   mockResponses as mockDashboardResponses,
 } from '../mocks/dashboard.mocks';
 
@@ -39,12 +40,13 @@ test.describe('get familiar with operate', () => {
       /^.*\/api.*$/i,
       mockDashboardResponses({
         statistics: mockDashboardStatistics,
-        incidentsByError: mockIncidentsByError,
-        incidentsByProcess: mockIncidentsByProcess,
+        incidentsByError: mockHealthyIncidentsByError,
+        incidentsByProcess: mockHealthyIncidentsByProcess,
       }),
     );
 
     await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await expect(page.getByTestId('instances-by-process-0')).toBeVisible();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/get-familiar-with-operate/operate-introduction.png',
