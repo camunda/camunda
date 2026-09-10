@@ -128,7 +128,7 @@ dependencies {
   implementation(libs.org.eclipse.angus.jakarta.mail)
   implementation(libs.org.apache.commons.commons.collections4)
   implementation(libs.org.apache.httpcomponents.httpclient)
-  implementation(libs.jakarta.servlet.jakarta.servlet.api.x1)
+  implementation(libs.jakarta.servlet.jakarta.servlet.api.optimize)
   implementation(libs.com.nimbusds.nimbus.jose.jwt)
   runtimeOnly(libs.org.jetbrains.annotations)
   testImplementation(libs.io.github.netmikey.logunit.logunit.log4j2)

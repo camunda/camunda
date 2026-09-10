@@ -27,7 +27,7 @@ dependencies {
     exclude(group = "com.github.vertical-blank", module = "sql-formatter")
   }
   testImplementation(libs.org.mockito.mockito.core)
-  testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
+  testImplementation(libs.org.junit.platform.junit.platform.commons)
   testImplementation(libs.org.instancio.instancio.core)
   testImplementation(libs.com.h2database.h2)
 }

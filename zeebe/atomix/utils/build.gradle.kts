@@ -14,7 +14,7 @@ dependencies {
   implementation(libs.com.esotericsoftware.minlog)
   api(libs.io.netty.netty.common)
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.awaitility.awaitility)
 }
 
