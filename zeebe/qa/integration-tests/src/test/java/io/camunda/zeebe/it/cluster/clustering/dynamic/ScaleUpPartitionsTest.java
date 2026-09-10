@@ -26,8 +26,9 @@ import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.management.backups.StateCode;
-import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -49,6 +50,7 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -64,6 +66,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -85,9 +88,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 @ZeebeIntegration
 // Interrupt any test method hanging longer than 10 minutes so the remaining tests still run and
 // the failure is attributed with a stack trace, instead of the CI job timing out with no test
@@ -109,10 +110,12 @@ public class ScaleUpPartitionsTest {
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
 
-  @TestZeebe(awaitCompleteTopology = false)
+  @TestZeebe(autoStart = false, awaitCompleteTopology = false)
   private final TestCluster cluster;
 
   ScaleUpPartitionsTest(@TempDir final Path backupPath) {
+    final var h2Url =
+        "jdbc:h2:mem:scale-up-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
     cluster =
         TestCluster.builder()
             .useRecordingExporter(true)
@@ -122,12 +125,16 @@ public class ScaleUpPartitionsTest {
             .withReplicationFactor(3)
             .withBrokerConfig(
                 b -> {
-                  // Keep the cluster's internal topology checks unauthenticated while enabling
-                  // authorization checks for clients that provide credentials.
-                  b.withUnauthenticatedAccess();
-                  b.withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+                  b.withSecondaryStorageType(SecondaryStorageType.rdbms);
+                  b.withAuthenticationMethod(AuthenticationMethod.BASIC);
+                  b.withAuthorizationsEnabled();
                   b.withUnifiedConfig(
                       cfg -> {
+                        final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
+                        rdbms.setUrl(h2Url);
+                        rdbms.setUsername("sa");
+                        rdbms.setPassword("");
+
                         final var backup = cfg.getData().getPrimaryStorage().getBackup();
                         backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
                         backup.getFilesystem().setBasePath(backupPath.toString());
@@ -146,11 +153,10 @@ public class ScaleUpPartitionsTest {
 
   @BeforeEach
   void createClient() {
-    camundaClient =
-        AuthorizationsUtil.createClient(
-            cluster.availableGateway(),
-            InitializationConfiguration.DEFAULT_USER_USERNAME,
-            InitializationConfiguration.DEFAULT_USER_PASSWORD);
+    cluster.start();
+    cluster.await(TestHealthProbe.READY);
+
+    camundaClient = cluster.newClientBuilder().build();
     clusterActuator = ClusterActuator.of(cluster.availableGateway());
     backupActuator = BackupActuator.of(cluster.availableGateway());
     initializeIdentityState();
@@ -190,6 +196,7 @@ public class ScaleUpPartitionsTest {
     new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
 
     Awaitility.await("until identity state is distributed")
+        .atMost(Duration.ofMinutes(2))
         .untilAsserted(
             () -> {
               assertThat(
@@ -779,6 +786,7 @@ public class ScaleUpPartitionsTest {
     try (final var decisionClient =
         AuthorizationsUtil.createClient(
             cluster.availableGateway(), decisionUsername, decisionPassword)) {
+
       Awaitility.await("until the new partition evaluates the existing decision")
           .atMost(Duration.ofMinutes(2))
           .ignoreExceptions()
