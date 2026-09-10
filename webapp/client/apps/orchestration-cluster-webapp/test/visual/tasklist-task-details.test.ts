@@ -83,6 +83,7 @@ test('should match the task details page snapshot', {tag: '@desktop'}, async ({n
 	await expect(taskDetailPage.taskName('Review purchase order')).toBeVisible();
 	await expect(taskDetailPage.aside.getByText('ORDER-2024-0042')).toBeVisible();
 	await expect(taskDetailPage.completeTaskButton).toBeEnabled();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -123,6 +124,7 @@ test('should match the task details sheet snapshot', {tag: '@tablet'}, async ({n
 	await expect(taskDetailPage.completeTaskButton).toBeEnabled();
 	await expect(taskDetailPage.detailsButton).toBeVisible();
 	await expect(taskDetailPage.detailsSheet).not.toBeVisible();
+	await taskDetailPage.assignmentButton.focus();
 	await expect(page).toHaveScreenshot();
 
 	await taskDetailPage.detailsButton.click();
@@ -152,7 +154,7 @@ test('should match the new variable row snapshot', async ({network, taskDetailPa
 	await taskDetailPage.addVariableButton.click();
 	await expect(taskDetailPage.firstNewVariableNameInput).toBeFocused();
 	await expect(taskDetailPage.firstNewVariableValueInput).toBeVisible();
-	await taskDetailPage.variablesHeading.click();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -184,6 +186,7 @@ test('should match the variable validation error snapshot', async ({network, tas
 	await taskDetailPage.variableValueInput('validationAmount').fill('{invalid');
 	await taskDetailPage.variablesHeading.click();
 	await expect(taskDetailPage.invalidVariableValueError).toBeVisible();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -256,6 +259,7 @@ test('should match the task details process tab snapshot', async ({network, task
 	await expect(taskDetailPage.processName('Procurement process')).toBeVisible();
 	await expect(taskDetailPage.processVersion(3)).toBeVisible();
 	await expect(taskDetailPage.processDiagramZoomReset).toBeVisible();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -285,6 +289,7 @@ test('should match the task details process forbidden snapshot', async ({network
 	await taskDetailPage.seedHideNotificationBanner();
 	await taskDetailPage.gotoProcess('2251799813685281');
 	await expect(taskDetailPage.processForbiddenError).toBeVisible();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -311,6 +316,7 @@ test('should match the unassigned task details snapshot', async ({network, taskD
 	await expect(taskDetailPage.detailsInfo).toBeVisible();
 	await expect(taskDetailPage.taskName('Review supplier onboarding')).toBeVisible();
 	await expect(taskDetailPage.completeTaskButton).toBeDisabled();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
