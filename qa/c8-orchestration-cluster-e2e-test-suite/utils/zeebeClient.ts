@@ -9,6 +9,8 @@
 import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {sleep} from './sleep';
+import {readFileSync} from 'node:fs';
+import {basename} from 'node:path';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -156,6 +158,36 @@ const waitForLatestProcessVersion = async (
   );
 };
 
+const deployWithSubstitutions = async (
+  filePath: string,
+  substitutions: Record<string, string>,
+) => {
+  let content = readFileSync(filePath, 'utf-8');
+  for (const [placeholder, replacement] of Object.entries(substitutions)) {
+    if (!content.includes(placeholder)) {
+      throw new Error(
+        `Placeholder '${placeholder}' not found in resource file '${filePath}'`,
+      );
+    }
+    content = content.split(placeholder).join(replacement);
+  }
+  const name = basename(filePath);
+  try {
+    return await zeebe.deployResources([{content, name}]);
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    throw error;
+  }
+};
+
+const setVariables = async (
+  elementInstanceKey: string,
+  variables: Record<string, unknown>,
+  local: boolean = false,
+): Promise<void> => {
+  await zeebeGrpc.setVariables({elementInstanceKey, variables, local});
+};
+
 export {
   deploy,
   waitForLatestProcessVersion,
@@ -165,4 +197,6 @@ export {
   createSingleInstance,
   cancelProcessInstance,
   createWorker,
+  deployWithSubstitutions,
+  setVariables,
 };
