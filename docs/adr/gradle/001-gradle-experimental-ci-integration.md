@@ -70,7 +70,8 @@ inputs, Gradle build inputs, or CI inputs that can change build behavior. It run
 The `testClasses` task compiles production and test sources without running tests. The job uploads the
 Gradle ZIP as an artifact. A separate `Gradle / Distribution Parity` job waits for both this job and
 `build-distball`, downloads the Gradle and Maven ZIPs, and compares their versioned roots and bundled
-JAR names and versions.
+JAR names and versions. Other file paths and byte contents are not compared. In general, the JAR bytes
+differ, for example because of manifest metadata.
 
 Both jobs are included in Unified CI's `check-results` gate. They therefore block relevant pull
 requests and merge groups when Gradle compilation, packaging, or distribution parity fails. Protected
