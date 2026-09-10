@@ -17,7 +17,7 @@ dependencies {
   implementation(project(":zeebe-util"))
   implementation(libs.org.jetbrains.annotations)
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(libs.com.google.guava.guava)
