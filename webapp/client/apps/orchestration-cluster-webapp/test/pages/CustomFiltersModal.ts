@@ -13,7 +13,7 @@ type AssigneeOption = 'All' | 'Unassigned' | 'Me' | 'User and group';
 
 class CustomFiltersModal extends View {
 	get dialog() {
-		return this.page.getByRole('dialog', {name: /custom filters modal/i});
+		return this.page.getByRole('dialog', {name: /apply filters/i});
 	}
 
 	get heading() {
@@ -32,25 +32,28 @@ class CustomFiltersModal extends View {
 		return this.dialog.getByRole('combobox', {name: 'Tasks for latest process version'});
 	}
 
+	processOption(name: string) {
+		return this.page.getByRole('option', {name, exact: true});
+	}
+
 	get assignedToInput() {
 		return this.dialog.getByRole('textbox', {name: /assigned to user/i});
 	}
 
 	statusRadio(name: StatusOption) {
-		return this.statusGroup.getByLabel(name, {exact: true});
+		return this.statusGroup.getByRole('radio', {name, exact: true});
 	}
 
 	statusOption(name: StatusOption) {
-		return this.statusGroup.getByText(name, {exact: true});
+		return this.statusRadio(name);
 	}
 
 	assigneeOption(name: AssigneeOption) {
-		return this.assigneeGroup.getByText(name, {exact: true});
+		return this.assigneeGroup.getByRole('radio', {name, exact: true});
 	}
 
-	// NOTE: A switch role locator would be superior, but only works with force clicks which fail for the toggle sometimes...
 	get advancedFiltersToggle() {
-		return this.dialog.locator('label[for="toggle-advanced-filters"]');
+		return this.dialog.getByRole('switch', {name: /advanced filters/i});
 	}
 
 	get businessIdField() {
@@ -72,17 +75,17 @@ class FilterNameModal extends View {
 	}
 
 	get nameInput() {
-		return this.page.getByRole('textbox', {name: /filter name/i});
+		return this.dialog.getByRole('textbox', {name: /filter name/i});
 	}
 
 	get saveAndApplyButton() {
-		return this.page.getByRole('button', {name: /save and apply/i});
+		return this.dialog.getByRole('button', {name: /save and apply/i});
 	}
 }
 
 class DeleteFilterModal extends View {
 	get dialog() {
-		return this.page.getByRole('dialog', {name: /delete filter/i});
+		return this.page.getByRole('alertdialog', {name: /delete filter/i});
 	}
 
 	get confirmButton() {

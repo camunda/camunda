@@ -7,20 +7,19 @@
  */
 
 import {
-	ComposedModal,
-	ModalBody,
-	ModalHeader,
-	StructuredListBody,
-	StructuredListCell,
-	StructuredListRow,
-	StructuredListWrapper,
-} from '@carbon/react';
-import {EventSchedule, UserAvatar} from '@carbon/react/icons';
+	Button,
+	Dialog,
+	DialogBody,
+	DialogClose,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from '@camunda/design-system';
+import {CalendarClock, CircleUser, X} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatHistoryDate} from '#/tasklist/modules/task-details-history/formatHistoryDate';
 import {getOperationTypeTranslationKey} from '#/tasklist/modules/task-details-history/getOperationTypeTranslationKey';
-import styles from './HistoryItemDetailsModal.module.scss';
 
 type Props = {
 	onClose: () => void;
@@ -31,59 +30,63 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 	const {t} = useTranslation();
 
 	return (
-		<ComposedModal
-			size="md"
+		<Dialog
 			open
-			onClose={onClose}
-			aria-label={t(getOperationTypeTranslationKey(auditLog.operationType))}
+			onOpenChange={(open) => {
+				if (!open) {
+					onClose();
+				}
+			}}
 		>
-			<ModalHeader
-				title={t(getOperationTypeTranslationKey(auditLog.operationType))}
-				iconDescription={t('tasklist.taskDetailsHistoryModalClose')}
-			/>
-			<ModalBody>
-				<StructuredListWrapper isCondensed isFlush>
-					<StructuredListBody>
-						<StructuredListRow className={styles.verticallyAlignedRow}>
-							<StructuredListCell className={styles.firstColumn}>
-								<div className={styles.iconText}>
-									<UserAvatar />
-									{t('tasklist.taskDetailsHistoryModalActor')}
+			<DialogContent size="sm" showCloseButton={false} aria-describedby={undefined}>
+				<DialogHeader>
+					<DialogTitle>{t(getOperationTypeTranslationKey(auditLog.operationType))}</DialogTitle>
+				</DialogHeader>
+				<DialogBody>
+					<dl className="border-y border-border">
+						<div className="grid min-h-11 grid-cols-[40%_60%] items-center border-b border-border">
+							<dt className="flex items-center gap-1 py-2 pr-4">
+								<CircleUser aria-hidden />
+								{t('tasklist.taskDetailsHistoryModalActor')}
+							</dt>
+							<dd className="py-2">{auditLog.actorId}</dd>
+						</div>
+						<div className="grid min-h-11 grid-cols-[40%_60%] items-center">
+							<dt className="flex items-center gap-1 py-2 pr-4 whitespace-nowrap">
+								<CalendarClock aria-hidden />
+								{t('tasklist.taskDetailsHistoryModalTime')}
+							</dt>
+							<dd className="py-2">{formatHistoryDate(auditLog.timestamp)}</dd>
+						</div>
+					</dl>
+					{auditLog.operationType === 'ASSIGN' ? (
+						<section>
+							<h3 className="py-4 font-semibold">{t('tasklist.taskDetailsHistoryModalDetails')}:</h3>
+							<dl className="border-y border-border">
+								<div className="grid min-h-11 grid-cols-[40%_60%] items-center">
+									<dt className="flex items-center gap-1 py-2 pr-4 whitespace-nowrap">
+										<CircleUser aria-hidden />
+										{t('tasklist.taskDetailsHistoryModalAssignee')}
+									</dt>
+									<dd className="py-2">{auditLog.relatedEntityKey}</dd>
 								</div>
-							</StructuredListCell>
-							<StructuredListCell>{auditLog.actorId}</StructuredListCell>
-						</StructuredListRow>
-						<StructuredListRow className={styles.verticallyAlignedRow}>
-							<StructuredListCell noWrap className={styles.firstColumn}>
-								<div className={styles.iconText}>
-									<EventSchedule />
-									{t('tasklist.taskDetailsHistoryModalTime')}
-								</div>
-							</StructuredListCell>
-							<StructuredListCell>{formatHistoryDate(auditLog.timestamp)}</StructuredListCell>
-						</StructuredListRow>
-					</StructuredListBody>
-				</StructuredListWrapper>
-				{auditLog.operationType === 'ASSIGN' ? (
-					<section>
-						<h5 className={styles.sectionTitle}>{t('tasklist.taskDetailsHistoryModalDetails')}:</h5>
-						<StructuredListWrapper isCondensed isFlush>
-							<StructuredListBody>
-								<StructuredListRow className={styles.verticallyAlignedRow}>
-									<StructuredListCell noWrap className={styles.firstColumn}>
-										<div className={styles.iconText}>
-											<EventSchedule />
-											{t('tasklist.taskDetailsHistoryModalAssignee')}
-										</div>
-									</StructuredListCell>
-									<StructuredListCell>{auditLog.relatedEntityKey}</StructuredListCell>
-								</StructuredListRow>
-							</StructuredListBody>
-						</StructuredListWrapper>
-					</section>
-				) : null}
-			</ModalBody>
-		</ComposedModal>
+							</dl>
+						</section>
+					) : null}
+				</DialogBody>
+				<DialogClose asChild>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						className="absolute top-2 right-2"
+						aria-label={t('tasklist.taskDetailsHistoryModalClose')}
+					>
+						<X aria-hidden />
+					</Button>
+				</DialogClose>
+			</DialogContent>
+		</Dialog>
 	);
 };
 

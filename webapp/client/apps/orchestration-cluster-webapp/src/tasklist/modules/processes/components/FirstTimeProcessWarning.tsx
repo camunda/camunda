@@ -6,13 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FeatureFlags, Modal} from '@carbon/react';
-import {useNavigate} from '@tanstack/react-router';
 import {useCallback, useState} from 'react';
+import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
+import {
+	Button,
+	Dialog,
+	DialogBody,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@camunda/design-system';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import Illustration from '#/tasklist/modules/processes/first-time-process-warning.svg';
-import styles from './FirstTimeProcessWarning.module.scss';
 
 type Props = {
 	children?: React.ReactNode;
@@ -27,37 +35,43 @@ function FirstTimeProcessWarning({children}: Props) {
 	const leaveProcesses = useCallback(() => {
 		navigate({to: '/tasklist', replace: true});
 	}, [navigate]);
-	const handleRequestSubmit = useCallback(() => {
+	const handleConsent = useCallback(() => {
 		storeStateLocally('tasklist.hasConsentedToStartProcess', true);
 		setHasConsented(true);
 	}, []);
 
 	return (
 		<>
-			<FeatureFlags enableFocusWrapWithoutSentinels>
-				<Modal
-					aria-label={t('tasklist.processesFirstTimeModalAriaLabel')}
-					modalHeading={t('tasklist.processesFirstTimeModalHeading')}
-					secondaryButtonText={t('tasklist.processesFirstTimeModalCancelButtonLabel')}
-					primaryButtonText={t('tasklist.processesFirstTimeModalContinueButtonLabel')}
-					open={!hasConsented}
-					onRequestClose={leaveProcesses}
-					onSecondarySubmit={leaveProcesses}
-					onRequestSubmit={handleRequestSubmit}
-					preventCloseOnClickOutside
-					size="md"
-				>
-					<div className={styles.content}>
-						<img className={styles.image} src={Illustration} alt="" />
+			<Dialog
+				open={!hasConsented}
+				onOpenChange={(open) => {
+					if (!open) {
+						leaveProcesses();
+					}
+				}}
+			>
+				<DialogContent size="md" onInteractOutside={(event) => event.preventDefault()}>
+					<DialogHeader>
+						<DialogTitle>{t('tasklist.processesFirstTimeModalHeading')}</DialogTitle>
+					</DialogHeader>
+					<DialogBody className="flex flex-col items-center text-center">
+						<img className="mb-8 h-auto w-full max-w-[404px]" src={Illustration} alt="" />
 						<div>
-							<p>{t('tasklist.processesFirstTimeModalBodyPart1')}</p>
+							<DialogDescription>{t('tasklist.processesFirstTimeModalBodyPart1')}</DialogDescription>
 							<p>{t('tasklist.processesFirstTimeModalBodyPart2')}</p>
-							<br />
 							<p>{t('tasklist.processesFirstTimeModalBodyPart3')}</p>
 						</div>
-					</div>
-				</Modal>
-			</FeatureFlags>
+					</DialogBody>
+					<DialogFooter>
+						<Button type="button" variant="secondary" onClick={leaveProcesses}>
+							{t('tasklist.processesFirstTimeModalCancelButtonLabel')}
+						</Button>
+						<Button type="button" onClick={handleConsent}>
+							{t('tasklist.processesFirstTimeModalContinueButtonLabel')}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 			{hasConsented ? children : null}
 		</>
 	);

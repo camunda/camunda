@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback} from 'react';
-import {useNavigate} from '@tanstack/react-router';
 import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useNavigate} from '@tanstack/react-router';
+import {useCallback} from 'react';
 import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
+import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/components/TaskDetailsForm';
 import {useTaskCompletion} from '#/tasklist/modules/task-details/useTaskCompletion';
-import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/TaskDetailsForm';
-import {TaskDetailsVariables} from '#/tasklist/modules/task-details-variables/TaskDetailsVariables';
+import {TaskDetailsVariables} from '#/tasklist/modules/task-details-variables/components/TaskDetailsVariables';
 
 type Props = {
 	task: UserTask;
@@ -54,7 +54,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 		userTaskKey: task.userTaskKey,
 		currentUser: currentUser.username,
 		taskState: task.state,
-		assignee: task.assignee,
+		assignee: task.assignee ?? null,
 		onComplete,
 	});
 	const isEditingAllowed = currentUser.username === task.assignee && task.state === 'CREATED';

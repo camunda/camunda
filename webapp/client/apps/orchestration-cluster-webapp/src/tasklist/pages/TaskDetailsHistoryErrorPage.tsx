@@ -6,14 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button, Layer, Link, Stack} from '@carbon/react';
-import {Launch} from '@carbon/react/icons';
+import {Button} from '@camunda/design-system';
+import {ExternalLink} from 'lucide-react';
 import {useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {Trans, useTranslation} from 'react-i18next';
 import {ForbiddenError} from '#/shared/errors';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import SvgForbidden from '#/shared/svg/Forbidden';
-import styles from './TaskDetailsHistoryErrorPage.module.scss';
 import {useCallback} from 'react';
 
 const DOCS_URL = 'https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/';
@@ -37,23 +36,27 @@ const ForbiddenHistoryPage: React.FC = () => {
 	const {t} = useTranslation();
 
 	return (
-		<div className={styles.container} data-testid="task-details-history-forbidden">
-			<Layer withBackground className={styles.card}>
-				<Stack orientation="horizontal" gap={6}>
-					<SvgForbidden aria-hidden />
-					<Stack gap={6}>
-						<Stack gap={3}>
-							<h3 className={styles.title}>{t('tasklist.taskDetailsHistoryForbiddenTitle')}</h3>
-							<div className={styles.description}>
-								<Trans i18nKey="tasklist.taskDetailsHistoryForbiddenDesc" components={{strong: <strong />}} />
-							</div>
-						</Stack>
-						<Link href={DOCS_URL} target="_blank" renderIcon={Launch}>
+		<div
+			className="grid min-h-0 w-full flex-1 content-center p-8 max-xl:p-4"
+			data-testid="task-details-history-forbidden"
+		>
+			<div className="flex min-w-0 gap-6 rounded-xl border border-border bg-background p-8 shadow-sm max-xl:p-4">
+				<SvgForbidden className="shrink-0 max-xl:hidden" aria-hidden />
+				<div className="flex min-w-0 flex-col items-start gap-6">
+					<div className="flex flex-col gap-2">
+						<h2 className="text-xl leading-7 font-normal">{t('tasklist.taskDetailsHistoryForbiddenTitle')}</h2>
+						<div className="text-sm leading-5 font-normal">
+							<Trans i18nKey="tasklist.taskDetailsHistoryForbiddenDesc" components={{strong: <strong />}} />
+						</div>
+					</div>
+					<Button asChild variant="link" className="h-auto max-w-full justify-start whitespace-normal p-0 text-left">
+						<a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
 							{t('tasklist.taskDetailsHistoryForbiddenLinkLabel')}
-						</Link>
-					</Stack>
-				</Stack>
-			</Layer>
+							<ExternalLink aria-hidden />
+						</a>
+					</Button>
+				</div>
+			</div>
 		</div>
 	);
 };
@@ -66,19 +69,17 @@ const GenericHistoryErrorPage: React.FC<GenericHistoryErrorPageProps> = ({onRetr
 	const {t} = useTranslation();
 
 	return (
-		<div className={styles.container} data-testid="task-details-history-error">
-			<Layer withBackground className={styles.card}>
-				<Stack orientation="horizontal" gap={6}>
-					<SvgErrorRobot aria-hidden />
-					<Stack gap={6}>
-						<Stack gap={3}>
-							<h3 className={styles.title}>{t('tasklist.taskDetailsHistoryErrorTitle')}</h3>
-							<p className={styles.description}>{t('tasklist.taskDetailsHistoryErrorMessage')}</p>
-						</Stack>
-						<Button onClick={onRetry}>{t('errorGenericErrorPageButtonLabel')}</Button>
-					</Stack>
-				</Stack>
-			</Layer>
+		<div className="grid min-h-0 w-full flex-1 content-center p-8 max-xl:p-4" data-testid="task-details-history-error">
+			<div className="flex min-w-0 gap-6 rounded-xl border border-border bg-background p-8 shadow-sm max-xl:p-4">
+				<SvgErrorRobot className="shrink-0 max-xl:hidden" aria-hidden />
+				<div className="flex min-w-0 flex-col items-start gap-6">
+					<div className="flex flex-col gap-2">
+						<h2 className="text-xl leading-7 font-normal">{t('tasklist.taskDetailsHistoryErrorTitle')}</h2>
+						<p className="text-sm leading-5 font-normal">{t('tasklist.taskDetailsHistoryErrorMessage')}</p>
+					</div>
+					<Button onClick={onRetry}>{t('errorGenericErrorPageButtonLabel')}</Button>
+				</div>
+			</div>
 		</div>
 	);
 };

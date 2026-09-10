@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineNotification} from '@carbon/react';
+import {Alert} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import type {FallbackProps} from 'react-error-boundary';
 
@@ -14,12 +14,7 @@ const ProcessesSelectErrorFallback: React.FC<FallbackProps> = () => {
 	const {t} = useTranslation();
 
 	return (
-		<InlineNotification
-			kind="error"
-			hideCloseButton
-			role="alert"
-			title={t('tasklist.customFiltersModalProcessDefinitionsLoadError')}
-		/>
+		<Alert variant="destructive" role="alert" title={t('tasklist.customFiltersModalProcessDefinitionsLoadError')} />
 	);
 };
 

@@ -8,8 +8,8 @@
 
 import {render} from 'vitest-browser-react';
 import {it} from '#/vitest-modules/test-extend';
-import {describe, expect, beforeEach, afterEach} from 'vitest';
-import {storeStateLocally, clearStateLocally} from '#/shared/browser-storage/local-storage';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {clearStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {NoTaskSelectedPage} from './NoTaskSelectedPage';
 
 describe('<NoTaskSelectedPage />', () => {
@@ -27,22 +27,28 @@ describe('<NoTaskSelectedPage />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Welcome to Tasklist'})).toBeVisible();
 	});
 
-	it('should show the tutorial paragraph for a new user', async () => {
+	it('should show the tutorial action for a new user', async () => {
 		const screen = await render(<NoTaskSelectedPage hasNoTasks={false} />);
+		const tutorialLink = screen.getByRole('link', {name: 'View tutorial'});
 
-		await expect.element(screen.getByTestId('tutorial-paragraph')).toBeVisible();
+		await expect.element(tutorialLink).toBeVisible();
+		await expect
+			.element(tutorialLink)
+			.toHaveAttribute('href', 'https://modeler.cloud.camunda.io/tutorial/quick-start-human-tasks');
+		await expect.element(tutorialLink).toHaveAttribute('target', '_blank');
+		await expect.element(tutorialLink).toHaveAttribute('rel', 'noreferrer');
 	});
 
 	it('should show the task-available prompt for a new user when there are tasks', async () => {
 		const screen = await render(<NoTaskSelectedPage hasNoTasks={false} />);
 
-		await expect.element(screen.getByText('Select a task to view its details.')).toBeVisible();
+		await expect.element(screen.getByText(/Select a task to view its details\./)).toBeVisible();
 	});
 
 	it('should not show the task-available prompt for a new user when there are no tasks', async () => {
-		const screen = await render(<NoTaskSelectedPage hasNoTasks={true} />);
+		const screen = await render(<NoTaskSelectedPage hasNoTasks />);
 
-		await expect.element(screen.getByText('Select a task to view its details.')).not.toBeInTheDocument();
+		await expect.element(screen.getByText(/Select a task to view its details\./)).not.toBeInTheDocument();
 	});
 
 	it('should show the pick-a-task prompt for a returning user', async () => {
@@ -64,7 +70,7 @@ describe('<NoTaskSelectedPage />', () => {
 	it('should render nothing for a returning user when there are no tasks', async () => {
 		storeStateLocally('tasklist.hasCompletedTask', true);
 
-		const screen = await render(<NoTaskSelectedPage hasNoTasks={true} />);
+		const screen = await render(<NoTaskSelectedPage hasNoTasks />);
 
 		await expect.element(screen.getByRole('heading', {name: 'Pick a task to work on'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('heading', {name: 'Welcome to Tasklist'})).not.toBeInTheDocument();

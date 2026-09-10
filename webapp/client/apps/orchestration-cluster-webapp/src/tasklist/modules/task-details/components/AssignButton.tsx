@@ -6,19 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {t as _t} from 'i18next';
-import {useTranslation} from 'react-i18next';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
-import {useTaskAssignment, type AssignmentStatus} from '#/tasklist/modules/task-details/useTaskAssignment';
-import {AsyncActionButton} from './AsyncActionButton/AsyncActionButton';
+import {t as _t} from 'i18next';
 import {useMemo} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useTaskAssignment, type AssignmentStatus} from '#/tasklist/modules/task-details/useTaskAssignment';
+import {AsyncActionButton} from './AsyncActionButton';
 
-const getAssignmentToggleLabels = (): Record<Exclude<AssignmentStatus, 'off'>, string> => ({
-	assigning: _t('tasklist.taskHeaderAssigning'),
-	unassigning: _t('tasklist.taskHeaderUnassigning'),
-	assignmentSuccessful: _t('tasklist.taskHeaderAssignmentSuccessful'),
-	unassignmentSuccessful: _t('tasklist.taskHeaderUnassignmentSuccessful'),
-});
+const getAssignmentToggleDescription = (status: AssignmentStatus): string | undefined => {
+	if (status === 'assigning') {
+		return _t('tasklist.taskHeaderAssigning');
+	}
+
+	if (status === 'unassigning') {
+		return _t('tasklist.taskHeaderUnassigning');
+	}
+
+	return undefined;
+};
 
 type Props = {
 	userTaskKey: string;
@@ -28,37 +33,26 @@ type Props = {
 };
 
 const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, currentUser}) => {
-	const isAssigned = typeof assignee === 'string' && taskState !== 'ASSIGNING';
 	const {t} = useTranslation();
+	const isAssigned = typeof assignee === 'string' && taskState !== 'ASSIGNING';
 	const {status, isBusy, toggle} = useTaskAssignment({
 		userTaskKey,
 		currentUser,
 		taskState,
 		assignee,
 	});
-
-	function getAsyncActionButtonStatus() {
-		if (isBusy || status !== 'off') {
-			const ACTIVE_STATES: AssignmentStatus[] = ['assigning', 'unassigning'];
-
-			return ACTIVE_STATES.includes(status) ? 'active' : 'finished';
-		}
-
-		return 'inactive';
-	}
-
-	const inlineLoadingProps = useMemo(
+	const loadingProps = useMemo(
 		() =>
 			({
-				description: status === 'off' ? undefined : getAssignmentToggleLabels()[status],
-				'aria-live': ['assigning', 'unassigning'].includes(status) ? 'assertive' : 'polite',
+				description: getAssignmentToggleDescription(status),
+				ariaLive: isBusy ? 'assertive' : 'polite',
 			}) as const,
-		[status],
+		[status, isBusy],
 	);
 	const buttonProps = useMemo(
 		() =>
 			({
-				kind: isAssigned ? 'ghost' : 'primary',
+				variant: isAssigned ? 'secondary' : 'default',
 				size: 'sm',
 				type: 'button',
 				onClick: toggle,
@@ -70,11 +64,7 @@ const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, curren
 	);
 
 	return (
-		<AsyncActionButton
-			inlineLoadingProps={inlineLoadingProps}
-			buttonProps={buttonProps}
-			status={getAsyncActionButtonStatus()}
-		>
+		<AsyncActionButton {...loadingProps} buttonProps={buttonProps} status={isBusy ? 'active' : 'inactive'}>
 			{isAssigned ? t('tasklist.taskDetailsUnassign') : t('tasklist.taskDetailsAssignToMe')}
 		</AsyncActionButton>
 	);

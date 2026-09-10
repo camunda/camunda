@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {TooltipProvider} from '@camunda/design-system';
 import {render} from 'vitest-browser-react';
 import {describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
@@ -13,7 +14,11 @@ import {ProcessDiagramView} from './ProcessDiagramView';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 
 const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
-	return <div style={{height: '400px', width: '800px'}}>{children}</div>;
+	return (
+		<TooltipProvider>
+			<div style={{height: '400px', width: '800px'}}>{children}</div>
+		</TooltipProvider>
+	);
 };
 
 describe('<ProcessDiagramView />', () => {
