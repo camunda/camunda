@@ -152,6 +152,27 @@ func TestDeleteDataDirRemovesH2Data(t *testing.T) {
 	require.True(t, os.IsNotExist(err), "data directory should be removed for H2 cleanup")
 }
 
+func TestDeleteDataDirPreservesLocalSecrets(t *testing.T) {
+	baseDir := t.TempDir()
+	version := "8.10.0"
+	dataDir := filepath.Join(baseDir, "camunda-zeebe-"+version, "data")
+	secretPath := filepath.Join(baseDir, "secrets", "API_KEY")
+	require.NoError(t, os.MkdirAll(dataDir, 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Dir(secretPath), 0o700))
+	require.NoError(t, os.WriteFile(secretPath, []byte("secret-value"), 0o600))
+	processes := types.Processes{
+		Camunda: types.Process{
+			Version: version,
+			PidPath: filepath.Join(baseDir, "camunda.process"),
+		},
+	}
+
+	deleteDataDir(processes)
+
+	_, err := os.Stat(secretPath)
+	require.NoError(t, err, "local secret should remain after H2 data cleanup")
+}
+
 func TestDeleteDataDirSkipsWhenVersionEmpty(t *testing.T) {
 	baseDir := t.TempDir()
 	targetDir := filepath.Join(baseDir, "camunda-zeebe-", "data")
