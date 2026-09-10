@@ -64,6 +64,14 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
+      - name: Build frontend
+        # Mirrors the smoke's heavy Optimize frontend build to reproduce the runner
+        # resource pressure that precedes "Start services".
+        if: ${{ env.BUILD_FROM_SOURCE == 'true' }}
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+
       - uses: ./.github/actions/build-zeebe
         if: ${{ env.BUILD_FROM_SOURCE == 'true' }}
         id: build-camunda
