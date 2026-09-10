@@ -41,11 +41,9 @@ inputs:
     description: |
       If enabled, logs into Echo (reg.echohq.com) with a CI account.
       Echo login is automatically disabled for fork PRs.
-      Implied by `minimus` while the Echo migration is in progress:
-      camunda.Dockerfile builds on Echo and optimize.Dockerfile still builds on
-      Minimus, and several workflows build both, so a caller asking for
-      hardened base images needs both registries. Set this on its own once a
-      workflow no longer needs Minimus.
+      Needed by any job that builds camunda.Dockerfile against a private base.
+      Jobs building only optimize.Dockerfile need `minimus` instead; jobs
+      building both need both, until Optimize also moves to Echo.
     required: false
     default: "false"
   java-distribution:
@@ -324,7 +322,7 @@ runs:
     # Echo login is disabled for fork PRs; those build with BASE=public.
     if: >-
       steps.is-fork.outputs.is-fork != 'true' &&
-      (inputs.echo == 'true' || inputs.minimus == 'true')
+      inputs.echo == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
       DOCKER_USERNAME: ${{ steps.secrets.outputs.echo-username }}
