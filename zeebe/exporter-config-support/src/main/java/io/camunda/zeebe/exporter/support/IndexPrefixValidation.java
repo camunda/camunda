@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.support;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.NullMarked;
@@ -44,6 +45,7 @@ public final class IndexPrefixValidation {
   }
 
   public static boolean exceedsMaxLength(final @Nullable String prefix) {
-    return prefix != null && prefix.length() > MAX_PREFIX_LENGTH;
+    // ES/OS enforce the 255-char index-name limit in UTF-8 bytes, not UTF-16 code units
+    return prefix != null && prefix.getBytes(StandardCharsets.UTF_8).length > MAX_PREFIX_LENGTH;
   }
 }

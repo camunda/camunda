@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -205,9 +206,11 @@ public class OpensearchExporter implements Exporter {
     if (IndexPrefixValidation.exceedsMaxLength(prefix)) {
       throw new ExporterException(
           String.format(
-              "Opensearch prefix must not exceed %d characters, to keep generated index names "
-                  + "within Opensearch's 255-character limit. Current value: %s (%d characters)",
-              IndexPrefixValidation.MAX_PREFIX_LENGTH, prefix, prefix.length()));
+              "Opensearch prefix must not exceed %d bytes (UTF-8), to keep generated index names "
+                  + "within Opensearch's 255-byte limit. Current value: %s (%d bytes)",
+              IndexPrefixValidation.MAX_PREFIX_LENGTH,
+              prefix,
+              prefix.getBytes(StandardCharsets.UTF_8).length));
     }
 
     if (configuration.bulk.memoryLimit > RECOMMENDED_MAX_BULK_MEMORY_LIMIT) {

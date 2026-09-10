@@ -646,6 +646,15 @@ final class OpensearchExporterTest {
       assertThatCode(() -> exporter.configure(context)).doesNotThrowAnyException();
     }
 
+    @Test
+    void shouldNotAllowMultibyteIndexPrefixExceedingMaxLengthInBytes() {
+      // given - each 'é' is 2 UTF-8 bytes, so this has string length 120 but 240 bytes
+      config.index.prefix = "é".repeat(120);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
     @ParameterizedTest(name = "{0}")
     @ValueSource(ints = {-1, 0})
     void shouldForbidNonPositiveNumberOfShards(final int invalidNumberOfShards) {
