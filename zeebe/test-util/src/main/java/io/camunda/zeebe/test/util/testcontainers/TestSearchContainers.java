@@ -8,14 +8,20 @@
 package io.camunda.zeebe.test.util.testcontainers;
 
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Objects;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @SuppressWarnings("resource")
 public final class TestSearchContainers {
+  // startup can be slow in CI
+  private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(5);
+
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(
@@ -80,12 +86,23 @@ public final class TestSearchContainers {
             "elasticsearch-fast-startup.options",
             "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
             BindMode.READ_ONLY)
-        // can be slow in CI
-        .withStartupTimeout(Duration.ofMinutes(5))
+        .withStartupTimeout(STARTUP_TIMEOUT)
         .withEnv("action.auto_create_index", "true")
         .withEnv("xpack.security.enabled", "false")
         .withEnv("xpack.watcher.enabled", "false")
         .withEnv("xpack.ml.enabled", "false")
         .withEnv("action.destructive_requires_name", "false");
+  }
+
+  public static HttpWaitStrategy waitForClusterHealth() {
+    // only waiting for yellow as that means we should be able to start
+    // using the cluster - even if not all replicas are ready
+    return (HttpWaitStrategy)
+        Wait.forHttp("/_cluster/health?wait_for_status=yellow")
+            .forPort(9200)
+            .forStatusCode(200)
+            .forResponsePredicate(
+                response -> !response.toLowerCase(Locale.ROOT).contains("\"red\""))
+            .withStartupTimeout(STARTUP_TIMEOUT);
   }
 }
