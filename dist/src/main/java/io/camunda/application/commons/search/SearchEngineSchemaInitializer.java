@@ -14,6 +14,7 @@ import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -213,15 +214,17 @@ public class SearchEngineSchemaInitializer
   /**
    * A schema that the running version cannot migrate stays incompatible however often it is
    * retried, so this is terminal too. A missing 'monitor' cluster privilege is also terminal: no
-   * amount of retrying grants the permission. Everything else — an unreachable cluster, a rejected
-   * request, a mapping the current attempt could not validate, a cluster that has not yet turned
-   * yellow/green — is retried, because it may be repaired without restarting the node.
+   * amount of retrying grants the permission. So is a schema the descriptors cannot validate
+   * against the cluster: that diff is deterministic. Everything else — an unreachable cluster, a
+   * rejected request, a cluster that has not yet turned yellow/green — is retried, because it may
+   * be repaired without restarting the node.
    */
   @VisibleForTesting
   static boolean isTerminal(final Throwable failure) {
     return failure instanceof IncompatibleVersionException
         || failure instanceof TerminalSchemaInitializationException
-        || failure instanceof SearchEngineHealthCheckPermissionException;
+        || failure instanceof SearchEngineHealthCheckPermissionException
+        || failure instanceof IndexSchemaValidationException;
   }
 
   /**
