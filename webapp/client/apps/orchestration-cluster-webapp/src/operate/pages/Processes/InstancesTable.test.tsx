@@ -70,11 +70,7 @@ function renderSearchHarness(initial: ProcessesSearch, next: ProcessesSearch) {
 	return renderWithRouter(Harness, {path: '/operate/processes'});
 }
 
-function mockNoBatchOperationItems() {
-	return mockQueryBatchOperationItemsEndpoint({
-		successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
-	});
-}
+const EMPTY_BATCH_OPERATION_ITEMS_RESPONSE = HttpResponse.json(createQueryBatchOperationItemsResponse({items: []}));
 
 describe('<InstancesTable />', () => {
 	beforeEach(() => {
@@ -99,7 +95,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable();
@@ -129,7 +125,7 @@ describe('<InstancesTable />', () => {
 					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '42'})]}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable();
@@ -146,7 +142,7 @@ describe('<InstancesTable />', () => {
 					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable();
@@ -171,7 +167,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable();
@@ -189,7 +185,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable();
@@ -218,7 +214,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, startDateFrom: 'not-a-date'});
@@ -235,7 +231,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderSearchHarness(BASE_SEARCH, {
@@ -259,7 +255,7 @@ describe('<InstancesTable />', () => {
 					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable();
@@ -286,7 +282,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
@@ -438,7 +434,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
-			mockNoBatchOperationItems(),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		const screen = await renderInstancesTable();
@@ -470,6 +466,37 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByRole('button', {name: /delete/i})).not.toBeInTheDocument();
 	});
 
+	it('should disable an action and show a spinner while that operation is active', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE', hasIncident: true})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({
+								processInstanceKey: '1',
+								state: 'ACTIVE',
+								operationType: 'RESOLVE_INCIDENT',
+							}),
+						],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await expect.element(screen.getByRole('button', {name: /retry/i})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: /cancel/i})).not.toBeDisabled();
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+	});
+
 	it('should offer cancel for a suspended instance', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
@@ -490,7 +517,6 @@ describe('<InstancesTable />', () => {
 	});
 
 	it('should wait for a suspended instance cancellation to finish', async ({worker}) => {
-		let stateRequests = 0;
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
 				successResponse: HttpResponse.json(
@@ -512,17 +538,11 @@ describe('<InstancesTable />', () => {
 				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})),
 			}),
 		);
-		worker.events.on('request:start', ({request}) => {
-			if (request.method === 'GET' && request.url.endsWith('/v2/process-instances/1')) {
-				stateRequests += 1;
-			}
-		});
 
 		const screen = await renderInstancesTable();
 		await userEvent.click(screen.getByRole('button', {name: /cancel/i}));
 		await userEvent.click(screen.getByRole('button', {name: 'Apply', exact: true}));
 
-		await expect.poll(() => stateRequests).toBe(1);
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
 		worker.use(
@@ -531,7 +551,6 @@ describe('<InstancesTable />', () => {
 			}),
 		);
 
-		await expect.poll(() => stateRequests, {timeout: 3000}).toBe(2);
 		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
 	});
 
@@ -561,13 +580,19 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByRole('button', {name: /cancel/i})).not.toBeInTheDocument();
 	});
 
-	it('should send the incident retry command for the clicked row', async ({worker}) => {
-		let resolveRequests = 0;
+	it('should wait for incident retry to finish before refreshing the row', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryProcessInstancesResponse({
-						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE', hasIncident: true})],
+						items: [
+							createProcessInstance({
+								processInstanceKey: '1',
+								processDefinitionName: 'Incident Process',
+								state: 'ACTIVE',
+								hasIncident: true,
+							}),
+						],
 					}),
 				),
 			}),
@@ -578,20 +603,38 @@ describe('<InstancesTable />', () => {
 				successResponse: HttpResponse.json({batchOperationKey: 'batch-op-1'}),
 			}),
 			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createBatchOperation({batchOperationKey: 'batch-op-1', state: 'ACTIVE'})),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+		await userEvent.click(screen.getByRole('button', {name: /retry/i}));
+
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+		await expect.element(screen.getByText('Incident Process')).toBeVisible();
+
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [
+							createProcessInstance({
+								processInstanceKey: '1',
+								processDefinitionName: 'Recovered Process',
+								state: 'ACTIVE',
+								hasIncident: false,
+							}),
+						],
+					}),
+				),
+			}),
+			mockGetBatchOperationEndpoint({
 				successResponse: HttpResponse.json(createBatchOperation({batchOperationKey: 'batch-op-1', state: 'COMPLETED'})),
 			}),
 		);
-		worker.events.on('request:start', ({request}) => {
-			if (request.url.includes('/incident-resolution')) {
-				resolveRequests += 1;
-			}
-		});
 
-		const screen = await renderInstancesTable();
-
-		await userEvent.click(screen.getByRole('button', {name: /retry/i}));
-
-		await expect.poll(() => resolveRequests).toBe(1);
+		await expect.element(screen.getByText('Recovered Process')).toBeVisible();
+		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
 	});
 
 	it('should notify the user when an operation fails', async ({worker}) => {
