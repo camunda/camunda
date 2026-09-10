@@ -94,7 +94,7 @@ test.describe('Roles functionalities', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test.skip('User inherits permissions through role assignment', async ({
+  test('User inherits permissions through role assignment', async ({
     page,
     identityRolesPage,
     identityAuthorizationsPage,
@@ -208,7 +208,7 @@ test.describe('Roles functionalities', () => {
     });
   });
 
-  test.skip('As an Admin user I can unassign user from a role', async ({
+  test('As an Admin user I can unassign user from a role', async ({
     page,
     identityRolesPage,
     identityRolesDetailsPage,
