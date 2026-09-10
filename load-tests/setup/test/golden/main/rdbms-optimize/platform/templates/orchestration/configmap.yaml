@@ -118,8 +118,8 @@ data:
             history:
               els-rollover-date-format: "date"
               rollover-interval: "1d"
-              rollover-batch-size: 100
-              wait-period-before-archiving: "1h"
+              rollover-batch-size: 500
+              wait-period-before-archiving: "1m"
               delay-between-runs: 2000
               max-delay-between-runs: 60000
               policy-name: "camunda-retention-policy"
