@@ -61,7 +61,7 @@ dependencies {
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":camunda-client-java"))
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.com.auth0.java.jwt)
   testImplementation(libs.org.awaitility.awaitility)

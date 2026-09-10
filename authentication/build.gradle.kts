@@ -47,7 +47,7 @@ dependencies {
   implementation(project(":camunda-spring-utils"))
   implementation(project(":camunda-security-core"))
   testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.wiremock.wiremock.standalone)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)

@@ -50,7 +50,7 @@ dependencies {
   implementation(project(":camunda-client-java"))
   api(project(":camunda-testcontainer"))
   api(libs.org.junit.jupiter.junit.jupiter.api)
-  api(libs.org.junit.platform.junit.platform.commons.x1)
+  api(libs.org.junit.platform.junit.platform.commons)
   api(libs.io.swagger.core.v3.swagger.annotations.jakarta)
   api(libs.com.google.guava.guava)
   implementation(project(":camunda-search-client-opensearch"))
