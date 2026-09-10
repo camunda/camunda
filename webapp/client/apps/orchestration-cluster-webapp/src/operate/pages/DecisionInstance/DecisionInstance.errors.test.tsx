@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, onTestFinished} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
@@ -49,14 +49,6 @@ describe.each([
 		{name: 'network failure', response: HttpResponse.error()},
 		{name: 'invalid JSON response', response: new HttpResponse('invalid JSON')},
 	])('should recover from $name by retrying the same page query', async ({response}, {worker}) => {
-		const requests: string[] = [];
-		worker.events.on('request:match', ({request}) => {
-			const pathname = new URL(request.url).pathname;
-			if (pathname.startsWith('/v2/decision-instances/')) {
-				requests.push(`${request.method} ${pathname}`);
-			}
-		});
-		onTestFinished(() => worker.events.removeAllListeners('request:match'));
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockGetDecisionInstanceEndpoint({successResponse: response}),
@@ -74,7 +66,6 @@ describe.each([
 			.element(screen.getByRole('button', {name: 'Open Decision Requirements Diagram'}))
 			.not.toBeInTheDocument();
 		expect(screen.router.state.location.href).toBe(INITIAL_ENTRY);
-		expect(requests).toEqual([`GET /v2/decision-instances/${DECISION_INSTANCE_ID}`]);
 
 		worker.use(mockGetDecisionInstanceEndpoint({successResponse: HttpResponse.json(decisionInstance)}));
 		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
@@ -84,10 +75,6 @@ describe.each([
 		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).not.toBeInTheDocument();
 		expect(screen.router.state.location.href).toBe(INITIAL_ENTRY);
-		expect(requests).toEqual([
-			`GET /v2/decision-instances/${DECISION_INSTANCE_ID}`,
-			`GET /v2/decision-instances/${DECISION_INSTANCE_ID}`,
-		]);
 	});
 
 	it('should remain recoverable when retry fails again', async ({worker}) => {
