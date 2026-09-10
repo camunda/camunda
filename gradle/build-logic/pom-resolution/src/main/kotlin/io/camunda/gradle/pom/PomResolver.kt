@@ -23,34 +23,34 @@ class PomResolver(private val pomXml: String) {
     return element.textContent.trim().takeIf { it.isNotBlank() }
   }
 
-  fun resolveProperty(propertyName: String): String =
-    resolveProperty(propertyName, rawProperties, emptyList())
+  fun resolveProperty(propertyName: String): String = resolvePomProperty(propertyName, rawProperties)
 
-  fun resolveProperty(propertyName: String, vararg propertyMaps: Map<String, String>): String {
-    val resolvedProperties = mergePropertyMaps(propertyMaps.toList())
-    return resolveProperty(propertyName, resolvedProperties, emptyList())
-  }
+  fun resolveProperty(propertyName: String, vararg propertyMaps: Map<String, String>): String =
+    resolvePomProperty(propertyName, *propertyMaps)
 
   fun resolveProperties(vararg propertyMaps: Map<String, String>): Map<String, String> {
     val resolvedProperties = mergePropertyMaps(propertyMaps.toList())
     return resolvedProperties.keys.associateWith { key ->
-      resolveProperty(key, resolvedProperties, emptyList())
+      resolvePomProperty(key, resolvedProperties)
     }
   }
+}
 
-  private fun resolveProperty(
-    propertyName: String,
-    properties: Map<String, String>,
-    resolving: List<String>,
-  ): String {
-    if (propertyName in resolving) {
-      error("Cyclic POM property reference: ${(resolving + propertyName).joinToString(" -> ")}")
-    }
+fun resolvePomProperty(propertyName: String, vararg propertyMaps: Map<String, String>): String =
+  resolvePomProperty(propertyName, mergePropertyMaps(propertyMaps.toList()), emptyList())
 
-    val rawValue = properties[propertyName] ?: error("Missing POM property: $propertyName")
-    return propertyReferencePattern.replace(rawValue) { match ->
-      resolveProperty(match.groupValues[1], properties, resolving + propertyName)
-    }
+private fun resolvePomProperty(
+  propertyName: String,
+  properties: Map<String, String>,
+  resolving: List<String>,
+): String {
+  if (propertyName in resolving) {
+    error("Cyclic POM property reference: ${(resolving + propertyName).joinToString(" -> ")}")
+  }
+
+  val rawValue = properties[propertyName] ?: error("Missing POM property: $propertyName")
+  return propertyReferencePattern.replace(rawValue) { match ->
+    resolvePomProperty(match.groupValues[1], properties, resolving + propertyName)
   }
 }
 
@@ -74,9 +74,7 @@ private fun extractProperties(root: Element): Map<String, String> {
 
 private fun mergePropertyMaps(propertyMaps: List<Map<String, String>>): Map<String, String> {
   val merged = linkedMapOf<String, String>()
-  propertyMaps.forEach { propertyMap ->
-    merged.putAll(propertyMap)
-  }
+  propertyMaps.forEach { propertyMap -> merged.putAll(propertyMap) }
   return merged
 }
 
