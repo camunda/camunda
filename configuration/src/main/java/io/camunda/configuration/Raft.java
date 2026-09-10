@@ -112,10 +112,10 @@ public class Raft {
 
   /**
    * Sets the timeout for all requests sent by raft leaders and followers. When modifying the values
-   * for requestTimeout, it might also be useful to update snapshotTimeout.
+   * for requestTimeout, it might also be useful to update snapshotRequestTimeout.
    *
-   * <p>When not set, the partition factory derives the value from the configured electionTimeout at
-   * startup.
+   * <p>When not set, it is derived from the configured electionTimeout during configuration
+   * resolution.
    */
   private Duration requestTimeout = null;
 
