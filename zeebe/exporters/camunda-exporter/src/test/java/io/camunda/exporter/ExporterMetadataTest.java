@@ -10,6 +10,7 @@ package io.camunda.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.test.utils.TestObjectMapper;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 final class ExporterMetadataTest {
@@ -27,6 +28,7 @@ final class ExporterMetadataTest {
 
     // then
     assertThat(destination.getLastIncidentUpdatePosition()).isEqualTo(3);
+    assertThat(destination.getLastIncidentUpdatePositions()).isEqualTo(Map.of(0, 3L));
   }
 
   @Test
@@ -40,5 +42,6 @@ final class ExporterMetadataTest {
 
     // then
     assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(3);
+    assertThat(metadata.getLastIncidentUpdatePositions()).isEqualTo(Map.of(0, 3L));
   }
 }
