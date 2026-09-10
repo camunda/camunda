@@ -5,12 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.rdbms;
+package io.camunda.it.rdbms.db;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -27,6 +29,7 @@ import java.util.UUID;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.core.env.MapPropertySource;
@@ -48,6 +51,7 @@ import org.springframework.mock.env.MockEnvironment;
  * needs a live HTTP surface and lives in {@code
  * PhysicalTenantRdbmsSchemaInitializationIsolationIT}.
  */
+@Tag("rdbms")
 @Timeout(120)
 class RdbmsSchemaInitializerH2IT {
 
