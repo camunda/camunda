@@ -19,7 +19,11 @@ shown below.
 
 ### Prerequisites
 
-The exporter requires a Camunda license key and a cluster ID.
+The exporter requires a Camunda license key and a cluster ID. Both are resolved
+automatically from the broker context — see
+[cluster id](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#cluster)
+and [license key](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#licensing).
+No additional setup is needed.
 
 **License key.** The exporter authenticates to the Camunda analytics endpoint using your
 Camunda 8 Self-Managed license key. The raw key is never sent over the network — it is
@@ -34,25 +38,7 @@ deduplication key used by the analytics backend (`camunda.cluster.id` +
 `camunda.partition.id` + `camunda.log.position`). The value should be stable per cluster —
 changing it makes existing events look like they come from a different cluster.
 
-How the exporter obtains these values depends on your Camunda version:
-
-- **Camunda 8.10 and later:** [cluster id](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#cluster)
-  and [license key](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#licensing)
-  values are resolved automatically from the broker context. No additional setup is needed.
-- **Camunda 8.9 and earlier:** the broker does not expose the license key or cluster ID
-  through the context API. Provide them via environment variables on every broker:
-  - `CAMUNDA_LICENSE_KEY` — the Camunda license key.
-  - `ZEEBE_BROKER_CLUSTER_CLUSTERID` — the cluster identifier. This is the broker's
-    standard cluster-ID setting (`zeebe.broker.cluster.clusterId`); if it is already
-    configured on the broker, the analytics exporter picks it up automatically.
-
-  Without these variables, the exporter fails to start on 8.9 and earlier.
-
 ### YAML configuration
-
-Two configuration styles are supported.
-
-**Unified configuration (Camunda 8.9 and later, recommended):**
 
 ```yaml
 camunda:
@@ -74,34 +60,10 @@ camunda:
             - optional
 ```
 
-**Legacy configuration (Camunda 8.8 and earlier):**
-
-```yaml
-zeebe:
-  broker:
-    exporters:
-      analytics:
-        className: io.camunda.exporter.analytics.AnalyticsExporter
-        jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
-        args:
-          endpoint: https://telemetry.camunda.io
-          pushInterval: PT5M
-          maxQueueSize: 2048
-          maxBatchSize: 512
-          httpConnectTimeout: PT3S
-          httpRequestTimeout: PT3S
-          httpMaxRetryAttempts: 3
-          samplingRate: 1.0
-          categories:
-            - contractual
-            - optional
-```
-
 ### Environment variables
 
-The same settings can be provided via environment variables.
-
-**Unified (8.9+):** `CAMUNDA_DATA_EXPORTERS_ANALYTICS_*`
+The same settings can be provided via environment variables, prefixed
+`CAMUNDA_DATA_EXPORTERS_ANALYTICS_*`:
 
 ```sh
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
@@ -116,20 +78,34 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ```
 
-**Legacy (8.8 and earlier):** `ZEEBE_BROKER_EXPORTERS_ANALYTICS_*`
+### Configuring as an external JAR
 
-```sh
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://telemetry.camunda.io
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPCONNECTTIMEOUT=PT3S
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPREQUESTTIMEOUT=PT3S
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPMAXRETRYATTEMPTS=3
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
+The examples above assume the exporter class is already on the broker's classpath, which is
+the case starting with Camunda 8.10, where the exporter ships in-tree. On any version where
+that is not true, you can still load a self-built exporter jar the same way Zeebe loads any
+external exporter: point `jarPath` at the jar and use the classic
+`zeebe.broker.exporters.<name>` configuration style instead of the unified `camunda.data.exporters.<name>`
+style used above:
+
+```yaml
+zeebe:
+  broker:
+    exporters:
+      analytics:
+        className: io.camunda.exporter.analytics.AnalyticsExporter
+        jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
+        args:
+          endpoint: https://telemetry.camunda.io
+          categories:
+            - contractual
+            - optional
 ```
+
+The same `args` keys as the [configuration reference](#configuration-reference) apply, and the
+equivalent environment variables are available under `ZEEBE_BROKER_EXPORTERS_ANALYTICS_*` (e.g.
+`ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT`). This section only covers configuring the
+broker directly; it makes no claim about whether or how a particular deployment tool (an
+operator, a Helm chart, etc.) exposes `jarPath` for you — check that tool's own documentation.
 
 ### Verify the exporter is running
 
@@ -156,7 +132,7 @@ rarely need to be changed.
 | `http-request-timeout`    | duration | Per-attempt timeout for a whole OTLP export request (logs and metrics), from connect through response. Bounds how long the OTel SDK's batch worker thread can be blocked on a slow or unreachable endpoint.   | `PT3S`                         |
 | `http-max-retry-attempts` | int      | Maximum attempts per OTLP export request (the first attempt plus retries), with the OTel SDK's default backoff (1s initial, 5s max, 1.5x multiplier) between them.                                            | `3`                            |
 | `sampling-rate`           | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                               | `1.0`                          |
-| `categories`              | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted or empty, all categories are enabled. | `[contractual, optional]`      |
+| `categories`              | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted, both categories are enabled (the default). **An explicit empty list (`categories: []`) disables all categories** — no per-category events are registered — rather than falling back to "all". The periodic `camunda.telemetry.heartbeat` event is not gated by `categories` at all and keeps being sent regardless of this setting; see [Known limitations](#known-limitations). | `[contractual, optional]`      |
 
 ## What data is exported
 
@@ -398,6 +374,12 @@ of these attributes as a composite key.
 - **Fixed event set per category.** The exporter emits a small, hardcoded set of event
   types. The `categories` option controls which categories of events are exported, but
   individual event types within a category cannot be toggled independently.
+- **`categories: []` disables events, not the heartbeat.** Setting `categories` to an
+  explicit empty list registers no per-category handlers, so no
+  `PROCESS_INSTANCE`/`USER_TASK`/etc. events are exported — but the periodic
+  `camunda.telemetry.heartbeat` event is scheduled independently of `categories` and is
+  still sent. To silence the exporter entirely, disable it (remove its declaration from
+  the broker configuration) rather than emptying `categories`.
 
 ## How it works
 
