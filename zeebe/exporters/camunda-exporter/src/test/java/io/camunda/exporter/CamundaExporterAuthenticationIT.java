@@ -19,10 +19,8 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
-import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -45,12 +43,8 @@ public class CamundaExporterAuthenticationIT {
           .withPassword(ELASTIC_PASSWORD)
           .withEnv("xpack.security.enabled", "true")
           .waitingFor(
-              new HttpWaitStrategy()
-                  .forPort(9200)
-                  .forPath("/_cluster/health")
-                  .withBasicCredentials(ELASTIC_USER, ELASTIC_PASSWORD)
-                  .forStatusCode(200)
-                  .withStartupTimeout(Duration.ofMinutes(5)));
+              TestSearchContainers.waitForClusterHealth()
+                  .withBasicCredentials(ELASTIC_USER, ELASTIC_PASSWORD));
 
   private final ExporterConfiguration config = new ExporterConfiguration();
   private final ProtocolFactory factory = new ProtocolFactory();
