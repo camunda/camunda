@@ -585,7 +585,7 @@ class ExpressionProcessorTest {
 
       // then
       assertThat(result).isRight();
-      MsgPackUtil.assertEquality(result.get(), "'abc'");
+      MsgPackUtil.assertEquality(result.get().toBuffer(), "'abc'");
     }
 
     @Test
@@ -598,7 +598,7 @@ class ExpressionProcessorTest {
 
       // then
       assertThat(result).isRight();
-      MsgPackUtil.assertEquality(result.get(), "{'y': 1}");
+      MsgPackUtil.assertEquality(result.get().toBuffer(), "{'y': 1}");
     }
 
     @Test
@@ -611,7 +611,7 @@ class ExpressionProcessorTest {
 
       // then
       assertThat(result).isRight();
-      MsgPackUtil.assertEquality(result.get(), "null");
+      MsgPackUtil.assertEquality(result.get().toBuffer(), "null");
     }
 
     @Test
@@ -627,7 +627,7 @@ class ExpressionProcessorTest {
 
       // then
       assertThat(result).isRight();
-      MsgPackUtil.assertEquality(result.get(), "null");
+      MsgPackUtil.assertEquality(result.get().toBuffer(), "null");
     }
 
     @Test

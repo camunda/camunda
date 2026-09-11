@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
@@ -33,18 +34,25 @@ public final class OrderedOutputMappingResolver implements MappingResolver<Outpu
     final var resultBuilder =
         new OutputMappingResultBuilder(
             path -> {
+              // the raw scope chain, not yet layered with this builder's own results: always
+              // MessagePack, since nothing has been prepended to the context here
               final var value = processor.getEvaluationContext().getVariable(path.getFirst());
-              final var rootValue = value.isLeft() ? value.getLeft() : null;
+              final DirectBuffer rootValue =
+                  value.isLeft()
+                          && value.getLeft() instanceof ContextValue.MsgPack(final var buffer)
+                      ? buffer
+                      : null;
               return rootValue == null ? null : MsgPackPath.navigate(rootValue, path, 1);
             });
-    final var boundProcessor = processor.prependContext(resultBuilder::get);
+    final var boundProcessor =
+        processor.prependContext(name -> Either.left(resultBuilder.getVariable(name)));
 
     for (final OutputMapping mapping : outputMappings.mappings()) {
       final var result = boundProcessor.evaluateVariableMappingExpression(mapping.source());
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
-      resultBuilder.put(mapping.targetPath(), result.get());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.Evaluated(result.get()));
     }
     return Either.right(resultBuilder.toDocument());
   }
