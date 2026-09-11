@@ -27,8 +27,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * permission grant, so without this validator any principal the IdP authenticates would reach
  * Optimize.
  *
- * <p>Mirrors {@link OptimizeCloudOrganizationValidator}'s role in the CCSaaS chain, but for CCSM's
- * Identity-backed permission model instead of Auth0 organization roles.
+ * <p>This performs a full identity-sdk re-verification, including a hard match of the token's
+ * {@code aud} claim against {@code camunda.identity.audience} — unlike {@link
+ * OptimizeCloudOrganizationValidator}/{@code OptimizeCloudClusterValidator}, it is <b>not</b>
+ * lenient on an audience mismatch. {@link OptimizeCcsmSecurityConfiguration} relies on this: it
+ * wires this validator only onto paths that carry a genuine access token (bearer/API calls, and the
+ * session's per-request access token for interactive users), deliberately leaving the login
+ * id_token — audienced to the OIDC client-id, not {@code camunda.identity.audience} — validated by
+ * Spring's stock decoder instead. Do not reuse this validator against the id_token.
  */
 public final class OptimizeIdentityPermissionValidator implements OAuth2TokenValidator<Jwt> {
 
