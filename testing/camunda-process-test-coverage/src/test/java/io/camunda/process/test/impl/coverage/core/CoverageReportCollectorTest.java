@@ -19,11 +19,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.api.search.response.DecisionDefinition;
+import io.camunda.client.api.search.response.DecisionDefinitionType;
+import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.coverage.model.CoverageRunReport;
+import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionDefinitionData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefinitionData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
@@ -35,6 +41,7 @@ import org.junit.jupiter.api.Test;
 class CoverageReportCollectorTest {
 
   private static final String PROCESS_ID = "child-process";
+  private static final String DECISION_ID = "decision-a";
 
   private static final String REAL_XML =
       Bpmn.convertToString(
@@ -115,6 +122,56 @@ class CoverageReportCollectorTest {
             ImmutableCoverageProcessDefinitionData.builder()
                 .processDefinition(processDefinition)
                 .xml(xml)
+                .build())
+        .build();
+  }
+
+  /**
+   * A test class can evaluate different tables of one decision definition id, for example when a
+   * later test deploys a fixture with more rules. Only the most complete table describes the
+   * decision.
+   */
+  @Test
+  void shouldKeepTheMostCompleteTableWhenARunEvaluatesASmallerTable() {
+    // given
+    final CoverageReportCollector collector =
+        new CoverageReportCollector(
+            CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
+
+    // when: the run that evaluates the smaller table comes first
+    collector.collectTestRunCoverage(
+        "smallTableRun", null, decisionTestDataOf(2), Collections.emptyList());
+    collector.collectTestRunCoverage(
+        "fullTableRun", null, decisionTestDataOf(5), Collections.emptyList());
+
+    // then
+    assertThat(collector.getDecisionModels())
+        .singleElement()
+        .extracting(DecisionModel::getTotalRuleCount)
+        .isEqualTo(5);
+  }
+
+  /** Builds the data of a test run that evaluated a decision table with the given rule count. */
+  private static CoverageTestData decisionTestDataOf(final int ruleCount) {
+    final DecisionDefinition decisionDefinition = mock(DecisionDefinition.class);
+    when(decisionDefinition.getDmnDecisionId()).thenReturn(DECISION_ID);
+    when(decisionDefinition.getDmnDecisionName()).thenReturn(DECISION_ID);
+    when(decisionDefinition.getVersion()).thenReturn(1);
+
+    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
+    when(decisionInstance.getDecisionDefinitionId()).thenReturn(DECISION_ID);
+    when(decisionInstance.getDecisionDefinitionType())
+        .thenReturn(DecisionDefinitionType.DECISION_TABLE);
+
+    return ImmutableCoverageTestData.builder()
+        .addDecisionInstanceData(
+            ImmutableCoverageDecisionInstanceData.builder()
+                .decisionInstance(decisionInstance)
+                .build())
+        .addDecisionDefinitionData(
+            ImmutableCoverageDecisionDefinitionData.builder()
+                .decisionDefinition(decisionDefinition)
+                .xml(DecisionModelCreatorTest.buildDmnXml(DECISION_ID, DECISION_ID, ruleCount))
                 .build())
         .build();
   }
