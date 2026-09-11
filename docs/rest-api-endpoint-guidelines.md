@@ -1465,18 +1465,29 @@ Method surface derived from the marker (stated generally in terms of the
 request field `F` and its match literal `V`; the `withLease: true` / boolean
 case is the current production instance):
 
-- **Overload languages (JS/TS, Python, C#):** emit overloads keyed on the `F`
-  literal — `F` set to `V` returns the present projection, `F` set to any other
-  compile-time literal returns the absent projection, and a non-literal `F`
-  (dynamic value of `F`'s declared type) returns the base, nullable projection.
-  For `activateJobs` this is: `withLease: true` returns the present projection,
-  `withLease?: false | null | undefined` returns the absent projection, and the
-  general `boolean` overload returns the dynamic (base, nullable) projection.
-- **Two-method languages (Go, Rust):** emit the base method for the absent
-  projection (`activateJobs`, no token field) and a second method named
-  `<baseMethod> + PascalCase(F)` — `activateJobsWithLease` — for the present
-  projection (token required non-null). These are technical preview, so the
-  surface change is acceptable.
+- **Literal-overload languages (JS/TS, Python):** emit overloads keyed on the
+  `F` literal — `F` set to `V` returns the present projection, `F` set to any
+  other compile-time literal returns the absent projection, and a non-literal
+  `F` returns the base, nullable projection. The dynamic overload must accept
+  `F`'s **full declared type including `null`** (for `withLease`, which is
+  `nullable: true`, that is `boolean | null`) so a runtime `boolean | null`
+  value resolves to the base projection rather than falling between the literal
+  overloads. These languages model this with TS function overloads on literal
+  types / Python `@overload` on `Literal[...]`. For `activateJobs` this is:
+  `withLease: true` returns the present projection, `withLease?: false | null |
+  undefined` returns the absent projection, and the general
+  `withLease: boolean | null` overload returns the dynamic (base, nullable)
+  projection.
+- **Distinct-surface languages (Go, Rust, C#):** these cannot select a return
+  type from a literal argument value — Go and Rust have no overloading, and C#
+  overload resolution distinguishes neither a `true` from a `false` argument nor
+  the return type. Emit two distinct methods instead: a base method
+  (`activateJobs` / `ActivateJobs`) that returns the **base nullable projection**
+  (token present but nullable) — this is the safe surface for both the absent
+  case and a runtime dynamic `F`, since the caller reads the nullable token — and
+  a second method named `<baseMethod> + PascalCase(F)` (`activateJobsWithLease` /
+  `ActivateJobsWithLease`) for the present projection (token required non-null).
+  These are technical preview, so the surface change is acceptable.
 
 The present-variant method must additionally assert at runtime that the property
 is populated and fail fast if it is absent. This covers the later-client →
