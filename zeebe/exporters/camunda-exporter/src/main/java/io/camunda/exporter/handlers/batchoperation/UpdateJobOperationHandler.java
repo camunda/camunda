@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -22,7 +24,8 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
  * JobIntent#UPDATED} or {@link JobIntent#PRIORITY_UPDATED}, and failed when the {@link
  * JobIntent#UPDATE} command is rejected.
  */
-public class UpdateJobOperationHandler extends AbstractOperationStatusHandler<JobRecordValue> {
+public class UpdateJobOperationHandler extends AbstractOperationStatusHandler<JobRecordValue>
+    implements OrdinalIndexExportHandler<OperationEntity, JobRecordValue> {
 
   public UpdateJobOperationHandler(
       final String indexName,
