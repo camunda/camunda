@@ -516,9 +516,49 @@ class CoverageReporterTest {
         .isEqualTo(5);
   }
 
+  /**
+   * The rules of the smaller table do not exist in the reported table, so they must not count
+   * towards its coverage - otherwise the aggregated coverage exceeds 100%.
+   */
+  @Test
+  void shouldIgnoreMatchedRulesThatTheReportedTableDoesNotContain() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: a suite that matched all rules of a table the report does not describe
+    final CoverageReportCollector smallTableSuite =
+        buildCollectorForDecision(SmallTableSuiteTest.class, SMALL_TABLE, "small-1", "small-2");
+    final CoverageReportCollector fullTableSuite =
+        buildCollectorForDecision(FullTableSuiteTest.class, FULL_TABLE, "full-1", "full-2");
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(smallTableSuite, fullTableSuite));
+
+    // then: only the 2 of the 5 rules of the reported table count
+    assertThat(report.getDecisionCoverages())
+        .filteredOn(coverage -> coverage.getDecisionDefinitionId().equals(DECISION_ID))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds()).containsExactly("full-1", "full-2");
+              assertThat(coverage.getCoverage()).isEqualTo(2.0 / 5);
+            });
+  }
+
   /** Builds a mock collector reporting a single decision coverage against a single table. */
   private CoverageReportCollector buildCollectorForDecision(
       final Class<?> testClass, final DecisionModel model, final String... matchedRuleIds) {
+
+    final ImmutableDecisionCoverage.Builder coverage =
+        ImmutableDecisionCoverage.builder()
+            .decisionDefinitionId(model.getDecisionDefinitionId())
+            .addMatchedRuleIds(matchedRuleIds)
+            .coverage((double) matchedRuleIds.length / model.getTotalRuleCount());
+    for (int ruleIndex = 1; ruleIndex <= matchedRuleIds.length; ruleIndex++) {
+      coverage.addMatchedRuleIndices(ruleIndex);
+    }
 
     final CoverageSuiteReport suite =
         ImmutableCoverageSuiteReport.builder()
@@ -527,12 +567,7 @@ class CoverageReporterTest {
             .addRuns(
                 ImmutableCoverageRunReport.builder()
                     .name("run-1")
-                    .addDecisionCoverages(
-                        ImmutableDecisionCoverage.builder()
-                            .decisionDefinitionId(model.getDecisionDefinitionId())
-                            .addMatchedRuleIds(matchedRuleIds)
-                            .coverage((double) matchedRuleIds.length / model.getTotalRuleCount())
-                            .build())
+                    .addDecisionCoverages(coverage.build())
                     .build())
             .build();
 

@@ -20,6 +20,9 @@ import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.impl.coverage.data.CoverageDecisionDefinitionData;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.io.ByteArrayInputStream;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -78,6 +81,36 @@ public class DecisionModelCreator {
         .version(String.valueOf(decisionDefinitionData.getDecisionDefinition().getVersion()))
         .xml(xml)
         .build();
+  }
+
+  /**
+   * Collects the ids of the rules a model can cover, which are the rules counted by {@link
+   * #createModel}.
+   *
+   * <p>Yields no id when the rules of the model cannot be identified, for example because its DMN
+   * cannot be read or its rules carry no id. A caller cannot tell the rules of this table from the
+   * rules of another table then, and must not mistake the empty result for a table without rules.
+   *
+   * @param model The model to collect the rule ids of
+   * @return The ids of the rules of the decision table
+   */
+  public static Set<String> coverableRuleIds(final DecisionModel model) {
+    final DmnModelInstance modelInstance;
+    try {
+      modelInstance = Dmn.readModelFromStream(new ByteArrayInputStream(model.getXml().getBytes()));
+    } catch (final RuntimeException e) {
+      return Collections.emptySet();
+    }
+
+    final Decision decision = modelInstance.getModelElementById(model.getDecisionDefinitionId());
+    if (decision == null) {
+      return Collections.emptySet();
+    }
+    return decision.getChildElementsByType(DecisionTable.class).stream()
+        .flatMap(decisionTable -> decisionTable.getChildElementsByType(Rule.class).stream())
+        .map(Rule::getId)
+        .filter(ruleId -> ruleId != null && !ruleId.isEmpty())
+        .collect(Collectors.toSet());
   }
 
   /**
