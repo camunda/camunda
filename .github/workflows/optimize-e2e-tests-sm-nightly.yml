@@ -86,6 +86,7 @@ jobs:
           yarn run start-backend ci &> ./build/backendLogs.log &
 
       - name: Wait for import to complete
+<<<<<<< HEAD
         run: |
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
@@ -96,6 +97,9 @@ jobs:
             echo "Index has $count entities. Waiting for 49..."
             sleep 10
           done
+=======
+        run: ./.github/optimize/scripts/wait-for-import.sh
+>>>>>>> 85a95a75 (ci: derive Optimize E2E import wait from the broker's actual state)
 
       - name: Wait for frontend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
