@@ -244,7 +244,7 @@ ActivatedJobResult:
         - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
 ```
 
-Semantics SDK generators derive from the marker: when the request field is the
+Semantics: SDK generators derive from the marker: when the request field is the
 compile-time literal `equals` value (`V`), the property is **present** (required,
 non-null); when it is any other compile-time literal — `false`/`null`/omitted, or
 a non-matching string/number such as `mode: "compact"` when `equals: "full"` —

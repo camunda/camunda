@@ -11,6 +11,11 @@ describe('present-when-shape', () => {
   let shape;
 
   before(() => {
+    // Scope: this suite lints only the synthetic `present-when` fixture, so it
+    // verifies the marker's shape — not the production `jobs.yaml` binding. A
+    // typo'd `request` (e.g. `withLeese`) in the live spec would still pass; add
+    // a production-spec / semantic-resolver check if x-present-when sees broader
+    // adoption (see the matching note in `.spectral.yaml`).
     const allResults = lintFixture(FIXTURE);
     shape = filterByRule(allResults, SHAPE_RULE);
   });
