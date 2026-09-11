@@ -181,6 +181,53 @@ function categorize(input) {
 
 /***/ }),
 
+/***/ 388:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.closesIssueNumbers = closesIssueNumbers;
+/** Closed without being delivered; no pull request may claim these. */
+const ABANDONED_REASONS = new Set(['NOT_PLANNED', 'DUPLICATE']);
+/**
+ * The subset of `issueNumbers` this pull request actually closed.
+ *
+ * Three rules, in order:
+ *
+ *  1. A backport hop is trusted wholesale. The backport bot never writes a
+ *     closing keyword, and a merge into `stable/*` cannot fire one anyway
+ *     (GitHub only auto-closes from the DEFAULT branch), so both signals below
+ *     are structurally blank for every backport. Trusting the hop is what keeps
+ *     a patch release from reporting its entire contents as partial.
+ *  2. Where GitHub recorded a closer, it decides — and it decides both ways:
+ *     naming another pull request is a positive statement that this one did not
+ *     close the issue, even if this one says it did.
+ *  3. Where it recorded none — the issue is open, a human closed it, or a bare
+ *     commit did — fall back to the declaration. This is the same off-default-
+ *     branch case as rule 1 seen from the other side: a fix merged straight to
+ *     `stable/8.9` fires no close event, so its own keyword is the only signal
+ *     that exists.
+ *
+ * An issue closed as `NOT_PLANNED`/`DUPLICATE` is excluded under every rule but
+ * the backport hop: whatever a body claims, GitHub's own record says that issue
+ * was abandoned, not shipped.
+ */
+function closesIssueNumbers(input, closures) {
+    if (input.deliveryPath === 'backportHop')
+        return [...input.issueNumbers];
+    return input.issueNumbers.filter((issueNumber) => {
+        const closure = closures.get(issueNumber);
+        if (closure && closure.stateReason !== null && ABANDONED_REASONS.has(closure.stateReason))
+            return false;
+        if (closure?.closerPrNumber != null)
+            return closure.closerPrNumber === input.prNumber;
+        return input.declaredCloses.includes(issueNumber);
+    });
+}
+
+
+/***/ }),
+
 /***/ 516:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -226,6 +273,7 @@ const range_1 = __nccwpck_require__(53);
 const walk_1 = __nccwpck_require__(600);
 const render_1 = __nccwpck_require__(624);
 const parser_1 = __nccwpck_require__(883);
+const delivery_1 = __nccwpck_require__(388);
 const resolve_1 = __nccwpck_require__(940);
 const warm_1 = __nccwpck_require__(579);
 const resolver_1 = __nccwpck_require__(306);
@@ -371,13 +419,12 @@ async function run() {
                 component: output.categorization.component,
                 breaking: output.categorization.breaking,
                 issueNumbers: output.attribution.issueNumbers,
-                // A backport hop delivers via THIS PR's merge, but the backport bot never
-                // writes a closing keyword — closingIssuesReferences is always empty for
-                // it, so the general signal below would under-report every single one.
-                closesIssueNumbers: output.attribution.deliveryPath === 'backportHop'
-                    ? output.attribution.issueNumbers
-                    : output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
                 attributionSource: output.attribution.source,
+            },
+            delivery: {
+                prNumber: output.number,
+                deliveryPath: output.attribution.deliveryPath,
+                declaredCloses: pr.closingIssuesReferences,
             },
             // A `merge`-type PR (section: null) is excluded from every render() output
             // regardless of attribution, so it must never trip the unattributed guard.
@@ -418,12 +465,28 @@ async function run() {
                     core.warning(warning);
         }
     }
+    // One batched phase, after attribution because the issue set is what
+    // attribution produces. Only issues a backport hop did not already settle are
+    // worth asking about — on a patch release that is most of them.
+    const wantedIssues = new Set();
+    for (const entry of processed) {
+        if (!entry || entry.delivery.deliveryPath === 'backportHop')
+            continue;
+        for (const issueNumber of entry.renderPr.issueNumbers)
+            wantedIssues.add(issueNumber);
+    }
+    const closures = await graphql.fetchIssueClosers([...wantedIssues]);
+    core.info(`Read the close event of ${closures.size} of ${wantedIssues.size} referenced issue(s).`);
     const attributed = [];
     const unattributed = [];
     for (const entry of processed) {
         if (!entry)
             continue;
-        (entry.bucketed ? unattributed : attributed).push(entry.renderPr);
+        const renderPr = {
+            ...entry.renderPr,
+            closesIssueNumbers: (0, delivery_1.closesIssueNumbers)({ ...entry.delivery, issueNumbers: entry.renderPr.issueNumbers }, closures),
+        };
+        (entry.bucketed ? unattributed : attributed).push(renderPr);
     }
     const result = (0, render_1.render)(attributed, unattributed, {
         version: input.targetVersion,
@@ -933,7 +996,7 @@ const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
 // Release candidates are 1-based too, and appear at every level: `8.9.0-rc1`,
 // `8.7.6-rc2`, `8.10.0-alpha1-rc3`. Only the suffix is matched here — what it
 // is attached to still has to satisfy VERSION.
-const RC_SUFFIX = /-rc[1-9]\d*$/;
+const RC_SUFFIX = /-rc([1-9]\d*)$/;
 function parseVersion(version, reportAs = version) {
     const match = VERSION.exec(version);
     if (!match)
@@ -958,19 +1021,30 @@ function previousMinor(v, target) {
 /** The baseline to diff `target` against, from the version string alone — no
  *  tag list to consult, every case is arithmetic on the version number. */
 function resolveBaselineStrategy(target) {
-    // A candidate is a candidate *for* a version, so its notes cover that
-    // version's whole range: drop `-rcN` and resolve the version it stands for.
-    // Deliberately unlike zcl, which walks rcN back to rc(N-1) — that suits its
-    // incremental issue labelling, but would reduce a candidate's changelog to
-    // the delta since the last candidate rather than the release's contents.
-    // Only the baseline is computed from the stripped string; callers keep
-    // walking and labelling with the real `-rcN` tag.
-    const v = parseVersion(target.replace(RC_SUFFIX, ''), target);
+    // A candidate is resolved from the version it is a candidate *for*, so the
+    // shape of that version is validated first and names the errors below, even
+    // though `rcN` for N > 1 short-circuits to the previous candidate.
+    const rc = RC_SUFFIX.exec(target);
+    const baseVersion = target.replace(RC_SUFFIX, '');
+    const v = parseVersion(baseVersion, target);
     // An alpha is a pre-release of a minor, so it only ever carries patch 0.
     // Without this, `X.Y.1-alpha1` falls through to the previous-alpha branch and
     // resolves to `X.Y.1` — the target's own base version, a tag never cut.
     if (v.alpha !== null && v.patch !== 0) {
         throw new Error(`Unsupported release version "${target}": an alpha is a pre-release of a minor, so it must carry patch 0.`);
+    }
+    // Candidates chain: `rcN` is diffed against `rc(N-1)`, matching how the
+    // release actually publishes them. Each candidate is cut as its own GitHub
+    // release, and zcl labels issues per candidate tag (`version:8.9.0-rc2`), so
+    // a candidate's notes are the delta since the previous one; the final
+    // untagged version then resolves normally and carries the whole release.
+    // Reporting the full contents under every candidate instead would republish
+    // rc1's entire changelog under rc2, rc3 and rc4.
+    //
+    // `rc1` has no previous candidate, so it falls through to the version it
+    // stands for — which is also what makes the chain terminate somewhere real.
+    if (rc && Number(rc[1]) > 1) {
+        return { kind: 'previousTag', ref: `${baseVersion}-rc${Number(rc[1]) - 1}` };
     }
     // alpha1-of-cycle: no prior tag on this line exists yet, so always the fork
     // point off the previous minor's stable branch, never a tag lookup (V5).
@@ -1468,6 +1542,51 @@ class GithubGraphqlResolver {
                 out.set(number, {
                     target: node.__typename === 'PullRequest' ? 'pullRequest' : 'issue',
                     title: node.title ?? null,
+                });
+            });
+        }
+        return out;
+    }
+    /**
+     * Reads each issue's own close event: was it closed, why, and by which pull
+     * request's merge. Same batching as `classifyRefs` — a direct node lookup per
+     * alias, 100 to a request — and the same NOT_FOUND tolerance, because the
+     * number set comes from references that may point at something deleted.
+     *
+     * `timelineItems(last: 1)` is the LAST close, which is the one that matters
+     * for a reopened-then-reclosed issue; the timeline is append-only, so an
+     * earlier close never shadows it. A number that resolves to a pull request
+     * rather than an issue answers null and is treated as "nothing closed here".
+     */
+    async fetchIssueClosers(numbers) {
+        const out = new Map();
+        for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
+            const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
+            const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
+        repository(owner: $owner, name: $name) {
+          ${batch
+                .map((_, j) => `i${j}: issue(number: $n${j}) { closed stateReason timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`)
+                .join('\n')}
+        }
+      }`;
+            const variables = { owner: this.owner, name: this.repo };
+            batch.forEach((number, j) => (variables[`n${j}`] = number));
+            const repository = await this.requestRepository(query, variables, true);
+            batch.forEach((number, j) => {
+                const node = repository[`i${j}`];
+                if (!node)
+                    return;
+                const closer = node.timelineItems?.nodes?.[0]?.closer;
+                // A pull request in ANOTHER repository can close an issue here, and
+                // camunda/camunda-docs#4852 really does close camunda/camunda#26937.
+                // Its number means nothing in this repository's numbering, so reading
+                // it as one would credit whichever unrelated pull request happens to
+                // share the number.
+                const sameRepo = closer?.repository?.nameWithOwner === `${this.owner}/${this.repo}`;
+                out.set(number, {
+                    closed: node.closed ?? false,
+                    stateReason: node.stateReason ?? null,
+                    closerPrNumber: closer?.__typename === 'PullRequest' && sameRepo ? (closer.number ?? null) : null,
                 });
             });
         }
@@ -2077,8 +2196,7 @@ module.exports = require("node:fs");
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/compat */
-/******/ 	
+/******/ 	/* webpack/runtime/asset-relocator-loader */
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/

@@ -53,19 +53,32 @@ test('a later alpha on the first minor of a major still resolves to its previous
   assert.deepEqual(s, { kind: 'previousTag', ref: '8.0.0-alpha1' });
 });
 
-test('a candidate inherits the baseline of the version it is a candidate for, at every level', () => {
-  // Not the previous candidate (which is what zcl chains to): a changelog
-  // covers the release's contents, not the delta since the last candidate.
+test('the first candidate inherits the baseline of the version it is a candidate for, at every level', () => {
+  // rc1 has no previous candidate, so it resolves the version it stands for.
+  // This is what makes the chain below terminate on a real baseline.
   assert.deepEqual(resolveBaselineStrategy('8.9.0-rc1'), resolveBaselineStrategy('8.9.0'));
-  assert.deepEqual(resolveBaselineStrategy('8.7.6-rc2'), resolveBaselineStrategy('8.7.6'));
-  assert.deepEqual(resolveBaselineStrategy('8.10.0-alpha1-rc3'), resolveBaselineStrategy('8.10.0-alpha1'));
+  assert.deepEqual(resolveBaselineStrategy('8.7.6-rc1'), resolveBaselineStrategy('8.7.6'));
   assert.deepEqual(resolveBaselineStrategy('8.10.0-alpha2-rc1'), resolveBaselineStrategy('8.10.0-alpha2'));
+  assert.deepEqual(resolveBaselineStrategy('8.9.0-rc1'), { kind: 'forkPoint', otherRef: '8.8.0' });
 });
 
-test('every candidate of one version shares a baseline, so rc2 is not diffed against rc1', () => {
-  const rc1 = resolveBaselineStrategy('8.9.0-rc1');
-  assert.deepEqual(resolveBaselineStrategy('8.9.0-rc4'), rc1);
-  assert.deepEqual(rc1, { kind: 'forkPoint', otherRef: '8.8.0' });
+test('a later candidate is diffed against the previous candidate, not against the version', () => {
+  // Each candidate is cut as its own release and carries the delta since the
+  // one before it; the final version then carries the whole release. Matching
+  // how the release publishes them: without this, rc1's entire changelog is
+  // republished under rc2, rc3 and rc4.
+  assert.deepEqual(resolveBaselineStrategy('8.9.0-rc2'), { kind: 'previousTag', ref: '8.9.0-rc1' });
+  assert.deepEqual(resolveBaselineStrategy('8.9.0-rc4'), { kind: 'previousTag', ref: '8.9.0-rc3' });
+  assert.deepEqual(resolveBaselineStrategy('8.7.6-rc2'), { kind: 'previousTag', ref: '8.7.6-rc1' });
+});
+
+test('a candidate of an alpha chains within that alpha, never across alphas', () => {
+  // `8.10.0-alpha3-rc2` is the second candidate OF alpha3. Chaining it to
+  // alpha2's last candidate would diff it against a different alpha entirely.
+  assert.deepEqual(resolveBaselineStrategy('8.10.0-alpha3-rc2'), { kind: 'previousTag', ref: '8.10.0-alpha3-rc1' });
+  assert.deepEqual(resolveBaselineStrategy('8.10.0-alpha1-rc3'), { kind: 'previousTag', ref: '8.10.0-alpha1-rc2' });
+  // ...and the first candidate of an alpha still falls back to that alpha's own baseline.
+  assert.deepEqual(resolveBaselineStrategy('8.10.0-alpha3-rc1'), { kind: 'previousTag', ref: '8.10.0-alpha2' });
 });
 
 test('a candidate of an unsupported version is rejected, and names the version as given', () => {

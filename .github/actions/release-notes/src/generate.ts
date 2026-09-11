@@ -7,6 +7,8 @@ import { resolveBaselineRef, walkFirstParent } from './range/walk';
 import type { RenderPrInput } from './render';
 import { render } from './render';
 import { extractSection, parseRefs } from './parser';
+import { closesIssueNumbers } from './delivery';
+import type { DeliveryInput } from './delivery';
 import { GithubGraphqlResolver } from './resolve';
 import type { AssociatedPr, ClassifiedRef, PrMetadata } from './resolve';
 import { buildPipelineResolver } from './resolve/warm';
@@ -20,14 +22,10 @@ import { GithubResolver, prioritizeAndCap } from './resolver';
  *
  * Read-only by design; writing labels/comments is the cutover work unit (#57714).
  *
- * ponytail: `closesIssueNumbers` uses the PR's native `closingIssuesReferences`
- * as the "actually closed that issue" signal instead of a per-issue closer
- * lookup. A PR that really closed an issue but has an empty field (e.g. the
- * keyword was edited out) is under-reported as "Partially delivered" rather
- * than "Released"; closing that needs Issue.timelineItems, its own I/O step.
- * Exception: a backport-hop delivery is trusted wholesale (see below) — the
- * backport bot never writes closing keywords, so the field is always empty
- * for it and the general signal would under-report every single one.
+ * "Which issue did this pull request actually close" is answered from the
+ * ISSUE's own close event, in one batched phase after attribution (the issue
+ * set is not known before then). See `src/delivery` for the rule and why a
+ * `closes` keyword alone cannot answer it.
  */
 
 interface RunInputs {
@@ -172,7 +170,10 @@ async function run(): Promise<void> {
    *  which worker finishes first — an interleaved audit log is unreadable and,
    *  worse, differs between runs of the same release. */
   interface Processed {
-    readonly renderPr: RenderPrInput;
+    /** Everything but `closesIssueNumbers`, which needs the issue-side lookup
+     *  below and so cannot be decided until every attribution is known. */
+    readonly renderPr: Omit<RenderPrInput, 'closesIssueNumbers'>;
+    readonly delivery: Omit<DeliveryInput, 'issueNumbers'>;
     readonly bucketed: boolean;
     readonly warnings: readonly string[];
   }
@@ -209,14 +210,12 @@ async function run(): Promise<void> {
         component: output.categorization.component,
         breaking: output.categorization.breaking,
         issueNumbers: output.attribution.issueNumbers,
-        // A backport hop delivers via THIS PR's merge, but the backport bot never
-        // writes a closing keyword — closingIssuesReferences is always empty for
-        // it, so the general signal below would under-report every single one.
-        closesIssueNumbers:
-          output.attribution.deliveryPath === 'backportHop'
-            ? output.attribution.issueNumbers
-            : output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
         attributionSource: output.attribution.source,
+      },
+      delivery: {
+        prNumber: output.number,
+        deliveryPath: output.attribution.deliveryPath,
+        declaredCloses: pr.closingIssuesReferences,
       },
       // A `merge`-type PR (section: null) is excluded from every render() output
       // regardless of attribution, so it must never trip the unattributed guard.
@@ -259,11 +258,26 @@ async function run(): Promise<void> {
     }
   }
 
+  // One batched phase, after attribution because the issue set is what
+  // attribution produces. Only issues a backport hop did not already settle are
+  // worth asking about — on a patch release that is most of them.
+  const wantedIssues = new Set<number>();
+  for (const entry of processed) {
+    if (!entry || entry.delivery.deliveryPath === 'backportHop') continue;
+    for (const issueNumber of entry.renderPr.issueNumbers) wantedIssues.add(issueNumber);
+  }
+  const closures = await graphql.fetchIssueClosers([...wantedIssues]);
+  core.info(`Read the close event of ${closures.size} of ${wantedIssues.size} referenced issue(s).`);
+
   const attributed: RenderPrInput[] = [];
   const unattributed: RenderPrInput[] = [];
   for (const entry of processed) {
     if (!entry) continue;
-    (entry.bucketed ? unattributed : attributed).push(entry.renderPr);
+    const renderPr: RenderPrInput = {
+      ...entry.renderPr,
+      closesIssueNumbers: closesIssueNumbers({ ...entry.delivery, issueNumbers: entry.renderPr.issueNumbers }, closures),
+    };
+    (entry.bucketed ? unattributed : attributed).push(renderPr);
   }
 
   const result = render(attributed, unattributed, {
