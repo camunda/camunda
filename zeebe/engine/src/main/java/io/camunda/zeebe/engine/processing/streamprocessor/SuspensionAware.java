@@ -23,6 +23,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  */
 public interface SuspensionAware<T extends UnifiedRecordValue> {
 
+  String ERROR_MESSAGE_SUSPENDED_PI =
+      "Expected to process command for process instance with key '%d', but the process instance is suspended.";
+
   /**
    * Handles the command while the target instance is {@code SUSPENDED}, instead of processing it.
    * Write any events that must accompany this outcome (for example {@code Timer.SUSPENDED} when
@@ -46,6 +49,15 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
    *     or {@link SuspensionAction#BUFFER}
    */
   SuspensionAction onResuming(final TypedRecord<T> record);
+
+  /**
+   * {@code INVALID_STATE} reason used when this processor returns {@link SuspensionAction#REJECT}.
+   * Override to name a more specific restriction; the default is the generic
+   * suspended-process-instance message.
+   */
+  default String rejectionReason(final TypedRecord<T> record, final long processInstanceKey) {
+    return ERROR_MESSAGE_SUSPENDED_PI.formatted(processInstanceKey);
+  }
 
   static SuspensionAction bufferInternalOnly(final TypedRecord<?> record) {
     return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
