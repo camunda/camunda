@@ -4,7 +4,9 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+from typing import Self
 
+import yaml
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
@@ -36,7 +38,7 @@ class QueriesDocument(BaseModel):
     queries: list[Query] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def reject_duplicate_keys(self) -> "QueriesDocument":
+    def reject_duplicate_keys(self) -> Self:
         seen_keys: set[str] = set()
         for query in self.queries:
             if query.key in seen_keys:
@@ -75,10 +77,6 @@ def parse_query_file(queries_file: Path, substitutions: Mapping[str, str]) -> An
         except json.JSONDecodeError as error:
             raise ReportError(f"Could not parse queries file {queries_file}: {error}") from error
 
-    try:
-        import yaml
-    except ImportError as error:
-        raise ReportError("PyYAML is required to read YAML query files. Install it with uv.") from error
     try:
         return yaml.safe_load(raw_document)
     except yaml.YAMLError as error:

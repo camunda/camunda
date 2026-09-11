@@ -1,7 +1,3 @@
-"""Command-line parsing for the load-test report command."""
-
-from __future__ import annotations
-
 import argparse
 import sys
 from collections.abc import Sequence

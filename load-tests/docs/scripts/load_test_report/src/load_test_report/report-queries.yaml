@@ -20,7 +20,7 @@ queries:
     header: Namespace
     valueLabel: namespace
     query: |-
-      count by (namespace) (max_over_time(kube_pod_info{namespace="$NAMESPACE"}[$DURATION_S]))
+      max_over_time(kube_namespace_created{namespace="$NAMESPACE"}[$DURATION_S])
 
   - key: docker_image
     description: Deployed Docker image tag(s), read from the image label rather than a value field. Extracted

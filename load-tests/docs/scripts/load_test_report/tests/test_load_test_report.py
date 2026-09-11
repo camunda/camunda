@@ -2,23 +2,29 @@ from pathlib import Path
 
 import pytest
 
-import load_test_report
+import load_test_report.queries as queries_module
+from load_test_report.cli import build_parser
+from load_test_report.cli import run
+from load_test_report.errors import ReportError
+from load_test_report.queries import BUILTIN_QUERY_FILES
+from load_test_report.queries import load_query_document
+from load_test_report.queries import resolve_queries_file
 
-PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
+PROJECT_DIR = Path(queries_module.__file__).resolve().parent
 
 
 def test_should_build_parser():
-    parser = load_test_report.build_parser()
+    parser = build_parser()
 
     assert parser.prog == "load-test-report"
 
 
 def test_should_run_without_arguments():
-    assert load_test_report.run([]) == 0
+    assert run([]) == 0
 
 
 def test_should_return_argparse_exit_code_for_help():
-    assert load_test_report.run(["--help"]) == 0
+    assert run(["--help"]) == 0
 
 
 def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
@@ -33,7 +39,7 @@ def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
         encoding="utf-8",
     )
 
-    document = load_test_report.load_query_document(queries_file, {"$NAMESPACE": "c8-ck-test"})
+    document = load_query_document(queries_file, {"$NAMESPACE": "c8-ck-test"})
 
     assert document.queries[0].key == "namespace"
     assert document.queries[0].query == 'namespace_metric{namespace="c8-ck-test"}'
@@ -49,7 +55,7 @@ def test_should_substitute_query_file_before_json_decoding(tmp_path):
         encoding="utf-8",
     )
 
-    document = load_test_report.load_query_document(
+    document = load_query_document(
         queries_file,
         {"$NAMESPACE": "c8-ck-test", "$RATE_INTERVAL": "30s"},
     )
@@ -61,8 +67,8 @@ def test_should_report_invalid_json_query_file(tmp_path):
     queries_file = tmp_path / "queries.json"
     queries_file.write_text('{"queries":[', encoding="utf-8")
 
-    with pytest.raises(load_test_report.ReportError, match="Could not parse queries file"):
-        load_test_report.load_query_document(queries_file, {})
+    with pytest.raises(ReportError, match="Could not parse queries file"):
+        load_query_document(queries_file, {})
 
 
 def test_should_reject_legacy_load_test_metrics_schema(tmp_path):
@@ -76,8 +82,8 @@ def test_should_reject_legacy_load_test_metrics_schema(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(load_test_report.ReportError, match="queries.0.key"):
-        load_test_report.load_query_document(queries_file, {})
+    with pytest.raises(ReportError, match="queries.0.key"):
+        load_query_document(queries_file, {})
 
 
 def test_should_reject_duplicate_query_keys(tmp_path):
@@ -96,8 +102,8 @@ def test_should_reject_duplicate_query_keys(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(load_test_report.ReportError, match="duplicate query key: duplicate_metric"):
-        load_test_report.load_query_document(queries_file, {})
+    with pytest.raises(ReportError, match="duplicate query key: duplicate_metric"):
+        load_query_document(queries_file, {})
 
 
 def test_should_reject_entries_without_query(tmp_path):
@@ -111,8 +117,8 @@ def test_should_reject_entries_without_query(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(load_test_report.ReportError, match="queries.0.query"):
-        load_test_report.load_query_document(queries_file, {})
+    with pytest.raises(ReportError, match="queries.0.query"):
+        load_query_document(queries_file, {})
 
 
 def test_should_reject_static_value_entries(tmp_path):
@@ -127,8 +133,8 @@ def test_should_reject_static_value_entries(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(load_test_report.ReportError, match="Extra inputs are not permitted"):
-        load_test_report.load_query_document(queries_file, {})
+    with pytest.raises(ReportError, match="Extra inputs are not permitted"):
+        load_query_document(queries_file, {})
 
 
 def test_should_load_builtin_query_file(tmp_path):
@@ -148,7 +154,7 @@ def test_should_load_builtin_query_file(tmp_path):
         encoding="utf-8",
     )
 
-    document = load_test_report.load_query_document(
+    document = load_query_document(
         queries_file,
         {"$NAMESPACE": "c8-ck-test"},
     )
@@ -175,8 +181,8 @@ def test_should_reject_duplicate_keys_in_query_file(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(load_test_report.ReportError, match="duplicate query key: duplicate"):
-        load_test_report.load_query_document(queries_file, {})
+    with pytest.raises(ReportError, match="duplicate query key: duplicate"):
+        load_query_document(queries_file, {})
 
 
 def test_should_load_all_builtin_query_files():
@@ -187,14 +193,31 @@ def test_should_load_all_builtin_query_files():
         "$SAMPLE_STEP": "1m",
     }
 
-    for query_file_name in load_test_report.BUILTIN_QUERY_FILES.values():
-        document = load_test_report.load_query_document(PROJECT_DIR / query_file_name, substitutions)
+    for query_file_name in BUILTIN_QUERY_FILES.values():
+        document = load_query_document(PROJECT_DIR / query_file_name, substitutions)
 
         assert len(document.queries) > 0
 
 
+def test_should_use_namespace_created_metric():
+    substitutions = {
+        "$NAMESPACE": "c8-ck-test",
+        "$DURATION_S": "600s",
+        "$RATE_INTERVAL": "5m",
+        "$SAMPLE_STEP": "1m",
+    }
+
+    for query_file_name in BUILTIN_QUERY_FILES.values():
+        document = load_query_document(PROJECT_DIR / query_file_name, substitutions)
+        namespace_query = document.queries[0]
+
+        assert namespace_query.key == "namespace"
+        assert namespace_query.value_label == "namespace"
+        assert namespace_query.query == 'max_over_time(kube_namespace_created{namespace="c8-ck-test"}[600s])'
+
+
 def test_should_use_stable_87_specific_metric_sources():
-    document = load_test_report.load_query_document(
+    document = load_query_document(
         PROJECT_DIR / "report-queries-stable-87.yaml",
         {
             "$NAMESPACE": "c8-ck-test",
@@ -214,7 +237,7 @@ def test_should_use_stable_87_specific_metric_sources():
 
 
 def test_should_keep_builtin_descriptions_before_headers():
-    for query_file_name in load_test_report.BUILTIN_QUERY_FILES.values():
+    for query_file_name in BUILTIN_QUERY_FILES.values():
         query_text = (PROJECT_DIR / query_file_name).read_text(encoding="utf-8").split("queries:\n", 1)[1]
         entries = [entry for entry in query_text.split("\n\n") if entry.startswith("  - key:")]
 
@@ -238,7 +261,7 @@ def test_should_resolve_stable_87_builtin_queries(tmp_path):
         encoding="utf-8",
     )
 
-    assert load_test_report.resolve_queries_file(tmp_path, "stable-87") == tmp_path / "report-queries-stable-87.yaml"
+    assert resolve_queries_file(tmp_path, "stable-87") == tmp_path / "report-queries-stable-87.yaml"
 
 
 def test_should_resolve_custom_queries_file(tmp_path):
@@ -253,4 +276,4 @@ def test_should_resolve_custom_queries_file(tmp_path):
         encoding="utf-8",
     )
 
-    assert load_test_report.resolve_queries_file(tmp_path, str(queries_file)) == queries_file
+    assert resolve_queries_file(tmp_path, str(queries_file)) == queries_file

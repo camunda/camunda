@@ -1,7 +1,7 @@
 [project]
 name = "load-test-report"
 version = "0.1.0"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = [
   "pydantic==2.12.5",
   "pyyaml==6.0.3",
@@ -22,7 +22,7 @@ dev = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py313"
 
 [tool.ruff.lint]
 extend-select = ["I"]
