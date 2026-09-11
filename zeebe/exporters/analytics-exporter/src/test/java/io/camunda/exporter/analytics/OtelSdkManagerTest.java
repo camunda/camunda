@@ -488,7 +488,7 @@ class OtelSdkManagerTest {
       final var customLogExporter = InMemoryLogRecordExporter.create();
       final var customManager =
           TestOtelSdkManager.inMemory(
-              customLogExporter, new AnalyticsExporterConfig().setSamplingRate(0.5));
+              customLogExporter, new AnalyticsExporterConfig().setSamplingRate("0.5"));
 
       // find a position that passes at 0.5
       long passingPosition = -1L;

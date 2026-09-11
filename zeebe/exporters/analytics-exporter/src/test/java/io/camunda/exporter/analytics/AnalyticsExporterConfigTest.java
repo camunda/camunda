@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.exporter.analytics.sampling.HashSampler;
 import org.junit.jupiter.api.Test;
 
 class AnalyticsExporterConfigTest {
@@ -164,37 +165,50 @@ class AnalyticsExporterConfigTest {
 
   @Test
   void shouldRejectSamplingRateBelowZero() {
-    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate(-0.1).validate())
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate("-0.1").validate())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("samplingRate");
   }
 
   @Test
   void shouldRejectSamplingRateNaN() {
-    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate(Double.NaN).validate())
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate("NaN").validate())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("samplingRate");
   }
 
   @Test
   void shouldRejectSamplingRateAboveOne() {
-    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate(1.1).validate())
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate("1.1").validate())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("samplingRate");
   }
 
   @Test
+  void shouldRejectNonNumericSamplingRateWithRangeNamingMessage() {
+    // given — a typo'd or otherwise non-numeric samplingRate (see
+    // https://github.com/camunda/camunda/issues/62752); this must fail with the same
+    // range-naming message as a numeric out-of-range value, not a raw parse error.
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate("notanumber").validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("samplingRate must be between")
+        .hasMessageContaining(String.valueOf(HashSampler.MIN_SAMPLE_RATE))
+        .hasMessageContaining(String.valueOf(HashSampler.MAX_SAMPLE_RATE))
+        .hasMessageContaining("notanumber");
+  }
+
+  @Test
   void shouldAcceptSamplingRateBoundaries() {
-    assertThatCode(() -> new AnalyticsExporterConfig().setSamplingRate(0.0).validate())
+    assertThatCode(() -> new AnalyticsExporterConfig().setSamplingRate("0.0").validate())
         .doesNotThrowAnyException();
-    assertThatCode(() -> new AnalyticsExporterConfig().setSamplingRate(1.0).validate())
+    assertThatCode(() -> new AnalyticsExporterConfig().setSamplingRate("1.0").validate())
         .doesNotThrowAnyException();
   }
 
   @Test
   void shouldReturnSameDigestStringForEqualConfigs() {
     // given
-    final var config = new AnalyticsExporterConfig().setSamplingRate(0.5);
+    final var config = new AnalyticsExporterConfig().setSamplingRate("0.5");
 
     // when
     final var first = config.toExporterDigestString();
@@ -207,8 +221,8 @@ class AnalyticsExporterConfigTest {
   @Test
   void shouldReturnDifferentDigestStringWhenSamplingRateChanges() {
     // given
-    final var configA = new AnalyticsExporterConfig().setSamplingRate(0.5);
-    final var configB = new AnalyticsExporterConfig().setSamplingRate(0.25);
+    final var configA = new AnalyticsExporterConfig().setSamplingRate("0.5");
+    final var configB = new AnalyticsExporterConfig().setSamplingRate("0.25");
 
     // when / then
     assertThat(configA.toExporterDigestString()).isNotEqualTo(configB.toExporterDigestString());
@@ -217,9 +231,11 @@ class AnalyticsExporterConfigTest {
   @Test
   void shouldReturnSameDigestStringWhenNonBehaviorConfigChanges() {
     // given
-    final var configA = new AnalyticsExporterConfig().setSamplingRate(1.0);
+    final var configA = new AnalyticsExporterConfig().setSamplingRate("1.0");
     final var configB =
-        new AnalyticsExporterConfig().setSamplingRate(1.0).setEndpoint("https://other.example.com");
+        new AnalyticsExporterConfig()
+            .setSamplingRate("1.0")
+            .setEndpoint("https://other.example.com");
 
     // when / then
     assertThat(configA.toExporterDigestString()).isEqualTo(configB.toExporterDigestString());

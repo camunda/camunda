@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.analytics.sampling.HashSampler;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -44,9 +42,7 @@ import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -77,31 +73,6 @@ class AnalyticsExporterTest {
     assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("camunda.license.key");
-  }
-
-  @Test
-  void shouldRejectNonNumericSamplingRateWithRangeNamingMessage() {
-    // given — Jackson rejects a non-numeric samplingRate while converting the raw args map,
-    // before AnalyticsExporterConfig.validate() ever runs its own range check, so it would
-    // otherwise surface as a raw InvalidFormatException instead of naming the allowed range.
-    final Function<Map<String, Object>, AnalyticsExporterConfig> instantiate =
-        args -> new ObjectMapper().convertValue(args, AnalyticsExporterConfig.class);
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>(
-                    "analytics", Map.of("samplingRate", "notanumber"), instantiate))
-            .setClusterId("test-cluster")
-            .setPartitionId(1)
-            .setLicenseKey("test-license-key");
-
-    // when / then
-    assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("samplingRate must be between")
-        .hasMessageContaining(String.valueOf(HashSampler.MIN_SAMPLE_RATE))
-        .hasMessageContaining(String.valueOf(HashSampler.MAX_SAMPLE_RATE))
-        .hasMessageContaining("notanumber");
   }
 
   @Test

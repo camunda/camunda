@@ -29,7 +29,7 @@ class AnalyticsExporterDigestTest {
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
                 new StubHandlerAlpha());
-    final var config = new AnalyticsExporterConfig().setSamplingRate(1.0);
+    final var config = new AnalyticsExporterConfig().setSamplingRate("1.0");
 
     // when
     final var first = AnalyticsExporterDigest.compute(registry, config);
@@ -117,8 +117,8 @@ class AnalyticsExporterDigestTest {
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
                 new StubHandlerAlpha());
-    final var configA = new AnalyticsExporterConfig().setSamplingRate(1.0);
-    final var configB = new AnalyticsExporterConfig().setSamplingRate(0.5);
+    final var configA = new AnalyticsExporterConfig().setSamplingRate("1.0");
+    final var configB = new AnalyticsExporterConfig().setSamplingRate("0.5");
 
     // when / then
     assertThat(AnalyticsExporterDigest.compute(registry, configA))

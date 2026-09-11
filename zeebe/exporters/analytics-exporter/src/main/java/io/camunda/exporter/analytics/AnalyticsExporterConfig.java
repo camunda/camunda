@@ -33,7 +33,7 @@ public class AnalyticsExporterConfig {
   private int httpMaxRetryAttempts = 3;
   private boolean signing = true;
   private boolean allowInsecure = false;
-  private double samplingRate = HashSampler.MAX_SAMPLE_RATE;
+  private String samplingRate = String.valueOf(HashSampler.MAX_SAMPLE_RATE);
   private List<String> categories =
       Arrays.stream(AnalyticsCategory.values())
           .map(c -> c.name().toLowerCase(java.util.Locale.ROOT))
@@ -130,10 +130,10 @@ public class AnalyticsExporterConfig {
   }
 
   public double getSamplingRate() {
-    return samplingRate;
+    return Double.parseDouble(samplingRate);
   }
 
-  public AnalyticsExporterConfig setSamplingRate(final double samplingRate) {
+  public AnalyticsExporterConfig setSamplingRate(final String samplingRate) {
     this.samplingRate = samplingRate;
     return this;
   }
@@ -188,17 +188,7 @@ public class AnalyticsExporterConfig {
               + maxQueueSize
               + ")");
     }
-    if (Double.isNaN(samplingRate)
-        || samplingRate < HashSampler.MIN_SAMPLE_RATE
-        || samplingRate > HashSampler.MAX_SAMPLE_RATE) {
-      throw new IllegalArgumentException(
-          "samplingRate must be between "
-              + HashSampler.MIN_SAMPLE_RATE
-              + " and "
-              + HashSampler.MAX_SAMPLE_RATE
-              + ", got: "
-              + samplingRate);
-    }
+    validateSamplingRate();
     validateCategories();
     return this;
   }
@@ -256,6 +246,39 @@ public class AnalyticsExporterConfig {
     if (parsed.isZero() || parsed.isNegative()) {
       throw new IllegalArgumentException(
           "httpRequestTimeout must be positive, got: " + httpRequestTimeout);
+    }
+  }
+
+  /**
+   * Parses {@code samplingRate} and checks it falls within the allowed range, giving the same
+   * range-naming message for a non-numeric value (e.g. a typo) as for a numeric value that is out
+   * of range — see https://github.com/camunda/camunda/issues/62752.
+   */
+  private void validateSamplingRate() {
+    final double rate;
+    try {
+      rate = Double.parseDouble(samplingRate);
+    } catch (final NumberFormatException e) {
+      throw new IllegalArgumentException(
+          "samplingRate must be between "
+              + HashSampler.MIN_SAMPLE_RATE
+              + " and "
+              + HashSampler.MAX_SAMPLE_RATE
+              + ", got: '"
+              + samplingRate
+              + "'",
+          e);
+    }
+    if (Double.isNaN(rate)
+        || rate < HashSampler.MIN_SAMPLE_RATE
+        || rate > HashSampler.MAX_SAMPLE_RATE) {
+      throw new IllegalArgumentException(
+          "samplingRate must be between "
+              + HashSampler.MIN_SAMPLE_RATE
+              + " and "
+              + HashSampler.MAX_SAMPLE_RATE
+              + ", got: "
+              + rate);
     }
   }
 
