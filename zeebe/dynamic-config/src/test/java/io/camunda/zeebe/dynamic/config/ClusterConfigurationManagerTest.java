@@ -9,19 +9,29 @@ package io.camunda.zeebe.dynamic.config;
 
 import static io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
+import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
+import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -35,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -244,6 +255,63 @@ final class ClusterConfigurationManagerTest {
     assertThat(gossipState.get())
         .describedAs("Updated topology is gossiped")
         .isEqualTo(clusterTopologyManager.getClusterConfiguration().join());
+  }
+
+  @Test
+  void shouldContinueTwoPhaseJoinOnRestartDuringPromotion() {
+    // given - the manager restarts between the two phases of a join: the join operation already
+    // completed and marked the local member's partition LEARNER, and the promote operation is
+    // still pending. The partition is part of the member's distribution in this state, so on a
+    // real broker it is started on boot and the promotion can be driven. The leader's catch-up
+    // gate rejects the first promotion attempts, as it does while the learner is not caught up;
+    // the manager must keep retrying the operation until the gate accepts.
+    final var promoteAttempts = new AtomicInteger();
+    final PartitionChangeExecutor partitionChangeExecutor = mock(PartitionChangeExecutor.class);
+    when(partitionChangeExecutor.promote(1))
+        .thenAnswer(
+            invocation ->
+                promoteAttempts.incrementAndGet() < 3
+                    ? CompletableActorFuture.completedExceptionally(
+                        new RuntimeException("not caught up yet"))
+                    : CompletableActorFuture.completed(null));
+    final var partitionConfig = DynamicPartitionConfig.init();
+    final var otherMemberId = MemberId.from("2");
+    final ClusterConfiguration configurationWithPendingPromotion =
+        ClusterConfiguration.init()
+            .addMember(
+                localMemberId,
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())))
+            .addMember(
+                otherMemberId,
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, partitionConfig))))
+            .startConfigurationChange(List.of(new PartitionPromoteOperation(localMemberId, 1)));
+    final ClusterConfigurationInitializer initializer =
+        () -> CompletableActorFuture.completed(configurationWithPendingPromotion);
+
+    // when
+    final ClusterConfigurationManagerImpl clusterTopologyManager =
+        startTopologyManager(
+                initializer,
+                new ConfigurationChangeAppliersImpl(
+                    partitionChangeExecutor,
+                    new NoopClusterMembershipChangeExecutor(),
+                    new NoopPartitionScalingChangeExecutor(),
+                    new NoopClusterChangeExecutor()))
+            .join();
+
+    // then - the promotion is retried until the gate accepts and the partition becomes a voting
+    // member
+    Awaitility.await("Promotion is continued after restart and retried until accepted")
+        .untilAsserted(
+            () ->
+                ClusterConfigurationAssert.assertThatClusterTopology(
+                        clusterTopologyManager.getClusterConfiguration().join())
+                    .hasPendingOperationsWithSize(0)
+                    .member(localMemberId)
+                    .hasPartitionWithState(1, PartitionState.State.ACTIVE));
+    assertThat(promoteAttempts.get()).isEqualTo(3);
   }
 
   @Test
