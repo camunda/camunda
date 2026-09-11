@@ -8,16 +8,16 @@
 
 import useTranslate from "src/utility/localization";
 import { useLocation } from "react-router-dom";
-import Users from "src/pages/users";
-import Groups from "src/pages/groups";
-import Roles from "src/pages/roles";
-import Tenants from "src/pages/tenants";
-import MappingRules from "src/pages/mapping-rules";
-import Authorizations from "src/pages/authorizations";
-import ClusterVariables from "src/pages/cluster-variables";
-import OperationsLog from "src/pages/operations-log";
-import GlobalTaskListeners from "src/pages/global-task-listeners";
-import McpProcesses from "src/pages/mcp-processes";
+import Users from "src/pages/users/indexV2";
+import Groups from "src/pages/groups/indexV2";
+import Roles from "src/pages/roles/indexV2";
+import Tenants from "src/pages/tenants/indexV2";
+import MappingRules from "src/pages/mapping-rules/indexV2";
+import Authorizations from "src/pages/authorizations/indexV2";
+import ClusterVariables from "src/pages/cluster-variables/indexV2";
+import OperationsLog from "src/pages/operations-log/indexV2";
+import GlobalTaskListeners from "src/pages/global-task-listeners/indexV2";
+import McpProcesses from "src/pages/mcp-processes/indexV2";
 import {
   isCamundaGroupsEnabled,
   isOIDC,
