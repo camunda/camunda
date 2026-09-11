@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STORAGE_ORDINAL_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -27,6 +28,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ListViewProcessInstanceFromIncidentHandlerTest {
 
@@ -186,6 +188,69 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
 
     // when - then
     assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
+  }
+
+  @Test
+  void shouldSetStorageOrdinalKeyFromRecord() {
+    // given
+    final Record<IncidentRecordValue> incidentRecord = incidentRecordWithStorageOrdinalKey(1001);
+
+    // when
+    final var entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(incidentRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinalKey()).isEqualTo(1001);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void shouldLeaveStorageOrdinalKeyUnsetWhenRecordIsNotOrdinalControlled(final int ordinal) {
+    // given
+    final Record<IncidentRecordValue> incidentRecord = incidentRecordWithStorageOrdinalKey(ordinal);
+
+    // when
+    final var entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(incidentRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinalKey()).isNull();
+  }
+
+  @Test
+  void shouldUpsertStorageOrdinalKeyOnFlush() {
+    // given
+    final ProcessInstanceForListViewEntity inputEntity =
+        new ProcessInstanceForListViewEntity()
+            .setId("111")
+            .setErrorMessage("error")
+            .setStorageOrdinalKey(1001);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    expectedUpdateFields.put(ERROR_MSG, "error");
+    expectedUpdateFields.put(STORAGE_ORDINAL_KEY, 1001);
+
+    // when
+    underTest.flush(index, inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  private Record<IncidentRecordValue> incidentRecordWithStorageOrdinalKey(
+      final int storageOrdinalKey) {
+    final var recordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withProcessInstanceKey(123L)
+            .withElementInstanceKey(123L)
+            .withStorageOrdinalKey(storageOrdinalKey)
+            .build();
+    return factory.generateRecord(
+        ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED).withValue(recordValue));
   }
 
   private Record<IncidentRecordValue> createProcessLevelIncidentRecord(

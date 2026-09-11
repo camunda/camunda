@@ -39,7 +39,10 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
   }
 
   @Override
-  public void execute(final long incidentKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long incidentKey,
+      final int storageOrdinalKey,
+      final PersistedBatchOperation batchOperation) {
     final var incident = incidentState.getIncidentRecord(incidentKey);
     if (incident == null) {
       // ok I admit it, this is a bit of a hack, but we need to provoke an IncidentIntent.REVOLVE

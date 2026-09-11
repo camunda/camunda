@@ -52,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
@@ -182,7 +183,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setState(ProcessInstanceState.ACTIVE)
             .setTreePath("PI_111")
             .setTags(Set.of("businessKey:123", "priority:high"))
-            .setBusinessId("my-business-id");
+            .setBusinessId("my-business-id")
+            .setStorageOrdinalKey(1001);
     final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
@@ -198,6 +200,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
     expectedUpdateFields.put(ListViewTemplate.TAGS, inputEntity.getTags());
     expectedUpdateFields.put(ListViewTemplate.BUSINESS_ID, "my-business-id");
+    expectedUpdateFields.put(ListViewTemplate.STORAGE_ORDINAL_KEY, 1001);
     expectedUpdateFields.put(ListViewTemplate.SUSPENDED_DATE, null);
     expectedUpdateFields.put(PARTITION_ID, 12);
     expectedUpdateFields.put(POSITION, 123L);
@@ -326,6 +329,50 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("test-process-name");
     assertThat(processInstanceForListViewEntity.getProcessVersionTag())
         .isEqualTo("test-version-tag");
+  }
+
+  @Test
+  void shouldSetStorageOrdinalKeyFromRecord() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        processInstanceRecordWithStorageOrdinalKey(1001);
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinalKey()).isEqualTo(1001);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void shouldLeaveStorageOrdinalKeyUnsetWhenRecordIsNotOrdinalControlled(final int ordinal) {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        processInstanceRecordWithStorageOrdinalKey(ordinal);
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinalKey()).isNull();
+  }
+
+  private Record<ProcessInstanceRecordValue> processInstanceRecordWithStorageOrdinalKey(
+      final int storageOrdinalKey) {
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withElementInstancePath(List.of(List.of(111L)))
+            .withProcessDefinitionPath(List.of(222L))
+            .withStorageOrdinalKey(storageOrdinalKey)
+            .build();
+    return factory.generateRecord(
+        ValueType.PROCESS_INSTANCE,
+        r -> r.withIntent(ELEMENT_ACTIVATING).withValue(processInstanceRecordValue));
   }
 
   @Test

@@ -5,11 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.batchoperation.handlers;
+package io.camunda.zeebe.engine.processing.storageordinals;
 
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+public class NoopStorageOrdinalKeyProvider implements StorageOrdinalKeyProvider {
 
-public interface BatchOperationExecutor {
+  public NoopStorageOrdinalKeyProvider() {}
 
-  void execute(long itemKey, final int storageOrdinalKey, PersistedBatchOperation batchOperation);
+  @Override
+  public int getStorageOrdinalKey() {
+    return 0;
+  }
 }

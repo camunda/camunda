@@ -114,16 +114,16 @@ class IncidentItemProviderTest {
     // then
     assertThat(resultPage.items())
         .containsExactly(
-            new Item(11, 1, 1L),
-            new Item(12, 1, 1L),
-            new Item(21, 2, 1L),
-            new Item(22, 2, 1L),
-            new Item(31, 3, 3L),
-            new Item(32, 3, 3L),
-            new Item(41, 4, null),
-            new Item(42, 4, null),
-            new Item(51, 5, null),
-            new Item(52, 5, null));
+            new Item(11, 1, 1L, null),
+            new Item(12, 1, 1L, null),
+            new Item(21, 2, 1L, null),
+            new Item(22, 2, 1L, null),
+            new Item(31, 3, 3L, null),
+            new Item(32, 3, 3L, null),
+            new Item(41, 4, null, null),
+            new Item(42, 4, null, null),
+            new Item(51, 5, null, null),
+            new Item(52, 5, null, null));
     assertThat(resultPage.isLastPage()).isFalse();
   }
 

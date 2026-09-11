@@ -25,6 +25,9 @@ import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
+import io.camunda.exporter.handlers.batchoperation.DecisionInstanceHistoryDeletionOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessInstanceHistoryDeletionOperationHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
 import java.util.List;
@@ -100,13 +103,17 @@ public class ExportHandlerArchTest {
               DescribedPredicate.or(
                   // audit log handlers have custom handling
                   Predicates.assignableTo(AuditLogHandler.class),
-                  Predicates.assignableTo(AuditLogCleanupHandler.class)))
+                  Predicates.assignableTo(AuditLogCleanupHandler.class),
+                  // custom handling for batch operation chunk created items (need to look at
+                  // ordinal per item)
+                  Predicates.assignableTo(BatchOperationChunkCreatedItemHandler.class),
+                  // TODO need to sort these out still
+                  Predicates.assignableTo(DecisionInstanceHistoryDeletionOperationHandler.class),
+                  Predicates.assignableTo(ProcessInstanceHistoryDeletionOperationHandler.class)))
           .and()
           // TODO remove these exclusions once we have refactored the handlers to implement the
           // correct interface
-          .resideOutsideOfPackages(
-              "io.camunda.exporter.handlers.batchoperation..",
-              "io.camunda.exporter.handlers.operation..")
+          .resideOutsideOfPackages("io.camunda.exporter.handlers.operation..")
           .should()
           .beAssignableTo(
               DescribedPredicate.or(

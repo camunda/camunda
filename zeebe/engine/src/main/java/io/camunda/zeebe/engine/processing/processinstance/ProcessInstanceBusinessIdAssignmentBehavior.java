@@ -119,7 +119,8 @@ public final class ProcessInstanceBusinessIdAssignmentBehavior {
         .setTenantId(processInstanceRecord.getTenantId())
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setBpmnProcessId(processInstanceRecord.getBpmnProcessId())
-        .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
+        .setStorageOrdinalKey(processInstanceRecord.getStorageOrdinalKey());
   }
 
   /** Appends the {@code ASSIGNED} follow-up event for the given, already enriched value. */

@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STORAGE_ORDINAL_KEY;
 
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
@@ -102,6 +103,11 @@ public class ListViewProcessInstanceFromIncidentHandler
     } else {
       entity.setErrorMessage(null);
     }
+
+    final int storageOrdinalKey = recordValue.getStorageOrdinalKey();
+    if (storageOrdinalKey > 0) {
+      entity.setStorageOrdinalKey(storageOrdinalKey);
+    }
   }
 
   @Override
@@ -113,6 +119,9 @@ public class ListViewProcessInstanceFromIncidentHandler
     LOGGER.debug("Process instance for list view: id {}", entity.getId());
     final Map<String, Object> updateFields = new LinkedHashMap<>();
     updateFields.put(ERROR_MSG, entity.getErrorMessage());
+    if (entity.getStorageOrdinalKey() != null) {
+      updateFields.put(STORAGE_ORDINAL_KEY, entity.getStorageOrdinalKey());
+    }
 
     batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }

@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -22,7 +24,8 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
  * migration status and updating the corresponding batch operation item entity.
  */
 public class ProcessInstanceMigrationOperationHandler
-    extends AbstractOperationStatusHandler<ProcessInstanceMigrationRecordValue> {
+    extends AbstractOperationStatusHandler<ProcessInstanceMigrationRecordValue>
+    implements OrdinalIndexExportHandler<OperationEntity, ProcessInstanceMigrationRecordValue> {
 
   public ProcessInstanceMigrationOperationHandler(
       final String indexName,

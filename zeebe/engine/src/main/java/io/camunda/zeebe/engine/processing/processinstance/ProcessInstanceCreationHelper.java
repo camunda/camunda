@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -74,6 +75,7 @@ public class ProcessInstanceCreationHelper {
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
+  private final StorageOrdinalKeyProvider storageOrdinalKeyProvider;
   private final boolean businessIdUniquenessEnabled;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
@@ -84,6 +86,7 @@ public class ProcessInstanceCreationHelper {
       final BannedInstanceState bannedInstanceState,
       final CslAuthorizationCheck cslCheck,
       final BpmnBehaviors bpmnBehaviors,
+      final StorageOrdinalKeyProvider storageOrdinalKeyProvider,
       final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
@@ -91,6 +94,7 @@ public class ProcessInstanceCreationHelper {
     this.cslCheck = cslCheck;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    this.storageOrdinalKeyProvider = storageOrdinalKeyProvider;
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
@@ -143,6 +147,7 @@ public class ProcessInstanceCreationHelper {
         .setProcessDefinitionKey(process.getKey())
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinalKey(storageOrdinalKeyProvider.getStorageOrdinalKey())
         .setBpmnElementType(BpmnElementType.PROCESS)
         .setElementId(process.getProcess().getId())
         .setFlowScopeKey(-1)
@@ -248,6 +253,7 @@ public class ProcessInstanceCreationHelper {
     record
         .setProcessInstanceKey(processInstance.getProcessInstanceKey())
         .setRootProcessInstanceKey(processInstance.getRootProcessInstanceKey())
+        .setStorageOrdinalKey(processInstance.getStorageOrdinalKey())
         .setBpmnProcessId(processInstance.getBpmnProcessId())
         .setVersion(processInstance.getVersion())
         .setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
@@ -261,6 +267,7 @@ public class ProcessInstanceCreationHelper {
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessInstanceKey(),
         processInstance.getRootProcessInstanceKey(),
+        processInstance.getStorageOrdinalKey(),
         processInstance.getBpmnProcessIdBuffer(),
         processInstance.getTenantId(),
         variablesBuffer);
