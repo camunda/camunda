@@ -28,7 +28,7 @@ import {
 } from "src/utility/api/authorizations";
 import { TranslatedErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import AuthorizationList from "./AuthorizationsListV2";
-import { Paths } from "src/components/global/routePaths";
+import { Paths } from "src/components/globalV2/routePaths";
 import type {
   PermissionType,
   ResourceType,

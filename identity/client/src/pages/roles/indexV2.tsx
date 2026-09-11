@@ -7,25 +7,37 @@
  */
 
 import { FC, lazy, Suspense } from "react";
-import { ListPageFallback } from "src/components/fallbacks";
+import { ListPageFallback } from "src/components/fallbacksV2";
 import PageRoutes from "src/components/router/PageRoutes";
-import Detail from "src/pages/groups/detail";
+import Detail from "src/pages/roles/detailV2";
 
-const List = lazy(() => import("./List"));
+const List = lazy(() => import("./ListV2"));
 
-type GroupsProps = {
+type RolesProps = {
   isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+  defaultRoleIds: string[];
 };
 
-const Groups: FC<GroupsProps> = ({ isOIDC }) => (
+const Roles: FC<RolesProps> = ({
+  isOIDC,
+  isCamundaGroupsEnabled,
+  defaultRoleIds,
+}) => (
   <PageRoutes
     indexElement={
       <Suspense fallback={<ListPageFallback />}>
-        <List />
+        <List defaultRoleIds={defaultRoleIds} />
       </Suspense>
     }
-    detailElement={<Detail isOIDC={isOIDC} />}
+    detailElement={
+      <Detail
+        isOIDC={isOIDC}
+        isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+        defaultRoleIds={defaultRoleIds}
+      />
+    }
   />
 );
 
-export default Groups;
+export default Roles;

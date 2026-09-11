@@ -7,21 +7,23 @@
  */
 
 import { FC, lazy, Suspense } from "react";
-import { ListPageFallback } from "src/components/fallbacks";
-import PageRoutes from "src/components/router/PageRoutes";
-import Detail from "src/pages/users/detail";
+import { ListPageFallback } from "src/components/fallbacksV2";
+import PageRoutes from "src/components/router/PageRoutes.tsx";
 
-const List = lazy(() => import("./List"));
+const List = lazy(() => import("./ListV2"));
 
-const Users: FC = () => (
+type ClusterVariablesProps = {
+  isSaaS: boolean;
+};
+
+const ClusterVariables: FC<ClusterVariablesProps> = ({ isSaaS }) => (
   <PageRoutes
     indexElement={
       <Suspense fallback={<ListPageFallback />}>
-        <List />
+        <List isSaaS={isSaaS} />
       </Suspense>
     }
-    detailElement={<Detail />}
   />
 );
 
-export default Users;
+export default ClusterVariables;

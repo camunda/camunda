@@ -7,21 +7,19 @@
  */
 
 import { FC, lazy, Suspense } from "react";
-import { ListPageFallback } from "src/components/fallbacks";
+import { ListPageFallback } from "src/components/fallbacksV2";
 import PageRoutes from "src/components/router/PageRoutes";
-import Detail from "src/pages/users/detail";
 
-const List = lazy(() => import("./List"));
+const List = lazy(() => import("./ListV2"));
 
-const Users: FC = () => (
+const MappingRules: FC = () => (
   <PageRoutes
     indexElement={
       <Suspense fallback={<ListPageFallback />}>
         <List />
       </Suspense>
     }
-    detailElement={<Detail />}
   />
 );
 
-export default Users;
+export default MappingRules;

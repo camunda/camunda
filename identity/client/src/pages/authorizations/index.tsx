@@ -8,17 +8,13 @@
 
 import { FC, lazy, Suspense } from "react";
 import { ListPageFallback } from "src/components/fallbacks";
-import { ListPageFallback as ListPageFallbackV2 } from "src/components/fallbacksV2";
 import PageRoutes from "src/components/router/PageRoutes";
 import type {
   PermissionType,
   ResourceType,
 } from "@camunda/camunda-api-zod-schemas/8.10";
-import { IS_NEW_DESIGN_SYSTEM_ENABLED } from "src/feature-flags";
 
-const List = lazy(() =>
-  IS_NEW_DESIGN_SYSTEM_ENABLED ? import("./ListV2") : import("./List"),
-);
+const List = lazy(() => import("./List"));
 
 type AuthorizationsProps = {
   isOIDC: boolean;
@@ -36,15 +32,7 @@ const Authorizations: FC<AuthorizationsProps> = ({
   defaultRoleIds,
 }) => {
   const list = (
-    <Suspense
-      fallback={
-        IS_NEW_DESIGN_SYSTEM_ENABLED ? (
-          <ListPageFallbackV2 />
-        ) : (
-          <ListPageFallback />
-        )
-      }
-    >
+    <Suspense fallback={<ListPageFallback />}>
       <List
         isOIDC={isOIDC}
         isCamundaGroupsEnabled={isCamundaGroupsEnabled}
