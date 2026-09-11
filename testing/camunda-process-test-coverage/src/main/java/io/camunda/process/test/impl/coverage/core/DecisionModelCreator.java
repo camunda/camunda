@@ -21,6 +21,9 @@ import io.camunda.process.test.impl.coverage.data.CoverageDecisionDefinitionData
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.camunda.bpm.model.dmn.Dmn;
@@ -51,12 +54,31 @@ public class DecisionModelCreator {
    */
   public static DecisionModel createModel(
       final CoverageTestData testResults, final String decisionDefinitionId) {
+    return createModel(testResults, decisionDefinitionId, null);
+  }
+
+  /**
+   * Creates a decision model object from a decision definition in the Camunda engine.
+   *
+   * <p>A decision definition id can be deployed several times within a test run, for example when a
+   * mock deploys a stub of a decision that is also deployed for real. The deployment that was
+   * evaluated describes the decision; the other deployments describe a different decision under the
+   * same id. The first deployment of the id is used when the evaluated one is not known, as a model
+   * of another deployment still describes the decision better than no model at all.
+   *
+   * @param testResults The data source to retrieve decision definition data
+   * @param decisionDefinitionId The ID of the decision definition to create a model for
+   * @param decisionDefinitionKey The key of the deployment that was evaluated, or {@code null} if
+   *     unknown
+   * @return A DecisionModel object containing decision structure information and rule counts
+   * @throws IllegalArgumentException if the model cannot be read from the decision definition
+   */
+  public static DecisionModel createModel(
+      final CoverageTestData testResults,
+      final String decisionDefinitionId,
+      final Long decisionDefinitionKey) {
     final CoverageDecisionDefinitionData decisionDefinitionData =
-        testResults.getDecisionDefinitionData().stream()
-            .filter(
-                data ->
-                    data.getDecisionDefinition().getDmnDecisionId().equals(decisionDefinitionId))
-            .findFirst()
+        selectDeployment(testResults, decisionDefinitionId, decisionDefinitionKey)
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
@@ -81,6 +103,39 @@ public class DecisionModelCreator {
         .version(String.valueOf(decisionDefinitionData.getDecisionDefinition().getVersion()))
         .xml(xml)
         .build();
+  }
+
+  /**
+   * Selects the deployment that was evaluated, out of the deployments of a decision definition id.
+   *
+   * @param testResults The data source to retrieve decision definition data
+   * @param decisionDefinitionId The ID of the decision definition
+   * @param decisionDefinitionKey The key of the deployment that was evaluated, or {@code null} if
+   *     unknown
+   * @return The deployment that was evaluated, or the first deployment of the id if it is not among
+   *     them
+   */
+  private static Optional<CoverageDecisionDefinitionData> selectDeployment(
+      final CoverageTestData testResults,
+      final String decisionDefinitionId,
+      final Long decisionDefinitionKey) {
+
+    final List<CoverageDecisionDefinitionData> deploymentsOfId =
+        testResults.getDecisionDefinitionData().stream()
+            .filter(
+                data ->
+                    data.getDecisionDefinition().getDmnDecisionId().equals(decisionDefinitionId))
+            .collect(Collectors.toList());
+
+    final Optional<CoverageDecisionDefinitionData> deploymentThatRan =
+        deploymentsOfId.stream()
+            .filter(
+                data ->
+                    Objects.equals(
+                        decisionDefinitionKey, data.getDecisionDefinition().getDecisionKey()))
+            .findFirst();
+
+    return deploymentThatRan.isPresent() ? deploymentThatRan : deploymentsOfId.stream().findFirst();
   }
 
   /**

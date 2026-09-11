@@ -243,4 +243,63 @@ class DecisionModelCreatorTest {
     // then
     assertThat(count).isEqualTo(4);
   }
+
+  /**
+   * A decision definition id can be deployed more than once within a test run, for example when a
+   * mock deploys a stub of a decision that is also deployed for real. The model must describe the
+   * table that was evaluated, not whichever deployment the test data happens to list first.
+   */
+  @Test
+  void shouldCreateModelOfTheDeploymentThatWasEvaluated() {
+    // given: a two-rule table is listed before the five-rule table of the same decision id
+    final ImmutableCoverageTestData testData =
+        ImmutableCoverageTestData.builder()
+            .addDecisionDefinitionData(
+                decisionDefinitionDataOf(1, 111L, buildDmnXml(DECISION_ID, DECISION_NAME, 2)))
+            .addDecisionDefinitionData(
+                decisionDefinitionDataOf(2, 222L, buildDmnXml(DECISION_ID, DECISION_NAME, 5)))
+            .build();
+
+    // when: the instance evaluated the five-rule table
+    final DecisionModel model = DecisionModelCreator.createModel(testData, DECISION_ID, 222L);
+
+    // then
+    assertThat(model.getTotalRuleCount()).isEqualTo(5);
+    assertThat(model.getVersion()).isEqualTo("2");
+  }
+
+  /**
+   * Without the deployment that was evaluated, the report would have no model for the decision at
+   * all, which is worse than a model of another deployment of it.
+   */
+  @Test
+  void shouldFallBackToAnyDeploymentWhenTheEvaluatedOneIsUnknown() {
+    // given
+    final ImmutableCoverageTestData testData =
+        ImmutableCoverageTestData.builder()
+            .addDecisionDefinitionData(
+                decisionDefinitionDataOf(1, 111L, buildDmnXml(DECISION_ID, DECISION_NAME, 2)))
+            .build();
+
+    // when: the instance evaluated a deployment that the test data does not describe
+    final DecisionModel model = DecisionModelCreator.createModel(testData, DECISION_ID, 999L);
+
+    // then
+    assertThat(model.getVersion()).isEqualTo("1");
+  }
+
+  private static ImmutableCoverageDecisionDefinitionData decisionDefinitionDataOf(
+      final int version, final long decisionKey, final String dmnXml) {
+
+    final DecisionDefinition decisionDefinition = mock(DecisionDefinition.class);
+    when(decisionDefinition.getDmnDecisionId()).thenReturn(DECISION_ID);
+    when(decisionDefinition.getDmnDecisionName()).thenReturn(DECISION_NAME);
+    when(decisionDefinition.getVersion()).thenReturn(version);
+    when(decisionDefinition.getDecisionKey()).thenReturn(decisionKey);
+
+    return ImmutableCoverageDecisionDefinitionData.builder()
+        .decisionDefinition(decisionDefinition)
+        .xml(dmnXml)
+        .build();
+  }
 }

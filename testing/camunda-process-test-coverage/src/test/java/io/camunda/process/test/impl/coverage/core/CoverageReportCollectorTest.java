@@ -197,4 +197,115 @@ class CoverageReportCollectorTest {
                 .build())
         .build();
   }
+
+  /**
+   * A mock deploys its stub under the id of the process it mocks, so a run can have two deployments
+   * of one process definition id. The coverage of an instance must be measured against the
+   * deployment that the instance ran, otherwise it is measured against a process it never ran.
+   */
+  @Test
+  void shouldCollectCoverageAgainstTheDeploymentThatRan() {
+    // given
+    final CoverageReportCollector collector =
+        new CoverageReportCollector(
+            CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
+
+    // when: the instance ran the real deployment, which is deployed after the stub
+    collector.collectTestRunCoverage(
+        "realRun",
+        null,
+        ImmutableCoverageTestData.builder()
+            .addProcessInstanceData(processInstanceDataOf(222L))
+            .addProcessDefinitionData(processDefinitionDataOf(1, 111L, MOCK_STUB_XML))
+            .addProcessDefinitionData(processDefinitionDataOf(2, 222L, REAL_XML))
+            .build(),
+        Collections.emptyList());
+
+    // then
+    assertThat(collector.getModels())
+        .singleElement()
+        .extracting(ProcessModel::getXml)
+        .asString()
+        .contains("realTask");
+  }
+
+  /**
+   * A mock deploys its stub under the id of the decision it mocks, so a run can have two
+   * deployments of one decision definition id. The coverage of an evaluation must be measured
+   * against the table that was evaluated, otherwise it is measured against a table it never
+   * evaluated.
+   */
+  @Test
+  void shouldCollectCoverageAgainstTheTableThatWasEvaluated() {
+    // given
+    final CoverageReportCollector collector =
+        new CoverageReportCollector(
+            CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
+
+    // when: the instance evaluated the five-rule table, which is deployed after the two-rule table
+    collector.collectTestRunCoverage(
+        "evaluationRun",
+        null,
+        ImmutableCoverageTestData.builder()
+            .addDecisionInstanceData(decisionInstanceDataOf(222L))
+            .addDecisionDefinitionData(decisionDefinitionDataOf(1, 111L, 2))
+            .addDecisionDefinitionData(decisionDefinitionDataOf(2, 222L, 5))
+            .build(),
+        Collections.emptyList());
+
+    // then
+    assertThat(collector.getDecisionModels())
+        .singleElement()
+        .extracting(DecisionModel::getTotalRuleCount)
+        .isEqualTo(5);
+  }
+
+  private static ImmutableCoverageProcessInstanceData processInstanceDataOf(
+      final long processDefinitionKey) {
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn(PROCESS_ID);
+    when(processInstance.getProcessDefinitionKey()).thenReturn(processDefinitionKey);
+
+    return ImmutableCoverageProcessInstanceData.builder().processInstance(processInstance).build();
+  }
+
+  private static ImmutableCoverageProcessDefinitionData processDefinitionDataOf(
+      final int version, final long processDefinitionKey, final String xml) {
+    final ProcessDefinition processDefinition = mock(ProcessDefinition.class);
+    when(processDefinition.getProcessDefinitionId()).thenReturn(PROCESS_ID);
+    when(processDefinition.getVersion()).thenReturn(version);
+    when(processDefinition.getProcessDefinitionKey()).thenReturn(processDefinitionKey);
+
+    return ImmutableCoverageProcessDefinitionData.builder()
+        .processDefinition(processDefinition)
+        .xml(xml)
+        .build();
+  }
+
+  private static ImmutableCoverageDecisionInstanceData decisionInstanceDataOf(
+      final long decisionDefinitionKey) {
+    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
+    when(decisionInstance.getDecisionDefinitionId()).thenReturn(DECISION_ID);
+    when(decisionInstance.getDecisionDefinitionKey()).thenReturn(decisionDefinitionKey);
+    when(decisionInstance.getDecisionDefinitionType())
+        .thenReturn(DecisionDefinitionType.DECISION_TABLE);
+
+    return ImmutableCoverageDecisionInstanceData.builder()
+        .decisionInstance(decisionInstance)
+        .build();
+  }
+
+  private static ImmutableCoverageDecisionDefinitionData decisionDefinitionDataOf(
+      final int version, final long decisionKey, final int ruleCount) {
+    final DecisionDefinition decisionDefinition = mock(DecisionDefinition.class);
+    when(decisionDefinition.getDmnDecisionId()).thenReturn(DECISION_ID);
+    when(decisionDefinition.getDmnDecisionName()).thenReturn(DECISION_ID);
+    when(decisionDefinition.getVersion()).thenReturn(version);
+    when(decisionDefinition.getDecisionKey()).thenReturn(decisionKey);
+
+    return ImmutableCoverageDecisionDefinitionData.builder()
+        .decisionDefinition(decisionDefinition)
+        .xml(DecisionModelCreatorTest.buildDmnXml(DECISION_ID, DECISION_ID, ruleCount))
+        .build();
+  }
 }
