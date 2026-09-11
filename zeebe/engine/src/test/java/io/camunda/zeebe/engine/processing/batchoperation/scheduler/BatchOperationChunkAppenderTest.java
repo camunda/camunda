@@ -173,7 +173,7 @@ class BatchOperationChunkAppenderTest {
     // given
     final var item1 = new Item(100L, 200L, null, null);
     final var item2 = new Item(101L, 201L, 111L, null);
-    final var item3 = new Item(102L, 202L, 112L, null);
+    final var item3 = new Item(102L, 202L, 112L, 987);
     final var items = List.of(item1, item2, item3);
     final var page = new ItemPage(items, "cursor", 3L, false);
     final var context = createContext("cursor0", 10);
@@ -200,12 +200,13 @@ class BatchOperationChunkAppenderTest {
     assertThat(capturedChunks.get(0).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(capturedChunks.get(0).getItems())
         .containsExactlyInAnyOrder(
-            new BatchOperationItem(100L, 200L, -1L), new BatchOperationItem(101L, 201L, 111L));
+            new BatchOperationItem(100L, 200L, -1L, 0),
+            new BatchOperationItem(101L, 201L, 111L, 0));
 
     // Second chunk should have 1 item (remainder)
     assertThat(capturedChunks.get(1).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(capturedChunks.get(1).getItems())
-        .containsExactly(new BatchOperationItem(102L, 202L, 112L));
+        .containsExactly(new BatchOperationItem(102L, 202L, 112L, 987));
   }
 
   @Test
