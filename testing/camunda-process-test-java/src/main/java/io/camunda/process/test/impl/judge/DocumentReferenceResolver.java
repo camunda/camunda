@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.protocol.rest.DocumentReference;
@@ -66,13 +65,13 @@ public final class DocumentReferenceResolver {
    *     downloaded
    */
   public List<ResolvedDocument> resolve(final String variableJson) {
-    final List<JsonNode> referenceNodes = findReferences(variableJson);
+    final List<Map<String, Object>> referenceNodes = findReferences(variableJson);
     if (referenceNodes.isEmpty()) {
       return Collections.emptyList();
     }
     LOG.debug("Found {} Camunda document reference(s) in variable", referenceNodes.size());
     final Map<DocumentKey, ResolvedDocument> seen = new LinkedHashMap<>();
-    for (final JsonNode node : referenceNodes) {
+    for (final Map<String, Object> node : referenceNodes) {
       final DocumentReferenceResponse ref = parseReference(node);
       final DocumentKey key = new DocumentKey(ref.getDocumentId(), ref.getStoreId());
       if (!seen.containsKey(key)) {
@@ -82,22 +81,22 @@ public final class DocumentReferenceResolver {
     return new ArrayList<>(seen.values());
   }
 
-  private List<JsonNode> findReferences(final String variableJson) {
-    final JsonNode root = parseJsonOrNull(variableJson);
+  private List<Map<String, Object>> findReferences(final String variableJson) {
+    final Object root = parseJsonOrNull(variableJson);
     if (root == null) {
       return Collections.emptyList();
     }
-    final List<JsonNode> references = new ArrayList<>();
+    final List<Map<String, Object>> references = new ArrayList<>();
     collectReferences(root, references);
     return references;
   }
 
-  private JsonNode parseJsonOrNull(final String variableJson) {
+  private Object parseJsonOrNull(final String variableJson) {
     if (variableJson == null || variableJson.isEmpty()) {
       return null;
     }
     try {
-      return jsonMapper.readJson(variableJson, JsonNode.class);
+      return jsonMapper.readJson(variableJson);
     } catch (final CamundaAssertJsonMapper.JsonMappingException e) {
       LOG.debug(
           "Variable value is not valid JSON, skipping document resolution: {}", e.getMessage());
@@ -105,36 +104,36 @@ public final class DocumentReferenceResolver {
     }
   }
 
-  private static void collectReferences(final JsonNode node, final List<JsonNode> out) {
-    if (node == null || node.isMissingNode()) {
+  private static void collectReferences(final Object node, final List<Map<String, Object>> out) {
+    if (node instanceof List) {
+      ((List<?>) node).forEach(element -> collectReferences(element, out));
       return;
     }
-    if (isDocumentReference(node)) {
-      out.add(node);
+    if (!(node instanceof Map)) {
       return;
     }
-    if (node.isArray()) {
-      node.forEach(element -> collectReferences(element, out));
-    } else if (node.isObject()) {
-      node.fieldNames().forEachRemaining(fieldName -> collectReferences(node.get(fieldName), out));
+    @SuppressWarnings("unchecked")
+    final Map<String, Object> objectNode = (Map<String, Object>) node;
+    if (isDocumentReference(objectNode)) {
+      out.add(objectNode);
+      return;
     }
+    objectNode.values().forEach(value -> collectReferences(value, out));
   }
 
-  private static boolean isDocumentReference(final JsonNode node) {
-    if (!node.isObject()) {
-      return false;
-    }
-    final JsonNode typeNode = node.get(DOCUMENT_TYPE_FIELD);
-    return typeNode != null
-        && typeNode.isTextual()
-        && DOCUMENT_TYPE_VALUE.equals(typeNode.asText());
+  private static boolean isDocumentReference(final Map<String, Object> node) {
+    return DOCUMENT_TYPE_VALUE.equals(node.get(DOCUMENT_TYPE_FIELD));
   }
 
-  private DocumentReferenceResponse parseReference(final JsonNode referenceNode) {
+  private DocumentReferenceResponse parseReference(final Map<String, Object> referenceNode) {
     final DocumentReferenceResponse reference;
     try {
+      // Deserialize the protocol type rather than DocumentReferenceResponseImpl: the latter is
+      // only constructible through a Jackson 2 @JsonDeserialize hook, which a Jackson 3 mapper
+      // ignores. DocumentReference carries plain jackson-annotations, understood by both.
       reference =
-          jsonMapper.readJson(referenceNode.toString(), DocumentReferenceResponseImpl.class);
+          new DocumentReferenceResponseImpl(
+              jsonMapper.readJson(jsonMapper.toJson(referenceNode), DocumentReference.class));
     } catch (final CamundaAssertJsonMapper.JsonMappingException e) {
       throw new IllegalStateException(
           "Failed to parse Camunda document reference: " + e.getMessage(), e);
