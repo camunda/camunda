@@ -641,10 +641,20 @@
 					"deleteModalBody_other": "{{count}} instances selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.",
 					"deleteSuccessTitle": "The batch operation \"{{operationType}}\" has been started",
 					"deleteSuccessSubtitle": "You can track its progress in the Batch Operation page",
-					"deleteSuccessActionLabel": "Go to operation details",
-					"deleteErrorTitle": "Operation could not be created",
-					"forbiddenTitle": "You don't have permission to perform this operation",
-					"forbiddenSubtitle": "Please contact the administrator if you need access."
+					"deleteSuccessActionLabel": "Go to operation details"
+				},
+				"definitionDeletion": {
+					"buttonTitle": "Delete Decision Definition \"{{name}} - Version {{version}}\"",
+					"title": "Delete DRD",
+					"description": "You are about to delete the following DRD:",
+					"confirmation": "Yes, I confirm I want to delete this DRD and all related instances.",
+					"warningTitle": "Deleting a decision definition will delete the DRD and will impact the following:",
+					"warningDrd": "By deleting a decision definition, you will be deleting the DRD which contains this decision definition. All other decision tables and literal expressions that are part of the DRD will also be deleted.",
+					"warningIncidents": "Deleting the only existing version of a decision definition could result in process incidents.",
+					"documentation": "Read more about deleting a decision definition",
+					"details": "DRD Details",
+					"drdName": "DRD name",
+					"successTitle": "Operation created"
 				}
 			},
 			"decisionInstance": {
@@ -799,6 +809,9 @@
 					"modifyTitle": "Modify Instance {{processInstanceKey}}",
 					"deleteTitle": "Delete Instance {{processInstanceKey}}",
 					"deleteButtonLabel": "Delete",
+					"creationErrorTitle": "Operation could not be created",
+					"forbiddenTitle": "You don't have permission to perform this operation",
+					"forbiddenSubtitle": "Please contact the administrator if you need access.",
 					"cancelConfirmationModal": {
 						"heading": "Apply Operation",
 						"applyButton": "Apply",

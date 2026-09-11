@@ -630,10 +630,20 @@
 					"deleteModalBody_other": "{{count}} instances sélectionnées pour l'opération de suppression. Cela supprime définitivement les instances de décision sélectionnées et leur historique. Cette action est irréversible.",
 					"deleteSuccessTitle": "L'opération de lot « {{operationType}} » a été démarrée",
 					"deleteSuccessSubtitle": "Vous pouvez suivre son avancement dans la page Opérations par lot",
-					"deleteSuccessActionLabel": "Voir les détails de l'opération",
-					"deleteErrorTitle": "L'opération n'a pas pu être créée",
-					"forbiddenTitle": "Vous n'avez pas la permission d'effectuer cette opération",
-					"forbiddenSubtitle": "Veuillez contacter votre administrateur si vous avez besoin d'un accès."
+					"deleteSuccessActionLabel": "Voir les détails de l'opération"
+				},
+				"definitionDeletion": {
+					"buttonTitle": "Supprimer la définition de décision \"{{name}} - Version {{version}}\"",
+					"title": "Supprimer le DRD",
+					"description": "Vous êtes sur le point de supprimer le DRD suivant :",
+					"confirmation": "Oui, je confirme vouloir supprimer ce DRD et toutes les instances associées.",
+					"warningTitle": "La suppression d'une définition de décision supprimera le DRD et aura les conséquences suivantes :",
+					"warningDrd": "En supprimant une définition de décision, vous supprimez le DRD qui contient cette définition. Toutes les autres tables de décision et expressions littérales faisant partie du DRD seront également supprimées.",
+					"warningIncidents": "La suppression de la seule version existante d'une définition de décision peut entraîner des incidents de processus.",
+					"documentation": "En savoir plus sur la suppression d'une définition de décision",
+					"details": "Détails du DRD",
+					"drdName": "Nom du DRD",
+					"successTitle": "Opération créée"
 				}
 			},
 			"decisionInstance": {
@@ -788,6 +798,9 @@
 					"modifyTitle": "Modifier l'instance {{processInstanceKey}}",
 					"deleteTitle": "Supprimer l'instance {{processInstanceKey}}",
 					"deleteButtonLabel": "Supprimer",
+					"creationErrorTitle": "L'opération n'a pas pu être créée",
+					"forbiddenTitle": "Vous n'avez pas l'autorisation d'effectuer cette opération",
+					"forbiddenSubtitle": "Veuillez contacter l'administrateur si vous avez besoin d'un accès.",
 					"cancelConfirmationModal": {
 						"heading": "Appliquer l'opération",
 						"applyButton": "Appliquer",

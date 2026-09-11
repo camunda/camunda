@@ -23,6 +23,7 @@ import {
 	type QueryBatchOperationItemsRequestBody,
 	type QueryDecisionDefinitionsRequestBody,
 	type QueryDecisionInstancesRequestBody,
+	type DeleteResourceRequestBody,
 	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
 	type CreateCancellationBatchOperationRequestBody,
 	type CreateIncidentResolutionBatchOperationRequestBody,
@@ -316,6 +317,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteResource: (resourceKey: string, body: DeleteResourceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteResource.getUrl({resourceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteResource.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
