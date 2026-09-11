@@ -77,6 +77,31 @@ public class StringFilterPropertyCoverageTest {
                     () -> assertBareStringExactMatch(field)));
   }
 
+  @Test
+  void shouldDeserializeBareStringIntoStringFilterExactMatch() throws Exception {
+    // given a bare-string wire form (the pre-8.10-compatible exact match)
+    final String wire = MAPPER.writeValueAsString(EXACT_MATCH_VALUE);
+
+    // when deserialized with the client's Jackson module
+    final StringFilterProperty filter = MAPPER.readValue(wire, StringFilterProperty.class);
+
+    // then it maps back to a pure exact match
+    assertThat(filter.get$Eq()).isEqualTo(EXACT_MATCH_VALUE);
+  }
+
+  @Test
+  void shouldDeserializeBareStringIntoBasicStringFilterExactMatch() throws Exception {
+    // given a bare-string wire form (the pre-8.10-compatible exact match)
+    final String wire = MAPPER.writeValueAsString(EXACT_MATCH_VALUE);
+
+    // when deserialized with the client's Jackson module
+    final BasicStringFilterProperty filter =
+        MAPPER.readValue(wire, BasicStringFilterProperty.class);
+
+    // then it maps back to a pure exact match
+    assertThat(filter.get$Eq()).isEqualTo(EXACT_MATCH_VALUE);
+  }
+
   private void assertBareStringExactMatch(final Field field) throws Exception {
     // given a container with only this filter field set to a pure exact match
     final Object container = field.getDeclaringClass().getDeclaredConstructor().newInstance();
@@ -120,18 +145,30 @@ public class StringFilterPropertyCoverageTest {
   private static List<Field> stringFilterFields() throws Exception {
     final List<Field> fields = new ArrayList<>();
     for (final Class<?> clazz : protocolClasses()) {
-      if (clazz.isEnum()
-          || clazz.isInterface()
-          || Modifier.isAbstract(clazz.getModifiers())
-          || !hasNoArgConstructor(clazz)) {
+      if (clazz.isEnum() || clazz.isInterface()) {
         continue;
       }
+      final List<Field> matching = new ArrayList<>();
       for (final Field field : clazz.getDeclaredFields()) {
         if (field.getType() == StringFilterProperty.class
             || field.getType() == BasicStringFilterProperty.class) {
-          fields.add(field);
+          matching.add(field);
         }
       }
+      if (matching.isEmpty()) {
+        continue;
+      }
+      if (Modifier.isAbstract(clazz.getModifiers()) || !hasNoArgConstructor(clazz)) {
+        throw new IllegalStateException(
+            "Generated class "
+                + clazz.getName()
+                + " declares string-filter field(s) "
+                + matching.stream().map(Field::getName).collect(Collectors.joining(", "))
+                + " but is abstract or has no no-arg constructor, so the bare-string guard cannot "
+                + "instantiate it to verify the wire form. Add a construction strategy for this "
+                + "class so its filter fields cannot evade the guard.");
+      }
+      fields.addAll(matching);
     }
     return fields;
   }
