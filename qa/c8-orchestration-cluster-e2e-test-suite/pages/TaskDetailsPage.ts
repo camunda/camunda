@@ -165,7 +165,10 @@ class TaskDetailsPage {
     if (!(await this.assignedToMeText.isVisible())) {
       await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
       await this.assignToMeButton.click({timeout: 60000});
-      await expect(this.unassignButton).toBeVisible({timeout: 30000});
+      // Give the post-assign UI update the same 60s budget as the button
+      // click itself -- under CI load the assignment confirmation can take
+      // as long to reflect as the click did to become actionable.
+      await expect(this.unassignButton).toBeVisible({timeout: 60000});
     }
   }
 

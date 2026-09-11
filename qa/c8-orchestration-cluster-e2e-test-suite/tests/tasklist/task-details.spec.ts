@@ -368,10 +368,18 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await taskPanelPage.openTask('User Task with form rerender 1');
+    // Both of these are single-instance tasks from the file's shared
+    // beforeAll batch of ~20 processes; give them the same 60s indexing
+    // budget as the other freshly-created tasks in this file (see
+    // 'processWithDeployedForm' below) instead of the default 10s.
+    await taskPanelPage.openTask('User Task with form rerender 1', {
+      timeout: 60000,
+    });
     await taskDetailsPage.assertFieldValue('Name*', 'Mary');
 
-    await taskPanelPage.openTask('User Task with form rerender 2');
+    await taskPanelPage.openTask('User Task with form rerender 2', {
+      timeout: 60000,
+    });
     await taskDetailsPage.assertFieldValue('Name*', 'Stuart');
   });
 
@@ -418,7 +426,9 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number_Input');
+    // See the 'processWithDeployedForm' comment below for why this needs
+    // more than the default 10s.
+    await taskPanelPage.openTask('UserTask_Number_Input', {timeout: 60000});
     await taskDetailsPage.clickAssignToMeButton();
 
     await taskDetailsPage.fillTextInput('Number', '4');
@@ -427,7 +437,10 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('UserTask_Number_Input');
+    // The just-completed task can take a moment to reindex under the
+    // 'Completed' filter (same reasoning as 'Confirm Employee Details'
+    // above).
+    await taskPanelPage.openTask('UserTask_Number_Input', {timeout: 30000});
 
     await taskDetailsPage.assertFieldValue('Number', '4');
   });
@@ -437,7 +450,9 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number_Buttons');
+    // See the 'processWithDeployedForm' comment below for why this needs
+    // more than the default 10s.
+    await taskPanelPage.openTask('UserTask_Number_Buttons', {timeout: 60000});
     await taskDetailsPage.clickAssignToMeButton();
 
     // Form-js number-button clicks can occasionally register twice on
@@ -460,7 +475,10 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('UserTask_Number_Buttons');
+    // The just-completed task can take a moment to reindex under the
+    // 'Completed' filter (same reasoning as 'Confirm Employee Details'
+    // above).
+    await taskPanelPage.openTask('UserTask_Number_Buttons', {timeout: 30000});
     await taskDetailsPage.assertFieldValue('Number', '1');
   });
 
@@ -469,7 +487,9 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('Date and Time Task');
+    // See the 'processWithDeployedForm' comment below for why this needs
+    // more than the default 10s.
+    await taskPanelPage.openTask('Date and Time Task', {timeout: 60000});
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.fillDatetimeField('Date', '1/1/3000');
     await taskDetailsPage.fillDatetimeField('Time', '12:00 PM');
@@ -479,7 +499,10 @@ test.describe('task details page', () => {
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('Date and Time Task');
+    // The just-completed task can take a moment to reindex under the
+    // 'Completed' filter (same reasoning as 'Confirm Employee Details'
+    // above).
+    await taskPanelPage.openTask('Date and Time Task', {timeout: 30000});
     await taskDetailsPage.assertFieldValue('Date', '1/1/3000');
     await taskDetailsPage.assertFieldValue('Time', '12:00 PM');
   });
