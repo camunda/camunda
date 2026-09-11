@@ -41,7 +41,7 @@ public class CancelProcessInstanceBatchOperationExecutor implements BatchOperati
     final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(itemKey);
-
+    command.setStorageOrdinalKey(storageOrdinalKey);
     commandWriter.appendFollowUpCommand(
         itemKey,
         ProcessInstanceIntent.CANCEL,
