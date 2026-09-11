@@ -143,6 +143,16 @@ jobs:
       contents: read
       id-token: write
     steps:
+      # This must run first, before any step below writes metrics-*.json/variants.json into
+      # $GITHUB_WORKSPACE: as the job's first checkout, actions/checkout always wipes the
+      # workspace during its pre-init step regardless of `clean: false` (that flag only
+      # suppresses the post-checkout `git clean -ffdx`, not the pre-init wipe that runs when no
+      # compatible git repo already exists at the workspace path). Checking out here, before
+      # those files exist, means there's nothing for that wipe to delete.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
       - name: Download variant metrics artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true # a variant whose collect-metrics never ran just yields fewer entries below
@@ -193,14 +203,6 @@ jobs:
             variants.json
           retention-days: 90
           if-no-files-found: ignore
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: .github
-          persist-credentials: false
-          # clean: false -- checkout defaults to `git clean -ffdx`, which would delete the
-          # metrics-*.json/variants.json files the steps above just wrote into $GITHUB_WORKSPACE
-          # before the GCS upload step below gets to read them.
-          clean: false
       - name: Download flamegraph artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true # profiling is best-effort; a run with no flamegraphs still persists its metrics
