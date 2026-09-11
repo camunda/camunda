@@ -30,6 +30,7 @@ public final class SocketUtil {
   private static final int PORT_RANGE_PER_TEST_FORK = 1000;
   private static final int TOTAL_PORT_RANGE = PORT_RANGE_PER_TEST_FORK * MAX_TEST_FORKS;
 
+  private static final String GRADLE_WORKER_ID_PROPERTY_NAME = "test.gradleWorkerIdProperty";
   private static final int TEST_FORK_NUMBER;
   private static final PortRange PORT_RANGE;
 
@@ -38,9 +39,13 @@ public final class SocketUtil {
 
     LOG.info("Starting socket assignment with testForkNumber {}", testForkNumber);
 
-    // ensure limits to stay in available port range
-    assert testForkNumber < MAX_TEST_FORKS
-        : "System property test fork number has to be smaller than " + MAX_TEST_FORKS;
+    final boolean useEphemeralPorts =
+        System.getProperty(GRADLE_WORKER_ID_PROPERTY_NAME) != null;
+    if (!useEphemeralPorts) {
+      // ensure limits to stay in available port range
+      assert testForkNumber < MAX_TEST_FORKS
+          : "System property test fork number has to be smaller than " + MAX_TEST_FORKS;
+    }
     final int absoluteMaxPort = BASE_PORT + TOTAL_PORT_RANGE;
     // this assert seems unnecessary but is there to prevent changes to the constants above from
     // causing potential collisions with the base port that the Docker daemon uses
@@ -51,12 +56,15 @@ public final class SocketUtil {
             + DOCKER_BASE_PORT
             + ", the minimum port of Docker";
 
-    final int testOffset = testForkNumber * PORT_RANGE_PER_TEST_FORK;
-    final int min = BASE_PORT + testOffset;
-    final int max = min + PORT_RANGE_PER_TEST_FORK;
-
     TEST_FORK_NUMBER = testForkNumber;
-    PORT_RANGE = new PortRange(DEFAULT_HOST, TEST_FORK_NUMBER, min, max);
+    if (useEphemeralPorts) {
+      PORT_RANGE = new PortRange(DEFAULT_HOST, TEST_FORK_NUMBER);
+    } else {
+      final int testOffset = testForkNumber * PORT_RANGE_PER_TEST_FORK;
+      final int min = BASE_PORT + testOffset;
+      final int max = min + PORT_RANGE_PER_TEST_FORK;
+      PORT_RANGE = new PortRange(DEFAULT_HOST, TEST_FORK_NUMBER, min, max);
+    }
   }
 
   private SocketUtil() {}

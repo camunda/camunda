@@ -29,10 +29,9 @@ public final class TestEnvironment {
       if (testForkNumberProperty != null) {
         testForkNumber = Integer.parseInt(testForkNumberProperty);
       } else {
-        // Gradle doesn't expose a per-worker fork number directly. As a workaround, the build
-        // passes the name of Gradle's internal worker ID property via test.gradleWorkerIdProperty.
-        // Each worker JVM has that property set to its unique ID (1-based), which we map to a
-        // 0-based fork number so SocketUtil assigns non-overlapping port ranges per worker.
+        // Gradle doesn't expose a per-worker fork number directly. Preserve its worker ID for
+        // diagnostics; SocketUtil uses OS-assigned ports for Gradle workers instead of treating
+        // the global ID as a bounded port-range slot.
         final String gradleWorkerIdPropName = System.getProperty("test.gradleWorkerIdProperty");
         if (gradleWorkerIdPropName != null) {
           final String workerId = System.getProperty(gradleWorkerIdPropName);
