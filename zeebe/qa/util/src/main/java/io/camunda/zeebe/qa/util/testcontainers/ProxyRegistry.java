@@ -11,9 +11,9 @@ import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.IntStream;
 import org.testcontainers.containers.ToxiproxyContainer;
 
@@ -29,19 +29,21 @@ import org.testcontainers.containers.ToxiproxyContainer;
 public final class ProxyRegistry {
 
   // used to generate unique listen ports on the Toxiproxy container; each proxy will use a single
-  // port, which must be unique to avoid collisions. Starts at 1024, since ports below are reserved
-  // by the kernel
+  // port, which must be unique to avoid collisions
   private static final int MIN_EXPOSED_PORT = 10_000;
   private static final int MAX_EXPOSED_PORT = MIN_EXPOSED_PORT + 32;
-  private static final AtomicInteger PORT_GENERATOR = new AtomicInteger(MIN_EXPOSED_PORT);
 
   // the name under which the container reaches ports bound on the host running the tests
   private static final String HOST_ALIAS = "host.testcontainers.internal";
 
-  // concurrent to allow static usage along with static containers and parallel tests
-  private final ConcurrentMap<String, ContainerProxy> proxies = new ConcurrentHashMap<>();
   private final ToxiproxyContainer toxiproxy;
-  private ToxiproxyClient lazyClient;
+
+  // everything below describes the container run identified by containerId, and is guarded by
+  // this; see resetIfContainerRestarted
+  private final Map<String, ContainerProxy> proxies = new HashMap<>();
+  private int nextPort = MIN_EXPOSED_PORT;
+  private ToxiproxyClient client;
+  private String containerId;
 
   public ProxyRegistry(final ToxiproxyContainer toxiproxy) {
     this.toxiproxy = toxiproxy;
@@ -69,7 +71,8 @@ public final class ProxyRegistry {
    * @param upstream the upstream endpoint that the proxy points to
    * @return a {@link ContainerProxy} which can be used to access the proxy
    */
-  public ContainerProxy getOrCreateProxy(final String upstream) {
+  public synchronized ContainerProxy getOrCreateProxy(final String upstream) {
+    resetIfContainerRestarted();
     return proxies.computeIfAbsent(upstream, this::createProxy);
   }
 
@@ -87,29 +90,41 @@ public final class ProxyRegistry {
   }
 
   private ContainerProxy createProxy(final String upstream) {
-    final var proxyPort = PORT_GENERATOR.getAndIncrement();
-
-    if (proxyPort >= MAX_EXPOSED_PORT) {
+    if (nextPort >= MAX_EXPOSED_PORT) {
       throw new IllegalStateException(
           "Cannot proxy more than %d ports with a single container"
               .formatted(MAX_EXPOSED_PORT - MIN_EXPOSED_PORT));
     }
 
+    final var proxyPort = nextPort++;
     try {
       final var proxy =
-          getClient().createProxy(upstream, "0.0.0.0:%d".formatted(proxyPort), upstream);
+          Objects.requireNonNull(client)
+              .createProxy(upstream, "0.0.0.0:%d".formatted(proxyPort), upstream);
       return new ContainerProxy(proxy, proxyPort);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  private synchronized ToxiproxyClient getClient() {
-    if (lazyClient == null) {
-      lazyClient = new ToxiproxyClient(toxiproxy.getHost(), toxiproxy.getControlPort());
+  /**
+   * Proxies live in the container, so a container that was stopped and started again is empty and
+   * publishes new host ports. That happens when a test class keeps the container and this registry
+   * in static fields and is rerun after a failure: the container is recreated, the registry is not.
+   * Forget everything recorded for the previous run, so that the client targets the live control
+   * port and each proxy is created anew instead of being looked up in a container that never had
+   * it.
+   */
+  private void resetIfContainerRestarted() {
+    final var currentId = toxiproxy.getContainerId();
+    if (Objects.equals(currentId, containerId)) {
+      return;
     }
 
-    return lazyClient;
+    containerId = currentId;
+    client = new ToxiproxyClient(toxiproxy.getHost(), toxiproxy.getControlPort());
+    proxies.clear();
+    nextPort = MIN_EXPOSED_PORT;
   }
 
   /**
