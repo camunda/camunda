@@ -669,6 +669,90 @@ jobs:
       dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/camunda:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
+  # Shadow run of the new release-notes generator (#57713), beside the legacy
+  # zcl changelog the `github` job builds. Read-only and non-blocking: it never
+  # gates the release, and its output is read from the run summary.
+  #
+  # Its own job purely so the token can be read-only. GitHub scopes token
+  # permissions per JOB, and `github` publishes the release and labels issues,
+  # so it necessarily holds write. Running the generator there handed a
+  # write-capable token to an action whose whole contract is that it only
+  # reads — the permissions below are what make that claim enforceable rather
+  # than merely documented.
+  #
+  #   - Skipped on a dry run. The generator walks `<baseline>..<tag>`, and on a
+  #     dry run the tag is never pushed, so a fresh checkout cannot resolve it;
+  #     the step could only ever fail.
+  #   - Skipped for the scheduled dry-run wrapper's fake `dryrun` tags — those
+  #     aren't real semver and would fail baseline resolution.
+  #   - allow-unattributed=true: shadow mode must never fail on an attribution
+  #     gap the legacy tool does not even check for.
+  release-notes-shadow:
+    # AFTER the github job, not beside it. Both call the GitHub API with the
+    # same GITHUB_TOKEN, and the secondary rate limit fires on concurrency
+    # rather than volume — run in parallel, this job's hundreds of GraphQL
+    # requests could throttle zcl's and fail the REAL changelog. Serial costs
+    # only wall-clock on a job nothing waits for.
+    needs: [release, github]
+    name: Release Notes (shadow run)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    # Belt and braces with the step's own continue-on-error: that one keeps a
+    # failing GENERATOR from failing the job, this one keeps a failing JOB —
+    # a dead checkout, a hit timeout — from turning the whole release run red
+    # for a job that gates nothing.
+    continue-on-error: true
+    # A minor walks thousands of commits; a patch finishes in seconds.
+    timeout-minutes: 30
+    # KILL SWITCH: set the repository variable RELEASE_NOTES_SHADOW_DISABLED to
+    # 'true' to turn this job off without a code change or a merge. Unset means
+    # enabled, so nothing has to be configured for it to work.
+    #
+    # Patches and alphas for now; minors and candidates skipped. A minor walks
+    # thousands of commits and predates the PR-issue gate, making it both the
+    # slowest run and the noisiest comparison. Candidates are skipped because
+    # zcl and this tool agree on chaining rcN -> rc(N-1) but the interesting
+    # divergence is in the releases themselves.
+    #
+    # BOTH dry-run flags are skipped, for the same underlying reason — the tag
+    # the generator is asked to walk to does not exist in this job's fresh
+    # checkout:
+    #   - dryRun sets remoteTagging=false, so the tag is created only in the
+    #     release job's own workspace and never pushed.
+    #   - releaseProcessDryRun DOES push a tag, but names it `dryrun-<version>`
+    #     while releaseVersion stays plain, so the plain tag is still absent —
+    #     or, worse, resolves to the PREVIOUS real release of that version and
+    #     the run silently reports the wrong range.
+    #
+    # Expressions have no regex, so the version shape is tested as
+    # `!contains('-rc')` (drops candidates) plus `!endsWith('.0')` (drops
+    # minors, while leaving `X.Y.0-alphaN` alone).
+    if: ${{ always() && !cancelled() &&
+      needs.release.result == 'success' && needs.github.result == 'success' &&
+      vars.RELEASE_NOTES_SHADOW_DISABLED != 'true' &&
+      !inputs.dryRun && !inputs.releaseProcessDryRun && !contains(inputs.releaseVersion, 'dryrun') &&
+      !contains(inputs.releaseVersion, '-rc') && !endsWith(inputs.releaseVersion, '.0') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          fetch-depth: 0 # Tags and full history — the range walk needs both.
+          persist-credentials: false
+      - name: Generate Changelog (new generator, shadow run)
+        id: gen-changelog-shadow
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/generate
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-version: ${{ inputs.releaseVersion }}
+          release-branch: ${{ env.RELEASE_BRANCH }}
+          allow-unattributed: 'true'
+          unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
+          output-dir: release-notes-shadow
+
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
   # - With dryRun=true: Skips creating the actual GitHub release (only prepares artifacts and changelog)
@@ -748,27 +832,6 @@ jobs:
 
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
-      # Shadow run of the new release-notes generator (#57713), alongside the
-      # legacy zcl tool above, so both outputs land in the same run summary
-      # for comparison. Read-only and non-blocking: never gates the release.
-      #   - Runs even when dryRun is true (unlike the zcl step above) so it
-      #     still gives signal on a dry run, where zcl is skipped entirely.
-      #   - Skipped for the scheduled dry-run wrapper's fake `dryrun` tags —
-      #     those aren't real semver and would fail baseline resolution.
-      #   - allow-unattributed=true: shadow mode must never fail on an
-      #     attribution gap the legacy tool doesn't even check for.
-      - name: Generate Changelog (new generator, shadow run)
-        id: gen-changelog-shadow
-        if: ${{ !contains(inputs.releaseVersion, 'dryrun') }}
-        continue-on-error: true
-        uses: ./.github/actions/release-notes/generate
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target-version: ${{ inputs.releaseVersion }}
-          release-branch: ${{ env.RELEASE_BRANCH }}
-          allow-unattributed: 'true'
-          unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
-          output-dir: release-notes-shadow
       - name: Download Release Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

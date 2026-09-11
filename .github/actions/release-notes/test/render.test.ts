@@ -27,13 +27,50 @@ test('a single closing PR appears in the customer body under its section, linkin
   assert.match(result.customerBody, /#100/);
 });
 
-test('an unattributed bucket reports a failure reason by default, but still renders every output — audit.json must exist to explain why', () => {
+test('an unattributed bucket reports a failure reason by default, but still renders every output', () => {
+  // given
   const unattributed = [pr({ number: 2, attributionSource: 'unattributed', issueNumbers: [] })];
+
+  // when
   const result = render([], unattributed, { version: '8.8.30', allowUnattributed: false });
+
+  // then — the failure names the pull request, and every output still exists,
+  // because audit.json's whole purpose is explaining a failed run.
   assert.match(result.failureReason ?? '', /#2/);
-  assert.ok(
-    (result.auditJson as { overrides: { number: number; reason: string }[] }).overrides.some((o) => o.number === 2),
-  );
+  assert.ok(result.fullAsset.length > 0);
+  assert.equal((result.auditJson as { version: string }).version, '8.8.30');
+});
+
+test('audit.json carries the run\'s audit lines, not just its overrides', () => {
+  // given — the lines the job also logs as warnings
+  const warnings = ['Ruleset-bypass anomaly: commit abc has no associated pull request', 'PR #9: post_gate_fallback_attribution (legacyBodyScan).'];
+
+  // when
+  const result = render([pr({ number: 9 })], [], { version: '8.9.0', allowUnattributed: false, warnings });
+
+  // then — a log is not an artifact: nothing downstream can read, diff or
+  // archive one, so the audit guarantees have to survive in the file too.
+  assert.deepEqual((result.auditJson as { warnings: string[] }).warnings, warnings);
+});
+
+test('audit.json carries an empty warning list rather than omitting the field', () => {
+  // when — a clean run
+  const result = render([pr({ number: 9 })], [], { version: '8.9.0', allowUnattributed: false });
+
+  // then — a consumer never has to distinguish absent from empty
+  assert.deepEqual((result.auditJson as { warnings: string[] }).warnings, []);
+});
+
+test('a failed run records no overrides — nothing was overridden', () => {
+  // given — the guard failed, so no exception was approved
+  const unattributed = [pr({ number: 2, attributionSource: 'unattributed', issueNumbers: [] })];
+
+  // when
+  const result = render([], unattributed, { version: '8.8.30', allowUnattributed: false });
+
+  // then — writing rows here made a plain failure indistinguishable from an
+  // approved exception, in the one file whose job is telling them apart.
+  assert.deepEqual((result.auditJson as { overrides: unknown[] }).overrides, []);
 });
 
 test('the two failures sharing the gate bucket are named apart, each with its own remedy', () => {
@@ -108,6 +145,41 @@ test('an issue this PR only contributes to (does not close) gets a "Partially de
   assert.equal(entry?.relationKind, 'contributor');
   assert.match(entry!.text, /Partially delivered in 8\.8\.5 by #11/);
   assert.doesNotMatch(entry!.text, /Released/);
+});
+
+test('several pull requests delivering one issue produce ONE comment naming all of them', () => {
+  // given — four pull requests, one issue. Per-PR rows all carried the same
+  // `issue-100` marker, so publishing them would have overwritten one with the
+  // next and left only whichever was applied last.
+  const prs = [100, 101, 102, 103].map((number) => pr({ number, issueNumbers: [100], closesIssueNumbers: [] }));
+
+  // when
+  const result = render(prs, [], { version: '8.9.0', allowUnattributed: false });
+
+  // then
+  const entries = (result.commentsJson as { entries: { issueNumber: number; prNumbers: number[]; text: string }[] }).entries;
+  const forIssue = entries.filter((e) => e.issueNumber === 100);
+  assert.equal(forIssue.length, 1);
+  assert.deepEqual(forIssue[0]!.prNumbers, [100, 101, 102, 103]);
+  assert.match(forIssue[0]!.text, /by #100, #101, #102, #103/);
+});
+
+test('an issue is Released when ANY of its delivering pull requests closed it', () => {
+  // given — only the last of three actually closed the issue
+  const prs = [
+    pr({ number: 200, issueNumbers: [100], closesIssueNumbers: [] }),
+    pr({ number: 201, issueNumbers: [100], closesIssueNumbers: [] }),
+    pr({ number: 202, issueNumbers: [100], closesIssueNumbers: [100] }),
+  ];
+
+  // when
+  const result = render(prs, [], { version: '8.9.0', allowUnattributed: false });
+
+  // then — one comment, and it reads as released rather than partial
+  const entries = (result.commentsJson as { entries: { issueNumber: number; relationKind: string; text: string }[] }).entries;
+  const entry = entries.find((e) => e.issueNumber === 100);
+  assert.equal(entry?.relationKind, 'closing');
+  assert.match(entry!.text, /Released in 8\.9\.0 \(#200, #201, #202\)/);
 });
 
 test('multi-release delivery idempotency: the earlier release never says Released even after the later one does', () => {
