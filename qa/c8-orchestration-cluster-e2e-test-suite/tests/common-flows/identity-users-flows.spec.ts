@@ -14,6 +14,7 @@ import {createTestData} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {verifyAccess} from 'utils/accessVerification';
 import {waitForItemInList} from 'utils/waitForItemInList';
+import {waitForAssertion} from 'utils/waitForAssertion';
 import {createInstances, deploy} from 'utils/zeebeClient';
 import {sleep} from 'utils/sleep';
 import {cleanupUsers} from 'utils/usersCleanup';
@@ -421,8 +422,22 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify test user can view the userTask in Tasklist', async () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
-      await expect(page.getByText('identityProcess').first()).toBeVisible({
-        timeout: 60000,
+      // Tasklist's task search doesn't poll aggressively enough to always
+      // pick up a just-propagated group authorization within a single 60s
+      // wait (unlike Operate's process-instance list, which the previous
+      // step confirms updates within that window from the same
+      // authorization change) -- force a fresh fetch with a reload between
+      // attempts, same pattern used elsewhere in this suite for
+      // eventual-consistency waits.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('identityProcess').first()).toBeVisible(
+            {timeout: 20000},
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
     });
   });
