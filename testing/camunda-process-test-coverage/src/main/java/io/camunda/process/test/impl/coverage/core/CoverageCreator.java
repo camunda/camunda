@@ -163,13 +163,19 @@ public class CoverageCreator {
    * describes such a process by a single model, so elements of the other models are not part of the
    * coverage: they are neither counted nor highlighted in the diagram.
    *
+   * <p>An element that an instance covered several times, for example by looping over it, is
+   * retained once. Otherwise it would count as covering several elements of the model.
+   *
    * @param elementIds The ids of the covered elements
    * @param coverableElementIds The ids of the elements of the reported model
-   * @return The covered element ids that are part of the reported model
+   * @return The distinct covered element ids that are part of the reported model
    */
   private static List<String> retainCoverable(
       final List<String> elementIds, final Set<String> coverableElementIds) {
-    return elementIds.stream().filter(coverableElementIds::contains).collect(Collectors.toList());
+    return elementIds.stream()
+        .filter(coverableElementIds::contains)
+        .distinct()
+        .collect(Collectors.toList());
   }
 
   /**

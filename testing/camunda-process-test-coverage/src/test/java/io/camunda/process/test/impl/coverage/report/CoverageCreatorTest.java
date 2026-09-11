@@ -319,4 +319,56 @@ class CoverageCreatorTest {
     // then: the sequence flow from the event-based gateway to the timer event is added
     assertThat(coverage.getTakenSequenceFlows()).contains("Flow_Timer");
   }
+
+  @Test
+  void shouldCollectAnEventBasedGatewayFlowOnlyOnceWhenTheGatewayIsPassedRepeatedly() {
+    // given: a process that loops back to its event-based gateway
+    final String processDefinitionId = "test-with-event-based-gateway-loop";
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(processDefinitionId)
+            .startEvent("StartEvent")
+            .eventBasedGateway("Gateway")
+            .sequenceFlowId("Flow_Timer")
+            .intermediateCatchEvent("Timer_Event")
+            .timerWithDuration("PT2S")
+            .connectTo("Gateway")
+            .done();
+
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn(processDefinitionId);
+
+    // and: an instance that passed the gateway and the timer event three times
+    final ImmutableCoverageProcessInstanceData processInstanceData =
+        ImmutableCoverageProcessInstanceData.builder()
+            .processInstance(processInstance)
+            .addElementInstances(
+                completedElementInstance("Gateway", ElementInstanceType.EVENT_BASED_GATEWAY),
+                completedElementInstance(
+                    "Timer_Event", ElementInstanceType.INTERMEDIATE_CATCH_EVENT),
+                completedElementInstance("Gateway", ElementInstanceType.EVENT_BASED_GATEWAY),
+                completedElementInstance(
+                    "Timer_Event", ElementInstanceType.INTERMEDIATE_CATCH_EVENT),
+                completedElementInstance("Gateway", ElementInstanceType.EVENT_BASED_GATEWAY),
+                completedElementInstance(
+                    "Timer_Event", ElementInstanceType.INTERMEDIATE_CATCH_EVENT))
+            .build();
+
+    // when
+    final ProcessCoverage coverage =
+        CoverageCreator.createCoverage(
+            processInstanceData, ProcessModelFixtures.modelOf(processDefinitionId, model));
+
+    // then: the flow is taken once, so it does not count as covering several elements
+    assertThat(coverage.getTakenSequenceFlows()).containsExactly("Flow_Timer");
+    assertThat(coverage.getCoverage()).isEqualTo(3.0 / 6);
+  }
+
+  private static ElementInstance completedElementInstance(
+      final String elementId, final ElementInstanceType type) {
+    final ElementInstance elementInstance = mock(ElementInstance.class);
+    when(elementInstance.getElementId()).thenReturn(elementId);
+    when(elementInstance.getType()).thenReturn(type);
+    when(elementInstance.getState()).thenReturn(ElementInstanceState.COMPLETED);
+    return elementInstance;
+  }
 }
