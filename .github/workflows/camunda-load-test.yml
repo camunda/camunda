@@ -135,6 +135,11 @@ on:
         type: string
         default: ""
         required: false
+      metrics-exporter-tag:
+        description: 'Override Metrics Exporter image tag (registry.camunda.cloud/team-reliability-testing/metrics-exporter). Builds and pushes this tag from load-tests/metrics-exporter. Only set this to deliberately test a new metrics-exporter build — it is independent of the Camunda version under test and otherwise defaults to "latest".'
+        type: string
+        default: ""
+        required: false
   workflow_call:
     inputs:
       ref:
@@ -246,6 +251,11 @@ on:
         type: string
         default: ""
         required: false
+      metrics-exporter-tag:
+        description: 'Metrics Exporter Tag: Docker image tag for the load-test Metrics Exporter (registry.camunda.cloud/team-reliability-testing/metrics-exporter). When set, builds and pushes this tag from load-tests/metrics-exporter and deploys it. The metrics-exporter has its own independent versioning from the Camunda version under test, so leave unset to use the Helm chart default ("latest", kept fresh by CI on every merge to main); only set this to deliberately test a new metrics-exporter build.'
+        type: string
+        default: ""
+        required: false
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
@@ -266,6 +276,7 @@ env:
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
   LOAD_TEST_LOAD: ${{ inputs.load-test-load }}
   LOAD_TEST_SETUP_HELM_VALUES: ${{ inputs.load-test-setup-helm-values }}
+  METRICS_EXPORTER_TAG: ${{ inputs.metrics-exporter-tag }}
   NAME: ${{ inputs.name }}
   OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
   ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
@@ -322,6 +333,7 @@ jobs:
           | Optimize tag | \`${OPTIMIZE_TAG:-—}\` |
           | Identity tag | \`${IDENTITY_TAG:-—}\` |
           | Connectors tag | \`${CONNECTORS_TAG:-—}\` |
+          | Metrics exporter tag | \`${METRICS_EXPORTER_TAG:-latest}\` |
           EOF
 
   calculate-image-tag:
@@ -508,10 +520,14 @@ jobs:
 
   build-metrics-exporter-image:
     name: Build Metrics Exporter
-    if: ${{ inputs.reuse-tag == '' || inputs.orchestration-tag != '' }}
+    # The metrics-exporter has its own independent versioning from the Camunda version
+    # under test (it is normally kept at "latest" via the dedicated CI on main, see
+    # camunda-load-test-metrics-exporter-ci.yaml). Only build here when a caller
+    # explicitly asks to test a new metrics-exporter build via metrics-exporter-tag —
+    # do not tie this to reuse-tag/orchestration-tag, which are about the Camunda images.
+    if: ${{ inputs.metrics-exporter-tag != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: calculate-image-tag
     permissions:
       contents: read
       id-token: write
@@ -533,7 +549,7 @@ jobs:
         working-directory: ./load-tests/metrics-exporter
         run: make docker "IMAGE=registry.camunda.cloud/team-reliability-testing/metrics-exporter:${IMAGE_TAG}" DOCKER_PUSH=true
         env:
-          IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          IMAGE_TAG: ${{ inputs.metrics-exporter-tag }}
 
       - name: Observe build status
         if: always()
@@ -609,7 +625,6 @@ jobs:
           RESOLVED_IMAGE_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
           CAMUNDA_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
           OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}
-          METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
         run: |-
           .github/scripts/load-test-install-camunda-platform.sh \
             "${NAMESPACE}" \
@@ -622,7 +637,7 @@ jobs:
             "${PERFORM_READ_BENCHMARKS}" \
             "${ENABLE_OPTIMIZE}" \
             "${ENABLE_OPTIMIZE_METRICS}" \
-            "${METRICS_EXPORTER_BUILT}" \
+            "${METRICS_EXPORTER_TAG}" \
             "${ENABLE_CHAOS}" \
             "${PHYSICAL_TENANT_COUNT}" \
             --optimize-tag "${OPTIMIZE_TAG}" \
