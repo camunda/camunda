@@ -69,6 +69,9 @@
     <version.gson>2.14.0</version.gson>
     <version.guava>33.7.1-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
+    <version.icu4j>78.3</version.icu4j>
+    <version.json-schema-validator>3.0.7</version.json-schema-validator>
+    <version.maven-surefire-common>3.5.6</version.maven-surefire-common>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpclient5>5.6.4</version.httpclient5>
@@ -170,6 +173,8 @@
     <version.checker-qual>4.2.3</version.checker-qual>
     <version.java-jwt>4.6.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
+    <version.roaster>2.31.1.Final</version.roaster>
+    <version.surefire-extensions-api>3.5.6</version.surefire-extensions-api>
     <version.postgresql>42.7.13</version.postgresql>
     <version.h2>2.4.240</version.h2>
     <version.aws-advanced-jdbc-wrapper>4.4.0</version.aws-advanced-jdbc-wrapper>
