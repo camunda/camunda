@@ -21,14 +21,27 @@ const MAX_RETRY_AFTER_MS = 60_000;
  *  `retry-after` (a 403 without one is a real permission failure and must not
  *  be retried). 5xx is a transient backend failure. Mirrors resolve/index.ts's
  *  GraphQL-side retryableStatus — same throttle shapes, REST transport. */
-function retryableStatus(res: Response): boolean {
+async function retryableStatus(res: Response): Promise<boolean> {
   if (res.status === 429 || res.status >= 500) return true;
-  return res.status === 403 && res.headers.get('retry-after') !== null;
+  if (res.status !== 403) return false;
+  if (res.headers.get('retry-after') !== null) return true;
+  if (res.headers.get('x-ratelimit-remaining') === '0') return true;
+  // GitHub's SECONDARY rate limit — the one that fires on concurrency rather
+  // than on volume — answers 403 and often names itself only in the body, with
+  // the primary counter still reading full. Indistinguishable from a permission
+  // failure by status alone, so read the body of a 403 (from a clone, leaving
+  // the caller's stream intact) before deciding this job cannot proceed.
+  try {
+    return /rate limit/i.test(await res.clone().text());
+  } catch {
+    return false;
+  }
 }
 
-/** The server's own wait, when it names one, else exponential backoff. */
-function backoffMs(res: Response, attempt: number): number {
-  const header = res.headers.get('retry-after');
+/** The server's own wait, when it names one, else exponential backoff. `null`
+ *  when the request never produced a response at all. */
+function backoffMs(res: Response | null, attempt: number): number {
+  const header = res?.headers.get('retry-after') ?? null;
   const seconds = header === null ? NaN : Number(header);
   if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
   return 2 ** attempt * 1000;
@@ -46,12 +59,56 @@ export async function fetchWithRetry(
   sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 ): Promise<Response> {
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(url, init);
-    if (res.ok || !retryableStatus(res)) return res;
+    let res: Response;
+    try {
+      res = await fetch(url, init);
+    } catch (error) {
+      // `fetch` REJECTS on a socket-level failure — connection reset, socket
+      // hang-up, DNS blip — rather than returning a Response, so none of the
+      // status handling below ever sees it. Left unguarded this aborts the
+      // whole job on one blip, which over the thousands of calls a minor
+      // release makes is close to certain.
+      if (attempt >= MAX_RETRIES - 1) {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`GitHub API request never completed past ${MAX_RETRIES} attempts (${url}): ${detail}`);
+      }
+      await sleepImpl(backoffMs(null, attempt));
+      continue;
+    }
+    if (res.ok || !(await retryableStatus(res))) return res;
     if (attempt >= MAX_RETRIES - 1) {
       throw new Error(`GitHub API kept returning HTTP ${res.status} past ${MAX_RETRIES} attempts (${url}).`);
     }
     await sleepImpl(backoffMs(res, attempt));
+  }
+}
+
+/** A JSON response that survived the retries, or the status that explains why
+ *  there is no body to read. */
+export type JsonResult<T> = { readonly ok: true; readonly status: number; readonly data: T } | { readonly ok: false; readonly status: number };
+
+/**
+ * `fetchWithRetry` plus the body read, so a truncated or empty body is retried
+ * like any other transient instead of throwing a SyntaxError past the retry
+ * loop. GitHub answers that way under load exactly as readily as it answers
+ * 502, and parsing outside the loop meant one such body killed the run.
+ */
+export async function fetchJsonWithRetry<T>(
+  url: string,
+  init: RequestInit,
+  sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<JsonResult<T>> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetchWithRetry(url, init, sleepImpl);
+    if (!res.ok) return { ok: false, status: res.status };
+    try {
+      return { ok: true, status: res.status, data: (await res.json()) as T };
+    } catch {
+      if (attempt >= MAX_RETRIES - 1) {
+        throw new Error(`GitHub API returned an unparseable body past ${MAX_RETRIES} attempts (${url}).`);
+      }
+      await sleepImpl(backoffMs(null, attempt));
+    }
   }
 }
 
