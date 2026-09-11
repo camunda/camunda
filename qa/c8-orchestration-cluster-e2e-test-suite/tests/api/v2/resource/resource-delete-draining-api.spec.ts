@@ -178,7 +178,9 @@ test.describe('Process Definition Draining Deletion API', () => {
     await findUserTask(request, instance.processInstanceKey, 'CREATED');
     await drainProcessDefinition(request, processDefinitionKey);
 
-    await cancelProcessInstance(instance.processInstanceKey);
+    await cancelProcessInstance(instance.processInstanceKey, {
+      ignoreNotFound: false,
+    });
 
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
   });
@@ -203,7 +205,9 @@ test.describe('Process Definition Draining Deletion API', () => {
     await drainProcessDefinition(request, processDefinitionKey);
 
     for (let ended = 1; ended < instances.length; ended++) {
-      await cancelProcessInstance(instances[ended - 1]!.processInstanceKey);
+      await cancelProcessInstance(instances[ended - 1]!.processInstanceKey, {
+        ignoreNotFound: false,
+      });
       await expectProcessInstanceCount(
         request,
         {processDefinitionId, state: 'ACTIVE'},
@@ -218,6 +222,9 @@ test.describe('Process Definition Draining Deletion API', () => {
 
     await cancelProcessInstance(
       instances[instances.length - 1]!.processInstanceKey,
+      {
+        ignoreNotFound: false,
+      },
     );
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
   });
@@ -261,7 +268,9 @@ test.describe('Process Definition Draining Deletion API', () => {
     await drainProcessDefinition(request, childKey);
     await expectProcessDefinitionState(request, parentKey, 'ACTIVE');
 
-    await cancelProcessInstance(parentInstance.processInstanceKey);
+    await cancelProcessInstance(parentInstance.processInstanceKey, {
+      ignoreNotFound: false,
+    });
 
     await expectProcessDefinitionDeleted(request, childKey);
   });
@@ -546,7 +555,9 @@ test.describe('Process Definition Draining Deletion API', () => {
 
     // Cancelling keeps the test off the user-task index, the slowest propagation
     // path.
-    await cancelProcessInstance(instance.processInstanceKey);
+    await cancelProcessInstance(instance.processInstanceKey, {
+      ignoreNotFound: false,
+    });
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
 
     await expectProcessInstanceCount(request, {processDefinitionId}, 1);
@@ -577,7 +588,9 @@ test.describe('Process Definition Draining Deletion API', () => {
     // History is retained for as long as the definition is draining.
     await expectProcessInstanceCount(request, {processDefinitionId}, 1);
 
-    await cancelProcessInstance(instance.processInstanceKey);
+    await cancelProcessInstance(instance.processInstanceKey, {
+      ignoreNotFound: false,
+    });
 
     // The purge takes the definition record with it, so there is nothing left to
     // read back.

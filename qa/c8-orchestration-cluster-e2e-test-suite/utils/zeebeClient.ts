@@ -80,16 +80,18 @@ const createSingleInstance = async (
   });
 };
 
-const cancelProcessInstance = async (processInstanceKey: string) => {
+// Default true for teardown; pass false when the cancel itself drives the
+// assertion, so a 404 there is not silently absorbed.
+const cancelProcessInstance = async (
+  processInstanceKey: string,
+  {ignoreNotFound = true}: {ignoreNotFound?: boolean} = {},
+) => {
   return zeebe.cancelProcessInstance({processInstanceKey}).catch((e) => {
-    // The SDK wraps HTTPError and exposes the response status as `statusCode`;
-    // older code paths used `status`. Accept either so 404s from already-
-    // completed instances are silently swallowed (common cleanup scenario).
+    // SDK reports the status as statusCode or status depending on the path.
     const status = e?.statusCode ?? e?.status;
-    if (status === 404) {
+    if (ignoreNotFound && status === 404) {
       return;
     }
-    // Something else happened. Throw the error to surface the problem.
     throw e;
   });
 };
