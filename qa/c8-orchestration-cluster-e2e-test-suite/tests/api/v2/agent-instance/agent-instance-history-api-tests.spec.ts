@@ -60,6 +60,10 @@ test.describe.serial('Agent Instance History Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {path: CREATE_ENDPOINT, method: 'POST', status: '200'},
+        res,
+      );
       state.agentInstanceKey = (await res.json()).agentInstanceKey as string;
     });
   });

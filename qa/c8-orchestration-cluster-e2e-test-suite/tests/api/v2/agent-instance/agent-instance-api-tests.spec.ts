@@ -9,6 +9,7 @@
 import {expect, test} from '@playwright/test';
 import {APIRequestContext} from 'playwright-core';
 import {
+  assertBadRequest,
   assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -455,7 +456,7 @@ test.describe.serial('Agent Instance API', () => {
       headers: jsonHeaders(),
       data: {elementInstanceKey},
     });
-    await assertStatusCode(res, 400);
+    await assertBadRequest(res, 'No definition provided', 'INVALID_ARGUMENT');
   });
 
   test('Get unknown agent instance returns 404', async ({request}) => {
