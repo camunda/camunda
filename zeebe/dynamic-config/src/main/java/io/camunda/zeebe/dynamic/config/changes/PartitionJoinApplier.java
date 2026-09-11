@@ -25,10 +25,22 @@ import java.util.function.UnaryOperator;
 /**
  * A Partition Join operation is executed when a member wants to start replicating a partition. This
  * is allowed only when the member is active, and the partition is not already active.
+ *
+ * <p>The member joins the partition's replication group as a non-voting learner - the first phase
+ * of a two-phase join - and the partition ends in the {@code LEARNER} state, from which the
+ * subsequent promote operation makes it a voting member. The {@code JOINING} state only spans the
+ * join itself and is deliberately not part of the partition distribution, so a restart within it
+ * retries the join from scratch; {@code LEARNER} is, so a restart after it recovers the partition
+ * from disk.
+ *
+ * <p>An operation created before two-phase joins existed ({@code asLearner} false) is not followed
+ * by a promote operation. It keeps its original meaning: the member joins as a voting member and
+ * the partition ends {@code ACTIVE}, so a change in flight during a rolling upgrade completes.
  */
 final class PartitionJoinApplier implements MemberOperationApplier {
   private final int partitionId;
   private final int priority;
+  private final boolean asLearner;
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final MemberId localMemberId;
   private Map<MemberId, Integer> partitionMembersWithPriority;
@@ -38,10 +50,12 @@ final class PartitionJoinApplier implements MemberOperationApplier {
       final int partitionId,
       final int priority,
       final MemberId localMemberId,
+      final boolean asLearner,
       final PartitionChangeExecutor partitionChangeExecutor) {
     this.partitionId = partitionId;
     this.priority = priority;
     this.localMemberId = localMemberId;
+    this.asLearner = asLearner;
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
@@ -116,13 +130,13 @@ final class PartitionJoinApplier implements MemberOperationApplier {
         new CompletableActorFuture<>();
 
     partitionChangeExecutor
-        .join(partitionId, partitionMembersWithPriority, partitionConfig)
+        .join(partitionId, partitionMembersWithPriority, partitionConfig, asLearner)
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
-                result.complete(
-                    memberState ->
-                        memberState.updatePartition(partitionId, PartitionState::toActive));
+                final UnaryOperator<PartitionState> joined =
+                    asLearner ? PartitionState::toLearner : PartitionState::toActive;
+                result.complete(memberState -> memberState.updatePartition(partitionId, joined));
               } else {
                 result.completeExceptionally(error);
               }

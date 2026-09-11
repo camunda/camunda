@@ -314,7 +314,7 @@ final class ClusterApiUtilsTest {
         new AwaitRelocationCompletion(memberId1, 8, partitionSet),
 
         // Partition change operations
-        new PartitionJoinOperation(memberId1, 1, 1),
+        new PartitionJoinOperation(memberId1, 1, 1, true),
         new PartitionLeaveOperation(memberId1, 1, 3),
         new PartitionPromoteOperation(memberId1, 1),
         new PartitionDemoteOperation(memberId1, 1),

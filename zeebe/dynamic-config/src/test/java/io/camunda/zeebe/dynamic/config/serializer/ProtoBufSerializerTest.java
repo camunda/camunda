@@ -232,7 +232,7 @@ final class ProtoBufSerializerTest {
             Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
             List.of(
                 new MemberLeaveOperation(MemberId.from("1")),
-                new PartitionJoinOperation(MemberId.from("2"), 1, 2)));
+                new PartitionJoinOperation(MemberId.from("2"), 1, 2, true)));
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);

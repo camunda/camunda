@@ -302,7 +302,7 @@ class ClusterConfigurationTest {
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(member(1), MemberState.initializeAsActive(Map.of()))
-            .startConfigurationChange(List.of(new PartitionJoinOperation(member(1), 1, 1)));
+            .startConfigurationChange(List.of(new PartitionJoinOperation(member(1), 1, 1, true)));
     final var changeId = initialTopology.pendingChanges().orElseThrow().id();
 
     // when
