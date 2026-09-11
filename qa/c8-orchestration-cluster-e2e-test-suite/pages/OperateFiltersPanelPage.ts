@@ -164,12 +164,18 @@ export class OperateFiltersPanelPage {
     if (await this.isOptionalFilterDisplayed(filterName)) {
       return;
     }
+    // The dropdown is a Radix menu that mounts its items asynchronously, so
+    // clicking the trigger and immediately clicking the item can race the
+    // menu's open animation under CI load. Wait for the trigger and then the
+    // item to actually be visible, mirroring TaskPanelPage.filterBy()'s
+    // handling of the equivalent Tasklist dropdown.
+    await expect(this.moreFiltersButton).toBeVisible({timeout: 10000});
     await this.moreFiltersButton.click();
-    await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
-      .click();
+    const menuItem = this.page.getByRole('menuitem', {
+      name: filterName,
+    });
+    await expect(menuItem).toBeVisible({timeout: 10000});
+    await menuItem.click();
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {

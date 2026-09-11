@@ -17,40 +17,71 @@ export type TaskCard = {
 class TaskPanelPage {
   readonly availableTasks: Locator;
   readonly taskCards: Locator;
-  readonly collapseSidePanelButton: Locator;
-  readonly expandSidePanelButton: Locator;
+  readonly filterSelectButton: Locator;
   private page: Page;
   readonly taskListPageBanner: Locator;
-  readonly collapseFilter: Locator;
   readonly completedHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
     this.taskCards = this.availableTasks.locator('article');
-    this.collapseSidePanelButton = page.locator(
-      'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
-    );
-    this.expandSidePanelButton = page
-      .locator('[aria-label="Filter controls"] li')
-      .filter({hasText: 'Expand to show filters'});
-    this.taskListPageBanner = page.getByRole('link', {
-      name: 'Camunda logo Tasklist',
+    // The old Carbon expandable filter sidebar (`[aria-label="Filter
+    // controls"]`, "Expand to show filters") no longer exists. Filtering is
+    // now a single dropdown-trigger button (id="filter-select") whose
+    // accessible name is the `taskFiltersHeaderAria` string ("Filters");
+    // clicking it opens a Radix DropdownMenu of filter options.
+    this.filterSelectButton = page.getByRole('button', {
+      name: 'Filters',
+      exact: true,
     });
-    this.collapseFilter = page.locator(
-      'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
-    );
-    this.completedHeading = page.getByRole('heading', {
-      name: 'completed',
+    // The header logo's accessible name is now just "Camunda logo" (the old
+    // Carbon header appended the product name, "Camunda logo Tasklist").
+    this.taskListPageBanner = page.getByRole('link', {
+      name: 'Camunda logo',
+    });
+    // There is no page heading for the "Completed" filter post-redesign --
+    // that assumption dates back to the old Carbon sidebar, where each
+    // filter link routed to a page with its own <h1>. FilterSelect.tsx now
+    // renders every filter (including "Completed") as plain visible text
+    // inside the filter-select trigger button (id="filter-select"); the
+    // button's accessible name is the static `taskFiltersHeaderAria` string
+    // ("Filters"), not the filter's label, because it carries a static
+    // aria-label, so this has to be a text lookup scoped to that button
+    // rather than an accessible-name lookup.
+    this.completedHeading = this.filterSelectButton.getByText('Completed', {
+      exact: true,
     });
   }
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    await this.availableTasks
-      .getByText(name, {exact: true})
-      .nth(0)
-      .click({timeout});
+    const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
+
+    // The parent tasklist layout route (routes/_shadcn/_auth/tasklist/_tasks/
+    // route.tsx) does poll this query every 5s (refetchInterval: 5000), so a
+    // task that isn't indexed yet should normally show up on its own within a
+    // few seconds. A page reload is a strictly faster, deterministic way to
+    // force an immediate fresh fetch rather than wait out however much of
+    // the next 5s tick remains, and it's also the only thing that helps if
+    // polling isn't keeping up (e.g. under CI load) -- no amount of waiting
+    // on the existing DOM without either will make a just-created task
+    // appear. Retry with a reload in between attempts, same pattern as
+    // assertCompletedHeadingVisible below, instead of relying on a single
+    // fetch plus Playwright's built-in element wait.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(task).toBeVisible({timeout});
+      },
+      onFailure: async () => {
+        console.log(
+          `Task "${name}" not visible yet, reloading and retrying...`,
+        );
+        await this.reloadPage();
+      },
+    });
+
+    await task.click({timeout});
   }
 
   async filterBy(
@@ -65,13 +96,21 @@ class TaskPanelPage {
     const maxRetries = 5;
     while (retryCount < maxRetries) {
       try {
-        const link = this.page.getByRole('link', {name: option, exact: true});
-        if (!(await link.isVisible())) {
-          await expect(this.expandSidePanelButton).toBeVisible();
-          await this.expandSidePanelButton.click();
-        }
-        await expect(link).toBeVisible({timeout: 10000});
-        await link.click();
+        // Open the filter dropdown, then pick the option from the menu that
+        // appears. Unlike the old Carbon sidebar, the trigger is always
+        // visible — there's no separate expand/collapse step.
+        await expect(this.filterSelectButton).toBeVisible({timeout: 10000});
+        await this.filterSelectButton.click();
+
+        const menuItem = this.page.getByRole('menuitem', {
+          name: option,
+          exact: true,
+        });
+        await expect(menuItem).toBeVisible({timeout: 10000});
+        await menuItem.click();
+
+        // Selecting an item closes the dropdown menu on its own.
+        await expect(menuItem).toBeHidden({timeout: 10000});
 
         if (option === 'All open tasks') {
           // "All open tasks" is the default filter, so the router omits it
@@ -91,7 +130,6 @@ class TaskPanelPage {
           const filterRegex = new RegExp(`filter=${expectedSegment}(?:&|$)`);
           await expect(this.page).toHaveURL(filterRegex, {timeout: 15000});
         }
-        await this.collapseSidePanelButton.click();
         return;
       } catch (error) {
         retryCount++;
@@ -103,18 +141,21 @@ class TaskPanelPage {
     );
   }
 
-  async clickCollapseFilter(): Promise<void> {
-    await this.collapseFilter.click({timeout: 45000});
-  }
-
   async assertCompletedHeadingVisible() {
     await waitForAssertion({
       assertion: async () => {
         await expect(this.completedHeading).toBeVisible();
       },
       onFailure: async () => {
-        console.log('Filter not applied, retrying...');
-        await this.filterBy('Completed'); // Reapply the filter if necessary
+        // Re-selecting "Completed" here is a no-op when it's already the
+        // active filter: filterBy() only waits for the URL to reflect the
+        // filter, and the URL already does, so it returns immediately
+        // without ever forcing a new fetch. Reload instead, same as
+        // openTask() above, to force one.
+        console.log(
+          'Completed filter not reflected yet, reloading and retrying...',
+        );
+        await this.reloadPage();
       },
     });
   }

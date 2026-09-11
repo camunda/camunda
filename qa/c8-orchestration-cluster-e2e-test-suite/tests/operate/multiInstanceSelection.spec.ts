@@ -70,11 +70,16 @@ test.describe('Multi Instance Flow Node Selection', () => {
     operateProcessInstancePage,
   }) => {
     await test.step('Verify that the process instance is selected by default', async () => {
+      // This instance carries 25 waited-for incidents (see beforeAll), which
+      // can make the instance-history tree's initial selection state take
+      // longer than the default 10s to settle under CI load.
       await expect(
         operateProcessInstancePage.getSelectedTreeItemsInHistory(
           /multiInstanceProcess/,
         ),
-      ).toHaveAttribute('aria-label', 'multiInstanceProcess');
+      ).toHaveAttribute('aria-label', 'multiInstanceProcess', {
+        timeout: 30000,
+      });
     });
 
     await test.step('Unfold 2x Task B (Multi Instance)', async () => {
