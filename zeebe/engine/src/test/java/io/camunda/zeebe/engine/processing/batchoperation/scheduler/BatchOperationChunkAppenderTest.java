@@ -243,6 +243,64 @@ class BatchOperationChunkAppenderTest {
   }
 
   @Test
+  void shouldGroupItemsIntoChunkRecordsByOrdinalKey() {
+    // given
+    processor = new BatchOperationChunkAppender(10);
+
+    final var item1 = new Item(100L, 200L, null, 987);
+    final var item2 = new Item(101L, 201L, 111L, 0);
+    final var item3 = new Item(102L, 202L, 112L, null);
+    final var item4 = new Item(103L, 203L, 112L, 987);
+    final var item5 = new Item(104L, 204L, 112L, 987);
+    final var item6 = new Item(105L, 205L, 112L, 0);
+    final var item7 = new Item(106L, 206L, 112L, 0);
+    final var item8 = new Item(107L, 207L, 112L, 1);
+    final var items = List.of(item1, item2, item3, item4, item5, item6, item7, item8);
+    final var page = new ItemPage(items, "cursor", 8L, false);
+    final var context = createContext("cursor0", 10);
+
+    when(mockItemProvider.fetchItemPage("cursor0", 10)).thenReturn(page);
+    when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
+
+    // when
+    processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
+
+    // then
+    final var chunkCaptor = ArgumentCaptor.forClass(BatchOperationChunkRecord.class);
+    verify(mockTaskResultBuilder, times(3))
+        .appendCommandRecord(
+            eq(BATCH_OPERATION_KEY),
+            eq(BatchOperationChunkIntent.CREATE),
+            chunkCaptor.capture(),
+            any(FollowUpCommandMetadata.class));
+
+    final var capturedChunks = chunkCaptor.getAllValues();
+    assertThat(capturedChunks).hasSize(3);
+
+    // First chunk should have ordinals that were null or 0
+    assertThat(capturedChunks.get(0).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(capturedChunks.get(0).getItems())
+        .containsExactlyInAnyOrder(
+            new BatchOperationItem(101L, 201L, 111L, 0),
+            new BatchOperationItem(102L, 202L, 112L, 0),
+            new BatchOperationItem(105L, 205L, 112L, 0),
+            new BatchOperationItem(106L, 206L, 112L, 0));
+
+    // Second chunk should items for ordinal=1
+    assertThat(capturedChunks.get(1).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(capturedChunks.get(1).getItems())
+        .containsExactly(new BatchOperationItem(107L, 207L, 112L, 1));
+
+    // Third chunk should ordinal for ordinal=987
+    assertThat(capturedChunks.get(2).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(capturedChunks.get(2).getItems())
+        .containsExactlyInAnyOrder(
+            new BatchOperationItem(100L, 200L, -1L, 987),
+            new BatchOperationItem(103L, 203L, 112L, 987),
+            new BatchOperationItem(104L, 204L, 112L, 987));
+  }
+
+  @Test
   void shouldReturnFetchFailedWhenItemProviderThrows() {
     // given
     final var context = createContext("cursor1", 50);
