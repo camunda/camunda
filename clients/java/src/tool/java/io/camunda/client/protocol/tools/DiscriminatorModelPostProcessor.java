@@ -16,8 +16,11 @@
 package io.camunda.client.protocol.tools;
 
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -65,6 +68,7 @@ public final class DiscriminatorModelPostProcessor {
   }
 
   private static void copyDir(final Path src, final Path dst) throws IOException {
+    deleteDir(dst);
     try (final Stream<Path> files = Files.walk(src)) {
       for (final Path source : (Iterable<Path>) files::iterator) {
         final Path dest = dst.resolve(src.relativize(source));
@@ -76,6 +80,33 @@ public final class DiscriminatorModelPostProcessor {
         }
       }
     }
+  }
+
+  private static void deleteDir(final Path dir) throws IOException {
+    if (Files.notExists(dir)) {
+      return;
+    }
+
+    Files.walkFileTree(
+        dir,
+        new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+              throws IOException {
+            Files.delete(file);
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult postVisitDirectory(final Path directory, final IOException exc)
+              throws IOException {
+            if (exc != null) {
+              throw exc;
+            }
+            Files.delete(directory);
+            return FileVisitResult.CONTINUE;
+          }
+        });
   }
 
   @SuppressWarnings("unchecked")
