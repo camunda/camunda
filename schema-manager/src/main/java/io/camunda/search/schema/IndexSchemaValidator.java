@@ -36,14 +36,14 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li/>The mapping provided by the descriptor has same fields with different types compared to
- *       the existing indices corresponding to an {@link IndexDescriptor} or {@link
- *       IndexTemplateDescriptor}. This indicates that the existing indices cannot be updated to new
- *       mappings. If the index is set to allow dynamic mapping, then this case is ignored and the
- *       mapping will be considered as valid.
+ *        the existing indices corresponding to an {@link IndexDescriptor} or {@link
+ *        IndexTemplateDescriptor}. This indicates that the existing indices cannot be updated to
+ *        new mappings. If the index is set to allow dynamic mapping, then this case is ignored and
+ *        the mapping will be considered as valid.
  *   <li/>If multiple indices corresponding to the {@link IndexDescriptor} or {@link
- *       IndexTemplateDescriptor} has different mappings and the differences are not the same. In
- *       this case, it is not clear how to update multiple indices for the same descriptor to the
- *       provided mapping.
+ *        IndexTemplateDescriptor} has different mappings and the differences are not the same. In
+ *        this case, it is not clear how to update multiple indices for the same descriptor to the
+ *        provided mapping.
  * </ul>
  */
 public class IndexSchemaValidator {
@@ -67,18 +67,83 @@ public class IndexSchemaValidator {
   public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexMappings(
       final Map<String, IndexMapping> mappings, final Collection<IndexDescriptor> indexDescriptors)
       throws IndexSchemaValidationException {
+    return validateIndexMappings(mappings, indexDescriptors, Map.of());
+  }
+
+  /**
+   * Same as {@link #validateIndexMappings(Map, Collection)}, but additionally falls back to diffing
+   * a template descriptor's mapping against its already-existing index template when no
+   * index/dated-index currently exists for it. Without this fallback, a template whose backing
+   * indices were all dropped would never be detected as stale and would keep spawning indices with
+   * an outdated mapping.
+   *
+   * @param templateMappings existing index template mappings, keyed by template name
+   */
+  public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexMappings(
+      final Map<String, IndexMapping> mappings,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Map<String, IndexMapping> templateMappings)
+      throws IndexSchemaValidationException {
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields = new HashMap<>();
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(mappings, indexDescriptor);
-      // we don't check indices that were not yet created
       if (!indexMappingsGroup.isEmpty()) {
         final DifferingIndices differingIndices =
             getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
         validateDifferenceAndCollectNewFields(indexDescriptor, differingIndices, newFields);
+      } else if (indexDescriptor instanceof final IndexTemplateDescriptor templateDescriptor) {
+        // No backing index exists. Fall back to comparing against the template's own stored
+        // mapping, so the template itself still gets updated
+        validateTemplateMappingFallback(templateDescriptor, templateMappings, newFields);
       }
+      // else: a plain index that was not yet created - nothing to validate
     }
     return newFields;
+  }
+
+  private void validateTemplateMappingFallback(
+      final IndexTemplateDescriptor templateDescriptor,
+      final Map<String, IndexMapping> templateMappings,
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
+    final IndexMapping existingTemplateMapping =
+        templateMappings.get(templateDescriptor.getTemplateName());
+    if (existingTemplateMapping == null) {
+      // template itself does not exist either - initialiseIndexTemplates() creates it from scratch
+      return;
+    }
+
+    final IndexMappingDifference difference =
+        filterOutDynamicProperties(
+            IndexMappingDifference.of(
+                IndexMapping.from(templateDescriptor, objectMapper), existingTemplateMapping));
+    if (!hasRealDifference(difference)) {
+      LOGGER.debug(
+          "Template fields are up to date for template '{}'.",
+          templateDescriptor.getTemplateName());
+      return;
+    }
+
+    if (!difference.entriesOnlyOnRight().isEmpty()) {
+      LOGGER.info(
+          "Template '{}': Field deletion is requested, will be ignored. Fields: {}",
+          templateDescriptor.getTemplateName(),
+          difference.entriesOnlyOnRight());
+    }
+
+    if (!difference.entriesDiffering().isEmpty()) {
+      LOGGER.info(
+          "Template '{}': Field types differ from expected, but no backing index exists to "
+              + "migrate - updating the template outright. Changes found: {}",
+          templateDescriptor.getTemplateName(),
+          difference.entriesDiffering());
+    }
+
+    if (!difference.entriesOnlyOnLeft().isEmpty() || !difference.entriesDiffering().isEmpty()) {
+      final var changedProperties = new HashSet<>(difference.entriesOnlyOnLeft());
+      difference.entriesDiffering().forEach(d -> changedProperties.add(d.leftValue()));
+      newFields.put(templateDescriptor, changedProperties);
+    }
   }
 
   private void validateDifferenceAndCollectNewFields(

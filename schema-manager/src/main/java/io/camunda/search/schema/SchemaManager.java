@@ -435,7 +435,11 @@ public class SchemaManager implements CloseableSilently {
             descriptor.getAlias(),
             newProperties);
       }
-      searchEngineClient.putMapping(descriptor, newProperties);
+      // no backing index exists yet (e.g. all indices were dropped) - the template update above
+      // already covers future indices, and there is nothing to put the mapping on
+      if (searchEngineClient.indexExists(descriptor.getFullQualifiedName())) {
+        searchEngineClient.putMapping(descriptor, newProperties);
+      }
     }
   }
 
@@ -512,7 +516,11 @@ public class SchemaManager implements CloseableSilently {
         "Validate '{}' existing indices based on '{}' descriptors",
         currentIndices.size(),
         allIndexDescriptors.size());
-    return schemaValidator.validateIndexMappings(currentIndices, allIndexDescriptors);
+    final var currentTemplates =
+        searchEngineClient.getMappings(
+            config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE);
+    return schemaValidator.validateIndexMappings(
+        currentIndices, allIndexDescriptors, currentTemplates);
   }
 
   private Set<String> existingIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
