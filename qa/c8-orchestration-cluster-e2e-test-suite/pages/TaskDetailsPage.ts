@@ -1,1 +1,462 @@
-@/private/tmp/claude-501/-Users-sara-lolatte-Documents-GitHub-workspace-cli/65f04904-7fb3-4cf8-aae3-e25e7446dd2f/scratchpad/branch/TaskDetailsPage.ts
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {Page, Locator, expect} from '@playwright/test';
+import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
+
+function cardinalToOrdinal(numberValue: number): string {
+  const realOrderIndex = numberValue.toString();
+
+  if (['11', '12', '13'].includes(realOrderIndex.slice(-2))) {
+    return `${realOrderIndex}th`;
+  }
+
+  switch (realOrderIndex.slice(-1)) {
+    case '1':
+      return `${realOrderIndex}st`;
+    case '2':
+      return `${realOrderIndex}nd`;
+    case '3':
+      return `${realOrderIndex}rd`;
+    default:
+      return `${realOrderIndex}th`;
+  }
+}
+
+class TaskDetailsPage {
+  private page: Page;
+  readonly assignToMeButton: Locator;
+  readonly completeButton: Locator;
+  readonly unassignButton: Locator;
+  readonly assignee: Locator;
+  readonly completeTaskButton: Locator;
+  readonly addVariableButton: Locator;
+  readonly detailsPanel: Locator;
+  readonly detailsHeader: Locator;
+  readonly pendingTaskDescription: Locator;
+  readonly pickATaskHeader: Locator;
+  readonly emptyTaskMessage: Locator;
+  readonly nameInput: Locator;
+  readonly addressInput: Locator;
+  readonly ageInput: Locator;
+  readonly variablesTable: Locator;
+  readonly nameColumnHeader: Locator;
+  readonly valueColumnHeader: Locator;
+  readonly form: Locator;
+  readonly numberInput: Locator;
+  readonly incrementButton: Locator;
+  readonly decrementButton: Locator;
+  readonly dateInput: Locator;
+  readonly timeInput: Locator;
+  readonly checkbox: Locator;
+  readonly selectDropdown: Locator;
+  readonly tagList: Locator;
+  readonly detailsInfo: Locator;
+  readonly taskCompletedBanner: Locator;
+  readonly addDynamicListRowButton: Locator;
+  readonly processTab: Locator;
+  readonly bpmnDiagram: Locator;
+  readonly assignedToMeText: Locator;
+  readonly historyTabButton: Locator;
+  readonly historyTable: Locator;
+  readonly historyTableRow: Locator;
+  readonly historyTableOperationTypeHeader: Locator;
+  readonly historyTableDetailsHeader: Locator;
+  readonly historyTableActorHeader: Locator;
+  readonly historyTableDateHeader: Locator;
+  readonly historyTableAssignCell: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.assignToMeButton = page.getByRole('button', {name: 'Assign to me'});
+    this.completeButton = page.getByRole('button', {name: 'Complete'});
+    this.unassignButton = page.getByRole('button', {name: 'Unassign'});
+    this.assignee = page.getByTestId('assignee');
+    this.completeTaskButton = page.getByRole('button', {name: 'Complete Task'});
+    this.addVariableButton = page.getByRole('button', {name: 'Add Variable'});
+    this.detailsPanel = this.page.getByRole('complementary', {
+      name: 'Task details right panel',
+    });
+    this.detailsHeader = page.getByTitle('Task details header');
+    this.pendingTaskDescription = page.getByText('Pending task');
+    this.pickATaskHeader = page.getByRole('heading', {
+      name: 'Pick a task to work on',
+    });
+    this.emptyTaskMessage = page.getByRole('heading', {
+      name: 'task has no variables',
+    });
+    this.nameInput = page.getByLabel('Name*');
+    this.addressInput = page.getByLabel('Address*');
+    this.ageInput = page.getByLabel('Age');
+    this.variablesTable = page.getByTestId('variables-table');
+    this.nameColumnHeader = this.variablesTable.getByRole('columnheader', {
+      name: 'Name',
+    });
+    this.valueColumnHeader = this.variablesTable.getByRole('columnheader', {
+      name: 'Value',
+    });
+    this.form = page.getByTestId('embedded-form');
+    this.numberInput = this.form.getByLabel('Number');
+    this.incrementButton = page.getByRole('button', {name: 'Increment'});
+    this.decrementButton = page.getByRole('button', {name: 'Decrement'});
+    this.dateInput = page.getByPlaceholder('mm/dd/yyyy');
+    this.timeInput = page.getByPlaceholder('hh:mm ?m');
+    this.checkbox = this.form.getByLabel('Checkbox');
+    this.selectDropdown = this.form.getByText('Select').last();
+    this.tagList = page.getByPlaceholder('Search');
+    this.detailsInfo = page.getByTestId('details-info');
+    this.taskCompletedBanner = this.page.getByText('Task completed');
+    this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
+    this.processTab = page.getByRole('link', {
+      name: 'show associated bpmn process',
+    });
+    this.bpmnDiagram = page.getByTestId('diagram');
+    this.assignedToMeText = page
+      .getByTestId('assignee')
+      .getByText('Assigned to me');
+    this.historyTabButton = page.getByRole('link', {
+      name: 'Show task history',
+    });
+    this.historyTable = page
+      .getByTestId('task-details-history-view')
+      .getByRole('table');
+    this.historyTableRow = this.historyTable.getByRole('row');
+    this.historyTableOperationTypeHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Operation type',
+      },
+    );
+    this.historyTableDetailsHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Details',
+      },
+    );
+    this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Actor',
+    });
+    this.historyTableDateHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Date',
+    });
+    this.historyTableAssignCell = this.historyTable.getByRole('cell', {
+      name: 'Assign task',
+    });
+  }
+
+  async clickAssignToMeButton() {
+    // A non-waiting isVisible() snapshot taken right after navigation can
+    // race the assignee panel still loading, falling through to wait
+    // forever on "Assign to me" when the task is actually already assigned
+    // (so only "Unassign"/assignedToMeText can ever appear). Wait for
+    // whichever terminal state actually resolves, then only click if the
+    // button (not the already-assigned text) is what's showing.
+    await expect(this.assignedToMeText.or(this.assignToMeButton)).toBeVisible({
+      timeout: 60000,
+    });
+    if (await this.assignToMeButton.isVisible()) {
+      await this.assignToMeButton.click({timeout: 60000});
+    }
+  }
+
+  async clickUnassignButton() {
+    // The right-panel re-renders when transitioning from a just-completed
+    // task to the next one. `toBeVisible` can match the Unassign button from
+    // the stale (previous) state just before it detaches, leaving `click` to
+    // wait for an actionable element that never resettles in time. Re-query
+    // on each retry so a stale-then-detached match doesn't sink the click.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.unassignButton).toBeVisible({timeout: 10000});
+        await this.unassignButton.click({timeout: 5000});
+      },
+      onFailure: async () => {},
+      maxRetries: 4,
+    });
+  }
+
+  async clickCompleteTaskButton() {
+    await this.completeTaskButton.click({timeout: 60000});
+  }
+
+  async clickAddVariableButton() {
+    await this.addVariableButton.click({timeout: 60000});
+  }
+
+  async replaceExistingVariableValue(values: {name: string; value: string}) {
+    const {name, value} = values;
+    await this.page.getByTitle(name).clear();
+    await this.page.getByTitle(name).fill(value);
+  }
+
+  getNthVariableNameInput(nth: number) {
+    return this.page.getByRole('textbox', {
+      name: `${cardinalToOrdinal(nth)} variable name`,
+    });
+  }
+
+  getNthVariableValueInput(nth: number) {
+    return this.page.getByRole('textbox', {
+      name: `${cardinalToOrdinal(nth)} variable value`,
+    });
+  }
+
+  async addVariable(payload: {name: string; value: string}) {
+    const {name, value} = payload;
+
+    await this.clickAddVariableButton();
+    await this.getNthVariableNameInput(1).fill(name);
+    await this.getNthVariableValueInput(1).fill(value);
+  }
+
+  async fillNumber(number: string): Promise<void> {
+    await this.numberInput.fill(number);
+  }
+
+  async clickIncrementButton(): Promise<void> {
+    await this.incrementButton.click({timeout: 60000});
+  }
+
+  async clickDecrementButton(): Promise<void> {
+    await this.decrementButton.click({timeout: 60000});
+  }
+
+  async fillDatetimeField(label: string, value: string) {
+    const input = this.page.getByRole('textbox', {name: label});
+    await expect(input).toBeVisible();
+    await input.click();
+    await input.fill(value);
+    await this.page.keyboard.press('Enter');
+    await expect(input).toHaveValue(value);
+  }
+
+  async checkCheckbox(): Promise<void> {
+    await this.checkbox.check();
+  }
+
+  async selectDropdownValue(value: string): Promise<void> {
+    await this.selectDropdown.click();
+    await this.page.getByText(value).click();
+  }
+
+  async selectDropdownOption(label: string, value: string) {
+    await this.page.getByText(label).click();
+    await this.page.getByText(value).click();
+  }
+
+  async clickRadioButton(label: string): Promise<void> {
+    await this.page.getByText(label).click();
+  }
+
+  async checkChecklistBox(label: string): Promise<void> {
+    // Scope to the embedded form: an unscoped getByLabel can also match a task
+    // card link in the left panel whose aria-label contains the checkbox label
+    // (e.g. "Unassigned task: Confirm Employee Details" collides with "Confirm"),
+    // triggering a strict-mode violation.
+    await this.form.getByLabel(label).check();
+  }
+
+  async enterTwoValuesInTagList(value1: string, value2: string): Promise<void> {
+    await this.tagList.click();
+    await this.page.getByText(value1).click();
+    await this.page.getByText(value2, {exact: true}).click();
+  }
+
+  async fillTextInput(label: string, value: string): Promise<void> {
+    const input = this.page.getByLabel(label, {exact: true});
+    const maxRetries = 3;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        await input.click({timeout: 120000});
+        await input.fill(value);
+        await input.blur();
+        await expect(input).toHaveValue(value);
+        return;
+      } catch (error) {
+        attempt++;
+        console.log(
+          `Attempt ${attempt} to fill input "${label}" failed with error: ${error}`,
+        );
+        if (attempt === maxRetries) {
+          throw new Error(
+            `Failed to set value "${value}" for label "${label}" after ${maxRetries} attempts.`,
+          );
+        }
+        await sleep(500);
+      }
+    }
+  }
+
+  async priorityAssertion(priority: string): Promise<void> {
+    let retryCount = 0;
+    const maxRetries = 2;
+    while (retryCount < maxRetries) {
+      try {
+        await expect(this.detailsPanel.getByText(priority)).toBeVisible({
+          timeout: 45000,
+        });
+        return; // Exit the function if the expectation is met
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await this.page.reload();
+        await sleep(10000);
+      }
+    }
+    throw new Error(`Active icon not visible after ${maxRetries} attempts.`);
+  }
+
+  async taskAssertion(name: string): Promise<void> {
+    let retryCount = 0;
+    const maxRetries = 2;
+    while (retryCount < maxRetries) {
+      try {
+        await expect(this.detailsInfo.getByText(name)).toBeVisible({
+          timeout: 45000,
+        });
+        return; // Exit the function if the expectation is met
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await this.page.reload();
+        await sleep(10000);
+      }
+    }
+    throw new Error(`Active icon not visible after ${maxRetries} attempts.`);
+  }
+
+  async assertVariableValue(
+    variableName: string,
+    variableValue: string,
+  ): Promise<void> {
+    await expect(this.page.getByTitle(variableName + ' Value')).toHaveValue(
+      variableValue,
+    );
+  }
+
+  async fillDynamicList(label: string, value: string) {
+    await sleep(500);
+    const locator = this.page.getByLabel(label);
+    const elements = await locator.all();
+    if (elements.length === 0) {
+      throw new Error(
+        `No elements found for label "${label}" in the dynamic list`,
+      );
+    }
+
+    for (const [index, element] of elements.entries()) {
+      await this.fillElementWithRetry(element, index, value);
+    }
+  }
+
+  private async fillElementWithRetry(
+    locator: Locator,
+    index: number,
+    value: string,
+  ): Promise<void> {
+    let retryCount = 0;
+    const maxRetries = 3;
+    while (retryCount < maxRetries) {
+      try {
+        const expectedValue = `${value}${index + 1}`;
+        await locator.fill(expectedValue);
+        await expect(locator).toHaveValue(expectedValue);
+        return;
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await sleep(1000);
+        await locator.click();
+        await locator.clear();
+      }
+    }
+    throw new Error(
+      `${locator} could not be filled with value "${value}" after ${maxRetries} attempts.`,
+    );
+  }
+
+  async getDynamicListValues(label: string): Promise<string[]> {
+    const locator = this.page.getByLabel(label);
+    const elements = await locator.all();
+    if (elements.length === 0) {
+      throw new Error(`No elements found for label "${label}"`);
+    }
+
+    return Promise.all(elements.map((element) => element.inputValue()));
+  }
+
+  async addDynamicListRow(): Promise<void> {
+    await this.addDynamicListRowButton.click();
+  }
+
+  async assertFieldValue(label: string, expectedValue: string): Promise<void> {
+    const input = this.page.getByLabel(label, {exact: true});
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(input).toHaveValue(expectedValue);
+      },
+      onFailure: async () => {
+        // The completed-task view sometimes renders form fields lazily after
+        // first paint; reload to force a fresh load on retry. A fixed sleep
+        // isn't a bound on when the form is actually ready (run 34435455486:
+        // 3 internal retries plus both Playwright attempts all still read an
+        // empty value), so wait on the form's own visibility instead --
+        // same fix already present in this method on main.
+        await this.page.reload();
+        await expect(this.form).toBeVisible({timeout: 30000});
+      },
+    });
+  }
+
+  async assertItemChecked(label: string): Promise<void> {
+    await expect(this.page.getByLabel(label)).toBeChecked();
+  }
+
+  async selectTaglistValues(values: string[]) {
+    await this.tagList.click();
+    for (const value of values) {
+      await this.page.getByText(value, {exact: true}).click();
+    }
+  }
+
+  async clickProcessTab(): Promise<void> {
+    await this.processTab.click();
+  }
+
+  async clickHistoryTab(): Promise<void> {
+    await this.historyTabButton.click();
+  }
+
+  getHistoryTableRowCount(): Promise<number> {
+    return this.historyTableRow.count();
+  }
+
+  getHistoryTableAssignCellCount(): Promise<number> {
+    return this.historyTableAssignCell.count();
+  }
+
+  async unassignReassignToMeAndComplete(): Promise<void> {
+    // Unassign from the current assignee
+    await this.clickUnassignButton();
+
+    // Assign to the logged-in user and verify assignment
+    await this.clickAssignToMeButton();
+
+    // Complete the task, wait for the banner to appear, then disappear.
+    // The completion round-trip can take longer than the default 10s on
+    // loaded shared clusters; allow 30s for the banner to surface.
+    await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
+    await this.clickCompleteTaskButton();
+    await expect(this.taskCompletedBanner).toBeVisible({timeout: 30000});
+    await expect(this.taskCompletedBanner).toBeHidden({timeout: 15000});
+  }
+}
+
+export {TaskDetailsPage};
