@@ -25,6 +25,5 @@ extensions.configure<PublishingExtension> {
 
 afterEvaluate {
   val sourceSet = sourceSets.named(publishedTestJar.sourceSetName.get()).get()
-  tests.extendsFrom(configurations[sourceSet.runtimeClasspathConfigurationName])
   testsJar.configure { from(sourceSet.output) }
 }
