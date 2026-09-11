@@ -8,10 +8,14 @@
 
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Heading, Separator } from "@camunda/design-system";
+import {
+  Button,
+  Heading,
+  Separator,
+  CamundaLogo,
+} from "@camunda/design-system";
 import { UserCog } from "@camunda/design-system/icons";
 import useTranslate from "src/utility/localization";
-import CamundaLogo from "src/assets/images/camunda.svg";
 import Page from "src/components/layoutV2/Page";
 import TextField from "src/components/formV2/TextField";
 import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
@@ -207,7 +211,7 @@ export const SetupPage: React.FC = () => {
     <Page className="min-h-screen">
       <div className="m-auto flex w-100 flex-col gap-6">
         <div className="flex justify-center">
-          <CamundaLogo />
+          <CamundaLogo className="size-12" />
         </div>
         <Heading as="h1" variant="heading-lg" className="text-center">
           {t("setupCreateAdminUser")}
