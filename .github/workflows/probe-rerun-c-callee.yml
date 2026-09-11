@@ -13,6 +13,12 @@ on:
       mode:
         required: true
         type: string
+      # Mirrors the real callee's ref input so probes D and E can pass it through
+      # the way zeebe-aws-os-dispatch-tests.yml does. Unused on purpose.
+      ref:
+        required: false
+        type: string
+        default: "main"
 
 jobs:
   pre-one:

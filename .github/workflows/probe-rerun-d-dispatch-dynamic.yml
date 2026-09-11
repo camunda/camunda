@@ -1,0 +1,49 @@
+# TEMPORARY PROBE - delete with the branch yf-probe-rerun-failed-matrix-reusable.
+# The suspect combination both startup_failures share: workflow_dispatch event plus
+# a partial re-run, with the outer matrix computed from github.event.inputs by the
+# exact expression zeebe-aws-os-dispatch-tests.yml uses. Probe E is identical except
+# for a static matrix, so D failing while E survives pins the dynamic expression.
+name: PROBE D dispatch dynamic matrix
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or commit to test against
+        type: string
+        default: "main"
+      opensearch-version:
+        description: Version of AWS OpenSearch
+        type: choice
+        options:
+          - "2.19"
+          - "3.7"
+          - "all"
+
+jobs:
+  legs:
+    name: "ver ${{ matrix.os_version }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        # Copied verbatim from zeebe-aws-os-dispatch-tests.yml.
+        os_version: ${{ fromJSON(format('[{0}]', (github.event.inputs.opensearch-version == 'all' || !github.event.inputs.opensearch-version) && '"2.19", "3.7"' || format('"{0}"', github.event.inputs.opensearch-version))) }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/probe-rerun-c-callee.yml
+    secrets: inherit
+    with:
+      os_version: ${{ matrix.os_version }}
+      ref: ${{ inputs.ref }}
+      # Only the 3.7 chain fails, mirroring the real failures.
+      mode: ${{ matrix.os_version == '3.7' && 'fail' || 'pass' }}
+
+  trailing-job:
+    name: "Trailing job gated like the retry"
+    needs: legs
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - run: echo "attempt=${{ github.run_attempt }}"

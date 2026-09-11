@@ -1,0 +1,41 @@
+# TEMPORARY PROBE - delete with the branch yf-probe-rerun-failed-matrix-reusable.
+# Control for probe D: same workflow_dispatch trigger and reusable call, but the
+# outer matrix is a static list instead of an expression over github.event.inputs.
+# D failing while this survives pins the dynamic matrix expression; both failing
+# pins the dispatch event itself.
+name: PROBE E dispatch static matrix
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or commit to test against
+        type: string
+        default: "main"
+
+jobs:
+  legs:
+    name: "ver ${{ matrix.os_version }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: ["2.19", "3.7"]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/probe-rerun-c-callee.yml
+    secrets: inherit
+    with:
+      os_version: ${{ matrix.os_version }}
+      ref: ${{ inputs.ref }}
+      # Only the 3.7 chain fails, mirroring the real failures.
+      mode: ${{ matrix.os_version == '3.7' && 'fail' || 'pass' }}
+
+  trailing-job:
+    name: "Trailing job gated like the retry"
+    needs: legs
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - run: echo "attempt=${{ github.run_attempt }}"
