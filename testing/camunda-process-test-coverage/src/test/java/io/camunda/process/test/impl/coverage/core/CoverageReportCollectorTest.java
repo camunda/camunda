@@ -1,0 +1,96 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.impl.coverage.core;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.process.test.api.coverage.model.ProcessModel;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefinitionData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import java.util.Collections;
+import org.junit.jupiter.api.Test;
+
+class CoverageReportCollectorTest {
+
+  private static final String PROCESS_ID = "child-process";
+
+  private static final String REAL_XML =
+      Bpmn.convertToString(
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent("start")
+              .serviceTask("realTask")
+              .endEvent("end")
+              .done());
+
+  /** The stub that {@code MOCK_CHILD_PROCESS} deploys under the mocked process id. */
+  private static final String MOCK_STUB_XML =
+      Bpmn.convertToString(
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent("child-start")
+              .endEvent("child-end")
+              .done());
+
+  /**
+   * A test class can mock a child process in one test and run the real one in another. Both runs
+   * report coverage for the same process definition id, but only the real model describes the
+   * process.
+   */
+  @Test
+  void shouldKeepTheMostCompleteModelWhenARunDeploysAMockStub() {
+    // given
+    final CoverageReportCollector collector =
+        new CoverageReportCollector(
+            CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
+
+    // when: the run that mocks the child process comes first
+    collector.collectTestRunCoverage("mockingRun", null, testDataOf(MOCK_STUB_XML));
+    collector.collectTestRunCoverage("realRun", null, testDataOf(REAL_XML));
+
+    // then
+    assertThat(collector.getModels())
+        .singleElement()
+        .extracting(ProcessModel::getXml)
+        .asString()
+        .contains("realTask");
+  }
+
+  /** Builds the data of a test run that ran a single instance of the given process model. */
+  private static CoverageTestData testDataOf(final String xml) {
+    final ProcessDefinition processDefinition = mock(ProcessDefinition.class);
+    when(processDefinition.getProcessDefinitionId()).thenReturn(PROCESS_ID);
+    when(processDefinition.getVersion()).thenReturn(1);
+
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn(PROCESS_ID);
+
+    return ImmutableCoverageTestData.builder()
+        .addProcessInstanceData(
+            ImmutableCoverageProcessInstanceData.builder().processInstance(processInstance).build())
+        .addProcessDefinitionData(
+            ImmutableCoverageProcessDefinitionData.builder()
+                .processDefinition(processDefinition)
+                .xml(xml)
+                .build())
+        .build();
+  }
+}

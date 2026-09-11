@@ -86,16 +86,24 @@ public final class CoverageReportCollector {
                         processInstanceData.getProcessInstance().getProcessDefinitionId()))
             .collect(Collectors.toList());
 
+    // the models of this run, which are not necessarily the models of the previous runs: a test can
+    // deploy a different model under an already covered process definition id
+    final Map<String, ProcessModel> runModels = new HashMap<>();
+
     final List<ProcessCoverage> coverages =
         filteredProcessInstanceData.stream()
             .map(
                 processInstanceResult ->
                     CoverageCreator.createCoverage(
                         processInstanceResult,
-                        models.computeIfAbsent(
+                        runModels.computeIfAbsent(
                             processInstanceResult.getProcessInstance().getProcessDefinitionId(),
                             key -> ModelCreator.createModel(testResults, key))))
             .collect(Collectors.toList());
+
+    runModels.forEach(
+        (processDefinitionId, runModel) ->
+            models.merge(processDefinitionId, runModel, ModelCreator::selectMostCompleteModel));
 
     final List<DecisionCoverage> decisionCoverages = collectDecisionCoverages(testResults);
 

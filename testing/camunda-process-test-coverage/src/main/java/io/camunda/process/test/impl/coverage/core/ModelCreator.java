@@ -98,6 +98,24 @@ public class ModelCreator {
   }
 
   /**
+   * Selects the model that describes more of the process out of two models sharing a process
+   * definition id.
+   *
+   * <p>A process definition id can be deployed with different models within the same test run. The
+   * most common case is a mocked child process: {@code MOCK_CHILD_PROCESS} deploys a stub of a few
+   * elements under the id of the real process. The report describes such a process by its richest
+   * model, so that the real BPMN wins over a stub.
+   *
+   * @param model A model of the process
+   * @param otherModel Another model of the same process
+   * @return The model with the higher element count, or the first one if both are equal
+   */
+  public static ProcessModel selectMostCompleteModel(
+      final ProcessModel model, final ProcessModel otherModel) {
+    return otherModel.getTotalElementCount() > model.getTotalElementCount() ? otherModel : model;
+  }
+
+  /**
    * Determines if a model element is part of an executable process.
    *
    * <p>Checks if the element belongs to the process with the specified ID and whether that process
