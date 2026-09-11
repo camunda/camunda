@@ -133,6 +133,12 @@ services:
       - CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_2=USER_TASKS
       - CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_0=VARIABLE # [AUTHORIZATION, BATCH, DECISION, GROUP, INCIDENT, MAPPING_RULE, PROCESS_INSTANCE, ROLE, TENANT, USER, USER_TASK, RESOURCE, VARIABLE]
       - CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED=true
+      # Centralized secret resolution. Without a store the broker registers a
+      # NoopSecretStore, so every reference resolves to NOT_FOUND. The store id
+      # must be `default` - any other id is rejected at startup. A 1m cache TTL
+      # (the minimum) keeps rotation testable; the product default is 20m.
+      - CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH=/etc/camunda/secrets
+      - CAMUNDA_SECRETS_CACHE_TTL=1m
     ports:
       - 26500:26500
       - 9600:9600
@@ -141,6 +147,8 @@ services:
       - ${DATABASE}
     networks:
       - zeebe_network
+    volumes:
+      - ./secrets:/etc/camunda/secrets:ro
     env_file:
       - envs/.env.database.${DATABASE}
 
