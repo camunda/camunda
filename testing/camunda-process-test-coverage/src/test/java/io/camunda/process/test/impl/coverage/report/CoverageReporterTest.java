@@ -31,7 +31,6 @@ import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
-import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
@@ -69,37 +68,27 @@ class CoverageReporterTest {
 
   /** The real, fully deployed model: 4 flow nodes and 3 sequence flows. */
   private static final ProcessModel REAL_MODEL =
-      ImmutableProcessModel.builder()
-          .processDefinitionId(PROCESS_ID)
-          .totalElementCount(7)
-          .version("1")
-          .xml(
-              Bpmn.convertToString(
-                  Bpmn.createExecutableProcess(PROCESS_ID)
-                      .startEvent("startA")
-                      .sequenceFlowId("flowA1")
-                      .serviceTask("taskA1")
-                      .sequenceFlowId("flowA2")
-                      .serviceTask("taskA2")
-                      .sequenceFlowId("flowA3")
-                      .endEvent("endA")
-                      .done()))
-          .build();
+      ProcessModelFixtures.modelOf(
+          PROCESS_ID,
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent("startA")
+              .sequenceFlowId("flowA1")
+              .serviceTask("taskA1")
+              .sequenceFlowId("flowA2")
+              .serviceTask("taskA2")
+              .sequenceFlowId("flowA3")
+              .endEvent("endA")
+              .done());
 
   /** The stub that {@code MOCK_CHILD_PROCESS} deploys under the mocked process id. */
   private static final ProcessModel MOCK_STUB_MODEL =
-      ImmutableProcessModel.builder()
-          .processDefinitionId(PROCESS_ID)
-          .totalElementCount(3)
-          .version("1")
-          .xml(
-              Bpmn.convertToString(
-                  Bpmn.createExecutableProcess(PROCESS_ID)
-                      .startEvent("child-start")
-                      .sequenceFlowId("child-flow")
-                      .endEvent("child-end")
-                      .done()))
-          .build();
+      ProcessModelFixtures.modelOf(
+          PROCESS_ID,
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent("child-start")
+              .sequenceFlowId("child-flow")
+              .endEvent("child-end")
+              .done());
 
   /** The real suite covers 5 of the 7 elements: the process instance is still running. */
   private static final ProcessCoverage REAL_COVERAGE =
@@ -158,12 +147,15 @@ class CoverageReporterTest {
 
     final List<ProcessModel> processModels =
         Collections.singletonList(
-            ImmutableProcessModel.builder()
-                .processDefinitionId(processDefinitionId)
-                .totalElementCount(4)
-                .version("1")
-                .xml("<bpmn/>")
-                .build());
+            ProcessModelFixtures.modelOf(
+                processDefinitionId,
+                Bpmn.createExecutableProcess(processDefinitionId)
+                    .startEvent("start")
+                    .sequenceFlowId("flow-a")
+                    .serviceTask("task")
+                    .sequenceFlowId("flow-b")
+                    .endEvent("end")
+                    .done()));
 
     final List<DecisionModel> decisionModels =
         Collections.singletonList(
@@ -202,7 +194,7 @@ class CoverageReporterTest {
     // the message includes the suite identifier (class name), process ID, and coverage percentage
     assertThat(message).contains(PrintProcessTest.class.getName());
     assertThat(message).contains("my-process");
-    assertThat(message).contains("75%");
+    assertThat(message).contains("60%");
   }
 
   @Test
@@ -283,12 +275,12 @@ class CoverageReporterTest {
 
     final Collection<ProcessModel> processModels =
         Collections.singletonList(
-            ImmutableProcessModel.builder()
-                .processDefinitionId("proc-model")
-                .totalElementCount(3)
-                .version("1")
-                .xml("<bpmn/>")
-                .build());
+            ProcessModelFixtures.modelOf(
+                "proc-model",
+                Bpmn.createExecutableProcess("proc-model")
+                    .startEvent("start")
+                    .endEvent("end")
+                    .done()));
 
     final Collection<DecisionModel> decisionModels =
         Collections.singletonList(
