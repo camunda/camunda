@@ -83,15 +83,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     permissions: {}
-    # Temporarily disabled while the Aurora async replication IT is buggy. The job remains
-    # available for manual re-enablement through the repository variable.
     if: |
-      vars.CI_ENABLE_AURORA_ASYNC_REPLICATION == 'true' &&
-      (github.event_name == 'schedule' ||
-       github.event_name == 'workflow_dispatch' ||
-       (github.event_name == 'pull_request' &&
-        (github.event.action == 'labeled' && github.event.label.name == 'run-aurora-tests' ||
-         github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'run-aurora-tests'))))
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       (github.event.action == 'labeled' && github.event.label.name == 'run-aurora-tests' ||
+        github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'run-aurora-tests')))
 
     steps:
       - name: Checkout
