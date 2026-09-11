@@ -104,8 +104,39 @@ def test_should_load_packaged_query_files():
 
     for query_file_name in PACKAGED_QUERY_FILES:
         document = QueriesDocument.from_file(PROJECT_DIR / query_file_name, substitutions)
+        assert len(document.queries) > 0
+
+def test_should_substitute_queries(tmp_path):
+    substitutions = {
+        "$NAMESPACE": "c8-ck-test",
+        "$DURATION_S": "600s",
+        "$SAMPLE_STEP": "1m",
+    }
+
+    queries_file = tmp_path / "report-queries.yaml"
+    queries_file.write_text(
+        """queries:
+- key: query
+  description: query to substitute
+  header: query
+  query: |
+    count(max_over_time((kube_pod_status_phase{namespace="$NAMESPACE", pod=~"(camunda|zeebe)-[0-9]+", phase="Running"} == 1)[$DURATION_S:$SAMPLE_STEP]))
+- key: query2
+  description: query2 to substitute
+  header: query2
+  query: |
+    max(max_over_time(kube_pod_container_resource_limits{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container=~".*(orchestration|zeebe|camunda).*", resource="cpu", unit="core"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_cpu_cores{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container=~".*(orchestration|zeebe|camunda).*"}[$DURATION_S]))
+""",
+        encoding="utf-8",
+    )
+
+    for query_file_name in PACKAGED_QUERY_FILES:
+        document = QueriesDocument.from_file(queries_file, substitutions)
 
         assert len(document.queries) > 0
+        for query in document.queries:
+            assert "c8-ck-test" in query.query
+            assert "600s" in query.query
 
 
 def test_should_use_namespace_created_metric():

@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, List
 from typing import Self
 
 import yaml
@@ -10,8 +10,9 @@ from pydantic import Field
 from pydantic import ValidationError
 from pydantic import model_validator
 
-from .errors import ReportError
+from load_test_report.cli import query_substitutions
 
+from .errors import ReportError
 
 class Query(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
@@ -42,14 +43,6 @@ class QueriesDocument(BaseModel):
         raw_document = substitute_query_text(queries_file.read_text(encoding="utf-8"), substitutions)
         parsed = yaml.safe_load(raw_document)
         return cls.model_validate(parsed)
-
-def query_substitutions(options: Any) -> Mapping[str, str]:
-    return {
-        "$NAMESPACE": options.namespace,
-        "$DURATION_S": f"{options.duration_seconds}s",
-        "$RATE_INTERVAL": options.rate_interval,
-        "$SAMPLE_STEP": options.sample_step,
-    }
 
 
 def substitute_query_text(value: str, substitutions: Mapping[str, str]) -> str:

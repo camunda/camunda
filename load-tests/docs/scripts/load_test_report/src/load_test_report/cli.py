@@ -1,6 +1,7 @@
 import argparse
 import sys
 from collections.abc import Sequence
+from typing import Any, Mapping
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -8,6 +9,15 @@ def build_parser() -> argparse.ArgumentParser:
         prog="load-test-report",
         description="Build a wide load-test report from Prometheus.",
     )
+
+
+def query_substitutions(options: Any) -> Mapping[str, str]:
+    return {
+        "$NAMESPACE": options.namespace,
+        "$DURATION_S": f"{options.duration_seconds}s",
+        "$RATE_INTERVAL": options.rate_interval,
+        "$SAMPLE_STEP": options.sample_step,
+    }
 
 
 def run(argv: Sequence[str]) -> int:
