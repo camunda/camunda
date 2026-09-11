@@ -25,6 +25,7 @@ import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.util.Arrays;
@@ -224,6 +225,57 @@ class CoverageReportCreatorTest {
     assertThat(report.getProcessCoverages().get(0).getCoverage()).isEqualTo(1.0);
     assertThat(report.getProcessCoverages().get(0).getCompletedElements())
         .containsExactlyInAnyOrder("element1", "element2", "element3");
+  }
+
+  @Test
+  void shouldReportEachProcessInstanceOfARunSeparately() {
+    // given: a run that started the same process twice, each instance taking a different path
+    final ProcessModel processModel =
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("flow1")
+                .serviceTask("task1")
+                .sequenceFlowId("flow2")
+                .endEvent("end")
+                .done());
+
+    final CoverageSuiteReport suite =
+        ImmutableCoverageSuiteReport.builder()
+            .id("suite")
+            .name("Suite")
+            .addRuns(
+                ImmutableCoverageRunReport.builder()
+                    .name("run")
+                    .addProcessCoverages(
+                        ImmutableProcessCoverage.builder()
+                            .processDefinitionId("process")
+                            .addCompletedElements("start")
+                            .addTakenSequenceFlows("flow1")
+                            .coverage(0.4)
+                            .build())
+                    .addProcessCoverages(
+                        ImmutableProcessCoverage.builder()
+                            .processDefinitionId("process")
+                            .addCompletedElements("task1", "end")
+                            .addTakenSequenceFlows("flow2")
+                            .coverage(0.6)
+                            .build())
+                    .build())
+            .build();
+
+    // when
+    final CoverageReport report =
+        CoverageReportCreator.createAggregatedCoverageReport(
+            Collections.singletonList(suite),
+            Collections.singletonList(processModel),
+            Collections.emptyList());
+
+    // then: the run still reports what each instance covered, in the order they ran
+    assertThat(report.getSuites().get(0).getRuns().get(0).getProcessCoverages())
+        .extracting(ProcessCoverage::getCoverage)
+        .containsExactly(0.4, 0.6);
   }
 
   @Test

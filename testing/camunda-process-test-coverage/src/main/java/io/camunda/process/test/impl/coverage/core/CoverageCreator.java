@@ -29,6 +29,7 @@ import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -120,39 +121,64 @@ public class CoverageCreator {
         coverages.stream().collect(Collectors.groupingBy(ProcessCoverage::getProcessDefinitionId));
     final List<ProcessCoverage> aggregatedCoverages = new ArrayList<>();
     coveragesByProcessDefinition.forEach(
-        (processDefinitionId, coveragesForProcessInstance) -> {
-          final ProcessModel processModel =
-              processModels.stream()
-                  .filter(m -> m.getProcessDefinitionId().equals(processDefinitionId))
-                  .findFirst()
-                  .orElseThrow(
-                      () ->
-                          new IllegalStateException(
-                              "No model found for process definition id: " + processDefinitionId));
-          final Set<String> coverableElementIds = ModelCreator.coverableElementIds(processModel);
-          final List<String> completedElements =
-              retainCoverable(
-                  coveragesForProcessInstance.stream()
-                      .flatMap(c -> c.getCompletedElements().stream())
-                      .distinct()
-                      .collect(Collectors.toList()),
-                  coverableElementIds);
-          final List<String> takenSequenceFlows =
-              retainCoverable(
-                  coveragesForProcessInstance.stream()
-                      .flatMap(c -> c.getTakenSequenceFlows().stream())
-                      .distinct()
-                      .collect(Collectors.toList()),
-                  coverableElementIds);
-          aggregatedCoverages.add(
-              ImmutableProcessCoverage.builder()
-                  .processDefinitionId(processDefinitionId)
-                  .addAllCompletedElements(completedElements)
-                  .addAllTakenSequenceFlows(takenSequenceFlows)
-                  .coverage(calculateCoverage(completedElements, takenSequenceFlows, processModel))
-                  .build());
-        });
+        (processDefinitionId, coveragesForProcessInstance) ->
+            aggregatedCoverages.add(
+                aggregate(processDefinitionId, coveragesForProcessInstance, processModels)));
     return aggregatedCoverages;
+  }
+
+  /**
+   * Measures a coverage against the model the report describes its process by.
+   *
+   * <p>A coverage is collected against the deployment the process instance ran, which is not
+   * necessarily the deployment the report describes the process by: a process can be deployed both
+   * for real and as a stub that {@code MOCK_CHILD_PROCESS} deploys under the same id. The report
+   * renders the coverage against the model it selected, so elements of another deployment neither
+   * count towards the percentage nor are highlighted in that diagram.
+   *
+   * @param coverage The coverage as it was collected
+   * @param processModels The models the report describes the processes by
+   * @return The coverage, measured against the model of its process definition id
+   */
+  public static ProcessCoverage measureAgainstReportedModel(
+      final ProcessCoverage coverage, final Collection<ProcessModel> processModels) {
+    return aggregate(
+        coverage.getProcessDefinitionId(), Collections.singletonList(coverage), processModels);
+  }
+
+  private static ProcessCoverage aggregate(
+      final String processDefinitionId,
+      final List<ProcessCoverage> coverages,
+      final Collection<ProcessModel> processModels) {
+    final ProcessModel processModel =
+        processModels.stream()
+            .filter(m -> m.getProcessDefinitionId().equals(processDefinitionId))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "No model found for process definition id: " + processDefinitionId));
+    final Set<String> coverableElementIds = ModelCreator.coverableElementIds(processModel);
+    final List<String> completedElements =
+        retainCoverable(
+            coverages.stream()
+                .flatMap(c -> c.getCompletedElements().stream())
+                .distinct()
+                .collect(Collectors.toList()),
+            coverableElementIds);
+    final List<String> takenSequenceFlows =
+        retainCoverable(
+            coverages.stream()
+                .flatMap(c -> c.getTakenSequenceFlows().stream())
+                .distinct()
+                .collect(Collectors.toList()),
+            coverableElementIds);
+    return ImmutableProcessCoverage.builder()
+        .processDefinitionId(processDefinitionId)
+        .addAllCompletedElements(completedElements)
+        .addAllTakenSequenceFlows(takenSequenceFlows)
+        .coverage(calculateCoverage(completedElements, takenSequenceFlows, processModel))
+        .build();
   }
 
   /**

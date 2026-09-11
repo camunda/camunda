@@ -65,6 +65,9 @@ public class CoverageReportCreator {
    * claim a percentage of a model it did not run and highlight elements that the rendered diagram
    * does not contain.
    *
+   * <p>Each coverage is measured on its own, so a run that ran a process several times keeps one
+   * entry per instance.
+   *
    * @param run The run as it was collected
    * @param processModels The models the report describes the processes by
    * @param decisionModels The tables the report describes the decisions by
@@ -78,9 +81,18 @@ public class CoverageReportCreator {
         .name(run.getName())
         .displayName(run.getDisplayName())
         .addAllProcessCoverages(
-            CoverageCreator.aggregateCoverages(run.getProcessCoverages(), processModels))
+            run.getProcessCoverages().stream()
+                .map(
+                    coverage ->
+                        CoverageCreator.measureAgainstReportedModel(coverage, processModels))
+                .collect(Collectors.toList()))
         .addAllDecisionCoverages(
-            DecisionCoverageCreator.aggregateCoverages(run.getDecisionCoverages(), decisionModels))
+            run.getDecisionCoverages().stream()
+                .map(
+                    coverage ->
+                        DecisionCoverageCreator.measureAgainstReportedModel(
+                            coverage, decisionModels))
+                .collect(Collectors.toList()))
         .build();
   }
 
