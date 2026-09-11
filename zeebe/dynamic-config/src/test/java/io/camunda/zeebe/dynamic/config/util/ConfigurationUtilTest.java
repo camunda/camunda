@@ -178,6 +178,37 @@ class ConfigurationUtilTest {
   }
 
   @Test
+  void shouldIncludeLearnerPartitionsInDistribution() {
+    // given - a learner must be part of the distribution so that it starts its partition on boot
+    // and recovers its raft state, otherwise a pending promotion could never complete
+    final PartitionMetadata partitionOne =
+        new PartitionMetadata(
+            PartitionId.from(GROUP_NAME, 1),
+            Set.of(member(0), member(1)),
+            Map.of(member(0), 2, member(1), 1),
+            2,
+            member(0));
+
+    final ClusterConfiguration topology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(0),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, partitionConfig))))
+            .addMember(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())));
+
+    // when
+    final var partitionDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+
+    // then
+    assertThat(partitionDistribution).containsExactly(partitionOne);
+  }
+
+  @Test
   void shouldGeneratePartitionDistributionFromTopologyWithMemberWithNoPartitions() {
     // given
     final PartitionMetadata partitionOne =
