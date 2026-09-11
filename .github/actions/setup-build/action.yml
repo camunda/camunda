@@ -232,7 +232,7 @@ runs:
       mirrors: ${{ steps.maven.outputs.mirrors }}
   - uses: ./.github/actions/apt-fast-mirror-failover
     if: inputs.time-zone != '' && runner.os == 'Linux'
-  # tzdata is not installed in self-hosted runners. `timeout` runs inside the sudo'd
+  # tzdata may be missing on self-hosted runners. `timeout` runs inside the sudo'd
   # root process tree so it can self-terminate a hung apt-get without nick-fields/retry
   # having to kill across the privilege boundary -- doing that externally throws
   # `kill EPERM` and crashes instead of retrying, see
@@ -240,12 +240,20 @@ runs:
   - name: Install tzdata
     if: inputs.time-zone != '' && runner.os == 'Linux'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      TZ_IDENTIFIER: ${{ inputs.time-zone }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
       timeout_minutes: 2
       shell: bash
-      command: sudo timeout 115 bash -c "apt-get update && apt-get install -y tzdata"
+      # Skip the install when the zone file Set Time Zone symlinks already exists,
+      # so a mirror outage cannot fail an otherwise-ready runner. Check that exact
+      # file, not just /usr/share/zoneinfo -- a partial zoneinfo would leave
+      # /etc/localtime dangling, which `ln -s` reports as success.
+      command: |
+        [ -e "/usr/share/zoneinfo/${TZ_IDENTIFIER}" ] && exit 0
+        sudo timeout 115 bash -c "apt-get update && apt-get install -y tzdata"
   - name: Set Time Zone
     if: inputs.time-zone != '' && runner.os == 'Linux'
     env:
