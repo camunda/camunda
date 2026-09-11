@@ -89,8 +89,11 @@ function evaluatePostGateAnomaly(input) {
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BOT_CATEGORY_OVERRIDES = void 0;
+exports.internalIssueKind = internalIssueKind;
+exports.hiddenFromCustomerBody = hiddenFromCustomerBody;
 exports.stripBackportPrefix = stripBackportPrefix;
 exports.parseDependencyUpdate = parseDependencyUpdate;
+exports.formatDependencyUpdates = formatDependencyUpdates;
 exports.categorize = categorize;
 /** D16: bots whose own title can't be trusted as the category source. */
 exports.BOT_CATEGORY_OVERRIDES = {
@@ -117,6 +120,40 @@ const SECTION_BY_TYPE = {
 };
 /** The one section hidden from the customer-facing body — still in the full asset. */
 const INTERNAL_SECTION = 'Maintenance';
+/**
+ * Issue kinds a customer must never be shown, whatever the delivering pull
+ * request's title says.
+ *
+ * Section comes from the conventional-commit type, which describes the CHANGE,
+ * not who it is for: a CI gate lands as `feat:`, a flaky-test repair as `fix:`,
+ * a load-test folder marker as `docs:`. Each of those then reads to a customer
+ * as a feature, a bug fix and a documentation change respectively. The issue's
+ * `kind/*` label is the only place the audience is actually recorded — and it
+ * lives on the issue alone; the delivering pull request carries no `kind/*` of
+ * its own. Measured on 8.9.19: 3 of the 23 customer-facing lines were internal
+ * work before this rule.
+ */
+const INTERNAL_ISSUE_KINDS = new Set(['kind/task', 'kind/epic']);
+/** The `kind/*` label that marks one issue internal, or null. Returns the
+ *  label rather than a boolean so the audit line can name which one did it. */
+function internalIssueKind(issueLabels) {
+    return issueLabels.find((label) => INTERNAL_ISSUE_KINDS.has(label)) ?? null;
+}
+/**
+ * The kind that hides an ENTRY from the customer body, or null to show it.
+ *
+ * Hidden only when EVERY linked issue is internal. One pull request routinely
+ * closes a customer bug and a QA task together — 8.9.19's #61857 closed both
+ * `kind/bug` #61719 and `kind/task` #56995 — and hiding on any internal label
+ * would have suppressed a real customer-facing fix along with the task. A pull
+ * request linking no issue at all is not hidden: absence is not a signal.
+ */
+function hiddenFromCustomerBody(issueLabelSets) {
+    if (issueLabelSets.length === 0)
+        return null;
+    const kinds = issueLabelSets.map(internalIssueKind);
+    return kinds.every((kind) => kind !== null) ? kinds[0] : null;
+}
 // `type` + optional `(scope)` + optional `!` + `: ` + subject. The caller
 // (pipeline/index.ts) already runs stripBackportPrefix on the title before
 // this ever sees it, so no bracket tolerance is needed here — a leading
@@ -139,19 +176,31 @@ const DEPENDABOT_BUMP = /Bump (\S+) from (\S+) to (\S+)/i;
 // the column count varies between renovate's table shapes.
 const RENOVATE_TABLE_ROW = /^\|\s*\[([^\]]+)\].*?`([^`]+)`\s*→\s*`([^`]+)`.*\|\s*$/gm;
 /**
- * For a `deps:` PR, the dependency name and its old/new version — the customer
- * wants "name: old → new", not the bot's verbose prose. Renovate only puts the
- * new version in its title, so its body table is read instead. null when
- * neither shape matches; the caller then keeps the plain title.
+ * For a `deps:` PR, each dependency it moves and the versions it moved them
+ * between — the customer wants "name: old → new", not the bot's verbose prose.
+ * Renovate only puts the new version in its title, so its body table is read
+ * instead, and one renovate PR can carry several rows. Empty when neither
+ * shape matches; the caller then keeps the plain title.
+ *
+ * Structured rather than pre-formatted because the renderer collapses repeated
+ * updates of one package across a release into a single first-to-last line,
+ * which it cannot do from a string it would have to parse back.
  */
 function parseDependencyUpdate(input) {
     const bump = DEPENDABOT_BUMP.exec(input.title);
     if (bump) {
         const [, name, from, to] = bump;
-        return `${name}: ${from} → ${to}`;
+        return [{ name: name, from: from, to: to }];
     }
-    const rows = [...input.body.matchAll(RENOVATE_TABLE_ROW)].map((match) => `${match[1]}: ${match[2]} → ${match[3]}`);
-    return rows.length > 0 ? rows.join('; ') : null;
+    return [...input.body.matchAll(RENOVATE_TABLE_ROW)].map((match) => ({
+        name: match[1],
+        from: match[2],
+        to: match[3],
+    }));
+}
+/** The one-line form used as an entry title. */
+function formatDependencyUpdates(updates) {
+    return updates.map((update) => `${update.name}: ${update.from} → ${update.to}`).join('; ');
 }
 function categorize(input) {
     const reasons = [];
@@ -273,6 +322,7 @@ const range_1 = __nccwpck_require__(53);
 const walk_1 = __nccwpck_require__(600);
 const render_1 = __nccwpck_require__(624);
 const parser_1 = __nccwpck_require__(883);
+const categorize_1 = __nccwpck_require__(493);
 const delivery_1 = __nccwpck_require__(388);
 const resolve_1 = __nccwpck_require__(940);
 const warm_1 = __nccwpck_require__(579);
@@ -420,6 +470,7 @@ async function run() {
                 breaking: output.categorization.breaking,
                 issueNumbers: output.attribution.issueNumbers,
                 attributionSource: output.attribution.source,
+                dependencies: output.dependencies,
             },
             delivery: {
                 prNumber: output.number,
@@ -466,25 +517,38 @@ async function run() {
         }
     }
     // One batched phase, after attribution because the issue set is what
-    // attribution produces. Only issues a backport hop did not already settle are
-    // worth asking about — on a patch release that is most of them.
+    // attribution produces. Every attributed issue is asked about, including the
+    // ones a backport hop already settled: the delivery rule does not need those,
+    // but the `kind/*` visibility rule needs all of them, and a backport is
+    // exactly where an internal issue tends to arrive.
     const wantedIssues = new Set();
     for (const entry of processed) {
-        if (!entry || entry.delivery.deliveryPath === 'backportHop')
+        if (!entry)
             continue;
         for (const issueNumber of entry.renderPr.issueNumbers)
             wantedIssues.add(issueNumber);
     }
-    const closures = await graphql.fetchIssueClosers([...wantedIssues]);
-    core.info(`Read the close event of ${closures.size} of ${wantedIssues.size} referenced issue(s).`);
+    const issueFacts = await graphql.fetchIssueFacts([...wantedIssues]);
+    core.info(`Read labels and the close event of ${issueFacts.size} of ${wantedIssues.size} referenced issue(s).`);
     const attributed = [];
     const unattributed = [];
     for (const entry of processed) {
         if (!entry)
             continue;
+        // A `kind/task` or `kind/epic` issue never reaches the customer body,
+        // whatever the delivering pull request's type made of it. Still in the
+        // full asset — hidden from customers, never dropped.
+        const internalKind = (0, categorize_1.hiddenFromCustomerBody)(entry.renderPr.issueNumbers.map((issueNumber) => issueFacts.get(issueNumber)?.labels ?? []));
+        if (internalKind) {
+            core.warning(`PR #${entry.renderPr.number}: linked issue is ${internalKind} — kept in the full asset, hidden from the customer body.`);
+        }
         const renderPr = {
             ...entry.renderPr,
-            closesIssueNumbers: (0, delivery_1.closesIssueNumbers)({ ...entry.delivery, issueNumbers: entry.renderPr.issueNumbers }, closures),
+            visibility: internalKind ? 'internal' : entry.renderPr.visibility,
+            closesIssueNumbers: (0, delivery_1.closesIssueNumbers)({ ...entry.delivery, issueNumbers: entry.renderPr.issueNumbers }, issueFacts),
+            // Positively open only. An issue absent from the lookup — deleted, or a
+            // number that was really a pull request — is not evidence of anything.
+            openIssueNumbers: entry.renderPr.issueNumbers.filter((issueNumber) => issueFacts.get(issueNumber)?.closed === false),
         };
         (entry.bucketed ? unattributed : attributed).push(renderPr);
     }
@@ -949,9 +1013,9 @@ async function categorizePr(resolver, pr, original, override) {
  */
 async function resolveDisplayTitle(resolver, pr, categorization, attribution, fallbackTitle) {
     if (categorization.section === 'Dependency updates') {
-        const dependencyLine = (0, categorize_1.parseDependencyUpdate)({ title: pr.title, body: pr.body });
-        if (dependencyLine)
-            return dependencyLine;
+        const updates = (0, categorize_1.parseDependencyUpdate)({ title: pr.title, body: pr.body });
+        if (updates.length > 0)
+            return (0, categorize_1.formatDependencyUpdates)(updates);
     }
     const [primaryIssue] = attribution.issueNumbers;
     if (primaryIssue !== undefined) {
@@ -976,7 +1040,8 @@ async function processPr(resolver, pr, options) {
         gateRequiredAt: options.gateRequiredAt,
         source: attribution.source,
     });
-    return { number: pr.number, title, attribution, categorization, anomaly };
+    const dependencies = categorization.section === 'Dependency updates' ? (0, categorize_1.parseDependencyUpdate)({ title: pr.title, body: pr.body }) : [];
+    return { number: pr.number, title, attribution, categorization, anomaly, dependencies };
 }
 
 
@@ -1281,24 +1346,35 @@ function sectionRank(name) {
  * entry, and it errs toward showing — the direction this epic exists to fix.
  */
 function toEntries(prs) {
+    // A dependency bump is grouped by the package it moves, not by its own pull
+    // request; anything with a linked issue keeps the issue grouping below.
+    const isDependencyBump = (pr) => (pr.dependencies?.length ?? 0) > 0 && pr.issueNumbers.length === 0;
     const grouped = new Map();
     for (const pr of prs) {
+        if (isDependencyBump(pr))
+            continue;
         const key = entryKeyFor(pr);
         const list = grouped.get(key) ?? [];
         list.push(pr);
         grouped.set(key, list);
     }
-    return [...grouped.values()].map((group) => {
+    const entries = [...grouped.values()].map((group) => {
         // Non-empty by construction, and ties keep the first PR in range order.
         const lead = group.reduce((best, pr) => sectionRank(groupNameFor(pr)) < sectionRank(groupNameFor(best)) ? pr : best);
+        // Delivered is asked of the grouping key — the issue the entry is titled
+        // by — not of any issue the group happens to touch.
+        const [keyIssue] = lead.issueNumbers;
+        const stillOpen = keyIssue !== undefined && group.some((pr) => pr.openIssueNumbers?.includes(keyIssue));
         return {
             groupName: groupNameFor(lead),
             title: lead.title,
             issueNumbers: [...new Set(group.flatMap((pr) => pr.issueNumbers))],
             prNumbers: group.map((pr) => pr.number),
             breaking: group.some((pr) => pr.breaking),
+            delivered: !stillOpen,
         };
     });
+    return [...entries, ...collapseDependencies(prs.filter(isDependencyBump))];
 }
 function renderSectionedBody(prs) {
     const entries = toEntries(prs);
@@ -1326,7 +1402,84 @@ function renderLine(entry) {
     const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
     if (entry.issueNumbers.length === 0)
         return `- ${entry.title} (${prs})`;
-    return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}`;
+    // Grouping put one line under the issue's own title, which reads as the whole
+    // feature shipping. Say so when the issue is still OPEN: the work landed, the
+    // issue did not finish. Same vocabulary as the issue comment.
+    const partial = entry.delivered ? '' : ' (partially delivered)';
+    return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}${partial}`;
+}
+/**
+ * One line per dependency, not per bump.
+ *
+ * A release that moves the same package five times published five lines a
+ * reader has to reconcile by hand — and 8.9.19 shipped two byte-identical
+ * `io.github.classgraph: 4.8.193 → 4.8.194` lines from #61527 and #61528. The
+ * useful fact is where the package started the release and where it ended, so
+ * the range is collapsed to the EARLIEST `from` and the LATEST `to`, citing
+ * every pull request that moved it.
+ *
+ * The walk is newest-first, so the earliest update is the LAST element. The
+ * same collapse fixes a single renovate pull request whose body table lists one
+ * package twice.
+ */
+/** Dotted-numeric versions compare numerically; anything else — a digest, a
+ *  short sha, a date tag — has no order and returns null. */
+function versionKey(value) {
+    const trimmed = value.replace(/^v/, '');
+    return /^\d+(\.\d+)*$/.test(trimmed) ? trimmed.split('.').map(Number) : null;
+}
+function isLower(candidate, current) {
+    const [a, b] = [versionKey(candidate), versionKey(current)];
+    if (!a || !b)
+        return false;
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        const [left, right] = [a[i] ?? 0, b[i] ?? 0];
+        if (left !== right)
+            return left < right;
+    }
+    return false;
+}
+/**
+ * The release's actual start and end version for one package.
+ *
+ * Across pull requests the walk order settles it — newest first, so the
+ * earliest update is last. Within ONE pull request it cannot: a grouped
+ * renovate body lists rows per lockfile, not in time order, and taking the
+ * last row gave `browserslist: 4.28.2` when the release really started at
+ * `4.28.1`. So versions are compared numerically where they can be, and the
+ * positional answer is the fallback for anything unorderable — a digest or a
+ * short sha, where walk order IS the chronology.
+ */
+function versionRange(updates) {
+    let from = updates[updates.length - 1].from;
+    let to = updates[0].to;
+    for (const update of updates) {
+        if (isLower(update.from, from))
+            from = update.from;
+        if (isLower(to, update.to))
+            to = update.to;
+    }
+    return { from, to };
+}
+function collapseDependencies(prs) {
+    const byName = new Map();
+    for (const pr of prs) {
+        for (const update of pr.dependencies ?? []) {
+            const existing = byName.get(update.name) ?? { prNumbers: [], updates: [], groupName: groupNameFor(pr) };
+            if (!existing.prNumbers.includes(pr.number))
+                existing.prNumbers.push(pr.number);
+            existing.updates.push(update);
+            byName.set(update.name, existing);
+        }
+    }
+    return [...byName].map(([name, group]) => ({
+        groupName: group.groupName,
+        title: `${name}: ${versionRange(group.updates).from} → ${versionRange(group.updates).to}`,
+        issueNumbers: [],
+        prNumbers: group.prNumbers,
+        breaking: false,
+        delivered: true,
+    }));
 }
 /**
  * One comment per issue, not per pull request that touched it.
@@ -1613,8 +1766,8 @@ class GithubGraphqlResolver {
         return out;
     }
     /**
-     * Reads each issue's own close event: was it closed, why, and by which pull
-     * request's merge. Same batching as `classifyRefs` — a direct node lookup per
+     * Reads what only the ISSUE knows: its labels, and its own close event —
+     * was it closed, why, and by which pull request's merge. Same batching as `classifyRefs` — a direct node lookup per
      * alias, 100 to a request — and the same NOT_FOUND tolerance, because the
      * number set comes from references that may point at something deleted.
      *
@@ -1623,14 +1776,14 @@ class GithubGraphqlResolver {
      * earlier close never shadows it. A number that resolves to a pull request
      * rather than an issue answers null and is treated as "nothing closed here".
      */
-    async fetchIssueClosers(numbers) {
+    async fetchIssueFacts(numbers) {
         const out = new Map();
         for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
             const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
             const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
         repository(owner: $owner, name: $name) {
           ${batch
-                .map((_, j) => `i${j}: issue(number: $n${j}) { closed stateReason timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`)
+                .map((_, j) => `i${j}: issue(number: $n${j}) { closed stateReason labels(first: 20) { nodes { name } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`)
                 .join('\n')}
         }
       }`;
@@ -1652,6 +1805,7 @@ class GithubGraphqlResolver {
                     closed: node.closed ?? false,
                     stateReason: node.stateReason ?? null,
                     closerPrNumber: closer?.__typename === 'PullRequest' && sameRepo ? (closer.number ?? null) : null,
+                    labels: (node.labels?.nodes ?? []).map((label) => label.name),
                 });
             });
         }

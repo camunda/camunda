@@ -270,7 +270,7 @@ test('the customer body names only the PRs it may show; the full asset names eve
   // entries exist — a maintenance PR number in customer notes is noise.
   const delivering = [
     pr({ number: 101, title: 'Add agent history API', section: 'Maintenance', visibility: 'internal', issueNumbers: [55] }),
-    pr({ number: 102, title: 'Add agent history API', section: 'Features', issueNumbers: [55] }),
+    pr({ number: 102, title: 'Add agent history API', section: 'Features', issueNumbers: [55], closesIssueNumbers: [55] }),
   ];
 
   // when
@@ -299,4 +299,135 @@ test('BREAKING CHANGE is cross-listed at the top of the customer body in additio
   assert.match(result.customerBody, /## Breaking changes/);
   assert.match(result.customerBody, /#50/);
   assert.match(result.customerBody, /## Features/);
+});
+
+test('an issue still open after this release is marked partially delivered', () => {
+  // given — grouping puts one line under the issue's own title, which reads as
+  // the whole feature shipping even when the issue is still open
+  const prs = [
+    pr({ number: 101, title: 'Add agent history API', section: 'Features', issueNumbers: [55], openIssueNumbers: [55] }),
+    pr({ number: 102, title: 'Add agent history API', section: 'Features', issueNumbers: [55], openIssueNumbers: [55] }),
+  ];
+
+  // when
+  const result = render(prs, [], { version: '8.9.0', allowUnattributed: false });
+
+  // then
+  assert.match(result.customerBody, /- Add agent history API \(#55\) — #101, #102 \(partially delivered\)$/m);
+});
+
+test('a closed issue carries no partial marker, even when no pull request is recorded as its closer', () => {
+  // given — 8.9.19's #55699 is CLOSED/COMPLETED with no recorded closer: a
+  // human clicked Close. Keying the marker on "who closed it" called that
+  // partially delivered, which is a false claim about finished work.
+  const prs = [
+    pr({ number: 101, title: 'Add agent history API', section: 'Features', issueNumbers: [55], closesIssueNumbers: [], openIssueNumbers: [] }),
+  ];
+
+  // when
+  const result = render(prs, [], { version: '8.9.0', allowUnattributed: false });
+
+  // then
+  assert.match(result.customerBody, /- Add agent history API \(#55\) — #101$/m);
+});
+
+test('an entry with no linked issue is never marked partial', () => {
+  // given — an opt-out pull request has no issue to be partial about
+  const result = render([pr({ number: 61909, title: 'fix: use exact long position', attributionSource: 'optOut', issueNumbers: [] })], [], {
+    version: '8.9.19',
+    allowUnattributed: false,
+  });
+
+  // then
+  assert.doesNotMatch(result.customerBody, /partially delivered/);
+});
+
+test('repeated updates of one dependency collapse to one first-to-last line', () => {
+  // given — the walk is newest-first, so #61527 (newest) moved it to 4.8.196
+  // and #61530 (oldest) started it at 4.8.193
+  const bump = (number: number, from: string, to: string) =>
+    pr({
+      number,
+      section: 'Dependency updates',
+      issueNumbers: [],
+      title: `io.github.classgraph:classgraph: ${from} → ${to}`,
+      dependencies: [{ name: 'io.github.classgraph:classgraph', from, to }],
+    });
+  const prs = [bump(61527, '4.8.195', '4.8.196'), bump(61528, '4.8.194', '4.8.195'), bump(61530, '4.8.193', '4.8.194')];
+
+  // when
+  const result = render(prs, [], { version: '8.9.19', allowUnattributed: false });
+
+  // then — one line, the range the release actually moved it through, every
+  // pull request still cited
+  assert.match(result.customerBody, /- io\.github\.classgraph:classgraph: 4\.8\.193 → 4\.8\.196 \(#61527, #61528, #61530\)$/m);
+  assert.equal(result.customerBody.split('\n').filter((line) => line.includes('classgraph')).length, 1);
+});
+
+test('one renovate pull request listing a package twice collapses too', () => {
+  // given — a grouped renovate PR whose body table carries two rows for one
+  // package; 8.9.19 shipped exactly this as a doubled browserslist line
+  const prs = [
+    pr({
+      number: 61684,
+      section: 'Dependency updates',
+      issueNumbers: [],
+      title: 'browserslist: 4.28.1 → 4.28.7; browserslist: 4.28.2 → 4.28.7',
+      dependencies: [
+        { name: 'browserslist', from: '4.28.2', to: '4.28.7' },
+        { name: 'browserslist', from: '4.28.1', to: '4.28.7' },
+      ],
+    }),
+  ];
+
+  // when
+  const result = render(prs, [], { version: '8.9.19', allowUnattributed: false });
+
+  // then
+  assert.match(result.customerBody, /- browserslist: 4\.28\.1 → 4\.28\.7 \(#61684\)$/m);
+});
+
+test('one pull request bumping several packages produces one line each', () => {
+  // given
+  const prs = [
+    pr({
+      number: 900,
+      section: 'Dependency updates',
+      issueNumbers: [],
+      title: 'grouped',
+      dependencies: [
+        { name: 'left', from: '1.0', to: '1.1' },
+        { name: 'right', from: '2.0', to: '2.1' },
+      ],
+    }),
+  ];
+
+  // when
+  const result = render(prs, [], { version: '8.9.19', allowUnattributed: false });
+
+  // then — a reader scanning for one package finds it on its own line
+  assert.match(result.customerBody, /- left: 1\.0 → 1\.1 \(#900\)$/m);
+  assert.match(result.customerBody, /- right: 2\.0 → 2\.1 \(#900\)$/m);
+});
+
+test('an unorderable version pair falls back to walk order rather than inventing a range', () => {
+  // given — action digests and short shas have no numeric order, and the walk
+  // is newest-first, so the oldest pull request holds the release's start
+  const bump = (number: number, from: string, to: string) =>
+    pr({
+      number,
+      section: 'Dependency updates',
+      issueNumbers: [],
+      title: 'x',
+      dependencies: [{ name: 'camunda/infra-global-github-actions', from, to }],
+    });
+
+  // when
+  const result = render([bump(2, 'bbbbbbb', 'ccccccc'), bump(1, 'aaaaaaa', 'bbbbbbb')], [], {
+    version: '8.9.19',
+    allowUnattributed: false,
+  });
+
+  // then
+  assert.match(result.customerBody, /- camunda\/infra-global-github-actions: aaaaaaa → ccccccc \(#2, #1\)$/m);
 });

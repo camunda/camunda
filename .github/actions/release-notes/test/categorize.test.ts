@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { categorize, parseDependencyUpdate, stripBackportPrefix } from '../src/categorize';
+import { categorize, formatDependencyUpdates, hiddenFromCustomerBody, internalIssueKind, parseDependencyUpdate, stripBackportPrefix } from '../src/categorize';
 
 test('every conventional type maps to its designed section and visibility', () => {
   const cases: [string, string | null, 'customer' | 'internal'][] = [
@@ -115,7 +115,7 @@ test('parseDependencyUpdate reads name/old/new from a renovate single-row table'
     '| [org.liquibase:liquibase-core](http://www.liquibase.com) ([source](https://x)) | `5.0.3` → `5.0.4` | ![age](x) | ![confidence](x) |',
   ].join('\n');
   const result = parseDependencyUpdate({ title: 'deps: Update dependency org.liquibase:liquibase-core to v5.0.4 (stable/8.9)', body });
-  assert.equal(result, 'org.liquibase:liquibase-core: 5.0.3 → 5.0.4');
+  assert.deepEqual(result, [{ name: 'org.liquibase:liquibase-core', from: '5.0.3', to: '5.0.4' }]);
 });
 
 test('parseDependencyUpdate reads a Docker-tag renovate row with an extra Update column', () => {
@@ -125,10 +125,10 @@ test('parseDependencyUpdate reads a Docker-tag renovate row with an extra Update
     '| [camunda/camunda](https://camunda.com/platform/) ([source](https://x)) | patch | `8.8.35` → `8.8.36` |',
   ].join('\n');
   const result = parseDependencyUpdate({ title: 'deps: Update camunda/camunda Docker tag to v8.8.36 (stable/8.8)', body });
-  assert.equal(result, 'camunda/camunda: 8.8.35 → 8.8.36');
+  assert.deepEqual(result, [{ name: 'camunda/camunda', from: '8.8.35', to: '8.8.36' }]);
 });
 
-test('parseDependencyUpdate joins multiple rows from a grouped renovate PR', () => {
+test('parseDependencyUpdate returns every row of a grouped renovate PR', () => {
   const body = [
     '| Package | Change |',
     '|---|---|',
@@ -136,14 +136,84 @@ test('parseDependencyUpdate joins multiple rows from a grouped renovate PR', () 
     '| [org.springframework.boot:spring-boot](https://x) | `4.0.7` → `4.0.8` |',
   ].join('\n');
   const result = parseDependencyUpdate({ title: 'deps: Update spring boot (stable/8.8) (patch)', body });
-  assert.equal(result, 'org.springframework.boot:spring-boot: 4.1.0 → 4.1.1; org.springframework.boot:spring-boot: 4.0.7 → 4.0.8');
+  assert.deepEqual(result, [
+    { name: 'org.springframework.boot:spring-boot', from: '4.1.0', to: '4.1.1' },
+    { name: 'org.springframework.boot:spring-boot', from: '4.0.7', to: '4.0.8' },
+  ]);
+  // The title still reads as one line; the renderer is what collapses them.
+  assert.equal(
+    formatDependencyUpdates(result),
+    'org.springframework.boot:spring-boot: 4.1.0 → 4.1.1; org.springframework.boot:spring-boot: 4.0.7 → 4.0.8',
+  );
 });
 
 test('parseDependencyUpdate reads a dependabot "Bump X from A to B" title directly, no body needed', () => {
   const result = parseDependencyUpdate({ title: 'Bump foo from 1.2.2 to 1.2.3', body: 'Bumps foo from 1.2.2 to 1.2.3.' });
-  assert.equal(result, 'foo: 1.2.2 → 1.2.3');
+  assert.deepEqual(result, [{ name: 'foo', from: '1.2.2', to: '1.2.3' }]);
 });
 
-test('parseDependencyUpdate returns null when neither shape matches', () => {
-  assert.equal(parseDependencyUpdate({ title: 'ci: bump runner', body: 'no table here' }), null);
+test('parseDependencyUpdate returns nothing when neither shape matches', () => {
+  assert.deepEqual(parseDependencyUpdate({ title: 'ci: bump runner', body: 'no table here' }), []);
+});
+
+test('a kind/task issue is never customer-facing, whatever the pull request type says', () => {
+  // given — 8.9.19 shipped "CamundaSpringProcessTestConnectorsIT is flaky" to
+  // customers under Bug Fixes, because the delivering pull request was a `fix:`
+  // while the issue itself is a task
+  const labels = ['kind/task', 'component/camunda-process-test', 'version:8.9.19'];
+
+  // when
+  const kind = internalIssueKind(labels);
+
+  // then — named, not just flagged, so the audit line can say which label did it
+  assert.equal(kind, 'kind/task');
+});
+
+test('a kind/epic issue is never customer-facing either', () => {
+  // given — "[EPIC]: Prepare 8.10 release for load testing" reached 8.9.19's
+  // customer body under Documentation, via a `docs:` pull request
+  // when
+  const kind = internalIssueKind(['kind/epic', 'component/load-tests']);
+
+  // then
+  assert.equal(kind, 'kind/epic');
+});
+
+test('a kind/bug issue stays customer-facing', () => {
+  // when
+  const kind = internalIssueKind(['kind/bug', 'severity/mid', 'component/zeebe']);
+
+  // then
+  assert.equal(kind, null);
+});
+
+test('an issue with no kind label at all stays customer-facing', () => {
+  // then — absence is not a reason to hide delivered work
+  assert.equal(internalIssueKind([]), null);
+  assert.equal(internalIssueKind(['component/zeebe']), null);
+});
+
+test('an entry is hidden only when EVERY linked issue is internal', () => {
+  // given — 8.9.19's #61857 closed kind/bug #61719 AND kind/task #56995. The
+  // first attempt hid on any internal label and suppressed a real customer bug.
+  const mixed = [['kind/bug', 'component/zeebe'], ['kind/task', 'component/qa']];
+
+  // when
+  const hidden = hiddenFromCustomerBody(mixed);
+
+  // then
+  assert.equal(hidden, null);
+});
+
+test('an entry whose every linked issue is internal is hidden, and names the kind', () => {
+  // when
+  const hidden = hiddenFromCustomerBody([['kind/task'], ['kind/epic']]);
+
+  // then
+  assert.equal(hidden, 'kind/task');
+});
+
+test('a pull request linking no issue at all is not hidden — absence is not a signal', () => {
+  // then — an opt-out or bot-exempt PR keeps its place
+  assert.equal(hiddenFromCustomerBody([]), null);
 });

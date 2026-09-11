@@ -7,6 +7,7 @@ import { resolveBaselineRef, walkFirstParent } from './range/walk';
 import type { RenderPrInput } from './render';
 import { render } from './render';
 import { extractSection, parseRefs } from './parser';
+import { hiddenFromCustomerBody } from './categorize';
 import { closesIssueNumbers } from './delivery';
 import type { DeliveryInput } from './delivery';
 import { GithubGraphqlResolver } from './resolve';
@@ -211,6 +212,7 @@ async function run(): Promise<void> {
         breaking: output.categorization.breaking,
         issueNumbers: output.attribution.issueNumbers,
         attributionSource: output.attribution.source,
+        dependencies: output.dependencies,
       },
       delivery: {
         prNumber: output.number,
@@ -259,23 +261,41 @@ async function run(): Promise<void> {
   }
 
   // One batched phase, after attribution because the issue set is what
-  // attribution produces. Only issues a backport hop did not already settle are
-  // worth asking about — on a patch release that is most of them.
+  // attribution produces. Every attributed issue is asked about, including the
+  // ones a backport hop already settled: the delivery rule does not need those,
+  // but the `kind/*` visibility rule needs all of them, and a backport is
+  // exactly where an internal issue tends to arrive.
   const wantedIssues = new Set<number>();
   for (const entry of processed) {
-    if (!entry || entry.delivery.deliveryPath === 'backportHop') continue;
+    if (!entry) continue;
     for (const issueNumber of entry.renderPr.issueNumbers) wantedIssues.add(issueNumber);
   }
-  const closures = await graphql.fetchIssueClosers([...wantedIssues]);
-  core.info(`Read the close event of ${closures.size} of ${wantedIssues.size} referenced issue(s).`);
+  const issueFacts = await graphql.fetchIssueFacts([...wantedIssues]);
+  core.info(`Read labels and the close event of ${issueFacts.size} of ${wantedIssues.size} referenced issue(s).`);
 
   const attributed: RenderPrInput[] = [];
   const unattributed: RenderPrInput[] = [];
   for (const entry of processed) {
     if (!entry) continue;
+    // A `kind/task` or `kind/epic` issue never reaches the customer body,
+    // whatever the delivering pull request's type made of it. Still in the
+    // full asset — hidden from customers, never dropped.
+    const internalKind = hiddenFromCustomerBody(
+      entry.renderPr.issueNumbers.map((issueNumber) => issueFacts.get(issueNumber)?.labels ?? []),
+    );
+    if (internalKind) {
+      core.warning(
+        `PR #${entry.renderPr.number}: linked issue is ${internalKind} — kept in the full asset, hidden from the customer body.`,
+      );
+    }
+
     const renderPr: RenderPrInput = {
       ...entry.renderPr,
-      closesIssueNumbers: closesIssueNumbers({ ...entry.delivery, issueNumbers: entry.renderPr.issueNumbers }, closures),
+      visibility: internalKind ? 'internal' : entry.renderPr.visibility,
+      closesIssueNumbers: closesIssueNumbers({ ...entry.delivery, issueNumbers: entry.renderPr.issueNumbers }, issueFacts),
+      // Positively open only. An issue absent from the lookup — deleted, or a
+      // number that was really a pull request — is not evidence of anything.
+      openIssueNumbers: entry.renderPr.issueNumbers.filter((issueNumber) => issueFacts.get(issueNumber)?.closed === false),
     };
     (entry.bucketed ? unattributed : attributed).push(renderPr);
   }
