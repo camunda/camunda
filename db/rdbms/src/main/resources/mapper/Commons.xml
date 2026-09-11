@@ -415,6 +415,9 @@
         </if>
       </when>
       <when test="operation.operator.name().equals('NOT_IN')">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE != 'null'
+        </if>
         <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
           VAR_VALUE NOT IN
           <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
