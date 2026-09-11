@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
+import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageRunReport;
@@ -42,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
@@ -462,6 +464,58 @@ class CoverageReporterTest {
         .isEqualTo(5.0 / 7.0);
   }
 
+  /**
+   * The report renders a test run against the model it describes the process by, so a run that ran
+   * another deployment of the id must be measured against that model too. Otherwise the mocking run
+   * claims to have covered the real process completely, while highlighting stub elements that the
+   * rendered diagram does not contain.
+   */
+  @Test
+  void shouldMeasureRunCoverageAgainstTheReportedModel() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: a run that covered the mock stub completely
+    final CoverageReportCollector mockingSuite =
+        buildCollectorForProcess(MockingSuiteTest.class, MOCK_STUB_MODEL, MOCK_STUB_COVERAGE);
+    final CoverageReportCollector realSuite =
+        buildCollectorForProcess(RealProcessSuiteTest.class, REAL_MODEL, REAL_COVERAGE);
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(mockingSuite, realSuite));
+
+    // then: none of the stub elements counts towards the real model the report describes
+    assertThat(runCoveragesOf(report, MockingSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getCompletedElements()).isEmpty();
+              assertThat(coverage.getTakenSequenceFlows()).isEmpty();
+              assertThat(coverage.getCoverage()).isZero();
+            });
+
+    // and: the run that ran the real process keeps its coverage
+    assertThat(runCoveragesOf(report, RealProcessSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getCompletedElements())
+                  .containsExactlyInAnyOrder("startA", "taskA1", "taskA2");
+              assertThat(coverage.getCoverage()).isEqualTo(5.0 / 7.0);
+            });
+  }
+
+  private static List<ProcessCoverage> runCoveragesOf(
+      final CoverageReport report, final Class<?> testClass) {
+    return report.getSuites().stream()
+        .filter(suite -> suite.getId().equals(testClass.getName()))
+        .flatMap(suite -> suite.getRuns().stream())
+        .flatMap(run -> run.getProcessCoverages().stream())
+        .collect(Collectors.toList());
+  }
+
   /** Builds a mock collector reporting a single process coverage against a single model. */
   private CoverageReportCollector buildCollectorForProcess(
       final Class<?> testClass, final ProcessModel model, final ProcessCoverage coverage) {
@@ -545,6 +599,55 @@ class CoverageReporterTest {
               assertThat(coverage.getMatchedRuleIds()).containsExactly("full-1", "full-2");
               assertThat(coverage.getCoverage()).isEqualTo(2.0 / 5);
             });
+  }
+
+  /**
+   * The report renders a test run against the table it describes the decision by, so a run that
+   * evaluated another deployment of the id must be measured against that table too. Otherwise the
+   * run claims full coverage while highlighting no rule of the rendered table.
+   */
+  @Test
+  void shouldMeasureRunCoverageAgainstTheReportedTable() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: a run that matched all rules of a table the report does not describe
+    final CoverageReportCollector smallTableSuite =
+        buildCollectorForDecision(SmallTableSuiteTest.class, SMALL_TABLE, "small-1", "small-2");
+    final CoverageReportCollector fullTableSuite =
+        buildCollectorForDecision(FullTableSuiteTest.class, FULL_TABLE, "full-1", "full-2");
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(smallTableSuite, fullTableSuite));
+
+    // then: none of the rules of the smaller table counts towards the reported table
+    assertThat(runDecisionCoveragesOf(report, SmallTableSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds()).isEmpty();
+              assertThat(coverage.getCoverage()).isZero();
+            });
+
+    // and: the run that evaluated the reported table keeps its coverage
+    assertThat(runDecisionCoveragesOf(report, FullTableSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds()).containsExactly("full-1", "full-2");
+              assertThat(coverage.getCoverage()).isEqualTo(2.0 / 5);
+            });
+  }
+
+  private static List<DecisionCoverage> runDecisionCoveragesOf(
+      final CoverageReport report, final Class<?> testClass) {
+    return report.getSuites().stream()
+        .filter(suite -> suite.getId().equals(testClass.getName()))
+        .flatMap(suite -> suite.getRuns().stream())
+        .flatMap(run -> run.getDecisionCoverages().stream())
+        .collect(Collectors.toList());
   }
 
   /** Builds a mock collector reporting a single decision coverage against a single table. */
