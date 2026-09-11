@@ -1,4 +1,5 @@
 import type { AttributionSource } from '../attribution/types';
+import type { DependencyUpdate } from '../categorize';
 
 /**
  * Turns the attributed-and-categorized PR list into the outputs downstream
@@ -41,6 +42,13 @@ export interface RenderPrInput {
    *  derived from a `closes`/`fixes` keyword alone. */
   readonly closesIssueNumbers: readonly number[];
   readonly attributionSource: AttributionSource;
+  /** Set for a `deps:` pull request whose bot prose parsed — see `collapseDependencies`. */
+  readonly dependencies?: readonly DependencyUpdate[];
+  /** Of `issueNumbers`, the ones GitHub still reports as OPEN. Only these make
+   *  an entry read as partial: an issue closed with no recorded closer — a
+   *  human clicked Close — is finished work we merely cannot attribute, and
+   *  calling that "partially delivered" would be a false claim, not caution. */
+  readonly openIssueNumbers?: readonly number[];
 }
 
 export interface RenderOptions {
@@ -85,6 +93,9 @@ interface RenderEntry {
   readonly issueNumbers: readonly number[];
   readonly prNumbers: readonly number[];
   readonly breaking: boolean;
+  /** False when nothing in this range closed the entry's issue — the work
+   *  landed, the issue did not finish. Meaningless without an issue. */
+  readonly delivered: boolean;
 }
 
 /** C1: the issue is the grouping key. A PR with no issue — opt-out, bot-exempt,
@@ -112,27 +123,40 @@ function sectionRank(name: string): number {
  * entry, and it errs toward showing — the direction this epic exists to fix.
  */
 function toEntries(prs: readonly RenderPrInput[]): RenderEntry[] {
+  // A dependency bump is grouped by the package it moves, not by its own pull
+  // request; anything with a linked issue keeps the issue grouping below.
+  const isDependencyBump = (pr: RenderPrInput): boolean =>
+    (pr.dependencies?.length ?? 0) > 0 && pr.issueNumbers.length === 0;
+
   const grouped = new Map<string, RenderPrInput[]>();
   for (const pr of prs) {
+    if (isDependencyBump(pr)) continue;
     const key = entryKeyFor(pr);
     const list = grouped.get(key) ?? [];
     list.push(pr);
     grouped.set(key, list);
   }
 
-  return [...grouped.values()].map((group) => {
+  const entries = [...grouped.values()].map((group) => {
     // Non-empty by construction, and ties keep the first PR in range order.
     const lead = group.reduce((best, pr) =>
       sectionRank(groupNameFor(pr)) < sectionRank(groupNameFor(best)) ? pr : best,
     );
+    // Delivered is asked of the grouping key — the issue the entry is titled
+    // by — not of any issue the group happens to touch.
+    const [keyIssue] = lead.issueNumbers;
+    const stillOpen = keyIssue !== undefined && group.some((pr) => pr.openIssueNumbers?.includes(keyIssue));
     return {
       groupName: groupNameFor(lead),
       title: lead.title,
       issueNumbers: [...new Set(group.flatMap((pr) => pr.issueNumbers))],
       prNumbers: group.map((pr) => pr.number),
       breaking: group.some((pr) => pr.breaking),
+      delivered: !stillOpen,
     };
   });
+
+  return [...entries, ...collapseDependencies(prs.filter(isDependencyBump))];
 }
 
 function renderSectionedBody(prs: readonly RenderPrInput[]): string {
@@ -161,7 +185,84 @@ function renderSectionedBody(prs: readonly RenderPrInput[]): string {
 function renderLine(entry: RenderEntry): string {
   const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
   if (entry.issueNumbers.length === 0) return `- ${entry.title} (${prs})`;
-  return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}`;
+  // Grouping put one line under the issue's own title, which reads as the whole
+  // feature shipping. Say so when the issue is still OPEN: the work landed, the
+  // issue did not finish. Same vocabulary as the issue comment.
+  const partial = entry.delivered ? '' : ' (partially delivered)';
+  return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}${partial}`;
+}
+
+/**
+ * One line per dependency, not per bump.
+ *
+ * A release that moves the same package five times published five lines a
+ * reader has to reconcile by hand — and 8.9.19 shipped two byte-identical
+ * `io.github.classgraph: 4.8.193 → 4.8.194` lines from #61527 and #61528. The
+ * useful fact is where the package started the release and where it ended, so
+ * the range is collapsed to the EARLIEST `from` and the LATEST `to`, citing
+ * every pull request that moved it.
+ *
+ * The walk is newest-first, so the earliest update is the LAST element. The
+ * same collapse fixes a single renovate pull request whose body table lists one
+ * package twice.
+ */
+/** Dotted-numeric versions compare numerically; anything else — a digest, a
+ *  short sha, a date tag — has no order and returns null. */
+function versionKey(value: string): number[] | null {
+  const trimmed = value.replace(/^v/, '');
+  return /^\d+(\.\d+)*$/.test(trimmed) ? trimmed.split('.').map(Number) : null;
+}
+
+function isLower(candidate: string, current: string): boolean {
+  const [a, b] = [versionKey(candidate), versionKey(current)];
+  if (!a || !b) return false;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const [left, right] = [a[i] ?? 0, b[i] ?? 0];
+    if (left !== right) return left < right;
+  }
+  return false;
+}
+
+/**
+ * The release's actual start and end version for one package.
+ *
+ * Across pull requests the walk order settles it — newest first, so the
+ * earliest update is last. Within ONE pull request it cannot: a grouped
+ * renovate body lists rows per lockfile, not in time order, and taking the
+ * last row gave `browserslist: 4.28.2` when the release really started at
+ * `4.28.1`. So versions are compared numerically where they can be, and the
+ * positional answer is the fallback for anything unorderable — a digest or a
+ * short sha, where walk order IS the chronology.
+ */
+function versionRange(updates: readonly DependencyUpdate[]): { from: string; to: string } {
+  let from = updates[updates.length - 1]!.from;
+  let to = updates[0]!.to;
+  for (const update of updates) {
+    if (isLower(update.from, from)) from = update.from;
+    if (isLower(to, update.to)) to = update.to;
+  }
+  return { from, to };
+}
+
+function collapseDependencies(prs: readonly RenderPrInput[]): RenderEntry[] {
+  const byName = new Map<string, { prNumbers: number[]; updates: DependencyUpdate[]; groupName: string }>();
+  for (const pr of prs) {
+    for (const update of pr.dependencies ?? []) {
+      const existing = byName.get(update.name) ?? { prNumbers: [], updates: [], groupName: groupNameFor(pr) };
+      if (!existing.prNumbers.includes(pr.number)) existing.prNumbers.push(pr.number);
+      existing.updates.push(update);
+      byName.set(update.name, existing);
+    }
+  }
+
+  return [...byName].map(([name, group]) => ({
+    groupName: group.groupName,
+    title: `${name}: ${versionRange(group.updates).from} → ${versionRange(group.updates).to}`,
+    issueNumbers: [],
+    prNumbers: group.prNumbers,
+    breaking: false,
+    delivered: true,
+  }));
 }
 
 /**

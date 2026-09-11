@@ -1,7 +1,7 @@
 import { decideAttribution, evaluatePostGateAnomaly, hasEligibleRefs } from '../attribution';
 import type { AttributionAnomaly, AttributionDecision, AttributionSource } from '../attribution/types';
-import { BOT_CATEGORY_OVERRIDES, categorize, parseDependencyUpdate, stripBackportPrefix } from '../categorize';
-import type { CategorizeDecision } from '../categorize';
+import { BOT_CATEGORY_OVERRIDES, categorize, formatDependencyUpdates, parseDependencyUpdate, stripBackportPrefix } from '../categorize';
+import type { CategorizeDecision, DependencyUpdate } from '../categorize';
 import { extractSection, isOptOutTicked, parseRefs } from '../parser';
 import { isLinkExemptAuthor } from '../title';
 import type { ParsedRef, ResolvedRef } from '../types';
@@ -57,6 +57,9 @@ export interface PipelinePrOutput {
   readonly attribution: AttributionDecision;
   readonly categorization: CategorizeDecision;
   readonly anomaly?: AttributionAnomaly;
+  /** Present only for a `deps:` pull request whose bot prose parsed. The
+   *  renderer collapses repeated updates of one package into one line. */
+  readonly dependencies: readonly DependencyUpdate[];
 }
 
 /**
@@ -184,8 +187,8 @@ async function resolveDisplayTitle(
   fallbackTitle: string,
 ): Promise<string> {
   if (categorization.section === 'Dependency updates') {
-    const dependencyLine = parseDependencyUpdate({ title: pr.title, body: pr.body });
-    if (dependencyLine) return dependencyLine;
+    const updates = parseDependencyUpdate({ title: pr.title, body: pr.body });
+    if (updates.length > 0) return formatDependencyUpdates(updates);
   }
 
   const [primaryIssue] = attribution.issueNumbers;
@@ -218,6 +221,8 @@ export async function processPr(
     gateRequiredAt: options.gateRequiredAt,
     source: attribution.source,
   });
+  const dependencies =
+    categorization.section === 'Dependency updates' ? parseDependencyUpdate({ title: pr.title, body: pr.body }) : [];
 
-  return { number: pr.number, title, attribution, categorization, anomaly };
+  return { number: pr.number, title, attribution, categorization, anomaly, dependencies };
 }
