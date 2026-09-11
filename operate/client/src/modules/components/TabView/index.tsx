@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container, Tab, Content, TabPanel, TabList} from './styled';
 import {tracking} from 'modules/tracking';
@@ -25,6 +26,11 @@ type Props<TabId extends string = string> = {
   tabs: TabType<TabId>[];
   eventName?: 'variables-panel-used';
   dataTestId?: string;
+  /**
+   * Id of the tab that should be selected. Left unset (or pointing at a
+   * tab that no longer exists), defaults to the first tab.
+   */
+  activeTabId?: TabId;
   onTabChange?: (id: TabId) => void;
 };
 
@@ -32,8 +38,24 @@ function TabView<TabId extends string = string>({
   tabs = [],
   eventName,
   dataTestId,
+  activeTabId,
   onTabChange,
 }: Props<TabId>) {
+  // Falls back to internal state so TabView still behaves as an
+  // uncontrolled component when the caller doesn't pass `activeTabId`.
+  const [internalActiveTabId, setInternalActiveTabId] = useState<
+    TabId | undefined
+  >(undefined);
+  const effectiveActiveTabId = activeTabId ?? internalActiveTabId;
+
+  const selectedIndex =
+    effectiveActiveTabId === undefined
+      ? 0
+      : Math.max(
+          0,
+          tabs.findIndex(({id}) => id === effectiveActiveTabId),
+        );
+
   return (
     <Container data-testid={dataTestId}>
       {tabs.length === 1 && tabs[0] !== undefined ? (
@@ -42,23 +64,27 @@ function TabView<TabId extends string = string>({
           <Content>{tabs[0].content}</Content>
         </>
       ) : (
-        <Tabs>
+        <Tabs
+          selectedIndex={selectedIndex}
+          onChange={({selectedIndex: newIndex}) => {
+            const tab = tabs[newIndex];
+            if (tab === undefined) {
+              return;
+            }
+            tab.onClick?.();
+            setInternalActiveTabId(tab.id);
+            onTabChange?.(tab.id);
+            if (eventName !== undefined) {
+              tracking.track({
+                eventName,
+                toTab: tab.id,
+              });
+            }
+          }}
+        >
           <TabList aria-label="Variable Panel Tabs">
-            {tabs.map(({id, labelIcon, label, testId, onClick}) => (
-              <Tab
-                key={id}
-                data-testid={testId}
-                onClick={() => {
-                  onClick?.();
-                  onTabChange?.(id);
-                  if (eventName !== undefined) {
-                    tracking.track({
-                      eventName,
-                      toTab: id,
-                    });
-                  }
-                }}
-              >
+            {tabs.map(({id, labelIcon, label, testId}) => (
+              <Tab key={id} data-testid={testId}>
                 <Stack orientation="horizontal" gap={3}>
                   {label}
                   {labelIcon}
