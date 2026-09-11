@@ -224,12 +224,10 @@ jobs:
 
   gradle-compile-check:
     if: >-
-      always() &&
-      needs.build-distball.result == 'success' &&
       github.event_name != 'schedule' &&
       needs.detect-changes.outputs.gradle-changes == 'true'
     name: "Gradle / Test Classes"
-    needs: [ detect-changes, build-distball ]
+    needs: [ detect-changes ]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
