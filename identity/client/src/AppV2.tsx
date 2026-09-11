@@ -22,14 +22,12 @@ import { DocsUrlProvider } from "./components/documentation/DocsUrlContext.tsx";
 import { docsUrl } from "src/configuration";
 import { queryClient } from "src/utility/api/queryClient";
 import ErrorNotificationBridge from "src/utility/api/ErrorNotificationBridge";
-import {
-  C4Provider,
-  TooltipProvider,
-  SidebarProvider,
-} from "@camunda/design-system";
+import { ThemeProvider } from "./common/theme/ThemeProviderV2";
+import { TooltipProvider, SidebarProvider } from "@camunda/design-system";
 
-import "./c4-ui.css";
 import "@camunda/design-system/styles.css";
+import "./c4-ui.css";
+import "./AppV2.css";
 
 const App: FC = () => {
   useEffect(() => {
@@ -39,7 +37,7 @@ const App: FC = () => {
   return (
     <BrowserRouter basename={getBaseUrl()}>
       <QueryClientProvider client={queryClient}>
-        <C4Provider>
+        <ThemeProvider>
           <TooltipProvider>
             <SidebarProvider>
               <DocsUrlProvider value={docsUrl}>
@@ -75,7 +73,7 @@ const App: FC = () => {
               </DocsUrlProvider>
             </SidebarProvider>
           </TooltipProvider>
-        </C4Provider>
+        </ThemeProvider>
       </QueryClientProvider>
     </BrowserRouter>
   );

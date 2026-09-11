@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+body {
+  /* NOTE: Using design-system variables here does not work. They are only available in a lower ".c4-ui" scope... */
+  background-color: var(--background);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}

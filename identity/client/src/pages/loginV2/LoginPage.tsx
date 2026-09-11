@@ -133,7 +133,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultRedirectUrl }) => {
   const hasProductionLicense = license?.isCommercial;
 
   return (
-    <Page className="min-h-screen">
+    <Page className="h-dvh">
       <div className="mx-auto flex w-100 flex-col">
         <div className="m-8 flex flex-col items-center gap-2">
           <CamundaLogo />

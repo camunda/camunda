@@ -27,7 +27,7 @@ const LateLoading: FC<LateLoadingProps> = ({ timeout = 300 }) => {
       <Loader2
         aria-label="Loading"
         role="status"
-        className="size-11 animate-spin text-primary-action-default"
+        className="size-24 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary-foreground-subtle"
       />
     );
   }
