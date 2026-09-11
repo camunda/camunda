@@ -12,9 +12,13 @@ import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {
+	mockGetProcessDefinitionStatisticsEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
@@ -32,6 +36,7 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 		],
 	}),
 );
+const PROCESS_STATISTICS = HttpResponse.json(createGetProcessDefinitionStatisticsResponse([]));
 
 type RenderProps = {
 	process?: string;
@@ -43,8 +48,11 @@ type RenderProps = {
 	canceled?: boolean;
 };
 
-function renderPage(props?: RenderProps) {
-	return renderWithRouter(
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderPage(props?: RenderProps) {
+	const screen = await renderWithRouter(
 		() => (
 			<Processes
 				process={props?.process}
@@ -58,6 +66,11 @@ function renderPage(props?: RenderProps) {
 		),
 		{path: '/operate/processes'},
 	);
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesResponse());
@@ -67,8 +80,15 @@ describe('<Processes />', () => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
-		sessionStorage.clear();
+	afterEach(async () => {
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+		}
 	});
 
 	it('should render the filter sections', async ({worker}) => {
@@ -111,6 +131,8 @@ describe('<Processes />', () => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({successResponse: PROCESS_STATISTICS}),
 		);
 
 		const screen = await renderPage({process: 'order-process', version: 1});
@@ -122,6 +144,8 @@ describe('<Processes />', () => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({successResponse: PROCESS_STATISTICS}),
 		);
 
 		const screen = await renderPage({process: 'payment-process', version: 1, elementId: 'some-element'});
@@ -144,6 +168,8 @@ describe('<Processes />', () => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({successResponse: PROCESS_STATISTICS}),
 		);
 
 		const screen = await renderPage({process: 'order-process', elementId: 'some-element'});
