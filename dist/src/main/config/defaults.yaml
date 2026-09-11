@@ -306,9 +306,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         replication-timeout: "10s" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_REPLICATIONTIMEOUT
       
       # Sets the timeout for all requests sent by raft leaders and followers. When modifying the values for
-      # requestTimeout, it might also be useful to update snapshotTimeout.
-      # When not set, the partition factory derives the value from the configured electionTimeout at
-      # startup.
+      # requestTimeout, it might also be useful to update snapshotRequestTimeout.
+      # When not set, it is derived from the configured electionTimeout during configuration resolution.
       request-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REQUESTTIMEOUT
       # Defines the strategy to use to preallocate segment files when "preallocateSegmentFiles" is set to
       # true. Possible options are:  NOOP: does not preallocate files, same as setting
@@ -641,17 +640,37 @@ camunda: # Type: io.camunda.configuration.Camunda
       autoconfigure-camunda-exporter: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_AUTOCONFIGURECAMUNDAEXPORTER
       elasticsearch: # Type: io.camunda.configuration.Elasticsearch  
         backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_DATABASENAME
+          # Defines the timeout period for determining whether an incomplete backup should be considered as
+          # failed or still in progress. This property helps distinguish between backups that are actively
+          # running versus those that may have stalled or failed silently.
+          # Note: This setting applies to backups of secondary storage.
+          incomplete-check-timeout: "5m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_INCOMPLETECHECKTIMEOUT
+          # Set the ES / OS snapshot repository name.
+          # Note: This setting applies to backups of secondary storage.
+          repository-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_REPOSITORYNAME
+          # A backup of history data consists of multiple Elasticsearch/Opensearch snapshots. snapshotTimeout
+          # controls the maximum time to wait for a snapshot operation to complete during backup creation. When
+          # set to 0, the system will wait indefinitely for snapshots to finish.
+          # Note: This setting applies to backups of secondary storage.
+          snapshot-timeout: 0 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_SNAPSHOTTIMEOUT
         
         batch-operation-cache: # Type: io.camunda.configuration.Cache  
-          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONCACHE_CACHENAME
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONCACHE_DATABASENAME
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONCACHE_MAXSIZE
         
         batch-operations: # Type: io.camunda.configuration.BatchOperation  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONS_DATABASENAME
+          # Export the batch operation items when the initial chunk records are processed. If set to  false, the
+          # batch operation items will be exported only when they have been processed and are completed or
+          # failed.
+          export-items-on-creation: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONS_EXPORTITEMSONCREATION
         
         bulk: # Type: io.camunda.configuration.Bulk  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_DATABASENAME
+          # Delay before forced flush (in seconds)
+          delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_DELAY
+          # Bulk memory utilisation before flush (in MB)
+          memory-limit: "20MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_MEMORYLIMIT
+          # Bulk size before flush
+          size: 5000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_SIZE
         
         # Name of the cluster
         cluster-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CLUSTERNAME
@@ -662,12 +681,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The date format for ES and OS
         date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZZ" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DATEFORMAT
         decision-requirements-cache: # Type: io.camunda.configuration.Cache  
-          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_CACHENAME
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_DATABASENAME
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_MAXSIZE
         
         form-cache: # Type: io.camunda.configuration.Cache  
-          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_CACHENAME
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_DATABASENAME
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_MAXSIZE
         
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HEALTHCHECKENABLED
@@ -702,7 +721,13 @@ camunda: # Type: io.camunda.configuration.Camunda
           wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
         
         incident-notifier: # Type: io.camunda.configuration.IncidentNotifier  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_DATABASENAME
+          # Defines the domain which the user always sees
+          auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
+          auth0-protocol: "https" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0PROTOCOL
+          m2m-audience: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MAUDIENCE
+          m2m-client-id: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MCLIENTID
+          m2m-client-secret: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MCLIENTSECRET
+          webhook: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_WEBHOOK
         
         # Prefix to apply to the indexes.
         index-prefix: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX
@@ -725,11 +750,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Whether to schedule the cleanup of legacy indexes
         perform-cleanup: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PERFORMCLEANUP
         post-export: # Type: io.camunda.configuration.PostExport  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_DATABASENAME
+          batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_BATCHSIZE
+          delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_DELAYBETWEENRUNS
+          ignore-missing-data: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_IGNOREMISSINGDATA
+          max-delay-between-runs: "5s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_MAXDELAYBETWEENRUNS
         
         process-cache: # Type: io.camunda.configuration.Cache  
-          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_CACHENAME
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_DATABASENAME
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_MAXSIZE
         
         proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration  
           enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_ENABLED
@@ -744,7 +772,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVALBYINDEXNAME
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_DATABASENAME
+          # Path to certificate used by Elasticsearch or Opensearch
+          certificate-path: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_CERTIFICATEPATH
+          # Enable security
+          enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_ENABLED
+          # Certificate was self-signed
+          self-signed: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_SELFSIGNED
+          # Should the hostname be validated
+          verify-hostname: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_VERIFYHOSTNAME
         
         # The socket timeout for ES and OS connector
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SOCKETTIMEOUT
@@ -764,17 +799,37 @@ camunda: # Type: io.camunda.configuration.Camunda
       opensearch: # Type: io.camunda.configuration.Opensearch  
         aws-enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_AWSENABLED
         backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_DATABASENAME
+          # Defines the timeout period for determining whether an incomplete backup should be considered as
+          # failed or still in progress. This property helps distinguish between backups that are actively
+          # running versus those that may have stalled or failed silently.
+          # Note: This setting applies to backups of secondary storage.
+          incomplete-check-timeout: "5m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_INCOMPLETECHECKTIMEOUT
+          # Set the ES / OS snapshot repository name.
+          # Note: This setting applies to backups of secondary storage.
+          repository-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_REPOSITORYNAME
+          # A backup of history data consists of multiple Elasticsearch/Opensearch snapshots. snapshotTimeout
+          # controls the maximum time to wait for a snapshot operation to complete during backup creation. When
+          # set to 0, the system will wait indefinitely for snapshots to finish.
+          # Note: This setting applies to backups of secondary storage.
+          snapshot-timeout: 0 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_SNAPSHOTTIMEOUT
         
         batch-operation-cache: # Type: io.camunda.configuration.Cache  
-          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONCACHE_CACHENAME
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONCACHE_DATABASENAME
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONCACHE_MAXSIZE
         
         batch-operations: # Type: io.camunda.configuration.BatchOperation  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONS_DATABASENAME
+          # Export the batch operation items when the initial chunk records are processed. If set to  false, the
+          # batch operation items will be exported only when they have been processed and are completed or
+          # failed.
+          export-items-on-creation: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONS_EXPORTITEMSONCREATION
         
         bulk: # Type: io.camunda.configuration.Bulk  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_DATABASENAME
+          # Delay before forced flush (in seconds)
+          delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_DELAY
+          # Bulk memory utilisation before flush (in MB)
+          memory-limit: "20MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_MEMORYLIMIT
+          # Bulk size before flush
+          size: 5000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_SIZE
         
         # Name of the cluster
         cluster-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_CLUSTERNAME
@@ -785,12 +840,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The date format for ES and OS
         date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZZ" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DATEFORMAT
         decision-requirements-cache: # Type: io.camunda.configuration.Cache  
-          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_CACHENAME
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_DATABASENAME
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_MAXSIZE
         
         form-cache: # Type: io.camunda.configuration.Cache  
-          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_CACHENAME
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_DATABASENAME
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_MAXSIZE
         
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HEALTHCHECKENABLED
@@ -825,7 +880,13 @@ camunda: # Type: io.camunda.configuration.Camunda
           wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
         
         incident-notifier: # Type: io.camunda.configuration.IncidentNotifier  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_DATABASENAME
+          # Defines the domain which the user always sees
+          auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
+          auth0-protocol: "https" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0PROTOCOL
+          m2m-audience: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MAUDIENCE
+          m2m-client-id: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MCLIENTID
+          m2m-client-secret: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MCLIENTSECRET
+          webhook: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_WEBHOOK
         
         # Prefix to apply to the indexes.
         index-prefix: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
@@ -848,11 +909,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Whether to schedule the cleanup of legacy indexes
         perform-cleanup: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PERFORMCLEANUP
         post-export: # Type: io.camunda.configuration.PostExport  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_DATABASENAME
+          batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_BATCHSIZE
+          delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_DELAYBETWEENRUNS
+          ignore-missing-data: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_IGNOREMISSINGDATA
+          max-delay-between-runs: "5s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_MAXDELAYBETWEENRUNS
         
         process-cache: # Type: io.camunda.configuration.Cache  
-          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_CACHENAME
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_DATABASENAME
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_MAXSIZE
         
         proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration  
           enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_ENABLED
@@ -867,7 +931,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVALBYINDEXNAME
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
-          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_DATABASENAME
+          # Path to certificate used by Elasticsearch or Opensearch
+          certificate-path: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_CERTIFICATEPATH
+          # Enable security
+          enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_ENABLED
+          # Certificate was self-signed
+          self-signed: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_SELFSIGNED
+          # Should the hostname be validated
+          verify-hostname: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_VERIFYHOSTNAME
         
         # The socket timeout for ES and OS connector
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SOCKETTIMEOUT
