@@ -244,6 +244,13 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
             "userCharColumnSize", Integer.toString(vendorDatabaseProperties.userCharColumnSize()),
             "errorMessageSize", Integer.toString(vendorDatabaseProperties.errorMessageSize()),
             "treePathSize", Integer.toString(vendorDatabaseProperties.treePathSize())));
+    /**
+     * to avoid that Liquibase's JVM-wide fast-check mistakes one prefixed physical tenant's schema
+     * for another's {@link liquibase.changelog.FastCheckService#isUpToDateFastCheck}
+     */
+    if (StringUtils.isNotBlank(prefix)) {
+      runner.setContexts(prefix + "CONTEXT");
+    }
     return runner;
   }
 
