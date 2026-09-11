@@ -7,7 +7,6 @@
  */
 package io.camunda.it.orchestration;
 
-import static io.camunda.it.util.TestHelper.activateAndCompleteJobs;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
@@ -86,7 +85,18 @@ public class AgentInstanceMigrationIT {
     final long sourceAgentDefinitionKey =
         client.newAgentInstanceGetRequest(agentInstanceKey).execute().getAgentDefinitionKey();
 
-    activateAndCompleteJobs(client, agentJobType, "test-worker", 1);
+    final var reactivatedJob =
+        client
+            .newActivateJobsCommand()
+            .jobType(agentJobType)
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMinutes(5))
+            .withLease(true)
+            .send()
+            .join()
+            .getJobs()
+            .getFirst();
+    client.newCompleteCommand(reactivatedJob).execute();
     waitForElementInstances(
         client, f -> f.elementId(sourceNextElementId).processInstanceKey(processInstanceKey), 1);
 
@@ -179,6 +189,7 @@ public class AgentInstanceMigrationIT {
             .jobType(agentJobType)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
+            .withLease(true)
             .send()
             .join()
             .getJobs()
@@ -189,7 +200,7 @@ public class AgentInstanceMigrationIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .jobLease("test-job-lease")
+            .jobLease(activatedJob.getLeaseToken())
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))

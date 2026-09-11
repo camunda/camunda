@@ -71,13 +71,19 @@ public class AgentInstanceCreateTest {
             .setName("seeded-tool")
             .setDescription("a tool seeded by the client")
             .setElementId("inner-task");
-    ENGINE.jobs().withType("agent").activate();
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType("agent")
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var configItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config")
@@ -99,6 +105,7 @@ public class AgentInstanceCreateTest {
             .withMetricsDelta(50L, 25L, 5, 3)
             .withTools(List.of(seededTool))
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem))
             .create();
 
@@ -151,10 +158,28 @@ public class AgentInstanceCreateTest {
             .withElementType(BpmnElementType.SERVICE_TASK)
             .withElementId(customElementId)
             .getFirst();
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when
     final var created =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create();
 
     // then
     assertThat(created.getValue().getElementInstanceKey()).isEqualTo(elementInstance.getKey());
@@ -199,10 +224,28 @@ public class AgentInstanceCreateTest {
             .withElementType(BpmnElementType.PROCESS)
             .getFirst();
     final var childServiceTaskInstance = awaitServiceTaskActivated(childProcessInstance.getKey());
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstance.getKey())
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when
     final var created =
-        ENGINE.agentInstances().withElementInstanceKey(childServiceTaskInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(childServiceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create();
 
     // then
     assertThat(created.getValue().getProcessInstanceKey()).isEqualTo(childProcessInstance.getKey());
@@ -229,10 +272,28 @@ public class AgentInstanceCreateTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when
     final var created =
-        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create();
 
     // then
     assertThat(created.getValue().getProcessDefinitionVersionTag())
@@ -266,10 +327,28 @@ public class AgentInstanceCreateTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when
     final var created =
-        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create();
 
     // then -- the CREATED event links back to the element's AgentDefinition version.
     assertThat(created.getValue().getAgentDefinitionKey()).isEqualTo(agentDefinitionKey);
@@ -323,6 +402,19 @@ public class AgentInstanceCreateTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when -- the command tries to set a different status; engine must ignore it.
     final var created =
@@ -330,6 +422,8 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.THINKING)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create();
 
     // then
@@ -351,6 +445,19 @@ public class AgentInstanceCreateTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when -- even when the command carries non-default metrics, the engine resets them.
     final var created =
@@ -358,6 +465,8 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withMetricsDelta(50L, 25L, 5, 3)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create();
 
     // then
@@ -383,13 +492,19 @@ public class AgentInstanceCreateTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
-    ENGINE.jobs().withType("agent").activate();
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType("agent")
             .getFirst()
             .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when -- limits supplied via a CONFIGURATION history item in CREATE's own history batch are
     // applied inline by AgentInstanceCreateProcessor, before it appends AGENT_INSTANCE:CREATED.
@@ -405,6 +520,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .withHistory(List.of(configItem))
             .create();
 
@@ -429,10 +545,28 @@ public class AgentInstanceCreateTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when
     final var created =
-        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create();
 
     // then
     assertThat(created.getIntent()).isEqualTo(AgentInstanceIntent.CREATED);
@@ -441,8 +575,8 @@ public class AgentInstanceCreateTest {
 
   @Test
   public void shouldAcceptAdHocSubProcessElementType() {
-    // given -- an ad-hoc subprocess with an inner task and a completion condition that keeps the
-    // ad-hoc subprocess element active long enough for us to attach an agent instance to it.
+    // given -- an ad-hoc subprocess with an inner task whose job is never completed, which keeps
+    // the ad-hoc subprocess element active long enough for us to attach an agent instance to it.
     ENGINE
         .deployment()
         .withXmlResource(
@@ -452,28 +586,41 @@ public class AgentInstanceCreateTest {
                     AD_HOC_SUB_PROCESS_ID,
                     asp -> {
                       asp.zeebeAiAgentSubProcessDefinition();
+                      asp.zeebeJobType("agent");
                       asp.task("inner-task");
-                      asp.completionCondition("=completionCondition");
                     })
                 .endEvent()
                 .done())
         .deploy();
-    final var processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables(Map.of("completionCondition", false))
-            .create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final var adHocInstance =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
             .getFirst();
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when
     final var created =
-        ENGINE.agentInstances().withElementInstanceKey(adHocInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(adHocInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create();
 
     // then
     assertThat(created.getIntent()).isEqualTo(AgentInstanceIntent.CREATED);
@@ -517,11 +664,45 @@ public class AgentInstanceCreateTest {
             .toList();
     assertThat(children).hasSize(2);
 
+    final var jobBatch =
+        ENGINE.jobs().withType("agent").withMaxJobsToActivate(2).withLease().activate();
+    final var jobKeys =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+    final var firstJobKey = jobKeys.get(0);
+    final var firstJobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(firstJobKey))
+            .getLeaseToken();
+    final var secondJobKey = jobKeys.get(1);
+    final var secondJobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(secondJobKey))
+            .getLeaseToken();
+
     // when -- create an agent instance for each child element instance.
     final var firstAgent =
-        ENGINE.agentInstances().withElementInstanceKey(children.get(0).getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(children.get(0).getKey())
+            .withJobKey(firstJobKey)
+            .withJobLease(firstJobLease)
+            .create();
     final var secondAgent =
-        ENGINE.agentInstances().withElementInstanceKey(children.get(1).getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(children.get(1).getKey())
+            .withJobKey(secondJobKey)
+            .withJobLease(secondJobLease)
+            .create();
 
     // then -- each child gets its own agent instance with distinct keys.
     assertThat(firstAgent.getValue().getElementInstanceKey()).isEqualTo(children.get(0).getKey());
@@ -546,10 +727,28 @@ public class AgentInstanceCreateTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when
     final var first =
-        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create();
     final var secondRejection =
         ENGINE
             .agentInstances()
@@ -644,11 +843,34 @@ public class AgentInstanceCreateTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     final var first =
-        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create();
 
-    ENGINE.job().ofInstance(processInstanceKey).withType("agent").complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("agent")
+        .withLeaseToken(jobLease)
+        .complete();
     RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .getFirst();

@@ -113,8 +113,8 @@ class RdbmsSchemaInitializerH2IT {
         assertThat(initializer.isInitialized(TENANT_B)).isFalse();
 
         // and - the healthy tenant's migration really ran; it was not merely reported ready
-        assertThat(tableExists(tenants.dataSourceFor(TENANT_A), "DATABASECHANGELOG")).isTrue();
-        assertThat(tableExists(tenants.dataSourceFor(TENANT_B), "DATABASECHANGELOG")).isFalse();
+        assertThat(tableExists(tenants.dataSourceFor(TENANT_A), "DEPLOYED_RESOURCE")).isTrue();
+        assertThat(tableExists(tenants.dataSourceFor(TENANT_B), "DEPLOYED_RESOURCE")).isFalse();
       } finally {
         initializer.destroy();
       }

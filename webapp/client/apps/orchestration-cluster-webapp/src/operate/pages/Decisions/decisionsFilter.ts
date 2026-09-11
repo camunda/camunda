@@ -10,6 +10,7 @@ import type {DecisionInstanceState, QueryDecisionInstancesRequestBody} from '@ca
 import {parseIds} from '#/operate/shared/utils/parseIds';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
+import {buildInstanceKeyCriterion} from '#/operate/shared/utils/buildInstanceKeyCriterion';
 
 type DecisionInstancesFilter = NonNullable<QueryDecisionInstancesRequestBody['filter']>;
 type DecisionInstancesSort = NonNullable<QueryDecisionInstancesRequestBody['sort']>;
@@ -86,21 +87,6 @@ function mapDecisionInstancesSort(sort: string | undefined): ResolvedDecisionIns
 	}
 
 	return [{field: field as DecisionInstancesSortField, order}];
-}
-
-/**
- * Builds the `decisionEvaluationInstanceKey` criterion for a batch delete request from the
- * current tri-state row selection. `undefined` when everything matching the filter should be
- * targeted (selection mode ALL), matching legacy's `buildInstanceKeyCriterion`.
- */
-function buildInstanceKeyCriterion(includeIds: string[], excludeIds: string[]) {
-	if (includeIds.length > 0) {
-		return {$in: includeIds};
-	}
-	if (excludeIds.length > 0) {
-		return {$notIn: excludeIds};
-	}
-	return undefined;
 }
 
 export {mapDecisionInstancesFilter, mapDecisionInstancesSort, buildInstanceKeyCriterion};

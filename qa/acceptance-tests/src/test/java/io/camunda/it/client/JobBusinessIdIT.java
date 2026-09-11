@@ -16,10 +16,10 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -134,7 +134,7 @@ public class JobBusinessIdIT {
   private static void waitForJob(final long processInstanceKey) {
     Awaitility.await()
         .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
+        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () ->
                 !client

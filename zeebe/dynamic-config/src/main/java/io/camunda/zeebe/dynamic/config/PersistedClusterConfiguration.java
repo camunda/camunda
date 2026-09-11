@@ -28,7 +28,7 @@ import java.util.zip.CRC32C;
 public final class PersistedClusterConfiguration {
   // Header is a single byte for the version, followed by a long for the checksum.
   // Constant version, to be incremented if the format changes.
-  private static final byte VERSION = 1;
+  public static final byte VERSION = 1;
   private final Path topologyFile;
   private final ClusterConfigurationSerializer serializer;
   private ClusterConfiguration clusterConfiguration;
@@ -110,11 +110,16 @@ public final class PersistedClusterConfiguration {
    * @param path the path where to save the file
    */
   public static void writeToFile(final byte[] body, final Path path) throws IOException {
+    writeToFile(body, path, VERSION);
+  }
+
+  public static void writeToFile(final byte[] body, final Path path, final byte version)
+      throws IOException {
     final var checksum = checksum(body, 0, body.length);
     final var buffer =
         ByteBuffer.allocate(HEADER_LENGTH + body.length)
             .order(ByteOrder.LITTLE_ENDIAN)
-            .put(VERSION)
+            .put(version)
             .putLong(checksum)
             .put(body);
     Files.write(
@@ -162,18 +167,23 @@ public final class PersistedClusterConfiguration {
     public static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
 
     public static Header parseFrom(final byte[] content, final Path topologyFile) {
+      final var header = parseAnyVersion(content, topologyFile);
+      if (header.version != VERSION) {
+        throw new UnexpectedVersion(topologyFile, header.version);
+      }
+      return header;
+    }
+
+    /**
+     * Parses the header without rejecting unknown versions, so a caller that can read more than one
+     * on-disk format dispatches on {@link #version()} itself.
+     */
+    public static Header parseAnyVersion(final byte[] content, final Path topologyFile) {
       if (content.length < HEADER_LENGTH) {
         throw new MissingHeader(topologyFile, content.length);
       }
       final var header = ByteBuffer.wrap(content, 0, HEADER_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
-      final var version = header.get();
-      final var expectedChecksum = header.getLong();
-
-      if (version != VERSION) {
-        throw new UnexpectedVersion(topologyFile, version);
-      }
-
-      return new Header(version, expectedChecksum);
+      return new Header(header.get(), header.getLong());
     }
   }
 }

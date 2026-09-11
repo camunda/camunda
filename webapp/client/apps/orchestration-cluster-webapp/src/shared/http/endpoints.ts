@@ -17,11 +17,16 @@ import {
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryProcessInstancesRequestBody,
+	type CancelProcessInstanceRequestBody,
+	type DeleteProcessInstanceRequestBody,
 	type QueryBatchOperationsRequestBody,
 	type QueryBatchOperationItemsRequestBody,
 	type QueryDecisionDefinitionsRequestBody,
 	type QueryDecisionInstancesRequestBody,
 	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
+	type CreateCancellationBatchOperationRequestBody,
+	type CreateIncidentResolutionBatchOperationRequestBody,
+	type CreateDeletionBatchOperationRequestBody,
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type CreateProcessInstanceRequestBody as ApiCreateProcessInstanceRequestBody,
@@ -215,6 +220,34 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	resolveProcessInstanceIncidents: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resolveProcessInstanceIncidents.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resolveProcessInstanceIncidents.method,
+		}),
+
+	getProcessInstance: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstance.method,
+		}),
+
+	// Both bodies are optional, but an empty object is not a valid one — `operationReference` is
+	// required once the body is present — so send no body at all when there is no payload.
+	cancelProcessInstance: (processInstanceKey: string, body?: CancelProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.cancelProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.cancelProcessInstance.method,
+			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
+	deleteProcessInstance: (processInstanceKey: string, body?: DeleteProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteProcessInstance.method,
+			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
 	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstances.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
@@ -251,6 +284,30 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionInstances.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryDecisionInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createCancellationBatchOperation: (body: CreateCancellationBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createCancellationBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createCancellationBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createIncidentResolutionBatchOperation: (body: CreateIncidentResolutionBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createIncidentResolutionBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createIncidentResolutionBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDeletionBatchOperation: (body: CreateDeletionBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createDeletionBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDeletionBatchOperation.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

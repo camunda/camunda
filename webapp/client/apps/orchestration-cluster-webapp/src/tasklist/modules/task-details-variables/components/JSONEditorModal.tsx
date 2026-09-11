@@ -6,14 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useRef, useState} from 'react';
-import {ComposedModal, ModalBody, ModalFooter, ModalHeader} from '@carbon/react';
+import {
+	Button,
+	Dialog,
+	DialogBody,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@camunda/design-system';
 import Editor from '@monaco-editor/react';
 import type {editor} from 'monaco-editor';
+import {X} from '@camunda/design-system/icons';
+import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {themeStore} from '#/shared/theme/theme';
 import {isValidJSON} from '#/tasklist/modules/json/isValidJSON';
-import styles from './JSONEditorModal.module.scss';
 
 function beautifyJSON(value: string): string {
 	try {
@@ -55,58 +63,83 @@ const JSONEditorModal: React.FC<Props> = ({isOpen, value, isReadOnly, onClose, o
 	);
 
 	return (
-		<ComposedModal open={isOpen} preventCloseOnClickOutside size="lg" onClose={onClose} aria-label={title}>
-			<ModalHeader title={title} iconDescription={t('tasklist.jsonEditorCloseButtonLabel')} />
-			<ModalBody>
-				{isOpen ? (
-					<Editor
-						className={styles.editor}
-						language="json"
-						value={editedValue}
-						options={options}
-						onChange={
-							isReadOnly
-								? undefined
-								: (newValue) => {
-										const nextValue = newValue ?? '';
-										setEditedValue(nextValue);
-										setIsValid(isValidJSON(nextValue));
-									}
-						}
-						onMount={(editorInstance, monaco) => {
-							editorRef.current = editorInstance;
-							monaco.editor.setTheme(themeStore.actualTheme === 'light' ? 'light' : 'vs-dark');
-							editorInstance.focus();
-						}}
-					/>
-				) : (
-					<div className={styles.editor} />
-				)}
-			</ModalBody>
-			{isReadOnly ? null : (
-				<ModalFooter
-					primaryButtonText={isReadOnly ? undefined : t('tasklist.jsonEditorApplyButtonLabel')}
-					primaryButtonDisabled={!isValid}
-					secondaryButtonText={
-						isReadOnly ? t('tasklist.jsonEditorCloseButtonLabel') : t('tasklist.jsonEditorCancelButtonLabel')
-					}
-					onRequestClose={onClose}
-					onRequestSubmit={
-						isReadOnly
-							? undefined
-							: () => {
-									if (isValid) {
-										onSave(editedValue);
-									} else {
-										editorRef.current?.getAction('editor.action.marker.next')?.run();
-									}
+		<Dialog
+			open={isOpen}
+			onOpenChange={(open) => {
+				if (!open) {
+					onClose();
+				}
+			}}
+		>
+			<DialogContent
+				size="full"
+				showCloseButton={false}
+				className="flex max-h-[90vh] w-[calc(100vw-4rem)] max-w-[60rem] flex-col"
+				aria-label={title}
+				aria-describedby={undefined}
+				onInteractOutside={(event) => event.preventDefault()}
+			>
+				<DialogHeader>
+					<DialogTitle>{title}</DialogTitle>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						className="absolute top-2 right-2"
+						aria-label={t('tasklist.jsonEditorCloseButtonLabel')}
+						onClick={onClose}
+					>
+						<X aria-hidden />
+					</Button>
+				</DialogHeader>
+				<DialogBody className="min-h-0 flex-1">
+					{isOpen ? (
+						<Editor
+							className="h-[60vh]"
+							language="json"
+							value={editedValue}
+							options={options}
+							onChange={
+								isReadOnly
+									? undefined
+									: (newValue) => {
+											const nextValue = newValue ?? '';
+											setEditedValue(nextValue);
+											setIsValid(isValidJSON(nextValue));
+										}
+							}
+							onMount={(editorInstance, monaco) => {
+								editorRef.current = editorInstance;
+								monaco.editor.setTheme(themeStore.actualTheme === 'light' ? 'light' : 'vs-dark');
+								editorInstance.focus();
+							}}
+						/>
+					) : (
+						<div className="h-[60vh]" />
+					)}
+				</DialogBody>
+				{isReadOnly ? null : (
+					<DialogFooter>
+						<Button type="button" variant="secondary" onClick={onClose}>
+							{t('tasklist.jsonEditorCancelButtonLabel')}
+						</Button>
+						<Button
+							type="button"
+							disabled={!isValid}
+							onClick={() => {
+								if (isValid) {
+									onSave(editedValue);
+								} else {
+									void editorRef.current?.getAction('editor.action.marker.next')?.run();
 								}
-					}
-				>
-					{null}
-				</ModalFooter>
-			)}
-		</ComposedModal>
+							}}
+						>
+							{t('tasklist.jsonEditorApplyButtonLabel')}
+						</Button>
+					</DialogFooter>
+				)}
+			</DialogContent>
+		</Dialog>
 	);
 };
 

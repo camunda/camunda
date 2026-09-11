@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -211,13 +212,16 @@ public final class AgentInstanceUpdateProcessor
             commandValue.getJobKey(),
             commandValue.getJobLease(),
             commandValue.getElementInstanceKey(),
-            commandValue.getHistory(),
             LeaseMismatchHandling.ALLOW_STALE);
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
+
+    final var job = validJob.get();
+    final var isRequestLevelStale =
+        !Objects.equals(commandValue.getJobLease(), job.getLeaseToken());
 
     final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
     if (isHistoryValid.isLeft()) {
@@ -226,7 +230,18 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    final var validPatch = validateRequestLevelChanges(command, current);
+    // Request-level changes (currently just status) bypass the history commit/discard lifecycle,
+    // so unlike history items they have no way to resolve a stale write after the fact: the active
+    // lease's own update already applied (or will apply) the change, so a request-level change
+    // under a superseded lease must not be applied. We are not just skipping validation here: by
+    // setting validPatch to an empty list instead of validating the command's own changes, the
+    // later applyRequestLevelChanges call below sees nothing to apply either, so both validation
+    // and application are skipped in one go — validating a change that will never be applied could
+    // otherwise reject the whole command over a transition that never actually happens.
+    final var validPatch =
+        isRequestLevelStale
+            ? Either.<Rejection, List<String>>right(List.of())
+            : validateRequestLevelChanges(command, current);
     if (validPatch.isLeft()) {
       final var rejection = validPatch.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
@@ -366,7 +381,12 @@ public final class AgentInstanceUpdateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 }

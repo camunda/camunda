@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Button } from "@camunda/design-system";
+import { Link } from "@camunda/design-system";
 import { FC } from "react";
 import useTranslate from "src/utility/localization";
 import ErrorPage from "src/components/globalV2/ErrorPage";
@@ -19,11 +19,9 @@ const NotFound: FC = () => {
       <Translate>
         What you&apos;re looking for isn&apos;t here, sorry!
       </Translate>
-      <Button variant="link" size="sm" asChild>
-        <a href="/">
-          <Translate>Click here to go back home</Translate>
-        </a>
-      </Button>
+      <Link href="/">
+        <Translate>Click here to go back home</Translate>
+      </Link>
     </ErrorPage>
   );
 };

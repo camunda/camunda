@@ -12,13 +12,11 @@ import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
 	mockLoginEndpoint,
-	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
-import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 
@@ -30,6 +28,9 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
 		}),
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse({items: []})),
+		}),
 	);
 });
 
@@ -39,11 +40,7 @@ test('should redirect the Tasklist index to Tasklist login and return after logi
 	tasklistIndexPage,
 	tasklistLoginPage,
 }) => {
-	network.use(
-		mockQueryUserTasksEndpoint({successResponse: HttpResponse.json(createQueryUserTasksResponse({items: []}))}),
-	);
-
-	await tasklistIndexPage.goto();
+	await tasklistLoginPage.gotoTasklist();
 
 	await expect(page).toHaveURL('/tasklist/login');
 	await expect(tasklistLoginPage.title).toBeVisible();
@@ -55,27 +52,14 @@ test('should redirect the Tasklist index to Tasklist login and return after logi
 	await tasklistLoginPage.submitButton.click();
 
 	await expect(page).toHaveURL('/tasklist');
-	await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
+	await expect(tasklistIndexPage.noTasksMessage).toBeVisible();
 });
 
-test('should preserve a nested Tasklist URL through login', async ({
-	network,
-	page,
-	tasklistLoginPage,
-	tasklistProcessesPage,
-}) => {
-	network.use(
-		mockQueryProcessDefinitionsEndpoint({
-			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
-		}),
-	);
-
-	await tasklistProcessesPage.goto('?search=invoice');
+test('should preserve a Tasklist URL through login', async ({network, page, tasklistIndexPage, tasklistLoginPage}) => {
+	await tasklistLoginPage.gotoTasklist('?filter=assigned');
 
 	await expect(page).toHaveURL((url) => {
-		return (
-			url.pathname === '/tasklist/login' && url.searchParams.get('redirect') === '/tasklist/processes?search=invoice'
-		);
+		return url.pathname === '/tasklist/login' && url.searchParams.get('redirect') === '/tasklist?filter=assigned';
 	});
 	await expect(tasklistLoginPage.usernameInput).toBeVisible();
 
@@ -84,8 +68,45 @@ test('should preserve a nested Tasklist URL through login', async ({
 	await tasklistLoginPage.fillCredentials('demo', 'demo');
 	await tasklistLoginPage.submitButton.click();
 
-	await expect(page).toHaveURL('/tasklist/processes?search=invoice');
-	await expect(tasklistProcessesPage.heading).toBeVisible();
+	await expect(page).toHaveURL('/tasklist?filter=assigned');
+	await expect(tasklistIndexPage.noTasksMessage).toBeVisible();
+});
+
+test('should show an error for wrong credentials', async ({network, tasklistLoginPage}) => {
+	network.use(mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
+
+	await tasklistLoginPage.goto();
+	await tasklistLoginPage.fillCredentials('demo', 'wrong-password');
+	await tasklistLoginPage.submitButton.click();
+
+	await expect(tasklistLoginPage.errorMessage).toContainText(/username and password do not match/i);
+});
+
+test('should show a generic error message', async ({network, tasklistLoginPage}) => {
+	network.use(mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+
+	await tasklistLoginPage.goto();
+	await tasklistLoginPage.fillCredentials('demo', 'demo');
+	await tasklistLoginPage.submitButton.click();
+
+	await expect(tasklistLoginPage.errorMessage).toContainText(/credentials could not be verified/i);
+});
+
+test('should show a loading state while the login form is submitting', async ({network, tasklistLoginPage}) => {
+	network.use(
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 200}),
+			delay: 500,
+		}),
+	);
+
+	await tasklistLoginPage.goto();
+	await tasklistLoginPage.fillCredentials('demo', 'demo');
+	await tasklistLoginPage.submitButton.click();
+
+	await expect(tasklistLoginPage.loadingButton).toBeVisible();
+	await expect(tasklistLoginPage.loadingButton).toHaveAttribute('aria-busy', 'true');
+	await expect(tasklistLoginPage.loadingButton).toHaveAttribute('aria-disabled', 'true');
 });
 
 test.describe('redirect validation', () => {
@@ -97,7 +118,7 @@ test.describe('redirect validation', () => {
 		'/tasklist/login',
 		'/tasklist/login?redirect=/tasklist',
 	]) {
-		test(`should reject ${redirect} as a Tasklist redirect`, async ({tasklistLoginPage}) => {
+		test(`should reject ${redirect} as aredirect`, async ({tasklistLoginPage}) => {
 			await tasklistLoginPage.goto(redirect);
 
 			await expect(tasklistLoginPage.genericErrorHeading).toBeVisible();

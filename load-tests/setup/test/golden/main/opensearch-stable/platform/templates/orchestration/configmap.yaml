@@ -118,8 +118,8 @@ data:
             history:
               els-rollover-date-format: "date"
               rollover-interval: "1d"
-              rollover-batch-size: 100
-              wait-period-before-archiving: "1h"
+              rollover-batch-size: 500
+              wait-period-before-archiving: "1m"
               delay-between-runs: 2000
               max-delay-between-runs: 60000
               policy-name: "camunda-retention-policy"
@@ -278,13 +278,11 @@ data:
     zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
     zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
     
-    # Camunda Exporter configuration
-    zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 500
-    zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
-    
     # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-    zeebe.broker.flowControl.write.enabled: "true"
-    zeebe.broker.flowControl.write.limit: 10000
-    zeebe.broker.flowControl.write.throttling.enabled: "true"
+    # Uses the unified `camunda.*` property tree rather than the legacy `zeebe.broker.*` one, because otherwise only the default physical tenant
+    # receives this configuration.
+    camunda.processing.flow-control.write.enabled: "true"
+    camunda.processing.flow-control.write.limit: 10000
+    camunda.processing.flow-control.write.throttle.enabled: "true"
   application-override.yml: |
     # no overrides

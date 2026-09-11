@@ -465,6 +465,35 @@
 				"drainingDescriptionVersion": "Cette version de la définition de processus est programmée pour suppression et sera automatiquement supprimée une fois que toutes ses instances en cours seront terminées."
 			},
 			"processes": {
+				"toolbar": {
+					"delete": "Supprimer",
+					"cancel": "Annuler",
+					"retry": "Réessayer",
+					"discard": "Abandonner",
+					"selectAll": "Sélectionner tous les éléments",
+					"selectRow": "Sélectionner l’instance {{key}}",
+					"selected_other": "{{total}} éléments sélectionnés",
+					"selected_one": "{{total}} élément sélectionné",
+					"heading": "Appliquer l’opération",
+					"apply": "Appliquer",
+					"confirm_other": "{{total}} instances sélectionnées pour l’opération « {{action}} ».",
+					"confirm_one": "{{total}} instance sélectionnée pour l’opération « {{action}} ».",
+					"permanent": "Cette action supprime définitivement les instances de processus sélectionnées et leur historique. Elle est irréversible.",
+					"calledInstances": "Si des instances appelées existent, elles seront également annulées.",
+					"ignoreFinished": "Les instances terminées de votre sélection seront ignorées.",
+					"ignoreNonIncident": "Les instances sans incident de votre sélection seront ignorées.",
+					"noFinished": "Aucune instance de processus terminée sélectionnée. Sélectionnez au moins une instance achevée ou annulée à supprimer.",
+					"noRunning": "Aucune instance de processus en cours sélectionnée. Sélectionnez au moins une instance active ou avec incident à annuler.",
+					"noIncidents": "Aucune instance de processus avec incident sélectionnée. Sélectionnez au moins une instance avec incident pour réessayer.",
+					"actionMode": "Non disponible en mode de modification par lots",
+					"started": "L’opération par lots « {{operationType}} » a été démarrée",
+					"progressSubtitle": "Vous pouvez suivre sa progression sur la page de l’opération par lots",
+					"details": "Voir les détails de l’opération",
+					"failed": "L’opération n’a pas pu être créée",
+					"forbidden": "Vous n’avez pas l’autorisation d’effectuer cette opération",
+					"contactAdministrator": "Veuillez contacter l’administrateur si vous avez besoin d’un accès.",
+					"progressUnavailable": "La progression de l’opération par lots est temporairement indisponible"
+				},
 				"title": "Processus",
 				"filters": {
 					"processSection": "Processus",
@@ -508,6 +537,15 @@
 					"endDate": "Date de fin",
 					"operationState": "État de l'opération",
 					"operationStateLoading": "Chargement...",
+					"operations": {
+						"header": "Opérations",
+						"resolveIncidentsFailed": "Échec de la relance des incidents",
+						"cancelFailed": "Échec de l'annulation de l'instance de processus",
+						"deleteFailed": "Échec de la suppression de l'instance de processus",
+						"deleteScheduled": "L'instance est planifiée pour suppression",
+						"forbiddenTitle": "Vous n'avez pas la permission d'effectuer cette opération",
+						"forbiddenSubtitle": "Veuillez contacter votre administrateur si vous avez besoin d'un accès."
+					},
 					"parentProcessInstanceKey": "Clé d'instance de processus parente",
 					"viewInstance": "Afficher l'instance {{key}}",
 					"viewParentInstance": "Afficher l'instance parente {{key}}",
@@ -703,6 +741,40 @@
 			},
 			"batchOperations": {
 				"title": "Opérations par lots"
+			},
+			"batchOperation": {
+				"title": "Opérations par lots",
+				"pageTitle": "Operate : Opération par lots {{name}}",
+				"notFoundNotificationTitle": "L'opération par lots {{batchOperationKey}} n'a pas pu être trouvée",
+				"loadErrorTitle": "Impossible de charger les détails de l'opération par lots",
+				"backButton": "Retour aux opérations par lots",
+				"forbidden": {
+					"heading": "403 - Vous n'avez pas la permission de consulter ces informations",
+					"description": "Contactez votre administrateur pour obtenir l'accès.",
+					"learnMoreLink": "En savoir plus sur les autorisations"
+				},
+				"tiles": {
+					"state": "État du lot",
+					"summaryOfItems": "Résumé des éléments",
+					"startDate": "Date de début",
+					"endDate": "Date de fin",
+					"actor": "Acteur"
+				},
+				"itemsTable": {
+					"title": "Éléments",
+					"state": "État du lot",
+					"date": "Date",
+					"processInstanceKey": "Clé d'instance de processus",
+					"decisionInstanceKey": "Clé d'instance de décision",
+					"incidentKey": "Clé d'incident",
+					"noProcessInstance": "Aucune instance de processus",
+					"noDecisionInstance": "Aucune instance de décision",
+					"noIncident": "Aucun incident",
+					"viewProcessInstance": "Voir l'instance de processus {{key}}",
+					"viewDecisionInstance": "Voir l'instance de décision {{key}}",
+					"failureReason": "Raison de l'échec : {{message}}",
+					"emptyMessage": "Aucun élément trouvé"
+				}
 			},
 			"shared": {
 				"errorMessage": {

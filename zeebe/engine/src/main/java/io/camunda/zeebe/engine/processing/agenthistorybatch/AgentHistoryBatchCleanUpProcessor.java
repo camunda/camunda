@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.agenthistorybatch;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -38,9 +37,16 @@ public final class AgentHistoryBatchCleanUpProcessor
     implements TypedRecordProcessor<AgentHistoryBatchRecord>,
         SuspensionAware<AgentHistoryBatchRecord> {
 
-  // number of history-item ids deleted, combined across the committed and metrics-accumulated
-  // indexes, per AGENT_HISTORY_BATCH:CLEANED cycle
-  public static final int CHUNK_SIZE = 1000;
+  /**
+   * Number of history-item ids deleted, combined across the committed and metrics-accumulated
+   * indexes, per {@code AGENT_HISTORY_BATCH:CLEANED} cycle. Each history-item id is capped at 256
+   * characters, and a single character can take up to 4 bytes in UTF-8, so the extreme worst case
+   * (every character an emoji) is 100 items * 256 chars * 4 bytes * 100 commands per processing
+   * batch = ~10 MB. Under normal conditions (assuming ~1.5 bytes per character on average, which
+   * still allows for the occasional non-Latin character) that same batch is only 100 items * 256
+   * chars * ~1.5 bytes * 100 commands = ~3.84 MB — comfortably within the default max message size.
+   */
+  public static final int CHUNK_SIZE = 100;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -95,6 +101,11 @@ public final class AgentHistoryBatchCleanUpProcessor
     }
   }
 
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
+  }
+
   private boolean collectUpToChunkSize(
       final HashSet<String> idsToDelete, final AtomicBoolean hasMore, final String id) {
     // An id already collected from the other column family doesn't need a new budget slot: check
@@ -116,12 +127,12 @@ public final class AgentHistoryBatchCleanUpProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryBatchRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<AgentHistoryBatchRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   @Override
-  public boolean shouldProcessResultsInSeparateBatches() {
-    return true;
+  public SuspensionAction onResuming(final TypedRecord<AgentHistoryBatchRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

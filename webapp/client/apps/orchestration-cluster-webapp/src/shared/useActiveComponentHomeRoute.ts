@@ -10,7 +10,7 @@ import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 
-const COMPONENT_HOME_ROUTES = ['/shadcn/tasklist'] as const satisfies FileRouteTypes['to'][];
+const COMPONENT_HOME_ROUTES = ['/tasklist'] as const satisfies FileRouteTypes['to'][];
 
 function useActiveComponentHomeRoute(): FileRouteTypes['to'] | undefined {
 	const matchRoute = useMatchRoute();

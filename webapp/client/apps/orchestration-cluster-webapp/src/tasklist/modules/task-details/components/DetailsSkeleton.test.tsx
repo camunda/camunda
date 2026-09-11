@@ -7,8 +7,8 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {it} from '#/vitest-modules/test-extend';
 import {describe, expect} from 'vitest';
+import {it} from '#/vitest-modules/test-extend';
 import {DetailsSkeleton} from './DetailsSkeleton';
 
 describe('<DetailsSkeleton />', () => {

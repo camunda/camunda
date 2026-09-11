@@ -1,10 +1,11 @@
 # owner: @camunda/engineering-operations
-name: GCS build-cache auth
+name: GCS auth via Workload Identity Federation
 description: >-
-  Vault-fetch the monorepo-build-cache service account and authenticate gcloud
-  via Workload Identity Federation. After this action, `gcloud storage` commands
-  can read/write the run-scoped build-cache bucket. The caller still runs its own
-  `gcloud storage` step (upload/download/delete) so intent stays at the call site.
+  Vault-fetch a GCS service account and authenticate gcloud via Workload
+  Identity Federation. After this action, `gcloud storage` commands can
+  access whichever bucket the service account is scoped to. The caller
+  still runs its own `gcloud storage` step (upload/download/delete) so
+  intent stays at the call site.
 inputs:
   vault-addr:
     description: Vault address (secrets.VAULT_ADDR)
@@ -15,13 +16,19 @@ inputs:
   vault-secret-id:
     description: Vault AppRole secret id (secrets.VAULT_SECRET_ID)
     required: true
+  secret-path:
+    description: >-
+      Vault path to the SERVICE_ACCOUNT/WORKLOAD_IDENTITY_PROVIDER pair to
+      authenticate with. Defaults to the monorepo build-cache service account.
+    required: false
+    default: secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa
 runs:
   using: composite
   steps:
     - name: Check for fork
       uses: ./.github/actions/is-fork
       id: is-fork
-    - name: Fetch GCS build-cache credentials
+    - name: Fetch GCS credentials
       id: gcs-secrets
       if: steps.is-fork.outputs.is-fork != 'true'
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -32,8 +39,8 @@ runs:
         secretId: ${{ inputs.vault-secret-id }}
         exportEnv: false
         secrets: |
-          secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
-          secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+          ${{ inputs.secret-path }} SERVICE_ACCOUNT | GCS_SA;
+          ${{ inputs.secret-path }} WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
     - name: Authenticate to GCS via WIF
       # Not retried. An earlier attempt to wrap this in Wandalen/wretry.action broke SA
       # impersonation -- gcloud ran as the bare WIF identity and every storage call 403'd

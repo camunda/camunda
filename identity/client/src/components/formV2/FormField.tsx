@@ -7,73 +7,38 @@
  */
 
 import { FC, ReactNode, useId } from "react";
-import { Label, Text } from "@camunda/design-system";
+import { Label } from "@camunda/design-system";
 
 export type FormFieldControlProps = {
   id: string;
-  "aria-invalid": true | undefined;
   "aria-describedby": string | undefined;
 };
 
 export type FormFieldProps = {
   label: string;
-  error?: ReactNode;
-  helperText?: ReactNode;
   /** Receives the id it has to carry, which is part of the control's `aria-describedby`. */
   footer?: (id: string) => ReactNode;
   children: (control: FormFieldControlProps) => ReactNode;
 };
 
 /**
- * Label, control, and error/helper text, with the `aria-*` wiring between
- * them. The design system ships the parts but no wrapper that connects them.
- *
- * The control is a render prop because only the caller knows which element the
- * generated id and `aria-*` attributes belong on. A control that accepts
- * neither `aria-invalid` nor `aria-describedby` — `MultiSelect` — can take the
- * `id` alone; its error still announces through `role="alert"` below.
+ * Label and control, with the id wiring between them. `Input`, `Textarea`,
+ * and `SelectTrigger` render their own error/helper text and `aria-*` wiring
+ * given `invalidText`/`helperText`/`aria-invalid` directly — pass those to
+ * the control instead of through this wrapper. `MultiSelect` has no such
+ * support, so its callers must render their own error text alongside it.
  */
-const FormField: FC<FormFieldProps> = ({
-  label,
-  error,
-  helperText,
-  footer,
-  children,
-}) => {
+const FormField: FC<FormFieldProps> = ({ label, footer, children }) => {
   const id = useId();
-  const errorId = `${id}-error`;
-  const helperId = `${id}-helper`;
   const footerId = `${id}-footer`;
-
-  const showHelperText = !error && Boolean(helperText);
-  const describedBy =
-    [
-      error ? errorId : undefined,
-      showHelperText ? helperId : undefined,
-      footer ? footerId : undefined,
-    ]
-      .filter(Boolean)
-      .join(" ") || undefined;
 
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       {children({
         id,
-        "aria-invalid": error ? true : undefined,
-        "aria-describedby": describedBy,
+        "aria-describedby": footer ? footerId : undefined,
       })}
-      {error || showHelperText ? (
-        <Text
-          as="p"
-          variant="helper"
-          id={error ? errorId : helperId}
-          role={error ? "alert" : undefined}
-          className={error ? "text-danger-action-default" : undefined}
-        >
-          {error || helperText}
-        </Text>
-      ) : null}
       {footer?.(footerId)}
     </div>
   );

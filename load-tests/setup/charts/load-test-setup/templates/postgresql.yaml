@@ -10,6 +10,13 @@ metadata:
 spec:
   description: PostgreSQL cluster for Camunda secondary storage
 
+  # Propagated to every object CNPG creates for this Cluster (pods, PVCs,
+  # jobs, services), so the pods carry the same "who created this" label as
+  # the rest of the load test's resources (namespace, Elasticsearch, Keycloak).
+  inheritedMetadata:
+    labels:
+      camunda.io/created-by: "{{ .Values.author }}"
+
   instances: 1
   {{- with .Values.postgresql.image }}
   imageName: {{ .registry }}/{{ .repository }}:{{ .tag }}

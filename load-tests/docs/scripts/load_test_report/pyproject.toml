@@ -1,20 +1,30 @@
 [project]
 name = "load-test-report"
 version = "0.1.0"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = [
+  "pydantic==2.12.5",
   "pyyaml==6.0.3",
 ]
 
+[project.scripts]
+load-test-report = "load_test_report.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [dependency-groups]
 dev = [
-  "pytest==8.4.2",
-  "ruff==0.14.6",
+  "pytest==9.1.1",
+  "pytest-cov>=7.1.0",
+  "pytest-ruff>=0.5",
+  "ruff==0.16.6",
 ]
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py313"
 
 [tool.ruff.lint]
 extend-select = ["I"]
@@ -23,4 +33,12 @@ extend-select = ["I"]
 force-single-line = true
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src"]
+addopts = [
+    "--cov=load_test_report",
+    "--cov-branch",
+    "--cov-report=html",
+    "--cov-report=term",
+    "--ruff",
+    "--ruff-format",
+]

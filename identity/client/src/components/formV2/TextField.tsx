@@ -15,17 +15,18 @@ import {
   useState,
 } from "react";
 import {
-  Button,
   CharacterCount,
+  IconButton,
   Input,
+  type NavIcon,
   Textarea,
 } from "@camunda/design-system";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "@camunda/design-system/icons";
 import useTranslate from "src/utility/localization";
 import FormField from "./FormField";
 
 type ActionButtonProps = {
-  icon: ReactNode;
+  icon: NavIcon;
   label: string;
   onClick: () => void;
   ariaHasPopup?: AriaAttributes["aria-haspopup"];
@@ -127,8 +128,6 @@ const TextField: FC<TextFieldProps> = ({
   return (
     <FormField
       label={label}
-      error={errorText}
-      helperText={helperText}
       footer={
         showCounter
           ? (id) => (
@@ -154,6 +153,9 @@ const TextField: FC<TextFieldProps> = ({
           autoFocus,
           name,
           autoComplete,
+          "aria-invalid": errorText ? (true as const) : undefined,
+          invalidText: errorText || undefined,
+          helperText,
           onChange: handleChange,
           onBlur: handleBlur,
           onClick,
@@ -167,23 +169,16 @@ const TextField: FC<TextFieldProps> = ({
                 type={passwordVisible ? "text" : "password"}
                 className="pr-10"
               />
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon-sm"
-                className="absolute inset-y-0 right-0.5 my-auto"
-                aria-label={
-                  passwordVisible ? t("hidePassword") : t("showPassword")
-                }
+                size="sm"
+                className="absolute top-0.5 right-0.5"
+                label={passwordVisible ? t("hidePassword") : t("showPassword")}
+                icon={passwordVisible ? EyeOff : Eye}
                 aria-pressed={passwordVisible}
                 onClick={() => setPasswordVisible((visible) => !visible)}
-              >
-                {passwordVisible ? (
-                  <EyeOff aria-hidden="true" />
-                ) : (
-                  <Eye aria-hidden="true" />
-                )}
-              </Button>
+              />
             </div>
           );
         }
@@ -209,18 +204,17 @@ const TextField: FC<TextFieldProps> = ({
           return (
             <div className="relative">
               <Input {...commonProps} type={type} className="pr-9" />
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon-sm"
-                className="absolute inset-y-0 right-0.5 my-auto"
-                aria-label={actionButton.label}
+                size="sm"
+                className="absolute top-0.5 right-0.5"
+                label={actionButton.label}
+                icon={actionButton.icon}
                 aria-haspopup={actionButton.ariaHasPopup}
                 aria-expanded={actionButton.ariaExpanded}
                 onClick={actionButton.onClick}
-              >
-                {actionButton.icon}
-              </Button>
+              />
             </div>
           );
         }

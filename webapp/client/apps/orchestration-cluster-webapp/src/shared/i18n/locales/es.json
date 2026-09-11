@@ -462,6 +462,35 @@
 				"drainingDescriptionVersion": "Esta versión de la definición de proceso está programada para su eliminación y se eliminará automáticamente una vez que todas sus instancias en ejecución hayan finalizado."
 			},
 			"processes": {
+				"toolbar": {
+					"delete": "Eliminar",
+					"cancel": "Cancelar",
+					"retry": "Reintentar",
+					"discard": "Descartar",
+					"selectAll": "Seleccionar todos los elementos",
+					"selectRow": "Seleccionar instancia {{key}}",
+					"selected_other": "{{total}} elementos seleccionados",
+					"selected_one": "{{total}} elemento seleccionado",
+					"heading": "Aplicar operación",
+					"apply": "Aplicar",
+					"confirm_other": "{{total}} instancias seleccionadas para la operación «{{action}}».",
+					"confirm_one": "{{total}} instancia seleccionada para la operación «{{action}}».",
+					"permanent": "Esta acción elimina permanentemente las instancias de proceso seleccionadas y su historial. No se puede deshacer.",
+					"calledInstances": "Si hay instancias llamadas, también se cancelarán.",
+					"ignoreFinished": "Se ignorarán las instancias finalizadas de su selección.",
+					"ignoreNonIncident": "Se ignorarán las instancias sin incidente de su selección.",
+					"noFinished": "No se han seleccionado instancias de proceso finalizadas. Seleccione al menos una instancia completada o cancelada para eliminarla.",
+					"noRunning": "No se han seleccionado instancias de proceso en ejecución. Seleccione al menos una instancia activa o con incidente para cancelarla.",
+					"noIncidents": "No se han seleccionado instancias de proceso con incidente. Seleccione al menos una instancia con incidente para reintentar.",
+					"actionMode": "No disponible en el modo de modificación por lotes",
+					"started": "Se ha iniciado la operación por lotes «{{operationType}}»",
+					"progressSubtitle": "Puede seguir su progreso en la página de la operación por lotes",
+					"details": "Ir a los detalles de la operación",
+					"failed": "No se ha podido crear la operación",
+					"forbidden": "No tiene permiso para realizar esta operación",
+					"contactAdministrator": "Póngase en contacto con el administrador si necesita acceso.",
+					"progressUnavailable": "El progreso de la operación por lotes no está disponible temporalmente"
+				},
 				"title": "Procesos",
 				"filters": {
 					"processSection": "Proceso",
@@ -505,6 +534,15 @@
 					"endDate": "Fecha de fin",
 					"operationState": "Estado de la operación",
 					"operationStateLoading": "Cargando...",
+					"operations": {
+						"header": "Operaciones",
+						"resolveIncidentsFailed": "No se pudieron reintentar las incidencias",
+						"cancelFailed": "No se pudo cancelar la instancia de proceso",
+						"deleteFailed": "No se pudo eliminar la instancia de proceso",
+						"deleteScheduled": "La instancia está programada para eliminación",
+						"forbiddenTitle": "No tiene permiso para realizar esta operación",
+						"forbiddenSubtitle": "Póngase en contacto con su administrador si necesita acceso."
+					},
 					"parentProcessInstanceKey": "Clave de instancia de proceso principal",
 					"viewInstance": "Ver instancia {{key}}",
 					"viewParentInstance": "Ver instancia principal {{key}}",
@@ -700,6 +738,40 @@
 			},
 			"batchOperations": {
 				"title": "Operaciones en lote"
+			},
+			"batchOperation": {
+				"title": "Operaciones en lote",
+				"pageTitle": "Operate: Operación en lote {{name}}",
+				"notFoundNotificationTitle": "No se pudo encontrar la operación en lote {{batchOperationKey}}",
+				"loadErrorTitle": "No se pudieron cargar los detalles de la operación en lote",
+				"backButton": "Volver a operaciones en lote",
+				"forbidden": {
+					"heading": "403 - No tiene permiso para ver esta información",
+					"description": "Póngase en contacto con su administrador para obtener acceso.",
+					"learnMoreLink": "Más información sobre los permisos"
+				},
+				"tiles": {
+					"state": "Estado del lote",
+					"summaryOfItems": "Resumen de elementos",
+					"startDate": "Fecha de inicio",
+					"endDate": "Fecha de finalización",
+					"actor": "Actor"
+				},
+				"itemsTable": {
+					"title": "Elementos",
+					"state": "Estado del lote",
+					"date": "Fecha",
+					"processInstanceKey": "Clave de instancia de proceso",
+					"decisionInstanceKey": "Clave de instancia de decisión",
+					"incidentKey": "Clave de incidente",
+					"noProcessInstance": "Sin instancia de proceso",
+					"noDecisionInstance": "Sin instancia de decisión",
+					"noIncident": "Sin incidente",
+					"viewProcessInstance": "Ver instancia de proceso {{key}}",
+					"viewDecisionInstance": "Ver instancia de decisión {{key}}",
+					"failureReason": "Motivo del fallo: {{message}}",
+					"emptyMessage": "No se encontraron elementos"
+				}
 			},
 			"shared": {
 				"errorMessage": {

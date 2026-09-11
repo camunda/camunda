@@ -62,6 +62,7 @@ describe('<DecisionInstance />', () => {
 
 		await expect.element(screen.getByText('403 - You do not have permission to view this information')).toBeVisible();
 		await expect.element(screen.getByText('Contact your administrator to get access.')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Try again'})).not.toBeInTheDocument();
 		await expect
 			.element(screen.getByRole('link', {name: 'Learn more about permissions'}))
 			.toHaveAttribute(
@@ -83,6 +84,7 @@ describe('<DecisionInstance />', () => {
 		const screen = await renderPage();
 
 		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/decisions');
+		await expect.element(screen.getByRole('button', {name: 'Try again'})).not.toBeInTheDocument();
 		await expect
 			.poll(() => notificationsStore.notifications.map((notification) => notification.title))
 			.toContain(`Decision instance ${DECISION_INSTANCE_ID} could not be found`);

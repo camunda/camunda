@@ -37,19 +37,17 @@ function useTaskCompletion({
 	taskState,
 	assignee,
 	onComplete,
-	isShadcn = false,
 }: {
 	userTaskKey: string;
 	currentUser: string;
 	taskState: UserTask['state'];
 	assignee: string | null;
 	onComplete: () => void;
-	isShadcn?: boolean;
 }) {
 	const queryClient = useQueryClient();
 
 	const actorRef = useActorRef(taskCompletionMachine, {
-		input: {queryClient, userTaskKey, currentUser, initialTaskState: taskState, initialAssignee: assignee, isShadcn},
+		input: {queryClient, userTaskKey, currentUser, initialTaskState: taskState, initialAssignee: assignee},
 	});
 
 	useEffect(() => {

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.agentinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
@@ -47,11 +49,10 @@ import org.junit.Test;
  * <p>COMPLETE is classified {@code PROCESS} so that teardown bookkeeping is not orphaned when a
  * suspended instance is cancelled.
  *
- * <p>{@link io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck} resolves the
- * process instance key for CREATE by looking up the target element instance ({@code
- * elementInstanceKey}), and for UPDATE by looking up the agent instance identified by the command
- * key — both are populated by real clients, so the gate fires for genuine external/internal
- * commands without any test scaffolding.
+ * <p>{@link SuspensionBehavior} resolves the process instance key for CREATE by looking up the
+ * target element instance ({@code elementInstanceKey}), and for UPDATE by looking up the agent
+ * instance identified by the command key — both are populated by real clients, so the gate fires
+ * for genuine external/internal commands without any test scaffolding.
  */
 public class AgentInstanceSuspensionGateTest {
 
@@ -98,8 +99,7 @@ public class AgentInstanceSuspensionGateTest {
             .getValue()
             .getProcessInstanceKey();
 
-    final long agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey, processInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -164,8 +164,7 @@ public class AgentInstanceSuspensionGateTest {
             .getValue()
             .getProcessInstanceKey();
 
-    final long agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey, processInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -210,8 +209,7 @@ public class AgentInstanceSuspensionGateTest {
             .getValue()
             .getProcessInstanceKey();
 
-    final long agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey, processInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -225,6 +223,30 @@ public class AgentInstanceSuspensionGateTest {
             .withRecordKey(agentInstanceKey)
             .getFirst();
     assertThat(completed).isNotNull();
+  }
+
+  private static long createAgentInstance(
+      final long elementInstanceKey, final long processInstanceKey) {
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    return ENGINE
+        .agentInstances()
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLease(jobLease)
+        .create()
+        .getKey();
   }
 
   private static long activateServiceTask() {

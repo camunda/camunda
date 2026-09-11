@@ -8,7 +8,7 @@
 
 import {Button} from '@camunda/design-system';
 import {Link} from '@tanstack/react-router';
-import {FileQuestion} from 'lucide-react';
+import {FileQuestion} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
 import {PageEmptyState} from './PageEmptyState';

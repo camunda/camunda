@@ -30,6 +30,7 @@ import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.multidb.CamundaClientTestFactory;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.authz.EntityType;
@@ -120,6 +121,7 @@ class MeAuthorizationsOidcIT {
   @Test
   void shouldReturnAuthorizationsForMappingRuleDirectlyViaGroupAndViaRole() {
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final CamundaClient client = clientFactory.getCamundaClient(ME_MAPPING_RULE.id());
@@ -167,6 +169,7 @@ class MeAuthorizationsOidcIT {
   @Test
   void shouldFilterMappingRuleAuthorizationsByResourceType() {
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final CamundaClient client = clientFactory.getCamundaClient(ME_MAPPING_RULE.id());
@@ -193,6 +196,7 @@ class MeAuthorizationsOidcIT {
   @Test
   void shouldReturnAuthorizationsForClientDirectlyAndViaGroup() {
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final CamundaClient client = clientFactory.getCamundaClient(ME_CLIENT.clientId());

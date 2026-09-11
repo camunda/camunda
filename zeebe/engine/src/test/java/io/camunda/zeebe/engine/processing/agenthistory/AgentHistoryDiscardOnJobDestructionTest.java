@@ -93,6 +93,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(AGENTIC_JOB_TYPE)
+        .withLeaseToken(fixture.jobLease)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
@@ -146,6 +147,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(EXTERNAL_AGENT_JOB_TYPE)
+        .withLeaseToken(fixture.jobLease)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
@@ -267,16 +269,28 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .getFirst();
     final long elementInstanceKey = serviceTaskInstance.getKey();
 
-    ENGINE.jobs().withType(jobType).activate();
+    final var jobBatch = ENGINE.jobs().withType(jobType).withLease().activate();
     final long jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(jobType)
             .getFirst()
             .getKey();
+    final String jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     final long agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
+            .create()
+            .getKey();
 
     final var historyItemId = Strings.newRandomValidBpmnId();
     ENGINE
@@ -284,6 +298,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
+        .withJobLease(jobLease)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -302,9 +317,13 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .getFirst()
             .getKey();
 
-    return new Fixture(processInstanceKey, elementInstanceKey, jobKey, itemKey);
+    return new Fixture(processInstanceKey, elementInstanceKey, jobKey, jobLease, itemKey);
   }
 
   private record Fixture(
-      long processInstanceKey, long elementInstanceKey, long jobKey, long itemKey) {}
+      long processInstanceKey,
+      long elementInstanceKey,
+      long jobKey,
+      String jobLease,
+      long itemKey) {}
 }

@@ -7,14 +7,10 @@
  */
 
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
-import {Stack, Tag} from '@carbon/react';
-import {ArrowRight, List} from '@carbon/react/icons';
-import {t as _t} from 'i18next';
+import {Badge, Button, Card, CardContent, Heading} from '@camunda/design-system';
+import {ArrowRight, List} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
-import {AsyncActionButton} from '#/tasklist/modules/task-details/components/AsyncActionButton/AsyncActionButton';
 import type {StartProcessStatus} from '#/tasklist/modules/processes/startProcessMachine';
-import styles from './ProcessTile.module.scss';
-import {useMemo} from 'react';
 
 type Props = {
 	process: ProcessDefinition;
@@ -23,90 +19,72 @@ type Props = {
 	onStartProcess: () => void;
 };
 
-function getStartProcessStatusDescription(status: StartProcessStatus): string | undefined {
+function getStartProcessStatusLabel(t: (key: string) => string, status: StartProcessStatus) {
 	if (status === 'active') {
-		return _t('tasklist.processesStartProcessPendingStatusText');
+		return t('tasklist.processesStartProcessPendingStatusText');
 	}
 
 	if (status === 'active-tasks') {
-		return _t('tasklist.processesStartProcessWaitForTasksText');
+		return t('tasklist.processesStartProcessWaitForTasksText');
 	}
 
 	if (status === 'finished') {
-		return _t('tasklist.processesStartProcessSuccess');
+		return t('tasklist.processesStartProcessSuccess');
 	}
 
 	if (status === 'error') {
-		return _t('tasklist.processesStartProcessFailed');
+		return t('tasklist.processesStartProcessFailed');
 	}
 
 	return undefined;
 }
 
-function getInlineLoadingStatus(status: StartProcessStatus) {
-	return status === 'active-tasks' ? 'active' : status;
-}
-
 const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, onStartProcess}) => {
 	const {t} = useTranslation();
 	const displayName = process.name ?? process.processDefinitionId;
-	const statusDescription = getStartProcessStatusDescription(status);
-	const buttonProps = useMemo(
-		() =>
-			({
-				type: 'button',
-				kind: 'tertiary',
-				size: 'sm',
-				renderIcon: process.hasStartForm ? ArrowRight : undefined,
-				disabled: isStartButtonDisabled,
-				onClick: onStartProcess,
-			}) as const,
-		[process.hasStartForm, isStartButtonDisabled, onStartProcess],
-	);
-	const inlineLoadingProps = useMemo(
-		() =>
-			({
-				description: statusDescription,
-				'aria-live': status === 'error' || status === 'finished' ? 'assertive' : 'polite',
-			}) as const,
-		[status, statusDescription],
-	);
+	const isBusy = status === 'active' || status === 'active-tasks';
+	const isStatusVisible = status !== 'inactive';
+	const statusLabel = getStartProcessStatusLabel(t, status);
 
 	return (
-		<div className={styles.container}>
-			<Stack className={styles.content}>
-				<Stack className={styles.titleWrapper}>
-					<div className={styles.titleRow}>
-						<h2 className={styles.title} title={displayName}>
-							{displayName}
-						</h2>
-					</div>
-					<span className={styles.subtitle} title={process.processDefinitionId}>
+		<Card className="h-full" data-testid={`process-tile-${process.processDefinitionKey}`}>
+			<CardContent className="flex h-full min-w-0 flex-col justify-between gap-6">
+				<div className="flex min-w-0 flex-col gap-1">
+					<Heading as="h2" variant="heading-sm" className="truncate" title={displayName}>
+						{displayName}
+					</Heading>
+					<span
+						className="block min-h-4 truncate text-xs leading-4 text-neutral-foreground-subtle"
+						title={process.processDefinitionId}
+					>
 						{displayName === process.processDefinitionId ? '' : process.processDefinitionId}
 					</span>
-				</Stack>
-				<div className={styles.buttonRow}>
-					<ul
-						className={styles.attributes}
-						title={t('tasklist.processesProcessTileAttributes')}
-						aria-hidden={!process.hasStartForm}
-					>
-						{process.hasStartForm ? (
-							<li>
-								<Tag renderIcon={List}>{t('tasklist.processesProcessTileAttributeRequiresForm')}</Tag>
-							</li>
-						) : null}
-					</ul>
-					<AsyncActionButton
-						status={getInlineLoadingStatus(status)}
-						buttonProps={buttonProps}
-						inlineLoadingProps={inlineLoadingProps}
-					>
-						{t('tasklist.processesTileStartProcessButtonLabel')}
-					</AsyncActionButton>
 				</div>
-			</Stack>
-		</div>
+				<div className="flex flex-wrap items-center gap-2">
+					<Button
+						type="button"
+						variant="secondary"
+						size="sm"
+						loading={isBusy}
+						disabled={isStartButtonDisabled}
+						aria-disabled={isStatusVisible || undefined}
+						aria-live={status === 'error' || status === 'finished' ? 'assertive' : 'polite'}
+						onClick={isStatusVisible ? undefined : onStartProcess}
+					>
+						{statusLabel ?? t('tasklist.processesTileStartProcessButtonLabel')}
+						{statusLabel === undefined && process.hasStartForm ? (
+							<ArrowRight aria-hidden className="ml-1 size-4" />
+						) : null}
+					</Button>
+					{process.hasStartForm ? (
+						<Badge className="w-fit gap-1" title={t('tasklist.processesProcessTileAttributes')}>
+							<List aria-hidden className="size-3" />
+							{t('tasklist.processesProcessTileAttributeRequiresForm')}
+						</Badge>
+					) : null}
+				</div>
+			</CardContent>
+		</Card>
 	);
 };
 

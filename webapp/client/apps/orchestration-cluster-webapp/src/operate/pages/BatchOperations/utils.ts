@@ -7,13 +7,7 @@
  */
 
 import {format, parseISO} from 'date-fns';
-
-function formatOperationType(type: string): string {
-	return type
-		.split('_')
-		.map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-		.join(' ');
-}
+import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
 
 function formatStartDate(startDate: string | null | undefined): string {
 	return startDate ? format(parseISO(startDate), 'yyyy-MM-dd HH:mm:ss') : '--';

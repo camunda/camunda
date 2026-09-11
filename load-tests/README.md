@@ -176,6 +176,28 @@ More details about observability can be read [here](../docs/observability.md).
 
 For a full list of Prometheus metrics, SLO targets, and PromQL queries used to evaluate load tests, see [docs/metrics.md](docs/metrics.md).
 
+### Historical results archive (GCS)
+
+The daily stress-test workflow (`camunda-daily-load-tests.yml`) persists each run's aggregated
+metrics, variant manifest, and flamegraphs to
+`gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/<benchmark>/`, outliving both
+the 90-day GH Actions artifact retention and the Prometheus retention window.
+
+To list available runs and then download one for local analysis:
+
+```bash
+gcloud storage ls gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/
+gcloud storage cp -r gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/<benchmark>/ ./<local-dir>/
+```
+
+For more details:
+
+See `camunda/infra-core`'s
+[`docs/benchmark/load-test-results-storage.md`](https://github.com/camunda/infra-core/blob/stage/docs/benchmark/load-test-results-storage.md)
+for bucket setup, and `camunda/team-reliability-testing`'s
+[`knowledge/load-tests/workflows.md`](https://github.com/camunda/team-reliability-testing/blob/main/knowledge/load-tests/workflows.md)
+for how to backfill a run if that failed.
+
 ### Accessing metrics via Claude Code (Grafana MCP)
 
 If you are using Claude Code and have kubectl access to the benchmark cluster, you can query

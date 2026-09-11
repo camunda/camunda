@@ -476,6 +476,35 @@
 				"drainingDescriptionVersion": "This process definition version is scheduled for deletion and will be removed automatically once all of its running instances finish."
 			},
 			"processes": {
+				"toolbar": {
+					"delete": "Delete",
+					"cancel": "Cancel",
+					"retry": "Retry",
+					"discard": "Discard",
+					"selectAll": "Select all items",
+					"selectRow": "Select instance {{key}}",
+					"selected_other": "{{total}} items selected",
+					"selected_one": "{{total}} item selected",
+					"heading": "Apply operation",
+					"apply": "Apply",
+					"confirm_other": "{{total}} instances selected for \"{{action}}\" operation.",
+					"confirm_one": "{{total}} instance selected for \"{{action}}\" operation.",
+					"permanent": "This permanently deletes the selected process instances and their history. This cannot be undone.",
+					"calledInstances": "In case there are called instances, these will be canceled too.",
+					"ignoreFinished": "Finished instances in your selection will be ignored.",
+					"ignoreNonIncident": "Instances without an incident in your selection will be ignored.",
+					"noFinished": "No finished process instances selected. Please select at least one completed or canceled process instance to delete.",
+					"noRunning": "No running process instances selected. Please select at least one active or incident process instance to cancel.",
+					"noIncidents": "No process instances with an incident selected. Please select at least one process instance with an incident to retry.",
+					"actionMode": "Not available in batch modification mode",
+					"started": "The batch operation \"{{operationType}}\" has been started",
+					"progressSubtitle": "You can track its progress in the Batch Operation page",
+					"details": "Go to operation details",
+					"failed": "Operation could not be created",
+					"forbidden": "You don't have permission to perform this operation",
+					"contactAdministrator": "Please contact the administrator if you need access.",
+					"progressUnavailable": "Batch operation progress is temporarily unavailable"
+				},
 				"title": "Processes",
 				"filters": {
 					"processSection": "Process",
@@ -519,6 +548,15 @@
 					"endDate": "End Date",
 					"operationState": "Operation State",
 					"operationStateLoading": "Loading...",
+					"operations": {
+						"header": "Operations",
+						"resolveIncidentsFailed": "Failed to retry incidents",
+						"cancelFailed": "Failed to cancel process instance",
+						"deleteFailed": "Failed to delete process instance",
+						"deleteScheduled": "Instance is scheduled for deletion",
+						"forbiddenTitle": "You don't have permission to perform this operation",
+						"forbiddenSubtitle": "Please contact the administrator if you need access."
+					},
 					"parentProcessInstanceKey": "Parent Process Instance Key",
 					"viewInstance": "View instance {{key}}",
 					"viewParentInstance": "View parent instance {{key}}",
@@ -714,6 +752,40 @@
 			},
 			"batchOperations": {
 				"title": "Batch Operations"
+			},
+			"batchOperation": {
+				"title": "Batch Operations",
+				"pageTitle": "Operate: Batch Operation {{name}}",
+				"notFoundNotificationTitle": "Batch operation {{batchOperationKey}} could not be found",
+				"loadErrorTitle": "Failed to load batch operation details",
+				"backButton": "Back to batch operations",
+				"forbidden": {
+					"heading": "403 - You do not have permission to view this information",
+					"description": "Contact your administrator to get access.",
+					"learnMoreLink": "Learn more about permissions"
+				},
+				"tiles": {
+					"state": "Batch state",
+					"summaryOfItems": "Summary of items",
+					"startDate": "Start date",
+					"endDate": "End date",
+					"actor": "Actor"
+				},
+				"itemsTable": {
+					"title": "Items",
+					"state": "Batch state",
+					"date": "Date",
+					"processInstanceKey": "Process instance key",
+					"decisionInstanceKey": "Decision instance key",
+					"incidentKey": "Incident key",
+					"noProcessInstance": "No process instance",
+					"noDecisionInstance": "No decision instance",
+					"noIncident": "No incident",
+					"viewProcessInstance": "View process instance {{key}}",
+					"viewDecisionInstance": "View decision instance {{key}}",
+					"failureReason": "Failure reason: {{message}}",
+					"emptyMessage": "No items found"
+				}
 			},
 			"shared": {
 				"errorMessage": {

@@ -554,9 +554,13 @@ public class ExporterMigrationTestHelper {
   public static List<String> fetchLatestPatchFromPreviousMinor() {
     final List<String> allVersions = fetchAllPatchesFromPreviousMinor();
     final int len = allVersions.size();
-    final String latestVersion = allVersions.get(len - 1);
-    final int latestReleaseIndex = latestVersion.endsWith("-SNAPSHOT") ? len - 2 : len - 1;
-    return List.of(allVersions.get(latestReleaseIndex));
+    String latestVersion = allVersions.getLast();
+    if (latestVersion.endsWith("-SNAPSHOT")) {
+      if (allVersions.size() > 1) {
+        latestVersion = allVersions.get(len - 2);
+      }
+    }
+    return List.of(latestVersion);
   }
 
   /**
@@ -626,7 +630,7 @@ public class ExporterMigrationTestHelper {
     }
 
     final List<String> allPreviousVersions =
-        findAllPatchVersionsOrLatestAlphaOrReleaseCandidate(PREVIOUS_MINOR_VERSION, allTags);
+        findAllPatchReleaseVersions(PREVIOUS_MINOR_VERSION, allTags);
     final List<String> allVersions = new ArrayList<>(allPreviousVersions);
 
     final String snapshotVersion = PREVIOUS_MINOR_VERSION + "-SNAPSHOT";
@@ -637,7 +641,7 @@ public class ExporterMigrationTestHelper {
     return allVersions;
   }
 
-  static List<String> findAllPatchVersionsOrLatestAlphaOrReleaseCandidate(
+  static List<String> findAllPatchReleaseVersions(
       final String previousMinorVersion, final List<String> allTags) {
 
     final List<SemanticVersion> allPreviousVersions = new ArrayList<>();
@@ -649,6 +653,8 @@ public class ExporterMigrationTestHelper {
       SemanticVersion.parse(tag).ifPresent(allPreviousVersions::add);
     }
 
+    // this may include pre-release versions (as they may not be backwards compatible),
+    // but we won't actually use those we just want to sanity that there are some versions there
     if (allPreviousVersions.isEmpty()) {
       throw new NoSuchElementException("No images found for " + previousMinorVersion);
     }
@@ -661,29 +667,11 @@ public class ExporterMigrationTestHelper {
             .map(SemanticVersion::toString)
             .toList();
 
-    if (!releaseVersions.isEmpty()) {
-      return releaseVersions;
+    if (releaseVersions.isEmpty()) {
+      LOG.warn("No release versions found for {}", previousMinorVersion);
     }
 
-    final List<String> preReleaseVersions =
-        allPreviousVersions.stream()
-            .filter(SemanticVersion::isPreRelease)
-            .map(SemanticVersion::toString)
-            .filter(version -> PRE_RELEASE_PATTERN.matcher(version).matches())
-            .toList();
-
-    if (preReleaseVersions.isEmpty()) {
-      throw new NoSuchElementException(
-          "No release or pre-release images found for " + previousMinorVersion);
-    }
-
-    final var latestNonReleaseVersion = preReleaseVersions.getLast();
-
-    LOG.warn(
-        "No release versions found for {}, returning latest alpha or release candidate ({})",
-        previousMinorVersion,
-        latestNonReleaseVersion);
-    return List.of(latestNonReleaseVersion);
+    return releaseVersions;
   }
 
   private static String getCurrentMinorVersion() {

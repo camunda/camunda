@@ -305,6 +305,8 @@ public final class EventAppliers implements EventApplier {
     register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
     register(TimerIntent.TRIGGERED, new TimerTriggeredApplier(state.getTimerState()));
     register(TimerIntent.MIGRATED, new TimerInstanceMigratedApplier(state.getTimerState()));
+    register(TimerIntent.SUSPENDED, new TimerSuspendedApplier(state.getTimerState()));
+    register(TimerIntent.RESUMED, new TimerResumedApplier(state.getTimerState()));
   }
 
   private void registerDeploymentAppliers(final MutableProcessingState state) {

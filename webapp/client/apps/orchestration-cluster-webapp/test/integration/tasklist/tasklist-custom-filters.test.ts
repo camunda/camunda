@@ -126,14 +126,16 @@ test.describe('Custom filters', () => {
 	});
 
 	test('should edit an existing custom filter with prefilled fields', async ({tasklistIndexPage}) => {
-		await tasklistIndexPage.seedCustomFilters({custom: {assignee: 'all', status: 'completed', bpmnProcess: 'order-1'}});
+		await tasklistIndexPage.seedCustomFilters({
+			custom: {assignee: 'all', status: 'completed', bpmnProcess: 'order-1'},
+		});
 
 		await tasklistIndexPage.goto();
 		await tasklistIndexPage.expandFilters();
 
 		await expect(tasklistIndexPage.customFilterLink('Custom')).toBeVisible();
 
-		await tasklistIndexPage.customFilterActionsButton.click();
+		await tasklistIndexPage.customFilterActionsButton('Custom').click();
 		await tasklistIndexPage.customFilterOverflowItem('Edit').click();
 
 		await expect(tasklistIndexPage.customFiltersModal.dialog).toBeVisible();
@@ -148,7 +150,7 @@ test.describe('Custom filters', () => {
 
 		await expect(tasklistIndexPage.customFilterLink('Custom')).toBeVisible();
 
-		await tasklistIndexPage.customFilterActionsButton.click();
+		await tasklistIndexPage.customFilterActionsButton('Custom').click();
 		await tasklistIndexPage.customFilterOverflowItem('Delete').click();
 
 		await expect(tasklistIndexPage.deleteFilterModal.dialog).toBeVisible();
@@ -178,8 +180,9 @@ test.describe('Custom filters', () => {
 		await tasklistIndexPage.newFilterButton.click();
 
 		await expect(tasklistIndexPage.customFiltersModal.processSelect).toBeVisible();
-		await expect(tasklistIndexPage.customFiltersModal.processSelect).toContainText('All processes');
-		await expect(tasklistIndexPage.customFiltersModal.processSelect).toContainText('Order Process');
-		await expect(tasklistIndexPage.customFiltersModal.processSelect).toContainText('Payment Process');
+		await tasklistIndexPage.customFiltersModal.processSelect.click();
+		await expect(tasklistIndexPage.customFiltersModal.processOption('All processes')).toBeVisible();
+		await expect(tasklistIndexPage.customFiltersModal.processOption('Order Process - v1')).toBeVisible();
+		await expect(tasklistIndexPage.customFiltersModal.processOption('Payment Process - v2')).toBeVisible();
 	});
 });

@@ -24,12 +24,15 @@ This is fundamentally different from the `@testing-library/react` + `vi.mock()` 
 - Co-locate test files with source: a test for `src/shared/foo/bar.tsx` sits at `src/shared/foo/bar.test.tsx`; a test for `src/operate/components/Foo.tsx` sits next to it at `src/operate/components/Foo.test.tsx`. Pod areas follow their own conventions for test placement.
 - Prefix test names with `should` (e.g., `it('should display an error on invalid credentials')`).
 - Do not mock the router. Use `renderWithRouter(Component, {path})` from `#/vitest-modules/render-with-router` when the component needs routing context. It mounts the component in a fresh, isolated TanStack Router backed by an in-memory history — the component receives real route params, search params, and navigation. No full application route tree or global providers are loaded, which keeps tests fast and self-contained. Typed file-route hooks (`Route.useParams()`) will not resolve under the isolated router; use `useParams({from: '/your-path'})` instead.
-- Avoid `vi.mock()` in general. Prefer MSW and real implementations. Vitest mocks couple tests to internals and break on refactors. Reach for them only when there is no practical alternative, such as faking time with `vi.useFakeTimers`.
+- Never use `vi.mock()` for HTTP. For non-HTTP dependencies, prefer real implementations and mock
+  only an unavoidable external or browser boundary.
 - Do not use `// given / when / then` comments — that is a Java backend convention. Structure tests by visual grouping (blank lines between setup, action, and assertion).
 
 ## MSW mocking
 
-Endpoint mocks live in `#/shared-test-modules/endpoints` as a shared dictionary. Each entry is created with `createEndpointMock` from `#/shared-test-modules/mock-endpoint`, which builds a typed MSW handler factory for a given endpoint + HTTP method.
+Endpoint mocks live in `#/shared-test-modules/mock-handlers`. Each entry is created with
+`createEndpointMock` from `#/shared-test-modules/mock-endpoint`, which builds a typed MSW handler
+factory for a given endpoint and HTTP method.
 
 Two shapes:
 
@@ -42,32 +45,9 @@ The `worker` fixture is injected by the custom `it` and auto-resets between test
 
 ### Testing a standalone component (no routing context)
 
-```tsx
-import {render} from 'vitest-browser-react';
-import {it} from '#/vitest-modules/test-extend';
-import {mockUsersEndpoint} from '#/shared-test-modules/mock-handlers';
-import {describe, expect} from 'vitest';
-import {HttpResponse} from 'msw';
-import {UserList} from './UserList';
-
-describe('<UserList />', () => {
-  it('should render users from the API', async ({worker}) => {
-    worker.use(
-      mockUsersEndpoint({
-        successResponse: HttpResponse.json([
-          {name: 'Alice'},
-          {name: 'Bob'},
-        ]),
-      }),
-    );
-
-    const screen = await render(<UserList />);
-
-    await expect.element(screen.getByRole('cell', {name: 'Alice'})).toBeVisible();
-    await expect.element(screen.getByRole('cell', {name: 'Bob'})).toBeVisible();
-  });
-});
-```
+See `src/operate/shared/TenantField/TenantField.test.tsx` for a complete example that registers
+`mockCurrentUserEndpoint`, renders a standalone component with providers, interacts through
+`userEvent`, and asserts through `expect.element()`.
 
 ### Testing a page or component that needs routing context
 
@@ -168,10 +148,11 @@ Format changed files via `npm run prettier:format` from `webapp/client/` and typ
 ## Template references
 
 - `src/shared/pages/LoginPage.test.tsx` — page-level test using `renderWithRouter`.
+- `src/operate/shared/TenantField/TenantField.test.tsx` — standalone component test using a shared
+  endpoint mock.
 - `src/shared/mock-test.test.tsx` — component test with MSW mocking.
 - `src/vitest-modules/test-extend.ts` — custom `it` fixture source.
 - `src/vitest-modules/render-with-router.tsx` — `renderWithRouter` utility source.
 - `shared-test-modules/mock-endpoint.ts` — `createEndpointMock` factory source.
 - `shared-test-modules/mock-handlers.ts` — shared endpoint mock definitions.
 - `docs/monorepo-docs/frontend/testing.md` — full testing guide.
-

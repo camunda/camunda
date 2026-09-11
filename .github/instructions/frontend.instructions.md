@@ -84,4 +84,4 @@ npm run test:visual       # Playwright visual regression (needs Docker)
 - Playwright tests (integration, visual, a11y) use MSW via `@msw/playwright`. See `.claude/skills/frontend-integration-test/`.
 - Follow the pod areas + shared + routes architecture. See `.claude/skills/frontend-feature/`.
 - For Tasklist pod work in `src/tasklist/`, see `.claude/skills/tasklist-frontend/`.
-- For migrating legacy Operate code to the unified app, see `.claude/skills/frontend-migrator/`.
+- For migrating legacy Operate code to the unified app, see `.claude/skills/frontend-operate-migrator/`.

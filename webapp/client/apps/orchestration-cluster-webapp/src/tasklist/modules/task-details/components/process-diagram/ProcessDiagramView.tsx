@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Layer, Tag} from '@carbon/react';
+import {Badge, Card, CardAction, CardHeader, CardTitle} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import {BPMNDiagram} from './BPMNDiagram';
-import styles from './ProcessDiagramView.module.scss';
 
 type Props = {
 	xml: string;
@@ -22,15 +21,17 @@ const ProcessDiagramView: React.FC<Props> = ({xml, elementId, processName, proce
 	const {t} = useTranslation();
 
 	return (
-		<Layer className={styles.container}>
-			<div className={styles.header}>
-				<span className={styles.processName}>{processName}</span>
-				<Tag className={styles.version}>{t('tasklist.processViewProcessVersion', {version: processVersion})}</Tag>
-			</div>
-			<Layer className={styles.diagramFrame}>
+		<div className="flex h-full w-full flex-col p-4 pt-0">
+			<Card className="min-h-0 w-full flex-1">
+				<CardHeader>
+					<CardTitle>{processName}</CardTitle>
+					<CardAction>
+						<Badge variant="neutral">{t('tasklist.processViewProcessVersion', {version: processVersion})}</Badge>
+					</CardAction>
+				</CardHeader>
 				<BPMNDiagram xml={xml} highlightActivity={elementId} />
-			</Layer>
-		</Layer>
+			</Card>
+		</div>
 	);
 };
 

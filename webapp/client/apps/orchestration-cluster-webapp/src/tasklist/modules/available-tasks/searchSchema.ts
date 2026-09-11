@@ -98,7 +98,6 @@ export {
 	tasklistIndexSearchDefaults,
 	enforceSortInvariant,
 	stripCustomFilterParams,
-	FILTER_VALUES,
 	isBuiltInFilter,
 	type TasklistIndexSearch,
 	type CustomFilterSearchParams,

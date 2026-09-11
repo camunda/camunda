@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TableHeader} from '@carbon/react';
+import {Button, TableHead} from '@camunda/design-system';
+import {ArrowDown, ArrowUp, ArrowUpDown} from '@camunda/design-system/icons';
 import {useNavigate} from '@tanstack/react-router';
 import {
 	getNextSortSearchValue,
@@ -14,6 +15,18 @@ import {
 	type TaskDetailsHistorySearch,
 	type TaskDetailsHistorySortField,
 } from '../sortUtils';
+
+const OrderIcon: React.FC<{sortOrder: 'asc' | 'desc'; isActive: boolean}> = ({sortOrder, isActive}) => {
+	if (!isActive) {
+		return <ArrowUpDown className="size-3.5 opacity-50" aria-hidden />;
+	}
+
+	return sortOrder === 'asc' ? (
+		<ArrowUp className="size-3.5" aria-hidden />
+	) : (
+		<ArrowDown className="size-3.5" aria-hidden />
+	);
+};
 
 type Props = {
 	label: string;
@@ -28,28 +41,31 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, search, isDisabled, chil
 	const sort = getSortParams(search);
 
 	if (sortKey === undefined || isDisabled) {
-		return <TableHeader>{children}</TableHeader>;
+		return <TableHead>{children || <span className="sr-only">{label}</span>}</TableHead>;
 	}
 
 	const isActive = sort.sortBy === sortKey;
 	const currentSortOrder = isActive ? sort.sortOrder : undefined;
 
 	return (
-		<TableHeader
-			onClick={() => {
-				void navigate({
-					to: '.',
-					search: (previous) => ({...previous, sort: getNextSortSearchValue(sortKey, currentSortOrder)}),
-				});
-			}}
-			isSortHeader
-			title={`Sort by ${label}`}
-			aria-label={`Sort by ${label}`}
-			sortDirection={isActive ? (currentSortOrder === 'asc' ? 'ASC' : 'DESC') : 'NONE'}
-			isSortable
-		>
-			{children}
-		</TableHeader>
+		<TableHead aria-sort={isActive ? (currentSortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}>
+			<Button
+				variant="ghost"
+				size="sm"
+				className="-mx-2 h-auto gap-1 px-2 py-1 font-medium"
+				onClick={() => {
+					navigate({
+						to: '.',
+						search: (previous) => ({...previous, sort: getNextSortSearchValue(sortKey, currentSortOrder)}),
+					});
+				}}
+				title={`Sort by ${label}`}
+				aria-label={`Sort by ${label}`}
+			>
+				{children}
+				<OrderIcon sortOrder={currentSortOrder ?? 'asc'} isActive={isActive} />
+			</Button>
+		</TableHead>
 	);
 };
 

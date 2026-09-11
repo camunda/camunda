@@ -143,22 +143,67 @@ public class AgentInstanceCompleteTest {
             .withElementType(BpmnElementType.SERVICE_TASK)
             .withElementId(thirdTaskId)
             .getFirst();
+    final var firstJobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var firstJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var firstJobLease =
+        firstJobBatch
+            .getValue()
+            .getJobs()
+            .get(firstJobBatch.getValue().getJobKeys().indexOf(firstJobKey))
+            .getLeaseToken();
+    final var secondJobBatch = ENGINE.jobs().withType("other-agent").withLease().activate();
+    final var secondJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("other-agent")
+            .getFirst()
+            .getKey();
+    final var secondJobLease =
+        secondJobBatch
+            .getValue()
+            .getJobs()
+            .get(secondJobBatch.getValue().getJobKeys().indexOf(secondJobKey))
+            .getLeaseToken();
+    final var thirdJobBatch = ENGINE.jobs().withType("third-agent").withLease().activate();
+    final var thirdJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("third-agent")
+            .getFirst()
+            .getKey();
+    final var thirdJobLease =
+        thirdJobBatch
+            .getValue()
+            .getJobs()
+            .get(thirdJobBatch.getValue().getJobKeys().indexOf(thirdJobKey))
+            .getLeaseToken();
     final var firstAgentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
+            .withJobKey(firstJobKey)
+            .withJobLease(firstJobLease)
             .create()
             .getKey();
     final var secondAgentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
+            .withJobKey(secondJobKey)
+            .withJobLease(secondJobLease)
             .create()
             .getKey();
     final var thirdAgentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(thirdTaskInstance.getKey())
+            .withJobKey(thirdJobKey)
+            .withJobLease(thirdJobLease)
             .create()
             .getKey();
 
@@ -263,10 +308,25 @@ public class AgentInstanceCompleteTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create()
             .getValue()
             .getAgentInstanceKey();

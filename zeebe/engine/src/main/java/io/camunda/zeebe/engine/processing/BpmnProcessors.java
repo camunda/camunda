@@ -101,7 +101,6 @@ public final class BpmnProcessors {
         processingState,
         asyncRequestBehavior,
         cslCheck,
-        timerChecker,
         bpmnBehaviors.jobActivationBehavior(),
         subscriptionCommandSender,
         transientProcessMessageSubscriptionState,
@@ -189,7 +188,6 @@ public final class BpmnProcessors {
       final ProcessingState processingState,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
-      final DueDateTimerCheckScheduler timerChecker,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -216,7 +214,6 @@ public final class BpmnProcessors {
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
             writers,
-            timerChecker,
             suspensionMetrics));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
