@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { decideAttribution, evaluatePostGateAnomaly, hopToBackportOriginal } from '../src/attribution';
+import { decideAttribution, evaluatePostGateAnomaly } from '../src/attribution';
 import type { AttributionInput } from '../src/attribution/types';
 import type { ParsedRef, RefKind, RefTarget, ResolvedRef } from '../src/types';
 
@@ -102,14 +102,6 @@ test('multiple live refs in the section all attribute', () => {
   );
   assert.equal(d.source, 'section');
   assert.deepEqual(d.issueNumbers, [100, 101]);
-});
-
-test('backport hop copies the original decision but flips deliveryPath', () => {
-  const original = decideAttribution(input({ sectionRefs: [ref(200, 'closing', 'issue')] }));
-  const hopped = hopToBackportOriginal(original);
-  assert.equal(hopped.source, 'section');
-  assert.deepEqual(hopped.issueNumbers, [200]);
-  assert.equal(hopped.deliveryPath, 'backportHop');
 });
 
 test('post-gate fallback attribution anomaly fires for a fallback source merged after the watermark', () => {

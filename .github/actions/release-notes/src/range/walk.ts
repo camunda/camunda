@@ -2,11 +2,8 @@ import { execFileSync } from 'node:child_process';
 import type { BaselineStrategy } from './index';
 
 /**
- * The one place that actually runs `git log`. ponytail: a single function
- * that runs one command and parses its output — no generic shell-runner
- * abstraction for a package that shells out exactly once. Args are passed as
- * an argv array (execFileSync, no shell) so a baseline/target ref can never
- * be interpreted as a shell command.
+ * The only place that shells out to git. Args go as an argv array
+ * (execFileSync, no shell) so a ref can never be read as a shell command.
  */
 
 export interface WalkedGitCommit {
@@ -17,12 +14,7 @@ export interface WalkedGitCommit {
 // Unit separator: never appears in a commit subject, unlike ":" or "|".
 const FIELD_SEP = '\x1f';
 
-/**
- * Turn a `BaselineStrategy` (the pure decision from `resolveBaselineStrategy`)
- * into an actual commit SHA/ref. A previousTag strategy already names the ref
- * to diff against; a forkPoint strategy needs the one real git call this
- * package makes for that purpose (`merge-base`).
- */
+/** Turn a `BaselineStrategy` into a ref: previousTag already names one, forkPoint needs `merge-base`. */
 export function resolveBaselineRef(repoDir: string, strategy: BaselineStrategy, target: string): string {
   if (strategy.kind === 'previousTag') return strategy.ref;
   return execFileSync('git', ['merge-base', target, strategy.otherRef], { cwd: repoDir, encoding: 'utf8' }).trim();
