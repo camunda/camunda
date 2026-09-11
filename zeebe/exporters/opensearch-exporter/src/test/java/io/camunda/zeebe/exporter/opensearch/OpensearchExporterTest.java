@@ -561,7 +561,7 @@ final class OpensearchExporterTest {
   final class ValidationTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":", "+"})
     void shouldNotAllowInvalidCharactersInIndexPrefix(final String testCharacter) {
       // given
       config.index.prefix = "test-prefix" + testCharacter;
@@ -571,7 +571,7 @@ final class OpensearchExporterTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":", "+"})
     void shouldNotAllowInvalidCharactersAtBeginningOfIndexPrefix(final String testCharacter) {
       // given
       config.index.prefix = testCharacter + "test-prefix";
@@ -581,7 +581,7 @@ final class OpensearchExporterTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":", "+"})
     void shouldNotAllowInvalidCharactersInMiddleOfIndexPrefix(final String testCharacter) {
       // given
       config.index.prefix = "test" + testCharacter + "prefix";
@@ -595,6 +595,16 @@ final class OpensearchExporterTest {
     void shouldNotAllowInvalidCharactersAtStartOfIndexPrefix(final String testCharacter) {
       // given
       config.index.prefix = testCharacter + "test-prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowPlusCharacterInMiddleOfIndexPrefix() {
+      // given - OpenSearch forbids `+` anywhere in an index name, unlike Elasticsearch, which only
+      // forbids it as a leading character
+      config.index.prefix = "test+prefix";
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);

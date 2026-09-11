@@ -61,6 +61,14 @@ public final class ConfigValidator {
       throw new ExporterException(
           "CamundaExporter index.prefix must not begin with invalid characters [. + - _].");
     }
+    if (!ConnectionTypes.isElasticSearch(configuration.getConnect().getType())
+        && IndexPrefixValidation.hasInvalidCharactersForOpensearch(configuredPrefix)) {
+      throw new ExporterException(
+          String.format(
+              "CamundaExporter index.prefix must not contain invalid characters [+] when "
+                  + "connect.type is opensearch. Current value: '%s'",
+              configuredPrefix));
+    }
     if (IndexPrefixValidation.hasUppercaseCharacters(configuredPrefix)) {
       throw new ExporterException(
           String.format(
