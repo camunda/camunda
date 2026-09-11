@@ -30,6 +30,15 @@ class PortRange implements Iterator<InetSocketAddress> {
     currentOffset = 0;
   }
 
+  PortRange(final String host, final int forkNumber) {
+    this.host = host;
+    basePort = 0;
+    maxOffset = 0;
+    this.forkNumber = forkNumber;
+
+    currentOffset = 0;
+  }
+
   @Override
   public boolean hasNext() {
     return true;
@@ -44,13 +53,25 @@ class PortRange implements Iterator<InetSocketAddress> {
 
   private int nextPort() {
     int next;
-    do {
-      next = basePort + (currentOffset++ % maxOffset);
-    } while (!portAvailable(next));
+    if (maxOffset == 0) {
+      next = ephemeralPort();
+    } else {
+      do {
+        next = basePort + (currentOffset++ % maxOffset);
+      } while (!portAvailable(next));
+    }
 
     SocketUtil.LOG.info(
         "Choosing next port {} for test fork {} with range {}", next, forkNumber, this);
     return next;
+  }
+
+  private int ephemeralPort() {
+    try (final ServerSocket socket = new ServerSocket(0)) {
+      return socket.getLocalPort();
+    } catch (final IOException e) {
+      throw new IllegalStateException("Unable to allocate an ephemeral test port", e);
+    }
   }
 
   private boolean portAvailable(final int port) {
