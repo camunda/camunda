@@ -157,6 +157,17 @@ async function run(): Promise<void> {
   writeFileSync(`${input.outputDir}/comments.json`, JSON.stringify(result.commentsJson, null, 2));
   core.setOutput('customer-body', result.customerBody);
 
+  // Both bodies, so a reviewer can see exactly what the customer gets vs. the
+  // full internal asset — same rendering guard as every other output: written
+  // even when the unattributed guard trips, never skipped on failure.
+  await core.summary
+    .addHeading(`Release notes — ${input.targetVersion}`, 2)
+    .addHeading('Customer-facing body', 3)
+    .addRaw(result.customerBody)
+    .addHeading('Full asset (includes internal-only sections)', 3)
+    .addRaw(result.fullAsset)
+    .write();
+
   // Every output above is written even when the unattributed guard trips —
   // audit.json's whole purpose is explaining which PRs and why — so the job
   // fails only AFTER the diagnostic outputs exist on disk.
