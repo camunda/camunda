@@ -1,6 +1,3 @@
-"""Query-file loading, substitution, and validation."""
-
-import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -14,12 +11,6 @@ from pydantic import ValidationError
 from pydantic import model_validator
 
 from .errors import ReportError
-
-DEFAULT_QUERIES = "camunda"
-BUILTIN_QUERY_FILES = {
-    "camunda": "report-queries.yaml",
-    "stable-87": "report-queries-stable-87.yaml",
-}
 
 
 class Query(BaseModel):
@@ -47,36 +38,16 @@ class QueriesDocument(BaseModel):
         return self
 
 
-def resolve_queries_file(script_dir: Path, queries: str) -> Path:
-    if queries in BUILTIN_QUERY_FILES:
-        return script_dir / BUILTIN_QUERY_FILES[queries]
-
-    queries_file = Path(queries)
-    if queries_file.is_file():
-        return queries_file
-
-    if queries_file.exists():
-        raise ReportError(f"--queries '{queries}' must be a file.")
-
-    supported_queries = ", ".join(BUILTIN_QUERY_FILES)
-    raise ReportError(
-        f"Unsupported --queries '{queries}'. Expected a built-in name ({supported_queries}) or an existing file."
-    )
-
-
 def load_query_document(queries_file: Path, substitutions: Mapping[str, str]) -> QueriesDocument:
     parsed = parse_query_file(queries_file, substitutions)
     return validate_query_document(parsed, f"queries file {queries_file}")
 
 
 def parse_query_file(queries_file: Path, substitutions: Mapping[str, str]) -> Any:
-    raw_document = substitute_query_text(queries_file.read_text(encoding="utf-8"), substitutions)
-    if queries_file.suffix.lower() == ".json":
-        try:
-            return json.loads(raw_document)
-        except json.JSONDecodeError as error:
-            raise ReportError(f"Could not parse queries file {queries_file}: {error}") from error
+    if queries_file.suffix.lower() not in {".yaml", ".yml"}:
+        raise ReportError(f"Queries file {queries_file} must use YAML format.")
 
+    raw_document = substitute_query_text(queries_file.read_text(encoding="utf-8"), substitutions)
     try:
         return yaml.safe_load(raw_document)
     except yaml.YAMLError as error:

@@ -1,4 +1,4 @@
-# Built-in Camunda 8.7 query set for load-test-report.
+# Packaged Camunda 8.7 query set for load-test-report.
 #
 # 8.7 Zeebe broker and gateway layout plus common load-test metrics.
 # Pass --queries <path> to use one custom file with the same top-level `queries:` schema.
