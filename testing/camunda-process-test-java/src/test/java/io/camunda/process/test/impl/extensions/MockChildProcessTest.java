@@ -25,7 +25,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
-import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -72,7 +71,7 @@ public class MockChildProcessTest {
 
   @Captor private ArgumentCaptor<BpmnModelInstance> processModelCaptor;
 
-  private CamundaProcessTestContext processTestContext;
+  private CamundaProcessTestContextImpl processTestContext;
 
   @BeforeEach
   void configureMocks() {
@@ -111,6 +110,27 @@ public class MockChildProcessTest {
 
     // the process has no service tasks (it's a simple start → end)
     assertThat(deployedModel.getModelElementsByType(ServiceTask.class)).isEmpty();
+  }
+
+  @Test
+  void shouldRememberTheMockedChildProcess() {
+    // when
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID);
+
+    // then
+    assertThat(processTestContext.getMockedChildProcessIds()).containsExactly(CHILD_PROCESS_ID);
+  }
+
+  @Test
+  void shouldForgetTheMockedChildProcessWhenCleared() {
+    // given
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID);
+
+    // when
+    processTestContext.clearMockedChildProcessIds();
+
+    // then
+    assertThat(processTestContext.getMockedChildProcessIds()).isEmpty();
   }
 
   @Test

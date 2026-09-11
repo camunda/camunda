@@ -133,7 +133,7 @@ public class CamundaProcessTestExtension
   private DataDeletionMode dataDeletionMode = CamundaProcessTestRuntimeDefaults.DATA_DELETION_MODE;
   private Instant testCaseStartTime;
 
-  private CamundaProcessTestContext camundaProcessTestContext;
+  private CamundaProcessTestContextImpl camundaProcessTestContext;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
       new ConditionalBehaviorEngine();
 
@@ -305,6 +305,10 @@ public class CamundaProcessTestExtension
               + "Make sure that you registering the extension on a static field.");
     }
 
+    // a test starts without mocks, so that a process mocked by a previous test is not taken for
+    // mocked in this one
+    camundaProcessTestContext.clearMockedChildProcessIds();
+
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -394,7 +398,8 @@ public class CamundaProcessTestExtension
           context.getRequiredTestClass(),
           getCoverageTestName(context),
           getDisplayName(context),
-          coverageData);
+          coverageData,
+          camundaProcessTestContext.getMockedChildProcessIds());
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }

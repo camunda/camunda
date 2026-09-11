@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +37,7 @@ import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -151,6 +153,22 @@ public class JunitExtensionTest {
     assertThat(camundaProcessTestContext.getCamundaRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(camundaProcessTestContext.getConnectorsAddress())
         .isEqualTo(connectorsRestApiAddress);
+  }
+
+  @Test
+  void shouldForgetMockedChildProcessesOfThePreviousTest() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+    extension.beforeAll(extensionContext);
+
+    final CamundaProcessTestContextImpl context = spyOnTestContext(extension);
+
+    // when
+    extension.beforeEach(extensionContext);
+
+    // then: a process mocked by a previous test is not taken for mocked in this one
+    verify(context).clearMockedChildProcessIds();
   }
 
   @Test
@@ -360,6 +378,20 @@ public class JunitExtensionTest {
   @CamundaProcessTest
   private static final class MainProcessTest {
     static class NestedProcessTest {}
+  }
+
+  /** Replaces the test context of the extension with a spy of it, to observe the calls on it. */
+  private CamundaProcessTestContextImpl spyOnTestContext(
+      final CamundaProcessTestExtension extension) throws Exception {
+    final Field contextField =
+        CamundaProcessTestExtension.class.getDeclaredField("camundaProcessTestContext");
+    contextField.setAccessible(true);
+
+    final CamundaProcessTestContextImpl context =
+        spy((CamundaProcessTestContextImpl) contextField.get(extension));
+    contextField.set(extension, context);
+
+    return context;
   }
 
   @Nested
