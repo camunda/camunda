@@ -167,7 +167,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
-    camundaProcessTestContext.clearMockedChildProcessIds();
+    camundaProcessTestContext.clearMockedChildProcessDefinitionKeys();
 
     client = createClient(camundaProcessTestContext);
 
@@ -234,7 +234,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
           runName,
           displayName,
           coverageTestData,
-          camundaProcessTestContext.getMockedChildProcessIds());
+          camundaProcessTestContext.getMockedChildProcessDefinitionKeys());
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }

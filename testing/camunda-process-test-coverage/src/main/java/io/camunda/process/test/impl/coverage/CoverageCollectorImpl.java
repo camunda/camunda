@@ -53,7 +53,7 @@ public final class CoverageCollectorImpl implements CoverageCollector {
       final String runName,
       final String displayName,
       final CoverageTestData testData,
-      final Collection<String> mockedProcessDefinitionIds) {
+      final Collection<Long> mockedProcessDefinitionKeys) {
 
     final String testClassName = getCollectorKey(testClass);
     final CoverageReportCollector coverageReportCollector =
@@ -64,7 +64,7 @@ public final class CoverageCollectorImpl implements CoverageCollector {
                     testClass, excludedProcessDefinitionIds, excludedDecisionDefinitionIds));
 
     coverageReportCollector.collectTestRunCoverage(
-        runName, displayName, testData, mockedProcessDefinitionIds);
+        runName, displayName, testData, mockedProcessDefinitionKeys);
     return coverageReporter.createSuiteCoverageReport(coverageReportCollector);
   }
 

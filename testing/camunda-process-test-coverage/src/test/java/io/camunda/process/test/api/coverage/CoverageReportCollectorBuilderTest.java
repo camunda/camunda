@@ -93,12 +93,13 @@ class CoverageReportCollectorBuilderTest {
   }
 
   @Test
-  void shouldNotReportCoverageOfAProcessMockedInTheRun() {
+  void shouldNotReportCoverageOfAStubDeployedInTheRun() {
     // given
     final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
 
     final ProcessInstance stubInstance = mock(ProcessInstance.class);
     when(stubInstance.getProcessDefinitionId()).thenReturn("mocked-process");
+    when(stubInstance.getProcessDefinitionKey()).thenReturn(111L);
 
     final CoverageTestData testData =
         ImmutableCoverageTestData.builder()
@@ -111,11 +112,7 @@ class CoverageReportCollectorBuilderTest {
     // when
     final CoverageReport report =
         coverageCollector.collectTestRunCoverage(
-            MockingTest.class,
-            "run-1",
-            null,
-            testData,
-            java.util.Collections.singletonList("mocked-process"));
+            MockingTest.class, "run-1", null, testData, java.util.Collections.singletonList(111L));
 
     // then: the mocked process is not part of the report
     assertThat(report.getSuites())
