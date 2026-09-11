@@ -13,6 +13,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 
+/**
+ * V2 of the REJECTED applier. Guards subscription removal against stale generations: when the
+ * stored subscription belongs to a newer generation (created by a suspend/resume cycle), the
+ * removal is skipped so the live replacement survives, while the correlation lock is still
+ * released.
+ *
+ * <p>See <a href="https://github.com/camunda/camunda/issues/61099">#61099</a>.
+ */
 public final class MessageSubscriptionRejectedV2Applier
     implements TypedEventApplier<MessageSubscriptionIntent, MessageSubscriptionRecord> {
 
@@ -28,7 +36,12 @@ public final class MessageSubscriptionRejectedV2Applier
 
   @Override
   public void applyState(final long key, final MessageSubscriptionRecord value) {
-    subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
+    final long eventSubscriptionKey = value.getSubscriptionKey();
+    final var stored =
+        subscriptionState.get(value.getElementInstanceKey(), value.getMessageNameBuffer());
+    if (stored == null || eventSubscriptionKey == -1L || stored.getKey() == eventSubscriptionKey) {
+      subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
+    }
     messageState.removeMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());
   }
 }
