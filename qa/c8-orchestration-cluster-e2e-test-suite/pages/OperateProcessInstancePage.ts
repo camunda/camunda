@@ -326,7 +326,7 @@ class OperateProcessInstancePage {
       readModeValue: this.variableValueCellLocator(name).getByTestId(
         'edit-variable-value-readonly',
       ),
-      editor: this.variableValueCellLocator(name).getByRole('code'),
+      editor: this.variableValueCellLocator(name).locator('.cm-content'),
       editVariableModal: {
         button: this.variableButtonsCellLocator(name).getByRole('button', {
           name: 'Edit',
@@ -371,7 +371,14 @@ class OperateProcessInstancePage {
       },
     });
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
-    this.editor = page.getByRole('code');
+    // In modification mode every variable renders its own inline CodeMirror
+    // editor simultaneously, so target only the focused one (where keyboard
+    // input actually lands). The dialog fallback keeps the shared fill/clear
+    // helpers working for the maximized JSON editor modal, which still uses
+    // Monaco (role="code").
+    this.editor = page.locator(
+      '.cm-content:focus, [role="dialog"] [role="code"]',
+    );
     this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
     this.editButton = page.getByRole('button', {name: 'Edit'});
@@ -423,9 +430,14 @@ class OperateProcessInstancePage {
     await this.waitForIconWithRetry(this.activeIcon, 'Active', 90000);
   }
   getEditVariableFieldSelector(variableName: string) {
+    // Target the CodeMirror editable content directly: it is both a valid
+    // click/focus target and holds only the variable value, whereas the
+    // wrapper's text also picks up the editor's visually-hidden label and
+    // screen-reader announcements (e.g. "Selection deleted").
     return this.page
       .getByTestId(`variable-${variableName}`)
-      .getByTestId('edit-variable-value');
+      .getByTestId('edit-variable-value')
+      .locator('.cm-content');
   }
 
   getNewVariableNameFieldSelector = (variableName: string) => {
