@@ -307,7 +307,7 @@ public class CamundaProcessTestExtension
 
     // a test starts without mocks, so that a process mocked by a previous test is not taken for
     // mocked in this one
-    camundaProcessTestContext.clearMockedChildProcessIds();
+    camundaProcessTestContext.clearMockedChildProcessDefinitionKeys();
 
     // inject fields
     try {
@@ -399,7 +399,7 @@ public class CamundaProcessTestExtension
           getCoverageTestName(context),
           getDisplayName(context),
           coverageData,
-          camundaProcessTestContext.getMockedChildProcessIds());
+          camundaProcessTestContext.getMockedChildProcessDefinitionKeys());
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }

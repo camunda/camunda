@@ -54,8 +54,8 @@ public interface CoverageCollector {
    * @param displayName Optional custom display name (e.g. from {@code @DisplayName}), or {@code
    *     null} if not set
    * @param testData Snapshot of all test run data required for coverage calculation
-   * @param mockedProcessDefinitionIds Ids of the processes that this run mocked, whose instances
-   *     are stubs rather than the process under test
+   * @param mockedProcessDefinitionKeys Keys of the process definitions that this run deployed as a
+   *     stub of a mocked process, whose instances are stubs rather than the process under test
    * @return Coverage report for the current suite
    */
   CoverageReport collectTestRunCoverage(
@@ -63,7 +63,7 @@ public interface CoverageCollector {
       String runName,
       String displayName,
       CoverageTestData testData,
-      Collection<String> mockedProcessDefinitionIds);
+      Collection<Long> mockedProcessDefinitionKeys);
 
   /**
    * Generates coverage reports (JSON/HTML), prints coverage summary, and returns the aggregated

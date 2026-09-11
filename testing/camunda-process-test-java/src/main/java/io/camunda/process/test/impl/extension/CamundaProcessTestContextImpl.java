@@ -128,7 +128,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
   private final Supplier<CamundaDataSource> dataSourceSupplier;
-  private final Set<String> mockedChildProcessIds = ConcurrentHashMap.newKeySet();
+  private final Set<Long> mockedChildProcessDefinitionKeys = ConcurrentHashMap.newKeySet();
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -216,23 +216,23 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public MockChildProcessBuilder mockChildProcess() {
     final CamundaClient client = createClient();
-    return new MockChildProcessBuilderImpl(client, mockedChildProcessIds::add);
+    return new MockChildProcessBuilderImpl(client, mockedChildProcessDefinitionKeys::add);
   }
 
   /**
-   * Returns the processes that are mocked at the moment. Their instances are stubs deployed by
-   * {@link #mockChildProcess()} instead of the process itself, for example when collecting the
-   * coverage of a test.
+   * Returns the process definitions that {@link #mockChildProcess()} deployed as a stub so far.
+   * Their instances are stubs of the mocked process rather than the process itself, for example
+   * when collecting the coverage of a test.
    *
-   * @return The ids of the mocked processes, as they are now
+   * @return The keys of the deployed stubs, as they are now
    */
-  public Set<String> getMockedChildProcessIds() {
-    return new HashSet<>(mockedChildProcessIds);
+  public Set<Long> getMockedChildProcessDefinitionKeys() {
+    return new HashSet<>(mockedChildProcessDefinitionKeys);
   }
 
-  /** Forgets the mocked processes, so that the next test starts without mocks. */
-  public void clearMockedChildProcessIds() {
-    mockedChildProcessIds.clear();
+  /** Forgets the deployed stubs, so that the next test starts without mocks. */
+  public void clearMockedChildProcessDefinitionKeys() {
+    mockedChildProcessDefinitionKeys.clear();
   }
 
   @Override

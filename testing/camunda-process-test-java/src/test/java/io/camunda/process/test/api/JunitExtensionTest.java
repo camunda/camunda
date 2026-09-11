@@ -168,7 +168,7 @@ public class JunitExtensionTest {
     extension.beforeEach(extensionContext);
 
     // then: a process mocked by a previous test is not taken for mocked in this one
-    verify(context).clearMockedChildProcessIds();
+    verify(context).clearMockedChildProcessDefinitionKeys();
   }
 
   @Test
@@ -375,11 +375,6 @@ public class JunitExtensionTest {
     verify(camundaRuntimeBuilder).withContainerProvidersServiceLoaderEnabled(true);
   }
 
-  @CamundaProcessTest
-  private static final class MainProcessTest {
-    static class NestedProcessTest {}
-  }
-
   /** Replaces the test context of the extension with a spy of it, to observe the calls on it. */
   private CamundaProcessTestContextImpl spyOnTestContext(
       final CamundaProcessTestExtension extension) throws Exception {
@@ -392,6 +387,11 @@ public class JunitExtensionTest {
     contextField.set(extension, context);
 
     return context;
+  }
+
+  @CamundaProcessTest
+  private static final class MainProcessTest {
+    static class NestedProcessTest {}
   }
 
   @Nested

@@ -51,6 +51,11 @@ class CoverageReportCollectorTest {
               .endEvent("end")
               .done());
 
+  /** A smaller model that an earlier test deploys under the same process definition id. */
+  private static final String SMALL_XML =
+      Bpmn.convertToString(
+          Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start").endEvent("end").done());
+
   /** The stub that {@code MOCK_CHILD_PROCESS} deploys under the mocked process id. */
   private static final String MOCK_STUB_XML =
       Bpmn.convertToString(
@@ -60,22 +65,22 @@ class CoverageReportCollectorTest {
               .done());
 
   /**
-   * A test class can mock a child process in one test and run the real one in another. Both runs
-   * report coverage for the same process definition id, but only the real model describes the
+   * A test class can deploy different models under one process definition id, for example when a
+   * later test deploys a fixture with more elements. Only the most complete model describes the
    * process.
    */
   @Test
-  void shouldKeepTheMostCompleteModelWhenARunDeploysAMockStub() {
+  void shouldKeepTheMostCompleteModelWhenARunDeploysASmallerModel() {
     // given
     final CoverageReportCollector collector =
         new CoverageReportCollector(
             CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
 
-    // when: the run that mocks the child process comes first
+    // when: the run that deploys the smaller model comes first
     collector.collectTestRunCoverage(
-        "mockingRun", null, testDataOf(MOCK_STUB_XML), Collections.emptyList());
+        "smallModelRun", null, testDataOf(111L, SMALL_XML), Collections.emptyList());
     collector.collectTestRunCoverage(
-        "realRun", null, testDataOf(REAL_XML), Collections.emptyList());
+        "realRun", null, testDataOf(222L, REAL_XML), Collections.emptyList());
 
     // then
     assertThat(collector.getModels())
@@ -93,9 +98,9 @@ class CoverageReportCollectorTest {
         new CoverageReportCollector(
             CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
 
-    // when
+    // when: the run deployed the stub as the process definition with the key 111
     collector.collectTestRunCoverage(
-        "mockingRun", null, testDataOf(MOCK_STUB_XML), Collections.singletonList(PROCESS_ID));
+        "mockingRun", null, testDataOf(111L, MOCK_STUB_XML), Collections.singletonList(111L));
 
     // then: the stub contributes neither a model nor coverage
     assertThat(collector.getModels()).isEmpty();
@@ -107,44 +112,51 @@ class CoverageReportCollectorTest {
   }
 
   /**
-   * The report cannot tell a stub from the process it mocks by its model alone, so the collector
-   * has to remember which processes its suite mocked - in any of its runs, as the run that reports
-   * a stub model is not the run that mocked the process.
+   * The instances of a mocked process outlive the run that mocked it when the test data between
+   * runs is kept. A later run that does not mock the process must not count them either: they are
+   * instances of the stub, and counting them reports elements of the stub as coverage of the
+   * process.
    */
   @Test
-  void shouldRememberTheProcessesThatAnyRunMocked() {
-    // given
+  void shouldNotCollectCoverageOfAStubInstanceOfAnEarlierRun() {
+    // given: a run that mocked the child process
     final CoverageReportCollector collector =
         new CoverageReportCollector(
             CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
-
-    // when: only one of the runs mocks the child process
     collector.collectTestRunCoverage(
-        "mockingRun", null, testDataOf(MOCK_STUB_XML), Collections.singletonList(PROCESS_ID));
-    collector.collectTestRunCoverage(
-        "realRun", null, testDataOf(REAL_XML), Collections.emptyList());
+        "mockingRun", null, testDataOf(111L, MOCK_STUB_XML), Collections.singletonList(111L));
 
-    // then
-    assertThat(collector.getMockedProcessDefinitionIds()).containsExactly(PROCESS_ID);
+    // when: a later run does not mock it, but the stub instance of the earlier run is still around
+    collector.collectTestRunCoverage(
+        "realRun",
+        null,
+        ImmutableCoverageTestData.builder()
+            .addProcessInstanceData(processInstanceDataOf(111L))
+            .addProcessInstanceData(processInstanceDataOf(222L))
+            .addProcessDefinitionData(processDefinitionDataOf(1, 111L, MOCK_STUB_XML))
+            .addProcessDefinitionData(processDefinitionDataOf(2, 222L, REAL_XML))
+            .build(),
+        Collections.emptyList());
+
+    // then: only the instance of the real process is coverage of it
+    assertThat(collector.getModels())
+        .singleElement()
+        .extracting(ProcessModel::getXml)
+        .asString()
+        .contains("realTask");
+    assertThat(collector.getSuite().getRuns())
+        .filteredOn(run -> run.getName().equals("realRun"))
+        .singleElement()
+        .extracting(CoverageRunReport::getProcessCoverages)
+        .asInstanceOf(InstanceOfAssertFactories.LIST)
+        .hasSize(1);
   }
 
   /** Builds the data of a test run that ran a single instance of the given process model. */
-  private static CoverageTestData testDataOf(final String xml) {
-    final ProcessDefinition processDefinition = mock(ProcessDefinition.class);
-    when(processDefinition.getProcessDefinitionId()).thenReturn(PROCESS_ID);
-    when(processDefinition.getVersion()).thenReturn(1);
-
-    final ProcessInstance processInstance = mock(ProcessInstance.class);
-    when(processInstance.getProcessDefinitionId()).thenReturn(PROCESS_ID);
-
+  private static CoverageTestData testDataOf(final long processDefinitionKey, final String xml) {
     return ImmutableCoverageTestData.builder()
-        .addProcessInstanceData(
-            ImmutableCoverageProcessInstanceData.builder().processInstance(processInstance).build())
-        .addProcessDefinitionData(
-            ImmutableCoverageProcessDefinitionData.builder()
-                .processDefinition(processDefinition)
-                .xml(xml)
-                .build())
+        .addProcessInstanceData(processInstanceDataOf(processDefinitionKey))
+        .addProcessDefinitionData(processDefinitionDataOf(1, processDefinitionKey, xml))
         .build();
   }
 

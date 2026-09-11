@@ -17,7 +17,9 @@ package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -112,25 +114,48 @@ public class MockChildProcessTest {
     assertThat(deployedModel.getModelElementsByType(ServiceTask.class)).isEmpty();
   }
 
+  /**
+   * The stub is deployed under the id of the process it mocks, so only its process definition key
+   * tells its instances from the instances of the process itself.
+   */
   @Test
-  void shouldRememberTheMockedChildProcess() {
+  void shouldRememberTheDeployedStub() {
+    // given
+    mockStubDeployment(123L);
+
     // when
     processTestContext.mockChildProcess(CHILD_PROCESS_ID);
 
     // then
-    assertThat(processTestContext.getMockedChildProcessIds()).containsExactly(CHILD_PROCESS_ID);
+    assertThat(processTestContext.getMockedChildProcessDefinitionKeys()).containsExactly(123L);
   }
 
   @Test
-  void shouldForgetTheMockedChildProcessWhenCleared() {
+  void shouldForgetTheDeployedStubWhenCleared() {
     // given
+    mockStubDeployment(123L);
     processTestContext.mockChildProcess(CHILD_PROCESS_ID);
 
     // when
-    processTestContext.clearMockedChildProcessIds();
+    processTestContext.clearMockedChildProcessDefinitionKeys();
 
     // then
-    assertThat(processTestContext.getMockedChildProcessIds()).isEmpty();
+    assertThat(processTestContext.getMockedChildProcessDefinitionKeys()).isEmpty();
+  }
+
+  /** Lets the deployment of the stub report the given process definition key. */
+  private void mockStubDeployment(final long processDefinitionKey) {
+    final io.camunda.client.api.response.Process deployedProcess =
+        mock(io.camunda.client.api.response.Process.class);
+    when(deployedProcess.getProcessDefinitionKey()).thenReturn(processDefinitionKey);
+
+    when(camundaClient
+            .newDeployResourceCommand()
+            .addProcessModel(any(), anyString())
+            .send()
+            .join()
+            .getProcesses())
+        .thenReturn(Collections.singletonList(deployedProcess));
   }
 
   @Test

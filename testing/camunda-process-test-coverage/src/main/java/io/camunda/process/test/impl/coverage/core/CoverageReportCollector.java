@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.client.api.search.response.DecisionDefinitionType;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.coverage.model.CoverageRunReport;
 import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
@@ -29,7 +30,6 @@ import io.camunda.process.test.impl.coverage.data.CoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -54,7 +54,7 @@ public final class CoverageReportCollector {
   private final Map<String, ProcessModel> models = new HashMap<>();
   private final Map<String, DecisionModel> decisionModels = new HashMap<>();
   private final List<CoverageRunReport> coverageRunReports = new ArrayList<>();
-  private final Set<String> mockedProcessDefinitionIds = new LinkedHashSet<>();
+  private final Set<Long> mockedProcessDefinitionKeys = new LinkedHashSet<>();
 
   private final String suiteId;
   private final String suiteName;
@@ -79,20 +79,19 @@ public final class CoverageReportCollector {
    * @param runName Identifier for the current test run (the test method name)
    * @param displayName Optional custom display name for the test case (e.g. from
    *     {@code @DisplayName}), or {@code null} if not set
-   * @param mockedProcessDefinitionIds Ids of the processes that this run mocked, whose instances
-   *     are stubs rather than the process under test
+   * @param mockedProcessDefinitionKeys Keys of the process definitions that this run deployed as a
+   *     stub of a mocked process, whose instances are stubs rather than the process under test
    */
   public void collectTestRunCoverage(
       final String runName,
       final String displayName,
       final CoverageTestData testResults,
-      final Collection<String> mockedProcessDefinitionIds) {
-    this.mockedProcessDefinitionIds.addAll(mockedProcessDefinitionIds);
+      final Collection<Long> mockedProcessDefinitionKeys) {
+    this.mockedProcessDefinitionKeys.addAll(mockedProcessDefinitionKeys);
 
     final List<CoverageProcessInstanceData> filteredProcessInstanceData =
         testResults.getProcessInstanceData().stream()
-            .filter(
-                processInstanceData -> !isExcluded(processInstanceData, mockedProcessDefinitionIds))
+            .filter(processInstanceData -> !isExcluded(processInstanceData))
             .collect(Collectors.toList());
 
     // the models of this run, keyed by the deployment that ran: a test can run several deployments
@@ -168,25 +167,20 @@ public final class CoverageReportCollector {
   }
 
   /**
-   * Gets the ids of the processes that this suite mocked in any of its runs.
+   * Tells whether an instance is coverage of the process under test.
    *
-   * <p>A model this suite reports for such a process may be the stub the mock deployed rather than
-   * the process itself: a run that did not declare the mock collects the stub instances of the runs
-   * that did, when the test data of the previous runs is not deleted.
+   * <p>An instance of a stub that a mock deployed is not: it is an instance of a few elements
+   * standing in for the process, not of the process itself. The stubs of all runs of this suite are
+   * recognised, not only those of the current run, because the instances of a previous run are
+   * still around when the test data between runs is kept.
    *
-   * @return The ids of the processes mocked by this suite
+   * @param processInstanceData The instance to judge
+   * @return {@code true} if the instance must not be counted as coverage
    */
-  public Set<String> getMockedProcessDefinitionIds() {
-    return Collections.unmodifiableSet(mockedProcessDefinitionIds);
-  }
-
-  private boolean isExcluded(
-      final CoverageProcessInstanceData processInstanceData,
-      final Collection<String> mockedProcessDefinitionIds) {
-    final String processDefinitionId =
-        processInstanceData.getProcessInstance().getProcessDefinitionId();
-    return excludedProcessDefinitionIds.contains(processDefinitionId)
-        || mockedProcessDefinitionIds.contains(processDefinitionId);
+  private boolean isExcluded(final CoverageProcessInstanceData processInstanceData) {
+    final ProcessInstance processInstance = processInstanceData.getProcessInstance();
+    return excludedProcessDefinitionIds.contains(processInstance.getProcessDefinitionId())
+        || mockedProcessDefinitionKeys.contains(processInstance.getProcessDefinitionKey());
   }
 
   private List<DecisionCoverage> collectDecisionCoverages(final CoverageTestData dataSource) {
