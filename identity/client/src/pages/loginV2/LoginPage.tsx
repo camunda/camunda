@@ -8,11 +8,17 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Button, cn, Heading, Link, Text } from "@camunda/design-system";
+import {
+  Button,
+  cn,
+  Heading,
+  Link,
+  Text,
+  CamundaLogo,
+} from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { disableSession, isLoggedIn, login } from "src/utility/auth";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
-import CamundaLogo from "src/assets/images/camunda.svg";
 import { useLicense } from "src/utility/license.ts";
 import TextField from "src/components/formV2/TextField";
 import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
@@ -136,7 +142,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultRedirectUrl }) => {
     <Page className="h-dvh">
       <div className="mx-auto flex w-100 flex-col">
         <div className="m-8 flex flex-col items-center gap-2">
-          <CamundaLogo />
+          <CamundaLogo className="size-12" />
           <Heading as="h1" variant="heading-xl">
             {t("admin")}
           </Heading>
