@@ -1,0 +1,19 @@
+{
+  "properties": [
+    {
+      "name": "camunda.document.assigned",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Selects which configured document store ids are active for a physical tenant. Must not be set at the root level; it is only relevant per physical tenant and must be set under 'camunda.physical-tenants.[tenant-id].document.assigned'."
+    },
+    {
+      "name": "camunda.security.authentication.providers.assigned",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Selects which OIDC providers are active for a physical tenant. Must not be set at the root level; it is only relevant per physical tenant and must be set under 'camunda.physical-tenants.[tenant-id].security.authentication.providers.assigned'."
+    },
+    {
+      "name": "camunda.data.exporters-assigned",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Manifest of the generic exporters active for a physical tenant. Must not list the autoconfigured 'camundaexporter' or 'rdbms' exporters — only custom exporters may be listed here. Must not be set at the root level; it is only relevant per physical tenant and must be set under 'camunda.physical-tenants.[tenant-id].data.exporters-assigned'."
+    }
+  ]
+}
