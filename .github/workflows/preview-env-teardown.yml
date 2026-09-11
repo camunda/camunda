@@ -68,7 +68,7 @@ jobs:
     #########################################################################
     # Tear down preview environment
     - name: Tear down Preview Environment
-      uses: camunda/infra-global-github-actions/preview-env/destroy@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
+      uses: camunda/infra-global-github-actions/preview-env/destroy@50d6a648396f9cf5af51212986d9baa83f8c0129 # preview-env-1.0.13
       with:
         revision: ${{ env.BRANCH_NAME }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
@@ -90,4 +90,4 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [teardown-preview]
     steps:
-    - uses: camunda/infra-global-github-actions/preview-env/comment@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
+    - uses: camunda/infra-global-github-actions/preview-env/comment@50d6a648396f9cf5af51212986d9baa83f8c0129 # preview-env-1.0.13
