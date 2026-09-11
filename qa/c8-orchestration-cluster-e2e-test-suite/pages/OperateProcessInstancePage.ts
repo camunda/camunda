@@ -326,7 +326,12 @@ class OperateProcessInstancePage {
       readModeValue: this.variableValueCellLocator(name).getByTestId(
         'edit-variable-value-readonly',
       ),
-      editor: this.variableValueCellLocator(name).getByRole('code'),
+      // See the comment on `this.editor` below: the inline variable editor is
+      // CodeMirror now (#62782), not Monaco, so it no longer exposes
+      // `role="code"`.
+      editor: this.variableValueCellLocator(name).getByTestId(
+        'code-mirror-editor',
+      ),
       editVariableModal: {
         button: this.variableButtonsCellLocator(name).getByRole('button', {
           name: 'Edit',
@@ -371,7 +376,12 @@ class OperateProcessInstancePage {
       },
     });
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
-    this.editor = page.getByRole('code');
+    // Operate's inline variable-value editor (InlineJsonEditor) migrated
+    // from Monaco to CodeMirror in #62782. Monaco's container exposed
+    // `role="code"`; CodeMirror's `.cm-content` is `role="textbox"` instead
+    // and isn't uniquely named, so target the CodeMirror instance by the
+    // data-testid it sets explicitly rather than by role.
+    this.editor = page.getByTestId('code-mirror-editor');
     this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
     this.editButton = page.getByRole('button', {name: 'Edit'});
