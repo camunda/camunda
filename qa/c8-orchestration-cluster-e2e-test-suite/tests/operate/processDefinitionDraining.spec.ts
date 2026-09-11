@@ -296,7 +296,9 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
 
     // The dashboard panel counts running instances, so the whole row goes, not
     // just the marker.
-    await cancelProcessInstance(instance.processInstanceKey);
+    await cancelProcessInstance(instance.processInstanceKey, {
+      ignoreNotFound: false,
+    });
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
 
     await waitForAssertion({
