@@ -17,7 +17,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -59,10 +58,8 @@ public class OptimizeCcsmSecurityConfiguration {
       final CCSMTokenService ccsmTokenService) {
     final List<OAuth2TokenValidator<Jwt>> extraValidators =
         List.of(new OptimizeIdentityPermissionValidator(ccsmTokenService));
-    return new TokenValidatorFactory(
-        oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
-        cslProperties.getAuthentication().getOidc().getClockSkew(),
-        extraValidators);
+    return OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
+        oidcProviderConfigurationPort, cslProperties, extraValidators);
   }
 
   /**
@@ -73,8 +70,6 @@ public class OptimizeCcsmSecurityConfiguration {
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final TokenValidatorFactory tokenValidatorFactory) {
-    final OidcIdTokenDecoderFactory decoderFactory = new OidcIdTokenDecoderFactory();
-    decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
-    return decoderFactory;
+    return OptimizeTokenValidatorFactorySupport.idTokenDecoderFactory(tokenValidatorFactory);
   }
 }

@@ -62,6 +62,16 @@ public final class OptimizeIdentityPermissionValidator implements OAuth2TokenVal
               OAuth2ErrorCodes.INVALID_TOKEN,
               "Token could not be verified against Identity",
               null));
+    } catch (final RuntimeException e) {
+      // A security boundary must fail closed on the unexpected, not propagate it: an uncaught
+      // exception here would surface as an unhandled 500 instead of a clean rejection, and could
+      // let a token through some chains treat validator errors more leniently than others.
+      LOG.warn("Rejected token: unexpected error verifying it against Identity", e);
+      return OAuth2TokenValidatorResult.failure(
+          new OAuth2Error(
+              OAuth2ErrorCodes.INVALID_TOKEN,
+              "Token could not be verified against Identity",
+              null));
     }
   }
 }
