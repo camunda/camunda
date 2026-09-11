@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_5.DbColumnFamilyCorrectionMi
 import io.camunda.zeebe.engine.state.migration.to_8_6.DbDistributionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_7.DbDistributionMigrationState8dot7;
 import io.camunda.zeebe.engine.state.migration.to_8_8.DbPermissionMigrationState;
+import io.camunda.zeebe.engine.state.migration.to_8_8.DbProcessReactivateMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -133,6 +134,7 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbDistributionMigrationState distributionState;
   private final DbDistributionMigrationState8dot7 distributionState8dot7;
   private final DbPermissionMigrationState permissionMigrationState;
+  private final DbProcessReactivateMigrationState processReactivateMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -294,6 +296,8 @@ public class DbMigrationState implements MutableMigrationState {
     distributionState = new DbDistributionMigrationState(zeebeDb, transactionContext);
     distributionState8dot7 = new DbDistributionMigrationState8dot7(zeebeDb, transactionContext);
     permissionMigrationState = new DbPermissionMigrationState(zeebeDb, transactionContext);
+    processReactivateMigrationState =
+        new DbProcessReactivateMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -530,5 +534,10 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void ensureRetriableDeploymentDistributions() {
     distributionState8dot7.ensureRetriableDeploymentDistributions();
+  }
+
+  @Override
+  public void reactivatePendingDeletionProcesses() {
+    processReactivateMigrationState.reactivatePendingDeletionProcesses();
   }
 }

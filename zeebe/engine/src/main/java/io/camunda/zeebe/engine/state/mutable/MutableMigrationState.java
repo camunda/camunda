@@ -58,4 +58,6 @@ public interface MutableMigrationState extends MigrationState {
   void migrateMissingPermissionsForAuthorizations();
 
   void ensureRetriableDeploymentDistributions();
+
+  void reactivatePendingDeletionProcesses();
 }

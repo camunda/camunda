@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_6.OrderedCommandDistribution
 import io.camunda.zeebe.engine.state.migration.to_8_7.EnsureRetriableDeploymentDistributionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_7.IdempotentCommandDistributionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_8.PermissionStateCorrectionMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_8.ReactivatePendingDeletionProcessesMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.util.VersionUtil;
@@ -65,7 +66,8 @@ public class DbMigratorImpl implements DbMigrator {
           new OrderedCommandDistributionMigration(),
           new IdempotentCommandDistributionMigration(),
           new EnsureRetriableDeploymentDistributionMigration(),
-          new PermissionStateCorrectionMigration());
+          new PermissionStateCorrectionMigration(),
+          new ReactivatePendingDeletionProcessesMigration());
   private static final Logger LOGGER =
       LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
   // Be mindful of https://github.com/camunda/camunda/issues/7248. In particular, that issue
