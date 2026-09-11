@@ -14,6 +14,7 @@ functions:
   - verifyAddedInVersion
   - verifyScope
   - verifySemanticKindsRegistered
+  - verifyPresentWhenRequestResolves
   - verifyNoAmbiguousIdentifierProperty
   - verifySecurityDeclared
   - verifyRequiredPermissions
@@ -184,6 +185,58 @@ rules:
     message: "{{error}}"
     then:
       function: verifyScope
+
+  # ── x-present-when ──
+  # Response-property marker declaring conditional presence: the annotated
+  # response property is present (required, non-null) iff the named top-level
+  # request-body field equals the given scalar; otherwise it is absent. This is
+  # the ground-truth SDK generators derive request→response dependent typing
+  # from (e.g. ActivatedJobResult.leaseToken vs JobActivationRequest.withLease).
+  # The marker is inert on the wire: the property keeps its declared nullable
+  # shape for any consumer that does not derive from it.
+  #
+  # Scope: like the other `*-shape` rules here, this validates only the marker's
+  # local JSON shape. It does NOT cross-reference that `request` names a real
+  # top-level property on the operation's request body — that referential-
+  # integrity check lives in the `present-when-request-resolves` rule below,
+  # which resolves each operation against the real spec.
+  present-when-shape:
+    description: "Each `x-present-when` marker must declare a request field and a scalar `equals` value."
+    severity: error
+    given: $..x-present-when
+    message: "{{error}}"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          additionalProperties: false
+          required: [request, equals]
+          properties:
+            request:
+              type: string
+              minLength: 1
+              description: Top-level request-body property whose value governs presence of this response property.
+            equals:
+              type: [boolean, string, number]
+              description: Scalar literal the request field must equal for the property to be present (required, non-null).
+
+  # Referential integrity for `x-present-when` (complements `present-when-shape`).
+  # The shape rule cannot see that `request` names a real field, because the
+  # marker sits on a shared component schema with no back-reference to the
+  # operation whose request body it constrains. This rule resolves each
+  # operation, finds every marker reachable from its 2xx responses, and asserts
+  # `request` is a top-level property of that operation's request body (and that
+  # the annotated property stays nullable + required — inert on the wire). A
+  # dangling binding (`request: withLeese`) would otherwise silently degrade the
+  # dependent typing every SDK generator derives from the marker.
+  present-when-request-resolves:
+    description: "Each `x-present-when.request` must name a top-level property of its operation's request body, and the annotated response property must stay nullable and required."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyPresentWhenRequestResolves
 
   # ── x-required-permissions (camunda/camunda#54727) ──
   # Canonical endpoint -> required-permission(s) binding. Two rules:

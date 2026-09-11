@@ -11,6 +11,10 @@ node --test spectral-tests/*.test.js
 
 Requires [Spectral CLI](https://docs.stoplight.io/docs/spectral/b8391e051b7d8-installation) (globally installed or via `npx`).
 
+CI runs the same suite in the `Lint / C8 REST OpenAPI` job (see
+`.github/workflows/ci.yml`), gated on the `openapi-change` path filter, so a
+broken rule or fixture fails the build.
+
 ## Structure
 
 ```

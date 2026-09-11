@@ -1399,6 +1399,116 @@ cross-check the value against the `@ClusterScoped` annotation in Java directly
 
 ---
 
+### 2.21 Conditional-presence annotation (`x-present-when`)
+
+Some response properties are only meaningful for certain request shapes. The
+canonical case is `activateJobs`: `ActivatedJobResult.leaseToken` is populated
+only when the request was made with `withLease: true`; when `withLease` is
+`false` or omitted, the server returns no lease token. OpenAPI 3.x binds exactly
+one response schema per operation/status, so it cannot express that a response
+field's presence depends on a request field. Left unannotated, every generated
+SDK types `leaseToken` as always-nullable, and a user who reads it after an
+unleased activation writes code that compiles but fails at runtime.
+
+`x-present-when` encodes that request→response dependency as ground truth on the
+response property. It is the single source of truth from which each SDK's
+facade/post-generation layer derives dependent typing; the SDKs must not
+hardcode the relationship.
+
+#### Shape
+
+Place the marker on the response property whose presence is conditional:
+
+```yaml
+ActivatedJobResult:
+  required:
+    - ...
+    - leaseToken        # stays required + nullable on the wire (see below)
+  properties:
+    leaseToken:
+      description: The lease token; `null` when activated without a lease.
+      nullable: true
+      x-present-when:
+        request: withLease   # a TOP-LEVEL property of the operation's request body
+        equals: true         # a scalar literal (boolean / string / number)
+      allOf:
+        - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+```
+
+- **`request`** — the name of a top-level property on the operation's request
+  body. Nested paths are not supported (decision: top-level only).
+- **`equals`** — a single scalar literal (`boolean`, `string`, or `number`).
+  Composite/array matchers are not supported (decision: scalar only).
+
+The `present-when-shape` Spectral rule validates this structure (see §3). The
+marker is **inert on the wire**: the property keeps its declared `nullable`
+shape and stays in `required`, so the server contract and any consumer that does
+not derive from the marker are completely unaffected. Adding or removing the
+marker is not a wire-breaking change.
+
+#### Derivation contract (what every SDK implements)
+
+For an operation with request body `R` and 200-response schema `S`, walk `S`
+transitively (including through arrays and nested objects) for any property
+annotated `x-present-when: { request: F, equals: V }`, where `F` is a top-level
+property of `R`. Project the property three ways on the compile-time value of
+`F`, and propagate the projection outward through every enclosing type (e.g.
+`JobActivationResult.jobs[] → ActivatedJobResult.leaseToken`):
+
+|                                                               `F` at the call site                                                                |                                                                                              Projection of the annotated property                                                                                               |
+|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| the literal `V`                                                                                                                                   | **present** — required, non-null                                                                                                                                                                                                |
+| any other compile-time literal ≠ `V` — `false` / `null` / omitted, or a non-matching string/number (e.g. `mode: "summary"` when `equals: "full"`) | **absent** — omitted for nominal languages (Go, Rust, C#); typed `?: never` for JS/TS; for Python (no `?: never` equivalent) modelled via an overload whose return type omits the property (e.g. a `TypedDict` without the key) |
+| not a compile-time literal (dynamic value of `F`'s type, variable)                                                                                | base schema unchanged — property stays nullable (preserves backward compatibility)                                                                                                                                              |
+
+Method surface derived from the marker (stated generally in terms of the
+request field `F` and its match literal `V`; the `withLease: true` / boolean
+case is the current production instance):
+
+- **Literal-overload languages (JS/TS, Python):** emit overloads keyed on the
+  `F` literal — `F` set to `V` returns the present projection, `F` set to any
+  other compile-time literal returns the absent projection, and a non-literal
+  `F` returns the base, nullable projection. The dynamic overload must accept
+  `F`'s **full declared type including `null`** (for `withLease`, which is
+  `nullable: true`, that is `boolean | null`) so a runtime `boolean | null`
+  value resolves to the base projection rather than falling between the literal
+  overloads. These languages model this with TS function overloads on literal
+  types / Python `@overload` on `Literal[...]`. For `activateJobs` this is:
+  `withLease: true` returns the present projection, `withLease?: false | null |
+  undefined` returns the absent projection, and the general
+  `withLease: boolean | null` overload returns the dynamic (base, nullable)
+  projection.
+- **Distinct-surface languages (Go, Rust, C#):** these cannot select a return
+  type from a literal argument value — Go and Rust have no overloading, and C#
+  overload resolution distinguishes neither a `true` from a `false` argument nor
+  the return type. Emit two distinct methods instead: a base method
+  (`activateJobs` / `ActivateJobs`) that returns the **base nullable projection**
+  (token present but nullable) — this is the safe surface for both the absent
+  case and a runtime dynamic `F`, since the caller reads the nullable token — and
+  a second method named `<baseMethod> + PascalCase(F)` (`activateJobsWithLease` /
+  `ActivateJobsWithLease`) for the present projection (token required non-null).
+  These are technical preview, so the surface change is acceptable.
+
+The present-variant method must additionally assert at runtime that the property
+is populated and fail fast if it is absent. This covers the later-client →
+earlier-server case: a newer SDK that requested a lease against an older server
+that ignores `withLease` gets a clear failure rather than a silent null.
+
+Because the lease token is optional on every wire (REST `nullable`, gRPC proto3
+`optional`), none of this changes the wire; it is a pure client-typing
+refinement.
+
+#### When to add a new `x-present-when`
+
+Only when a response property's presence genuinely depends on a scalar
+top-level request field. This is rare — as of writing, `activateJobs` is the
+only production case. Do not use it for data-provenance or response-state
+conditioning (those use different mechanisms). If a new case needs nested
+request paths or non-scalar matchers, extend this section and the
+`present-when-shape` rule together rather than overloading the existing shape.
+
+---
+
 ## 3. Spectral linting & custom rules
 
 ### 3.1 What is Spectral?
