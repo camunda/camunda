@@ -197,6 +197,12 @@ public class OpensearchExporter implements Exporter {
               "Opensearch prefix must not begin with invalid characters [. + - _]. Current value: %s",
               prefix));
     }
+    if (IndexPrefixValidation.hasInvalidCharactersForOpensearch(prefix)) {
+      throw new ExporterException(
+          String.format(
+              "Opensearch prefix must not contain invalid characters [+]. Current value: %s",
+              prefix));
+    }
     if (IndexPrefixValidation.hasUppercaseCharacters(prefix)) {
       throw new ExporterException(
           String.format(
