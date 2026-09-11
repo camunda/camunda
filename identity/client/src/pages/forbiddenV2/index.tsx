@@ -8,7 +8,7 @@
 
 import { FC } from "react";
 import ForbiddenPage from "./ForbiddenPage";
-import AppRoot from "src/components/global/AppRoot.tsx";
+import AppRoot from "src/components/globalV2/AppRoot.tsx";
 
 const Forbidden: FC = () => {
   return (
