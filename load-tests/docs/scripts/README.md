@@ -2,30 +2,6 @@
 
 This folder contains several scripts we wrote to test or debug things.
 
-## Choosing a language for new tooling
-
-- **Shell**: thin wrappers and glue only: minimal branching, no assembly of structured data.
-  Fine for orchestrating existing CLIs (`kubectl`, `curl`, `jq`).
-- **Python**: the default for non-trivial operational/reporting scripts: anything that reads or
-  writes JSON/YAML/CSV/TSV, talks to HTTP APIs, validates input, or needs meaningful unit tests.
-  Prefer stdlib (`argparse`, `json`, `csv`, `datetime`, `urllib`) before adding dependencies. Keep
-  a thin shell wrapper around it when command compatibility with an existing script matters.
-- **Go**: for a maintained distributable binary, stronger compile-time guarantees, parallelism or
-  performance work, or a tool that naturally fits into an existing Go module.
-- **Cross-cutting**: use structured encoders instead of string-building; every non-trivial tool
-  needs targeted tests and a README section here (usage, examples, dependencies, exact test
-  command).
-
-This standard came out of comparing three implementations of the same load-test reporting script:
-[#61425](https://github.com/camunda/camunda/pull/61425) (shell), [#62289](https://github.com/camunda/camunda/pull/62289) (Python), and
-[#62361](https://github.com/camunda/camunda/pull/62361) (Go). Python is the default going forward for
-this class of tooling; Go remains an option once a tool becomes a maintained multi-command CLI or
-binary.
-
-Decided 2026-09-08, see the [team discussion](https://camunda.slack.com/archives/C0A22S6M4TF/p1788862132853069?thread_ts=1788811533.488189&cid=C0A22S6M4TF)
-for the full reasoning. Revisit this decision if the tooling grows more complex sub-commands or
-shared logic than a single script justifies.
-
 ## Profile.sh
 
 **Usage:**
@@ -99,10 +75,10 @@ Runs every PromQL query defined in `queries.yaml` against a Prometheus HTTP endp
 ```
 
 **Arguments:**
-- `namespace` — exact namespace label, e.g. `c8-pgoyal-quicker-pr-1234`. Required.
-- `duration_seconds` — PromQL range-vector window. Default: `600`.
-- `endpoint` — Prometheus base URL. Default: `http://localhost:9090` (assumes `kubectl port-forward` is open).
-- `extra_curl_opts` — free-form curl options string, e.g. `--user "u:p"` for HTTP basic auth.
+- `namespace` - exact namespace label, e.g. `c8-pgoyal-quicker-pr-1234`. Required.
+- `duration_seconds` - PromQL range-vector window. Default: `600`.
+- `endpoint` - Prometheus base URL. Default: `http://localhost:9090` (assumes `kubectl port-forward` is open).
+- `extra_curl_opts` - free-form curl options string, e.g. `--user "u:p"` for HTTP basic auth.
 
 **Examples:**
 
@@ -122,6 +98,23 @@ Against the LDAP-protected ingress:
 ```
 
 zsh users: quote regex-looking arguments to avoid `no matches found` glob errors.
+
+## load_test_report
+
+Builds a wide JSON, CSV, or TSV report for one load-test namespace from Prometheus.
+The tool lives in its own Python subproject:
+[`load_test_report/`](load_test_report/).
+
+Quick start:
+
+```bash
+cd load-tests/docs/scripts/load_test_report
+make test
+uv run load-test-report c8-ck-baseline-20260814 --duration-seconds 1800
+```
+
+See [`load_test_report/README.md`](load_test_report/README.md) for setup, examples,
+query-file documentation, and the Makefile targets used by CI.
 
 ## PartitionDistribution.sh
 
