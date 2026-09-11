@@ -19,7 +19,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -74,10 +73,8 @@ public class OptimizeCloudSecurityConfiguration {
             new OptimizeCloudOrganizationValidator(
                 organizationId, OptimizeCloudOrganizationValidator.ALLOWED_ORG_ROLES),
             new OptimizeCloudClusterValidator(clusterId));
-    return new TokenValidatorFactory(
-        oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
-        cslProperties.getAuthentication().getOidc().getClockSkew(),
-        extraValidators);
+    return OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
+        oidcProviderConfigurationPort, cslProperties, extraValidators);
   }
 
   /**
@@ -88,9 +85,7 @@ public class OptimizeCloudSecurityConfiguration {
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final TokenValidatorFactory tokenValidatorFactory) {
-    final OidcIdTokenDecoderFactory decoderFactory = new OidcIdTokenDecoderFactory();
-    decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
-    return decoderFactory;
+    return OptimizeTokenValidatorFactorySupport.idTokenDecoderFactory(tokenValidatorFactory);
   }
 
   private static CloudAuthConfiguration cloudConfig(

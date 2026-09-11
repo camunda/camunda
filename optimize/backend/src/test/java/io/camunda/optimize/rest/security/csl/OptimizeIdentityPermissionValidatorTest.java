@@ -57,6 +57,18 @@ class OptimizeIdentityPermissionValidatorTest {
     assertThat(validator().validate(jwt()).hasErrors()).isTrue();
   }
 
+  @Test
+  void shouldRejectTokenOnUnexpectedError() {
+    // A security boundary must fail closed on the unexpected rather than let it propagate as an
+    // unhandled exception, so even an error outside the known Identity exception hierarchy must
+    // still reject the token.
+    doThrow(new IllegalStateException("unexpected"))
+        .when(ccsmTokenService)
+        .verifyAccessToken("token");
+
+    assertThat(validator().validate(jwt()).hasErrors()).isTrue();
+  }
+
   private static Jwt jwt() {
     final Instant now = Instant.now();
     return Jwt.withTokenValue("token")
