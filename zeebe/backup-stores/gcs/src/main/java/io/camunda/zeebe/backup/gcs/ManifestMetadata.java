@@ -102,7 +102,7 @@ final class ManifestMetadata {
       return Optional.empty();
     }
 
-    final var id = parseIdentifierFromPath(blob.getName(), basePath, manifestBlobName, metadata);
+    final var id = parseIdentifier(blob.getName(), basePath, manifestBlobName);
     final var statusCode = BackupStatusCode.valueOf(metadata.get(STATUS_CODE));
     final var failureReason = Optional.ofNullable(metadata.get(FAILURE_REASON));
     final var created = Optional.ofNullable(metadata.get(CREATED_AT)).map(Instant::parse);
@@ -113,11 +113,9 @@ final class ManifestMetadata {
         new BackupStatusImpl(id, descriptor, statusCode, failureReason, created, modified));
   }
 
-  private static BackupIdentifier parseIdentifierFromPath(
-      final String blobName,
-      final String basePath,
-      final String manifestBlobName,
-      final Map<String, String> metadata) {
+  /** Parses the backup identifier encoded in the name of a manifest blob. */
+  static BackupIdentifier parseIdentifier(
+      final String blobName, final String basePath, final String manifestBlobName) {
     // Path format: {basePath}manifests/{partitionId}/{checkpointId}/{memberId}/manifest.json
     // where {memberId} is "zone_nodeId" for zone-aware clusters or bare "nodeId" otherwise.
     final var manifestsPrefix = basePath + "manifests/";

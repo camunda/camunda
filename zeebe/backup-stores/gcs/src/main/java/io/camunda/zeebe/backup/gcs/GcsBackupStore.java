@@ -22,22 +22,24 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -50,9 +52,19 @@ public final class GcsBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String ERROR_VALIDATION_FAILED =
       "Invalid configuration for GcsBackupStore: %s";
+
+  /**
+   * Retention hands the leader a batch of up to a thousand deletions at once. Each deletion makes
+   * several requests to GCS, and the client opens a connection per concurrent request, so without a
+   * bound the leader fails with connection errors instead of draining the batch.
+   */
+  static final int DELETE_PARALLELISM = 16;
+
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
   private static final String METADATA_OBJECT_NAME = "metadata.json";
+
   private final ExecutorService executor;
+  private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
   private final Storage client;
@@ -146,19 +158,19 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listBackupStatuses(wildcard), executor);
+        () -> manifestManager.listBackupStatuses(wildcard, options), executor);
   }
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-
-    return CompletableFuture.runAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
-            return;
+            return null;
           } else if (manifest.statusCode() != StatusCode.DELETED) {
             throw new UnexpectedManifestState(
                 "Cannot delete Backup with id '%s', must be marked as deleted."
@@ -172,8 +184,10 @@ public final class GcsBackupStore implements BackupStore {
           allIds.addAll(segmentIds);
           fileSetManager.deleteBlobs(allIds);
           manifestManager.deleteManifest(manifest);
+          return null;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
@@ -233,7 +247,7 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
-    return CompletableFuture.supplyAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
@@ -242,7 +256,8 @@ public final class GcsBackupStore implements BackupStore {
           manifestManager.markAsDeleted(manifest);
           return BackupStatusCode.DELETED;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
