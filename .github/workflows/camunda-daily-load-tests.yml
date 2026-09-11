@@ -259,14 +259,8 @@ jobs:
           timeout_minutes: 2
           shell: bash
           command: |
-            set -euo pipefail
-            shopt -s nullglob
-            prefix="gs://${GCS_LOAD_TEST_RESULTS_BUCKET}/automated/daily/stress/${BENCHMARK}"
-            metrics_files=(data/metrics-*.json data/variants.json)
-            gcloud storage cp "${metrics_files[@]}" "${prefix}/"
-            if [ -d data/flamegraphs ] && [ -n "$(ls -A data/flamegraphs)" ]; then
-              gcloud storage cp -r data/flamegraphs/* "${prefix}/flamegraphs/"
-            fi
+            target="gs://${GCS_LOAD_TEST_RESULTS_BUCKET}/automated/daily/stress/${BENCHMARK}/"
+            gcloud storage cp -r data/* "${target}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -387,7 +381,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":warning: *${{ needs.upload-results-to-gcs.result == 'failure' && 'Daily load test result upload failed' || 'Daily load test execution failed' }}:*"
+                    "text": ":warning: *Daily load test creation failed:*"
                   }
                 },
                 {
