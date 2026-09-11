@@ -138,8 +138,8 @@ precedence, and every other lookup (process variables, `camunda.vars.*`) is forw
 whose references are all held is injected and activated. A job with a miss is skipped without
 consuming a batch slot, so jobs behind it still activate, and one `RESOLUTION_REQUESTED` event is
 appended per missing reference. Its applier records the reference as pending and parks the job in
-`WAITING_FOR_SECRET_RESOLUTION` (see [zeebe ADR
-0007](../../../zeebe/docs/adr/0007-810-job-waiting-for-secret-resolution-state.md)).
+`WAITING_FOR_SECRET_RESOLUTION` (see
+[zeebe ADR 0007](https://github.com/camunda/camunda/blob/main/zeebe/docs/adr/0007-810-job-waiting-for-secret-resolution-state.md)).
 
 Two budgets bound the blast radius of a cold cache. The collector stops after
 `MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION` (100) skipped jobs and marks the batch truncated
@@ -355,7 +355,7 @@ and customer data on the metrics endpoint.
 - [Centralized Secret Resolution via Zeebe, design doc (Google Doc)](https://docs.google.com/document/d/1gjrdnVucxyUwmBrCJ5u3ZX8Nby92HBVU8yluODwVrzw)
 - [Connector Credential Manager (camunda/product-hub#3396)](https://github.com/camunda/product-hub/issues/3396)
 - [Strong Tenant Isolation in Camunda 8 OC, Self-Managed (camunda/product-hub#3430)](https://github.com/camunda/product-hub/issues/3430)
-- [Job state for jobs waiting for secret resolution (zeebe ADR 0007)](../../../zeebe/docs/adr/0007-810-job-waiting-for-secret-resolution-state.md)
+- [Job state for jobs waiting for secret resolution (zeebe ADR 0007)](https://github.com/camunda/camunda/blob/main/zeebe/docs/adr/0007-810-job-waiting-for-secret-resolution-state.md)
 - [Detect missing secret references on activation and emit RESOLUTION_REQUESTED (camunda/camunda#57846)](https://github.com/camunda/camunda/issues/57846)
 - [Background task: resolve pending secrets from the secret store (camunda/camunda#57848)](https://github.com/camunda/camunda/issues/57848)
 - [Async secret resolution at job activation, job push (camunda/camunda#56564)](https://github.com/camunda/camunda/issues/56564)
