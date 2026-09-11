@@ -52,7 +52,8 @@ final class ConfigurationChangeAppliersImplTest {
 
     final MemberId localMemberId = MemberId.from("1");
     return Stream.of(
-        Arguments.of(new PartitionJoinOperation(localMemberId, 1, 1), PartitionJoinApplier.class),
+        Arguments.of(
+            new PartitionJoinOperation(localMemberId, 1, 1, true), PartitionJoinApplier.class),
         Arguments.of(new PartitionLeaveOperation(localMemberId, 1, 1), PartitionLeaveApplier.class),
         Arguments.of(
             new PartitionPromoteOperation(localMemberId, 1), PartitionPromoteApplier.class),

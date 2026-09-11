@@ -55,6 +55,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               joinOperation.partitionId(),
               joinOperation.priority(),
               joinOperation.memberId(),
+              joinOperation.asLearner(),
               partitionChangeExecutor);
       case final PartitionLeaveOperation leaveOperation ->
           new PartitionLeaveApplier(

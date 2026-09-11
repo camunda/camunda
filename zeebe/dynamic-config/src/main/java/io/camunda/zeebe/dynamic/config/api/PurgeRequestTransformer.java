@@ -13,8 +13,10 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -42,24 +44,50 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
     final SortedMap<Integer, PartitionBootstrapOperation> primaries =
         createBootstrapOperations(clusterConfiguration.members());
 
-    final Map<Integer, List<PartitionJoinOperation>> followers =
+    final Map<Integer, List<ClusterConfigurationChangeOperation>> followers =
         new TreeMap<>(Comparator.naturalOrder());
+
+    // Every leave except a partition's last is preceded by a demotion, so the removal commits
+    // without the departing member. The last replica must not be demoted - a non-empty replication
+    // group without a voting member could neither elect a leader nor commit - and keeps the
+    // one-shot leave, which as the only remaining member it can drive to the empty configuration.
+    final Map<Integer, Long> remainingActiveReplicas = new TreeMap<>();
+    for (final var member : clusterConfiguration.members().values()) {
+      member
+          .partitions()
+          .forEach(
+              (partitionId, partition) -> {
+                if (partition.state() == PartitionState.State.ACTIVE) {
+                  remainingActiveReplicas.merge(partitionId, 1L, Long::sum);
+                }
+              });
+    }
 
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
     for (final var member : clusterConfiguration.members().entrySet()) {
       final var memberId = member.getKey();
       for (final var partitions : member.getValue().partitions().entrySet()) {
         final var partitionId = partitions.getKey();
+        final var isActive = partitions.getValue().state() == PartitionState.State.ACTIVE;
+        final var otherActiveReplicas =
+            remainingActiveReplicas.getOrDefault(partitionId, 0L) - (isActive ? 1 : 0);
+        if (otherActiveReplicas > 0) {
+          operations.add(new PartitionDemoteOperation(memberId, partitionId));
+        }
+        if (isActive) {
+          remainingActiveReplicas.merge(partitionId, -1L, Long::sum);
+        }
         operations.add(new PartitionLeaveOperation(memberId, partitionId, 0));
 
         final var primaryForPartition = primaries.get(partitionId);
 
         if (!primaryForPartition.memberId().equals(memberId)) {
-          followers
-              .computeIfAbsent(partitionId, key -> new ArrayList<>())
-              .add(
-                  new PartitionJoinOperation(
-                      memberId, partitionId, partitions.getValue().priority()));
+          final var partitionFollowers =
+              followers.computeIfAbsent(partitionId, key -> new ArrayList<>());
+          partitionFollowers.add(
+              new PartitionJoinOperation(
+                  memberId, partitionId, partitions.getValue().priority(), true));
+          partitionFollowers.add(new PartitionPromoteOperation(memberId, partitionId));
         }
       }
     }

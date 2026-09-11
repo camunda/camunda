@@ -14,8 +14,10 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -51,7 +53,8 @@ final class ClusterPurgeRequestTransformerTest {
     // when
     final var result = transformer.operations(currentTopology);
 
-    // then
+    // then - every leave except a partition's last is preceded by a demotion; the last replica
+    // must keep its one-shot leave since demoting it would leave the group without a voting member
     assertThat(result)
         .isRight()
         .right()
@@ -59,7 +62,9 @@ final class ClusterPurgeRequestTransformerTest {
             operations -> {
               assertThat(operations)
                   .containsExactly(
+                      new PartitionDemoteOperation(id0, 0),
                       new PartitionLeaveOperation(id0, 0, 0),
+                      new PartitionDemoteOperation(id0, 1),
                       new PartitionLeaveOperation(id0, 1, 0),
                       new PartitionLeaveOperation(id1, 0, 0),
                       new PartitionLeaveOperation(id1, 1, 0),
@@ -69,8 +74,10 @@ final class ClusterPurgeRequestTransformerTest {
                           id0, 0, 2, Optional.of(partitionConfig), false),
                       new PartitionBootstrapOperation(
                           id1, 1, 2, Optional.of(partitionConfig), false),
-                      new PartitionJoinOperation(id1, 0, 1),
-                      new PartitionJoinOperation(id0, 1, 1));
+                      new PartitionJoinOperation(id1, 0, 1, true),
+                      new PartitionPromoteOperation(id1, 0),
+                      new PartitionJoinOperation(id0, 1, 1, true),
+                      new PartitionPromoteOperation(id0, 1));
             });
   }
 
@@ -101,8 +108,11 @@ final class ClusterPurgeRequestTransformerTest {
             operations -> {
               assertThat(operations)
                   .containsExactly(
+                      new PartitionDemoteOperation(id0, 0),
                       new PartitionLeaveOperation(id0, 0, 0),
+                      new PartitionDemoteOperation(id0, 1),
                       new PartitionLeaveOperation(id0, 1, 0),
+                      new PartitionDemoteOperation(id0, 2),
                       new PartitionLeaveOperation(id0, 2, 0),
                       new PartitionLeaveOperation(id1, 0, 0),
                       new PartitionLeaveOperation(id1, 1, 0),
@@ -115,9 +125,12 @@ final class ClusterPurgeRequestTransformerTest {
                           id1, 1, 2, Optional.of(partitionConfig), false),
                       new PartitionBootstrapOperation(
                           id0, 2, 2, Optional.of(partitionConfig), false),
-                      new PartitionJoinOperation(id1, 0, 1),
-                      new PartitionJoinOperation(id0, 1, 1),
-                      new PartitionJoinOperation(id1, 2, 1));
+                      new PartitionJoinOperation(id1, 0, 1, true),
+                      new PartitionPromoteOperation(id1, 0),
+                      new PartitionJoinOperation(id0, 1, 1, true),
+                      new PartitionPromoteOperation(id0, 1),
+                      new PartitionJoinOperation(id1, 2, 1, true),
+                      new PartitionPromoteOperation(id1, 2));
             });
   }
 
