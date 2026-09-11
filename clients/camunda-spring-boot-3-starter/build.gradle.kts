@@ -109,11 +109,13 @@ dependencies {
     exclude(group = "org.springframework.boot", module = "spring-boot-health")
   }
   api(project(":camunda-client-java"))
-  api(libs.io.micrometer.micrometer.core)
-  api(libs.org.springframework.spring.beans)
-  api(libs.org.springframework.boot.spring.boot.autoconfigure)
-  api(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
-  implementation(libs.org.springframework.boot.spring.boot.actuator)
+  compileOnly(libs.io.micrometer.micrometer.core)
+  testImplementation(libs.io.micrometer.micrometer.core)
+  api("org.springframework:spring-beans:$spring6Version")
+  api("org.springframework.boot:spring-boot-autoconfigure:$springBoot3Version")
+  compileOnly("org.springframework.boot:spring-boot-actuator-autoconfigure:$springBoot3Version")
+  testImplementation(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
+  implementation("org.springframework.boot:spring-boot-actuator:$springBoot3Version")
   implementation(libs.org.slf4j.slf4j.api)
 
   testImplementation(libs.org.aspectj.aspectjweaver)
