@@ -414,6 +414,31 @@
           </foreach>
         </if>
       </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
+          VAR_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+        </if>
+        <if test="operation.type.toString == 'LONG'">
+          (LONG_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          OR DOUBLE_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          )
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          DOUBLE_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+        </if>
+      </when>
       <when test="operation.operator.name().equals('LIKE')">
         VAR_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
           ESCAPE ${escapeChar}
