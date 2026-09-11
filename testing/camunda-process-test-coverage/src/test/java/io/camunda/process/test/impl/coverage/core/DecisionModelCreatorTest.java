@@ -269,11 +269,11 @@ class DecisionModelCreatorTest {
   }
 
   /**
-   * Without the deployment that was evaluated, the report would have no model for the decision at
-   * all, which is worse than a model of another deployment of it.
+   * Another deployment of the id describes a different decision, so reporting it would explain the
+   * evaluation by a table it never ran. Failing keeps that table out of the report.
    */
   @Test
-  void shouldFallBackToAnyDeploymentWhenTheEvaluatedOneIsUnknown() {
+  void shouldRejectADeploymentThatTheTestDataDoesNotDescribe() {
     // given
     final ImmutableCoverageTestData testData =
         ImmutableCoverageTestData.builder()
@@ -282,10 +282,11 @@ class DecisionModelCreatorTest {
             .build();
 
     // when: the instance evaluated a deployment that the test data does not describe
-    final DecisionModel model = DecisionModelCreator.createModel(testData, DECISION_ID, 999L);
-
     // then
-    assertThat(model.getVersion()).isEqualTo("1");
+    assertThatThrownBy(() -> DecisionModelCreator.createModel(testData, DECISION_ID, 999L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(DECISION_ID)
+        .hasMessageContaining("999");
   }
 
   private static ImmutableCoverageDecisionDefinitionData decisionDefinitionDataOf(

@@ -21,11 +21,10 @@ import io.camunda.process.test.impl.coverage.data.CoverageDecisionDefinitionData
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -60,11 +59,10 @@ public class DecisionModelCreator {
   /**
    * Creates a decision model object from a decision definition in the Camunda engine.
    *
-   * <p>A decision definition id can be deployed several times within a test run, for example when a
-   * mock deploys a stub of a decision that is also deployed for real. The deployment that was
-   * evaluated describes the decision; the other deployments describe a different decision under the
-   * same id. The first deployment of the id is used when the evaluated one is not known, as a model
-   * of another deployment still describes the decision better than no model at all.
+   * <p>A decision definition id can be deployed several times within a test run, for example when
+   * suites deploy fixtures that differ in their rules. The deployment that was evaluated describes
+   * the decision; the other deployments describe a different decision under the same id, so no
+   * other deployment stands in for it.
    *
    * @param testResults The data source to retrieve decision definition data
    * @param decisionDefinitionId The ID of the decision definition to create a model for
@@ -82,7 +80,11 @@ public class DecisionModelCreator {
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "No decision definition data found for ID: " + decisionDefinitionId));
+                        "No decision definition data found for ID: "
+                            + decisionDefinitionId
+                            + (decisionDefinitionKey == null
+                                ? ""
+                                : " deployed under key: " + decisionDefinitionKey)));
 
     final String xml = decisionDefinitionData.getXml();
 
@@ -108,34 +110,33 @@ public class DecisionModelCreator {
   /**
    * Selects the deployment that was evaluated, out of the deployments of a decision definition id.
    *
+   * <p>Another deployment of the id does not stand in for it: it describes a different decision, so
+   * its table would neither explain what was evaluated nor let its rules count as coverage.
+   *
    * @param testResults The data source to retrieve decision definition data
    * @param decisionDefinitionId The ID of the decision definition
    * @param decisionDefinitionKey The key of the deployment that was evaluated, or {@code null} if
    *     unknown
-   * @return The deployment that was evaluated, or the first deployment of the id if it is not among
-   *     them
+   * @return The deployment that was evaluated, or any deployment of the id when the key is unknown
    */
   private static Optional<CoverageDecisionDefinitionData> selectDeployment(
       final CoverageTestData testResults,
       final String decisionDefinitionId,
       final Long decisionDefinitionKey) {
 
-    final List<CoverageDecisionDefinitionData> deploymentsOfId =
+    final Stream<CoverageDecisionDefinitionData> deploymentsOfId =
         testResults.getDecisionDefinitionData().stream()
             .filter(
                 data ->
-                    data.getDecisionDefinition().getDmnDecisionId().equals(decisionDefinitionId))
-            .collect(Collectors.toList());
+                    data.getDecisionDefinition().getDmnDecisionId().equals(decisionDefinitionId));
 
-    final Optional<CoverageDecisionDefinitionData> deploymentThatRan =
-        deploymentsOfId.stream()
-            .filter(
-                data ->
-                    Objects.equals(
-                        decisionDefinitionKey, data.getDecisionDefinition().getDecisionKey()))
-            .findFirst();
+    if (decisionDefinitionKey == null) {
+      return deploymentsOfId.findFirst();
+    }
 
-    return deploymentThatRan.isPresent() ? deploymentThatRan : deploymentsOfId.stream().findFirst();
+    return deploymentsOfId
+        .filter(data -> decisionDefinitionKey.equals(data.getDecisionDefinition().getDecisionKey()))
+        .findFirst();
   }
 
   /**
