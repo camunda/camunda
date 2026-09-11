@@ -185,6 +185,25 @@ final class ExtendedConfigurationBuilderTest {
   }
 
   @Test
+  void shouldDisableCamundaExporterAutoconfigurationWhenExplicitCamundaExporterIsConfigured() {
+    // given - a manually-declared CamundaExporter and the secondary-storage-driven autoconfigured
+    // 'camundaexporter' would otherwise both write to the same location, colliding at startup
+    final var builder = new ExtendedConfigurationBuilder();
+
+    // when
+    builder.withCamundaExporter("http://localhost:9200");
+
+    // then
+    assertThat(
+            builder
+                .getUnifiedConfig()
+                .getData()
+                .getSecondaryStorage()
+                .getAutoconfigureCamundaExporter())
+        .isFalse();
+  }
+
+  @Test
   void shouldNotEmitNodeIdForPhysicalTenantConfig() {
     // given — physical-tenant configs carry storage/security only and never a node id, which is a
     // root-config concern
