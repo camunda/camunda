@@ -17,9 +17,12 @@ import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
+import io.atomix.raft.protocol.TestRaftServerProtocol;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
@@ -29,6 +32,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +47,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -114,6 +122,13 @@ final class ReconfigurationTest {
 
   private RaftServer createServer(
       final Path dir, final ClusterMembershipService membershipService) {
+    return createServer(dir, membershipService, config -> {});
+  }
+
+  private RaftServer createServer(
+      final Path dir,
+      final ClusterMembershipService membershipService,
+      final Consumer<RaftPartitionConfig> configCustomizer) {
     final var memberId = membershipService.getLocalMember().id();
     final var protocol = protocolFactory.newServerProtocol(memberId);
     final var storage =
@@ -122,15 +137,17 @@ final class ReconfigurationTest {
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10)
             .build();
+    final var partitionConfig =
+        new RaftPartitionConfig()
+            .setElectionTimeout(Duration.ofMillis(500))
+            .setHeartbeatInterval(Duration.ofMillis(100));
+    configCustomizer.accept(partitionConfig);
     final var server =
         RaftServer.builder(memberId)
             .withMembershipService(membershipService)
             .withProtocol(protocol)
             .withStorage(storage)
-            .withPartitionConfig(
-                new RaftPartitionConfig()
-                    .setElectionTimeout(Duration.ofMillis(500))
-                    .setHeartbeatInterval(Duration.ofMillis(100)))
+            .withPartitionConfig(partitionConfig)
             .withMeterRegistry(meterRegistry)
             .build();
     servers.add(server);
@@ -760,6 +777,254 @@ final class ReconfigurationTest {
       // then -- remaining three can elect a leader and commit entries
       final var leader = awaitLeader(m1, m2);
       assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
+    }
+
+    /**
+     * The discriminating test for <a href="https://github.com/camunda/camunda/issues/57390">
+     * #57390</a>: a leaving member must keep receiving appends/heartbeats for as long as its
+     * removal is appended but not yet committed, so its election timer stays quiet and it stays
+     * reachable while the outcome is still undecided. Red on unfixed code, where {@code
+     * RaftClusterContext#updateConfiguration} prunes the leaving member's context - and thus its
+     * place in the leader's replication targets - as soon as the removal is appended.
+     */
+    @Test
+    void leavingMemberKeepsReceivingAppendsUntilConfigurationCommits(@TempDir final Path tmp) {
+      // given - a cluster with 3 members and generous timeouts, so holding one follower's ack of
+      // the final configuration back for an extended window doesn't itself disrupt the leader or
+      // the leaving member (see removedLeaderStepsDownAtCommitNotAtAppend for why)
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      final Consumer<RaftPartitionConfig> testTimeouts =
+          config -> {
+            config.setMaxQuorumResponseTimeout(Duration.ofSeconds(60));
+            config.setElectionTimeout(Duration.ofSeconds(3));
+          };
+
+      final var m1 =
+          createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3), testTimeouts);
+      final var m2 =
+          createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3), testTimeouts);
+      final var m3 =
+          createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2), testTimeouts);
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+      awaitLeader(m1, m2, m3);
+      final var leader = getLeaderServer(List.of(m1, m2, m3)).orElseThrow();
+      final var followers = Stream.of(m1, m2, m3).filter(s -> s != leader).toList();
+      final var leaving = followers.get(0);
+      final var leavingId = MemberId.from(leaving.name());
+      final var quorumFollower = followers.get(1);
+      final var quorumFollowerId = MemberId.from(quorumFollower.name());
+
+      // when - a follower (not the leader) leaves. The final, non-joint configuration is
+      // identifiable by an empty oldMembers; once the leader starts disseminating it to the other
+      // follower (the one whose ack the new configuration's quorum needs), drop entry-carrying
+      // appends to it, so the removal can never commit. Every append exchange is delayed by a few
+      // milliseconds, for the same reason as in removedLeaderStepsDownAtCommitNotAtAppend: the
+      // in-memory test protocol otherwise completes exchanges fast enough that a member which
+      // keeps acknowledging immediately refuels another full round of appends to every member,
+      // busy-looping the single raft actor thread - which would also corrupt this test's own
+      // append counter for the leaving member.
+      final var holdBackCommit = new AtomicBoolean(false);
+      final var appendsToLeavingMember = new AtomicInteger();
+      final var leaderProtocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
+      leaderProtocol.interceptRequest(
+          ConfigureRequest.class,
+          (receiver, request) -> {
+            // oldMembers().isEmpty() alone is not enough to identify C-new: the *initial*
+            // configuration is also non-joint and could resurface here as a retried/straggler
+            // ConfigureRequest after this interceptor is registered (e.g. after a dropped
+            // configure response, or a term bump). Requiring that the leaving member is
+            // already excluded from the new members uniquely identifies the final,
+            // post-joint-consensus configuration.
+            if (receiver.equals(quorumFollowerId)
+                && request.oldMembers().isEmpty()
+                && request.newMembers().stream()
+                    .noneMatch(member -> member.memberId().equals(leavingId))) {
+              holdBackCommit.set(true);
+            }
+          });
+      leaderProtocol.interceptDelivery(
+          VersionedAppendRequest.class,
+          (receiver, request) -> {
+            if (receiver.equals(leavingId)) {
+              appendsToLeavingMember.incrementAndGet();
+            }
+            final var result = new CompletableFuture<Void>();
+            CompletableFuture.runAsync(
+                () -> {
+                  if (receiver.equals(quorumFollowerId)
+                      && holdBackCommit.get()
+                      && !request.entries().isEmpty()) {
+                    result.completeExceptionally(new ConnectException());
+                  } else {
+                    result.complete(null);
+                  }
+                },
+                CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
+            return result;
+          });
+
+      final var leaveFuture = leaving.leave();
+
+      // then - while the final configuration is appended but held back from committing, the
+      // leaving member keeps receiving appends across several heartbeat intervals, and neither
+      // the leave nor the leader's own leadership resolves
+      Awaitility.await("the final configuration is appended but not yet committed")
+          .until(holdBackCommit::get);
+      final var appendsAtHoldBack = appendsToLeavingMember.get();
+      Awaitility.await("the leaving member keeps receiving appends")
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> appendsToLeavingMember.get() >= appendsAtHoldBack + 5);
+      assertThat(leader.isLeader()).isTrue();
+      assertThat(leaveFuture).isNotDone();
+
+      // when - the configuration is allowed to commit
+      holdBackCommit.set(false);
+
+      // then - the leave completes, the leaving member's context is torn down everywhere, and it
+      // stops receiving appends
+      assertThat(leaveFuture).succeedsWithin(Duration.ofSeconds(10));
+      final var remaining = List.of(leader, quorumFollower);
+      final var expected =
+          remaining.stream().map(server -> server.cluster().getLocalMember()).toList();
+      Awaitility.await("the leaving member's context is removed everywhere")
+          .untilAsserted(
+              () ->
+                  assertThat(remaining)
+                      .allSatisfy(
+                          member ->
+                              assertThat(member.cluster().getMembers())
+                                  .containsExactlyInAnyOrderElementsOf(expected)));
+      assertThat(leader.getContext().getCluster().getMemberContext(leavingId)).isNull();
+    }
+
+    /**
+     * Pins existing behavior against regression: a removed leader steps down only once the removal
+     * commits, not as soon as it is appended. Role transitions for demotions/removals are driven by
+     * the commit-index hook in {@code RaftContext#setCommitIndex}, not by the append-time
+     * membership bookkeeping in {@code RaftClusterContext#updateConfiguration} - so a leaving
+     * leader keeps leading and replicating for as long as the removal is uncommitted.
+     */
+    @Test
+    void removedLeaderStepsDownAtCommitNotAtAppend(@TempDir final Path tmp) {
+      // given - a cluster with 3 members and a long quorum response timeout, so the leader does
+      // not suspect a network partition and step down early while this test deliberately holds
+      // back one member's acknowledgement of the final configuration
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      // A held-back follower is not the only one affected while the removal is uncommitted: any
+      // *other* follower that catches up to the removing configuration entry stops recognizing
+      // the (about-to-be-removed) leader via RaftClusterContext#getMember, because that lookup is
+      // backed by remoteMemberContexts, which is pruned at append time on unfixed code. Its
+      // election timer then never gets reset by further heartbeats from that leader, and it calls
+      // its own election after one electionTimeout. Widen the election timeout so that neither
+      // follower's timer fires within this test's observation window.
+      final Consumer<RaftPartitionConfig> testTimeouts =
+          config -> {
+            config.setMaxQuorumResponseTimeout(Duration.ofSeconds(60));
+            config.setElectionTimeout(Duration.ofSeconds(3));
+          };
+
+      final var m1 =
+          createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3), testTimeouts);
+      final var m2 =
+          createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3), testTimeouts);
+      final var m3 =
+          createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2), testTimeouts);
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+      awaitLeader(m1, m2, m3);
+      final var leader = getLeaderServer(List.of(m1, m2, m3)).orElseThrow();
+      final var leaderId = MemberId.from(leader.name());
+      final var followers = Stream.of(m1, m2, m3).filter(s -> s != leader).toList();
+      final var heldBackFollower = followers.get(0);
+      final var heldBackFollowerId = MemberId.from(heldBackFollower.name());
+
+      // when - the leader leaves. The final, non-joint configuration is identifiable by an empty
+      // oldMembers (the joint configuration that precedes it always carries the current members
+      // as oldMembers); once the leader starts disseminating it to one follower, drop entry-
+      // carrying appends to that follower, so its match index can never reach the new
+      // configuration's index and the removal can never commit. Empty heartbeats keep flowing so
+      // the follower is not falsely suspected unreachable and does not call an election itself.
+      // Every append exchange (to either follower) is delayed by a few milliseconds: the in-memory
+      // test protocol otherwise completes them fast enough that a follower which keeps
+      // acknowledging immediately refuels another full round of appends to every member (see
+      // LeaderAppender#recordHeartbeat -> sendHeartbeats), busy-looping the single raft actor
+      // thread. A few milliseconds is negligible against this test's assertions, which all operate
+      // on a scale of several heartbeat intervals or more.
+      final var holdBackCommit = new AtomicBoolean(false);
+      final var leaderProtocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
+      leaderProtocol.interceptRequest(
+          ConfigureRequest.class,
+          (receiver, request) -> {
+            // oldMembers().isEmpty() alone is not enough to identify C-new: the *initial*
+            // configuration is also non-joint and could resurface here as a retried/straggler
+            // ConfigureRequest after this interceptor is registered (e.g. after a dropped
+            // configure response, or a term bump). Requiring that the leaving leader is
+            // already excluded from the new members uniquely identifies the final,
+            // post-joint-consensus configuration.
+            if (receiver.equals(heldBackFollowerId)
+                && request.oldMembers().isEmpty()
+                && request.newMembers().stream()
+                    .noneMatch(member -> member.memberId().equals(leaderId))) {
+              holdBackCommit.set(true);
+            }
+          });
+      leaderProtocol.interceptDelivery(
+          VersionedAppendRequest.class,
+          (receiver, request) -> {
+            final var result = new CompletableFuture<Void>();
+            CompletableFuture.runAsync(
+                () -> {
+                  if (receiver.equals(heldBackFollowerId)
+                      && holdBackCommit.get()
+                      && !request.entries().isEmpty()) {
+                    result.completeExceptionally(new ConnectException());
+                  } else {
+                    result.complete(null);
+                  }
+                },
+                CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
+            return result;
+          });
+
+      final var leaveFuture = leader.leave();
+
+      // then - while the final configuration is appended but held back from committing, the
+      // removed leader keeps leading and heartbeating instead of stepping down immediately
+      Awaitility.await("the final configuration is appended but not yet committed")
+          .until(holdBackCommit::get);
+      Awaitility.await("the leader keeps leading while the removal is uncommitted")
+          .during(Duration.ofMillis(800))
+          .until(leader::isLeader);
+      assertThat(leaveFuture).isNotDone();
+
+      // when - the configuration is allowed to commit
+      holdBackCommit.set(false);
+
+      // then - only now does the removed leader step down, the leave completes, and the
+      // remaining members elect a new leader among themselves
+      assertThat(leaveFuture).succeedsWithin(Duration.ofSeconds(10));
+      Awaitility.await("the removed leader has stepped down to inactive")
+          .untilAsserted(
+              () ->
+                  assertThat(leader.cluster().getLocalMember().getType())
+                      .isEqualTo(RaftMember.Type.INACTIVE));
+      awaitLeader(followers.toArray(RaftServer[]::new));
+      final var expected =
+          followers.stream().map(server -> server.cluster().getLocalMember()).toList();
+      assertThat(followers)
+          .allSatisfy(
+              member ->
+                  assertThat(member.cluster().getMembers())
+                      .containsExactlyInAnyOrderElementsOf(expected));
     }
   }
 
