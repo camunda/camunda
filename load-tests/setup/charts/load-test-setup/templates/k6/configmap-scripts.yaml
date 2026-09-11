@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-scripts
+  labels:
+    app.kubernetes.io/component: k6
+data:
+  {{- (.Files.Glob "k6/scripts/**.js").AsConfig | nindent 2 }}
