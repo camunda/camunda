@@ -26,7 +26,6 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.io.ByteArrayInputStream;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -54,7 +53,7 @@ public class ModelCreator {
    * once and shared from here. There is an entry per model the suite deployed, which the suite
    * holds on to anyway.
    */
-  private static final Map<ProcessModel, Set<String>> COVERABLE_ELEMENT_IDS_BY_MODEL =
+  private static final Map<ProcessModel, CoverableElements> COVERABLE_ELEMENTS_BY_MODEL =
       new ConcurrentHashMap<>();
 
   /**
@@ -113,7 +112,7 @@ public class ModelCreator {
         .processDefinitionId(processDefinition.getProcessDefinitionId())
         .processName(processDefinition.getName())
         .totalElementCount(
-            coverableElementIds(modelInstance, processDefinition.getProcessDefinitionId()).size())
+            coverableElements(modelInstance, processDefinition.getProcessDefinitionId()).count())
         .version(String.valueOf(processDefinition.getVersion()))
         .xml(Bpmn.convertToString(modelInstance))
         .build();
@@ -156,31 +155,30 @@ public class ModelCreator {
   }
 
   /**
-   * Collects the ids of the elements a model can cover, which are the elements counted by {@link
+   * Collects the elements a model can cover, which are the elements counted by {@link
    * #createModel}.
    *
-   * @param processModel The model to collect the element ids of
-   * @return The ids of the flow nodes and sequence flows of the executable process
+   * @param processModel The model to collect the elements of
+   * @return The flow nodes and sequence flows of the executable process, by kind
    */
-  public static Set<String> coverableElementIds(final ProcessModel processModel) {
-    return COVERABLE_ELEMENT_IDS_BY_MODEL.computeIfAbsent(
+  public static CoverableElements coverableElements(final ProcessModel processModel) {
+    return COVERABLE_ELEMENTS_BY_MODEL.computeIfAbsent(
         processModel,
         model ->
-            Collections.unmodifiableSet(
-                coverableElementIds(
-                    readModel(model.getXml(), model.getProcessDefinitionId()),
-                    model.getProcessDefinitionId())));
+            coverableElements(
+                readModel(model.getXml(), model.getProcessDefinitionId()),
+                model.getProcessDefinitionId()));
   }
 
   /**
-   * Collects the ids of the elements a model can cover, which are the elements counted by {@link
+   * Collects the elements a model can cover, which are the elements counted by {@link
    * #createModel}.
    *
    * @param modelInstance The parsed BPMN model
    * @param processDefinitionId The ID of the executable process within the model
-   * @return The ids of the flow nodes and sequence flows of the executable process
+   * @return The flow nodes and sequence flows of the executable process, by kind
    */
-  public static Set<String> coverableElementIds(
+  public static CoverableElements coverableElements(
       final BpmnModelInstance modelInstance, final String processDefinitionId) {
 
     final Set<FlowNode> definitionFlowNodes =
@@ -188,14 +186,15 @@ public class ModelCreator {
             .filter(node -> isExecutable(node, processDefinitionId))
             .collect(Collectors.toSet());
 
-    final Stream<String> definitionSequenceFlowIds =
+    final Set<String> definitionSequenceFlowIds =
         modelInstance.getModelElementsByType(SequenceFlow.class).stream()
             .filter(sequenceFlow -> definitionFlowNodes.contains(sequenceFlow.getSource()))
-            .map(SequenceFlow::getId);
+            .map(SequenceFlow::getId)
+            .collect(Collectors.toSet());
 
-    return Stream.concat(
-            definitionFlowNodes.stream().map(FlowNode::getId), definitionSequenceFlowIds)
-        .collect(Collectors.toSet());
+    return new CoverableElements(
+        definitionFlowNodes.stream().map(FlowNode::getId).collect(Collectors.toSet()),
+        definitionSequenceFlowIds);
   }
 
   /**

@@ -29,6 +29,7 @@ import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
@@ -39,6 +40,8 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstan
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CoverageCreatorTest {
@@ -393,6 +396,48 @@ class CoverageCreatorTest {
     // then: the flow is taken once, so it does not count as covering several elements
     assertThat(coverage.getTakenSequenceFlows()).containsExactly("Flow_Timer");
     assertThat(coverage.getCoverage()).isEqualTo(3.0 / 6);
+  }
+
+  @Test
+  void shouldCountAnElementOfTheReportedModelOnlyAsTheKindOfElementItIs() {
+    // given: a model whose sequence flow carries an id that names a task in another deployment
+    final ProcessModel reportedModel =
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("shared")
+                .endEvent("end")
+                .done());
+
+    // and: a run of that other deployment, which completed the task
+    final ProcessCoverage stubCoverage =
+        ImmutableProcessCoverage.builder()
+            .processDefinitionId("process")
+            .addCompletedElements("shared")
+            .coverage(1.0)
+            .build();
+
+    // and: a run of the reported deployment, which took the sequence flow
+    final ProcessCoverage reportedCoverage =
+        ImmutableProcessCoverage.builder()
+            .processDefinitionId("process")
+            .addCompletedElements("start", "end")
+            .addTakenSequenceFlows("shared")
+            .coverage(1.0)
+            .build();
+
+    // when
+    final List<ProcessCoverage> aggregated =
+        CoverageCreator.aggregateCoverages(
+            Arrays.asList(stubCoverage, reportedCoverage),
+            Collections.singletonList(reportedModel));
+
+    // then: the id counts as the sequence flow the model has, not also as an element it has not
+    assertThat(aggregated).hasSize(1);
+    assertThat(aggregated.get(0).getCompletedElements()).containsExactlyInAnyOrder("start", "end");
+    assertThat(aggregated.get(0).getTakenSequenceFlows()).containsExactly("shared");
+    assertThat(aggregated.get(0).getCoverage()).isEqualTo(1.0);
   }
 
   private static ElementInstance completedElementInstance(

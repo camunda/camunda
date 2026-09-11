@@ -90,11 +90,12 @@ public class CoverageCreator {
     enhanceSequenceFlowsByEventBasedGateway(
         takenSequenceFlowIds, completedElementInstances, modelInstance);
 
-    final Set<String> coverableElementIds =
-        ModelCreator.coverableElementIds(modelInstance, processModel.getProcessDefinitionId());
-    final List<String> coveredElements = retainCoverable(completedElementIds, coverableElementIds);
+    final CoverableElements coverableElements =
+        ModelCreator.coverableElements(modelInstance, processModel.getProcessDefinitionId());
+    final List<String> coveredElements =
+        retainCoverable(completedElementIds, coverableElements.getFlowNodeIds());
     final List<String> coveredSequenceFlows =
-        retainCoverable(takenSequenceFlowIds, coverableElementIds);
+        retainCoverable(takenSequenceFlowIds, coverableElements.getSequenceFlowIds());
 
     return ImmutableProcessCoverage.builder()
         .processDefinitionId(processInstanceData.getProcessInstance().getProcessDefinitionId())
@@ -158,21 +159,21 @@ public class CoverageCreator {
                 () ->
                     new IllegalStateException(
                         "No model found for process definition id: " + processDefinitionId));
-    final Set<String> coverableElementIds = ModelCreator.coverableElementIds(processModel);
+    final CoverableElements coverableElements = ModelCreator.coverableElements(processModel);
     final List<String> completedElements =
         retainCoverable(
             coverages.stream()
                 .flatMap(c -> c.getCompletedElements().stream())
                 .distinct()
                 .collect(Collectors.toList()),
-            coverableElementIds);
+            coverableElements.getFlowNodeIds());
     final List<String> takenSequenceFlows =
         retainCoverable(
             coverages.stream()
                 .flatMap(c -> c.getTakenSequenceFlows().stream())
                 .distinct()
                 .collect(Collectors.toList()),
-            coverableElementIds);
+            coverableElements.getSequenceFlowIds());
     return ImmutableProcessCoverage.builder()
         .processDefinitionId(processDefinitionId)
         .addAllCompletedElements(completedElements)
@@ -182,18 +183,21 @@ public class CoverageCreator {
   }
 
   /**
-   * Retains the elements that the reported model can cover.
+   * Retains the elements that the reported model can cover as the kind of element they are.
    *
    * <p>A process definition id can be covered by more than one model, for example by the real
    * process and by the stub that {@code MOCK_CHILD_PROCESS} deploys under the same id. The report
    * describes such a process by a single model, so elements of the other models are not part of the
-   * coverage: they are neither counted nor highlighted in the diagram.
+   * coverage: they are neither counted nor highlighted in the diagram. An id names an element only
+   * within its own model, so what an instance completed is retained against the flow nodes of the
+   * reported model and what it took against its sequence flows. Retaining both against all of its
+   * elements would let one element count twice.
    *
    * <p>An element that an instance covered several times, for example by looping over it, is
    * retained once. Otherwise it would count as covering several elements of the model.
    *
    * @param elementIds The ids of the covered elements
-   * @param coverableElementIds The ids of the elements of the reported model
+   * @param coverableElementIds The ids of the elements of the reported model of that kind
    * @return The distinct covered element ids that are part of the reported model
    */
   private static List<String> retainCoverable(
