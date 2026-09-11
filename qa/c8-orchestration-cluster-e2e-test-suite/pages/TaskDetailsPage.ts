@@ -151,8 +151,16 @@ class TaskDetailsPage {
   }
 
   async clickAssignToMeButton() {
-    if (!(await this.assignedToMeText.isVisible())) {
-      await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    // A non-waiting isVisible() snapshot taken right after navigation can
+    // race the assignee panel still loading, falling through to wait
+    // forever on "Assign to me" when the task is actually already assigned
+    // (so only "Unassign"/assignedToMeText can ever appear). Wait for
+    // whichever terminal state actually resolves, then only click if the
+    // button (not the already-assigned text) is what's showing.
+    await expect(this.assignedToMeText.or(this.assignToMeButton)).toBeVisible({
+      timeout: 60000,
+    });
+    if (await this.assignToMeButton.isVisible()) {
       await this.assignToMeButton.click({timeout: 60000});
     }
   }

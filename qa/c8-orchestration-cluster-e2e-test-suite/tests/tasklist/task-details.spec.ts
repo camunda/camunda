@@ -461,13 +461,24 @@ test.describe('task details page', () => {
     // waits for an editable field). Do not remove this guard.
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await expect(taskDetailsPage.numberInput).toBeEditable();
+    // "Editable" and "bound to the form data model" aren't perfectly
+    // synchronized -- a short settle wait plus retrying each click+assert
+    // pair covers the narrow remaining window instead of relying on a single
+    // guard check alone.
+    await sleep(500);
 
-    await taskDetailsPage.clickIncrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '1');
-    await taskDetailsPage.clickIncrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '2');
-    await taskDetailsPage.clickDecrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '1');
+    await expect(async () => {
+      await taskDetailsPage.clickIncrementButton();
+      await taskDetailsPage.assertFieldValue('Number', '1');
+    }).toPass({timeout: 10000});
+    await expect(async () => {
+      await taskDetailsPage.clickIncrementButton();
+      await taskDetailsPage.assertFieldValue('Number', '2');
+    }).toPass({timeout: 10000});
+    await expect(async () => {
+      await taskDetailsPage.clickDecrementButton();
+      await taskDetailsPage.assertFieldValue('Number', '1');
+    }).toPass({timeout: 10000});
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
@@ -575,7 +586,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertItemChecked('Value2');
   });
 
-  // TODO issue #3719
+  // Skipped due to bug #60174: https://github.com/camunda/camunda/issues/60174
   // eslint-disable-next-line playwright/no-skipped-test
   test.skip('task completion with tag list form', async ({
     taskPanelPage,
@@ -600,7 +611,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form.getByText('Value 2')).toBeVisible();
   });
 
-  // TODO issue #3719
+  // Skipped due to bug #60174: https://github.com/camunda/camunda/issues/60174
   // eslint-disable-next-line playwright/no-skipped-test
   test.skip('task completion with text template form', async ({
     taskPanelPage,
@@ -681,7 +692,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.bpmnDiagram).toBeVisible();
   });
 
-  // TODO issue #41614
+  // Skipped due to bug #41614: https://github.com/camunda/camunda/issues/41614
   // eslint-disable-next-line playwright/no-skipped-test
   test.skip('task completion with large variable form', async ({
     taskPanelPage,

@@ -110,7 +110,7 @@ test.describe('task panel page', () => {
     }).toPass({timeout: 5000});
   });
 
-  // TODO: This test fails in V2 mode - investigate if this is expected behavior or a bug
+  // Skipped due to bug #62704: https://github.com/camunda/camunda/issues/62704
   // V2 mode may have different scrolling/pagination behavior that affects task count expectations
   test.skip('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
