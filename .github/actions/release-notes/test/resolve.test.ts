@@ -22,16 +22,34 @@ interface PrNode {
   readonly number: number;
   readonly baseRefName: string;
   readonly state: string;
+  readonly headRefName?: string;
+  readonly mergeCommit?: { readonly oid: string } | null;
 }
+
+/** What `mapCommitsToPrs` returns for a node built with `commitPage`'s defaults,
+ *  so each test states only the fields it is actually about. */
+const expectedAssoc = (number: number, baseRefName: string) => ({
+  number,
+  baseRefName,
+  headRefName: `feature-${number}`,
+  mergeCommitOid: `merge-${number}`,
+});
 
 /** One `mapCommitsToPrs` page. `alias` is `c0` for the batch query, `c` for a cursor follow-up. */
 function commitPage(nodes: readonly PrNode[], opts: { alias?: string; nextCursor?: string } = {}): unknown {
+  // Branch name and merge commit default to a plausible in-range shape; a test
+  // that cares about either passes it explicitly.
+  const filled = nodes.map((node) => ({
+    headRefName: `feature-${node.number}`,
+    mergeCommit: { oid: `merge-${node.number}` },
+    ...node,
+  }));
   return {
     data: {
       repository: {
         [opts.alias ?? 'c0']: {
           associatedPullRequests: {
-            nodes,
+            nodes: filled,
             pageInfo: { hasNextPage: opts.nextCursor !== undefined, endCursor: opts.nextCursor ?? null },
           },
         },
@@ -87,7 +105,7 @@ const mergedPage = commitPage([{ number: 1, baseRefName: 'main', state: 'MERGED'
 
 test('single commit maps to its single associated PR', async () => {
   const result = await resolver(fakeFetch([commitPage([{ number: 1, baseRefName: 'main', state: 'MERGED' }])])).mapCommitsToPrs(['abc123']);
-  assert.deepEqual(result, [{ sha: 'abc123', associatedPrs: [{ number: 1, baseRefName: 'main' }] }]);
+  assert.deepEqual(result, [{ sha: 'abc123', associatedPrs: [expectedAssoc(1, 'main')] }]);
 });
 
 test('commit and repo identifiers are sent as GraphQL variables, never string-concatenated into the query', async () => {
@@ -124,8 +142,8 @@ test('pagination: a commit with more associated-PR pages follows the cursor and 
   assert.equal(calls.length, 2);
   assert.equal(calls[1]!.body.variables.after, 'CURSOR1');
   assert.deepEqual(result[0]!.associatedPrs, [
-    { number: 1, baseRefName: 'main' },
-    { number: 2, baseRefName: 'stable/8.8' },
+    expectedAssoc(1, 'main'),
+    expectedAssoc(2, 'stable/8.8'),
   ]);
 });
 
@@ -138,7 +156,7 @@ test('associatedPullRequests is filtered to MERGED — the field has no states a
     ]),
   ]);
   const result = await resolver(fetchImpl).mapCommitsToPrs(['abc']);
-  assert.deepEqual(result[0]!.associatedPrs, [{ number: 61368, baseRefName: 'stable/8.8' }]);
+  assert.deepEqual(result[0]!.associatedPrs, [expectedAssoc(61368, 'stable/8.8')]);
 });
 
 test('a bot author\'s login is normalized to the REST [bot] suffix — GraphQL omits it for the same actor', async () => {
@@ -204,7 +222,7 @@ test('a secondary rate limit is retried with backoff and eventually succeeds', a
   );
   const result = await resolver(fetchImpl).mapCommitsToPrs(['abc']);
   assert.equal(calls.length, 2);
-  assert.deepEqual(result[0]!.associatedPrs, [{ number: 1, baseRefName: 'main' }]);
+  assert.deepEqual(result[0]!.associatedPrs, [expectedAssoc(1, 'main')]);
 });
 
 test('a rate limit that never clears throws at exactly MAX_RETRIES attempts, never loops forever', async () => {
@@ -236,7 +254,7 @@ test('a transient 502 is retried rather than failing the whole release job', asy
   const fetchImpl = fakeHttp([{ status: 502 }, { status: 200, payload: mergedPage }], calls);
   const result = await resolver(fetchImpl).mapCommitsToPrs(['abc']);
   assert.equal(calls.count, 2);
-  assert.deepEqual(result[0]!.associatedPrs, [{ number: 1, baseRefName: 'main' }]);
+  assert.deepEqual(result[0]!.associatedPrs, [expectedAssoc(1, 'main')]);
 });
 
 test('HTTP 429 is retried and the server\'s retry-after is honoured over the backoff', async () => {
@@ -247,7 +265,7 @@ test('HTTP 429 is retried and the server\'s retry-after is honoured over the bac
   ]);
   const result = await resolver(fetchImpl, async (ms) => void slept.push(ms)).mapCommitsToPrs(['abc']);
   assert.deepEqual(slept, [7000]);
-  assert.deepEqual(result[0]!.associatedPrs, [{ number: 1, baseRefName: 'main' }]);
+  assert.deepEqual(result[0]!.associatedPrs, [expectedAssoc(1, 'main')]);
 });
 
 test('a 403 carrying retry-after is a throttle and is retried', async () => {
@@ -255,7 +273,7 @@ test('a 403 carrying retry-after is a throttle and is retried', async () => {
   const fetchImpl = fakeHttp([{ status: 403, headers: { 'retry-after': '1' } }, { status: 200, payload: mergedPage }], calls);
   const result = await resolver(fetchImpl).mapCommitsToPrs(['abc']);
   assert.equal(calls.count, 2);
-  assert.deepEqual(result[0]!.associatedPrs, [{ number: 1, baseRefName: 'main' }]);
+  assert.deepEqual(result[0]!.associatedPrs, [expectedAssoc(1, 'main')]);
 });
 
 test('a bare 403 is a permission failure and fails immediately, never retried', async () => {

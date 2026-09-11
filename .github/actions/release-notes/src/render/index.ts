@@ -63,32 +63,95 @@ function groupNameFor(pr: RenderPrInput): string {
   return pr.section ?? 'Uncategorized';
 }
 
-function renderSectionedBody(prs: readonly RenderPrInput[]): string {
-  const breaking = prs.filter((pr) => pr.breaking);
-  const groups = new Map<string, RenderPrInput[]>();
+/**
+ * One rendered line. The unit of presentation is the user-visible change, not
+ * the pull request: an issue delivered by four PRs is one entry naming all
+ * four. Rendering it per-PR instead repeats the issue's title once per PR,
+ * and a reader counting delivered work reads four features where one shipped.
+ */
+interface RenderEntry {
+  readonly groupName: string;
+  readonly title: string;
+  readonly issueNumbers: readonly number[];
+  readonly prNumbers: readonly number[];
+  readonly breaking: boolean;
+}
+
+/** C1: the issue is the grouping key. A PR with no issue — opt-out, bot-exempt,
+ *  unattributed — has nothing to group under and stays a single-PR entry. */
+function entryKeyFor(pr: RenderPrInput): string {
+  return pr.issueNumbers.length > 0 ? `issue:${pr.issueNumbers[0]}` : `pr:${pr.number}`;
+}
+
+/** A section absent from SECTION_ORDER sorts after every known one, matching
+ *  the output order below, which appends unknown names rather than dropping them. */
+function sectionRank(name: string): number {
+  const index = SECTION_ORDER.indexOf(name);
+  return index === -1 ? SECTION_ORDER.length : index;
+}
+
+/**
+ * Where a group's PRs disagree on section — a `feat`, a `fix` and two
+ * `refactor`s delivering one issue — the most customer-visible section wins,
+ * and the entry appears there once rather than repeating under each.
+ *
+ * Deliberately not "the section of the PR that closed the issue": that needs
+ * `closesIssueNumbers`, which is a proxy pending a real per-issue closer
+ * lookup, and has no answer at all when nothing in the range closed the issue.
+ * Ranking by visibility needs neither, so a wrong closer can never misplace an
+ * entry, and it errs toward showing — the direction this epic exists to fix.
+ */
+function toEntries(prs: readonly RenderPrInput[]): RenderEntry[] {
+  const grouped = new Map<string, RenderPrInput[]>();
   for (const pr of prs) {
-    const name = groupNameFor(pr);
-    const list = groups.get(name) ?? [];
+    const key = entryKeyFor(pr);
+    const list = grouped.get(key) ?? [];
     list.push(pr);
-    groups.set(name, list);
+    grouped.set(key, list);
+  }
+
+  return [...grouped.values()].map((group) => {
+    // Non-empty by construction, and ties keep the first PR in range order.
+    const lead = group.reduce((best, pr) =>
+      sectionRank(groupNameFor(pr)) < sectionRank(groupNameFor(best)) ? pr : best,
+    );
+    return {
+      groupName: groupNameFor(lead),
+      title: lead.title,
+      issueNumbers: [...new Set(group.flatMap((pr) => pr.issueNumbers))],
+      prNumbers: group.map((pr) => pr.number),
+      breaking: group.some((pr) => pr.breaking),
+    };
+  });
+}
+
+function renderSectionedBody(prs: readonly RenderPrInput[]): string {
+  const entries = toEntries(prs);
+  const groups = new Map<string, RenderEntry[]>();
+  for (const entry of entries) {
+    const list = groups.get(entry.groupName) ?? [];
+    list.push(entry);
+    groups.set(entry.groupName, list);
   }
 
   const lines: string[] = [];
+  const breaking = entries.filter((entry) => entry.breaking);
   if (breaking.length > 0) {
-    lines.push('## Breaking changes', '', ...breaking.map((pr) => renderLine(pr)), '');
+    lines.push('## Breaking changes', '', ...breaking.map((entry) => renderLine(entry)), '');
   }
   const orderedNames = [...SECTION_ORDER, ...[...groups.keys()].filter((name) => !SECTION_ORDER.includes(name))];
   for (const name of orderedNames) {
     const list = groups.get(name);
     if (!list?.length) continue;
-    lines.push(`## ${name}`, '', ...list.map((pr) => renderLine(pr)), '');
+    lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)), '');
   }
   return lines.join('\n').trim();
 }
 
-function renderLine(pr: RenderPrInput): string {
-  const issues = pr.issueNumbers.length ? ` (${pr.issueNumbers.map((n) => `#${n}`).join(', ')})` : '';
-  return `- ${pr.title} (#${pr.number})${issues}`;
+function renderLine(entry: RenderEntry): string {
+  const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
+  if (entry.issueNumbers.length === 0) return `- ${entry.title} (${prs})`;
+  return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}`;
 }
 
 function commentFor(pr: RenderPrInput, issueNumber: number, version: string): { relationKind: 'closing' | 'contributor'; text: string } {
@@ -97,16 +160,39 @@ function commentFor(pr: RenderPrInput, issueNumber: number, version: string): { 
     : { relationKind: 'contributor', text: `Partially delivered in ${version} by #${pr.number}.` };
 }
 
+/**
+ * The gate bucket holds two different failures — a PR that declared no issue at
+ * all, and one whose every declared ref turned out to be dead. They need
+ * opposite fixes (add a link vs. repair the target), so name them apart: a
+ * release operator reading "unattributed" against a PR that visibly *has* a
+ * `closes` line has no way to tell that the referenced issue is what is gone.
+ */
+function describeGuardFailure(bucket: readonly RenderPrInput[]): string {
+  const list = (prs: readonly RenderPrInput[]) => prs.map((pr) => `#${pr.number}`).join(', ');
+  const noRefs = bucket.filter((pr) => pr.attributionSource === 'unattributed');
+  const deadRefs = bucket.filter((pr) => pr.attributionSource === 'resolutionFailed');
+
+  const parts = [`Release-notes attribution gate failed for ${bucket.length} pull request(s).`];
+  if (noRefs.length > 0) {
+    parts.push(`No issue reference found: ${list(noRefs)} — add a linked issue to the PR's "Related issues" section.`);
+  }
+  if (deadRefs.length > 0) {
+    parts.push(
+      `Every referenced issue was unresolvable: ${list(deadRefs)} — the reference exists but its target is deleted, ` +
+        'transferred, or unreadable with this token; repair the reference rather than the PR body.',
+    );
+  }
+  parts.push('Set allow-unattributed=true with a non-empty unattributed-reason to override.');
+  return parts.join(' ');
+}
+
 export function render(
   prs: readonly RenderPrInput[],
   unattributed: readonly RenderPrInput[],
   options: RenderOptions,
 ): RenderResult {
   const guardFailed = unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason);
-  const failureReason = guardFailed
-    ? `Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
-      'Set allow-unattributed=true with a non-empty unattributed-reason to override.'
-    : undefined;
+  const failureReason = guardFailed ? describeGuardFailure(unattributed) : undefined;
   // A non-empty reason is proven whenever the guard passed with `unattributed` present.
   const unattributedReason = options.unattributedReason ?? '';
 

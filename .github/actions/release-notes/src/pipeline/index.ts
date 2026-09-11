@@ -81,10 +81,10 @@ async function attributeDirectly(
   return decideAttribution({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
 
-/** Attribution outcomes with nothing further to try directly — eligible for
- *  the backport hop and the bot-link exemption. Mirrors the gate's own
- *  hop trigger (any failing link outcome, not just "nothing found"). */
-const HOPPABLE_SOURCES: ReadonlySet<AttributionSource> = new Set(['unattributed', 'resolutionFailed']);
+/** Attribution outcomes that found nothing to attribute to — the trigger for
+ *  the bot-link exemption. Mirrors the gate's own failing-link outcomes, not
+ *  just "nothing found". */
+const UNRESOLVED_SOURCES: ReadonlySet<AttributionSource> = new Set(['unattributed', 'resolutionFailed']);
 
 interface Attributed {
   readonly decision: AttributionDecision;
@@ -99,6 +99,19 @@ interface Attributed {
  * Direct scan, then the backport hop (inheriting the original's decision,
  * C7/V2), then the bot link exemption LAST — an exempt bot that did link a real
  * issue keeps that attribution rather than being overridden by the exemption.
+ *
+ * The hop fires whenever a backport marker is present, NOT only when the
+ * backport's own body yielded nothing: C7 makes the original canonical, and a
+ * backport body is a bot's paraphrase of it. `backport-action` copies the
+ * original's refs into `relates to ${issue_refs}` without stripping HTML
+ * comments, so the PR template's own `<!-- closes #1234 -->` examples arrive
+ * here as visible, author-looking refs — four of them, plus the real one. A
+ * body-wide scan of that *succeeds*, which is exactly why gating the hop on
+ * failure let a 2018 issue title describe a 2026 fix. Deciding from the
+ * original makes the outcome independent of whatever the bot wrote.
+ *
+ * An explicit opt-out tick on the backport is the one thing that outranks the
+ * original: unlike a copied ref, it is a deliberate statement about this PR.
  */
 async function attributePr(
   resolver: PipelineResolver,
@@ -108,7 +121,10 @@ async function attributePr(
   let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
   let mergedAt = pr.mergedAt;
 
-  if (HOPPABLE_SOURCES.has(decision.source)) {
+  if (decision.source !== 'optOut') {
+    // Resolves to null when there is no backport marker, so this costs nothing
+    // for an ordinary PR — and for a backport bot the original is fetched for
+    // the inherited title anyway, memoized by the caller.
     const originalPull = await original();
     if (originalPull) {
       const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
@@ -117,7 +133,7 @@ async function attributePr(
     }
   }
 
-  if (HOPPABLE_SOURCES.has(decision.source) && isLinkExemptAuthor(pr.authorLogin)) {
+  if (UNRESOLVED_SOURCES.has(decision.source) && isLinkExemptAuthor(pr.authorLogin)) {
     return {
       decision: {
         source: 'botExempt',

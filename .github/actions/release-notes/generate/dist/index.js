@@ -273,7 +273,8 @@ async function run() {
         message: commit.message,
         associatedPrs: commitMappings[i]?.associatedPrs ?? [],
     }));
-    const { prNumbers, reasons: rangeReasons } = (0, range_1.resolveCommitsToPrs)(commitsForDedupe, input.releaseBranch);
+    const rangeShas = new Set(walked.map((commit) => commit.sha));
+    const { prNumbers, reasons: rangeReasons } = (0, range_1.resolveCommitsToPrs)(commitsForDedupe, input.releaseBranch, rangeShas);
     for (const reason of rangeReasons)
         core.warning(reason);
     const metadata = await graphql.fetchPrMetadata(prNumbers);
@@ -643,19 +644,35 @@ async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const legacyRefs = needsLegacyScan ? await resolver.resolveRefs((0, parser_1.parseRefs)(body)) : [];
     return (0, attribution_1.decideAttribution)({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
-/** Attribution outcomes with nothing further to try directly — eligible for
- *  the backport hop and the bot-link exemption. Mirrors the gate's own
- *  hop trigger (any failing link outcome, not just "nothing found"). */
-const HOPPABLE_SOURCES = new Set(['unattributed', 'resolutionFailed']);
+/** Attribution outcomes that found nothing to attribute to — the trigger for
+ *  the bot-link exemption. Mirrors the gate's own failing-link outcomes, not
+ *  just "nothing found". */
+const UNRESOLVED_SOURCES = new Set(['unattributed', 'resolutionFailed']);
 /**
  * Direct scan, then the backport hop (inheriting the original's decision,
  * C7/V2), then the bot link exemption LAST — an exempt bot that did link a real
  * issue keeps that attribution rather than being overridden by the exemption.
+ *
+ * The hop fires whenever a backport marker is present, NOT only when the
+ * backport's own body yielded nothing: C7 makes the original canonical, and a
+ * backport body is a bot's paraphrase of it. `backport-action` copies the
+ * original's refs into `relates to ${issue_refs}` without stripping HTML
+ * comments, so the PR template's own `<!-- closes #1234 -->` examples arrive
+ * here as visible, author-looking refs — four of them, plus the real one. A
+ * body-wide scan of that *succeeds*, which is exactly why gating the hop on
+ * failure let a 2018 issue title describe a 2026 fix. Deciding from the
+ * original makes the outcome independent of whatever the bot wrote.
+ *
+ * An explicit opt-out tick on the backport is the one thing that outranks the
+ * original: unlike a copied ref, it is a deliberate statement about this PR.
  */
 async function attributePr(resolver, pr, original) {
     let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
     let mergedAt = pr.mergedAt;
-    if (HOPPABLE_SOURCES.has(decision.source)) {
+    if (decision.source !== 'optOut') {
+        // Resolves to null when there is no backport marker, so this costs nothing
+        // for an ordinary PR — and for a backport bot the original is fetched for
+        // the inherited title anyway, memoized by the caller.
         const originalPull = await original();
         if (originalPull) {
             const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
@@ -663,7 +680,7 @@ async function attributePr(resolver, pr, original) {
             mergedAt = originalPull.mergedAt ?? pr.mergedAt;
         }
     }
-    if (HOPPABLE_SOURCES.has(decision.source) && (0, title_1.isLinkExemptAuthor)(pr.authorLogin)) {
+    if (UNRESOLVED_SOURCES.has(decision.source) && (0, title_1.isLinkExemptAuthor)(pr.authorLogin)) {
         return {
             decision: {
                 source: 'botExempt',
@@ -747,25 +764,58 @@ exports.resolveBaselineStrategy = resolveBaselineStrategy;
 exports.resolveCommitsToPrs = resolveCommitsToPrs;
 // Alphas are 1-based: an `-alpha0` would make the previous-alpha baseline
 // `-alpha-1`, a ref that cannot exist, so it is rejected as unrecognized.
+//
+// Dotted alphas (`8.8.0-alpha4.1`) are deliberately NOT accepted, though the
+// 8.8 line has a couple and zcl parses them. The release process no longer
+// cuts them, so this is a closed shape, not an oversight — do not widen the
+// regex on the strength of those tags alone.
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
-function parseVersion(version) {
+// Release candidates are 1-based too, and appear at every level: `8.9.0-rc1`,
+// `8.7.6-rc2`, `8.10.0-alpha1-rc3`. Only the suffix is matched here — what it
+// is attached to still has to satisfy VERSION.
+const RC_SUFFIX = /-rc[1-9]\d*$/;
+function parseVersion(version, reportAs = version) {
     const match = VERSION.exec(version);
     if (!match)
-        throw new Error(`Not a recognized release version: "${version}"`);
+        throw new Error(`Not a recognized release version: "${reportAs}"`);
     return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]), alpha: match[4] ? Number(match[4]) : null };
 }
 function format(v) {
     const base = `${v.major}.${v.minor}.${v.patch}`;
-    return v.alpha ? `${base}-alpha${v.alpha}` : base;
+    // Explicit null check, not truthiness: an `alpha: 0` reaching here would
+    // otherwise format as a stable tag and send the walk at the wrong baseline.
+    return v.alpha == null ? base : `${base}-alpha${v.alpha}`;
+}
+/** `minor - 1`, guarded: at minor 0 the previous line belongs to the previous
+ *  major, whose last minor no arithmetic on this version string can name. */
+function previousMinor(v, target) {
+    if (v.minor === 0) {
+        throw new Error(`Unsupported release version "${target}": the baseline for the first minor of a major is the previous ` +
+            `major's last minor, which cannot be derived from the version number alone.`);
+    }
+    return v.minor - 1;
 }
 /** The baseline to diff `target` against, from the version string alone — no
  *  tag list to consult, every case is arithmetic on the version number. */
 function resolveBaselineStrategy(target) {
-    const v = parseVersion(target);
+    // A candidate is a candidate *for* a version, so its notes cover that
+    // version's whole range: drop `-rcN` and resolve the version it stands for.
+    // Deliberately unlike zcl, which walks rcN back to rc(N-1) — that suits its
+    // incremental issue labelling, but would reduce a candidate's changelog to
+    // the delta since the last candidate rather than the release's contents.
+    // Only the baseline is computed from the stripped string; callers keep
+    // walking and labelling with the real `-rcN` tag.
+    const v = parseVersion(target.replace(RC_SUFFIX, ''), target);
+    // An alpha is a pre-release of a minor, so it only ever carries patch 0.
+    // Without this, `X.Y.1-alpha1` falls through to the previous-alpha branch and
+    // resolves to `X.Y.1` — the target's own base version, a tag never cut.
+    if (v.alpha !== null && v.patch !== 0) {
+        throw new Error(`Unsupported release version "${target}": an alpha is a pre-release of a minor, so it must carry patch 0.`);
+    }
     // alpha1-of-cycle: no prior tag on this line exists yet, so always the fork
     // point off the previous minor's stable branch, never a tag lookup (V5).
     if (v.alpha === 1 && v.patch === 0) {
-        return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${v.minor - 1}` };
+        return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${previousMinor(v, target)}` };
     }
     if (v.alpha !== null) {
         return { kind: 'previousTag', ref: format({ ...v, alpha: v.alpha - 1 }) };
@@ -774,37 +824,99 @@ function resolveBaselineStrategy(target) {
         return { kind: 'previousTag', ref: format({ ...v, patch: v.patch - 1 }) };
     }
     // Minor release: fork point between the previous minor's release tag and this target.
-    const previousMinorTag = format({ major: v.major, minor: v.minor - 1, patch: 0 });
+    const previousMinorTag = format({ major: v.major, minor: previousMinor(v, target), patch: 0 });
     return { kind: 'forkPoint', otherRef: previousMinorTag };
 }
 /** The only legitimate PR-less commits (C12); anything else without a PR on a
- *  protected branch is a ruleset-bypass anomaly. */
-const AUTOMATION_WHITELIST = /^\[maven-release-plugin\]/;
+ *  protected branch is a ruleset-bypass anomaly.
+ *
+ *  The `Revert "..."` form is the orphaned-tag repair: when a release job has to
+ *  redo its own version bumps it reverts them first, so those reverts are as
+ *  much release automation as the commits they undo. Without them here, every
+ *  repaired release reports its reverts as ruleset bypasses. */
+const AUTOMATION_WHITELIST = /^(?:Revert ")?\[maven-release-plugin\]/;
+/** A release branch is `release-<version>` — `release-8.9.19`,
+ *  `release-8.10.0-alpha5`. Anchored on the version so it cannot swallow a
+ *  feature branch that merely starts with the word. */
+const RELEASE_BRANCH = /^release-\d+\.\d+\.\d+/;
+/**
+ * A release-branch merge-back delivers nothing of its own. It merges
+ * `release-X.Y.Z` back into the line it was cut from, and everything it carries
+ * was already published in that release's own notes. The branch shape is the
+ * definition, not a heuristic: no other pull request goes from a release branch
+ * into a stable line (or into `main`, for a pre-branch alpha).
+ *
+ * D25 asks for these to carry a `merge:` title at the source, which would also
+ * exclude them via `categorize`. That fix lives in release automation outside
+ * this repository and cannot reach pull requests that already merged, so the
+ * topology is checked here as well. Relying on the title alone would put the
+ * previous release's merge-back in every release's notes, and — because it
+ * links no issue — in every release's unattributed bucket, failing the gate on
+ * the same known-benign pull request every single time.
+ */
+function isReleaseMergeBack(pr) {
+    // Version-shaped, not a bare `release-` prefix: a feature branch called
+    // `release-notes-gate` targeting a stable line is ordinary work, not a
+    // merge-back, and excluding it would drop real delivered work.
+    return RELEASE_BRANCH.test(pr.headRefName) && (pr.baseRefName.startsWith('stable/') || pr.baseRefName === 'main');
+}
 /**
  * Dedupe a first-parent commit walk to one entry per PR. Ambiguity rule: prefer
  * the PR targeting the release branch; still tied -> audit, never guess.
+ *
+ * `rangeShas` is the walk's own commits. A pull request ships in this range only
+ * if its merge landed among them: commits pushed straight onto a release branch
+ * — the release plugin's version bumps, and the reverts that repair an orphaned
+ * tag — have no pull request of their own, so GitHub credits them to whichever
+ * one later swept that branch into stable. That is the *next* release's
+ * merge-back, whose merge commit is not in this range at all. Without the
+ * check, 8.9.19's notes listed #62049, merged three days after the tag was cut.
  */
-function resolveCommitsToPrs(commits, releaseBranch) {
+function resolveCommitsToPrs(commits, releaseBranch, rangeShas) {
     const reasons = [];
     // Insertion-ordered, so this both dedupes and preserves walk order.
     const prNumbers = new Set();
     for (const commit of commits) {
-        if (commit.associatedPrs.length === 0) {
+        // Three outcomes, kept apart because they are three different facts about a
+        // commit and collapsing them produces a wrong audit line: a merge-back is
+        // excluded even though it merged here, while an out-of-range PR is excluded
+        // precisely because it did not.
+        const mergeBacks = commit.associatedPrs.filter(isReleaseMergeBack);
+        const candidates = commit.associatedPrs.filter((pr) => !isReleaseMergeBack(pr));
+        const shipped = candidates.filter((pr) => {
+            if (pr.mergeCommitOid === null) {
+                // Keep it: a MERGED pull request without a merge commit is a GitHub
+                // data anomaly, and under-inclusion is the failure this epic exists to
+                // fix. Say so, so the operator can check rather than wonder.
+                reasons.push(`PR #${pr.number}: GitHub reported no merge commit — kept, but its range membership is unverified.`);
+                return true;
+            }
+            return rangeShas.has(pr.mergeCommitOid);
+        });
+        if (shipped.length === 0) {
+            // Credited only to a merge-back: either the merge-back commit itself, or
+            // a commit pushed straight onto the release branch that one swept in.
+            // Release plumbing either way — nothing delivered, nothing to report.
+            if (mergeBacks.length > 0 && candidates.length === 0)
+                continue;
             if (AUTOMATION_WHITELIST.test(commit.message))
                 continue;
-            reasons.push(`Ruleset-bypass anomaly: commit ${commit.sha} has no associated pull request and does not match the automation whitelist.`);
+            const list = candidates.map((pr) => `#${pr.number}`).join(', ');
+            reasons.push(candidates.length === 0
+                ? `Ruleset-bypass anomaly: commit ${commit.sha} has no associated pull request and does not match the automation whitelist.`
+                : `Commit ${commit.sha} is credited only to pull requests that did not merge inside this range (${list}), and its message does not match the automation whitelist — excluded.`);
             continue;
         }
-        if (commit.associatedPrs.length === 1) {
-            prNumbers.add(commit.associatedPrs[0].number);
+        if (shipped.length === 1) {
+            prNumbers.add(shipped[0].number);
             continue;
         }
-        const matchingBranch = commit.associatedPrs.filter((pr) => pr.baseRefName === releaseBranch);
+        const matchingBranch = shipped.filter((pr) => pr.baseRefName === releaseBranch);
         if (matchingBranch.length === 1) {
             prNumbers.add(matchingBranch[0].number);
         }
         else {
-            const list = commit.associatedPrs.map((pr) => `#${pr.number}`).join(', ');
+            const list = shipped.map((pr) => `#${pr.number}`).join(', ');
             reasons.push(`Ambiguous commit ${commit.sha}: associated with multiple pull requests (${list}) and no unique match targeting ${releaseBranch} — never guessing.`);
         }
     }
@@ -877,43 +989,106 @@ function groupNameFor(pr) {
         return 'Changes without a tracked issue';
     return pr.section ?? 'Uncategorized';
 }
-function renderSectionedBody(prs) {
-    const breaking = prs.filter((pr) => pr.breaking);
-    const groups = new Map();
+/** C1: the issue is the grouping key. A PR with no issue — opt-out, bot-exempt,
+ *  unattributed — has nothing to group under and stays a single-PR entry. */
+function entryKeyFor(pr) {
+    return pr.issueNumbers.length > 0 ? `issue:${pr.issueNumbers[0]}` : `pr:${pr.number}`;
+}
+/** A section absent from SECTION_ORDER sorts after every known one, matching
+ *  the output order below, which appends unknown names rather than dropping them. */
+function sectionRank(name) {
+    const index = SECTION_ORDER.indexOf(name);
+    return index === -1 ? SECTION_ORDER.length : index;
+}
+/**
+ * Where a group's PRs disagree on section — a `feat`, a `fix` and two
+ * `refactor`s delivering one issue — the most customer-visible section wins,
+ * and the entry appears there once rather than repeating under each.
+ *
+ * Deliberately not "the section of the PR that closed the issue": that needs
+ * `closesIssueNumbers`, which is a proxy pending a real per-issue closer
+ * lookup, and has no answer at all when nothing in the range closed the issue.
+ * Ranking by visibility needs neither, so a wrong closer can never misplace an
+ * entry, and it errs toward showing — the direction this epic exists to fix.
+ */
+function toEntries(prs) {
+    const grouped = new Map();
     for (const pr of prs) {
-        const name = groupNameFor(pr);
-        const list = groups.get(name) ?? [];
+        const key = entryKeyFor(pr);
+        const list = grouped.get(key) ?? [];
         list.push(pr);
-        groups.set(name, list);
+        grouped.set(key, list);
+    }
+    return [...grouped.values()].map((group) => {
+        // Non-empty by construction, and ties keep the first PR in range order.
+        const lead = group.reduce((best, pr) => sectionRank(groupNameFor(pr)) < sectionRank(groupNameFor(best)) ? pr : best);
+        return {
+            groupName: groupNameFor(lead),
+            title: lead.title,
+            issueNumbers: [...new Set(group.flatMap((pr) => pr.issueNumbers))],
+            prNumbers: group.map((pr) => pr.number),
+            breaking: group.some((pr) => pr.breaking),
+        };
+    });
+}
+function renderSectionedBody(prs) {
+    const entries = toEntries(prs);
+    const groups = new Map();
+    for (const entry of entries) {
+        const list = groups.get(entry.groupName) ?? [];
+        list.push(entry);
+        groups.set(entry.groupName, list);
     }
     const lines = [];
+    const breaking = entries.filter((entry) => entry.breaking);
     if (breaking.length > 0) {
-        lines.push('## Breaking changes', '', ...breaking.map((pr) => renderLine(pr)), '');
+        lines.push('## Breaking changes', '', ...breaking.map((entry) => renderLine(entry)), '');
     }
     const orderedNames = [...SECTION_ORDER, ...[...groups.keys()].filter((name) => !SECTION_ORDER.includes(name))];
     for (const name of orderedNames) {
         const list = groups.get(name);
         if (!list?.length)
             continue;
-        lines.push(`## ${name}`, '', ...list.map((pr) => renderLine(pr)), '');
+        lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)), '');
     }
     return lines.join('\n').trim();
 }
-function renderLine(pr) {
-    const issues = pr.issueNumbers.length ? ` (${pr.issueNumbers.map((n) => `#${n}`).join(', ')})` : '';
-    return `- ${pr.title} (#${pr.number})${issues}`;
+function renderLine(entry) {
+    const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
+    if (entry.issueNumbers.length === 0)
+        return `- ${entry.title} (${prs})`;
+    return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}`;
 }
 function commentFor(pr, issueNumber, version) {
     return pr.closesIssueNumbers.includes(issueNumber)
         ? { relationKind: 'closing', text: `Released in ${version} (#${pr.number}).` }
         : { relationKind: 'contributor', text: `Partially delivered in ${version} by #${pr.number}.` };
 }
+/**
+ * The gate bucket holds two different failures — a PR that declared no issue at
+ * all, and one whose every declared ref turned out to be dead. They need
+ * opposite fixes (add a link vs. repair the target), so name them apart: a
+ * release operator reading "unattributed" against a PR that visibly *has* a
+ * `closes` line has no way to tell that the referenced issue is what is gone.
+ */
+function describeGuardFailure(bucket) {
+    const list = (prs) => prs.map((pr) => `#${pr.number}`).join(', ');
+    const noRefs = bucket.filter((pr) => pr.attributionSource === 'unattributed');
+    const deadRefs = bucket.filter((pr) => pr.attributionSource === 'resolutionFailed');
+    const parts = [`Release-notes attribution gate failed for ${bucket.length} pull request(s).`];
+    if (noRefs.length > 0) {
+        parts.push(`No issue reference found: ${list(noRefs)} — add a linked issue to the PR's "Related issues" section.`);
+    }
+    if (deadRefs.length > 0) {
+        parts.push(`Every referenced issue was unresolvable: ${list(deadRefs)} — the reference exists but its target is deleted, ` +
+            'transferred, or unreadable with this token; repair the reference rather than the PR body.');
+    }
+    parts.push('Set allow-unattributed=true with a non-empty unattributed-reason to override.');
+    return parts.join(' ');
+}
 function render(prs, unattributed, options) {
     const guardFailed = unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason);
-    const failureReason = guardFailed
-        ? `Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
-            'Set allow-unattributed=true with a non-empty unattributed-reason to override.'
-        : undefined;
+    const failureReason = guardFailed ? describeGuardFailure(unattributed) : undefined;
     // A non-empty reason is proven whenever the guard passed with `unattributed` present.
     const unattributedReason = options.unattributedReason ?? '';
     const all = [...prs, ...unattributed];
@@ -983,8 +1158,12 @@ function backoffMs(res, attempt) {
         return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
     return 2 ** attempt * 1000;
 }
-/** The one `associatedPullRequests` selection both query shapes share. */
-const prConnection = (afterArg = '') => `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } }`;
+/** The one `associatedPullRequests` selection both query shapes share.
+ *
+ *  `headRefName` and `mergeCommit` are read here rather than in the metadata
+ *  phase because both feed range membership, which is decided before any PR
+ *  metadata is fetched — and they are free on a connection already selected. */
+const prConnection = (afterArg = '') => `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName headRefName state mergeCommit { oid } } pageInfo { hasNextPage endCursor } }`;
 function assertField(value, description) {
     if (value === null || value === undefined)
         throw new Error(`Malformed GraphQL response: missing ${description}`);
@@ -1075,7 +1254,14 @@ class GithubGraphqlResolver {
             page = readPrPage(commit, sha);
             all.push(...page.nodes);
         }
-        return all.filter((node) => node.state === 'MERGED').map((node) => ({ number: node.number, baseRefName: node.baseRefName }));
+        return all
+            .filter((node) => node.state === 'MERGED')
+            .map((node) => ({
+            number: node.number,
+            baseRefName: node.baseRefName,
+            headRefName: node.headRefName,
+            mergeCommitOid: node.mergeCommit?.oid ?? null,
+        }));
     }
     async fetchMetadataBatch(numbers) {
         const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
