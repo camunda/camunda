@@ -50,17 +50,14 @@ class CoverageCreatorTest {
     final ElementInstance elementInstance = mock(ElementInstance.class);
     final ProcessInstanceSequenceFlow flow = mock(ProcessInstanceSequenceFlow.class);
     final ProcessModel processModel =
-        ImmutableProcessModel.builder()
-            .processDefinitionId("process")
-            .totalElementCount(2)
-            .version("1")
-            .xml(
-                Bpmn.convertToString(
-                    Bpmn.createExecutableProcess("process")
-                        .startEvent("start")
-                        .endEvent("end")
-                        .done()))
-            .build();
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("flow")
+                .serviceTask("task")
+                .endEvent("end")
+                .done());
 
     when(processInstance.getProcessInstanceKey()).thenReturn(1L);
     when(processInstance.getProcessDefinitionId()).thenReturn("process");
@@ -84,7 +81,53 @@ class CoverageCreatorTest {
     assertThat(coverage.getProcessDefinitionId()).isEqualTo("process");
     assertThat(coverage.getCompletedElements()).containsExactly("task");
     assertThat(coverage.getTakenSequenceFlows()).containsExactly("flow");
-    assertThat(coverage.getCoverage()).isEqualTo(1.0);
+    assertThat(coverage.getCoverage()).isEqualTo(2.0 / 5.0);
+  }
+
+  @Test
+  void shouldIgnoreCompletedElementsThatTheModelDoesNotContain() {
+    // given: a process instance of a mock stub, reported by the model of the real process
+    final ProcessModel realProcessModel =
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("flow")
+                .serviceTask("task")
+                .endEvent("end")
+                .done());
+
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn("process");
+
+    final ElementInstance startEvent = mock(ElementInstance.class);
+    when(startEvent.getElementId()).thenReturn("start");
+    when(startEvent.getType()).thenReturn(ElementInstanceType.START_EVENT);
+    when(startEvent.getState()).thenReturn(ElementInstanceState.COMPLETED);
+
+    final ElementInstance stubEndEvent = mock(ElementInstance.class);
+    when(stubEndEvent.getElementId()).thenReturn("mock-end");
+    when(stubEndEvent.getType()).thenReturn(ElementInstanceType.END_EVENT);
+    when(stubEndEvent.getState()).thenReturn(ElementInstanceState.COMPLETED);
+
+    final ProcessInstanceSequenceFlow stubFlow = mock(ProcessInstanceSequenceFlow.class);
+    when(stubFlow.getElementId()).thenReturn("mock-flow");
+
+    final ImmutableCoverageProcessInstanceData processInstanceData =
+        ImmutableCoverageProcessInstanceData.builder()
+            .processInstance(processInstance)
+            .addElementInstances(startEvent, stubEndEvent)
+            .addSequenceFlows(stubFlow)
+            .build();
+
+    // when
+    final ProcessCoverage coverage =
+        CoverageCreator.createCoverage(processInstanceData, realProcessModel);
+
+    // then: only the elements of the reported model are covered
+    assertThat(coverage.getCompletedElements()).containsExactly("start");
+    assertThat(coverage.getTakenSequenceFlows()).isEmpty();
+    assertThat(coverage.getCoverage()).isEqualTo(1.0 / 5.0);
   }
 
   @Test

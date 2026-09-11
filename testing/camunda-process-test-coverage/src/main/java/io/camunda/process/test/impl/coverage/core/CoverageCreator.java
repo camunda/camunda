@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -51,7 +52,8 @@ public class CoverageCreator {
    * Creates a coverage report for a single process instance.
    *
    * <p>Analyzes the elements and sequence flows taken in the process instance and calculates the
-   * overall coverage percentage based on the model definition.
+   * overall coverage percentage based on the model definition. Elements that the model does not
+   * contain are not covered by it and are left out.
    *
    * @param processInstanceData The process instance to analyze
    * @param processModel The process model containing definition information
@@ -78,17 +80,26 @@ public class CoverageCreator {
             .distinct()
             .collect(Collectors.toList());
 
+    final BpmnModelInstance modelInstance =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(processModel.getXml().getBytes()));
+
     // for event based gateways we need to find out how the flow continues to get the correct
     // sequence flow and add that as an event, as sequence flows after an event based gateway are
     // not reflected in the records
     enhanceSequenceFlowsByEventBasedGateway(
-        takenSequenceFlowIds, completedElementInstances, processModel);
+        takenSequenceFlowIds, completedElementInstances, modelInstance);
+
+    final Set<String> coverableElementIds =
+        ModelCreator.coverableElementIds(modelInstance, processModel.getProcessDefinitionId());
+    final List<String> coveredElements = retainCoverable(completedElementIds, coverableElementIds);
+    final List<String> coveredSequenceFlows =
+        retainCoverable(takenSequenceFlowIds, coverableElementIds);
 
     return ImmutableProcessCoverage.builder()
         .processDefinitionId(processInstanceData.getProcessInstance().getProcessDefinitionId())
-        .addAllCompletedElements(completedElementIds)
-        .addAllTakenSequenceFlows(takenSequenceFlowIds)
-        .coverage(calculateCoverage(completedElementIds, takenSequenceFlowIds, processModel))
+        .addAllCompletedElements(coveredElements)
+        .addAllTakenSequenceFlows(coveredSequenceFlows)
+        .coverage(calculateCoverage(coveredElements, coveredSequenceFlows, processModel))
         .build();
   }
 
@@ -96,7 +107,8 @@ public class CoverageCreator {
    * Aggregates multiple coverage reports into consolidated reports per process definition.
    *
    * <p>Combines coverage data from multiple executions of the same process definition, ensuring
-   * elements and sequence flows are counted only once in the aggregated result.
+   * elements and sequence flows are counted only once in the aggregated result. Elements that the
+   * reported model does not contain are not covered by it and are left out.
    *
    * @param coverages Collection of individual coverage reports to aggregate
    * @param processModels Collection of process models for coverage calculation
@@ -109,16 +121,6 @@ public class CoverageCreator {
     final List<ProcessCoverage> aggregatedCoverages = new ArrayList<>();
     coveragesByProcessDefinition.forEach(
         (processDefinitionId, coveragesForProcessInstance) -> {
-          final List<String> completedElements =
-              coveragesForProcessInstance.stream()
-                  .flatMap(c -> c.getCompletedElements().stream())
-                  .distinct()
-                  .collect(Collectors.toList());
-          final List<String> takenSequenceFlows =
-              coveragesForProcessInstance.stream()
-                  .flatMap(c -> c.getTakenSequenceFlows().stream())
-                  .distinct()
-                  .collect(Collectors.toList());
           final ProcessModel processModel =
               processModels.stream()
                   .filter(m -> m.getProcessDefinitionId().equals(processDefinitionId))
@@ -127,6 +129,21 @@ public class CoverageCreator {
                       () ->
                           new IllegalStateException(
                               "No model found for process definition id: " + processDefinitionId));
+          final Set<String> coverableElementIds = ModelCreator.coverableElementIds(processModel);
+          final List<String> completedElements =
+              retainCoverable(
+                  coveragesForProcessInstance.stream()
+                      .flatMap(c -> c.getCompletedElements().stream())
+                      .distinct()
+                      .collect(Collectors.toList()),
+                  coverableElementIds);
+          final List<String> takenSequenceFlows =
+              retainCoverable(
+                  coveragesForProcessInstance.stream()
+                      .flatMap(c -> c.getTakenSequenceFlows().stream())
+                      .distinct()
+                      .collect(Collectors.toList()),
+                  coverableElementIds);
           aggregatedCoverages.add(
               ImmutableProcessCoverage.builder()
                   .processDefinitionId(processDefinitionId)
@@ -139,6 +156,23 @@ public class CoverageCreator {
   }
 
   /**
+   * Retains the elements that the reported model can cover.
+   *
+   * <p>A process definition id can be covered by more than one model, for example by the real
+   * process and by the stub that {@code MOCK_CHILD_PROCESS} deploys under the same id. The report
+   * describes such a process by a single model, so elements of the other models are not part of the
+   * coverage: they are neither counted nor highlighted in the diagram.
+   *
+   * @param elementIds The ids of the covered elements
+   * @param coverableElementIds The ids of the elements of the reported model
+   * @return The covered element ids that are part of the reported model
+   */
+  private static List<String> retainCoverable(
+      final List<String> elementIds, final Set<String> coverableElementIds) {
+    return elementIds.stream().filter(coverableElementIds::contains).collect(Collectors.toList());
+  }
+
+  /**
    * Enhances sequence flow coverage data by analyzing event-based gateways.
    *
    * <p>Since sequence flows after event-based gateways may not be directly recorded in execution,
@@ -146,14 +180,12 @@ public class CoverageCreator {
    *
    * @param takenSequenceFlows List of sequence flow IDs to enhance
    * @param takenNodeElements List of element instances from the process execution
-   * @param processModel The process model containing definition information
+   * @param modelInstance The parsed BPMN model of the process
    */
   private static void enhanceSequenceFlowsByEventBasedGateway(
       final List<String> takenSequenceFlows,
       final List<ElementInstance> takenNodeElements,
-      final ProcessModel processModel) {
-    final BpmnModelInstance modelInstance =
-        Bpmn.readModelFromStream(new ByteArrayInputStream(processModel.getXml().getBytes()));
+      final BpmnModelInstance modelInstance) {
 
     for (int i = 0; i < takenNodeElements.size(); i++) {
       final ElementInstance event = takenNodeElements.get(i);

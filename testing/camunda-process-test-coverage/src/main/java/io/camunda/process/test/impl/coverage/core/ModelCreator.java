@@ -28,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.io.ByteArrayInputStream;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /**
@@ -67,34 +68,58 @@ public class ModelCreator {
                     new IllegalArgumentException(
                         "No process definition data found for ID: " + processDefinitionId));
 
-    final ByteArrayInputStream inputStream =
-        new ByteArrayInputStream(processDefinitionData.getXml().getBytes());
-    final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(inputStream);
-
-    if (modelInstance == null) {
-      throw new IllegalArgumentException(
-          "Cannot read model from process definition: " + processDefinitionId);
-    }
+    final BpmnModelInstance modelInstance =
+        readModel(processDefinitionData.getXml(), processDefinitionId);
 
     final ProcessDefinition processDefinition = processDefinitionData.getProcessDefinition();
-
-    final Set<FlowNode> definitionFlowNodes =
-        modelInstance.getModelElementsByType(FlowNode.class).stream()
-            .filter(node -> isExecutable(node, processDefinition.getProcessDefinitionId()))
-            .collect(Collectors.toSet());
-
-    final Set<SequenceFlow> definitionSequenceFlows =
-        modelInstance.getModelElementsByType(SequenceFlow.class).stream()
-            .filter(s -> definitionFlowNodes.contains(s.getSource()))
-            .collect(Collectors.toSet());
 
     return ImmutableProcessModel.builder()
         .processDefinitionId(processDefinition.getProcessDefinitionId())
         .processName(processDefinition.getName())
-        .totalElementCount(definitionFlowNodes.size() + definitionSequenceFlows.size())
+        .totalElementCount(
+            coverableElementIds(modelInstance, processDefinition.getProcessDefinitionId()).size())
         .version(String.valueOf(processDefinition.getVersion()))
         .xml(Bpmn.convertToString(modelInstance))
         .build();
+  }
+
+  /**
+   * Collects the ids of the elements a model can cover, which are the elements counted by {@link
+   * #createModel}.
+   *
+   * @param processModel The model to collect the element ids of
+   * @return The ids of the flow nodes and sequence flows of the executable process
+   */
+  public static Set<String> coverableElementIds(final ProcessModel processModel) {
+    return coverableElementIds(
+        readModel(processModel.getXml(), processModel.getProcessDefinitionId()),
+        processModel.getProcessDefinitionId());
+  }
+
+  /**
+   * Collects the ids of the elements a model can cover, which are the elements counted by {@link
+   * #createModel}.
+   *
+   * @param modelInstance The parsed BPMN model
+   * @param processDefinitionId The ID of the executable process within the model
+   * @return The ids of the flow nodes and sequence flows of the executable process
+   */
+  public static Set<String> coverableElementIds(
+      final BpmnModelInstance modelInstance, final String processDefinitionId) {
+
+    final Set<FlowNode> definitionFlowNodes =
+        modelInstance.getModelElementsByType(FlowNode.class).stream()
+            .filter(node -> isExecutable(node, processDefinitionId))
+            .collect(Collectors.toSet());
+
+    final Stream<String> definitionSequenceFlowIds =
+        modelInstance.getModelElementsByType(SequenceFlow.class).stream()
+            .filter(sequenceFlow -> definitionFlowNodes.contains(sequenceFlow.getSource()))
+            .map(SequenceFlow::getId);
+
+    return Stream.concat(
+            definitionFlowNodes.stream().map(FlowNode::getId), definitionSequenceFlowIds)
+        .collect(Collectors.toSet());
   }
 
   /**
@@ -113,6 +138,17 @@ public class ModelCreator {
   public static ProcessModel selectMostCompleteModel(
       final ProcessModel model, final ProcessModel otherModel) {
     return otherModel.getTotalElementCount() > model.getTotalElementCount() ? otherModel : model;
+  }
+
+  private static BpmnModelInstance readModel(final String xml, final String processDefinitionId) {
+    final BpmnModelInstance modelInstance =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
+
+    if (modelInstance == null) {
+      throw new IllegalArgumentException(
+          "Cannot read model from process definition: " + processDefinitionId);
+    }
+    return modelInstance;
   }
 
   /**
