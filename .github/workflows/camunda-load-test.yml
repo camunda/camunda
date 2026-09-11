@@ -28,6 +28,11 @@ on:
         default: 'main'
         type: string
         required: false
+      tooling-ref:
+        description: 'Git ref that contains reusable workflow tooling. Defaults to the workflow ref for direct dispatch.'
+        default: ''
+        type: string
+        required: false
       scenario:
         description: 'Workload scenario to run.'
         required: false
@@ -140,6 +145,11 @@ on:
       ref:
         description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is built and used to run the load test against'
         default: 'main'
+        type: string
+        required: false
+      tooling-ref:
+        description: 'Git ref that contains reusable workflow tooling. Defaults to main for workflow_call.'
+        default: ''
         type: string
         required: false
       name:
@@ -571,8 +581,29 @@ jobs:
           ref: ${{ inputs.ref }}
           persist-credentials: false
 
+      # Resolve workflow tooling from its own ref so local actions remain available when inputs.ref
+      # points at a branch, tag, or SHA with different repository contents.
+      - name: Checkout workflow tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tooling-ref || (github.event_name == 'workflow_dispatch' && github.ref_name) || 'main' }}
+          sparse-checkout: .github/actions/setup-asdf-with-retry
+          path: workflow-actions
+          persist-credentials: false
+
+      - name: Verify workflow tooling
+        run: |
+          set -euo pipefail
+          action_file="workflow-actions/.github/actions/setup-asdf-with-retry/action.yml"
+          if [[ ! -f "${action_file}" ]]; then
+            echo "::error::Missing ${action_file}. Pass tooling-ref with a ref that contains reusable workflow tooling."
+            exit 1
+          fi
+
       - name: Set up Helm
-        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+        uses: ./workflow-actions/.github/actions/setup-asdf-with-retry
+        with:
+          plugins: helm
 
       # Authenticate with Teleport
       - name: Set up Teleport
