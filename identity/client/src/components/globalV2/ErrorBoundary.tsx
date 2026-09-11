@@ -7,7 +7,7 @@
  */
 
 import { Component, FC, PropsWithChildren, ReactNode } from "react";
-import { CodeSnippet, Link } from "@carbon/react";
+import { CodeBlock, Link, Text } from "@camunda/design-system";
 import ErrorPage from "src/components/globalV2/ErrorPage";
 import useTranslate from "src/utility/localization";
 
@@ -23,15 +23,18 @@ const ErrorContent: FC<PropsWithChildren> = ({ children }) => {
   const { Translate } = useTranslate();
 
   return (
-    <ErrorPage title={<Translate>Failmunda - Unknown Error</Translate>}>
-      <p>
+    <ErrorPage
+      className="h-dvh"
+      title={<Translate>Failmunda - Unknown Error</Translate>}
+    >
+      <Text>
         <Translate>
           An unknown error has occurred. Please{" "}
           <Link href={document.location.href}>reload the page</Link> or try
           again later.
         </Translate>
-      </p>
-      <CodeSnippet type="multi">{children}</CodeSnippet>
+      </Text>
+      <CodeBlock variant="multi">{children}</CodeBlock>
     </ErrorPage>
   );
 };

@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, { createGlobalStyle } from "styled-components";
-import { FC, ReactNode, useEffect } from "react";
-// TODO: Remove this with design system migration
-import { styles } from "@carbon/elements";
+import { type CSSProperties, FC, ReactNode, useEffect } from "react";
 import AppHeader from "src/components/layout/AppHeaderV2";
 import ErrorBoundary from "src/components/globalV2/ErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
@@ -22,59 +19,15 @@ import { ApiError, getCsrfToken } from "src/utility/api/request";
 import { notifyApiError } from "src/utility/api/errorNotification";
 import { queryClient } from "src/utility/api/queryClient";
 import { getSessionHeartbeatApiUrl } from "src/configuration/urlConfig";
-// TODO: Remove this with design system migration
 import { C3Provider } from "../layout/C3Provider";
-// TODO: Remove this with design system migration
-import { ThemeProvider } from "src/common/theme/ThemeProvider";
+import { cn } from "@camunda/design-system";
 
-const GlobalStyle = createGlobalStyle`
-  body {
-    background: var(--cds-background);
-    font-size: ${styles.bodyShort01.fontSize};
-    font-weight: ${styles.bodyShort01.fontWeight};
-    line-height: ${styles.bodyShort01.lineHeight};
-    letter-spacing: ${styles.bodyShort01.letterSpacing};
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-  }
-  * {
-    box-sizing: border-box;
-  }
-`;
-
-const AppRootWrapper = styled.div`
-  height: 100vh;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    "header"
-    "main";
-  position: relative;
-`;
-
-const GridHeader = styled.div`
-  grid-area: header;
-`;
-
-const GridMain = styled.div`
-  grid-area: main;
-  overflow: auto;
-  position: relative;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  grid-template-columns: 1fr;
-`;
-
-const GridMainContent = styled.div`
-  grid-area: 1 / 1 / 1 / 4;
-  /* Variable is set by "SidebarProvider". Or overwritten in this
-  component "AppContent" if no sidebar should be visible.  */
-  padding-left: var(--app-sidebar-width, 0);
-  transition: padding-left 0.15s ease-out;
-`;
+const mainGrid = cn(
+  "relative grid grid-cols-[1fr] grid-rows-[1fr_auto] overflow-auto",
+);
+const mainContent = cn(
+  "pl-(--app-sidebar-width) transition-[padding-left] duration-150 ease-out",
+);
 
 const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
   const { data: camundaUser, isLoading: loading } = useQuery(
@@ -113,42 +66,39 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
   ) {
     return (
       <>
-        <GridHeader>
-          <AppHeader hideNavLinks />
-        </GridHeader>
-        <GridMain style={{ "--app-sidebar-width": 0 }}>
-          <GridMainContent id="main-content" tabIndex={-1}>
+        <AppHeader hideNavLinks />
+        <div
+          className={mainGrid}
+          /* --app-sidebar-width is set by SidebarProvider, or overwritten here when no sidebar is shown. */
+          style={{ "--app-sidebar-width": 0 } as CSSProperties}
+        >
+          <div id="main-content" tabIndex={-1} className={mainContent}>
             <ForbiddenComponent />
-          </GridMainContent>
-        </GridMain>
+          </div>
+        </div>
       </>
     );
   }
   return (
     <>
-      <GridHeader>
-        <AppHeader />
-      </GridHeader>
-      <GridMain>
-        <GridMainContent id="main-content" tabIndex={-1}>
+      <AppHeader />
+      <div className={mainGrid}>
+        <div id="main-content" tabIndex={-1} className={mainContent}>
           {children}
-        </GridMainContent>
-      </GridMain>
+        </div>
+      </div>
     </>
   );
 };
 
 const AppRoot: FC<{ children?: ReactNode }> = ({ children }) => (
-  <ThemeProvider>
-    <AppRootWrapper>
-      <ErrorBoundary>
-        <C3Provider>
-          <GlobalStyle />
-          <AppContent>{children}</AppContent>
-        </C3Provider>
-      </ErrorBoundary>
-    </AppRootWrapper>
-  </ThemeProvider>
+  <div className="relative grid h-dvh grid-cols-[1fr] grid-rows-[auto_1fr]">
+    <ErrorBoundary>
+      <C3Provider>
+        <AppContent>{children}</AppContent>
+      </C3Provider>
+    </ErrorBoundary>
+  </div>
 );
 
 export default AppRoot;
