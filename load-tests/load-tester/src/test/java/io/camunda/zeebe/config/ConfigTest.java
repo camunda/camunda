@@ -79,6 +79,20 @@ class ConfigTest {
     assertThat(optimizeCfg.getEvaluationInterval()).hasSeconds(60);
     assertThat(optimizeCfg.getInitialDelay()).hasSeconds(10);
     assertThat(optimizeCfg.getRequestTimeout()).hasSeconds(30);
+
+    // suspender
+    final var suspenderCfg = properties.getSuspender();
+    assertThat(suspenderCfg).isNotNull();
+    assertThat(suspenderCfg.isEnabled()).isFalse();
+    assertThat(suspenderCfg.getMode()).isEqualTo(SuspenderProperties.Mode.SINGLE);
+    assertThat(suspenderCfg.getProcessId()).isEqualTo("benchmark");
+    assertThat(suspenderCfg.getRate()).isEqualTo(10.0);
+    assertThat(suspenderCfg.getRateDuration()).hasSeconds(1);
+    assertThat(suspenderCfg.getRatePerSecond()).isEqualTo(10.0);
+    assertThat(suspenderCfg.getSampleSize()).isEqualTo(100);
+    assertThat(suspenderCfg.getBatchInterval()).hasSeconds(10);
+    assertThat(suspenderCfg.getBatchPageSize()).isEqualTo(1000);
+    assertThat(suspenderCfg.getHoldDuration()).hasSeconds(30);
   }
 
   @Nested
@@ -137,6 +151,18 @@ class ConfigTest {
       assertThat(optimizeCfg.getEvaluationInterval()).hasSeconds(30);
       assertThat(optimizeCfg.getInitialDelay()).hasSeconds(5);
       assertThat(optimizeCfg.getRequestTimeout()).hasSeconds(20);
+
+      // suspender overrides
+      final var suspenderCfg = properties.getSuspender();
+      assertThat(suspenderCfg.isEnabled()).isTrue();
+      assertThat(suspenderCfg.getMode()).isEqualTo(SuspenderProperties.Mode.BATCH);
+      assertThat(suspenderCfg.getProcessId()).isEqualTo("benchmark");
+      assertThat(suspenderCfg.getRate()).isEqualTo(25.0);
+      assertThat(suspenderCfg.getRateDuration()).hasSeconds(2);
+      assertThat(suspenderCfg.getSampleSize()).isEqualTo(250);
+      assertThat(suspenderCfg.getBatchInterval()).hasSeconds(5);
+      assertThat(suspenderCfg.getBatchPageSize()).isEqualTo(2000);
+      assertThat(suspenderCfg.getHoldDuration()).hasMinutes(1);
     }
   }
 }
