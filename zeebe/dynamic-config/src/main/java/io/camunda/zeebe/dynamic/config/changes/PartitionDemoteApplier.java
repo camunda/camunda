@@ -66,9 +66,7 @@ record PartitionDemoteApplier(
             .filter(entry -> !entry.getKey().equals(localMemberId))
             .filter(entry -> entry.getValue().hasPartition(partitionId))
             .anyMatch(
-                entry ->
-                    entry.getValue().getPartition(partitionId).state()
-                        == PartitionState.State.ACTIVE);
+                entry -> entry.getValue().getPartition(partitionId).state().isActiveReplica());
     if (!otherActiveReplicaExists) {
       return Either.left(
           new IllegalStateException(

@@ -69,7 +69,77 @@ final class PartitionLeaveApplierTest {
 
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("partition 1 has 1 replicas but minimum allowed replicas is 1");
+        .hasMessageContaining(
+            "partition 1 would have 0 active replicas left but minimum allowed replicas is 1");
+  }
+
+  @Test
+  void shouldNotCountLearnerTowardsMinimumReplicas() {
+    // given - the other replica is a learner: it does not vote yet and provides no redundancy, so
+    // leaving would strand the partition with a non-voting member only
+    final ClusterConfiguration topologyWithLearner =
+        initialClusterConfiguration
+            .updateMember(
+                localMemberId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                MemberId.from("2"),
+                m -> m.addPartition(1, PartitionState.joining(1, partitionConfig).toLearner()));
+
+    // when
+    final var result = partitionLeaveApplier.init(topologyWithLearner);
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("would have 0 active replicas left");
+  }
+
+  @Test
+  void shouldNotCountLeavingReplicaTowardsMinimumReplicas() {
+    // given - the other replica is already on its way out
+    final ClusterConfiguration topologyWithLeavingReplica =
+        initialClusterConfiguration
+            .updateMember(
+                localMemberId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                MemberId.from("2"),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig).toLeaving()));
+
+    // when
+    final var result = partitionLeaveApplier.init(topologyWithLeavingReplica);
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("would have 0 active replicas left");
+  }
+
+  @Test
+  void shouldAllowLearnerToLeaveWhenOneActiveReplicaRemains() {
+    // given - the leaving member is itself a stuck learner; removing a non-voting member never
+    // changes how many voting replicas remain, so this must pass the minimum of 1
+    final ClusterConfiguration topologyWithLocalLearner =
+        initialClusterConfiguration
+            .updateMember(
+                localMemberId,
+                m -> m.addPartition(1, PartitionState.joining(1, partitionConfig).toLearner()))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                MemberId.from("2"),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)));
+
+    // when
+    final var resultingTopology =
+        partitionLeaveApplier.init(topologyWithLocalLearner).get().apply(topologyWithLocalLearner);
+
+    // then
+    ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
+        .member(localMemberId)
+        .hasPartitionWithState(1, State.LEAVING);
   }
 
   @Test
