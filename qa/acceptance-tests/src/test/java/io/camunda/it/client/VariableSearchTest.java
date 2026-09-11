@@ -17,6 +17,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -178,6 +180,23 @@ class VariableSearchTest {
     final var first = result.items().getFirst();
     assertThat(first.getVariableKey()).isEqualTo(variable.getVariableKey());
     assertThat(first.getValue()).isEqualTo(variable.getValue());
+  }
+
+  @Test
+  void shouldQueryByValueFilterNotIn() {
+    // StringProperty has no $notIn method yet, so exercise it via a raw HTTP request.
+    final var response =
+        TestHelper.sendRawSearchRequest(
+            camundaClient,
+            "v2/variables/search",
+            Map.of("filter", Map.of("value", Map.of("$notIn", List.of(variable.getValue())))));
+
+    // then
+    final var variableKeys =
+        StreamSupport.stream(response.get("items").spliterator(), false)
+            .map(item -> item.get("variableKey").asText())
+            .toList();
+    assertThat(variableKeys).isNotEmpty().doesNotContain(String.valueOf(variable.getVariableKey()));
   }
 
   @Test
