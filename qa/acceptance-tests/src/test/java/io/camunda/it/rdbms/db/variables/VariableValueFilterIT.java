@@ -168,6 +168,101 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
   }
 
+  // NOT_IN matches broadly by design, so these use unrelated random data (like the neq tests)
+  // rather than prepareRandomVariablesAndReturnOne's 20-variables-sharing-one-name fixture: that
+  // fixture's random values would trivially satisfy any small notIn exclusion set too, making the
+  // "exactly one match" assertion meaningless.
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndNotInStringValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    prepareRandomVariables(testApplication);
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("a-string-value"));
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+
+    // and
+    final Operation<String> operation = Operation.notIn("some-other-value", "yet-another-value");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndNotInWholeNumberStoredAsDouble(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    prepareRandomVariables(testApplication);
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("42000.0"));
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+
+    // and
+    final Operation<String> operation = Operation.notIn("1", "2");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndNotInBooleanValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    prepareRandomVariables(testApplication);
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("true"));
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+
+    // and
+    final Operation<String> operation = Operation.notIn("false");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldExcludeVariableWithNameAndNotInValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two variables sharing a name, one holding an excluded value and one not
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel excludedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("excluded-value"));
+    createAndSaveVariable(rdbmsService, excludedVariable);
+    final VariableDbModel keptVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("kept-value"));
+    createAndSaveVariable(rdbmsService, keptVariable);
+
+    // and a notIn filter excluding the first variable's value
+    final var variableFilter =
+        new VariableFilter.Builder()
+            .names(varName)
+            .valueOperations(Operation.notIn("excluded-value"))
+            .build();
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    variableFilter,
+                    VariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    // then only the non-excluded variable is returned
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().variableKey()).isEqualTo(keptVariable.variableKey());
+  }
+
   @TestTemplate
   public void shouldFindVariableWithNameAndEqNullValue(
       final CamundaRdbmsTestApplication testApplication) {
