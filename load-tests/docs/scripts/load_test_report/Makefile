@@ -10,7 +10,10 @@ format:
 	$(UV) run ruff check --fix .
 	$(UV) run ruff format .
 
-lint:
+type-check:
+	$(UV) run mypy .
+
+lint: type-check
 	$(UV) run ruff check .
 	$(UV) run ruff format --check .
 

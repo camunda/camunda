@@ -4,8 +4,10 @@ import pytest
 from pydantic import ValidationError
 
 import load_test_report
-from load_test_report.cli import build_parser
-from load_test_report.cli import run
+from load_test_report.cli import Options
+from load_test_report.cli import parse_args
+from load_test_report.cli import query_substitutions
+from load_test_report.errors import ReportError
 from load_test_report.queries import QueriesDocument
 
 PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
@@ -15,21 +17,7 @@ PACKAGED_QUERY_FILES = (
 )
 
 
-def test_should_build_parser():
-    parser = build_parser()
-
-    assert parser.prog == "load-test-report"
-
-
-def test_should_run_without_arguments():
-    assert run([]) == 0
-
-
-def test_should_return_argparse_exit_code_for_help():
-    assert run(["--help"]) == 0
-
-
-def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
+def test_should_load_yaml_query_file_with_pyyaml(tmp_path: Path) -> None:
     queries_file = tmp_path / "queries.yaml"
     queries_file.write_text(
         """queries:
@@ -47,15 +35,31 @@ def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
     assert document.queries[0].query == 'namespace_metric{namespace="c8-ck-test"}'
 
 
-def test_should_reject_empty_file(tmp_path):
-    queries_file = tmp_path / "queries.json"
+def test_should_reject_malformed_yaml_query_file(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: [", encoding="utf-8")
+
+    with pytest.raises(ReportError, match="contains invalid YAML"):
+        QueriesDocument.from_file(queries_file, {})
+
+
+def test_should_reject_invalid_utf8_query_file(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_bytes(b"\xff")
+
+    with pytest.raises(ReportError, match="Could not read query file"):
+        QueriesDocument.from_file(queries_file, {})
+
+
+def test_should_reject_empty_file(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
     queries_file.write_text("{}", encoding="utf-8")
 
     with pytest.raises(ValidationError, match="Field required"):
         QueriesDocument.from_file(queries_file, {})
 
 
-def test_should_reject_invalid_queries(tmp_path):
+def test_should_reject_invalid_queries(tmp_path: Path) -> None:
     queries_file = tmp_path / "queries.yaml"
     queries_file.write_text(
         """queries:
@@ -70,7 +74,7 @@ def test_should_reject_invalid_queries(tmp_path):
         QueriesDocument.from_file(queries_file, {})
 
 
-def test_should_reject_duplicate_keys_in_query_file(tmp_path):
+def test_should_reject_duplicate_keys_in_query_file(tmp_path: Path) -> None:
     queries_file = tmp_path / "report-queries.yaml"
     queries_file.write_text(
         """queries:
@@ -91,7 +95,7 @@ def test_should_reject_duplicate_keys_in_query_file(tmp_path):
         QueriesDocument.from_file(queries_file, {})
 
 
-def test_should_load_packaged_query_files():
+def test_should_load_packaged_query_files() -> None:
     substitutions = {
         "$NAMESPACE": "c8-ck-test",
         "$DURATION_S": "600s",
@@ -102,9 +106,14 @@ def test_should_load_packaged_query_files():
     for query_file_name in PACKAGED_QUERY_FILES:
         document = QueriesDocument.from_file(PROJECT_DIR / query_file_name, substitutions)
         assert len(document.queries) > 0
+        for query in document.queries:
+            assert "$NAMESPACE" not in query.query
+            assert "$DURATION_S" not in query.query
+            assert "$RATE_INTERVAL" not in query.query
+            assert "$SAMPLE_STEP" not in query.query
 
 
-def test_should_substitute_queries(tmp_path):
+def test_should_substitute_queries(tmp_path: Path) -> None:
     substitutions = {
         "$NAMESPACE": "c8-ck-test",
         "$DURATION_S": "600s",
@@ -128,16 +137,15 @@ def test_should_substitute_queries(tmp_path):
         encoding="utf-8",
     )
 
-    for query_file_name in PACKAGED_QUERY_FILES:
-        document = QueriesDocument.from_file(queries_file, substitutions)
+    document = QueriesDocument.from_file(queries_file, substitutions)
 
-        assert len(document.queries) > 0
-        for query in document.queries:
-            assert "c8-ck-test" in query.query
-            assert "600s" in query.query
+    assert len(document.queries) > 0
+    for query in document.queries:
+        assert "c8-ck-test" in query.query
+        assert "600s" in query.query
 
 
-def test_should_use_namespace_created_metric():
+def test_should_use_namespace_created_metric() -> None:
     substitutions = {
         "$NAMESPACE": "c8-ck-test",
         "$DURATION_S": "600s",
@@ -154,7 +162,7 @@ def test_should_use_namespace_created_metric():
         assert namespace_query.query == 'max_over_time(kube_namespace_created{namespace="c8-ck-test"}[600s])'
 
 
-def test_should_use_stable_87_specific_metric_sources():
+def test_should_use_stable_87_specific_metric_sources() -> None:
     document = QueriesDocument.from_file(
         PROJECT_DIR / "report-queries-stable-87.yaml",
         {
@@ -174,7 +182,7 @@ def test_should_use_stable_87_specific_metric_sources():
     assert "N/A" in queries["data_availability_p99_seconds"].query
 
 
-def test_should_keep_packaged_descriptions_before_headers():
+def test_should_keep_packaged_descriptions_before_headers() -> None:
     for query_file_name in PACKAGED_QUERY_FILES:
         query_text = (PROJECT_DIR / query_file_name).read_text(encoding="utf-8").split("queries:\n", 1)[1]
         entries = [entry for entry in query_text.split("\n\n") if entry.startswith("  - key:")]
@@ -186,3 +194,45 @@ def test_should_keep_packaged_descriptions_before_headers():
             assert description_index != -1
             assert header_index != -1
             assert description_index < header_index
+
+
+def test_should_resolve_external_queries_file(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text(
+        """queries:
+- key: namespace
+  description: Namespace.
+  header: Namespace
+  query: namespace_metric{namespace="$NAMESPACE"}
+""",
+        encoding="utf-8",
+    )
+
+    assert parse_args(["c8-ck-test", "--queries", str(queries_file)]).queries_file == queries_file
+
+
+def test_should_build_query_substitutions() -> None:
+    options = Options(
+        namespace="c8-ck-test",
+        duration_seconds=900,
+        rate_interval="30s",
+        sample_step="15s",
+        endpoint="http://prometheus.example",
+        basic_auth_user="",
+        basic_auth_password="",
+        time_anchor="",
+        start_label="",
+        end_label="",
+        output_format="json",
+        include_header=True,
+        missing_value="NaN",
+        queries_file=Path("queries.yaml"),
+        output_file=None,
+    )
+
+    assert query_substitutions(options) == {
+        "$NAMESPACE": "c8-ck-test",
+        "$DURATION_S": "900s",
+        "$RATE_INTERVAL": "30s",
+        "$SAMPLE_STEP": "15s",
+    }
