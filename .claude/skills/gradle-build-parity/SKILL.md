@@ -1,0 +1,362 @@
+---
+name: gradle-build-parity
+description: Use when editing, fixing, or debugging the Gradle build in the Camunda monorepo (build.gradle.kts, settings.gradle.kts, buildSrc/, buildlogic conventions) — especially for missing dependencies, "cannot find symbol" across modules, test-jar wiring, optional dependencies, published-POM parity, or any Gradle vs Maven behavioral difference.
+---
+
+# Gradle Build Parity
+
+## Overview
+
+This branch builds a Gradle build for the Camunda monorepo as a parallel path to Maven.
+**Maven is the source of truth.** The job is to make Gradle match Maven behavior for the
+active modules, not to redesign the build.
+
+**Core principle:** When Gradle and Maven differ, assume Maven is correct until proven otherwise.
+
+Match Maven behavior for: dependency graphs, generated sources, resource processing, test-jar
+usage, published metadata, packaged artifacts.
+
+## CI Build-Tool Selection (why Maven stays the gate)
+
+`ci.yml` picks the build tool via a single `detect-changes` output:
+
+```yaml
+build-tool: ${{ (github.event_name == 'pull_request' && steps.filter.outputs.java-source-changes != 'true' && steps.filter.outputs.maven-build-changes != 'true' && (steps.filter.outputs.gradle-only-changes == 'true' || contains(github.event.pull_request.labels.*.name, 'gradle-build'))) && 'gradle' || 'maven' }}
+```
+
+`gradle` is chosen automatically for pure Gradle-only pull requests, or for other non-Java,
+non-Maven pull requests carrying the explicit `gradle-build` label. Every other trigger or change
+set falls to `maven`:
+
+- pure Gradle-only pull request → `gradle`
+- other non-Java PR with `gradle-build` label → `gradle`
+- Java or Maven-build PR, even with `gradle-build` label → `maven`
+- unlabeled pull request → `maven`
+- `push` (main, `stable/*`, `release-*`) → `maven`
+- `merge_group` (merge queue) → `maven`
+- schedules and manual runs → `maven`
+
+**Gradle mode replaces Maven only for labeled, non-Java PR checks, never at the landing gate.**
+main uses a required merge queue (ruleset `unified-ci-merges-main-branch`: `merge_queue` rule +
+required check `check-results`). A Gradle-labeled PR still gets Maven-validated in its `merge_group`
+run before it lands. If Maven fails there, the PR is kicked from the queue and never reaches main —
+so "something that doesn't build with Maven lands on main" **cannot happen** through the queue. `push`
+to main/stable is a second Maven gate.
+
+**Do not make `build-tool` a list/set** (run both on every PR). It doubles PR CI for zero
+integrity gain — the merge queue already re-validates with Maven.
+
+## Fix Workflow
+
+1. Reproduce the Gradle gap (build/verify the affected module).
+2. Compare against the relevant Maven `pom.xml` (module-local + `parent/pom.xml`).
+3. Patch the Gradle build with a minimal, module-scoped change.
+4. Verify the affected module only — no full-repo experimentation. Before concluding, run the
+   affected module's `compileTestJava` task and do not stop until it completes successfully.
+   Then always run `./gradlew testClasses` from the repository root and do not consider the task
+   finished until it completes successfully. This catches failures in other Gradle modules that
+   are not exercised by the affected module's compile task.
+5. For every Gradle change, build the Gradle distribution and compare its archive with the Maven
+   archive using `compare-dist.py`. The CI gate builds `testClasses` and `distZip` together, then
+   runs distribution parity separately.
+6. Preserve already-fixed conventions; avoid regressions.
+
+Maven source changes need two related but separate workflows:
+
+- When a rebase brings many Maven commits onto the Gradle branch, follow
+  [references/rebase-pom-audit.md](references/rebase-pom-audit.md) to identify the relevant
+  source range and reduce it to the final net POM changes.
+- To translate any Maven change into Gradle, follow
+  [references/pom-change-porting.md](references/pom-change-porting.md). This is the reusable
+  dependency, version-catalog, configuration, and validation procedure; it also applies after
+  the rebase audit.
+
+The rebase audit identifies what changed. It does not replace the porting procedure.
+
+### Gradle CI gates
+
+On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task
+and builds `:camunda-zeebe:distZip` in the same invocation. The required
+`gradle-dist-parity` job then compares the Gradle distribution archive with the Maven
+distribution archive using `compare-dist.py` (the current CI artifacts are ZIPs; the tool also
+supports tar.gz/exploded distribution comparisons). These are the Gradle build gates; do not
+describe this path as a full Gradle test-suite run.
+
+**Before investigating CI failures: always rebase onto main first.** CI runs on the merge
+commit, so Gradle build files apply against main's Java sources, which may differ from the
+branch's local sources.
+
+## Pom Changes That Break Gradle
+
+When a Gradle failure follows a pom-only commit, check
+[references/pom-change-failure-modes.md](references/pom-change-failure-modes.md) first — catalog
+of pom edit categories (missing internal/external deps, wrong `api`/`implementation`, scope-
+ordering quirks, exclusions, optional/test-jar wiring, version/BOM skew, surefire↔Gradle test
+config drift, codegen input changes) and CI-shaped failures (concurrency misconfiguration).
+
+## Known Gradle vs Maven Differences
+
+For replicating Maven **build-time plugins** (code generation, resource templating, per-module
+version pinning) see [references/maven-plugin-equivalents.md](references/maven-plugin-equivalents.md):
+config-cache-safe pom reads, `templating-maven-plugin` → `Sync`+`ReplaceTokens`,
+`openapi-generator` multi-spec `GenerateTask`, Spring version pinning, SBE tool isolation.
+
+### Maven `<optional>true</optional>` → Gradle `compileOnly` + `testImplementation`
+
+Gradle has no direct optional-dependency equivalent. Repo pattern:
+`compileOnly(dep) + testImplementation(dep)`. It approximates Maven optional but differs:
+
+|          Scope           | Maven `optional` | Gradle `compileOnly` + `testImplementation` |
+|--------------------------|------------------|---------------------------------------------|
+| Declaring module compile | ✓                | ✓                                           |
+| Declaring module runtime | ✓                | ✗                                           |
+| Declaring module tests   | ✓                | ✓ (via explicit `testImplementation`)       |
+| Consumer compile         | ✗                | ✗                                           |
+| Consumer runtime         | ✗                | ✗                                           |
+
+The declaring module's **runtime** classpath lacks the `compileOnly` dep. Safe when the dep is
+used only behind Spring Boot `@ConditionalOnClass` — the ASM condition evaluates false and the
+config class never loads.
+
+**`api()` leaks optional deps:** Gradle `api()` always propagates to consumers' compile AND
+runtime classpaths, unlike Maven optional which stops at consumers. If a module declares an
+optional dep as `api`, consumers get it transitively in Gradle but not Maven — silently
+activating Spring Boot conditional config that should be inactive. Fix: `api(dep)` →
+`compileOnly(dep) + testImplementation(dep)`, and list the dep in the module's
+`OptionalDependenciesPomAction` for published-POM parity.
+
+**True Gradle equivalent:** [feature variants](https://docs.gradle.org/current/userguide/how_to_create_feature_variants_of_a_library.html#feature_variants)
+give full compile/runtime control without the `compileOnly` runtime gap. Repo uses the pragmatic
+approximation; migrate to feature variants only if finer control is needed.
+
+**Fixed so far:** `clients/java` (`micrometer-core`, `micrometer-commons`),
+`clients/camunda-spring-boot-starter` (`micrometer-core`).
+
+### Maven compile dependencies → Gradle `api()` vs `implementation()`
+
+Maven's default `compile` scope does **not** automatically mean Gradle `api()`. Choose the
+configuration from the module boundary:
+
+- Use **`api()`** when the dependency's classes are exposed by the module's public or protected
+  API and are used by code outside the declaring module. This includes public/protected method
+  parameters and return types, fields, constructors, thrown types, generic bounds, implemented
+  interfaces, superclasses, and annotations that consumers must resolve.
+- Use **`implementation()`** when the dependency is used only by the module's implementation —
+  for example in private or package-private members, internal algorithms, or code whose types do
+  not appear in the consumer-facing API. Other packages inside the same module do not by themselves
+  require `api()`; they are already compiled against that module's implementation classpath.
+- A direct dependency being present in a Maven POM, or a consumer compiling through a transitive
+  dependency today, is not sufficient evidence for `api()`. Inspect the exposed signatures and
+  downstream usages first. Prefer `implementation()` when the dependency is not part of the
+  module boundary because `api()` expands consumers' compile classpaths and build-cache invalidation.
+- Gradle `implementation()` dependencies are not available on a consumer's **compile** classpath;
+  Maven compile dependencies normally are transitively available there. When a consumer directly
+  imports a dependency's classes, declare that dependency in the consumer too, using `api()` only
+  if the consumer exposes those classes and `implementation()` otherwise. Do not rely on a
+  provider's `implementation()` dependency merely because Maven's transitive graph made the code
+  compile. This can require more direct Gradle declarations than Maven, while preserving the same
+  observable API and runtime behavior.
+- Test-only usage remains `testImplementation()`. Maven `provided` and `optional` semantics are
+  separate decisions; follow the `compileOnly`/`testImplementation` and published-POM rules above
+  rather than promoting those dependencies to `api()` merely because main sources import them.
+
+When auditing a POM dependency, check both the declaration and the API boundary before editing:
+
+```bash
+rg -n 'public |protected |import <group-or-package>' <module>/src/main
+rg -n '<artifact-id>|<group-id>' <module>/pom.xml <module>/build.gradle.kts
+```
+
+Then verify the selected configuration with `compare-module-deps.py` and a consumer compile. Do not
+use `api()` as a generic replacement for Maven compile scope.
+
+### Maven `test-jar` → Gradle `configuration = "tests"`
+
+Maven modules with `<goal>test-jar</goal>` in `maven-jar-plugin` expose test classes as a
+`*-tests.jar`. In Gradle this needs both sides:
+
+**Producer** applies the convention plugin (creates `tests` configuration + `testsJar` artifact):
+
+```kotlin
+plugins {
+  id("buildlogic.test-jar-conventions")
+}
+```
+
+**Consumer** adds both main jar and test jar:
+
+```kotlin
+testImplementation(project(":some-module"))
+testImplementation(project(":some-module", configuration = "tests"))
+```
+
+**Diagnose:** if compilation fails with `cannot find symbol` for a class under another module's
+`src/test/java`, check whether that module's `build.gradle.kts` applies `test-jar-conventions`.
+If not, add it, then add the `configuration = "tests"` dep on the consumer.
+
+### Required: no free library versions in the Gradle build
+
+**Never define a library version directly in Gradle.** This applies to every external library,
+tool, BOM, buildscript dependency, convention-plugin dependency, and version-catalog entry. A
+version must either be sourced from Maven through the generated `libs` catalog or be omitted
+because an already-represented BOM manages it. A hardcoded library version in a Gradle file is a
+parity violation, even when Maven has no convenient property yet.
+
+The catalog is built in `settings.gradle.kts`; versions are sourced from Maven via
+`pomVersion("version.X")`, which reads `parent/pom.xml` `<properties>` — Maven stays the single
+source of truth. When a Maven version lives **inline** (for example, a library or plugin
+`<version>2.2.0</version>` in a module POM rather than a property), promote it to a parent
+`<properties>` entry and reference it via `${version.X}` in the module POM. Then add
+`version("X", pomVersion("version.X"))` and a `library(...)` entry to the catalog, and reference
+`libs...` from the build.
+
+The only exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
+Maven-sourced version. Do not extend that exception to libraries used by the plugin or to ordinary
+buildscript dependencies; those still use the catalog.
+
+**Catalog accessors work inside `buildscript {}`** on Gradle 9.5 — a buildscript classpath dep
+can use `classpath(libs.some.lib)` instead of a hardcoded coordinate (verified on
+`zeebe/protocol-asserts`, whose generator lib runs on the buildscript classpath).
+
+### Maven surefire/failsafe ↔ Gradle test/it mapping
+
+The current Gradle test-task contract mirrors Maven's split on the shared `src/test` source set:
+
+- Maven **Surefire** (unit tests) ↔ Gradle **`test`**
+- Maven **Failsafe** (integration tests) ↔ Gradle **`it`**
+- Gradle **`check`** depends on **`it`**
+
+`test` excludes the standard IT class-name patterns (`IT*`, `*IT`, `*ITCase`); `it` includes
+those patterns. Do **not** reintroduce a custom `ut` task or make `test` an empty lifecycle task
+that just depends on other test tasks — that breaks native Gradle test filtering such as
+`test --tests ...`.
+
+Optimize's owner-aligned suite tasks follow the same naming shift:
+
+- `testCoreFeatures`
+- `testDataLayer`
+
+If you are comparing CI behavior, expect Gradle unit-test jobs to invoke `test`, not `ut`.
+
+#### Acceptance-test pattern and profile parity is critical
+
+Always monitor these Maven files for changes that can silently change which acceptance tests run:
+
+- `qa/pom.xml` — shared Failsafe include patterns for the `qa` reactor;
+- `qa/acceptance-tests/pom.xml` — `multi-db-test`, `history`, `identity-tests`, `rdbms`, and
+  physical-tenant profile tags, includes, excludes, and system properties;
+- `qa/acceptance-tests/pom.xml` — the `identity-packages` property used by the multi-database
+  profiles; and
+- `parent/pom.xml` — shared Failsafe execution, fork, skip, and reporting configuration.
+
+When any of these change, audit `qa/acceptance-tests/build.gradle.kts` in the same change. Keep
+these Gradle task selectors behaviorally aligned with the corresponding Maven profiles:
+
+- `itMultiDb` ↔ `multi-db-test`
+- `itHistory` ↔ `history`
+- `itIdentity` ↔ `identity-tests`
+- `itRdbms` ↔ `rdbms`
+- `itPhysicalTenant`, `itPhysicalTenantIdentity`, and `itPhysicalTenantHistory` ↔ their
+  physical-tenant profiles
+
+Check all of the following, not just task names: class-name include patterns, JUnit tag includes
+and excludes, nested-class exclusions, identity-package boundaries, preferred-extension system
+properties, test fork/parallelism settings, and no-tests behavior. Also audit CI callers in
+`.github/workflows/ci.yml` and reusable workflows whenever a profile or task changes. A Maven
+profile change without a corresponding Gradle task/CI audit is a parity regression risk.
+
+## Constraints
+
+- Treat Maven behavior as the reference. Check the relevant `pom.xml` before assuming a Gradle
+  dependency or task is wrong or missing.
+- Prefer minimal, module-scoped Gradle fixes over broad refactors.
+- Configuration cache is enabled — keep build logic compatible with it.
+- Backend parity work should skip frontend builds by default with `-Pskip.fe.build=true` for
+  compile/test, dependency-validation, and distribution-parity tasks. This keeps the inner loop
+  focused on backend behavior and matches the Maven CI distball, which is built with
+  `-PskipFrontendBuild`; frontend bundles are produced separately where needed.
+- Build frontend assets only for explicit frontend parity work or when validating a deliberately
+  frontend-inclusive archive. Do not treat a distribution built with `-Pskip.fe.build=true` as
+  frontend-complete.
+
+## Tools
+
+### `compare-module-deps.py` — per-module dependency diff
+
+Compares the resolved dependencies of one module between Gradle and Maven. Use it to
+confirm a parity fix, or to diagnose a suspected dependency gap.
+
+```bash
+python .claude/skills/gradle-build-parity/compare-module-deps.py <gradle-project> [--scope runtime|compile|test] [--versions]
+python .claude/skills/gradle-build-parity/compare-module-deps.py --dir clients/java      # resolve project from its dir
+python .claude/skills/gradle-build-parity/compare-module-deps.py --list                  # gradle-project -> dir map
+```
+
+It reports, per module:
+- **third-party deps** — diffed by `group:artifact` (BOM/platform imports filtered out).
+- **internal deps** — Maven `io.camunda:*` reactor modules vs Gradle `project :...`,
+  diffed by name. This relies on the convention **Gradle project name == Maven
+  artifactId**. If they diverge, fix the Gradle project name — the tool flags it as a
+  false diff, which is itself a signal.
+
+Note: not every `io.camunda:*` artifact is a reactor module — some are separately-released
+libs (e.g. `camunda-security-library-*`, an alpha-versioned dependency). The tool
+classifies by the reactor project-name set from `settings.gradle.kts`: reactor artifacts
+are internal, all other `io.camunda:*` coords are ordinary third-party deps.
+
+Scope maps Maven scope → Gradle configuration: `runtime`→`runtimeClasspath`,
+`compile`→`compileClasspath`, `test`→`testRuntimeClasspath`. Exit code `2` on any diff.
+
+**Before treating a MISSING/EXTRA as a real gap, confirm the transitive path.** A "MISSING
+in Gradle" can be a Maven scope-resolution quirk rather than a build gap. Maven normally
+narrows a transitive reached through a **test**-scoped path down to `test`, but it fails to
+narrow **classifier-variant** artifacts: their nodes keep their declared `runtime` scope
+even though their (non-classifier) parent was correctly narrowed to `test`. So
+`-DincludeScope=runtime` wrongly lists them. Seen with
+`io.netty:netty-tcnative-boringssl-static` (reached via `zeebe-test-util` → `camunda-client-java`):
+the base and `netty-tcnative-classes` resolve to `test`, but the 5 platform-classifier jars
+resolve to `runtime`. Gradle narrows correctly, keeping them on `testRuntimeClasspath` only.
+Verify with `./mvnw dependency:list -pl <dir>` (inspect the per-artifact scope column) plus
+`./mvnw dependency:tree -pl <dir> -Dincludes=<group>:<artifact>`, and check the Gradle
+`testRuntimeClasspath` before changing the build.
+
+Single-module only by design: it launches one Maven + one Gradle invocation per run.
+A repo-wide `--all` was tried and dropped — 146 modules × 2 tools is too slow for CI,
+and bulk single-JVM resolution hit Gradle 9 walls (config-phase resolution locks,
+config-cache `Task.project` restrictions, per-project resolution locks). Not worth the
+complexity for the parity payoff; run it per module on the module you're fixing.
+
+### `compare-dist.py` — packaged distribution parity
+
+Compares the packaged distribution produced by the `dist/` project between Gradle and Maven.
+`compare-module-deps.py` diffs a single module's resolved classpath; `compare-dist.py` checks
+the actual shipped distribution. In ZIP mode it compares the versioned root and JAR
+names/versions under `lib/`; other file-content differences are intentionally ignored. In the
+legacy tar/directory mode it compares the JAR names and versions under `lib/`.
+
+```bash
+# Full ZIP archive comparison
+python3 .claude/skills/gradle-build-parity/compare-dist.py \
+    dist/build/distributions/camunda-zeebe-*.zip \
+    dist/target/camunda-zeebe-*.zip
+
+# JAR/version comparison against an exploded Maven distribution
+python3 .claude/skills/gradle-build-parity/compare-dist.py \
+    dist/build/distributions/camunda-zeebe-*.tar.gz \
+    dist/target/camunda-zeebe
+```
+
+Use it after a module-level fix to compare the versions and dependency set that actually land
+in the shipped distribution, and to catch packaging gaps that per-module classpath diffs miss
+(e.g. a dep present on a classpath but excluded from the assembly).
+
+## Reference Files
+
+- `parent/pom.xml` and module-local `pom.xml` files — authoritative for versions, deps, code
+  generation, exclusions, packaging, publication
+- `settings.gradle.kts` — module registration
+- `buildSrc/` — convention plugins (`buildlogic.*`)
+- [references/rebase-pom-audit.md](references/rebase-pom-audit.md) — audit for POM changes
+  introduced by a rebase and reduction to the final net state
+- [references/pom-change-porting.md](references/pom-change-porting.md) — reusable procedure for
+  porting Maven dependency, version, configuration, and packaging changes to Gradle
