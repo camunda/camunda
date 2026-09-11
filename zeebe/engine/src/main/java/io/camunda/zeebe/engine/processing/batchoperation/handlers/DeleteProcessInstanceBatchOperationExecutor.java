@@ -44,6 +44,7 @@ public class DeleteProcessInstanceBatchOperationExecutor implements BatchOperati
     final var command = new HistoryDeletionRecord();
     command.setResourceKey(itemKey);
     command.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
+    command.setStorageOrdinalKey(storageOrdinalKey);
 
     commandWriter.appendFollowUpCommand(
         itemKey,
