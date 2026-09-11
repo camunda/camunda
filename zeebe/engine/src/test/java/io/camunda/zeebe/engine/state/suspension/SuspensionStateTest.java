@@ -260,7 +260,7 @@ public final class SuspensionStateTest {
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
 
     // when - the drain removes the head of the buffer
-    suspensionState.removeBufferedCommand(10L);
+    suspensionState.removeBufferedCommand(processInstanceKey, 10L);
 
     // then
     assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey).orElseThrow().key())
@@ -275,7 +275,7 @@ public final class SuspensionStateTest {
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
 
     // when
-    suspensionState.removeBufferedCommand(10L);
+    suspensionState.removeBufferedCommand(processInstanceKey, 10L);
 
     // then
     final List<Long> visitedKeys = new ArrayList<>();
@@ -324,7 +324,7 @@ public final class SuspensionStateTest {
     assertThat(suspensionState.countBufferedCommands(processInstanceKeyB)).isEqualTo(1);
 
     // when — removing one of A's commands
-    suspensionState.removeBufferedCommand(10L);
+    suspensionState.removeBufferedCommand(processInstanceKeyA, 10L);
 
     // then
     assertThat(suspensionState.countBufferedCommands(processInstanceKeyA)).isEqualTo(1);
@@ -336,7 +336,8 @@ public final class SuspensionStateTest {
     final long processInstanceKey = 1L;
 
     // when - then (no exception)
-    assertThatCode(() -> suspensionState.removeBufferedCommand(10L)).doesNotThrowAnyException();
+    assertThatCode(() -> suspensionState.removeBufferedCommand(processInstanceKey, 10L))
+        .doesNotThrowAnyException();
     assertThatCode(() -> suspensionState.clearBufferedCommands(processInstanceKey))
         .doesNotThrowAnyException();
 

@@ -12,8 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.db.impl.DbNil;
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -22,11 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
 
 public final class DbSuspensionState implements MutableSuspensionState {
-
-  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final DbLong processInstanceKey = new DbLong();
   private final SuspensionMarkerValue suspensionMarkerValue = new SuspensionMarkerValue();
@@ -34,11 +29,10 @@ public final class DbSuspensionState implements MutableSuspensionState {
 
   private final DbLong bufferedCommandKey = new DbLong();
   private final DbBufferedCommand dbBufferedCommand = new DbBufferedCommand();
-  private final ColumnFamily<DbLong, DbBufferedCommand> bufferedCommandColumnFamily;
 
   private final DbCompositeKey<DbLong, DbLong> processInstanceKeyAndBufferedCommandKey =
       new DbCompositeKey<>(processInstanceKey, bufferedCommandKey);
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
+  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbBufferedCommand>
       bufferedCommandByProcessInstanceKeyColumnFamily;
 
   public DbSuspensionState(
@@ -49,18 +43,12 @@ public final class DbSuspensionState implements MutableSuspensionState {
             transactionContext,
             processInstanceKey,
             suspensionMarkerValue);
-    bufferedCommandColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.BUFFERED_PROCESS_INSTANCE_COMMANDS,
-            transactionContext,
-            bufferedCommandKey,
-            dbBufferedCommand);
     bufferedCommandByProcessInstanceKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY,
             transactionContext,
             processInstanceKeyAndBufferedCommandKey,
-            DbNil.INSTANCE);
+            dbBufferedCommand);
   }
 
   @Override
@@ -94,20 +82,14 @@ public final class DbSuspensionState implements MutableSuspensionState {
     processInstanceKey.wrapLong(key);
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
-        (compositeKey, nil) -> {
+        (compositeKey, stored) -> {
           final long bufferedKey = compositeKey.second().getValue();
-          bufferedCommandKey.wrapLong(bufferedKey);
-          final var stored =
-              bufferedCommandColumnFamily.get(bufferedCommandKey, DbBufferedCommand::new);
-          if (stored == null) {
-            LOG.error(
-                "Expected to find buffered command with key '{}' for process instance '{}', but "
-                    + "none was stored; the buffered-command index is inconsistent. Skipping this entry.",
-                bufferedKey,
-                key);
-            return;
-          }
-          visitor.visit(bufferedKey, stored.getRecord());
+          // stored is the column family's single reusable value instance, re-wrapped for every
+          // row - copy it so a visitor collecting values across multiple rows doesn't end up with
+          // every entry aliasing the same (by-then-overwritten) buffer
+          final var copy = new BufferedCommandRecord();
+          copy.copyFrom(stored.getRecord());
+          visitor.visit(bufferedKey, copy);
         });
   }
 
@@ -129,24 +111,15 @@ public final class DbSuspensionState implements MutableSuspensionState {
     final var oldest = new BufferedCommand[1];
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
-        (compositeKey, nil) -> {
-          final long bufferedKey = compositeKey.second().getValue();
-          bufferedCommandKey.wrapLong(bufferedKey);
-          final var stored =
-              bufferedCommandColumnFamily.get(bufferedCommandKey, DbBufferedCommand::new);
-          if (stored == null) {
-            // broken invariant: secondary index and primary CF are always written/deleted together,
-            // so a secondary entry with no matching primary record signals index corruption
-            LOG.error(
-                "Expected to find buffered command with key '{}' for process instance '{}', but "
-                    + "none was stored; the buffered-command index is inconsistent. Treating the "
-                    + "buffer as unreadable for this instance.",
-                bufferedKey,
-                key);
-            return false;
-          }
-          // the secondary index is ordered by bufferedCommandKey, so the first hit is the oldest
-          oldest[0] = new BufferedCommand(bufferedKey, stored.getRecord());
+        (compositeKey, stored) -> {
+          // the key is ordered by bufferedCommandKey, so the first hit is the oldest. stored is
+          // the column family's single reusable value instance - copy it, since the caller (the
+          // resume/drain hot path) holds onto this well beyond this method returning, and any
+          // later read from this column family would otherwise silently mutate it out from under
+          // them
+          final var copy = new BufferedCommandRecord();
+          copy.copyFrom(stored.getRecord());
+          oldest[0] = new BufferedCommand(compositeKey.second().getValue(), copy);
           return false;
         });
     return Optional.ofNullable(oldest[0]);
@@ -158,26 +131,15 @@ public final class DbSuspensionState implements MutableSuspensionState {
     processInstanceKey.wrapLong(command.getProcessInstanceKey());
     bufferedCommandKey.wrapLong(bufferedCommandKeyValue);
     dbBufferedCommand.setRecord(command);
-    bufferedCommandColumnFamily.insert(bufferedCommandKey, dbBufferedCommand);
     bufferedCommandByProcessInstanceKeyColumnFamily.insert(
-        processInstanceKeyAndBufferedCommandKey, DbNil.INSTANCE);
+        processInstanceKeyAndBufferedCommandKey, dbBufferedCommand);
   }
 
   @Override
-  public void removeBufferedCommand(final long bufferedCommandKeyValue) {
+  public void removeBufferedCommand(
+      final long processInstanceKeyValue, final long bufferedCommandKeyValue) {
+    processInstanceKey.wrapLong(processInstanceKeyValue);
     bufferedCommandKey.wrapLong(bufferedCommandKeyValue);
-    final var stored = bufferedCommandColumnFamily.get(bufferedCommandKey);
-    if (stored == null) {
-      // no-op: nothing buffered under this key (already removed, or never existed) — the normal
-      // case per the interface contract. Primary and secondary index are always written together
-      // in the same transaction (see #bufferCommand), so this also means there is no secondary
-      // entry to clean up.
-      return;
-    }
-    // derive the secondary-index key from the stored record itself, mirroring #bufferCommand,
-    // rather than taking it as a separate parameter that could desync from it
-    processInstanceKey.wrapLong(stored.getRecord().getProcessInstanceKey());
-    bufferedCommandColumnFamily.deleteIfExists(bufferedCommandKey);
     bufferedCommandByProcessInstanceKeyColumnFamily.deleteIfExists(
         processInstanceKeyAndBufferedCommandKey);
   }
@@ -188,16 +150,14 @@ public final class DbSuspensionState implements MutableSuspensionState {
     final List<Long> keysToRemove = new ArrayList<>();
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
-        (compositeKey, nil) -> {
+        (compositeKey, stored) -> {
           keysToRemove.add(compositeKey.second().getValue());
         });
-    // delete directly instead of delegating to #removeBufferedCommand: the prefix just iterated
-    // is already the authoritative processInstanceKey for every one of these entries, so there is
-    // no need to re-fetch each record just to re-derive it
+    // processInstanceKey is already wrapped to the prefix just iterated above; only the buffered
+    // command key needs to change per entry
     keysToRemove.forEach(
         k -> {
           bufferedCommandKey.wrapLong(k);
-          bufferedCommandColumnFamily.deleteIfExists(bufferedCommandKey);
           bufferedCommandByProcessInstanceKeyColumnFamily.deleteIfExists(
               processInstanceKeyAndBufferedCommandKey);
         });
