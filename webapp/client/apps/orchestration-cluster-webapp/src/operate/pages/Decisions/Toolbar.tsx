@@ -15,6 +15,7 @@ import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
+import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
 import {buildInstanceKeyCriterion, type DecisionInstancesFilter} from './decisionsFilter';
 
 type Props = {
@@ -49,20 +50,7 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 		setIsDeleting(false);
 
 		if (error !== null) {
-			if (error.variant === 'failed-response' && error.response.status === 403) {
-				notificationsStore.displayNotification({
-					kind: 'warning',
-					title: t('operate.decisions.toolbar.forbiddenTitle'),
-					subtitle: t('operate.decisions.toolbar.forbiddenSubtitle'),
-					isDismissable: true,
-				});
-				return;
-			}
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('operate.decisions.toolbar.deleteErrorTitle'),
-				isDismissable: true,
-			});
+			handleOperationError(error.response?.status);
 			return;
 		}
 

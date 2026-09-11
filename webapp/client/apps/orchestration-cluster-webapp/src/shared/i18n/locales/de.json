@@ -627,10 +627,20 @@
 					"deleteModalBody_other": "{{count}} Instanzen für die Löschoperation ausgewählt. Dies löscht die ausgewählten Entscheidungsinstanzen und ihren Verlauf dauerhaft. Dies kann nicht widerrufen werden.",
 					"deleteSuccessTitle": "Die Batch-Operation „{{operationType}}“ wurde gestartet",
 					"deleteSuccessSubtitle": "Sie können den Fortschritt auf der Seite Batch-Operationen verfolgen",
-					"deleteSuccessActionLabel": "Zu den Operationsdetails",
-					"deleteErrorTitle": "Operation konnte nicht erstellt werden",
-					"forbiddenTitle": "Sie haben keine Berechtigung, diese Operation auszuführen",
-					"forbiddenSubtitle": "Bitte kontaktieren Sie Ihren Administrator, wenn Sie Zugriff benötigen."
+					"deleteSuccessActionLabel": "Zu den Operationsdetails"
+				},
+				"definitionDeletion": {
+					"buttonTitle": "Entscheidungsdefinition \"{{name}} - Version {{version}}\" löschen",
+					"title": "DRD löschen",
+					"description": "Sie sind dabei, das folgende DRD zu löschen:",
+					"confirmation": "Ja, ich bestätige, dass ich dieses DRD und alle zugehörigen Instanzen löschen möchte.",
+					"warningTitle": "Durch das Löschen einer Entscheidungsdefinition wird das DRD gelöscht. Dies hat folgende Auswirkungen:",
+					"warningDrd": "Wenn Sie eine Entscheidungsdefinition löschen, löschen Sie das DRD, das diese Entscheidungsdefinition enthält. Alle anderen Entscheidungstabellen und literalen Ausdrücke, die Teil des DRD sind, werden ebenfalls gelöscht.",
+					"warningIncidents": "Das Löschen der einzigen vorhandenen Version einer Entscheidungsdefinition kann zu Prozess-Incidents führen.",
+					"documentation": "Weitere Informationen zum Löschen einer Entscheidungsdefinition",
+					"details": "DRD-Details",
+					"drdName": "DRD-Name",
+					"successTitle": "Operation erstellt"
 				}
 			},
 			"decisionInstance": {
@@ -785,6 +795,9 @@
 					"modifyTitle": "Instanz {{processInstanceKey}} ändern",
 					"deleteTitle": "Instanz {{processInstanceKey}} löschen",
 					"deleteButtonLabel": "Löschen",
+					"creationErrorTitle": "Operation konnte nicht erstellt werden",
+					"forbiddenTitle": "Sie haben keine Berechtigung, diese Operation auszuführen",
+					"forbiddenSubtitle": "Bitte kontaktieren Sie den Administrator, wenn Sie Zugriff benötigen.",
 					"cancelConfirmationModal": {
 						"heading": "Operation anwenden",
 						"applyButton": "Anwenden",
