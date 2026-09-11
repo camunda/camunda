@@ -14,6 +14,7 @@ functions:
   - verifyAddedInVersion
   - verifyScope
   - verifySemanticKindsRegistered
+  - verifyPresentWhenRequestResolves
   - verifyNoAmbiguousIdentifierProperty
   - verifySecurityDeclared
   - verifyRequiredPermissions
@@ -195,18 +196,10 @@ rules:
   # shape for any consumer that does not derive from it.
   #
   # Scope: like the other `*-shape` rules here, this validates only the marker's
-  # local JSON shape — it does NOT cross-reference that `request` names a real
-  # top-level property on the operation's request body, so a typo'd binding
-  # (`request: withLeese`) passes this rule. That cross-reference is deliberately
-  # out of scope while `x-present-when` has a single production instance
-  # (activateJobs). NOTE: the Spectral custom-rule unit tests
-  # (`spectral-tests/presentWhenShape.test.js`) lint only a synthetic fixture
-  # that carries no `requestBody`/`withLease` operation, so they verify the
-  # marker's *shape* only — neither they nor this rule pin the production
-  # `jobs.yaml` binding, so a typo'd `request` (e.g. `withLeese`) would go
-  # uncaught. Add a semantic resolver (a custom JS function, as
-  # verify-semantic-kinds-registered does for x-semantic-*) that checks the
-  # binding against the real spec here if the marker sees broader adoption.
+  # local JSON shape. It does NOT cross-reference that `request` names a real
+  # top-level property on the operation's request body — that referential-
+  # integrity check lives in the `present-when-request-resolves` rule below,
+  # which resolves each operation against the real spec.
   present-when-shape:
     description: "Each `x-present-when` marker must declare a request field and a scalar `equals` value."
     severity: error
@@ -227,6 +220,23 @@ rules:
             equals:
               type: [boolean, string, number]
               description: Scalar literal the request field must equal for the property to be present (required, non-null).
+
+  # Referential integrity for `x-present-when` (complements `present-when-shape`).
+  # The shape rule cannot see that `request` names a real field, because the
+  # marker sits on a shared component schema with no back-reference to the
+  # operation whose request body it constrains. This rule resolves each
+  # operation, finds every marker reachable from its 2xx responses, and asserts
+  # `request` is a top-level property of that operation's request body (and that
+  # the annotated property stays nullable + required — inert on the wire). A
+  # dangling binding (`request: withLeese`) would otherwise silently degrade the
+  # dependent typing every SDK generator derives from the marker.
+  present-when-request-resolves:
+    description: "Each `x-present-when.request` must name a top-level property of its operation's request body, and the annotated response property must stay nullable and required."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyPresentWhenRequestResolves
 
   # ── x-required-permissions (camunda/camunda#54727) ──
   # Canonical endpoint -> required-permission(s) binding. Two rules:
