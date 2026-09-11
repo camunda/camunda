@@ -653,6 +653,40 @@ final class RaftClusterContextTest {
         .containsExactly(new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()));
   }
 
+  @ParameterizedTest
+  @EnumSource(value = Type.class, names = "ACTIVE", mode = EnumSource.Mode.EXCLUDE)
+  void shouldTreatMembersActiveInEitherConfigurationAsVotingInJointConsensus(
+      final Type nonActiveType) {
+    // given -- a joint consensus configuration where member 2 is only active in the old
+    // configuration, member 3 is only active in the new configuration and member 4 is not active
+    // in either configuration
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldMembers =
+        List.<RaftMember>of(
+            localMember,
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), nonActiveType, Instant.now()),
+            new DefaultRaftMember(new MemberId("4"), nonActiveType, Instant.now()));
+    final var newMembers =
+        List.<RaftMember>of(
+            localMember,
+            new DefaultRaftMember(new MemberId("2"), nonActiveType, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("4"), nonActiveType, Instant.now()));
+
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // then -- members that are active in either the old or the new configuration are voting
+    // members and receive poll and vote requests, the member that is active in neither does not
+    assertThat(context.getVotingMembers())
+        .map(RaftMember::memberId)
+        .containsExactlyInAnyOrder(new MemberId("2"), new MemberId("3"));
+  }
+
   @Test
   void shouldKeepMembersWithHighestType() {
     // given - three active members

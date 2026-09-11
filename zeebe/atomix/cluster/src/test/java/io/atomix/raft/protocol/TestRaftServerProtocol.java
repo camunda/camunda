@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -54,8 +55,11 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   private final Map<Class<?>, ResponseInterceptor<?>> responseInterceptors =
       new ConcurrentHashMap<>();
 
+  private final MemberId memberId;
+
   public TestRaftServerProtocol(
       final MemberId memberId, final Map<MemberId, TestRaftServerProtocol> servers) {
+    this.memberId = memberId;
     this.servers = servers;
     servers.put(memberId, this);
   }
@@ -391,6 +395,23 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
         requestType,
         (request, listener) -> {
           interceptor.accept((T) request);
+          return CompletableFuture.completedFuture(listener);
+        });
+  }
+
+  /**
+   * interceptor is called before the request is handled by the receiver, with the receiver's member
+   * id as the first argument. Some requests are intercepted twice, once on the sending and once on
+   * the receiving protocol.
+   */
+  public <T> void interceptRequest(
+      final Class<T> requestType, final BiConsumer<MemberId, T> interceptor) {
+    interceptors.put(
+        requestType,
+        (request, listener) -> {
+          // listener is null when intercepting on the receiving protocol
+          final var receiver = listener != null ? listener.memberId : memberId;
+          interceptor.accept(receiver, (T) request);
           return CompletableFuture.completedFuture(listener);
         });
   }

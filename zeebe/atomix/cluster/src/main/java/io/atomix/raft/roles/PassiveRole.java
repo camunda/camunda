@@ -34,6 +34,7 @@ import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
@@ -404,17 +405,20 @@ public class PassiveRole extends InactiveRole {
     return handleAppend(request);
   }
 
+  // Polls and votes are answered regardless of the local role and configuration: during a
+  // reconfiguration, consensus is reached based on the candidate's configuration (Raft
+  // dissertation, section 4.1). A passive member's answer can be required to elect a leader,
+  // for example when a joint configuration was appended to a joining member before the leader
+  // failed. Unlike ActiveRole, no role transition happens on a term bump: a passive member may
+  // not have received a configuration yet, and it will be transitioned by the next
+  // ConfigureRequest when its type changes.
+
   @Override
   public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
     raft.checkThread();
     logRequest(request);
-
-    return CompletableFuture.completedFuture(
-        logResponse(
-            PollResponse.builder()
-                .withStatus(RaftResponse.Status.ERROR)
-                .withError(RaftError.Type.ILLEGAL_MEMBER_STATE, "Cannot poll RESERVE member")
-                .build()));
+    updateTermAndLeader(request.term(), null);
+    return CompletableFuture.completedFuture(logResponse(handlePoll(request)));
   }
 
   @Override
@@ -422,14 +426,143 @@ public class PassiveRole extends InactiveRole {
     raft.checkThread();
     logRequest(request);
     updateTermAndLeader(request.term(), null);
+    return CompletableFuture.completedFuture(logResponse(handleVote(request)));
+  }
 
-    return CompletableFuture.completedFuture(
-        logResponse(
-            VoteResponse.builder()
-                .withStatus(RaftResponse.Status.ERROR)
-                .withError(
-                    RaftError.Type.ILLEGAL_MEMBER_STATE, "Cannot request vote from RESERVE member")
-                .build()));
+  /** Handles a poll request. */
+  protected PollResponse handlePoll(final PollRequest request) {
+    // If the request term is not as great as the current context term then don't
+    // vote for the candidate. We want to vote for candidates that are at least
+    // as up to date as us.
+    if (request.term() < raft.getTerm()) {
+      log.debug("Rejected {}: candidate's term is less than the current term", request);
+      return PollResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withAccepted(false)
+          .build();
+    } else if (isLogUpToDate(request.lastLogIndex(), request.lastLogTerm(), request)) {
+      return PollResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withAccepted(true)
+          .build();
+    } else {
+      return PollResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withAccepted(false)
+          .build();
+    }
+  }
+
+  /** Returns a boolean value indicating whether the given candidate's log is up-to-date. */
+  boolean isLogUpToDate(final long lastIndex, final long lastTerm, final RaftRequest request) {
+    // If the log is empty then vote for the candidate.
+    if (raft.getLog().isEmpty()) {
+      log.debug("Accepted {}: candidate's log is up-to-date", request);
+      return true;
+    }
+
+    // Read the last entry from the log.
+    final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
+
+    // If the candidate's last log term is lower than the local log's last entry term, reject the
+    // request.
+    if (lastTerm < lastEntry.term()) {
+      log.debug(
+          "Rejected {}: candidate's last log entry ({}) is at a lower term than the local log ({})",
+          request,
+          lastTerm,
+          lastEntry.term());
+      return false;
+    }
+
+    // If the candidate's last term is equal to the local log's last entry term, reject the request
+    // if the
+    // candidate's last index is less than the local log's last index. If the candidate's last log
+    // term is
+    // greater than the local log's last term then it's considered up to date, and if both have the
+    // same term
+    // then the candidate's last index must be greater than the local log's last index.
+    if (lastTerm == lastEntry.term() && lastIndex < lastEntry.index()) {
+      log.debug(
+          "Rejected {}: candidate's last log entry ({}) is at a lower index than the local log ({})",
+          request,
+          lastIndex,
+          lastEntry.index());
+      return false;
+    }
+
+    // If we made it this far, the candidate's last term is greater than or equal to the local log's
+    // last
+    // term, and if equal to the local log's last term, the candidate's last index is equal to or
+    // greater
+    // than the local log's last index.
+    log.info("Accepted {}: candidate's log is up-to-date", request);
+    return true;
+  }
+
+  /** Handles a vote request. */
+  protected VoteResponse handleVote(final VoteRequest request) {
+    // If the request term is not as great as the current context term then don't
+    // vote for the candidate. We want to vote for candidates that are at least
+    // as up to date as us.
+    if (request.term() < raft.getTerm()) {
+      log.debug("Rejected {}: candidate's term is less than the current term", request);
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(false)
+          .build();
+    }
+    // If a leader was already determined for this term then reject the request.
+    else if (raft.getLeader() != null) {
+      log.debug("Rejected {}: leader already exists", request);
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(false)
+          .build();
+    }
+    // If no vote has been cast, check the log and cast a vote if necessary.
+    // The candidate does not need to be a member of the local configuration: during a
+    // reconfiguration, consensus is reached based on the candidate's configuration, so votes must
+    // be granted based on log up-to-dateness alone (Raft dissertation, section 4.1).
+    else if (raft.getLastVotedFor() == null) {
+      if (isLogUpToDate(request.lastLogIndex(), request.lastLogTerm(), request)) {
+        raft.setLastVotedFor(request.candidate());
+        return VoteResponse.builder()
+            .withStatus(RaftResponse.Status.OK)
+            .withTerm(raft.getTerm())
+            .withVoted(true)
+            .build();
+      } else {
+        return VoteResponse.builder()
+            .withStatus(RaftResponse.Status.OK)
+            .withTerm(raft.getTerm())
+            .withVoted(false)
+            .build();
+      }
+    }
+    // If we already voted for the requesting server, respond successfully.
+    else if (raft.getLastVotedFor().equals(request.candidate())) {
+      log.debug("Accepted {}: already voted for {}", request, raft.getLastVotedFor());
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(true)
+          .build();
+    }
+    // In this case, we've already voted for someone else.
+    else {
+      log.debug("Rejected {}: already voted for {}", request, raft.getLastVotedFor());
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(false)
+          .build();
+    }
   }
 
   // validates install request and returns a response if the request should not be processed
