@@ -87,6 +87,7 @@ import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretReferenceProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
@@ -153,6 +154,9 @@ public final class EngineProcessors {
     final int partitionId = typedRecordProcessorContext.getPartitionId();
     final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
+
+    final StorageOrdinalKeyProvider storageOrdinalKeyProvider =
+        getStorageOrdinalKeyProvider(config);
 
     final DueDateTimerCheckScheduler timerChecker =
         new DueDateTimerCheckScheduler(
@@ -361,6 +365,7 @@ public final class EngineProcessors {
             routingInfo,
             clock,
             config,
+            storageOrdinalKeyProvider,
             asyncRequestBehavior,
             cslCheck,
             transientProcessMessageSubscriptionState,
@@ -369,7 +374,12 @@ public final class EngineProcessors {
     typedRecordProcessors.withListener(suspensionMetrics);
 
     addDecisionProcessors(
-        typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
+        typedRecordProcessors,
+        decisionBehavior,
+        writers,
+        processingState,
+        storageOrdinalKeyProvider,
+        cslCheck);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -387,6 +397,7 @@ public final class EngineProcessors {
         secretResolutionScheduler,
         suspensionMetrics);
 
+    // TODO: @yohanfernando >> next need to apply storage ordinal changes here onwards
     final var userTaskProcessor =
         createUserTaskProcessor(
             processingState, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck, tenantCheck);
@@ -563,6 +574,15 @@ public final class EngineProcessors {
     return typedRecordProcessors;
   }
 
+  private static StorageOrdinalKeyProvider getStorageOrdinalKeyProvider(
+      final EngineConfiguration config) {
+    if (config.isArchiverlessEnabled()) {
+      return StorageOrdinalKeyProvider.getFixedProvider(config);
+    } else {
+      return StorageOrdinalKeyProvider.getNoopProvider();
+    }
+  }
+
   /**
    * Wires the identity/authorization subsystem: builds the CSL authorization graph via {@link
    * AuthorizationPortsFactory} and registers the authorization command processors on the given
@@ -692,6 +712,7 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final StorageOrdinalKeyProvider storageOrdinalKeyProvider,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -710,6 +731,7 @@ public final class EngineProcessors {
         routingInfo,
         clock,
         config,
+        storageOrdinalKeyProvider,
         asyncRequestBehavior,
         cslCheck,
         transientProcessMessageSubscriptionState,
@@ -839,11 +861,16 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final Writers writers,
       final MutableProcessingState processingState,
+      final StorageOrdinalKeyProvider storageOrdinalKeyProvider,
       final CslAuthorizationCheck cslCheck) {
 
     final DecisionEvaluationEvaluateProcessor decisionEvaluationEvaluateProcessor =
         new DecisionEvaluationEvaluateProcessor(
-            decisionBehavior, processingState.getKeyGenerator(), writers, cslCheck);
+            decisionBehavior,
+            processingState.getKeyGenerator(),
+            storageOrdinalKeyProvider,
+            writers,
+            cslCheck);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
