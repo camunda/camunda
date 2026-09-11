@@ -61,6 +61,30 @@ class LiquibaseSchemaManagerTest {
     verify(versionStore).recordCurrentVersion();
   }
 
+  @Test
+  void shouldUseTablePrefixAsLiquibaseContext() {
+    // given
+    final var schemaManager = new LiquibaseSchemaManager(autoDdlConfig("TENANT_"), "8.10.0");
+
+    // when
+    final var runner = schemaManager.buildRunner();
+
+    // then
+    assertThat(runner.getContexts()).isEqualTo("TENANT_CONTEXT");
+  }
+
+  @Test
+  void shouldNotSetLiquibaseContextWithoutTablePrefix() {
+    // given
+    final var schemaManager = new LiquibaseSchemaManager(autoDdlConfig(), "8.10.0");
+
+    // when
+    final var runner = schemaManager.buildRunner();
+
+    // then
+    assertThat(runner.getContexts()).isNull();
+  }
+
   // ---- stale lock (mock-based) ----
 
   @Test
@@ -205,7 +229,11 @@ class LiquibaseSchemaManagerTest {
   // ---- helpers ----
 
   private static PerTenantSchemaConfig autoDdlConfig() {
-    return new PerTenantSchemaConfig(mock(DataSource.class), h2Properties(), "", true, null);
+    return autoDdlConfig("");
+  }
+
+  private static PerTenantSchemaConfig autoDdlConfig(final String prefix) {
+    return new PerTenantSchemaConfig(mock(DataSource.class), h2Properties(), prefix, true, null);
   }
 
   private static VendorDatabaseProperties h2Properties() {
