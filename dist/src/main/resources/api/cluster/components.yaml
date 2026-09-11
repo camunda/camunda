@@ -431,6 +431,7 @@ schemas:
       - JOINING
       - ACTIVE
       - LEAVING
+      - LEARNER
 
   TopologyVersion:
     title: TopologyVersion
