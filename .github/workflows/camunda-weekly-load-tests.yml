@@ -1,7 +1,7 @@
 # description: Runs weekly load tests against main and every supported stable branch.
 #              Main: parallel endurance tests (realistic, rdbms-realistic (PostgreSQL),
 #              opensearch-realistic, ECS), TTL 28 days.
-#              Stable branches (8.7, 8.8, 8.9): one realistic-workload load test each, TTL 7
+#              Stable branches (8.7, 8.8, 8.9, 8.10): one realistic-workload load test each, TTL 7
 #              days, as a stability signal between patch releases.
 #              Naming pattern: medic-YYYY-WW-<sha> (main),
 #              weekly-YYYY-WW-<sha>-stable-<branch> (stable).
@@ -310,6 +310,17 @@ jobs:
       secondary-storage-type: elasticsearch
       ttl: 7
 
+  weekly-8-10:
+    name: Weekly load test (stable/8.10)
+    needs: test-data
+    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@stable/8.10
+    secrets: inherit
+    with:
+      name: ${{ needs.test-data.outputs.image-tag }}-stable-810
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      ttl: 7
+
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
@@ -323,6 +334,7 @@ jobs:
       - weekly-8-7
       - weekly-8-8
       - weekly-8-9
+      - weekly-8-10
     if: failure()
     timeout-minutes: 5
     permissions: { }
