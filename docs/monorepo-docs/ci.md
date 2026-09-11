@@ -628,7 +628,6 @@ teleport-actions/setup@*,
 test-summary/action@*,
 tibdex/github-app-token@*,
 wagoid/commitlint-github-action@*,
-Wandalen/wretry.action@*,
 </details>
 
 ## Preview Environments
