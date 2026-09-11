@@ -25,11 +25,28 @@ fi
 
 asdf_dir="${HOME}/.asdf"
 asdf_archive="$(mktemp)"
-trap 'rm -f "${asdf_archive}"' EXIT
+asdf_checksum_file="$(mktemp)"
+trap 'rm -f "${asdf_archive}" "${asdf_checksum_file}"' EXIT
+
+asdf_asset="asdf-v${ASDF_VERSION}-linux-amd64.tar.gz"
+asdf_release_url="https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/${asdf_asset}"
 
 mkdir -p "${asdf_dir}/bin"
-curl -fsSL -o "${asdf_archive}" \
-  "https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-amd64.tar.gz"
+curl -fsSL -o "${asdf_archive}" "${asdf_release_url}"
+
+# asdf's release-build workflow (wangyoucao577/go-release-action) publishes an
+# MD5 checksum alongside every asset but does not opt into SHA256 checksums,
+# so MD5 is the strongest published checksum available to verify against.
+# Fetching it per-release (rather than hardcoding a digest) keeps verification
+# working when ASDF_VERSION is bumped.
+curl -fsSL -o "${asdf_checksum_file}" "${asdf_release_url}.md5"
+asdf_expected_checksum="$(tr -d '[:space:]' <"${asdf_checksum_file}")"
+asdf_actual_checksum="$(md5sum "${asdf_archive}" | cut -d ' ' -f1)"
+if [[ "${asdf_actual_checksum}" != "${asdf_expected_checksum}" ]]; then
+  echo "::error::asdf archive checksum mismatch for ${asdf_asset}: expected ${asdf_expected_checksum}, got ${asdf_actual_checksum}"
+  exit 1
+fi
+
 tar -C "${asdf_dir}/bin" -xzf "${asdf_archive}"
 
 echo "${asdf_dir}/bin" >> "${GITHUB_PATH}"
