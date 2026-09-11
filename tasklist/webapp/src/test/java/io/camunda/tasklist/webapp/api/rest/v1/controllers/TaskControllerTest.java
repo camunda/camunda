@@ -37,6 +37,7 @@ import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.group.UserGroupService;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
+import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.TaskService;
@@ -58,6 +59,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -1076,6 +1078,31 @@ class TaskControllerTest {
 
       // Then
       assertThat(result).isEqualTo(expectedTaskResponse);
+    }
+
+    @Test
+    void shouldReturn415WhenCompletingTaskWithUnsupportedContentType() throws Exception {
+      // Given
+      final var taskId = "55555555";
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId)
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content("{}")
+                      .contentType(MediaType.TEXT_PLAIN))
+              // Then
+              .andExpect(status().isUnsupportedMediaType())
+              .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, Error.class);
+      assertThat(result.getStatus()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value());
+      assertThat(result.getMessage()).isNotBlank();
     }
 
     @Test
