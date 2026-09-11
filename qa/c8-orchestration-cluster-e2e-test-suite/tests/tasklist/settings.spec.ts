@@ -40,6 +40,15 @@ test.describe('settings', () => {
         exact: true,
       }),
     ).toBeVisible();
-    await expect(page.getByRole('button', {name: 'Déconnexion'})).toBeVisible();
+    // changeLanguage() explicitly closes the settings dropdown before
+    // returning (see its own comment in TasklistHeader.ts), so the logout
+    // entry isn't on screen right now -- reopen the menu to check it. It's
+    // also a Radix DropdownMenuItem (role="menuitem"), not a <button> like
+    // the old Carbon menu item, and TasklistHeader.logoutButton can't be
+    // reused here since it's hardcoded to the English "Log out" label.
+    await tasklistHeader.openSettingsButton.click();
+    await expect(
+      page.getByRole('menuitem', {name: 'Déconnexion'}),
+    ).toBeVisible();
   });
 });
