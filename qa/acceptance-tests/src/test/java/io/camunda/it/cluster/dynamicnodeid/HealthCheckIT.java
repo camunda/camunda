@@ -46,8 +46,7 @@ public class HealthCheckIT {
 
   @Container
   private static final ToxiproxyContainer TOXIPROXY =
-      ProxyRegistry.addExposedPorts(
-          new ToxiproxyContainer("ghcr.io/shopify/toxiproxy:2.5.0").withAccessToHost(true));
+      ProxyRegistry.addExposedPorts(new ToxiproxyContainer("ghcr.io/shopify/toxiproxy:2.5.0"));
 
   @Container
   private static final LocalStackContainer S3 =
