@@ -51,6 +51,11 @@ group = "io.camunda.optimize"
 
 description = "Optimize Upgrade"
 
+sourceSets.named("test") {
+  java.srcDir("src/it/java")
+  resources.srcDir("src/it/resources")
+}
+
 // Generate PreviousVersion.java from template (replaces Maven templating-maven-plugin)
 val generatePreviousVersionJava =
   tasks.register<Sync>("generatePreviousVersionJava") {
