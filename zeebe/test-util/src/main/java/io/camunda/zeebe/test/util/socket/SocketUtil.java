@@ -23,37 +23,25 @@ public final class SocketUtil {
   // most unix based systems reserve ports from 0-1024; picking 1025 as our base port gives us
   // plenty of ports before we will collide with Docker's base port
   private static final int BASE_PORT = 1025;
-  // defines the upper bound for how many separate maven processes (not forks or maven parallel
-  // build count) can be ran in parallel on the same machine, which is typically defined in the CI
-  // pipeline (e.g. Jenkinsfile)
-  private static final int MAX_TEST_STAGES = 10;
-  // defines the upper bound for how many forks can be ran per stage; this should be the number of
+  // defines the upper bound for how many forks can be ran in parallel; this should be the number of
   // maven threads (-T option) times the configured surefire/failsafe forkCount (see the surefire
   // or failsafe config in the pom)
-  private static final int MAX_TEST_FORKS_PER_STAGE = 30;
-  private static final int PORT_RANGE_PER_TEST_FORK = 100;
-  private static final int PORT_RANGE_PER_TEST_STAGE =
-      PORT_RANGE_PER_TEST_FORK * MAX_TEST_FORKS_PER_STAGE;
+  private static final int MAX_TEST_FORKS = 30;
+  private static final int PORT_RANGE_PER_TEST_FORK = 1000;
+  private static final int TOTAL_PORT_RANGE = PORT_RANGE_PER_TEST_FORK * MAX_TEST_FORKS;
 
   private static final int TEST_FORK_NUMBER;
   private static final PortRange PORT_RANGE;
 
   static {
     final int testForkNumber = TestEnvironment.getTestForkNumber();
-    // test stage in Jenkins (junit8, junit, it)
-    final int testMavenId = TestEnvironment.getTestMavenId();
 
-    LOG.info(
-        "Starting socket assignment with testForkNumber {} and testMavenId {}",
-        testForkNumber,
-        testMavenId);
+    LOG.info("Starting socket assignment with testForkNumber {}", testForkNumber);
 
     // ensure limits to stay in available port range
-    assert testForkNumber < MAX_TEST_FORKS_PER_STAGE
-        : "System property test fork number has to be smaller than " + MAX_TEST_FORKS_PER_STAGE;
-    assert testMavenId < MAX_TEST_STAGES
-        : "System property test maven id has to be smaller than " + MAX_TEST_STAGES;
-    final int absoluteMaxPort = BASE_PORT + MAX_TEST_STAGES * PORT_RANGE_PER_TEST_STAGE;
+    assert testForkNumber < MAX_TEST_FORKS
+        : "System property test fork number has to be smaller than " + MAX_TEST_FORKS;
+    final int absoluteMaxPort = BASE_PORT + TOTAL_PORT_RANGE;
     // this assert seems unnecessary but is there to prevent changes to the constants above from
     // causing potential collisions with the base port that the Docker daemon uses
     assert DOCKER_BASE_PORT > absoluteMaxPort
@@ -63,8 +51,7 @@ public final class SocketUtil {
             + DOCKER_BASE_PORT
             + ", the minimum port of Docker";
 
-    final int testOffset =
-        testMavenId * PORT_RANGE_PER_TEST_STAGE + testForkNumber * PORT_RANGE_PER_TEST_FORK;
+    final int testOffset = testForkNumber * PORT_RANGE_PER_TEST_FORK;
     final int min = BASE_PORT + testOffset;
     final int max = min + PORT_RANGE_PER_TEST_FORK;
 
