@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.process.test.api.coverage.model.CoverageRunReport;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefinitionData;
@@ -28,6 +29,7 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstan
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.util.Collections;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 class CoverageReportCollectorTest {
@@ -63,8 +65,10 @@ class CoverageReportCollectorTest {
             CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
 
     // when: the run that mocks the child process comes first
-    collector.collectTestRunCoverage("mockingRun", null, testDataOf(MOCK_STUB_XML));
-    collector.collectTestRunCoverage("realRun", null, testDataOf(REAL_XML));
+    collector.collectTestRunCoverage(
+        "mockingRun", null, testDataOf(MOCK_STUB_XML), Collections.emptyList());
+    collector.collectTestRunCoverage(
+        "realRun", null, testDataOf(REAL_XML), Collections.emptyList());
 
     // then
     assertThat(collector.getModels())
@@ -72,6 +76,27 @@ class CoverageReportCollectorTest {
         .extracting(ProcessModel::getXml)
         .asString()
         .contains("realTask");
+  }
+
+  /** A mocked child process is a stub of the real process, so its run is not coverage of it. */
+  @Test
+  void shouldNotCollectCoverageOfAMockedProcess() {
+    // given
+    final CoverageReportCollector collector =
+        new CoverageReportCollector(
+            CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
+
+    // when
+    collector.collectTestRunCoverage(
+        "mockingRun", null, testDataOf(MOCK_STUB_XML), Collections.singletonList(PROCESS_ID));
+
+    // then: the stub contributes neither a model nor coverage
+    assertThat(collector.getModels()).isEmpty();
+    assertThat(collector.getSuite().getRuns())
+        .singleElement()
+        .extracting(CoverageRunReport::getProcessCoverages)
+        .asInstanceOf(InstanceOfAssertFactories.LIST)
+        .isEmpty();
   }
 
   /** Builds the data of a test run that ran a single instance of the given process model. */

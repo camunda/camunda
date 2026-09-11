@@ -68,22 +68,25 @@ public final class CoverageReportCollector {
   /**
    * Collects coverage data for a specific test run.
    *
-   * <p>Retrieves process instances from the data source, filters out excluded processes, creates
-   * coverage data for each instance, and adds the collected data to the suite. Also collects
-   * decision table coverage from decision instances.
+   * <p>Retrieves process instances from the data source, filters out excluded and mocked processes,
+   * creates coverage data for each instance, and adds the collected data to the suite. Also
+   * collects decision table coverage from decision instances.
    *
    * @param runName Identifier for the current test run (the test method name)
    * @param displayName Optional custom display name for the test case (e.g. from
    *     {@code @DisplayName}), or {@code null} if not set
+   * @param mockedProcessDefinitionIds Ids of the processes that this run mocked, whose instances
+   *     are stubs rather than the process under test
    */
   public void collectTestRunCoverage(
-      final String runName, final String displayName, final CoverageTestData testResults) {
+      final String runName,
+      final String displayName,
+      final CoverageTestData testResults,
+      final Collection<String> mockedProcessDefinitionIds) {
     final List<CoverageProcessInstanceData> filteredProcessInstanceData =
         testResults.getProcessInstanceData().stream()
             .filter(
-                processInstanceData ->
-                    !excludedProcessDefinitionIds.contains(
-                        processInstanceData.getProcessInstance().getProcessDefinitionId()))
+                processInstanceData -> !isExcluded(processInstanceData, mockedProcessDefinitionIds))
             .collect(Collectors.toList());
 
     // the models of this run, which are not necessarily the models of the previous runs: a test can
@@ -145,6 +148,15 @@ public final class CoverageReportCollector {
    */
   public Collection<DecisionModel> getDecisionModels() {
     return decisionModels.values();
+  }
+
+  private boolean isExcluded(
+      final CoverageProcessInstanceData processInstanceData,
+      final Collection<String> mockedProcessDefinitionIds) {
+    final String processDefinitionId =
+        processInstanceData.getProcessInstance().getProcessDefinitionId();
+    return excludedProcessDefinitionIds.contains(processDefinitionId)
+        || mockedProcessDefinitionIds.contains(processDefinitionId);
   }
 
   private List<DecisionCoverage> collectDecisionCoverages(final CoverageTestData dataSource) {
