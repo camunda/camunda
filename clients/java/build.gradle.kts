@@ -193,7 +193,7 @@ dependencies {
   discriminatorToolClasspath(libs.org.jboss.forge.roaster.roaster.jdt)
   discriminatorToolClasspath(libs.org.yaml.snakeyaml)
 
-  implementation(project(":zeebe-bpmn-model"))
+  api(project(":zeebe-bpmn-model"))
   api(libs.com.fasterxml.jackson.core.jackson.core)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   api(libs.com.fasterxml.jackson.core.jackson.annotations)

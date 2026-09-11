@@ -65,8 +65,6 @@ dependencies {
   api(libs.org.springframework.boot.spring.boot.autoconfigure)
   api(libs.org.springframework.spring.beans)
   api(libs.com.fasterxml.jackson.core.jackson.core)
-  api(libs.tools.jackson.core.jackson.databind)
-  api(libs.tools.jackson.core.jackson.core)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   api(libs.com.fasterxml.jackson.core.jackson.annotations)
   api(libs.org.apache.httpcomponents.client5.httpclient5)
