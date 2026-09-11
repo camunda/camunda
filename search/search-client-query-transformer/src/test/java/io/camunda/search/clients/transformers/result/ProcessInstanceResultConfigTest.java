@@ -23,7 +23,8 @@ public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
                 q -> q.resultConfig(r -> r.onlyKeys(true))));
 
     // then
-    assertThat(source.sourceFilter().includes()).containsExactly("key", "rootProcessInstanceKey");
+    assertThat(source.sourceFilter().includes())
+        .containsExactly("key", "rootProcessInstanceKey", "storageOrdinalKey");
   }
 
   @Test
