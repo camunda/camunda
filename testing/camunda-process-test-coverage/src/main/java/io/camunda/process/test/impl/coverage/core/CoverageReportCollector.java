@@ -29,9 +29,12 @@ import io.camunda.process.test.impl.coverage.data.CoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +54,7 @@ public final class CoverageReportCollector {
   private final Map<String, ProcessModel> models = new HashMap<>();
   private final Map<String, DecisionModel> decisionModels = new HashMap<>();
   private final List<CoverageRunReport> coverageRunReports = new ArrayList<>();
+  private final Set<String> mockedProcessDefinitionIds = new LinkedHashSet<>();
 
   private final String suiteId;
   private final String suiteName;
@@ -83,6 +87,8 @@ public final class CoverageReportCollector {
       final String displayName,
       final CoverageTestData testResults,
       final Collection<String> mockedProcessDefinitionIds) {
+    this.mockedProcessDefinitionIds.addAll(mockedProcessDefinitionIds);
+
     final List<CoverageProcessInstanceData> filteredProcessInstanceData =
         testResults.getProcessInstanceData().stream()
             .filter(
@@ -148,6 +154,19 @@ public final class CoverageReportCollector {
    */
   public Collection<DecisionModel> getDecisionModels() {
     return decisionModels.values();
+  }
+
+  /**
+   * Gets the ids of the processes that this suite mocked in any of its runs.
+   *
+   * <p>A model this suite reports for such a process may be the stub the mock deployed rather than
+   * the process itself: a run that did not declare the mock collects the stub instances of the runs
+   * that did, when the test data of the previous runs is not deleted.
+   *
+   * @return The ids of the processes mocked by this suite
+   */
+  public Set<String> getMockedProcessDefinitionIds() {
+    return Collections.unmodifiableSet(mockedProcessDefinitionIds);
   }
 
   private boolean isExcluded(

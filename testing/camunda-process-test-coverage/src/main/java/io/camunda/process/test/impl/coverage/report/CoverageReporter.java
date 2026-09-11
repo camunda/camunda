@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -95,16 +96,7 @@ public class CoverageReporter {
         reportCollectors.stream()
             .map(CoverageReportCollector::getSuite)
             .collect(Collectors.toList());
-    final Collection<ProcessModel> processModels =
-        reportCollectors.stream()
-            .flatMap(c -> c.getModels().stream())
-            .collect(
-                Collectors.toMap(
-                    ProcessModel::getProcessDefinitionId,
-                    Function.identity(),
-                    ModelCreator::selectMostCompleteModel,
-                    LinkedHashMap::new))
-            .values();
+    final Collection<ProcessModel> processModels = selectProcessModels(reportCollectors);
     final Collection<DecisionModel> decisionModels =
         reportCollectors.stream()
             .flatMap(c -> c.getDecisionModels().stream())
@@ -122,6 +114,42 @@ public class CoverageReporter {
     writeJsonReport(aggregatedReport);
     writeHtmlReport(aggregatedReport);
     return aggregatedReport;
+  }
+
+  /**
+   * Selects the model that describes each process, out of the models of all suites.
+   *
+   * <p>A suite that mocked a process may report the stub the mock deployed instead of the process
+   * itself. Such a stub is not always smaller than the process it mocks, so it cannot be ruled out
+   * by its size alone: the models of the suites that mocked a process are only considered when no
+   * other suite reports a model for it.
+   *
+   * @param reportCollectors The collectors of the suites that were run
+   * @return The model of each process definition id, at most one per id
+   */
+  private static Collection<ProcessModel> selectProcessModels(
+      final Collection<CoverageReportCollector> reportCollectors) {
+
+    final Map<String, ProcessModel> models = new LinkedHashMap<>();
+    final Map<String, ProcessModel> modelsOfMockingSuites = new LinkedHashMap<>();
+
+    reportCollectors.forEach(
+        collector ->
+            collector
+                .getModels()
+                .forEach(
+                    model -> {
+                      final String processDefinitionId = model.getProcessDefinitionId();
+                      final Map<String, ProcessModel> modelsOfSuite =
+                          collector.getMockedProcessDefinitionIds().contains(processDefinitionId)
+                              ? modelsOfMockingSuites
+                              : models;
+                      modelsOfSuite.merge(
+                          processDefinitionId, model, ModelCreator::selectMostCompleteModel);
+                    }));
+
+    modelsOfMockingSuites.forEach(models::putIfAbsent);
+    return models.values();
   }
 
   /**

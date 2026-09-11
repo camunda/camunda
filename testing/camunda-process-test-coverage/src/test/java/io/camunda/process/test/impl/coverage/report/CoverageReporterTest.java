@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
@@ -104,6 +105,51 @@ class CoverageReporterTest {
           .processDefinitionId(PROCESS_ID)
           .addCompletedElements("child-start", "child-end")
           .addTakenSequenceFlows("child-flow")
+          .coverage(1.0)
+          .build();
+
+  /**
+   * A minimal real process: as large as the stub that a mock of it deploys, so that the two models
+   * cannot be told apart by their element count.
+   */
+  private static final String TIED_PROCESS_ID = "process-tied";
+
+  private static final ProcessModel TIED_REAL_MODEL =
+      ProcessModelFixtures.modelOf(
+          TIED_PROCESS_ID,
+          Bpmn.createExecutableProcess(TIED_PROCESS_ID)
+              .startEvent("startT")
+              .sequenceFlowId("flowT1")
+              .serviceTask("taskT")
+              .sequenceFlowId("flowT2")
+              .endEvent("endT")
+              .done());
+
+  /** The stub that {@code MOCK_CHILD_PROCESS} deploys when the mock supplies variables. */
+  private static final ProcessModel TIED_STUB_MODEL =
+      ProcessModelFixtures.modelOf(
+          TIED_PROCESS_ID,
+          Bpmn.createExecutableProcess(TIED_PROCESS_ID)
+              .startEvent("child-start")
+              .sequenceFlowId("child-flow-1")
+              .serviceTask("variableSupplier")
+              .sequenceFlowId("child-flow-2")
+              .endEvent("child-end")
+              .done());
+
+  private static final ProcessCoverage TIED_REAL_COVERAGE =
+      ImmutableProcessCoverage.builder()
+          .processDefinitionId(TIED_PROCESS_ID)
+          .addCompletedElements("startT", "taskT")
+          .addTakenSequenceFlows("flowT1")
+          .coverage(3.0 / 5.0)
+          .build();
+
+  private static final ProcessCoverage TIED_STUB_COVERAGE =
+      ImmutableProcessCoverage.builder()
+          .processDefinitionId(TIED_PROCESS_ID)
+          .addCompletedElements("child-start", "variableSupplier", "child-end")
+          .addTakenSequenceFlows("child-flow-1", "child-flow-2")
           .coverage(1.0)
           .build();
 
@@ -462,9 +508,59 @@ class CoverageReporterTest {
         .isEqualTo(5.0 / 7.0);
   }
 
+  /**
+   * A stub is not always smaller than the process it mocks: the stub of a mock that supplies
+   * variables has as many elements as a minimal real process. The report must still describe the
+   * process by its real model, so the suite that mocked the process must not decide what the
+   * process looks like.
+   *
+   * <p>A suite that mocks a process can still report a model for it, namely when one of its runs
+   * did not declare the mock while the stub instances of its other runs were still around.
+   */
+  @Test
+  void shouldReportRealModelWhenTheMockStubIsAsLargeAsTheProcess() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: the suite that mocks the process is reported before the suite that tests it
+    final CoverageReportCollector mockingSuite =
+        buildCollectorForProcess(
+            MockingSuiteTest.class,
+            TIED_STUB_MODEL,
+            TIED_STUB_COVERAGE,
+            Collections.singleton(TIED_PROCESS_ID));
+    final CoverageReportCollector realSuite =
+        buildCollectorForProcess(
+            RealProcessSuiteTest.class,
+            TIED_REAL_MODEL,
+            TIED_REAL_COVERAGE,
+            Collections.emptySet());
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(mockingSuite, realSuite));
+
+    // then
+    assertThat(report.getProcessModels())
+        .filteredOn(model -> model.getProcessDefinitionId().equals(TIED_PROCESS_ID))
+        .singleElement()
+        .extracting(ProcessModel::getXml)
+        .isEqualTo(TIED_REAL_MODEL.getXml());
+  }
+
   /** Builds a mock collector reporting a single process coverage against a single model. */
   private CoverageReportCollector buildCollectorForProcess(
       final Class<?> testClass, final ProcessModel model, final ProcessCoverage coverage) {
+    return buildCollectorForProcess(testClass, model, coverage, Collections.emptySet());
+  }
+
+  /** Builds a mock collector reporting a single process coverage against a single model. */
+  private CoverageReportCollector buildCollectorForProcess(
+      final Class<?> testClass,
+      final ProcessModel model,
+      final ProcessCoverage coverage,
+      final Set<String> mockedProcessDefinitionIds) {
 
     final CoverageSuiteReport suite =
         ImmutableCoverageSuiteReport.builder()
@@ -481,6 +577,7 @@ class CoverageReporterTest {
     when(collector.getSuite()).thenReturn(suite);
     when(collector.getModels()).thenReturn(Collections.singletonList(model));
     when(collector.getDecisionModels()).thenReturn(Collections.emptyList());
+    when(collector.getMockedProcessDefinitionIds()).thenReturn(mockedProcessDefinitionIds);
     return collector;
   }
 
