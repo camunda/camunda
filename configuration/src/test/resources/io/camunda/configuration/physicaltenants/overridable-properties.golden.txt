@@ -129,6 +129,7 @@ data.secondary-storage.elasticsearch.proxy.ssl-enabled
 data.secondary-storage.elasticsearch.proxy.username
 data.secondary-storage.elasticsearch.refresh-interval
 data.secondary-storage.elasticsearch.refresh-interval-by-index-name
+data.secondary-storage.elasticsearch.retry.database-name
 data.secondary-storage.elasticsearch.security.database-name
 data.secondary-storage.elasticsearch.socket-timeout
 data.secondary-storage.elasticsearch.template-priority
@@ -188,6 +189,7 @@ data.secondary-storage.opensearch.proxy.ssl-enabled
 data.secondary-storage.opensearch.proxy.username
 data.secondary-storage.opensearch.refresh-interval
 data.secondary-storage.opensearch.refresh-interval-by-index-name
+data.secondary-storage.opensearch.retry.database-name
 data.secondary-storage.opensearch.security.database-name
 data.secondary-storage.opensearch.socket-timeout
 data.secondary-storage.opensearch.template-priority
@@ -244,6 +246,7 @@ data.secondary-storage.rdbms.process-cache
 data.secondary-storage.rdbms.query.max-total-hits
 data.secondary-storage.rdbms.queue-memory-limit
 data.secondary-storage.rdbms.queue-size
+data.secondary-storage.rdbms.retry.database-name
 data.secondary-storage.rdbms.rewrite-batched-statements
 data.secondary-storage.rdbms.url
 data.secondary-storage.rdbms.urls

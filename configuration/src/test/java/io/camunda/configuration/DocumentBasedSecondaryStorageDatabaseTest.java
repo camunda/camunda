@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,6 +37,14 @@ class DocumentBasedSecondaryStorageDatabaseTest {
       "camunda.database.schema-manager.health-check-enabled";
   private static final String NEW_HEALTH_CHECK_ENABLED_PROPERTY =
       "camunda.data.secondary-storage.elasticsearch.health-check-enabled";
+  private static final String LEGACY_RETRY_MAX_RETRIES_PROPERTY =
+      "camunda.database.schema-manager.retry.maxRetries";
+  private static final String LEGACY_RETRY_MIN_RETRY_DELAY_PROPERTY =
+      "camunda.database.schema-manager.retry.minRetryDelay";
+  private static final String LEGACY_RETRY_MAX_RETRY_DELAY_PROPERTY =
+      "camunda.database.schema-manager.retry.maxRetryDelay";
+  private static final String NEW_RETRY_MAX_RETRIES_PROPERTY =
+      "camunda.data.secondary-storage.elasticsearch.retry.max-retries";
 
   private MockEnvironment mockEnvironment;
   private Elasticsearch elasticsearch;
@@ -202,5 +211,68 @@ class DocumentBasedSecondaryStorageDatabaseTest {
     assertThatExceptionOfType(UnifiedConfigurationException.class)
         .isThrownBy(elasticsearch::isHealthCheckEnabled)
         .withMessageContaining("Ambiguous legacy configuration");
+  }
+
+  @Test
+  void shouldDefaultRetryToUnboundedWithSchemaManagerDelays() {
+    // then
+    assertThat(elasticsearch.getRetry().getMaxRetries()).isEqualTo(Integer.MAX_VALUE);
+    assertThat(elasticsearch.getRetry().getMinRetryDelay()).isEqualTo(Duration.ofMillis(500));
+    assertThat(elasticsearch.getRetry().getMaxRetryDelay()).isEqualTo(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void shouldUseNewRetryValuesWhenNoLegacyRetryPropertyIsSet() {
+    // given
+    elasticsearch.getRetry().setMaxRetries(7);
+    elasticsearch.getRetry().setMinRetryDelay(Duration.ofSeconds(1));
+    elasticsearch.getRetry().setMaxRetryDelay(Duration.ofSeconds(20));
+
+    // then
+    assertThat(elasticsearch.getRetry().getMaxRetries()).isEqualTo(7);
+    assertThat(elasticsearch.getRetry().getMinRetryDelay()).isEqualTo(Duration.ofSeconds(1));
+    assertThat(elasticsearch.getRetry().getMaxRetryDelay()).isEqualTo(Duration.ofSeconds(20));
+  }
+
+  @Test
+  void shouldFallBackToLegacyRetryProperties() {
+    // given
+    mockEnvironment.setProperty(LEGACY_RETRY_MAX_RETRIES_PROPERTY, "5");
+    mockEnvironment.setProperty(LEGACY_RETRY_MIN_RETRY_DELAY_PROPERTY, "2s");
+    mockEnvironment.setProperty(LEGACY_RETRY_MAX_RETRY_DELAY_PROPERTY, "30s");
+
+    // then
+    assertThat(elasticsearch.getRetry().getMaxRetries()).isEqualTo(5);
+    assertThat(elasticsearch.getRetry().getMinRetryDelay()).isEqualTo(Duration.ofSeconds(2));
+    assertThat(elasticsearch.getRetry().getMaxRetryDelay()).isEqualTo(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldFallBackToLegacyRetryPropertiesInKebabCase() {
+    // given
+    mockEnvironment.setProperty("camunda.database.schema-manager.retry.max-retries", "5");
+
+    // then
+    assertThat(elasticsearch.getRetry().getMaxRetries()).isEqualTo(5);
+  }
+
+  @Test
+  void shouldPreferNewRetryValueOverLegacyRetryProperty() {
+    // given
+    elasticsearch.getRetry().setMaxRetries(7);
+    mockEnvironment.setProperty(NEW_RETRY_MAX_RETRIES_PROPERTY, "7");
+    mockEnvironment.setProperty(LEGACY_RETRY_MAX_RETRIES_PROPERTY, "5");
+
+    // then
+    assertThat(elasticsearch.getRetry().getMaxRetries()).isEqualTo(7);
+  }
+
+  @Test
+  void shouldFallBackToLegacyRetryPropertiesForOpensearch() {
+    // given
+    mockEnvironment.setProperty(LEGACY_RETRY_MAX_RETRIES_PROPERTY, "5");
+
+    // then
+    assertThat(opensearch.getRetry().getMaxRetries()).isEqualTo(5);
   }
 }

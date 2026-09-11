@@ -10,12 +10,14 @@ package io.camunda.configuration.beanoverrides;
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
 
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SchemaManagerRetry;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.search.schema.config.SchemaManagerConfiguration.SchemaManagerRetryConfiguration;
 import java.util.Set;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +80,7 @@ public class SearchEngineSchemaManagerPropertiesOverride {
               override.setPerformCleanup(secondaryStorage.isPerformCleanup());
               override.setCreateSchema(secondaryStorage.isCreateSchema());
               override.setHealthCheckEnabled(secondaryStorage.isHealthCheckEnabled());
+              override.setRetry(toRetryConfiguration(secondaryStorage.getRetry()));
             });
 
     override.setHealthCheckEnabled(
@@ -87,5 +90,14 @@ public class SearchEngineSchemaManagerPropertiesOverride {
             Boolean.class,
             SUPPORTED,
             LEGACY_HEALTH_CHECK_ENABLED_PROPERTIES));
+  }
+
+  private static SchemaManagerRetryConfiguration toRetryConfiguration(
+      final SchemaManagerRetry retry) {
+    final var converted = new SchemaManagerRetryConfiguration();
+    converted.setMaxRetries(retry.getMaxRetries());
+    converted.setMinRetryDelay(retry.getMinRetryDelay());
+    converted.setMaxRetryDelay(retry.getMaxRetryDelay());
+    return converted;
   }
 }

@@ -98,6 +98,10 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @NestedConfigurationProperty
   private RdbmsConnectionPool connectionPool = new RdbmsConnectionPool();
 
+  @NestedConfigurationProperty
+  private SchemaManagerRetry retry =
+      new SchemaManagerRetry(databaseName()).withoutLegacyProperties();
+
   /**
    * The database vendor id. It is used to determine the dialect to use for the database. If not
    * set, the dialect is determined automatically.
@@ -200,6 +204,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @Override
   public String databaseName() {
     return "rdbms";
+  }
+
+  public SchemaManagerRetry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final SchemaManagerRetry retry) {
+    this.retry = retry;
   }
 
   public RdbmsMetrics getMetrics() {

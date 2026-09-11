@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -50,7 +51,24 @@ public class MyBatisConfiguration {
     return new RdbmsSchemaInitializer(
         RdbmsSchemaManagers.fromConfigs(
             physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
-            VersionUtil.getVersion()));
+            VersionUtil.getVersion()),
+        physicalTenantId -> retryConfiguration(physicalTenantResolver, physicalTenantId));
+  }
+
+  private static RetryConfiguration retryConfiguration(
+      final PhysicalTenantResolver physicalTenantResolver, final String physicalTenantId) {
+    final var retry =
+        physicalTenantResolver
+            .forPhysicalTenant(physicalTenantId)
+            .getData()
+            .getSecondaryStorage()
+            .getRdbms()
+            .getRetry();
+    final var converted = new RetryConfiguration();
+    converted.setMaxRetries(retry.getMaxRetries());
+    converted.setMinRetryDelay(retry.getMinRetryDelay());
+    converted.setMaxRetryDelay(retry.getMaxRetryDelay());
+    return converted;
   }
 
   /**
