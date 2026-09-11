@@ -17,7 +17,8 @@ inputs:
   asdf_version:
     description: asdf release version to install.
     required: false
-    default: "0.20.0"
+    # renovate: datasource=github-releases depName=asdf-vm/asdf
+    default: '0.20.0'
   max_attempts:
     description: Maximum number of attempts before giving up.
     required: false
