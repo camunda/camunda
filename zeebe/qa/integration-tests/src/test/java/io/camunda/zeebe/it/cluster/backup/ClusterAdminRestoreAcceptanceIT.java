@@ -21,7 +21,6 @@ import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -30,16 +29,10 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,7 +92,6 @@ final class ClusterAdminRestoreAcceptanceIT {
   private static final int BROKERS_COUNT = 3;
   private static final int PARTITIONS_COUNT = 3;
 
-  private static final HttpClient HTTP = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @TempDir private static Path defaultBackupDir;
@@ -519,73 +511,12 @@ final class ClusterAdminRestoreAcceptanceIT {
     return body;
   }
 
-  /**
-   * Takes a snapshot on every partition of the tenant, on every broker, and waits for it to be
-   * persisted. A restore reads each broker's own backup of its own replica, so a snapshot taken on
-   * one broker alone would leave the others' backups behind the work being captured.
-   *
-   * <p>Snapshotting is asynchronous, and a tenant may already carry a snapshot from an earlier call
-   * here, so the wait is for each partition's snapshot ID to <em>change</em>: merely waiting for a
-   * non-null ID would return immediately on the second call and let the backup be taken before the
-   * work it is meant to capture is snapshotted.
-   */
   private void takeSnapshot(final String tenantId) {
-    cluster
-        .brokers()
-        .values()
-        .forEach(
-            broker -> {
-              final var partitions = PartitionsActuator.of(broker);
-              final var previousSnapshotIds = new HashMap<Integer, String>();
-              partitions
-                  .query(tenantId)
-                  .forEach((id, status) -> previousSnapshotIds.put(id, status.snapshotId()));
-              partitions.takeSnapshot(tenantId);
-              Awaitility.await(
-                      "a new snapshot is taken for tenant %s on broker %s"
-                          .formatted(tenantId, broker.nodeId()))
-                  .atMost(Duration.ofSeconds(60))
-                  .untilAsserted(
-                      () ->
-                          assertThat(partitions.query(tenantId))
-                              .allSatisfy(
-                                  (partitionId, status) ->
-                                      assertThat(status.snapshotId())
-                                          .isNotNull()
-                                          .isNotEqualTo(previousSnapshotIds.get(partitionId))));
-            });
+    InProcessRestoreTestUtil.takeSnapshotOnEveryBroker(cluster, tenantId);
   }
 
   private void takeBackup(final String tenantId, final long backupId) {
-    final var uri = backupsUri(tenantId);
-    final var body = "{\"backupId\": " + backupId + "}";
-    final var request =
-        HttpRequest.newBuilder(uri)
-            .header("Content-Type", "application/json")
-            .POST(BodyPublishers.ofString(body))
-            .build();
-    assertThat(send(request).statusCode())
-        .describedAs("take backup %d for tenant %s", backupId, tenantId)
-        .isEqualTo(202);
-
-    Awaitility.await("backup %d for tenant %s completes".formatted(backupId, tenantId))
-        .atMost(Duration.ofSeconds(120))
-        .ignoreExceptions() // 404 NOT_FOUND until the backup is registered
-        .untilAsserted(
-            () -> {
-              final var status =
-                  send(HttpRequest.newBuilder(URI.create(uri + "/" + backupId)).GET().build());
-              assertThat(status.statusCode()).isEqualTo(200);
-              assertThat(readJson(status.body()).path("state").asText()).isEqualTo("COMPLETED");
-            });
-  }
-
-  private URI backupsUri(final String tenantId) {
-    final var base = cluster.availableGateway().restAddress().toString().replaceAll("/+$", "");
-    return URI.create(
-        DEFAULT_TENANT.equals(tenantId)
-            ? base + "/v2/backups/runtime"
-            : base + "/physical-tenants/" + tenantId + "/v2/backups/runtime");
+    InProcessRestoreTestUtil.takeBackup(cluster, tenantId, backupId);
   }
 
   private static JsonNode readJson(final String body) {
@@ -593,17 +524,6 @@ final class ClusterAdminRestoreAcceptanceIT {
       return OBJECT_MAPPER.readTree(body);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to parse REST response: " + body, e);
-    }
-  }
-
-  private static HttpResponse<String> send(final HttpRequest request) {
-    try {
-      return HTTP.send(request, BodyHandlers.ofString());
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
     }
   }
 
