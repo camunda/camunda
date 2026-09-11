@@ -21,6 +21,7 @@ The PR-gate (`lint` entrypoint) is a different thing living in the same package;
 ## Contents
 
 - [What it produces](#what-it-produces)
+- [How it runs in the release workflow](#how-it-runs-in-the-release-workflow)
 - [Reading a run's log](#reading-a-runs-log)
 - [The pipeline](#the-pipeline)
   - [1. Baseline and range](#1-baseline-and-range)
@@ -44,13 +45,13 @@ Inputs and outputs are declared in [`generate/action.yml`](generate/action.yml).
 **read-only**: it writes files and one step output, and never labels an issue, comments on one, or
 touches the release. Publishing is the separate cutover work unit (#57714).
 
-| Written to `output-dir`  |                                                                                          Contents                                                                                           |
-|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `CHANGELOG-<version>.md` | The full asset. Every shipped pull request, including the internal-only `Maintenance` section and the unattributed bucket. This is the file attached to the GitHub release.                 |
-| `changelog.json`         | One record per pull request: number, title, section, visibility, component, breaking, `issueNumbers`, `closesIssueNumbers`, `attributionSource`. The machine-readable form of the same run. |
-| `labels.json`            | Flat lists of every issue number and pull request number in the release — what the cutover work unit will label.                                                                            |
-| `audit.json`             | The `allow-unattributed` overrides actually applied, one row per pull request with the reason given. Empty when nothing was overridden.                                                     |
-| `comments.json`          | One entry per (issue, pull request) pair, with the comment text and a stable marker so a re-run updates rather than duplicates.                                                             |
+| Written to `output-dir`  |                                                                                                  Contents                                                                                                   |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CHANGELOG-<version>.md` | The full asset. Every shipped pull request, including the internal-only `Maintenance` section and the unattributed bucket. This is the file attached to the GitHub release.                                 |
+| `changelog.json`         | One record per pull request: number, title, section, visibility, component, breaking, `issueNumbers`, `closesIssueNumbers`, `attributionSource`. The machine-readable form of the same run.                 |
+| `labels.json`            | Flat lists of every issue number and pull request number in the release — what the cutover work unit will label.                                                                                            |
+| `audit.json`             | The `allow-unattributed` overrides actually applied, one row per pull request with the reason given. Empty when nothing was overridden **and** empty when the guard failed — a failed run overrode nothing. |
+| `comments.json`          | **One entry per issue**, naming every pull request that delivered it, with the comment text and a stable marker so a re-run updates rather than duplicates.                                                 |
 
 |   Step output   |                                                               Contents                                                               |
 |-----------------|--------------------------------------------------------------------------------------------------------------------------------------|
@@ -59,8 +60,57 @@ touches the release. Publishing is the separate cutover work unit (#57714).
 Both bodies are also written to the job's step summary, so a reviewer can see the customer body and
 the full asset side by side without downloading anything.
 
-Every JSON output carries `schemaVersion` (currently `1.0.0`), so a consumer cannot silently misread
-a shape it was not built for.
+Every JSON output carries `schemaVersion` (currently `2.0.0`), so a consumer cannot silently misread
+a shape it was not built for. The `2.0.0` bump is `comments.json` moving from one row per
+(issue, pull request) pair to one row per issue: the marker is keyed on the issue, so the old shape
+emitted several rows sharing one marker and publishing them would have left only the last — 380
+comments on 8.9.0, 123 on 8.10.0-alpha5.
+
+---
+
+## How it runs in the release workflow
+
+Today it runs in **shadow mode**: beside the legacy `zcl` changelog, never instead of it. The job is
+`release-notes-shadow` in `.github/workflows/camunda-platform-release.yml`.
+
+**It cannot break a release.** Four independent reasons, so that no single one has to hold:
+
+- **Nothing depends on it.** It appears in no other job's `needs`, and neither Slack notification
+  job looks at its result.
+- **It cannot write.** Its own job, with only `contents: read`, `issues: read`, `pull-requests:
+  read`. Token permissions are job-scoped, so this is enforced at the boundary, not just promised by
+  the code.
+- **Failure is absorbed twice.** `continue-on-error` on the step keeps a failing generator from
+  failing the job; `continue-on-error` on the job keeps a failing job — dead checkout, hit timeout —
+  from turning the release run red.
+- **It touches nothing shared.** Separate job, separate runner, separate filesystem. It writes only
+  into its own workspace, never near `changelog.md` or `release-artifacts/`.
+
+**It runs after the `github` job, not beside it.** Both call the API with the same `GITHUB_TOKEN`,
+and GitHub's secondary rate limit fires on *concurrency* rather than volume, so running in parallel
+could throttle zcl's calls and fail the real changelog. Serialising costs only wall-clock time on a
+job nothing waits for.
+
+**Kill switch.** Set the repository variable **`RELEASE_NOTES_SHADOW_DISABLED`** to `true` to turn
+the job off — no code change, no merge, effective on the next release. Unset means enabled, so
+nothing has to be configured for it to work in the first place.
+
+**Scope: patches and alphas, for now.** Minors are skipped — a minor walks thousands of commits and
+predates the PR-issue gate, making it both the slowest run and the noisiest comparison. Candidates
+(`-rcN`) are skipped too: both tools chain `rcN` to `rc(N-1)`, so the interesting divergence is in
+the releases themselves. Widening the scope means relaxing the version test in the job's `if:`.
+
+**Both dry-run flags are skipped**, for the same underlying reason — the tag the generator is asked
+to walk to does not exist in this job's fresh checkout:
+
+- `dryRun` sets `-DremoteTagging=false`, so the tag is created only in the release job's own
+  workspace and never pushed.
+- `releaseProcessDryRun` *does* push a tag, but names it `dryrun-<version>` while `releaseVersion`
+  stays plain. The plain tag is therefore still absent — or, worse, resolves to the **previous real
+  release** of that version, and the run silently reports the wrong range.
+
+Giving dry runs real coverage needs a separate input naming a ref that actually exists, which is a
+change to what the action accepts rather than a condition tweak.
 
 ---
 
@@ -161,7 +211,9 @@ Rejected at this stage, each with a named error rather than a wrong range:
 
 GitHub writes the pull request number into the subject of the commit it squashes (`... (#61728)`), so
 for nearly every commit the mapping is already in hand. That candidate is **derived, never trusted**:
-it is confirmed against the pull request's own `mergeCommit`, which must *be* this commit. Anything
+it is confirmed against the pull request's own `mergeCommit`, which must *be* this commit. It is also
+looked up *tolerantly* — the number in a subject can be an issue, or typed by hand, and a strict
+lookup would abort the whole release on one such commit instead of letting it fall through. Anything
 unconfirmed — no number in the subject, unknown pull request, no merge commit, or a merge commit that
 is some other commit — falls back to `associatedPullRequests` (filtered to `MERGED`, paginated), so a
 wrong guess cannot become a wrong attribution.
@@ -183,7 +235,13 @@ Four rules then decide what ships:
    `Revert "[maven-release-plugin]`. A release job that redoes its version bumps reverts them first,
    so those reverts are as much release automation as the commits they undo.
 4. **Ambiguity is never guessed.** A commit associated with several shipped pull requests prefers the
-   one targeting the release branch; still tied, it is warned about and skipped.
+   one targeting the release **line**; still tied, it is warned about and skipped. The line is not
+   the `release-branch` input as given: the release workflow passes its temporary `release-X.Y.Z`
+   branch, which nothing ever merges into, so a literal match would never pick a winner and every
+   ambiguous commit would be skipped. A version-shaped `release-X.Y.Z` is normalized to
+   `stable/X.Y` **or** `main` — a patch and a post-branch alpha ship from the first, a pre-branch
+   alpha from the second, and accepting both only narrows an ambiguity that would otherwise be
+   abandoned. Any other value is matched literally.
 
 A `MERGED` pull request that GitHub reports with **no merge commit** is a data anomaly. It is **kept**,
 with a warning saying its range membership is unverified — under-inclusion is the failure this work

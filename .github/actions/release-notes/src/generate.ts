@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import * as core from './gha';
 import { processPr } from './pipeline';
 import type { PipelineResolver } from './pipeline';
@@ -104,7 +104,7 @@ async function run(): Promise<void> {
   }
 
   const metaByNumber = new Map<number, PrMetadata>();
-  for (const meta of await graphql.fetchPrMetadata([...new Set(candidateBySha.values())])) {
+  for (const meta of await graphql.fetchPrMetadata([...new Set(candidateBySha.values())], true)) {
     metaByNumber.set(meta.number, meta);
   }
 
@@ -280,11 +280,22 @@ async function run(): Promise<void> {
     (entry.bucketed ? unattributed : attributed).push(renderPr);
   }
 
+  // The same lines the job logs as warnings, carried into the artifact: a log
+  // is not something the cutover unit can read, diff between runs, or archive
+  // beyond the runner's retention.
+  const auditWarnings = [...rangeReasons, ...processed.flatMap((entry) => entry?.warnings ?? [])];
+
   const result = render(attributed, unattributed, {
     version: input.targetVersion,
     allowUnattributed: input.allowUnattributed,
     unattributedReason: input.unattributedReason,
+    warnings: auditWarnings,
   });
+
+  // The workflow names a directory that does not exist yet, and `writeFileSync`
+  // does not create one — every shadow run died with ENOENT here, after doing
+  // all of the work. Recursive so a nested `output-dir` also works.
+  mkdirSync(input.outputDir, { recursive: true });
 
   writeFileSync(`${input.outputDir}/CHANGELOG-${input.targetVersion}.md`, result.fullAsset);
   writeFileSync(`${input.outputDir}/changelog.json`, JSON.stringify(result.changelogJson, null, 2));

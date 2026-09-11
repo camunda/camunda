@@ -8,8 +8,13 @@ import type { AttributionSource } from '../attribution/types';
  */
 
 /** V6: every JSON output carries this, so a format change has to bump it
- *  deliberately instead of consumers misreading a shape they weren't built for. */
-export const SCHEMA_VERSION = '1.0.0';
+ *  deliberately instead of consumers misreading a shape they weren't built for.
+ *
+ *  2.0.0: `comments.json` entries went from one row per (issue, pull request)
+ *  to one row per issue carrying `prNumbers`. Breaking, so a major bump, even
+ *  though the only consumer is the not-yet-built cutover unit (#57714) — the
+ *  point of the field is that a shape change is never silent. */
+export const SCHEMA_VERSION = '2.0.0';
 
 const SECTION_ORDER = [
   'Features',
@@ -42,6 +47,11 @@ export interface RenderOptions {
   readonly version: string;
   readonly allowUnattributed: boolean;
   readonly unattributedReason?: string;
+  /** Every audit line the run produced, in walk order: range anomalies,
+   *  ruleset bypasses, truncated fields, attribution and categorization
+   *  reasons, post-gate anomalies. Logged as warnings too, but a log is not an
+   *  artifact — nothing downstream can read, diff or archive one. */
+  readonly warnings?: readonly string[];
 }
 
 export interface RenderResult {
@@ -154,10 +164,28 @@ function renderLine(entry: RenderEntry): string {
   return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}`;
 }
 
-function commentFor(pr: RenderPrInput, issueNumber: number, version: string): { relationKind: 'closing' | 'contributor'; text: string } {
-  return pr.closesIssueNumbers.includes(issueNumber)
-    ? { relationKind: 'closing', text: `Released in ${version} (#${pr.number}).` }
-    : { relationKind: 'contributor', text: `Partially delivered in ${version} by #${pr.number}.` };
+/**
+ * One comment per issue, not per pull request that touched it.
+ *
+ * The marker is keyed on `<version>:issue-<N>`, which is what lets a re-run
+ * update the comment it posted last time instead of adding a second one. Two
+ * pull requests delivering one issue therefore produced two rows carrying the
+ * SAME marker: publishing them would have overwritten one with the other and
+ * left whichever happened to be applied last, silently dropping the other.
+ *
+ * Aggregating also makes the sentence true. An issue delivered by four pull
+ * requests is released when ANY of them closed it, and one sentence should
+ * name all four rather than four sentences each naming one.
+ */
+function commentFor(
+  prs: readonly RenderPrInput[],
+  issueNumber: number,
+  version: string,
+): { relationKind: 'closing' | 'contributor'; text: string } {
+  const numbers = prs.map((pr) => `#${pr.number}`).join(', ');
+  return prs.some((pr) => pr.closesIssueNumbers.includes(issueNumber))
+    ? { relationKind: 'closing', text: `Released in ${version} (${numbers}).` }
+    : { relationKind: 'contributor', text: `Partially delivered in ${version} by ${numbers}.` };
 }
 
 /**
@@ -203,16 +231,25 @@ export function render(
   const customerBody = renderSectionedBody(customerPrs);
   const fullAsset = renderSectionedBody(assetPrs);
 
-  const commentEntries = all.flatMap((pr) =>
-    pr.issueNumbers.map((issueNumber) => ({
-      issueNumber,
-      prNumber: pr.number,
-      ...commentFor(pr, issueNumber, options.version),
-      marker: `<!-- release-notes:${options.version}:issue-${issueNumber} -->`,
-    })),
-  );
+  // Insertion-ordered, so issues come out in walk order like everything else.
+  const prsByIssue = new Map<number, RenderPrInput[]>();
+  for (const pr of all) {
+    for (const issueNumber of pr.issueNumbers) {
+      prsByIssue.set(issueNumber, [...(prsByIssue.get(issueNumber) ?? []), pr]);
+    }
+  }
+  const commentEntries = [...prsByIssue].map(([issueNumber, prs]) => ({
+    issueNumber,
+    prNumbers: prs.map((pr) => pr.number),
+    ...commentFor(prs, issueNumber, options.version),
+    marker: `<!-- release-notes:${options.version}:issue-${issueNumber} -->`,
+  }));
 
-  const overrides = unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
+  // Only an override that actually LET the guard pass is an override. Recorded
+  // unconditionally, a failed default run wrote the same rows with an empty
+  // reason, so an approved exception and a plain failure looked identical in
+  // the one file whose job is telling them apart.
+  const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
 
   return {
     customerBody,
@@ -224,7 +261,12 @@ export function render(
       issues: [...new Set(all.flatMap((pr) => pr.issueNumbers))],
       pullRequests: all.map((pr) => pr.number),
     },
-    auditJson: { schemaVersion: SCHEMA_VERSION, version: options.version, overrides },
+    auditJson: {
+      schemaVersion: SCHEMA_VERSION,
+      version: options.version,
+      overrides,
+      warnings: options.warnings ?? [],
+    },
     commentsJson: { schemaVersion: SCHEMA_VERSION, version: options.version, entries: commentEntries },
     failureReason,
   };

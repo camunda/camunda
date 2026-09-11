@@ -77,7 +77,11 @@ export interface IssueClosure {
 
 export interface GraphqlResolver {
   mapCommitsToPrs(shas: readonly string[]): Promise<CommitPrMapping[]>;
-  fetchPrMetadata(numbers: readonly number[]): Promise<PrMetadata[]>;
+  /** `speculative` for numbers that are only a guess at a pull request — a
+   *  merge subject's `(#N)`. Those tolerate a number that turns out to be an
+   *  issue, an unknown, or an open pull request, and simply come back absent.
+   *  A number already known to be a merged pull request must stay strict. */
+  fetchPrMetadata(numbers: readonly number[], speculative?: boolean): Promise<PrMetadata[]>;
   classifyRefs(numbers: readonly number[]): Promise<Map<number, ClassifiedRef>>;
   fetchIssueClosers(numbers: readonly number[]): Promise<Map<number, IssueClosure>>;
 }
@@ -371,10 +375,10 @@ export class GithubGraphqlResolver implements GraphqlResolver {
     return out;
   }
 
-  async fetchPrMetadata(numbers: readonly number[]): Promise<PrMetadata[]> {
+  async fetchPrMetadata(numbers: readonly number[], speculative = false): Promise<PrMetadata[]> {
     const results: PrMetadata[] = [];
     for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
-      results.push(...(await this.fetchMetadataBatch(numbers.slice(i, i + PR_METADATA_BATCH_SIZE))));
+      results.push(...(await this.fetchMetadataBatch(numbers.slice(i, i + PR_METADATA_BATCH_SIZE), speculative)));
     }
     return results;
   }
@@ -432,7 +436,16 @@ export class GithubGraphqlResolver implements GraphqlResolver {
       }));
   }
 
-  private async fetchMetadataBatch(numbers: readonly number[]): Promise<PrMetadata[]> {
+  /**
+   * `speculative` decides what an alias that resolves to nothing means. A
+   * number scraped out of a merge subject is a guess: `fix: thing (#1234)` can
+   * cite an issue, or a number typed by hand, and `pullRequest(number:)`
+   * answers NOT_FOUND for it. Strictly, one such commit aborts the whole
+   * release before the documented `associatedPullRequests` fallback ever runs.
+   * Absent here means "not confirmed", which is exactly what sends the commit
+   * down that fallback.
+   */
+  private async fetchMetadataBatch(numbers: readonly number[], speculative = false): Promise<PrMetadata[]> {
     const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
         ${numbers
@@ -446,13 +459,15 @@ export class GithubGraphqlResolver implements GraphqlResolver {
     const variables: Json = { owner: this.owner, name: this.repo };
     numbers.forEach((number, i) => (variables[`n${i}`] = number));
 
-    const repository = await this.requestRepository(query, variables);
-    return numbers.map((number, i) => {
-      const pr = assertField(repository[`pr${i}`] as PrMetadataNode | undefined, `repository.pr${i} (PR #${number})`);
+    const repository = await this.requestRepository(query, variables, speculative);
+    return numbers.flatMap((number, i) => {
+      const node = repository[`pr${i}`] as PrMetadataNode | null | undefined;
+      if (speculative && (node === null || node === undefined)) return [];
+      const pr = assertField(node, `repository.pr${i} (PR #${number})`);
       const truncatedFields: ('labels' | 'closingIssuesReferences')[] = [];
       if (pr.labels?.pageInfo?.hasNextPage) truncatedFields.push('labels');
       if (pr.closingIssuesReferences?.pageInfo?.hasNextPage) truncatedFields.push('closingIssuesReferences');
-      return {
+      return [{
         number: assertField(pr.number, `number on PR #${number}`),
         title: assertField(pr.title, `title on PR #${number}`),
         baseRefName: assertField(pr.baseRefName, `baseRefName on PR #${number}`),
@@ -466,7 +481,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
           (issue) => issue.number,
         ),
         ...(truncatedFields.length > 0 ? { truncatedFields } : {}),
-      };
+      }];
     });
   }
 
