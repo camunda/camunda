@@ -572,7 +572,12 @@ jobs:
           persist-credentials: false
 
       - name: Set up Helm
-        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.5
+          sha256: 32f644d8c291bb182f702c6d2b0dda9f8b01441e940d74d328aad5f08446b2fd
+          install_args: helm
+          cache: false
 
       # Authenticate with Teleport
       - name: Set up Teleport
