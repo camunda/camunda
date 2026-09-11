@@ -126,7 +126,8 @@ sourceSets { main { java { srcDir(mergedOpenApiJavaDir) } } }
 tasks.named("compileJava") { dependsOn(syncOpenApiGeneratedSources) }
 
 val gitCommitId =
-  providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+  providers
+    .exec { commandLine("git", "rev-parse", "--short", "HEAD") }
     .standardOutput
     .asText
     .map(String::trim)
@@ -157,8 +158,8 @@ val defaultJvmOpts =
       ?: error("Missing POM element: extraJvmArguments"))
     .split(Regex("\\s+"))
     .filterNot {
-    it == "\${jvm.module.opens}"
-  }
+      it == "\${jvm.module.opens}"
+    }
 
 fun jvmOptsFor(baseDir: String) =
   defaultJvmOpts.map { it.replace("@BASEDIR@", baseDir) } + jvmModuleOpens

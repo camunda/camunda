@@ -233,7 +233,15 @@ tasks.register<Test>("itMultiDb") {
     includePatterns = allItPatterns,
     includeTags = arrayOf("multi-db-test"),
     excludeTags = arrayOf("rdbms", "history"),
-    exclusions = arrayOf("**/io/camunda/it/auth/**", "**/io/camunda/it/identity/**", "**/io/camunda/it/csrf/**", "**/io/camunda/it/logout/**", "**/io/camunda/it/oidc/**", "**/*$*.class"),
+    exclusions =
+      arrayOf(
+        "**/io/camunda/it/auth/**",
+        "**/io/camunda/it/identity/**",
+        "**/io/camunda/it/csrf/**",
+        "**/io/camunda/it/logout/**",
+        "**/io/camunda/it/oidc/**",
+        "**/*$*.class",
+      ),
   )
 }
 
@@ -261,7 +269,14 @@ tasks.register<Test>("itRdbms") {
   configureAcceptanceProfile(
     includePatterns = allItPatterns,
     includeTags = arrayOf("rdbms"),
-    excludeTags = arrayOf("rdbms-aurora", "rdbms-aurora-mysql", "multi-db-test", "compatibility-test", "history"),
+    excludeTags =
+      arrayOf(
+        "rdbms-aurora",
+        "rdbms-aurora-mysql",
+        "multi-db-test",
+        "compatibility-test",
+        "history",
+      ),
     preferredExtension = null,
   )
 }
