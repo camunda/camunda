@@ -58,7 +58,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
     assertThat(restRequest.getUrl()).isEqualTo("/v2/batch-operations/search");
     assertThat(restRequest.getBodyAsString())
         .isEqualTo(
-            "{\"sort\":[{\"field\":\"state\",\"order\":\"ASC\"}],\"filter\":{\"batchOperationKey\":{\"$eq\":\"123\",\"$in\":[],\"$notIn\":[]}}}");
+            "{\"sort\":[{\"field\":\"state\",\"order\":\"ASC\"}],\"filter\":{\"batchOperationKey\":\"123\"}}");
   }
 
   @Test
