@@ -193,6 +193,16 @@ rules:
   # from (e.g. ActivatedJobResult.leaseToken vs JobActivationRequest.withLease).
   # The marker is inert on the wire: the property keeps its declared nullable
   # shape for any consumer that does not derive from it.
+  #
+  # Scope: like the other `*-shape` rules here, this validates only the marker's
+  # local JSON shape — it does NOT cross-reference that `request` names a real
+  # top-level property on the operation's request body, so a typo'd binding
+  # (`request: withLeese`) passes this rule. That cross-reference is deliberately
+  # out of scope while `x-present-when` has a single production instance
+  # (activateJobs); the one live binding is pinned by the Spectral custom-rule
+  # unit tests. Add a semantic resolver (a custom JS function, as
+  # verify-semantic-kinds-registered does for x-semantic-*) here if the marker
+  # sees broader adoption.
   present-when-shape:
     description: "Each `x-present-when` marker must declare a request field and a scalar `equals` value."
     severity: error
