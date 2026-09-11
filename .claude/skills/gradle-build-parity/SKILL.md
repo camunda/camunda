@@ -56,13 +56,31 @@ integrity gain — the merge queue already re-validates with Maven.
    Then always run `./gradlew testClasses` from the repository root and do not consider the task
    finished until it completes successfully. This catches failures in other Gradle modules that
    are not exercised by the affected module's compile task.
-5. Preserve already-fixed conventions; avoid regressions.
+5. For every Gradle change, build the Gradle distribution and compare its archive with the Maven
+   archive using `compare-dist.py`. The CI gate builds `testClasses` and `distZip` together, then
+   runs distribution parity separately.
+6. Preserve already-fixed conventions; avoid regressions.
 
-When a rebase brings many Maven commits onto the Gradle branch, follow
-[references/rebase-pom-audit.md](references/rebase-pom-audit.md). It explains how to identify the
-actual source range, enumerate POM-touching commits, collapse reverted changes, and port new
-external dependencies through the `settings.gradle.kts` version catalog as well as the module
-build file.
+Maven source changes need two related but separate workflows:
+
+- When a rebase brings many Maven commits onto the Gradle branch, follow
+  [references/rebase-pom-audit.md](references/rebase-pom-audit.md) to identify the relevant
+  source range and reduce it to the final net POM changes.
+- To translate any Maven change into Gradle, follow
+  [references/pom-change-porting.md](references/pom-change-porting.md). This is the reusable
+  dependency, version-catalog, configuration, and validation procedure; it also applies after
+  the rebase audit.
+
+The rebase audit identifies what changed. It does not replace the porting procedure.
+
+### Gradle CI gates
+
+On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task
+and builds `:camunda-zeebe:distZip` in the same invocation. The required
+`gradle-dist-parity` job then compares the Gradle distribution archive with the Maven
+distribution archive using `compare-dist.py` (the current CI artifacts are ZIPs; the tool also
+supports tar.gz/exploded distribution comparisons). These are the Gradle build gates; do not
+describe this path as a full Gradle test-suite run.
 
 **Before investigating CI failures: always rebase onto main first.** CI runs on the merge
 commit, so Gradle build files apply against main's Java sources, which may differ from the
@@ -74,8 +92,7 @@ When a Gradle failure follows a pom-only commit, check
 [references/pom-change-failure-modes.md](references/pom-change-failure-modes.md) first — catalog
 of pom edit categories (missing internal/external deps, wrong `api`/`implementation`, scope-
 ordering quirks, exclusions, optional/test-jar wiring, version/BOM skew, surefire↔Gradle test
-config drift, codegen input changes) and CI-shaped failures (concurrency misconfig, unmappable-
-character test-report filenames).
+config drift, codegen input changes) and CI-shaped failures (concurrency misconfiguration).
 
 ## Known Gradle vs Maven Differences
 
@@ -177,20 +194,25 @@ testImplementation(project(":some-module", configuration = "tests"))
 `src/test/java`, check whether that module's `build.gradle.kts` applies `test-jar-conventions`.
 If not, add it, then add the `configuration = "tests"` dep on the consumer.
 
-### No free versions in the Gradle build
+### Required: no free library versions in the Gradle build
 
-Every dependency version must come from the version catalog (`libs`), never hardcoded in a
-`build.gradle.kts`. The only exception is Gradle plugins themselves. The catalog is built in
-code in `settings.gradle.kts`; versions are sourced from Maven via `pomVersion("version.X")`,
-which reads `parent/pom.xml` `<properties>` — Maven stays the single source of truth.
+**Never define a library version directly in Gradle.** This applies to every external library,
+tool, BOM, buildscript dependency, convention-plugin dependency, and version-catalog entry. A
+version must either be sourced from Maven through the generated `libs` catalog or be omitted
+because an already-represented BOM manages it. A hardcoded library version in a Gradle file is a
+parity violation, even when Maven has no convenient property yet.
 
-When a Maven version lives **inline** (e.g. a plugin `<version>2.2.0</version>` in a module
-pom, not a property), promote it to a `<properties>` entry in `parent/pom.xml` and reference
-it via `${version.X}` in the module pom. Promoting an inline version to a parent property is a
-standard Maven refactor, not a redesign — it gives the catalog a `pomVersion` source. Then add
-`version("X", pomVersion("version.X"))` + a `library(...)` entry to the catalog and reference
-`libs...` from the build. If a version genuinely has no Maven source, a hardcoded catalog entry
-with a comment explaining its origin is acceptable (precedent: `aspectjweaver`).
+The catalog is built in `settings.gradle.kts`; versions are sourced from Maven via
+`pomVersion("version.X")`, which reads `parent/pom.xml` `<properties>` — Maven stays the single
+source of truth. When a Maven version lives **inline** (for example, a library or plugin
+`<version>2.2.0</version>` in a module POM rather than a property), promote it to a parent
+`<properties>` entry and reference it via `${version.X}` in the module POM. Then add
+`version("X", pomVersion("version.X"))` and a `library(...)` entry to the catalog, and reference
+`libs...` from the build.
+
+The only exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
+Maven-sourced version. Do not extend that exception to libraries used by the plugin or to ordinary
+buildscript dependencies; those still use the catalog.
 
 **Catalog accessors work inside `buildscript {}`** on Gradle 9.5 — a buildscript classpath dep
 can use `classpath(libs.some.lib)` instead of a hardcoded coordinate (verified on
@@ -334,5 +356,7 @@ in the shipped distribution, and to catch packaging gaps that per-module classpa
   generation, exclusions, packaging, publication
 - `settings.gradle.kts` — module registration
 - `buildSrc/` — convention plugins (`buildlogic.*`)
-- [references/rebase-pom-audit.md](references/rebase-pom-audit.md) — repeatable audit for POM
-  changes introduced by a rebase, including version-catalog updates and edge cases
+- [references/rebase-pom-audit.md](references/rebase-pom-audit.md) — audit for POM changes
+  introduced by a rebase and reduction to the final net state
+- [references/pom-change-porting.md](references/pom-change-porting.md) — reusable procedure for
+  porting Maven dependency, version, configuration, and packaging changes to Gradle

@@ -53,8 +53,8 @@ pom-only commit — the Gradle side almost never auto-picks-up a pom change.
 - **Inline `<version>` or `<properties>` bump** — the version catalog reads versions via
   `pomVersion("version.X")` from `parent/pom.xml` properties. A version bumped **inline** in a
   module pom (not through a property) has no catalog source and Gradle keeps building against
-  the old (or hardcoded) version — silent skew, not a build failure. See "No free versions" in
-  SKILL.md.
+  the old (or hardcoded) version — silent skew, not a build failure. See "Required: no free
+  library versions" in SKILL.md.
 - **BOM / `dependencyManagement` import version bump** — if the BOM version is pinned
   separately in the Gradle catalog rather than derived via `pomVersion`, a pom-side BOM bump
   doesn't propagate and dependency versions silently diverge between the two builds.
@@ -88,15 +88,3 @@ pom-only commit — the Gradle side almost never auto-picks-up a pom change.
 - **Runner concurrency/parallelism misconfigured** — wrong `-T` / `maxParallelForks` /
   matrix shard count for the runner's actual core count causes flaky OOM or timeout failures
   that look like product bugs but are resource starvation.
-- **Test-report generation fails on unmappable filename characters** —
-  `Could not generate test report ... Malformed input or input contains unmappable characters`
-  for an HTML report path derived from a parameterized JUnit 5 display name containing
-  non-ASCII characters (e.g. `→` in `[userTaskAssign-→-zeebe-assignmentDefinition]`). Gradle's
-  HTML test reporter builds one file per test using the **display name** verbatim in the
-  filename; Maven Surefire's HTML/XML reports don't do this (index-based naming), so this class
-  of failure is Gradle-specific. Root cause is usually the runner's JVM file-system encoding
-  (`sun.jnu.encoding`, often `ANSI_X3.4-1968`/POSIX on a minimal Linux image) not being UTF-8,
-  so it can't encode the non-ASCII display-name characters into a filesystem path. Fix at the
-  source (avoid non-ASCII in `@MethodSource`/`@ParameterizedTest` display names) or force a
-  UTF-8 file-system encoding for the CI JVM (`org.gradle.jvmargs=-Dfile.encoding=UTF-8
-  -Dsun.jnu.encoding=UTF-8`, or `LANG=en_US.UTF-8`/`LC_ALL=en_US.UTF-8` in the runner env).
