@@ -72,7 +72,6 @@ public class AnalyticsExporter implements Exporter {
     otelSdkManager.initialize(config, analyticsContext, metadata, meterRegistry);
     scheduleMetricFlush();
     scheduleHeartbeat();
-    // Only logged on open(), not configure(), to avoid logging during validation/history-purge.
     LOG.info(
         "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
         config.getEndpoint(),
