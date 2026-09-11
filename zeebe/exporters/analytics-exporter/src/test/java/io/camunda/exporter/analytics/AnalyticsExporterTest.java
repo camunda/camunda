@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
@@ -43,6 +44,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import java.util.ArrayList;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -265,6 +267,45 @@ class AnalyticsExporterTest {
               final var persisted = AnalyticsExporterMetadata.deserialize(bytes);
               assertThat(persisted.getMetricSequenceNumber()).isEqualTo(1L);
             });
+  }
+
+  @Test
+  void shouldNotLogConfiguredDuringValidationOnlyConfigure() {
+    // given — mirrors ExporterRepository.validate(): a throwaway context with the default
+    // partitionId=0, used purely to check that the configuration loads. configure() must not
+    // log a production-shaped "configured" line for this dry run.
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
+            .setClusterId("")
+            .setLicenseKey("test-license-key");
+
+    // when / then
+    try (final var logs =
+        LogCapturer.capturing(AnalyticsExporter.class.getPackageName(), Level.INFO)) {
+      new AnalyticsExporter().configure(context);
+      assertThat(logs.contains("Analytics exporter configured")).isFalse();
+    }
+  }
+
+  @Test
+  void shouldLogConfiguredWhenARealPartitionIsConfigured() {
+    // given — a context shaped like a live partition exporter (partitionId >= START_PARTITION_ID)
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
+            .setClusterId("test-cluster")
+            .setPartitionId(1)
+            .setLicenseKey("test-license-key");
+
+    // when / then
+    try (final var logs =
+        LogCapturer.capturing(AnalyticsExporter.class.getPackageName(), Level.INFO)) {
+      new AnalyticsExporter().configure(context);
+      assertThat(logs.contains("Analytics exporter configured")).isTrue();
+    }
   }
 
   @Test
