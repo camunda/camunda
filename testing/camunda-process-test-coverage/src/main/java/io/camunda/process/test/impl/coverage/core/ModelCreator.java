@@ -26,8 +26,11 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.io.ByteArrayInputStream;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -40,6 +43,19 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
  * sequence flows for coverage analysis.
  */
 public class ModelCreator {
+
+  /**
+   * The elements of a model, kept for as long as the model is measured against.
+   *
+   * <p>A suite reports itself after every test, and reporting measures every coverage of every run
+   * it collected so far against the model it describes the process by. Reading the elements of that
+   * model from its XML each time would parse it once per coverage, so the number of parses would
+   * grow with the square of the tests in the suite. A model never changes, so its elements are read
+   * once and shared from here. There is an entry per model the suite deployed, which the suite
+   * holds on to anyway.
+   */
+  private static final Map<ProcessModel, Set<String>> COVERABLE_ELEMENT_IDS_BY_MODEL =
+      new ConcurrentHashMap<>();
 
   /**
    * Creates a model object from a process definition in the Camunda engine.
@@ -147,9 +163,13 @@ public class ModelCreator {
    * @return The ids of the flow nodes and sequence flows of the executable process
    */
   public static Set<String> coverableElementIds(final ProcessModel processModel) {
-    return coverableElementIds(
-        readModel(processModel.getXml(), processModel.getProcessDefinitionId()),
-        processModel.getProcessDefinitionId());
+    return COVERABLE_ELEMENT_IDS_BY_MODEL.computeIfAbsent(
+        processModel,
+        model ->
+            Collections.unmodifiableSet(
+                coverableElementIds(
+                    readModel(model.getXml(), model.getProcessDefinitionId()),
+                    model.getProcessDefinitionId())));
   }
 
   /**

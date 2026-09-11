@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.camunda.bpm.model.dmn.Dmn;
@@ -41,6 +42,19 @@ import org.camunda.bpm.model.dmn.instance.Rule;
  * rules for coverage analysis.
  */
 public class DecisionModelCreator {
+
+  /**
+   * The rules of a table, kept for as long as the table is measured against.
+   *
+   * <p>A suite reports itself after every test, and reporting measures every coverage of every run
+   * it collected so far against the table it describes the decision by. Reading the rules of that
+   * table from its XML each time would parse it once per coverage, so the number of parses would
+   * grow with the square of the tests in the suite. A table never changes, so its rules are read
+   * once and shared from here. There is an entry per table the suite deployed, which the suite
+   * holds on to anyway.
+   */
+  private static final Map<DecisionModel, Map<String, Integer>> COVERABLE_RULE_INDICES_BY_MODEL =
+      new ConcurrentHashMap<>();
 
   /**
    * Creates a decision model object from a decision definition in the Camunda engine.
@@ -157,6 +171,11 @@ public class DecisionModelCreator {
    * @return The position of each rule of the decision table by its id, in table order
    */
   public static Map<String, Integer> coverableRuleIndicesById(final DecisionModel model) {
+    return COVERABLE_RULE_INDICES_BY_MODEL.computeIfAbsent(
+        model, table -> Collections.unmodifiableMap(readCoverableRuleIndicesById(table)));
+  }
+
+  private static Map<String, Integer> readCoverableRuleIndicesById(final DecisionModel model) {
     final List<Rule> rules;
     try {
       rules =
