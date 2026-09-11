@@ -25,22 +25,28 @@ fi
 
 asdf_dir="${HOME}/.asdf"
 asdf_archive="$(mktemp)"
-asdf_checksum_file="$(mktemp)"
-trap 'rm -f "${asdf_archive}" "${asdf_checksum_file}"' EXIT
+trap 'rm -f "${asdf_archive}"' EXIT
 
 asdf_asset="asdf-v${ASDF_VERSION}-linux-amd64.tar.gz"
 asdf_release_url="https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/${asdf_asset}"
 
+# Hardcoded MD5 for asdf-v0.20.0-linux-amd64.tar.gz (asdf's release-build
+# workflow, wangyoucao577/go-release-action, does not opt into SHA256).
+#
+# This is intentionally NOT fetched from asdf's release the way the archive
+# itself is: a checksum published next to the binary it verifies only proves
+# the download completed, not that the binary is what asdf actually built —
+# an attacker (or compromised release) able to swap the tarball could swap
+# the published .md5 alongside it. A value committed to this repo and
+# reviewed on every bump is a real integrity check instead.
+#
+# Must be updated together with the `asdf_version` input default in
+# action.yml whenever that version is bumped.
+asdf_expected_checksum="b7abaeb5c874dd6c3c59580a84050935"
+
 mkdir -p "${asdf_dir}/bin"
 curl -fsSL -o "${asdf_archive}" "${asdf_release_url}"
 
-# asdf's release-build workflow (wangyoucao577/go-release-action) publishes an
-# MD5 checksum alongside every asset but does not opt into SHA256 checksums,
-# so MD5 is the strongest published checksum available to verify against.
-# Fetching it per-release (rather than hardcoding a digest) keeps verification
-# working when ASDF_VERSION is bumped.
-curl -fsSL -o "${asdf_checksum_file}" "${asdf_release_url}.md5"
-asdf_expected_checksum="$(tr -d '[:space:]' <"${asdf_checksum_file}")"
 asdf_actual_checksum="$(md5sum "${asdf_archive}" | cut -d ' ' -f1)"
 if [[ "${asdf_actual_checksum}" != "${asdf_expected_checksum}" ]]; then
   echo "::error::asdf archive checksum mismatch for ${asdf_asset}: expected ${asdf_expected_checksum}, got ${asdf_actual_checksum}"
