@@ -117,6 +117,13 @@ merge groups when Gradle compilation, packaging, or distribution parity fails. P
 pushes run the same checks for post-merge health and to warm the shared Gradle cache; a push failure
 cannot prevent the commit that triggered it from having already landed.
 
+Note that the comparison of the tarball does not guarantee that each module contain the same exact
+dependencies, altough it's likely to happen (mostly because the modules compile).
+
+The `gradle testClasses` verifies only compilation of test classes, not the execution of the unit tests:
+there might be some situations where a change in java/maven requires a change in gradle that it's not catched
+by CI.
+
 ### D6. Keep the Gradle and Maven jobs independently gated
 
 The Gradle compilation job is a member of the Unified CI result gate, but Maven test jobs must not
@@ -128,9 +135,12 @@ must not skip, cancel, or make Maven tests unavailable.
 
 The following work is intentionally excluded from this change:
 
-- **Nightly Gradle validation.** A scheduled Gradle test run requires a confirmed alerting model.
+- **Nightly/Scheduled Gradle validation.** A scheduled Gradle test run requires a confirmed alerting model.
 - **Changing the source of truth.** Maven remains authoritative until a future decision explicitly
   changes that arrangement.
+- **Mandatory Gradle unit test check** Running all unit tests with gradle is under discussion as it can
+  prevent some regressions with limited CI time required, especially if tests results are cached.
+  We might select a subset of "fast" tests only (for example excluding randomized tests).
 
 ## Alternatives considered
 
