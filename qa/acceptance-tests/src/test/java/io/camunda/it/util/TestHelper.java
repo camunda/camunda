@@ -11,6 +11,9 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.icu.text.Collator;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
@@ -62,6 +65,13 @@ import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -112,6 +122,47 @@ public final class TestHelper {
 
   public static final String VAR_TEST_SCOPE_ID = "testScopeId";
   public static final String DEFAULT_TENANT_ID = "<default>";
+
+  private static final ObjectMapper RAW_REQUEST_OBJECT_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  private static final HttpClient RAW_REQUEST_HTTP_CLIENT = HttpClient.newHttpClient();
+
+  /**
+   * Sends a raw JSON POST request to a search endpoint, bypassing the fluent {@link CamundaClient}
+   * filter builders. Useful for exercising request shapes the fluent client doesn't support yet
+   * (e.g. an operator missing from a specific filter property), while still going through the real
+   * REST API and backend rather than mocking anything out.
+   *
+   * @param camundaClient used only to resolve the REST server address
+   * @param path the endpoint path relative to the REST address, e.g. {@code "v2/variables/search"}
+   * @param requestBody the request body, serialized to JSON (e.g. a {@link Map})
+   * @return the parsed JSON response body
+   */
+  public static JsonNode sendRawSearchRequest(
+      final CamundaClient camundaClient, final String path, final Object requestBody) {
+    try {
+      final var body = RAW_REQUEST_OBJECT_MAPPER.writeValueAsString(requestBody);
+      final var base = camundaClient.getConfiguration().getRestAddress().toString();
+      final var separator = base.endsWith("/") ? "" : "/";
+      final var request =
+          HttpRequest.newBuilder()
+              .uri(new URI(base + separator + path))
+              .header("Content-Type", "application/json")
+              .POST(BodyPublishers.ofString(body))
+              .build();
+      final var response = RAW_REQUEST_HTTP_CLIENT.send(request, BodyHandlers.ofString());
+      assertThat(response.statusCode())
+          .describedAs(
+              "Expected raw request to %s to succeed, but got body: %s", path, response.body())
+          .isEqualTo(200);
+      return RAW_REQUEST_OBJECT_MAPPER.readTree(response.body());
+    } catch (final URISyntaxException | IOException e) {
+      throw new RuntimeException(e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
 
   public static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
