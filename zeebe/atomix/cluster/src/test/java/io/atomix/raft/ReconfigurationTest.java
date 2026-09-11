@@ -29,6 +29,7 @@ import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.concurrent.SingleThreadContext;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -63,6 +64,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@SlowTest
 final class ReconfigurationTest {
   private final SingleThreadContext context = new SingleThreadContext("raft-%d");
   private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory();

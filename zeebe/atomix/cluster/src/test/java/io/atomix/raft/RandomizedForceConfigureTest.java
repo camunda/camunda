@@ -38,11 +38,13 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
 import net.jqwik.api.ShrinkingMode;
+import net.jqwik.api.Tag;
 import net.jqwik.api.lifecycle.AfterTry;
 import net.jqwik.api.lifecycle.BeforeProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Tag("randomized")
 public final class RandomizedForceConfigureTest {
 
   private static final int OPERATION_SIZE = 2000;

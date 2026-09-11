@@ -22,11 +22,14 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /** Coverage for the catch-up step of a coordinated leadership transfer. */
+@Category(SlowTest.class)
 public class RaftLeadershipTransferCatchUpTest {
 
   private static final Duration REPLICATION_TIMEOUT = Duration.ofSeconds(2);
