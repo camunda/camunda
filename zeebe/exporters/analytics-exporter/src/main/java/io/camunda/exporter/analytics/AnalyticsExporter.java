@@ -7,7 +7,10 @@
  */
 package io.camunda.exporter.analytics;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import io.camunda.exporter.analytics.sampling.HashSampler;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -46,7 +49,7 @@ public class AnalyticsExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
+    config = instantiateConfig(context.getConfiguration()).validate();
 
     handlers =
         AnalyticsHandlerCatalog.build(otelSdkManager, config.getActiveCategories()).apply(context);
@@ -144,6 +147,35 @@ public class AnalyticsExporter implements Exporter {
       SAMPLED_WARN_LOG.warn("Failed to emit heartbeat", e);
     } finally {
       scheduleHeartbeat();
+    }
+  }
+
+  /**
+   * Instantiates {@link AnalyticsExporterConfig} from the raw exporter arguments, re-mapping a
+   * non-numeric {@code samplingRate} to the same range-naming message {@link
+   * AnalyticsExporterConfig#validate()} gives for numeric out-of-range values. Jackson rejects a
+   * non-numeric value while converting the raw args map, before {@code validate()} ever runs, so
+   * without this it would otherwise surface as a raw {@link InvalidFormatException} instead (see
+   * https://github.com/camunda/camunda/issues/62752).
+   */
+  private static AnalyticsExporterConfig instantiateConfig(final Configuration configuration) {
+    try {
+      return configuration.instantiate(AnalyticsExporterConfig.class);
+    } catch (final IllegalArgumentException e) {
+      if (e.getCause() instanceof final InvalidFormatException ife
+          && ife.getPath().stream()
+              .anyMatch(ref -> "samplingRate".equalsIgnoreCase(ref.getFieldName()))) {
+        throw new IllegalArgumentException(
+            "samplingRate must be between "
+                + HashSampler.MIN_SAMPLE_RATE
+                + " and "
+                + HashSampler.MAX_SAMPLE_RATE
+                + ", got: '"
+                + ife.getValue()
+                + "'",
+            e);
+      }
+      throw e;
     }
   }
 
