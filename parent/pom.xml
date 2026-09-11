@@ -69,6 +69,9 @@
     <version.gson>2.14.0</version.gson>
     <version.guava>33.7.1-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
+    <version.icu4j>78.3</version.icu4j>
+    <version.json-schema-validator>3.0.7</version.json-schema-validator>
+    <version.maven-surefire-common>3.5.6</version.maven-surefire-common>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpclient5>5.6.4</version.httpclient5>
@@ -128,6 +131,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
+    <version.dev-failsafe>3.3.2</version.dev-failsafe>
     <version.jetbrains-annotations>26.1.0</version.jetbrains-annotations>
     <version.jqwik>1.10.1</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
@@ -169,6 +173,8 @@
     <version.checker-qual>4.2.3</version.checker-qual>
     <version.java-jwt>4.6.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
+    <version.roaster>2.31.1.Final</version.roaster>
+    <version.surefire-extensions-api>3.5.6</version.surefire-extensions-api>
     <version.postgresql>42.7.13</version.postgresql>
     <version.h2>2.5.250</version.h2>
     <version.aws-advanced-jdbc-wrapper>4.4.0</version.aws-advanced-jdbc-wrapper>
@@ -243,6 +249,7 @@
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.15</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
+    <plugin.version.openapi-generator>7.23.0</plugin.version.openapi-generator>
     <plugin.version.protobuf-maven-plugin>5.1.8</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.5.0</plugin.version.resources>
@@ -2915,7 +2922,7 @@
         <plugin>
           <groupId>org.openapitools</groupId>
           <artifactId>openapi-generator-maven-plugin</artifactId>
-          <version>7.23.0</version>
+          <version>${plugin.version.openapi-generator}</version>
           <configuration>
             <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
             <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->
