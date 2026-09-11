@@ -98,15 +98,9 @@ test.describe('HTO User Flow Tests', () => {
       await loginPage.login('demo', 'demo');
 
       // After cross-app navigation + variable update, the task list can take
-      // longer than the default 10s to populate on slow runners. Wait for the
-      // task to appear before clicking it. Use .first() to match the locator
-      // strategy in openTask() and avoid strict-mode violations when more
-      // than one task with the same name is present.
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('Variable_Process', {exact: true})
-          .first(),
-      ).toBeVisible({timeout: 60000});
+      // longer than the default 10s to populate on slow runners. openTask()
+      // itself now retries with a page reload until the task appears, so no
+      // separate pre-check is needed here.
       await taskPanelPage.openTask('Variable_Process', {timeout: 30000});
       await taskDetailsPage.clickAssignToMeButton();
       await expect(page.getByText('Assigning...')).not.toBeVisible({
@@ -200,9 +194,9 @@ test.describe('HTO User Flow Tests', () => {
     await test.step('Complete User Task in Tasklist & assert process complete in Operate', async () => {
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
-      await expect(
-        page.getByText('Zeebe_Priority_User_Task_Process').first(),
-      ).toBeVisible({timeout: 60000});
+      // completeTaskWithRetry() calls openTask(), which retries with a page
+      // reload until the just-created task appears, so no separate pre-check
+      // for the task's process name is needed here.
       await completeTaskWithRetry(
         taskPanelPage,
         taskDetailsPage,

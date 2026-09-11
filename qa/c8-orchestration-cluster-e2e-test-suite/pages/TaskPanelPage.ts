@@ -47,10 +47,28 @@ class TaskPanelPage {
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    await this.availableTasks
-      .getByText(name, {exact: true})
-      .nth(0)
-      .click({timeout});
+    const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
+
+    // The available-tasks query fires once on page load and is never polled
+    // (unlike the pre-migration UI), so a task created moments ago can be
+    // absent from that first response if the backend hasn't finished
+    // indexing it yet — no amount of waiting on the existing DOM will make
+    // it appear, only a fresh query will. Retry with a reload in between
+    // attempts, same pattern as assertCompletedHeadingVisible below, instead
+    // of relying on a single fetch plus Playwright's built-in element wait.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(task).toBeVisible({timeout});
+      },
+      onFailure: async () => {
+        console.log(
+          `Task "${name}" not visible yet, reloading and retrying...`,
+        );
+        await this.reloadPage();
+      },
+    });
+
+    await task.click({timeout});
   }
 
   async filterBy(

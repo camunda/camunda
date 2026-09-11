@@ -45,6 +45,16 @@ class TasklistHeader {
     // Selecting a language is a direct click on its radio item (no separate
     // listbox/option step like the old Carbon combobox required).
     await this.page.getByRole('radio', {name: option, exact: true}).click();
+    // Unlike a plain DropdownMenuItem, this radio lives in a bare Radix
+    // RadioGroup embedded in the dropdown (see AccountMenu.tsx), so selecting
+    // it does not auto-close the menu — intentional, so a user can flip
+    // through theme/language without the menu closing on every click. While
+    // it stays open, the modal DropdownMenu marks the rest of the page
+    // aria-hidden, which hides it from getByRole() queries even though it is
+    // still visually on screen. Close it explicitly so callers can assert on
+    // the underlying page right after this returns.
+    await this.page.keyboard.press('Escape');
+    await expect(this.languageSelector).toBeHidden();
   }
 
   async clickTasksTab() {
