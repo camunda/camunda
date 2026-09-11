@@ -5,6 +5,13 @@
 # for a static matrix, so D failing while E survives pins the dynamic expression.
 name: PROBE D dispatch dynamic matrix
 on:
+  # Dispatch-only workflows on a non-default branch never get registered, so they
+  # cannot be dispatched at all (chicken and egg). The push trigger exists solely
+  # to register the workflow; the run under test is the dispatched one. The push
+  # run doubles as a push-event data point for the same dynamic matrix.
+  push:
+    branches:
+      - yf-probe-rerun-failed-matrix-reusable
   workflow_dispatch:
     inputs:
       ref:

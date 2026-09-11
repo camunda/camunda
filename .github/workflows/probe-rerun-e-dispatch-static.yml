@@ -5,6 +5,10 @@
 # pins the dispatch event itself.
 name: PROBE E dispatch static matrix
 on:
+  # Registration-only trigger, see the note in probe D.
+  push:
+    branches:
+      - yf-probe-rerun-failed-matrix-reusable
   workflow_dispatch:
     inputs:
       ref:
