@@ -94,7 +94,7 @@ test.describe('Roles functionalities', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test.skip('User inherits permissions through role assignment', async ({
+  test('User inherits permissions through role assignment', async ({
     page,
     identityRolesPage,
     identityAuthorizationsPage,
@@ -136,7 +136,11 @@ test.describe('Roles functionalities', () => {
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'User',
-        ownerId: TEST_USER.name,
+        // The owner search dropdown (#51442) filters by `username` and
+        // displays the username as the option title; passing `TEST_USER.name`
+        // returns no matches (see identity-users-flows.spec.ts for the same
+        // note).
+        ownerId: TEST_USER.username,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
@@ -193,7 +197,8 @@ test.describe('Roles functionalities', () => {
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'User',
-        ownerId: TEST_USER.name,
+        // See the note above: the owner search matches `username`, not `name`.
+        ownerId: TEST_USER.username,
         resourceType: 'Role',
         resourceId: '*',
         accessPermissions: ['Create', 'Read', 'Update', 'Delete'],
@@ -208,7 +213,7 @@ test.describe('Roles functionalities', () => {
     });
   });
 
-  test.skip('As an Admin user I can unassign user from a role', async ({
+  test('As an Admin user I can unassign user from a role', async ({
     page,
     identityRolesPage,
     identityRolesDetailsPage,
@@ -251,7 +256,11 @@ test.describe('Roles functionalities', () => {
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'User',
-        ownerId: TEST_USER.name,
+        // The owner search dropdown (#51442) filters by `username` and
+        // displays the username as the option title; passing `TEST_USER.name`
+        // returns no matches (see identity-users-flows.spec.ts for the same
+        // note).
+        ownerId: TEST_USER.username,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
