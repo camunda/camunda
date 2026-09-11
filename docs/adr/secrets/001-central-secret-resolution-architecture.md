@@ -46,12 +46,18 @@ Four constraints shape every decision below.
 |      path       |                     who reads the store                      |                           what it resolves for                           |                     authorization                     |
 |-----------------|--------------------------------------------------------------|--------------------------------------------------------------------------|-------------------------------------------------------|
 | engine (broker) | `SecretResolutionScheduler` on the partition's IO task group | secret references recorded on a job, injected when the job is handed out | none per reference (see D9)                           |
-| gateway         | `SecretServices`, synchronously in the request               | `POST /v2/secrets/resolve` and `POST /v2/secrets/list`                   | `SECRET:REVEAL` per reference, `SECRET:READ` for list |
+| gateway         | `SecretServices`, on the request path                        | `POST /v2/secrets/resolve` and `POST /v2/secrets/list`                   | `SECRET:REVEAL` per reference, `SECRET:READ` for list |
 
-Both go through the same `SecretStore` SPI and the same per-tenant `SecretStoreRegistry`. The engine
-path exists because a job worker must receive a usable value without knowing anything about secrets.
-The gateway path exists because a connector runtime evaluates its own expressions and needs to
-resolve what those expressions referenced, under its own permissions.
+Both go through the same `SecretStore` SPI and the same per-tenant `SecretStoreRegistry`, and
+neither of them reads a store from a thread it must not block: the engine resolves on its IO task
+group rather than on the stream processor, and `SecretServices` hands its read to the API executor
+rather than running it on the HTTP request thread. The gateway path is still the synchronous one in
+the sense that matters to a caller, since its response carries the value the read produced, where an
+activation that misses is answered without one.
+
+The engine path exists because a job worker must receive a usable value without knowing anything
+about secrets. The gateway path exists because a connector runtime evaluates its own expressions and
+needs to resolve what those expressions referenced, under its own permissions.
 
 The evaluate-expression endpoint bridges the two: it reports the references an evaluation touched
 (`EvaluateExpressionResponse.getReferencedSecrets()`), and the caller then resolves them itself
@@ -96,9 +102,18 @@ and therefore could never resolve. It runs on `zeebe:input` only, and covers tho
 rather than every way a FEEL expression can produce a container, with `JobSecretInjector`'s runtime
 guard as the safety net for the rest.
 
-The reference name is a single token of `[\p{Alnum}_-]+`, at most 256 characters. The same string is
-the FEEL identifier, the authorization resource id and the store lookup key, never one of them
-escaped or rewritten. Dots are excluded because FEEL reads them as path separators.
+The reference name is a single token of `[\p{Alnum}_-]+`. The same string is the FEEL identifier,
+the authorization resource id and the store lookup key, never one of them escaped or rewritten, and
+`SecretReferenceCharsetSyncTest` is what holds the engine's and the gateway's copies of that charset
+together. Dots are excluded because FEEL reads them as path separators.
+
+The charset is shared, the length bound is not. A reference is capped at 256 characters only where
+it arrives in a request body and is used as an authorization resource id
+(`SecretServices.MAX_REFERENCE_LENGTH`, mirrored as `maxLength: 256` on
+`SecretResolveRequest.references` and pinned by `SecretRequestValidatorSpecSyncTest`). An authored
+reference has no length bound: the engine's `SecretReference.REFERENCE_PATTERN` states the charset
+and nothing else, because what bounds a name there is the model or the cluster variable it was
+written into, both of which are already permissioned writes.
 
 ### D3. The log and the state carry the placeholder, the value goes only into the hand-out
 
