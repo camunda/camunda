@@ -380,6 +380,11 @@ camunda: # Type: io.camunda.configuration.Camunda
     
     # This section allows configuring exporters
     exporters: null # Type: Map<String,io.camunda.configuration.Exporter>, Env: CAMUNDA_DATA_EXPORTERS
+    # Manifest of the generic exporters active for a physical tenant. Must not list the autoconfigured
+    # 'camundaexporter' or 'rdbms' exporters — only custom exporters may be listed here. Must not be set
+    # at the root level; it is only relevant per physical tenant and must be set under
+    # 'camunda.physical-tenants.[tenant-id].data.exporters-assigned'.
+    exporters-assigned: null # Type: List<String>, Env: CAMUNDA_DATA_EXPORTERSASSIGNED
     extension-properties: # Type: io.camunda.configuration.ExtensionProperties  
       # The extension property name whose value is exported as the `inboundConnectorType` attribute.
       inbound-connector-type-property: null # Type: String, Env: CAMUNDA_DATA_EXTENSIONPROPERTIES_INBOUNDCONNECTORTYPEPROPERTY
@@ -1158,6 +1163,10 @@ camunda: # Type: io.camunda.configuration.Camunda
     username: null # Type: String, Env: CAMUNDA_DATABASE_USERNAME
   
   document: # Type: io.camunda.configuration.Document  
+    # Selects which configured document store ids are active for a physical tenant. Must not be set at the
+    # root level; it is only relevant per physical tenant and must be set under
+    # 'camunda.physical-tenants.[tenant-id].document.assigned'.
+    assigned: null # Type: List<String>, Env: CAMUNDA_DOCUMENT_ASSIGNED
     # Default document store id to use when a request does not explicitly choose a store.
     default-store-id: null # Type: String, Env: CAMUNDA_DOCUMENT_DEFAULTSTOREID
     # Thread pool size used for document store operations.
@@ -1685,7 +1694,13 @@ camunda: # Type: io.camunda.configuration.Camunda
       gcp: null # Type: Map<String,io.camunda.configuration.Secrets$GcpSecretManagerStore>, Env: CAMUNDA_SECRETS_STORES_GCP
   
   security: # Type: io.camunda.configuration.Security  
-    authentication: null # Type: io.camunda.security.api.model.config.AuthenticationConfiguration, Env: CAMUNDA_SECURITY_AUTHENTICATION
+    authentication: # Type: io.camunda.security.api.model.config.AuthenticationConfiguration  
+      providers: # Type:   
+        # Selects which OIDC providers are active for a physical tenant. Must not be set at the root level; it
+        # is only relevant per physical tenant and must be set under
+        # 'camunda.physical-tenants.[tenant-id].security.authentication.providers.assigned'.
+        assigned: null # Type: List<String>, Env: CAMUNDA_SECURITY_AUTHENTICATION_PROVIDERS_ASSIGNED
+    
     authorizations: null # Type: io.camunda.security.api.model.config.AuthorizationsConfiguration, Env: CAMUNDA_SECURITY_AUTHORIZATIONS
     cluster-admin: # Type: io.camunda.configuration.ClusterAdmin  
       basic: # Type: io.camunda.configuration.ClusterAdminBasic  
