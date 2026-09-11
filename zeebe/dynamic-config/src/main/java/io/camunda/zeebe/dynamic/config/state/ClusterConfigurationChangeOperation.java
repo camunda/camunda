@@ -163,6 +163,29 @@ public sealed interface ClusterConfigurationChangeOperation {
         implements PartitionChangeOperation {}
 
     /**
+     * Operation to promote a member that joined a partition's replication group as a non-voting
+     * learner to a full voting member - the second phase of a two-phase join. The raft leader
+     * rejects the promotion until the member has caught up, so the operation is retried until it is
+     * accepted.
+     *
+     * @param memberId the member id of the member that will become a voting member
+     * @param partitionId id of the partition
+     */
+    record PartitionPromoteOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
+
+    /**
+     * Operation to demote a member of a partition's replication group to a non-voting member - the
+     * first phase of a two-phase leave, so that the subsequent {@link PartitionLeaveOperation}
+     * commits without the departing member's participation.
+     *
+     * @param memberId the member id of the member that will stop voting
+     * @param partitionId id of the partition
+     */
+    record PartitionDemoteOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
+
+    /**
      * Operation to reconfigure the priority of a member used for Raft's priority election.
      *
      * @param memberId the member id of the member that will change its priority
