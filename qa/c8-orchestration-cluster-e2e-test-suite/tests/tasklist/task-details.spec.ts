@@ -113,7 +113,10 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await taskPanelPage.openTask('usertask_to_be_completed');
+    // Same beforeAll-load reasoning as the tests below.
+    await taskPanelPage.openTask('usertask_to_be_completed', {
+      timeout: 60000,
+    });
 
     await expect(taskDetailsPage.detailsHeader).toBeVisible();
     await expect(taskDetailsPage.detailsHeader).toContainText(
@@ -142,7 +145,13 @@ test.describe('task details page', () => {
   });
 
   test('assign and unassign task', async ({taskPanelPage, taskDetailsPage}) => {
-    await taskPanelPage.openTask('usertask_for_assign_unassign');
+    // This task is one of ~24 instances created concurrently in this file's
+    // beforeAll -- give openTask's retry-with-reload a generous per-attempt
+    // timeout, same as the processWithDeployedForm calls below, instead of
+    // the 10s default.
+    await taskPanelPage.openTask('usertask_for_assign_unassign', {
+      timeout: 60000,
+    });
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible({
       timeout: 60000,
@@ -169,7 +178,10 @@ test.describe('task details page', () => {
   });
 
   test('complete task', async ({page, taskPanelPage, taskDetailsPage}) => {
-    await taskPanelPage.openTask('usertask_to_be_completed');
+    // Same beforeAll-load reasoning as 'assign and unassign task' above.
+    await taskPanelPage.openTask('usertask_to_be_completed', {
+      timeout: 60000,
+    });
 
     // Wait for the details panel to finish loading before interacting.
     // openTask only clicks the row — without this, the Assign button query

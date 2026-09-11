@@ -172,9 +172,22 @@ class TaskDetailsPage {
   async clickUnassignButton() {
     await expect(this.unassignButton).toBeVisible({timeout: 30000});
     await this.unassignButton.click();
-    // Unassigning is processed asynchronously; the Assign-to-me button can take
-    // a while to reappear under load, so match the assign path's 60s budget.
-    await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    // Unassigning is processed asynchronously and this view doesn't poll, so
+    // under load a single (even generous) wait can still lose the race with
+    // backend re-indexing. Retry with a reload in between attempts -- same
+    // pattern as TaskPanelPage.openTask -- instead of one long wait with no
+    // way to force a fresh fetch.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.assignToMeButton).toBeVisible({timeout: 30000});
+      },
+      onFailure: async () => {
+        console.log(
+          'Assign-to-me button not visible yet after unassign, reloading and retrying...',
+        );
+        await this.page.reload();
+      },
+    });
   }
 
   async clickCompleteTaskButton() {
