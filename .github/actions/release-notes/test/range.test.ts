@@ -26,6 +26,10 @@ test('unrecognized version string throws rather than silently guessing a baselin
   assert.throws(() => resolveBaselineStrategy('not-a-version'));
 });
 
+test('an alpha0 target is rejected, never resolved to an impossible -alpha-1 baseline', () => {
+  assert.throws(() => resolveBaselineStrategy('8.9.0-alpha0'), /Not a recognized release version/);
+});
+
 test('rebase-merged multi-commit PR dedupes to exactly one entry', () => {
   const commits = [
     { sha: 'a', message: 'x', associatedPrs: [{ number: 500, baseRefName: 'stable/8.8' }] },

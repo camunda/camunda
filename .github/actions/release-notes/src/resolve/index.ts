@@ -1,15 +1,13 @@
 import { githubHeaders } from '../github';
 
 /**
- * The generator's own network layer: two batched GraphQL phases (V7) — commit
- * to PR mapping, then PR metadata — behind a small interface so every other
- * step (attribution, categorize, range dedupe) tests against a fake, never
- * the real network (mirrors the gate's Resolver split).
+ * The generator's network layer: two batched GraphQL phases (V7) — commit to PR
+ * mapping, then PR metadata — behind an interface so every other step tests
+ * against a fake (mirrors the gate's Resolver split).
  *
- * Security: every identifier (owner, repo, sha, PR number, cursor) travels as
- * a GraphQL VARIABLE, never string-concatenated into the query document — the
- * query text itself is a fixed literal per call shape. Never log headers,
- * responses, or errors that could echo the token.
+ * Security: every identifier (owner, repo, sha, PR number, cursor) travels as a
+ * GraphQL VARIABLE, never concatenated into the query document. Never log
+ * headers, responses, or anything that could echo the token.
  */
 
 export interface CommitPrMapping {
@@ -25,6 +23,12 @@ export interface PrMetadata {
   readonly mergedAt: string;
   readonly labels: readonly string[];
   readonly closingIssuesReferences: readonly number[];
+  /** Set when `labels` and/or `closingIssuesReferences` above hit the query's
+   *  first-20 cap and more exist on GitHub's side — never silently dropped,
+   *  the caller must warn. Rare enough (>20 labels or >20 native closing
+   *  refs on one PR) that full pagination for this nested, per-alias
+   *  connection isn't worth the extra follow-up query machinery. */
+  readonly truncatedFields?: readonly ('labels' | 'closingIssuesReferences')[];
 }
 
 export interface GraphqlResolver {
@@ -34,16 +38,37 @@ export interface GraphqlResolver {
 
 const GRAPHQL_URL = 'https://api.github.com/graphql';
 
-/** A legitimate release never needs more than this many commits/PRs per
- *  request; batching bounds query cost and request count against a burst of
- *  thousands of commits (V7: 50-100 PRs/request). */
+/** Bounds query cost and request count against a burst of thousands of commits (V7: 50-100 PRs/request). */
 const BATCH_SIZE = 100;
 
-/** A real secondary rate limit clears within seconds to a couple of minutes;
- *  past this many attempts something else is wrong and must surface, not loop. */
+/** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
 const MAX_RETRIES = 5;
 
 export const RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
+
+/** Longest `retry-after` this honours; beyond it the job should fail rather
+ *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
+const MAX_RETRY_AFTER_MS = 60_000;
+
+/**
+ * GitHub reports a throttled GraphQL request three different ways: a
+ * `RATE_LIMITED` error type inside a 200, HTTP 429, or HTTP 403 carrying a
+ * `retry-after` (a 403 without one is a real permission failure and must not
+ * be retried). 5xx is separate — a transient GraphQL backend failure, routine
+ * on the multi-alias batch queries this client sends.
+ */
+function retryableStatus(res: Response): boolean {
+  if (res.status === 429 || res.status >= 500) return true;
+  return res.status === 403 && res.headers.get('retry-after') !== null;
+}
+
+/** The server's own wait, when it names one, else exponential backoff. */
+function backoffMs(res: Response | null, attempt: number): number {
+  const header = res?.headers.get('retry-after');
+  const seconds = header === null || header === undefined ? NaN : Number(header);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
+  return 2 ** attempt * 1000;
+}
 
 interface GraphqlError {
   readonly type?: string;
@@ -55,9 +80,56 @@ interface GraphqlResponse {
   readonly errors?: readonly GraphqlError[];
 }
 
+type Json = Record<string, unknown>;
+
+interface PrNode {
+  readonly number: number;
+  readonly baseRefName: string;
+  readonly state: string;
+}
+
+interface PageInfo {
+  readonly hasNextPage: boolean;
+  readonly endCursor: string | null;
+}
+
+interface PrMetadataNode {
+  readonly number?: number;
+  readonly title?: string;
+  readonly body?: string | null;
+  readonly mergedAt?: string;
+  readonly author?: { login?: string; __typename?: string } | null;
+  readonly labels?: { nodes?: readonly { name: string }[]; pageInfo?: { hasNextPage?: boolean } };
+  readonly closingIssuesReferences?: { nodes?: readonly { number: number }[]; pageInfo?: { hasNextPage?: boolean } };
+}
+
+/** The one `associatedPullRequests` selection both query shapes share. */
+const prConnection = (afterArg = ''): string =>
+  `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } }`;
+
 function assertField<T>(value: T | null | undefined, description: string): T {
   if (value === null || value === undefined) throw new Error(`Malformed GraphQL response: missing ${description}`);
   return value;
+}
+
+/** One commit's `associatedPullRequests` page, from whichever query shape produced it. */
+function readPrPage(commit: Json, sha: string): { nodes: readonly PrNode[]; pageInfo: PageInfo } {
+  const connection = assertField(commit.associatedPullRequests as Json | undefined, `associatedPullRequests on commit ${sha}`);
+  return {
+    nodes: assertField(connection.nodes as PrNode[] | undefined, `associatedPullRequests.nodes on commit ${sha}`),
+    pageInfo: assertField(connection.pageInfo as PageInfo | undefined, `associatedPullRequests.pageInfo on commit ${sha}`),
+  };
+}
+
+/**
+ * GraphQL's `author.login` omits the `[bot]` suffix REST always includes for the
+ * same actor (e.g. `monorepo-devops-automation`). Every bot-identity set in this
+ * package is keyed on the REST convention, so normalize to it via the
+ * `__typename: Bot` discriminator instead of leaving every map unmatched.
+ */
+function normalizeAuthorLogin(author: { login?: string; __typename?: string } | null | undefined): string | undefined {
+  if (!author?.login) return undefined;
+  return author.__typename === 'Bot' && !author.login.endsWith('[bot]') ? `${author.login}[bot]` : author.login;
 }
 
 export class GithubGraphqlResolver implements GraphqlResolver {
@@ -86,67 +158,49 @@ export class GithubGraphqlResolver implements GraphqlResolver {
   }
 
   private async mapCommitBatch(shas: readonly string[]): Promise<CommitPrMapping[]> {
-    const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: String!`).join(', ')}) {
+    const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: GitObjectID!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
-        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { associatedPullRequests(first: 10) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } } `).join('\n')}
+        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { ${prConnection()} } }`).join('\n')}
       }
     }`;
-    const variables: Record<string, unknown> = { owner: this.owner, name: this.repo };
+    const variables: Json = { owner: this.owner, name: this.repo };
     shas.forEach((sha, i) => (variables[`sha${i}`] = sha));
 
-    const repository = assertField<Record<string, unknown>>((await this.request(query, variables)).repository as Record<string, unknown> | undefined, 'repository');
+    const repository = await this.requestRepository(query, variables);
     const mappings: CommitPrMapping[] = [];
     for (const [i, sha] of shas.entries()) {
-      const commit = assertField(repository[`c${i}`] as Record<string, unknown> | undefined, `repository.c${i} (commit ${sha})`);
+      const commit = assertField(repository[`c${i}`] as Json | undefined, `repository.c${i} (commit ${sha})`);
       mappings.push({ sha, associatedPrs: await this.drainAssociatedPrs(sha, commit) });
     }
     return mappings;
   }
 
-  /** Follows `pageInfo.hasNextPage` for one commit's `associatedPullRequests`
-   *  connection until exhausted — rare (a commit tied to many PRs), but never
-   *  silently truncated at the first page. */
-  private async drainAssociatedPrs(
-    sha: string,
-    firstPage: Record<string, unknown>,
-  ): Promise<{ readonly number: number; readonly baseRefName: string }[]> {
-    const connection = assertField(
-      firstPage.associatedPullRequests as Record<string, unknown> | undefined,
-      `associatedPullRequests on commit ${sha}`,
-    );
-    let nodes = assertField(connection.nodes as { number: number; baseRefName: string }[] | undefined, `associatedPullRequests.nodes on commit ${sha}`);
-    let pageInfo = assertField(
-      connection.pageInfo as { hasNextPage: boolean; endCursor: string | null } | undefined,
-      `associatedPullRequests.pageInfo on commit ${sha}`,
-    );
-    const all = [...nodes];
+  /**
+   * Follows `pageInfo.hasNextPage` so a commit tied to many PRs is never
+   * silently truncated at the first page.
+   *
+   * Filters to MERGED: the field has no `states` argument and returns every PR
+   * whose branch history contains the commit — for a commit already on the base
+   * branch that is every PR opened against it afterward, which makes nearly
+   * every commit look ambiguous to the range resolver.
+   */
+  private async drainAssociatedPrs(sha: string, firstPage: Json): Promise<{ readonly number: number; readonly baseRefName: string }[]> {
+    let page = readPrPage(firstPage, sha);
+    const all = [...page.nodes];
 
-    while (pageInfo.hasNextPage) {
-      const query = `query($owner: String!, $name: String!, $sha: String!, $after: String) {
+    while (page.pageInfo.hasNextPage) {
+      const query = `query($owner: String!, $name: String!, $sha: GitObjectID!, $after: String) {
         repository(owner: $owner, name: $name) {
-          c: object(oid: $sha) { ... on Commit { associatedPullRequests(first: 10, after: $after) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } }
+          c: object(oid: $sha) { ... on Commit { ${prConnection(', after: $after')} } }
         }
       }`;
-      const repository = assertField<Record<string, unknown>>(
-        (await this.request(query, { owner: this.owner, name: this.repo, sha, after: pageInfo.endCursor })).repository as
-          | Record<string, unknown>
-          | undefined,
-        'repository',
-      );
-      const commit = assertField(repository.c as Record<string, unknown> | undefined, `repository.c (commit ${sha})`);
-      const nextConnection = assertField(
-        commit.associatedPullRequests as Record<string, unknown> | undefined,
-        `associatedPullRequests on commit ${sha}`,
-      );
-      nodes = assertField(nextConnection.nodes as { number: number; baseRefName: string }[] | undefined, `associatedPullRequests.nodes on commit ${sha}`);
-      pageInfo = assertField(
-        nextConnection.pageInfo as { hasNextPage: boolean; endCursor: string | null } | undefined,
-        `associatedPullRequests.pageInfo on commit ${sha}`,
-      );
-      all.push(...nodes);
+      const repository = await this.requestRepository(query, { owner: this.owner, name: this.repo, sha, after: page.pageInfo.endCursor });
+      const commit = assertField(repository.c as Json | undefined, `repository.c (commit ${sha})`);
+      page = readPrPage(commit, sha);
+      all.push(...page.nodes);
     }
 
-    return all;
+    return all.filter((node) => node.state === 'MERGED').map((node) => ({ number: node.number, baseRefName: node.baseRefName }));
   }
 
   private async fetchMetadataBatch(numbers: readonly number[]): Promise<PrMetadata[]> {
@@ -155,55 +209,60 @@ export class GithubGraphqlResolver implements GraphqlResolver {
         ${numbers
           .map(
             (_, i) =>
-              `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`,
+              `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`,
           )
           .join('\n')}
       }
     }`;
-    const variables: Record<string, unknown> = { owner: this.owner, name: this.repo };
+    const variables: Json = { owner: this.owner, name: this.repo };
     numbers.forEach((number, i) => (variables[`n${i}`] = number));
 
-    const repository = assertField<Record<string, unknown>>((await this.request(query, variables)).repository as Record<string, unknown> | undefined, 'repository');
+    const repository = await this.requestRepository(query, variables);
     return numbers.map((number, i) => {
-      const pr = assertField(repository[`pr${i}`] as Record<string, unknown> | undefined, `repository.pr${i} (PR #${number})`);
-      const labels = assertField(pr.labels as Record<string, unknown> | undefined, `labels on PR #${number}`);
-      const closingIssuesReferences = assertField(
-        pr.closingIssuesReferences as Record<string, unknown> | undefined,
-        `closingIssuesReferences on PR #${number}`,
-      );
+      const pr = assertField(repository[`pr${i}`] as PrMetadataNode | undefined, `repository.pr${i} (PR #${number})`);
+      const truncatedFields: ('labels' | 'closingIssuesReferences')[] = [];
+      if (pr.labels?.pageInfo?.hasNextPage) truncatedFields.push('labels');
+      if (pr.closingIssuesReferences?.pageInfo?.hasNextPage) truncatedFields.push('closingIssuesReferences');
       return {
-        number: assertField(pr.number as number | undefined, `number on PR #${number}`),
-        title: assertField(pr.title as string | undefined, `title on PR #${number}`),
-        body: (pr.body as string | null) ?? '',
-        authorLogin: (pr.author as { login?: string } | null)?.login,
-        mergedAt: assertField(pr.mergedAt as string | undefined, `mergedAt on PR #${number}`),
-        labels: (assertField(labels.nodes as { name: string }[] | undefined, `labels.nodes on PR #${number}`)).map((l) => l.name),
-        closingIssuesReferences: (
-          assertField(closingIssuesReferences.nodes as { number: number }[] | undefined, `closingIssuesReferences.nodes on PR #${number}`)
-        ).map((n) => n.number),
+        number: assertField(pr.number, `number on PR #${number}`),
+        title: assertField(pr.title, `title on PR #${number}`),
+        body: pr.body ?? '',
+        authorLogin: normalizeAuthorLogin(pr.author),
+        mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
+        labels: assertField(pr.labels?.nodes, `labels.nodes on PR #${number}`).map((label) => label.name),
+        closingIssuesReferences: assertField(pr.closingIssuesReferences?.nodes, `closingIssuesReferences.nodes on PR #${number}`).map(
+          (issue) => issue.number,
+        ),
+        ...(truncatedFields.length > 0 ? { truncatedFields } : {}),
       };
     });
   }
 
-  /** Post one GraphQL request, retrying a secondary rate limit with
-   *  exponential backoff up to MAX_RETRIES. Never logs the token, headers, or
-   *  the raw response — only the error type/message once retries are exhausted. */
-  private async request(query: string, variables: Record<string, unknown>): Promise<Record<string, unknown>> {
+  private async requestRepository(query: string, variables: Json): Promise<Json> {
+    const data = await this.request(query, variables);
+    return assertField(data.repository as Json | undefined, 'repository');
+  }
+
+  /** One GraphQL request, retrying a throttled or transiently failed one with
+   *  backoff. Never logs the token, headers, or the raw response. */
+  private async request(query: string, variables: Json): Promise<Json> {
     for (let attempt = 0; ; attempt++) {
       const res = await this.fetchImpl(GRAPHQL_URL, {
         method: 'POST',
         headers: githubHeaders(this.token, { json: true }),
         body: JSON.stringify({ query, variables }),
       });
-      if (!res.ok) throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
+
+      if (!res.ok) {
+        if (!retryableStatus(res)) throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
+        await this.waitForRetry(res, attempt, `HTTP ${res.status}`);
+        continue;
+      }
+
       const payload = (await res.json()) as GraphqlResponse;
 
-      const rateLimited = payload.errors?.some((error) => error.type === RATE_LIMITED_ERROR_TYPE) ?? false;
-      if (rateLimited) {
-        if (attempt >= MAX_RETRIES - 1) {
-          throw new Error(`GitHub GraphQL secondary rate limit persisted past ${MAX_RETRIES} attempts.`);
-        }
-        await this.sleepImpl(2 ** attempt * 1000);
+      if (payload.errors?.some((error) => error.type === RATE_LIMITED_ERROR_TYPE)) {
+        await this.waitForRetry(null, attempt, 'secondary rate limit');
         continue;
       }
 
@@ -213,5 +272,14 @@ export class GithubGraphqlResolver implements GraphqlResolver {
 
       return assertField(payload.data, 'data');
     }
+  }
+
+  /** Sleeps before the next attempt, or throws once the cap is reached — the
+   *  one place that decides a retry loop is over. */
+  private async waitForRetry(res: Response | null, attempt: number, cause: string): Promise<void> {
+    if (attempt >= MAX_RETRIES - 1) {
+      throw new Error(`GitHub GraphQL request kept failing (${cause}) past ${MAX_RETRIES} attempts.`);
+    }
+    await this.sleepImpl(backoffMs(res, attempt));
   }
 }

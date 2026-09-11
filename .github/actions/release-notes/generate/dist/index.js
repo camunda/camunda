@@ -7,35 +7,28 @@
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.hasEligibleRefs = hasEligibleRefs;
 exports.decideAttribution = decideAttribution;
-exports.hopToBackportOriginal = hopToBackportOriginal;
 exports.evaluatePostGateAnomaly = evaluatePostGateAnomaly;
-/** Fallback sources are only reachable when the section contract wasn't observed
- *  (bypass, outage, post-merge body edit, parser drift) — 'section' and 'optOut'
- *  are the gated PASS paths and never anomalous on their own. */
-const FALLBACK_SOURCES = new Set([
-    'closingIssuesReferences',
-    'legacyBodyScan',
-]);
-/**
- * The unconditional attribution chain (D20), applied to every PR in range, no
- * legacy heuristic. Pure: takes already-resolved facts for one PR's own body
- * and decides which issue(s) it attributes to. Backport hop composition
- * (deliveryPath: 'backportHop') is the orchestrator's job, same as the gate's
- * evaluateGate wraps evaluateLink — not this function's concern.
- */
-/** A section ref is eligible for attribution only if it targets this repo and
- *  isn't a bare `Backport of #N` marker (that's a delivery-hop signal, not an
- *  attribution ref — mirrors policy.ts's own `sameRepo` filter). */
+/** Sources only reachable when the section contract wasn't observed (gate bypass, outage, post-merge body edit). */
+const FALLBACK_SOURCES = new Set(['closingIssuesReferences', 'legacyBodyScan']);
+/** A `Backport of #N` marker is a delivery-hop signal, not an attribution ref; cross-repo refs never attribute. */
 function eligible(refs) {
     return refs.filter((ref) => !ref.crossRepo && ref.kind !== 'backport');
 }
-function uniqueNumbers(numbers) {
-    return [...new Set(numbers)];
+/** Whether the section carries anything the chain can terminate on, so a
+ *  caller can tell in advance that the later steps will not be consulted. */
+function hasEligibleRefs(refs) {
+    return eligible(refs).length > 0;
 }
-function uniqueRefNumbers(refs) {
-    return uniqueNumbers(refs.map((ref) => ref.number));
+function uniqueNumbers(refs) {
+    return [...new Set(refs.map((ref) => ref.number))];
 }
+/**
+ * The unconditional attribution chain (D20): section refs, then GitHub's native
+ * field, then a legacy body-wide scan. Pure — decides from one PR's own
+ * already-resolved facts; the backport hop is the caller's composition.
+ */
 function decideAttribution(input) {
     if (input.optOut) {
         return { source: 'optOut', issueNumbers: [], deliveryPath: 'direct', reasons: [] };
@@ -45,47 +38,32 @@ function decideAttribution(input) {
         const live = sectionEligible.filter((ref) => ref.target === 'issue');
         const notLive = sectionEligible.filter((ref) => ref.target !== 'issue');
         const reasons = notLive.length
-            ? [`These section refs do not resolve to a live issue in this repo: ${uniqueRefNumbers(notLive).map((n) => `#${n}`).join(', ')}.`]
+            ? [`These section refs do not resolve to a live issue in this repo: ${uniqueNumbers(notLive).map((n) => `#${n}`).join(', ')}.`]
             : [];
         if (live.length > 0) {
-            return { source: 'section', issueNumbers: uniqueRefNumbers(live), deliveryPath: 'direct', reasons };
+            return { source: 'section', issueNumbers: uniqueNumbers(live), deliveryPath: 'direct', reasons };
         }
         return { source: 'resolutionFailed', issueNumbers: [], deliveryPath: 'direct', reasons };
     }
     if (input.closingIssuesReferences.length > 0) {
         return {
             source: 'closingIssuesReferences',
-            issueNumbers: uniqueNumbers(input.closingIssuesReferences),
+            issueNumbers: [...new Set(input.closingIssuesReferences)],
             deliveryPath: 'direct',
             reasons: [],
         };
     }
     const legacyLive = eligible(input.legacyRefs).filter((ref) => ref.target === 'issue');
     if (legacyLive.length > 0) {
-        return {
-            source: 'legacyBodyScan',
-            issueNumbers: uniqueRefNumbers(legacyLive),
-            deliveryPath: 'direct',
-            reasons: [],
-        };
+        return { source: 'legacyBodyScan', issueNumbers: uniqueNumbers(legacyLive), deliveryPath: 'direct', reasons: [] };
     }
     return { source: 'unattributed', issueNumbers: [], deliveryPath: 'direct', reasons: [] };
 }
 /**
- * Compose a backport PR's decision from its ORIGINAL PR's decision (C7/V2):
- * same source and issue numbers, but deliveryPath flips to 'backportHop' so
- * the anomaly evaluation below can still key on the original's own mergedAt.
- */
-function hopToBackportOriginal(original) {
-    return { ...original, deliveryPath: 'backportHop' };
-}
-/**
- * D20's post-gate anomaly rule: a PR merged after its branch's gate watermark
- * terminates at the section step by construction (gated PRs have a section
- * ref or an opt-out) — any fallback source hit past that point means the
- * section contract wasn't observed. Evaluated on the ORIGINAL PR's mergedAt +
- * source for a backport hop (a post-gate backport of a pre-gate original is
- * NOT an anomaly — the caller passes the original's own mergedAt for that).
+ * D20: a PR merged after its branch's gate watermark terminates at the section
+ * step by construction, so any fallback source past that point means the
+ * section contract wasn't observed. `mergedAt` must be the PR the decision came
+ * FROM — for a backport hop, the original's.
  */
 function evaluatePostGateAnomaly(input) {
     if (input.gateRequiredAt === null)
@@ -105,31 +83,24 @@ function evaluatePostGateAnomaly(input) {
 
 
 /**
- * Pure title-type -> release-notes-section categorization (D16/D17/D18/D19).
- * No IO — the caller (entrypoint wiring, step 7) supplies the already-resolved
- * title (see `resolveCategorizeTitle` for the backport-inherit composition,
- * mirroring `hopToBackportOriginal` in ../attribution) and the labels already
- * fetched from the API.
- *
- * Type -> section table copied verbatim from the signed design
- * (53605-issue-proposals.html) — do not reinvent it:
- *   feat -> Features · fix -> Bug Fixes · perf -> Performance ·
- *   docs -> Documentation · deps -> Dependency updates · revert -> Reverts ·
- *   refactor/build/ci/test/style -> Maintenance (internal-only, asset-only) ·
- *   merge -> excluded entirely (release-merge PRs, D25) ·
- *   unparseable/unknown type -> Uncategorized (C10 safety net, never drop).
+ * Pure title-type -> release-notes-section categorization (D16-D19, table from
+ * the signed design 53605-issue-proposals.html). No IO: the caller supplies the
+ * already-resolved title and the labels already fetched from the API.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BOT_CATEGORY_OVERRIDES = void 0;
-exports.resolveCategorizeTitle = resolveCategorizeTitle;
+exports.stripBackportPrefix = stripBackportPrefix;
+exports.parseDependencyUpdate = parseDependencyUpdate;
 exports.categorize = categorize;
-/** D16: known bots whose own title/body can't be trusted as the category source. */
+/** D16: bots whose own title can't be trusted as the category source. */
 exports.BOT_CATEGORY_OVERRIDES = {
     'backport-action': 'inherit-original',
     'monorepo-devops-automation[bot]': 'inherit-original',
     'renovate[bot]': 'deps',
     'dependabot[bot]': 'deps',
 };
+/** null = excluded from both outputs (release-merge PRs, D25). An unknown or
+ *  unparseable type falls back to Uncategorized — never dropped (C10). */
 const SECTION_BY_TYPE = {
     feat: 'Features',
     fix: 'Bug Fixes',
@@ -144,37 +115,52 @@ const SECTION_BY_TYPE = {
     style: 'Maintenance',
     merge: null,
 };
-/** Sections hidden from the customer-facing body — still present in the full asset. */
-const INTERNAL_SECTIONS = new Set(['Maintenance']);
+/** The one section hidden from the customer-facing body — still in the full asset. */
+const INTERNAL_SECTION = 'Maintenance';
 // `type` + optional `(scope)` + optional `!` + `: ` + subject, tolerating a
 // leading "[Backport ...]" prefix a human-opened backport PR may still carry.
 const HEADER = /^(?:\[[^\]]*\]\s*)?(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
 function parseType(title) {
     return HEADER.exec(title)?.groups?.type?.toLowerCase() ?? null;
 }
+const BACKPORT_TITLE_PREFIX = /^\[backport\b[^\]]*\]\s*/i;
+/** Strips a leading `[Backport ...]` marker for display. Scoped to that one
+ *  word so an unrelated bracketed prefix ("[CPT] ...") is left alone. */
+function stripBackportPrefix(title) {
+    return title.replace(BACKPORT_TITLE_PREFIX, '');
+}
+// dependabot's default title states both sides directly: "Bump X from A to B".
+const DEPENDABOT_BUMP = /Bump (\S+) from (\S+) to (\S+)/i;
+// A renovate body table row: "| [package](url) ... | `old` → `new` | ...".
+// Anchored on the leading `[name]` and the backtick-quoted arrow pair only —
+// the column count varies between renovate's table shapes.
+const RENOVATE_TABLE_ROW = /^\|\s*\[([^\]]+)\].*?`([^`]+)`\s*→\s*`([^`]+)`.*\|\s*$/gm;
 /**
- * Decide which title to feed `categorize()`. Pure composition, same shape as
- * `hopToBackportOriginal` in ../attribution: `deps`-override bots are handled
- * inside `categorize()` itself (their title is irrelevant either way); only
- * `inherit-original` needs a substitute title, and only once the caller has
- * one to offer (`originalTitle` undefined otherwise degrades to the bot's own
- * title rather than throwing — a missing original is a resolver-layer concern).
+ * For a `deps:` PR, the dependency name and its old/new version — the customer
+ * wants "name: old → new", not the bot's verbose prose. Renovate only puts the
+ * new version in its title, so its body table is read instead. null when
+ * neither shape matches; the caller then keeps the plain title.
  */
-function resolveCategorizeTitle(input) {
-    const override = input.authorLogin ? exports.BOT_CATEGORY_OVERRIDES[input.authorLogin] : undefined;
-    if (override === 'inherit-original' && input.originalTitle !== undefined)
-        return input.originalTitle;
-    return input.title;
+function parseDependencyUpdate(input) {
+    const bump = DEPENDABOT_BUMP.exec(input.title);
+    if (bump) {
+        const [, name, from, to] = bump;
+        return `${name}: ${from} → ${to}`;
+    }
+    const rows = [...input.body.matchAll(RENOVATE_TABLE_ROW)].map((match) => `${match[1]}: ${match[2]} → ${match[3]}`);
+    return rows.length > 0 ? rows.join('; ') : null;
 }
 function categorize(input) {
     const reasons = [];
     const override = input.authorLogin ? exports.BOT_CATEGORY_OVERRIDES[input.authorLogin] : undefined;
     const type = override === 'deps' ? 'deps' : parseType(input.title);
-    if (type === null && input.authorLogin) {
-        reasons.push(`Unknown bot ${input.authorLogin}'s title does not parse as a conventional commit: "${input.title}".`);
+    if (type === null) {
+        const author = input.authorLogin ? ` (author ${input.authorLogin})` : '';
+        reasons.push(`Title does not parse as a conventional commit${author}: "${input.title}".`);
     }
-    const section = type === null ? 'Uncategorized' : (type in SECTION_BY_TYPE ? SECTION_BY_TYPE[type] : 'Uncategorized');
-    const visibility = section !== null && INTERNAL_SECTIONS.has(section) ? 'internal' : 'customer';
+    const mapped = type === null ? undefined : SECTION_BY_TYPE[type];
+    const section = mapped === undefined ? 'Uncategorized' : mapped;
+    const visibility = section === INTERNAL_SECTION ? 'internal' : 'customer';
     let component;
     if (input.componentLabels.length === 0) {
         component = null;
@@ -238,13 +224,22 @@ const walk_1 = __nccwpck_require__(600);
 const render_1 = __nccwpck_require__(624);
 const resolve_1 = __nccwpck_require__(940);
 const resolver_1 = __nccwpck_require__(306);
+/** `owner/repo` from the runner's own environment. Empty halves would reach
+ *  GraphQL and come back as an opaque schema error, so they fail here instead. */
+function readRepository() {
+    const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '').split('/');
+    if (!owner || !repo) {
+        throw new Error(`GITHUB_REPOSITORY must be set to "owner/repo", got "${process.env.GITHUB_REPOSITORY ?? ''}".`);
+    }
+    return { owner, repo };
+}
 function readInputs() {
-    const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
+    const { owner, repo } = readRepository();
     const gateRequiredAt = core.getInput('gate-required-at').trim();
     return {
         token: core.getInput('token', { required: true }),
-        owner: owner ?? '',
-        repo: repo ?? '',
+        owner,
+        repo,
         targetVersion: core.getInput('target-version', { required: true }),
         releaseBranch: core.getInput('release-branch', { required: true }),
         gateRequiredAt: gateRequiredAt.length > 0 ? gateRequiredAt : null,
@@ -260,6 +255,7 @@ async function run() {
     const pipelineResolver = {
         resolveRefs: (refs) => restResolver.resolve(refs),
         fetchOriginalPull: (number) => restResolver.fetchPull(number),
+        fetchIssueTitle: (number) => restResolver.fetchIssueTitle(number),
     };
     const strategy = (0, range_1.resolveBaselineStrategy)(input.targetVersion);
     const baseline = (0, walk_1.resolveBaselineRef)(process.cwd(), strategy, input.targetVersion);
@@ -552,48 +548,103 @@ exports.processPr = processPr;
 const attribution_1 = __nccwpck_require__(233);
 const categorize_1 = __nccwpck_require__(493);
 const parser_1 = __nccwpck_require__(883);
+const title_1 = __nccwpck_require__(150);
+/**
+ * The legacy body-wide scan is the chain's last step, so its refs are only
+ * resolved when the earlier steps cannot terminate — an opt-out, an eligible
+ * section ref, or a native reference all decide the outcome without it. Every
+ * ref costs an API call, and the section refs would otherwise be resolved a
+ * second time as part of the body they live in.
+ */
 async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const section = (0, parser_1.extractSection)(body);
     const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
     const sectionRefs = section ? await resolver.resolveRefs((0, parser_1.parseRefs)(section)) : [];
-    const legacyRefs = await resolver.resolveRefs((0, parser_1.parseRefs)(body));
+    const needsLegacyScan = !optOut && !(0, attribution_1.hasEligibleRefs)(sectionRefs) && closingIssuesReferences.length === 0;
+    const legacyRefs = needsLegacyScan ? await resolver.resolveRefs((0, parser_1.parseRefs)(body)) : [];
     return (0, attribution_1.decideAttribution)({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
-async function attributePr(resolver, pr) {
-    const direct = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
-    if (direct.source !== 'unattributed')
-        return direct;
-    const backport = (0, parser_1.parseRefs)(pr.body).find((ref) => ref.kind === 'backport');
-    if (!backport)
-        return direct;
-    const original = await resolver.fetchOriginalPull(backport.number);
-    if (!original)
-        return direct;
-    const originalDecision = await attributeDirectly(resolver, original.body, []);
-    return (0, attribution_1.hopToBackportOriginal)(originalDecision);
-}
-async function categorizePr(resolver, pr) {
-    const override = pr.authorLogin ? categorize_1.BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
-    let originalTitle;
-    if (override === 'inherit-original') {
-        const backport = (0, parser_1.parseRefs)(pr.body).find((ref) => ref.kind === 'backport');
-        if (backport)
-            originalTitle = (await resolver.fetchOriginalPull(backport.number))?.title;
+/**
+ * Direct scan, then the backport hop (inheriting the original's decision,
+ * C7/V2), then the bot link exemption LAST — an exempt bot that did link a real
+ * issue keeps that attribution rather than being overridden by the exemption.
+ */
+async function attributePr(resolver, pr, original) {
+    let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
+    let mergedAt = pr.mergedAt;
+    if (decision.source === 'unattributed') {
+        const originalPull = await original();
+        if (originalPull) {
+            const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
+            decision = { ...originalDecision, deliveryPath: 'backportHop' };
+            mergedAt = originalPull.mergedAt ?? pr.mergedAt;
+        }
     }
-    const title = (0, categorize_1.resolveCategorizeTitle)({ title: pr.title, authorLogin: pr.authorLogin, originalTitle });
+    if (decision.source === 'unattributed' && (0, title_1.isLinkExemptAuthor)(pr.authorLogin)) {
+        return {
+            decision: {
+                source: 'botExempt',
+                issueNumbers: [],
+                deliveryPath: 'direct',
+                reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],
+            },
+            mergedAt,
+        };
+    }
+    return { decision, mergedAt };
+}
+/**
+ * The category-detection title and the display title come from the same lookup:
+ * an inherit-original bot's own title is garbage for both purposes. The
+ * `[Backport ...]` marker is stripped either way — noise for the customer.
+ */
+async function categorizePr(resolver, pr, original, override) {
+    const inherited = override === 'inherit-original' ? (await original())?.title : undefined;
+    const displayTitle = (0, categorize_1.stripBackportPrefix)(inherited ?? pr.title);
     const componentLabels = pr.labels.filter((label) => label.startsWith('component/'));
-    const breakingChangeLabel = pr.labels.includes('BREAKING CHANGE');
-    return (0, categorize_1.categorize)({ title, authorLogin: pr.authorLogin, componentLabels, breakingChangeLabel });
+    const categorization = (0, categorize_1.categorize)({
+        title: displayTitle,
+        authorLogin: pr.authorLogin,
+        componentLabels,
+        breakingChangeLabel: pr.labels.includes('BREAKING CHANGE'),
+    });
+    return { displayTitle, categorization };
+}
+/**
+ * The customer-facing title, in priority order: a `deps:` PR's parsed
+ * "name: old → new"; else the FIRST linked issue's own title (written for a
+ * release-notes reader, unlike the PR title); else the PR's own title.
+ */
+async function resolveDisplayTitle(resolver, pr, categorization, attribution, fallbackTitle) {
+    if (categorization.section === 'Dependency updates') {
+        const dependencyLine = (0, categorize_1.parseDependencyUpdate)({ title: pr.title, body: pr.body });
+        if (dependencyLine)
+            return dependencyLine;
+    }
+    const [primaryIssue] = attribution.issueNumbers;
+    if (primaryIssue !== undefined) {
+        const issueTitle = await resolver.fetchIssueTitle(primaryIssue);
+        if (issueTitle)
+            return issueTitle;
+    }
+    return fallbackTitle;
 }
 async function processPr(resolver, pr, options) {
-    const attribution = await attributePr(resolver, pr);
-    const categorization = await categorizePr(resolver, pr);
+    const backport = (0, parser_1.parseRefs)(pr.body).find((ref) => ref.kind === 'backport');
+    const override = pr.authorLogin ? categorize_1.BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
+    // Both the attribution hop and the inherit-original title want the same
+    // original PR — fetch it at most once per PR, and only if one of them asks.
+    let pending;
+    const original = () => (pending ??= backport ? resolver.fetchOriginalPull(backport.number) : Promise.resolve(null));
+    const { decision: attribution, mergedAt } = await attributePr(resolver, pr, original);
+    const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);
+    const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, displayTitle);
     const anomaly = (0, attribution_1.evaluatePostGateAnomaly)({
-        mergedAt: pr.mergedAt,
+        mergedAt,
         gateRequiredAt: options.gateRequiredAt,
         source: attribution.source,
     });
-    return { number: pr.number, title: pr.title, attribution, categorization, anomaly };
+    return { number: pr.number, title, attribution, categorization, anomaly };
 }
 
 
@@ -604,16 +655,16 @@ async function processPr(resolver, pr, options) {
 
 
 /**
- * The pure part of the range resolver (#50968): baseline STRATEGY selection
- * (which previous point to diff against — never the actual git call) and the
- * commit-to-PR dedupe/ambiguity rules. The actual `merge-base`/`git log` calls
- * are the I/O part (a later step) — this module only decides what to ask git,
- * and how to turn its answer into a deduped PR list.
+ * The pure part of the range resolver (#50968): which previous point to diff
+ * against, and how to turn git's answer into a deduped PR list. The git calls
+ * themselves live in ./walk.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.resolveBaselineStrategy = resolveBaselineStrategy;
 exports.resolveCommitsToPrs = resolveCommitsToPrs;
-const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha(\d+))?$/;
+// Alphas are 1-based: an `-alpha0` would make the previous-alpha baseline
+// `-alpha-1`, a ref that cannot exist, so it is rejected as unrecognized.
+const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
 function parseVersion(version) {
     const match = VERSION.exec(version);
     if (!match)
@@ -624,18 +675,12 @@ function format(v) {
     const base = `${v.major}.${v.minor}.${v.patch}`;
     return v.alpha ? `${base}-alpha${v.alpha}` : base;
 }
-/**
- * Decide the baseline to diff `target` against, from the version string
- * alone — V5's alpha1-of-cycle rule is deliberately "always the fork point,
- * never a tag lookup", so this needs no tag list to consult; every other
- * case is pure arithmetic on the version number too (previous patch/alpha,
- * or the previous minor's own release tag by construction).
- */
+/** The baseline to diff `target` against, from the version string alone — no
+ *  tag list to consult, every case is arithmetic on the version number. */
 function resolveBaselineStrategy(target) {
     const v = parseVersion(target);
-    // alpha1-of-cycle: the first alpha of a brand-new minor, no prior tag on
-    // this line exists yet — ALWAYS the fork point off the previous minor's
-    // stable branch, never a tag lookup (V5).
+    // alpha1-of-cycle: no prior tag on this line exists yet, so always the fork
+    // point off the previous minor's stable branch, never a tag lookup (V5).
     if (v.alpha === 1 && v.patch === 0) {
         return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${v.minor - 1}` };
     }
@@ -645,30 +690,21 @@ function resolveBaselineStrategy(target) {
     if (v.patch > 0) {
         return { kind: 'previousTag', ref: format({ ...v, patch: v.patch - 1 }) };
     }
-    // Minor release (patch 0, not alpha): fork point between the previous
-    // minor's own release tag and this target — kills the ancestry warning.
+    // Minor release: fork point between the previous minor's release tag and this target.
     const previousMinorTag = format({ major: v.major, minor: v.minor - 1, patch: 0 });
     return { kind: 'forkPoint', otherRef: previousMinorTag };
 }
-/** `[maven-release-plugin]` stub-segment commits are the only legitimate
- *  PR-less commits (C12) — everything else on a protected branch without a PR
- *  is a ruleset-bypass anomaly. */
+/** The only legitimate PR-less commits (C12); anything else without a PR on a
+ *  protected branch is a ruleset-bypass anomaly. */
 const AUTOMATION_WHITELIST = /^\[maven-release-plugin\]/;
 /**
- * Dedupe a first-parent commit walk down to one entry per PR, applying the
- * ambiguity rule (prefer the PR targeting the release branch; still tied ->
- * audit, never guess) and the PR-less-commit whitelist (C10/C12).
+ * Dedupe a first-parent commit walk to one entry per PR. Ambiguity rule: prefer
+ * the PR targeting the release branch; still tied -> audit, never guess.
  */
 function resolveCommitsToPrs(commits, releaseBranch) {
-    const prNumbers = [];
     const reasons = [];
-    const seen = new Set();
-    const attribute = (pr) => {
-        if (seen.has(pr.number))
-            return;
-        seen.add(pr.number);
-        prNumbers.push(pr.number);
-    };
+    // Insertion-ordered, so this both dedupes and preserves walk order.
+    const prNumbers = new Set();
     for (const commit of commits) {
         if (commit.associatedPrs.length === 0) {
             if (AUTOMATION_WHITELIST.test(commit.message))
@@ -677,19 +713,19 @@ function resolveCommitsToPrs(commits, releaseBranch) {
             continue;
         }
         if (commit.associatedPrs.length === 1) {
-            attribute(commit.associatedPrs[0]);
+            prNumbers.add(commit.associatedPrs[0].number);
             continue;
         }
         const matchingBranch = commit.associatedPrs.filter((pr) => pr.baseRefName === releaseBranch);
         if (matchingBranch.length === 1) {
-            attribute(matchingBranch[0]);
+            prNumbers.add(matchingBranch[0].number);
         }
         else {
             const list = commit.associatedPrs.map((pr) => `#${pr.number}`).join(', ');
             reasons.push(`Ambiguous commit ${commit.sha}: associated with multiple pull requests (${list}) and no unique match targeting ${releaseBranch} — never guessing.`);
         }
     }
-    return { prNumbers, reasons };
+    return { prNumbers: [...prNumbers], reasons };
 }
 
 
@@ -705,12 +741,7 @@ exports.walkFirstParent = walkFirstParent;
 const node_child_process_1 = __nccwpck_require__(421);
 // Unit separator: never appears in a commit subject, unlike ":" or "|".
 const FIELD_SEP = '\x1f';
-/**
- * Turn a `BaselineStrategy` (the pure decision from `resolveBaselineStrategy`)
- * into an actual commit SHA/ref. A previousTag strategy already names the ref
- * to diff against; a forkPoint strategy needs the one real git call this
- * package makes for that purpose (`merge-base`).
- */
+/** Turn a `BaselineStrategy` into a ref: previousTag already names one, forkPoint needs `merge-base`. */
 function resolveBaselineRef(repoDir, strategy, target) {
     if (strategy.kind === 'previousTag')
         return strategy.ref;
@@ -738,16 +769,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SCHEMA_VERSION = void 0;
 exports.render = render;
 /**
- * Turns the attributed-and-categorized PR list into the outputs everyone
- * downstream reads. Pure — no IO, no fetching; every fact it needs (which
- * issues a PR actually closes, per real GitHub issue state) is supplied by
- * the caller, never derived here from a keyword (the AC this generator
- * exists to satisfy: an accidental closing keyword on a non-final PR must
- * not stamp a premature "Released").
+ * Turns the attributed-and-categorized PR list into the outputs downstream
+ * reads. Pure: which issues a PR actually closed is supplied by the caller,
+ * never derived here from a `closes` keyword — an accidental keyword on a
+ * non-final PR must not stamp a premature "Released".
  */
-/** V6: every JSON output carries this so a future format change must bump it
- *  deliberately, rather than downstream consumers silently misreading a
- *  shape they weren't built for. */
+/** V6: every JSON output carries this, so a format change has to bump it
+ *  deliberately instead of consumers misreading a shape they weren't built for. */
 exports.SCHEMA_VERSION = '1.0.0';
 const SECTION_ORDER = [
     'Features',
@@ -757,11 +785,10 @@ const SECTION_ORDER = [
     'Dependency updates',
     'Reverts',
     'Changes without a tracked issue',
+    'Maintenance', // asset-only, so last — never reached in the customer body
     'Uncategorized',
 ];
-/** D19: an opt-out PR is grouped under its own section for display, never
- *  its type's normal section — but only when its type is customer-visible;
- *  an internal-only opt-out type stays asset-only, same as a linked one. */
+/** D19: an opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr) {
     if (pr.attributionSource === 'optOut')
         return 'Changes without a tracked issue';
@@ -793,22 +820,18 @@ function renderLine(pr) {
     const issues = pr.issueNumbers.length ? ` (${pr.issueNumbers.map((n) => `#${n}`).join(', ')})` : '';
     return `- ${pr.title} (#${pr.number})${issues}`;
 }
-function relationFor(pr, issueNumber) {
-    return pr.closesIssueNumbers.includes(issueNumber) ? 'closing' : 'contributor';
-}
-function commentTextFor(pr, issueNumber, version) {
-    const relation = relationFor(pr, issueNumber);
-    return relation === 'closing'
-        ? `Released in ${version} (#${pr.number}).`
-        : `Partially delivered in ${version} by #${pr.number}.`;
+function commentFor(pr, issueNumber, version) {
+    return pr.closesIssueNumbers.includes(issueNumber)
+        ? { relationKind: 'closing', text: `Released in ${version} (#${pr.number}).` }
+        : { relationKind: 'contributor', text: `Partially delivered in ${version} by #${pr.number}.` };
 }
 function render(prs, unattributed, options) {
-    if (unattributed.length > 0) {
-        if (!options.allowUnattributed || !options.unattributedReason) {
-            throw new Error(`Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
-                'Set allow-unattributed=true with a non-empty unattributed-reason to override.');
-        }
+    if (unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason)) {
+        throw new Error(`Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
+            'Set allow-unattributed=true with a non-empty unattributed-reason to override.');
     }
+    // Past the guard, a non-empty reason is proven whenever `unattributed` is.
+    const unattributedReason = options.unattributedReason ?? '';
     const all = [...prs, ...unattributed];
     const customerPrs = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
     const assetPrs = all.filter((pr) => pr.section !== null);
@@ -816,12 +839,11 @@ function render(prs, unattributed, options) {
     const fullAsset = renderSectionedBody(assetPrs);
     const commentEntries = all.flatMap((pr) => pr.issueNumbers.map((issueNumber) => ({
         issueNumber,
-        relationKind: relationFor(pr, issueNumber),
         prNumber: pr.number,
-        text: commentTextFor(pr, issueNumber, options.version),
+        ...commentFor(pr, issueNumber, options.version),
         marker: `<!-- release-notes:${options.version}:issue-${issueNumber} -->`,
     })));
-    const overrides = unattributed.map((pr) => ({ number: pr.number, reason: options.unattributedReason ?? '' }));
+    const overrides = unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
     return {
         customerBody,
         fullAsset,
@@ -848,18 +870,59 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubGraphqlResolver = exports.RATE_LIMITED_ERROR_TYPE = void 0;
 const github_1 = __nccwpck_require__(631);
 const GRAPHQL_URL = 'https://api.github.com/graphql';
-/** A legitimate release never needs more than this many commits/PRs per
- *  request; batching bounds query cost and request count against a burst of
- *  thousands of commits (V7: 50-100 PRs/request). */
+/** Bounds query cost and request count against a burst of thousands of commits (V7: 50-100 PRs/request). */
 const BATCH_SIZE = 100;
-/** A real secondary rate limit clears within seconds to a couple of minutes;
- *  past this many attempts something else is wrong and must surface, not loop. */
+/** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
 const MAX_RETRIES = 5;
 exports.RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
+/** Longest `retry-after` this honours; beyond it the job should fail rather
+ *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
+const MAX_RETRY_AFTER_MS = 60_000;
+/**
+ * GitHub reports a throttled GraphQL request three different ways: a
+ * `RATE_LIMITED` error type inside a 200, HTTP 429, or HTTP 403 carrying a
+ * `retry-after` (a 403 without one is a real permission failure and must not
+ * be retried). 5xx is separate — a transient GraphQL backend failure, routine
+ * on the multi-alias batch queries this client sends.
+ */
+function retryableStatus(res) {
+    if (res.status === 429 || res.status >= 500)
+        return true;
+    return res.status === 403 && res.headers.get('retry-after') !== null;
+}
+/** The server's own wait, when it names one, else exponential backoff. */
+function backoffMs(res, attempt) {
+    const header = res?.headers.get('retry-after');
+    const seconds = header === null || header === undefined ? NaN : Number(header);
+    if (Number.isFinite(seconds) && seconds >= 0)
+        return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
+    return 2 ** attempt * 1000;
+}
+/** The one `associatedPullRequests` selection both query shapes share. */
+const prConnection = (afterArg = '') => `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } }`;
 function assertField(value, description) {
     if (value === null || value === undefined)
         throw new Error(`Malformed GraphQL response: missing ${description}`);
     return value;
+}
+/** One commit's `associatedPullRequests` page, from whichever query shape produced it. */
+function readPrPage(commit, sha) {
+    const connection = assertField(commit.associatedPullRequests, `associatedPullRequests on commit ${sha}`);
+    return {
+        nodes: assertField(connection.nodes, `associatedPullRequests.nodes on commit ${sha}`),
+        pageInfo: assertField(connection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`),
+    };
+}
+/**
+ * GraphQL's `author.login` omits the `[bot]` suffix REST always includes for the
+ * same actor (e.g. `monorepo-devops-automation`). Every bot-identity set in this
+ * package is keyed on the REST convention, so normalize to it via the
+ * `__typename: Bot` discriminator instead of leaving every map unmatched.
+ */
+function normalizeAuthorLogin(author) {
+    if (!author?.login)
+        return undefined;
+    return author.__typename === 'Bot' && !author.login.endsWith('[bot]') ? `${author.login}[bot]` : author.login;
 }
 class GithubGraphqlResolver {
     token;
@@ -889,14 +952,14 @@ class GithubGraphqlResolver {
         return results;
     }
     async mapCommitBatch(shas) {
-        const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: String!`).join(', ')}) {
+        const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: GitObjectID!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
-        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { associatedPullRequests(first: 10) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } } `).join('\n')}
+        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { ${prConnection()} } }`).join('\n')}
       }
     }`;
         const variables = { owner: this.owner, name: this.repo };
         shas.forEach((sha, i) => (variables[`sha${i}`] = sha));
-        const repository = assertField((await this.request(query, variables)).repository, 'repository');
+        const repository = await this.requestRepository(query, variables);
         const mappings = [];
         for (const [i, sha] of shas.entries()) {
             const commit = assertField(repository[`c${i}`], `repository.c${i} (commit ${sha})`);
@@ -904,58 +967,61 @@ class GithubGraphqlResolver {
         }
         return mappings;
     }
-    /** Follows `pageInfo.hasNextPage` for one commit's `associatedPullRequests`
-     *  connection until exhausted — rare (a commit tied to many PRs), but never
-     *  silently truncated at the first page. */
+    /**
+     * Follows `pageInfo.hasNextPage` so a commit tied to many PRs is never
+     * silently truncated at the first page.
+     *
+     * Filters to MERGED: the field has no `states` argument and returns every PR
+     * whose branch history contains the commit — for a commit already on the base
+     * branch that is every PR opened against it afterward, which makes nearly
+     * every commit look ambiguous to the range resolver.
+     */
     async drainAssociatedPrs(sha, firstPage) {
-        const connection = assertField(firstPage.associatedPullRequests, `associatedPullRequests on commit ${sha}`);
-        let nodes = assertField(connection.nodes, `associatedPullRequests.nodes on commit ${sha}`);
-        let pageInfo = assertField(connection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`);
-        const all = [...nodes];
-        while (pageInfo.hasNextPage) {
-            const query = `query($owner: String!, $name: String!, $sha: String!, $after: String) {
+        let page = readPrPage(firstPage, sha);
+        const all = [...page.nodes];
+        while (page.pageInfo.hasNextPage) {
+            const query = `query($owner: String!, $name: String!, $sha: GitObjectID!, $after: String) {
         repository(owner: $owner, name: $name) {
-          c: object(oid: $sha) { ... on Commit { associatedPullRequests(first: 10, after: $after) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } }
+          c: object(oid: $sha) { ... on Commit { ${prConnection(', after: $after')} } }
         }
       }`;
-            const repository = assertField((await this.request(query, { owner: this.owner, name: this.repo, sha, after: pageInfo.endCursor })).repository, 'repository');
+            const repository = await this.requestRepository(query, { owner: this.owner, name: this.repo, sha, after: page.pageInfo.endCursor });
             const commit = assertField(repository.c, `repository.c (commit ${sha})`);
-            const nextConnection = assertField(commit.associatedPullRequests, `associatedPullRequests on commit ${sha}`);
-            nodes = assertField(nextConnection.nodes, `associatedPullRequests.nodes on commit ${sha}`);
-            pageInfo = assertField(nextConnection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`);
-            all.push(...nodes);
+            page = readPrPage(commit, sha);
+            all.push(...page.nodes);
         }
-        return all;
+        return all.filter((node) => node.state === 'MERGED').map((node) => ({ number: node.number, baseRefName: node.baseRefName }));
     }
     async fetchMetadataBatch(numbers) {
         const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
         ${numbers
-            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`)
+            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`)
             .join('\n')}
       }
     }`;
         const variables = { owner: this.owner, name: this.repo };
         numbers.forEach((number, i) => (variables[`n${i}`] = number));
-        const repository = assertField((await this.request(query, variables)).repository, 'repository');
+        const repository = await this.requestRepository(query, variables);
         return numbers.map((number, i) => {
             const pr = assertField(repository[`pr${i}`], `repository.pr${i} (PR #${number})`);
-            const labels = assertField(pr.labels, `labels on PR #${number}`);
-            const closingIssuesReferences = assertField(pr.closingIssuesReferences, `closingIssuesReferences on PR #${number}`);
             return {
                 number: assertField(pr.number, `number on PR #${number}`),
                 title: assertField(pr.title, `title on PR #${number}`),
                 body: pr.body ?? '',
-                authorLogin: pr.author?.login,
+                authorLogin: normalizeAuthorLogin(pr.author),
                 mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
-                labels: (assertField(labels.nodes, `labels.nodes on PR #${number}`)).map((l) => l.name),
-                closingIssuesReferences: (assertField(closingIssuesReferences.nodes, `closingIssuesReferences.nodes on PR #${number}`)).map((n) => n.number),
+                labels: assertField(pr.labels?.nodes, `labels.nodes on PR #${number}`).map((label) => label.name),
+                closingIssuesReferences: assertField(pr.closingIssuesReferences?.nodes, `closingIssuesReferences.nodes on PR #${number}`).map((issue) => issue.number),
             };
         });
     }
-    /** Post one GraphQL request, retrying a secondary rate limit with
-     *  exponential backoff up to MAX_RETRIES. Never logs the token, headers, or
-     *  the raw response — only the error type/message once retries are exhausted. */
+    async requestRepository(query, variables) {
+        const data = await this.request(query, variables);
+        return assertField(data.repository, 'repository');
+    }
+    /** One GraphQL request, retrying a throttled or transiently failed one with
+     *  backoff. Never logs the token, headers, or the raw response. */
     async request(query, variables) {
         for (let attempt = 0;; attempt++) {
             const res = await this.fetchImpl(GRAPHQL_URL, {
@@ -963,15 +1029,15 @@ class GithubGraphqlResolver {
                 headers: (0, github_1.githubHeaders)(this.token, { json: true }),
                 body: JSON.stringify({ query, variables }),
             });
-            if (!res.ok)
-                throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
+            if (!res.ok) {
+                if (!retryableStatus(res))
+                    throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
+                await this.waitForRetry(res, attempt, `HTTP ${res.status}`);
+                continue;
+            }
             const payload = (await res.json());
-            const rateLimited = payload.errors?.some((error) => error.type === exports.RATE_LIMITED_ERROR_TYPE) ?? false;
-            if (rateLimited) {
-                if (attempt >= MAX_RETRIES - 1) {
-                    throw new Error(`GitHub GraphQL secondary rate limit persisted past ${MAX_RETRIES} attempts.`);
-                }
-                await this.sleepImpl(2 ** attempt * 1000);
+            if (payload.errors?.some((error) => error.type === exports.RATE_LIMITED_ERROR_TYPE)) {
+                await this.waitForRetry(null, attempt, 'secondary rate limit');
                 continue;
             }
             if (payload.errors?.length) {
@@ -979,6 +1045,14 @@ class GithubGraphqlResolver {
             }
             return assertField(payload.data, 'data');
         }
+    }
+    /** Sleeps before the next attempt, or throws once the cap is reached — the
+     *  one place that decides a retry loop is over. */
+    async waitForRetry(res, attempt, cause) {
+        if (attempt >= MAX_RETRIES - 1) {
+            throw new Error(`GitHub GraphQL request kept failing (${cause}) past ${MAX_RETRIES} attempts.`);
+        }
+        await this.sleepImpl(backoffMs(res, attempt));
     }
 }
 exports.GithubGraphqlResolver = GithubGraphqlResolver;
@@ -1027,6 +1101,11 @@ class GithubResolver {
     repo;
     repoUrl;
     headers;
+    /** Titles seen while classifying refs, keyed by same-repo number (issues and
+     *  PRs alike — `/issues/N` serves both). `classify` and `fetchIssueTitle` hit
+     *  that same endpoint, and the generator asks for the title of a ref it has
+     *  just classified, so the second call is served from here. */
+    titlesByNumber = new Map();
     constructor(token, owner, repo) {
         this.token = token;
         this.owner = owner;
@@ -1104,7 +1183,35 @@ class GithubResolver {
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
         const data = (await res.json());
-        return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
+        return {
+            body: data.body ?? '',
+            title: data.title ?? '',
+            authorLogin: data.user?.login,
+            mergedAt: data.merged_at ?? undefined,
+        };
+    }
+    /**
+     * The live title of a same-repo issue, or null if it doesn't exist. Used by
+     * the generator (#57713) to show the issue's own customer-facing wording
+     * in release notes rather than the delivering PR's dev-facing title.
+     */
+    async fetchIssueTitle(number) {
+        const cached = this.titlesByNumber.get(number);
+        if (cached !== undefined)
+            return cached;
+        const res = await fetch(`${this.repoUrl}/issues/${number}`, {
+            headers: this.headers,
+        });
+        if (res.status === 404) {
+            this.titlesByNumber.set(number, null);
+            return null;
+        }
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
+        const data = (await res.json());
+        const title = data.title ?? null;
+        this.titlesByNumber.set(number, title);
+        return title;
     }
     /** A ref points at a different repo than the one being gated (case-insensitive). */
     isCrossRepo(repo) {
@@ -1125,10 +1232,138 @@ class GithubResolver {
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
         const data = (await res.json());
+        this.titlesByNumber.set(ref.number, data.title ?? null);
         return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
     }
 }
 exports.GithubResolver = GithubResolver;
+
+
+/***/ }),
+
+/***/ 150:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BOT_LINK_EXEMPT = exports.BOT_TITLE_EXEMPT = exports.HEADER_MAX = exports.TITLE_TYPES = void 0;
+exports.lintTitle = lintTitle;
+exports.isTitleExemptAuthor = isTitleExemptAuthor;
+exports.isLinkExemptAuthor = isLinkExemptAuthor;
+/**
+ * PR-title lint — the active rules of `commitlint.config.cjs`, reimplemented as
+ * a pure check so the action keeps zero runtime deps (pulling @commitlint +
+ * config-conventional would vendor hundreds of kB into the committed bundle for
+ * a handful of trivial rules). The config's other rules are disabled ([0,...]).
+ *
+ * DRIFT GUARD: TITLE_TYPES and HEADER_MAX are the single source of truth here,
+ * and the action CI greps commitlint.config.cjs to assert they still match —
+ * so a change to the repo's commit rules fails CI until this is updated.
+ *
+ * Active rules mirrored (see commitlint.config.cjs):
+ *   type-empty:never · type-case:lower-case · type-enum · scope-empty:always ·
+ *   header-max-length:120. Subject/body/footer rules are disabled there.
+ */
+/** commitlint.config.cjs `type-enum`. Keep in sync — CI enforces it. */
+exports.TITLE_TYPES = [
+    'build',
+    'ci',
+    'deps',
+    'docs',
+    'feat',
+    'fix',
+    'merge',
+    'perf',
+    'refactor',
+    'revert',
+    'style',
+    'test',
+];
+/** commitlint.config.cjs `header-max-length`. Keep in sync — CI enforces it. */
+exports.HEADER_MAX = 120;
+// `type` + optional `(scope)` + optional `!` + `: ` + subject. Mirrors the
+// conventional-commit header shape config-conventional parses.
+const HEADER = /^(?<type>[^\s():!]+)(?<scope>\([^)]*\))?!?:[ ](?<subject>.+)$/;
+/**
+ * Wrap user-controlled title fragments before interpolating them into the
+ * sticky comment / job summary. The gate posts the comment with a write token,
+ * so a raw `@mention` in a malicious title would notify (spam) via the bot.
+ * Inline code neutralises mentions; stripping backticks stops the value
+ * breaking out of the span.
+ */
+function code(value) {
+    return `\`${(value ?? '').replace(/`/g, '')}\``;
+}
+/** Lint a PR title. Pure — no IO, no bot logic (the caller decides bot skips). */
+function lintTitle(title) {
+    if (title.length > exports.HEADER_MAX) {
+        return {
+            outcome: 'fail',
+            code: 'title-length',
+            reasons: [`The title is ${title.length} characters; keep it within ${exports.HEADER_MAX}.`],
+        };
+    }
+    const match = HEADER.exec(title);
+    if (!match?.groups) {
+        return {
+            outcome: 'fail',
+            code: 'title-format',
+            reasons: [
+                'The title must follow Conventional Commits: `type: summary` (e.g. "fix: correct retry backoff").',
+                `Allowed types: ${exports.TITLE_TYPES.join(', ')}.`,
+            ],
+        };
+    }
+    const { type, scope } = match.groups;
+    if (scope) {
+        return {
+            outcome: 'fail',
+            code: 'title-scope',
+            reasons: [`Scopes are not used in this repo — drop ${code(scope)} and write "${code(type)}: …".`],
+        };
+    }
+    if (type !== type?.toLowerCase()) {
+        return { outcome: 'fail', code: 'title-type', reasons: [`The type ${code(type)} must be lower-case.`] };
+    }
+    if (!exports.TITLE_TYPES.includes(type)) {
+        return {
+            outcome: 'fail',
+            code: 'title-type',
+            reasons: [`${code(type)} is not an allowed type. Use one of: ${exports.TITLE_TYPES.join(', ')}.`],
+        };
+    }
+    return { outcome: 'pass', code: 'title-ok', reasons: [`Title type "${type}" is valid.`] };
+}
+/**
+ * Bot authors whose titles are machine-generated and exempt from title lint
+ * (D16). Their PR-issue link / backport marker is still validated — only the
+ * title check is skipped.
+ */
+exports.BOT_TITLE_EXEMPT = new Set([
+    'backport-action',
+    'monorepo-devops-automation[bot]',
+    'renovate[bot]',
+    'dependabot[bot]',
+]);
+function isTitleExemptAuthor(login) {
+    return login !== undefined && exports.BOT_TITLE_EXEMPT.has(login);
+}
+/**
+ * Bot authors exempt from the PR-issue-LINK check, because they open PRs from
+ * their own template and will never tick the opt-out checkbox. Dependency bumps
+ * are not release-notes material, so an exemption is the agreed answer rather
+ * than teaching each bot to write the section.
+ *
+ * DELIBERATELY SEPARATE from BOT_TITLE_EXEMPT, which must never be reused here:
+ * that set contains `monorepo-devops-automation[bot]`, the author of every
+ * backport PR. Exempting it from the link check would skip the backport hop, so
+ * backports would stop inheriting the original PR's issue — silently dropping
+ * them from the release notes, which is the failure this gate exists to prevent.
+ */
+exports.BOT_LINK_EXEMPT = new Set(['renovate[bot]']);
+function isLinkExemptAuthor(login) {
+    return login !== undefined && exports.BOT_LINK_EXEMPT.has(login);
+}
 
 
 /***/ }),
