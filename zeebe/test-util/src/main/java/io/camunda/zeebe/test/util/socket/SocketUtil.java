@@ -39,8 +39,7 @@ public final class SocketUtil {
 
     LOG.info("Starting socket assignment with testForkNumber {}", testForkNumber);
 
-    final boolean useEphemeralPorts =
-        System.getProperty(GRADLE_WORKER_ID_PROPERTY_NAME) != null;
+    final boolean useEphemeralPorts = System.getProperty(GRADLE_WORKER_ID_PROPERTY_NAME) != null;
     if (!useEphemeralPorts) {
       // ensure limits to stay in available port range
       assert testForkNumber < MAX_TEST_FORKS
