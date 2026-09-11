@@ -235,6 +235,26 @@ public class VariableValueFilterIT {
   }
 
   @TestTemplate
+  public void shouldExcludeVariableWithNameAndNotInNullValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two variables sharing a name, one holding a null value and one holding a real value
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel excludedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("null"));
+    createAndSaveVariable(rdbmsService, excludedVariable);
+    final VariableDbModel keptVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("some-value"));
+    createAndSaveVariable(rdbmsService, keptVariable);
+
+    // and a notIn filter excluding null values
+    final Operation<String> operation = Operation.notIn("null");
+
+    // when only the non-null variable is returned
+    searchAndAssertVariableValueFilter(rdbmsService, keptVariable, varName, operation);
+  }
+
+  @TestTemplate
   public void shouldFindVariableWithNameAndEqNullValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
