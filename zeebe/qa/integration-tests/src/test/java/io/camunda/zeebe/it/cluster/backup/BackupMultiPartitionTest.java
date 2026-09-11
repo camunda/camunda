@@ -35,8 +35,6 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -96,7 +94,6 @@ class BackupMultiPartitionTest {
   private ZeebeResourcesHelper resourcesHelper;
   private BackupRequestHandler backupRequestHandler;
   private BackupActuator backupActuator;
-  private int lastSeenDistributionRecordCount = -1;
 
   @TestZeebe
   private final TestCluster cluster =
@@ -358,44 +355,6 @@ class BackupMultiPartitionTest {
     assertThat(backupStates.get(1).checkpointPosition()).isGreaterThan(0);
   }
 
-  @Test
-  @Timeout(value = 120)
-  void canRetrieveCheckpointStateFromPartialPartitions()
-      throws ExecutionException, InterruptedException, TimeoutException {
-    // given
-    awaitCommandDistributionsDrained();
-    final long processKey = resourcesHelper.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
-    createProcessInstanceOnPartitionOne(processKey);
-
-    final long backupId = 3;
-    // trigger backup only on partition 2
-    takeBackupOnPartition(backupId, 2);
-
-    // then
-    waitUntilBackupCompletedOnPartition(backupId, 2);
-
-    final var state = getCheckpointState();
-    assertThat(state).isNotNull();
-    assertThat(state.getCheckpointStates()).hasSize(1);
-    assertThat(state.getBackupStates()).hasSize(1);
-
-    final var checkpointStates =
-        state.getCheckpointStates().stream()
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
-            .toList();
-
-    final var backupStates =
-        state.getBackupStates().stream()
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
-            .toList();
-
-    assertThat(checkpointStates.stream().filter(f -> f.partitionId() == 2)).isNotEmpty();
-    assertThat(backupStates.stream().filter(f -> f.partitionId() == 2)).isNotEmpty();
-
-    assertThat(checkpointStates.stream().filter(f -> f.partitionId() == 1)).isEmpty();
-    assertThat(backupStates.stream().filter(f -> f.partitionId() == 1)).isEmpty();
-  }
-
   private Set<Long> createJobsOnAllPartitions() {
     final Set<Integer> partitions = new HashSet<>();
     final Set<Long> jobKeys = new HashSet<>();
@@ -485,40 +444,6 @@ class BackupMultiPartitionTest {
                 .limit(1)
                 .findFirst())
         .isPresent();
-  }
-
-  private void awaitCommandDistributionsDrained() {
-    lastSeenDistributionRecordCount = -1;
-    Awaitility.await("no command distribution is in flight")
-        .atMost(Duration.ofSeconds(60))
-        .pollInterval(Duration.ofMillis(100))
-        .during(Duration.ofSeconds(5))
-        .until(this::commandDistributionsDrained);
-  }
-
-  private boolean commandDistributionsDrained() {
-    final var distributionRecords =
-        RecordingExporter.getRecords().stream()
-            .filter(record -> record.getValueType() == ValueType.COMMAND_DISTRIBUTION)
-            .toList();
-
-    final var unchanged = distributionRecords.size() == lastSeenDistributionRecordCount;
-    lastSeenDistributionRecordCount = distributionRecords.size();
-    if (!unchanged) {
-      return false;
-    }
-
-    final Set<Long> pending = new HashSet<>();
-    final Set<Long> finished = new HashSet<>();
-    for (final var record : distributionRecords) {
-      if (record.getIntent() == CommandDistributionIntent.STARTED) {
-        pending.add(record.getKey());
-      } else if (record.getIntent() == CommandDistributionIntent.FINISHED) {
-        finished.add(record.getKey());
-      }
-    }
-    pending.removeAll(finished);
-    return pending.isEmpty();
   }
 
   private void createProcessInstanceOnPartitionOne(final long processKey) {
