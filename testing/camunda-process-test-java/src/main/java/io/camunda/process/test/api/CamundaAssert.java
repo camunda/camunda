@@ -25,6 +25,8 @@ import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.assertions.IncidentAssert;
+import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
@@ -34,6 +36,7 @@ import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
+import io.camunda.process.test.impl.assertions.IncidentAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
 import io.camunda.process.test.impl.assertions.ValueAssertj;
@@ -319,6 +322,17 @@ public class CamundaAssert {
         elementSelector,
         judgeConfig,
         semanticSimilarityConfig);
+  }
+
+  /**
+   * To verify an incident.
+   *
+   * @param incidentSelector the selector of the incident to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.IncidentSelectors
+   */
+  public static IncidentAssert assertThatIncident(final IncidentSelector incidentSelector) {
+    return new IncidentAssertj(getDataSource(), getAwaitBehavior(), incidentSelector);
   }
 
   /**
