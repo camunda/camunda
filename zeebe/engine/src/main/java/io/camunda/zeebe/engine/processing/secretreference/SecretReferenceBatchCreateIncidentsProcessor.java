@@ -42,6 +42,9 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
   private static final String INCIDENT_MESSAGE =
       "Failed to resolve secret '%s' from %s. Ensure the secret exists and the store is available, then resolve the incident to retry.";
 
+  private static final String INCIDENT_MESSAGE_NO_STORE_CONFIGURED =
+      "Failed to resolve secret '%s'. No secret store is configured. Configure a secret store, then resolve the incident to retry.";
+
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
@@ -51,12 +54,21 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
   private final ProcessState processState;
   private final IncidentState incidentState;
   private final IncidentMetrics incidentMetrics;
+  private final boolean defaultSecretStoreConfigured;
 
+  /**
+   * @param defaultSecretStoreConfigured whether a real store backs {@link
+   *     SecretStoreRegistry#DEFAULT_STORE_ID} — see {@link SecretStoreRegistry#isConfigured}.
+   *     Resolved once by the caller instead of handing this processor the registry itself: raising
+   *     an incident has no other use for it, and the registry's own {@code NoopSecretStore} check
+   *     is not this class's concern to repeat.
+   */
   public SecretReferenceBatchCreateIncidentsProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final boolean defaultSecretStoreConfigured) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     this.keyGenerator = keyGenerator;
@@ -66,6 +78,7 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
     processState = processingState.getProcessState();
     incidentState = processingState.getIncidentState();
     this.incidentMetrics = incidentMetrics;
+    this.defaultSecretStoreConfigured = defaultSecretStoreConfigured;
   }
 
   @Override
@@ -172,6 +185,20 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
         : "secret store '%s'".formatted(storeId);
   }
 
+  /**
+   * Only the default store can be unconfigured: a non-default id is not reachable yet (store
+   * selection is tracked under #56563), so no reference is ever raised against one.
+   */
+  private boolean isNoStoreConfigured(final String storeId) {
+    return SecretStoreRegistry.DEFAULT_STORE_ID.equals(storeId) && !defaultSecretStoreConfigured;
+  }
+
+  private String buildErrorMessage(final String storeId, final String secretReference) {
+    return isNoStoreConfigured(storeId)
+        ? INCIDENT_MESSAGE_NO_STORE_CONFIGURED.formatted(secretReference)
+        : INCIDENT_MESSAGE.formatted(secretReference, describeStore(storeId));
+  }
+
   private IncidentRecord buildIncident(
       final long jobKey, final JobRecord job, final String storeId, final String secretReference) {
     final var treePathProperties =
@@ -183,7 +210,7 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
 
     return new IncidentRecord()
         .setErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
-        .setErrorMessage(INCIDENT_MESSAGE.formatted(secretReference, describeStore(storeId)))
+        .setErrorMessage(buildErrorMessage(storeId, secretReference))
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(job.getProcessDefinitionKey())
         .setProcessInstanceKey(job.getProcessInstanceKey())

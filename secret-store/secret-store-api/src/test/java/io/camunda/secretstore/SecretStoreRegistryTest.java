@@ -67,6 +67,33 @@ class SecretStoreRegistryTest {
   }
 
   @Test
+  void shouldReportARealStoreAsConfigured() {
+    // given
+    final var registry = new SecretStoreRegistry(Map.of("default", storeHolding("token", "value")));
+
+    // when / then
+    assertThat(registry.isConfigured("default")).isTrue();
+  }
+
+  @Test
+  void shouldNotReportTheNoopStoreAsConfigured() {
+    // given - registered under "default" whenever nothing is configured, see NoopSecretStore
+    final var registry = new SecretStoreRegistry(Map.of("default", NOOP));
+
+    // when / then
+    assertThat(registry.isConfigured("default")).isFalse();
+  }
+
+  @Test
+  void shouldNotReportAnUnknownStoreIdAsConfigured() {
+    // given
+    final var registry = new SecretStoreRegistry(Map.of("default", storeHolding("token", "value")));
+
+    // when / then
+    assertThat(registry.isConfigured("other")).isFalse();
+  }
+
+  @Test
   void shouldNotAllowTheStoresToBeModified() {
     // given
     final var registry = new SecretStoreRegistry(Map.of("default", NOOP));
