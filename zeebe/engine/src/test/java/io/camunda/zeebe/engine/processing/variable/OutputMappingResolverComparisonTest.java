@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
 import io.camunda.zeebe.el.ContextValue;
+import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
@@ -42,6 +43,11 @@ class OutputMappingResolverComparisonTest {
 
   private static final OrderedOutputMappingResolver ORDERED = new OrderedOutputMappingResolver();
   private static final CombinedOutputMappingResolver COMBINED = new CombinedOutputMappingResolver();
+
+  // arbitrary, distinct scope keys used only by MergeTargetScopeIsOrderedOnly below, to prove
+  // which resolver actually looks up MappingContext#mergeTargetScopeKey()
+  private static final long ELEMENT_SCOPE_KEY = 1L;
+  private static final long MERGE_TARGET_SCOPE_KEY = 2L;
 
   @Nested
   // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
@@ -86,6 +92,29 @@ class OutputMappingResolverComparisonTest {
     }
   }
 
+  @Nested
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("mergeTargetScopeKey is read by ORDERED only")
+  class MergeTargetScopeIsOrderedOnly {
+    @Test
+    void shouldSeedOrderedFromMergeTargetScopeAndCombinedFromElementScope() {
+      // given: "a" holds a different sibling in the element's own scope than in the scope the
+      // output mapping result will be merged into
+      final var elementScope = Map.<String, Object>of("a", Map.of("onlyInElementScope", 1));
+      final var mergeTargetScope = Map.<String, Object>of("a", Map.of("onlyInMergeTarget", 2));
+
+      final var r =
+          Helpers.resolveWithDistinctMergeTarget(
+              List.of(Helpers.mapping("=42", "a.b")), elementScope, mergeTargetScope);
+
+      // then: ORDERED merges the nested target with the MERGE TARGET's sibling — see #35251 —
+      // while COMBINED has no notion of a merge target and merges with the element's own scope
+      // instead, proving mergeTargetScopeKey is meaningless to it
+      Helpers.assertDiffers(
+          r, "{'a':{'b':42,'onlyInMergeTarget':2}}", "{'a':{'b':42,'onlyInElementScope':1}}");
+    }
+  }
+
   static final class Helpers {
 
     static ResolverResults resolve(final List<ZeebeMapping> m, final Map<String, Object> jobVars) {
@@ -109,9 +138,53 @@ class OutputMappingResolverComparisonTest {
       final var ee = encode(elementScope);
       final ScopedEvaluationContext ctx =
           name -> Either.left(ContextValue.msgPack(ee.getOrDefault(name, ej.get(name))));
-      final var ctx2 = new MappingContext(BufferUtil.wrapString("t"), -1L, -1L, -1L, "");
+      final var ctx2 = new MappingContext(BufferUtil.wrapString("t"), -1L, -1L, -1L, "", -1L);
       return new MappingExpressionProcessor(
           new ExpressionProcessor(EXPRESSION_LANGUAGE, ctx, DEFAULT_TIMEOUT), ctx2);
+    }
+
+    /**
+     * Like {@link #resolve}, but the element's own scope and the scope the result is merged into
+     * are backed by two separate maps, so a test can tell which scope a resolver actually read.
+     */
+    static ResolverResults resolveWithDistinctMergeTarget(
+        final List<ZeebeMapping> m,
+        final Map<String, Object> elementScope,
+        final Map<String, Object> mergeTargetScope) {
+      final var outputMappings =
+          new VariableMappingTransformer().transformOutputMappings(m, EXPRESSION_LANGUAGE);
+      final var processor = buildProcessorWithDistinctMergeTarget(elementScope, mergeTargetScope);
+      return new ResolverResults(
+          ORDERED.resolve(outputMappings, processor), COMBINED.resolve(outputMappings, processor));
+    }
+
+    private static MappingExpressionProcessor buildProcessorWithDistinctMergeTarget(
+        final Map<String, Object> elementScope, final Map<String, Object> mergeTargetScope) {
+      final var ee = encode(elementScope);
+      final var em = encode(mergeTargetScope);
+      final ScopedEvaluationContext elementCtx =
+          name -> Either.left(ContextValue.msgPack(ee.get(name)));
+      final ScopedEvaluationContext mergeTargetCtx =
+          name -> Either.left(ContextValue.msgPack(em.get(name)));
+      // the default (unscoped) view mirrors the element's own scope, matching what
+      // MappingExpressionProcessor's constructor immediately re-scopes to via ELEMENT_SCOPE_KEY
+      final ScopedEvaluationContext base =
+          new ScopedEvaluationContext() {
+            @Override
+            public Either<ContextValue, EvaluationContext> getVariable(final String name) {
+              return elementCtx.getVariable(name);
+            }
+
+            @Override
+            public ScopedEvaluationContext processScoped(final long scopeKey) {
+              return scopeKey == MERGE_TARGET_SCOPE_KEY ? mergeTargetCtx : elementCtx;
+            }
+          };
+      final var mappingContext =
+          new MappingContext(
+              BufferUtil.wrapString("t"), ELEMENT_SCOPE_KEY, -1L, -1L, "", MERGE_TARGET_SCOPE_KEY);
+      return new MappingExpressionProcessor(
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, base, DEFAULT_TIMEOUT), mappingContext);
     }
 
     private static Map<String, DirectBuffer> encode(final Map<String, Object> vars) {

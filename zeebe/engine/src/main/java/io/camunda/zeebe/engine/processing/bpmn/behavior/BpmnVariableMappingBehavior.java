@@ -95,7 +95,8 @@ public final class BpmnVariableMappingBehavior {
             context.getElementInstanceKey(),
             context.getProcessInstanceKey(),
             context.getProcessDefinitionKey(),
-            context.getTenantId());
+            context.getTenantId(),
+            context.getElementInstanceKey());
     final var result =
         inputMappingResolver.resolve(
             inputMappings.get(),
@@ -160,13 +161,15 @@ public final class BpmnVariableMappingBehavior {
         }
       }
 
+      final var mergeTargetScopeKey = getVariableScopeKey(context);
       final var mappingContext =
           new MappingContext(
               element.getId(),
               elementInstanceKey,
               processInstanceKey,
               processDefinitionKey,
-              tenantId);
+              tenantId,
+              mergeTargetScopeKey);
       final var resolveResult =
           outputMappingResolver.resolve(
               outputMappings.get(),
@@ -174,8 +177,7 @@ public final class BpmnVariableMappingBehavior {
       if (resolveResult.isLeft()) {
         return Either.left(resolveResult.getLeft());
       }
-      return propagateVariables(
-          context, element, getVariableScopeKey(context), resolveResult.get());
+      return propagateVariables(context, element, mergeTargetScopeKey, resolveResult.get());
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default

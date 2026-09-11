@@ -68,6 +68,24 @@ public final class MappingExpressionProcessor {
   }
 
   /**
+   * Returns an evaluation context scoped to {@link MappingContext#mergeTargetScopeKey()} instead of
+   * the element instance: the scope an output mapping's result is merged into, as opposed to the
+   * scope its source expressions are evaluated against.
+   *
+   * <p>Used by {@code OrderedOutputMappingResolver} only, to seed a nested output target's merge
+   * from whatever the merge-target scope already holds, not from the completing element's own,
+   * about-to-be-discarded scope — see <a
+   * href="https://github.com/camunda/camunda/issues/35251">#35251</a>. No other resolver calls this
+   * method.
+   */
+  public ScopedEvaluationContext getMergeTargetEvaluationContext() {
+    return processor
+        .getEvaluationContext()
+        .processScoped(mappingContext.mergeTargetScopeKey())
+        .tenantScoped(tenantId);
+  }
+
+  /**
    * Evaluates the given expression against this processor's pre-scoped context.
    *
    * <p>The result is returned un-serialized so that a later mapping reading it (via a resolver's

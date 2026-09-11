@@ -49,16 +49,19 @@ final class OutputMappingResultBuilderTest {
 
   @Test
   void shouldPoisonLevelWhenScopeValueIsNotAMap() {
-    // given: scope has a = 5
+    // given: merge target has a = 5
     final var builder =
         new OutputMappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when
     builder.put(List.of("a", "b"), msgPack("1"));
 
-    // then: the level is null, like FEEL's context merge(5, {...})
+    // then: the emitted level is null, like FEEL's context merge(5, {...}) — poisoning is a
+    // document-only concept: a read of "a" mid-evaluation sees exactly what was written, since it
+    // never merges with the merge target at all (see the class doc)
     assertEquality(builder.toDocument(), "{'a': null}");
-    assertEquality(((ContextValue.MsgPack) builder.getVariable("a")).buffer(), "null");
+    final var read = (ContextValue.Structure) builder.getVariable("a");
+    assertEquality(MappingResultBuilder.toMsgPack(read), "{'b': 1}");
   }
 
   @Test

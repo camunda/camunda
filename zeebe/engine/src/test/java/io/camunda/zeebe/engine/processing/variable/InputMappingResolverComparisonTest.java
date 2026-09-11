@@ -721,7 +721,7 @@ class InputMappingResolverComparisonTest {
       return new MappingExpressionProcessor(
           new ExpressionProcessor(EXPRESSION_LANGUAGE, context, DEFAULT_TIMEOUT)
               .withSecretReferenceContext(),
-          new MappingContext(BufferUtil.wrapString("test-element"), -1L, -1L, -1L, ""));
+          new MappingContext(BufferUtil.wrapString("test-element"), -1L, -1L, -1L, "", -1L));
     }
 
     /** Asserts both resolvers gave the exact same result document. */

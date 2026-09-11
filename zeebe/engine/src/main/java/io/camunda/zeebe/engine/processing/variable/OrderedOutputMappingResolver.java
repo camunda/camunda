@@ -18,12 +18,17 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Resolves output mappings one by one in modeling order. Each mapping's source expression sees the
  * results of the earlier mappings (they take priority over same-named scope variables) and falls
- * back to the element's variable scope otherwise. A nested target merges with the existing scope
- * value at every path level. Resolution stops at the first failing mapping.
+ * back to the element's variable scope otherwise. A nested target's emitted value merges with the
+ * value already at that path in the scope the result is merged into (not with the completing
+ * element's own scope — see <a href="https://github.com/camunda/camunda/issues/35251">#35251</a>).
+ * Resolution stops at the first failing mapping.
  *
- * <p>The scope value for nested-target merges is obtained from the pre-scoped evaluation context
- * carried by the {@link MappingExpressionProcessor}: the top-level variable is looked up there,
- * then navigated along the remaining path segments via {@link MsgPackPath}.
+ * <p>The scope value for nested-target merges is obtained from {@link
+ * MappingExpressionProcessor#getMergeTargetEvaluationContext()}: the top-level variable is looked
+ * up there, then navigated along the remaining path segments via {@link MsgPackPath}. This is the
+ * only resolver that calls that method, or that reads {@link MappingContext#mergeTargetScopeKey()}
+ * at all — {@link CombinedOutputMappingResolver} and the input-mapping resolvers evaluate entirely
+ * against the element's own scope and never need it.
  */
 @NullMarked
 public final class OrderedOutputMappingResolver implements MappingResolver<OutputMappings> {
@@ -34,9 +39,10 @@ public final class OrderedOutputMappingResolver implements MappingResolver<Outpu
     final var resultBuilder =
         new OutputMappingResultBuilder(
             path -> {
-              // the raw scope chain, not yet layered with this builder's own results: always
-              // MessagePack, since nothing has been prepended to the context here
-              final var value = processor.getEvaluationContext().getVariable(path.getFirst());
+              // the scope the result is merged into, not the completing element's own scope:
+              // always MessagePack, since nothing has been prepended to this context
+              final var value =
+                  processor.getMergeTargetEvaluationContext().getVariable(path.getFirst());
               final DirectBuffer rootValue =
                   value.isLeft()
                           && value.getLeft() instanceof ContextValue.MsgPack(final var buffer)
