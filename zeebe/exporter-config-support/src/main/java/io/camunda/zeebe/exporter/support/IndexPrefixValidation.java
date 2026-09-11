@@ -40,6 +40,11 @@ public final class IndexPrefixValidation {
             || prefix.startsWith("_"));
   }
 
+  /** OpenSearch forbids {@code +} anywhere in an index name. */
+  public static boolean hasInvalidCharactersForOpensearch(final @Nullable String prefix) {
+    return prefix != null && prefix.contains("+");
+  }
+
   public static boolean hasUppercaseCharacters(final @Nullable String prefix) {
     return prefix != null && !prefix.equals(prefix.toLowerCase(Locale.ROOT));
   }
