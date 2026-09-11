@@ -185,6 +185,35 @@ rules:
     then:
       function: verifyScope
 
+  # ── x-present-when ──
+  # Response-property marker declaring conditional presence: the annotated
+  # response property is present (required, non-null) iff the named top-level
+  # request-body field equals the given scalar; otherwise it is absent. This is
+  # the ground-truth SDK generators derive request→response dependent typing
+  # from (e.g. ActivatedJobResult.leaseToken vs JobActivationRequest.withLease).
+  # The marker is inert on the wire: the property keeps its declared nullable
+  # shape for any consumer that does not derive from it.
+  present-when-shape:
+    description: "Each `x-present-when` marker must declare a request field and a scalar `equals` value."
+    severity: error
+    given: $..x-present-when
+    message: "{{error}}"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          additionalProperties: false
+          required: [request, equals]
+          properties:
+            request:
+              type: string
+              minLength: 1
+              description: Top-level request-body property whose value governs presence of this response property.
+            equals:
+              type: [boolean, string, number]
+              description: Scalar literal the request field must equal for the property to be present (required, non-null).
+
   # ── x-required-permissions (camunda/camunda#54727) ──
   # Canonical endpoint -> required-permission(s) binding. Two rules:
   #   1. Schema-shape lint for each entry (built-in `schema` function).
