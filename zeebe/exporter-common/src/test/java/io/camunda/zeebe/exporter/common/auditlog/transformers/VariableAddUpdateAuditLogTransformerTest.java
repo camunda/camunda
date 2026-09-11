@@ -9,8 +9,10 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -35,6 +37,17 @@ class VariableAddUpdateAuditLogTransformerTest {
 
     // then
     assertThat(transformer.supports(record)).isTrue();
+  }
+
+  @Test
+  void shouldSupportVariableRecordWithUserTaskCompletionSource() {
+    // given
+    final var record =
+        variableRecord(VariableIntent.UPDATED, VariableSourceRecord.userTaskCompletion());
+
+    // then
+    assertThat(transformer.supports(record)).isTrue();
+    assertThat(AuditLogInfo.of(record).category()).isEqualTo(AuditLogOperationCategory.USER_TASKS);
   }
 
   @Test

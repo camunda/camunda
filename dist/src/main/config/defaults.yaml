@@ -354,6 +354,8 @@ camunda: # Type: io.camunda.configuration.Camunda
       user: # Type: io.camunda.configuration.AuditLogEntry  
         categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES
+
+      user-task-completion-variable-audit-enabled: false # Type: Boolean, Env: CAMUNDA_DATA_AUDITLOG_USERTASKCOMPLETIONVARIABLEAUDITENABLED
     
     export: # Type: io.camunda.configuration.Export  
       # Configures the rate at which exporter positions are distributed to the followers. This is useful for
