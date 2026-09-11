@@ -14,6 +14,7 @@ import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
+import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
@@ -29,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -42,12 +44,21 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final ExporterMetadata metadata;
   private final IncidentUpdateRepository repository;
   private final boolean ignoreMissingData;
-  private final int batchSize;
+  private final int configuredBatchSize;
   private final ExecutorService executor;
   private final Logger logger;
   private final Duration waitForRefreshInterval;
   private final IncidentNotifier incidentNotifier;
   private final CamundaExporterMetrics metrics;
+
+  /**
+   * How many pending updates the next cycle will read. Starts at the configured batch size and is
+   * halved whenever the store rejects the resulting write as too large, so that a batch whose tree
+   * paths fan out into an oversized request is retried as something the store will accept. Reset
+   * once a cycle gets through, since the fan-out depends on which incidents the batch happens to
+   * contain rather than on anything lasting. Only ever touched from {@link #executor}.
+   */
+  private int batchSize;
 
   public IncidentUpdateTask(
       final ExporterMetadata metadata,
@@ -84,6 +95,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     this.metadata = metadata;
     this.repository = repository;
     this.ignoreMissingData = ignoreMissingData;
+    configuredBatchSize = batchSize;
     this.batchSize = batchSize;
     this.executor = executor;
     this.metrics = metrics;
@@ -94,11 +106,56 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
   @Override
   public CompletionStage<Integer> execute() {
+    final CompletableFuture<Integer> result;
     try {
-      return processNextBatch();
+      result = processNextBatch();
     } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
+      return CompletableFuture.failedFuture(adjustBatchSize(e));
     }
+
+    return result.handleAsync(
+        (documentsUpdated, error) -> {
+          if (error != null) {
+            throw new CompletionException(adjustBatchSize(error));
+          }
+
+          batchSize = configuredBatchSize;
+          return documentsUpdated;
+        },
+        executor);
+  }
+
+  /**
+   * Halves the number of pending updates the next cycle reads when the store refused the write for
+   * being too large. The read is what governs how many documents a cycle can fan out into, so this
+   * is the only lever the task has; every other failure is left alone, as it would not be helped by
+   * writing less.
+   */
+  private Throwable adjustBatchSize(final Throwable error) {
+    final var cause = FuturesUtil.unwrapCompletionException(error);
+    if (!(cause instanceof BulkRequestTooLargeException)) {
+      return cause;
+    }
+
+    if (batchSize > 1) {
+      batchSize = batchSize / 2;
+      logger.warn(
+          """
+            The store refused the incident update write for being too large; retrying with at most \
+            {} pending update(s) per cycle instead of {}.""",
+          batchSize,
+          configuredBatchSize,
+          cause);
+    } else {
+      logger.warn(
+          """
+            The store refused the incident update write for being too large even for a single \
+            pending update; the batch cannot be made any smaller, so it will be retried as is. The \
+            documents one incident fans out into is more than this store accepts in one request.""",
+          cause);
+    }
+
+    return cause;
   }
 
   @Override
