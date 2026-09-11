@@ -163,4 +163,87 @@ class ModelCreatorTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("No process definition data found for ID: unknown-process");
   }
+
+  /**
+   * A process definition id can be deployed more than once within a test run, for example when a
+   * mock deploys a stub of a process that is also deployed for real. The model must describe the
+   * deployment that the instance ran, not whichever deployment the test data happens to list first.
+   */
+  @Test
+  void shouldCreateModelOfTheDeploymentThatRan() {
+    // given: a stub deployment is listed before the real deployment of the same process id
+    final ImmutableCoverageTestData testData =
+        ImmutableCoverageTestData.builder()
+            .addProcessDefinitionData(
+                processDefinitionDataOf(
+                    "process",
+                    1,
+                    111L,
+                    Bpmn.createExecutableProcess("process")
+                        .startEvent("child-start")
+                        .endEvent("child-end")
+                        .done()))
+            .addProcessDefinitionData(
+                processDefinitionDataOf(
+                    "process",
+                    2,
+                    222L,
+                    Bpmn.createExecutableProcess("process")
+                        .startEvent("start")
+                        .serviceTask("realTask")
+                        .endEvent("end")
+                        .done()))
+            .build();
+
+    // when: the instance ran the real deployment
+    final ProcessModel model = ModelCreator.createModel(testData, "process", 222L);
+
+    // then
+    assertThat(model.getXml()).contains("realTask");
+    assertThat(model.getVersion()).isEqualTo("2");
+  }
+
+  /**
+   * Without the deployment that ran, the report would have no model for the process at all, which
+   * is worse than a model of another deployment of it.
+   */
+  @Test
+  void shouldFallBackToAnyDeploymentWhenTheOneThatRanIsUnknown() {
+    // given
+    final ImmutableCoverageTestData testData =
+        ImmutableCoverageTestData.builder()
+            .addProcessDefinitionData(
+                processDefinitionDataOf(
+                    "process",
+                    1,
+                    111L,
+                    Bpmn.createExecutableProcess("process")
+                        .startEvent("start")
+                        .endEvent("end")
+                        .done()))
+            .build();
+
+    // when: the instance ran a deployment that the test data does not describe
+    final ProcessModel model = ModelCreator.createModel(testData, "process", 999L);
+
+    // then
+    assertThat(model.getVersion()).isEqualTo("1");
+  }
+
+  private static ImmutableCoverageProcessDefinitionData processDefinitionDataOf(
+      final String processDefinitionId,
+      final int version,
+      final long processDefinitionKey,
+      final BpmnModelInstance bpmnModel) {
+
+    final ProcessDefinition processDefinition = mock(ProcessDefinition.class);
+    when(processDefinition.getProcessDefinitionId()).thenReturn(processDefinitionId);
+    when(processDefinition.getVersion()).thenReturn(version);
+    when(processDefinition.getProcessDefinitionKey()).thenReturn(processDefinitionKey);
+
+    return ImmutableCoverageProcessDefinitionData.builder()
+        .processDefinition(processDefinition)
+        .xml(Bpmn.convertToString(bpmnModel))
+        .build();
+  }
 }

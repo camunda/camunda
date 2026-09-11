@@ -95,9 +95,9 @@ public final class CoverageReportCollector {
                 processInstanceData -> !isExcluded(processInstanceData, mockedProcessDefinitionIds))
             .collect(Collectors.toList());
 
-    // the models of this run, which are not necessarily the models of the previous runs: a test can
-    // deploy a different model under an already covered process definition id
-    final Map<String, ProcessModel> runModels = new HashMap<>();
+    // the models of this run, keyed by the deployment that ran: a test can run several deployments
+    // of one process definition id, and they are not necessarily the deployments of previous runs
+    final Map<Long, ProcessModel> runModels = new HashMap<>();
 
     final List<ProcessCoverage> coverages =
         filteredProcessInstanceData.stream()
@@ -106,13 +106,24 @@ public final class CoverageReportCollector {
                     CoverageCreator.createCoverage(
                         processInstanceResult,
                         runModels.computeIfAbsent(
-                            processInstanceResult.getProcessInstance().getProcessDefinitionId(),
-                            key -> ModelCreator.createModel(testResults, key))))
+                            processInstanceResult.getProcessInstance().getProcessDefinitionKey(),
+                            processDefinitionKey ->
+                                ModelCreator.createModel(
+                                    testResults,
+                                    processInstanceResult
+                                        .getProcessInstance()
+                                        .getProcessDefinitionId(),
+                                    processDefinitionKey))))
             .collect(Collectors.toList());
 
-    runModels.forEach(
-        (processDefinitionId, runModel) ->
-            models.merge(processDefinitionId, runModel, ModelCreator::selectMostCompleteModel));
+    runModels
+        .values()
+        .forEach(
+            runModel ->
+                models.merge(
+                    runModel.getProcessDefinitionId(),
+                    runModel,
+                    ModelCreator::selectMostCompleteModel));
 
     final List<DecisionCoverage> decisionCoverages = collectDecisionCoverages(testResults);
 
@@ -191,9 +202,10 @@ public final class CoverageReportCollector {
                         decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId()))
             .collect(Collectors.toList());
 
-    // the decision models of this run, which are not necessarily the models of the previous runs: a
-    // test can deploy a different table under an already covered decision definition id
-    final Map<String, DecisionModel> runDecisionModels = new HashMap<>();
+    // the decision models of this run, keyed by the deployment that was evaluated: a test can
+    // evaluate several deployments of one decision definition id, and they are not necessarily the
+    // deployments of previous runs
+    final Map<Long, DecisionModel> runDecisionModels = new HashMap<>();
 
     final List<DecisionCoverage> decisionCoverages =
         filteredDecisionInstanceData.stream()
@@ -203,8 +215,14 @@ public final class CoverageReportCollector {
                     return DecisionCoverageCreator.createCoverage(
                         decisionInstanceResult,
                         runDecisionModels.computeIfAbsent(
-                            decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId(),
-                            key -> DecisionModelCreator.createModel(dataSource, key)));
+                            decisionInstanceResult.getDecisionInstance().getDecisionDefinitionKey(),
+                            decisionDefinitionKey ->
+                                DecisionModelCreator.createModel(
+                                    dataSource,
+                                    decisionInstanceResult
+                                        .getDecisionInstance()
+                                        .getDecisionDefinitionId(),
+                                    decisionDefinitionKey)));
                   } catch (final Exception e) {
                     LOG.warn(
                         "Failed to collect coverage for decision '{}': {}",
@@ -216,12 +234,14 @@ public final class CoverageReportCollector {
             .filter(dc -> dc != null)
             .collect(Collectors.toList());
 
-    runDecisionModels.forEach(
-        (decisionDefinitionId, runDecisionModel) ->
-            decisionModels.merge(
-                decisionDefinitionId,
-                runDecisionModel,
-                DecisionModelCreator::selectMostCompleteModel));
+    runDecisionModels
+        .values()
+        .forEach(
+            runDecisionModel ->
+                decisionModels.merge(
+                    runDecisionModel.getDecisionDefinitionId(),
+                    runDecisionModel,
+                    DecisionModelCreator::selectMostCompleteModel));
 
     return decisionCoverages;
   }
