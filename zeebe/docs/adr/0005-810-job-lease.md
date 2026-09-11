@@ -162,7 +162,8 @@ gap until the job APIs surface activation data at all.
   activation identity, not exactly-once execution.
 - The lease applies uniformly to all job kinds (service tasks, execution/task listeners, ad-hoc
   sub-process jobs) and is orthogonal to logical and physical multi-tenancy.
-- The first consumer is the agent-history commit lifecycle; the mechanism is generic and carries
+- The first consumer is the agent-history commit lifecycle
+  ([0013](0013-810-agent-history-commit-under-job-lease.md)); the mechanism is generic and carries
   no AI-specific semantics.
 
 ## Source

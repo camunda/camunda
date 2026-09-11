@@ -19,4 +19,8 @@ process-execution data path). These are module-scoped decisions; see the
 | [0007](0007-810-job-waiting-for-secret-resolution-state.md)         | Persisted `WAITING_FOR_SECRET_RESOLUTION` job state for jobs parked while their secret references resolve     |
 | [0008](0008-810-suspended-job-state.md)                             | Persisted `SUSPENDED` job state that withholds the jobs of a suspended process instance from hand-out         |
 | [0009](0009-810-suspended-timer-buffering.md)                       | Buffer a due timer trigger while suspended, drop its due-date index, fire it in the drain chain               |
+| [0010](0010-810-agent-execution-in-engine-records.md)               | Agent execution recorded as engine records: storage-independent pipeline, content passes through              |
+| [0011](0011-810-agent-definition-from-bpmn-marker.md)               | Agent definitions derived at deploy time from a `zeebe:agentDefinition` BPMN marker, no marker no agent       |
+| [0012](0012-810-agent-instance-written-by-agent-runtime.md)         | Agent instance as the anchor for one agent run, written by the agent runtime, engine owns completion          |
+| [0013](0013-810-agent-history-commit-under-job-lease.md)            | Agent history committed per job activation under the job lease, superseded items discarded at commit          |
 
