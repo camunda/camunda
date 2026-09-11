@@ -42,14 +42,14 @@ jobs:
           directory: .github/actions/release-notes
       - name: Typecheck
         run: npm run typecheck
-      - name: Test (parser + policy)
+      - name: Test
         run: npm test
       - name: Rebuild bundle
         run: npm run build
       - name: Fail if committed dist is stale
         run: |
-          if ! git diff --exit-code -- lint/dist; then
-            echo "::error::lint/dist is out of date. Run 'npm run build' in .github/actions/release-notes and commit the result."
+          if ! git diff --exit-code -- lint/dist generate/dist; then
+            echo "::error::lint/dist or generate/dist is out of date. Run 'npm run build' in .github/actions/release-notes and commit the result."
             exit 1
           fi
       - name: Repo-constant grep — PR template matches the parser opt-out phrase
