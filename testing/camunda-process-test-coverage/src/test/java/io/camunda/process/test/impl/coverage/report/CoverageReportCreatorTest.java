@@ -25,8 +25,9 @@ import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
-import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -37,12 +38,14 @@ class CoverageReportCreatorTest {
   void shouldCreateAggregatedCoverageReportWithModels() {
     // given
     final ProcessModel processModel =
-        ImmutableProcessModel.builder()
-            .processDefinitionId("process")
-            .totalElementCount(2)
-            .version("1")
-            .xml("<bpmn>process</bpmn>")
-            .build();
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("flow")
+                .serviceTask("task")
+                .endEvent("end")
+                .done());
     final DecisionModel decisionModel =
         ImmutableDecisionModel.builder()
             .decisionDefinitionId("decision")
@@ -87,7 +90,7 @@ class CoverageReportCreatorTest {
     assertThat(report.getDecisionCoverages()).hasSize(1);
     assertThat(report.getProcessModels())
         .singleElement()
-        .satisfies(model -> assertThat(model.getXml()).isEqualTo("<bpmn>process</bpmn>"));
+        .satisfies(model -> assertThat(model.getXml()).isEqualTo(processModel.getXml()));
     assertThat(report.getDecisionModels())
         .singleElement()
         .satisfies(model -> assertThat(model.getXml()).isEqualTo("<dmn>decision</dmn>"));
@@ -97,19 +100,23 @@ class CoverageReportCreatorTest {
   void shouldAggregateMultipleSuitesIntoSingleReport() {
     // given: two suites each covering a different process
     final ProcessModel processModelA =
-        ImmutableProcessModel.builder()
-            .processDefinitionId("process-a")
-            .totalElementCount(2)
-            .version("1")
-            .xml("<bpmn>process-a</bpmn>")
-            .build();
+        ProcessModelFixtures.modelOf(
+            "process-a",
+            Bpmn.createExecutableProcess("process-a")
+                .startEvent("startA")
+                .sequenceFlowId("flowA")
+                .serviceTask("taskA")
+                .endEvent("endA")
+                .done());
     final ProcessModel processModelB =
-        ImmutableProcessModel.builder()
-            .processDefinitionId("process-b")
-            .totalElementCount(4)
-            .version("1")
-            .xml("<bpmn>process-b</bpmn>")
-            .build();
+        ProcessModelFixtures.modelOf(
+            "process-b",
+            Bpmn.createExecutableProcess("process-b")
+                .startEvent("startB")
+                .sequenceFlowId("flowB1")
+                .serviceTask("taskB1")
+                .endEvent("endB")
+                .done());
 
     final CoverageSuiteReport suiteA =
         ImmutableCoverageSuiteReport.builder()
@@ -164,12 +171,15 @@ class CoverageReportCreatorTest {
   void shouldAggregateMultipleRunsWithinSameSuite() {
     // given: a suite with two runs both covering the same process (different elements each run)
     final ProcessModel processModel =
-        ImmutableProcessModel.builder()
-            .processDefinitionId("process")
-            .totalElementCount(4)
-            .version("1")
-            .xml("<bpmn>process</bpmn>")
-            .build();
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("element1")
+                .sequenceFlowId("flow1")
+                .serviceTask("element2")
+                .sequenceFlowId("flow2")
+                .endEvent("element3")
+                .done());
 
     final CoverageSuiteReport suite =
         ImmutableCoverageSuiteReport.builder()
@@ -183,7 +193,7 @@ class CoverageReportCreatorTest {
                             .processDefinitionId("process")
                             .addCompletedElements("element1")
                             .addTakenSequenceFlows("flow1")
-                            .coverage(0.5)
+                            .coverage(0.4)
                             .build())
                     .build())
             .addRuns(
@@ -192,9 +202,9 @@ class CoverageReportCreatorTest {
                     .addProcessCoverages(
                         ImmutableProcessCoverage.builder()
                             .processDefinitionId("process")
-                            .addCompletedElements("element2")
+                            .addCompletedElements("element2", "element3")
                             .addTakenSequenceFlows("flow2")
-                            .coverage(0.5)
+                            .coverage(0.6)
                             .build())
                     .build())
             .build();
@@ -210,23 +220,75 @@ class CoverageReportCreatorTest {
     assertThat(report.getSuites()).hasSize(1);
     assertThat(report.getSuites().get(0).getRuns()).hasSize(2);
 
-    // and the aggregated coverage across runs covers all 4 elements → 100%
+    // and the aggregated coverage across runs covers all 5 elements → 100%
     assertThat(report.getProcessCoverages()).hasSize(1);
     assertThat(report.getProcessCoverages().get(0).getCoverage()).isEqualTo(1.0);
     assertThat(report.getProcessCoverages().get(0).getCompletedElements())
-        .containsExactlyInAnyOrder("element1", "element2");
+        .containsExactlyInAnyOrder("element1", "element2", "element3");
+  }
+
+  @Test
+  void shouldReportEachProcessInstanceOfARunSeparately() {
+    // given: a run that started the same process twice, each instance taking a different path
+    final ProcessModel processModel =
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("flow1")
+                .serviceTask("task1")
+                .sequenceFlowId("flow2")
+                .endEvent("end")
+                .done());
+
+    final CoverageSuiteReport suite =
+        ImmutableCoverageSuiteReport.builder()
+            .id("suite")
+            .name("Suite")
+            .addRuns(
+                ImmutableCoverageRunReport.builder()
+                    .name("run")
+                    .addProcessCoverages(
+                        ImmutableProcessCoverage.builder()
+                            .processDefinitionId("process")
+                            .addCompletedElements("start")
+                            .addTakenSequenceFlows("flow1")
+                            .coverage(0.4)
+                            .build())
+                    .addProcessCoverages(
+                        ImmutableProcessCoverage.builder()
+                            .processDefinitionId("process")
+                            .addCompletedElements("task1", "end")
+                            .addTakenSequenceFlows("flow2")
+                            .coverage(0.6)
+                            .build())
+                    .build())
+            .build();
+
+    // when
+    final CoverageReport report =
+        CoverageReportCreator.createAggregatedCoverageReport(
+            Collections.singletonList(suite),
+            Collections.singletonList(processModel),
+            Collections.emptyList());
+
+    // then: the run still reports what each instance covered, in the order they ran
+    assertThat(report.getSuites().get(0).getRuns().get(0).getProcessCoverages())
+        .extracting(ProcessCoverage::getCoverage)
+        .containsExactly(0.4, 0.6);
   }
 
   @Test
   void shouldSetSuiteAggregatedCoverageFromAllRuns() {
     // given: suite with two runs each covering a different process
     final ProcessModel processModelA =
-        ImmutableProcessModel.builder()
-            .processDefinitionId("process-a")
-            .totalElementCount(2)
-            .version("1")
-            .xml("<bpmn>process-a</bpmn>")
-            .build();
+        ProcessModelFixtures.modelOf(
+            "process-a",
+            Bpmn.createExecutableProcess("process-a")
+                .startEvent("start")
+                .sequenceFlowId("flow")
+                .endEvent("end")
+                .done());
     final DecisionModel decisionModel =
         ImmutableDecisionModel.builder()
             .decisionDefinitionId("decision")
@@ -245,7 +307,7 @@ class CoverageReportCreatorTest {
                     .addProcessCoverages(
                         ImmutableProcessCoverage.builder()
                             .processDefinitionId("process-a")
-                            .addCompletedElements("task")
+                            .addCompletedElements("start", "end")
                             .addTakenSequenceFlows("flow")
                             .coverage(1.0)
                             .build())

@@ -66,10 +66,13 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -125,6 +128,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
   private final Supplier<CamundaDataSource> dataSourceSupplier;
+  private final Set<Long> mockedChildProcessDefinitionKeys = ConcurrentHashMap.newKeySet();
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -212,7 +216,23 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public MockChildProcessBuilder mockChildProcess() {
     final CamundaClient client = createClient();
-    return new MockChildProcessBuilderImpl(client);
+    return new MockChildProcessBuilderImpl(client, mockedChildProcessDefinitionKeys::add);
+  }
+
+  /**
+   * Returns the process definitions that {@link #mockChildProcess()} deployed as a stub so far.
+   * Their instances are stubs of the mocked process rather than the process itself, for example
+   * when collecting the coverage of a test.
+   *
+   * @return The keys of the deployed stubs, as they are now
+   */
+  public Set<Long> getMockedChildProcessDefinitionKeys() {
+    return new HashSet<>(mockedChildProcessDefinitionKeys);
+  }
+
+  /** Forgets the deployed stubs, so that the next test starts without mocks. */
+  public void clearMockedChildProcessDefinitionKeys() {
+    mockedChildProcessDefinitionKeys.clear();
   }
 
   @Override

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
+import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageRunReport;
@@ -31,9 +32,10 @@ import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
-import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -41,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
@@ -62,6 +65,63 @@ import org.mockito.MockedStatic;
  * out of the box) so that tests do not require a live Camunda engine.
  */
 class CoverageReporterTest {
+
+  private static final String PROCESS_ID = "process-a";
+
+  /** The real, fully deployed model: 4 flow nodes and 3 sequence flows. */
+  private static final ProcessModel REAL_MODEL =
+      ProcessModelFixtures.modelOf(
+          PROCESS_ID,
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent("startA")
+              .sequenceFlowId("flowA1")
+              .serviceTask("taskA1")
+              .sequenceFlowId("flowA2")
+              .serviceTask("taskA2")
+              .sequenceFlowId("flowA3")
+              .endEvent("endA")
+              .done());
+
+  /** The stub that {@code MOCK_CHILD_PROCESS} deploys under the mocked process id. */
+  private static final ProcessModel MOCK_STUB_MODEL =
+      ProcessModelFixtures.modelOf(
+          PROCESS_ID,
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent("child-start")
+              .sequenceFlowId("child-flow")
+              .endEvent("child-end")
+              .done());
+
+  /** The real suite covers 5 of the 7 elements: the process instance is still running. */
+  private static final ProcessCoverage REAL_COVERAGE =
+      ImmutableProcessCoverage.builder()
+          .processDefinitionId(PROCESS_ID)
+          .addCompletedElements("startA", "taskA1", "taskA2")
+          .addTakenSequenceFlows("flowA1", "flowA2")
+          .coverage(5.0 / 7.0)
+          .build();
+
+  private static final ProcessCoverage MOCK_STUB_COVERAGE =
+      ImmutableProcessCoverage.builder()
+          .processDefinitionId(PROCESS_ID)
+          .addCompletedElements("child-start", "child-end")
+          .addTakenSequenceFlows("child-flow")
+          .coverage(1.0)
+          .build();
+
+  private static final String DECISION_ID = "decision-a";
+
+  /** The full decision table, as one suite deploys it. */
+  private static final DecisionModel FULL_TABLE =
+      DecisionModelFixtures.modelOf(DECISION_ID, "full-1", "full-2", "full-3", "full-4", "full-5");
+
+  /** A smaller table that another suite deploys under the same decision definition id. */
+  private static final DecisionModel SMALL_TABLE =
+      DecisionModelFixtures.modelOf(DECISION_ID, "small-1", "small-2");
+
+  /** A smaller table listing rules of the full table, at other positions. */
+  private static final DecisionModel SHIFTED_TABLE =
+      DecisionModelFixtures.modelOf(DECISION_ID, "full-4", "full-1");
 
   @TempDir File tempDir;
 
@@ -103,12 +163,15 @@ class CoverageReporterTest {
 
     final List<ProcessModel> processModels =
         Collections.singletonList(
-            ImmutableProcessModel.builder()
-                .processDefinitionId(processDefinitionId)
-                .totalElementCount(4)
-                .version("1")
-                .xml("<bpmn/>")
-                .build());
+            ProcessModelFixtures.modelOf(
+                processDefinitionId,
+                Bpmn.createExecutableProcess(processDefinitionId)
+                    .startEvent("start")
+                    .sequenceFlowId("flow-a")
+                    .serviceTask("task")
+                    .sequenceFlowId("flow-b")
+                    .endEvent("end")
+                    .done()));
 
     final List<DecisionModel> decisionModels =
         Collections.singletonList(
@@ -147,7 +210,7 @@ class CoverageReporterTest {
     // the message includes the suite identifier (class name), process ID, and coverage percentage
     assertThat(message).contains(PrintProcessTest.class.getName());
     assertThat(message).contains("my-process");
-    assertThat(message).contains("75%");
+    assertThat(message).contains("60%");
   }
 
   @Test
@@ -228,12 +291,12 @@ class CoverageReporterTest {
 
     final Collection<ProcessModel> processModels =
         Collections.singletonList(
-            ImmutableProcessModel.builder()
-                .processDefinitionId("proc-model")
-                .totalElementCount(3)
-                .version("1")
-                .xml("<bpmn/>")
-                .build());
+            ProcessModelFixtures.modelOf(
+                "proc-model",
+                Bpmn.createExecutableProcess("proc-model")
+                    .startEvent("start")
+                    .endEvent("end")
+                    .done()));
 
     final Collection<DecisionModel> decisionModels =
         Collections.singletonList(
@@ -346,6 +409,324 @@ class CoverageReporterTest {
     assertThat(report.getSuites()).hasSize(2);
   }
 
+  // ── process mocked in another suite (SUPPORT-34357) ──────────────────────────
+
+  /**
+   * A process that another suite mocks via {@code MOCK_CHILD_PROCESS} is deployed twice under the
+   * same process definition id: once as the real model, and once as the tiny stub the mock deploys.
+   * The aggregated report must describe the process by its real model, not by the stub.
+   */
+  @Test
+  void shouldReportRealModelWhenProcessIsAlsoMockedInAnotherSuite() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: the suite that mocks the process is reported before the suite that tests it
+    final CoverageReportCollector mockingSuite =
+        buildCollectorForProcess(MockingSuiteTest.class, MOCK_STUB_MODEL, MOCK_STUB_COVERAGE);
+    final CoverageReportCollector realSuite =
+        buildCollectorForProcess(RealProcessSuiteTest.class, REAL_MODEL, REAL_COVERAGE);
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(mockingSuite, realSuite));
+
+    // then
+    assertThat(report.getProcessModels())
+        .filteredOn(model -> model.getProcessDefinitionId().equals(PROCESS_ID))
+        .singleElement()
+        .extracting(ProcessModel::getXml)
+        .isEqualTo(REAL_MODEL.getXml());
+  }
+
+  /**
+   * The elements of the mock stub do not exist in the real model, so they must not count towards
+   * the real process's coverage - otherwise the aggregated coverage exceeds 100%.
+   */
+  @Test
+  void shouldIgnoreMockStubElementsWhenProcessIsAlsoMockedInAnotherSuite() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: the suite that mocks the process is reported before the suite that tests it
+    final CoverageReportCollector mockingSuite =
+        buildCollectorForProcess(MockingSuiteTest.class, MOCK_STUB_MODEL, MOCK_STUB_COVERAGE);
+    final CoverageReportCollector realSuite =
+        buildCollectorForProcess(RealProcessSuiteTest.class, REAL_MODEL, REAL_COVERAGE);
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(mockingSuite, realSuite));
+
+    // then: only the 5 of 7 elements covered by the real suite count
+    assertThat(report.getProcessCoverages())
+        .filteredOn(coverage -> coverage.getProcessDefinitionId().equals(PROCESS_ID))
+        .singleElement()
+        .extracting(ProcessCoverage::getCoverage)
+        .isEqualTo(5.0 / 7.0);
+  }
+
+  /**
+   * The report renders a test run against the model it describes the process by, so a run that ran
+   * another deployment of the id must be measured against that model too. Otherwise the mocking run
+   * claims to have covered the real process completely, while highlighting stub elements that the
+   * rendered diagram does not contain.
+   */
+  @Test
+  void shouldMeasureRunCoverageAgainstTheReportedModel() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: a run that covered the mock stub completely
+    final CoverageReportCollector mockingSuite =
+        buildCollectorForProcess(MockingSuiteTest.class, MOCK_STUB_MODEL, MOCK_STUB_COVERAGE);
+    final CoverageReportCollector realSuite =
+        buildCollectorForProcess(RealProcessSuiteTest.class, REAL_MODEL, REAL_COVERAGE);
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(mockingSuite, realSuite));
+
+    // then: none of the stub elements counts towards the real model the report describes
+    assertThat(runCoveragesOf(report, MockingSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getCompletedElements()).isEmpty();
+              assertThat(coverage.getTakenSequenceFlows()).isEmpty();
+              assertThat(coverage.getCoverage()).isZero();
+            });
+
+    // and: the run that ran the real process keeps its coverage
+    assertThat(runCoveragesOf(report, RealProcessSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getCompletedElements())
+                  .containsExactlyInAnyOrder("startA", "taskA1", "taskA2");
+              assertThat(coverage.getCoverage()).isEqualTo(5.0 / 7.0);
+            });
+  }
+
+  private static List<ProcessCoverage> runCoveragesOf(
+      final CoverageReport report, final Class<?> testClass) {
+    return report.getSuites().stream()
+        .filter(suite -> suite.getId().equals(testClass.getName()))
+        .flatMap(suite -> suite.getRuns().stream())
+        .flatMap(run -> run.getProcessCoverages().stream())
+        .collect(Collectors.toList());
+  }
+
+  /** Builds a mock collector reporting a single process coverage against a single model. */
+  private CoverageReportCollector buildCollectorForProcess(
+      final Class<?> testClass, final ProcessModel model, final ProcessCoverage coverage) {
+
+    final CoverageSuiteReport suite =
+        ImmutableCoverageSuiteReport.builder()
+            .id(testClass.getName())
+            .name(testClass.getSimpleName())
+            .addRuns(
+                ImmutableCoverageRunReport.builder()
+                    .name("run-1")
+                    .addProcessCoverages(coverage)
+                    .build())
+            .build();
+
+    final CoverageReportCollector collector = mock(CoverageReportCollector.class);
+    when(collector.getSuite()).thenReturn(suite);
+    when(collector.getModels()).thenReturn(Collections.singletonList(model));
+    when(collector.getDecisionModels()).thenReturn(Collections.emptyList());
+    return collector;
+  }
+
+  // ── decision deployed as different tables under one id ───────────────────────
+
+  /**
+   * Suites can deploy different tables under the same decision definition id, for example when
+   * their fixtures differ in the rules they define. The aggregated report must describe the
+   * decision by the table that has the most rules, otherwise the rules matched by the other suites
+   * are counted against a table that does not have them.
+   */
+  @Test
+  void shouldReportMostCompleteTableWhenSuitesDeployDifferentDecisionTables() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: the suite with the smaller table is reported first
+    final CoverageReportCollector smallTableSuite =
+        buildCollectorForDecision(SmallTableSuiteTest.class, SMALL_TABLE, "small-1", "small-2");
+    final CoverageReportCollector fullTableSuite =
+        buildCollectorForDecision(FullTableSuiteTest.class, FULL_TABLE, "full-1");
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(smallTableSuite, fullTableSuite));
+
+    // then
+    assertThat(report.getDecisionModels())
+        .filteredOn(model -> model.getDecisionDefinitionId().equals(DECISION_ID))
+        .singleElement()
+        .extracting(DecisionModel::getTotalRuleCount)
+        .isEqualTo(5);
+  }
+
+  /**
+   * The rules of the smaller table do not exist in the reported table, so they must not count
+   * towards its coverage - otherwise the aggregated coverage exceeds 100%.
+   */
+  @Test
+  void shouldIgnoreMatchedRulesThatTheReportedTableDoesNotContain() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: a suite that matched all rules of a table the report does not describe
+    final CoverageReportCollector smallTableSuite =
+        buildCollectorForDecision(SmallTableSuiteTest.class, SMALL_TABLE, "small-1", "small-2");
+    final CoverageReportCollector fullTableSuite =
+        buildCollectorForDecision(FullTableSuiteTest.class, FULL_TABLE, "full-1", "full-2");
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(smallTableSuite, fullTableSuite));
+
+    // then: only the 2 of the 5 rules of the reported table count
+    assertThat(report.getDecisionCoverages())
+        .filteredOn(coverage -> coverage.getDecisionDefinitionId().equals(DECISION_ID))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds()).containsExactly("full-1", "full-2");
+              assertThat(coverage.getCoverage()).isEqualTo(2.0 / 5);
+            });
+  }
+
+  /**
+   * The report renders a test run against the table it describes the decision by, so a run that
+   * evaluated another deployment of the id must be measured against that table too. Otherwise the
+   * run claims full coverage while highlighting no rule of the rendered table.
+   */
+  @Test
+  void shouldMeasureRunCoverageAgainstTheReportedTable() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: a run that matched all rules of a table the report does not describe
+    final CoverageReportCollector smallTableSuite =
+        buildCollectorForDecision(SmallTableSuiteTest.class, SMALL_TABLE, "small-1", "small-2");
+    final CoverageReportCollector fullTableSuite =
+        buildCollectorForDecision(FullTableSuiteTest.class, FULL_TABLE, "full-1", "full-2");
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(smallTableSuite, fullTableSuite));
+
+    // then: none of the rules of the smaller table counts towards the reported table
+    assertThat(runDecisionCoveragesOf(report, SmallTableSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds()).isEmpty();
+              assertThat(coverage.getCoverage()).isZero();
+            });
+
+    // and: the run that evaluated the reported table keeps its coverage
+    assertThat(runDecisionCoveragesOf(report, FullTableSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds()).containsExactly("full-1", "full-2");
+              assertThat(coverage.getCoverage()).isEqualTo(2.0 / 5);
+            });
+  }
+
+  /**
+   * A rule id can sit at another position in the table that was evaluated than in the table the
+   * report describes the decision by. The report must number a covered rule as the table it renders
+   * lists it, otherwise the index points at a rule that was never matched.
+   */
+  @Test
+  void shouldNumberCoveredRulesAsTheReportedTableListsThem() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: a suite that matched rules 1 and 2 of a table that lists them as 4 and 1
+    final CoverageReportCollector shiftedTableSuite =
+        buildCollectorForDecision(ShiftedTableSuiteTest.class, SHIFTED_TABLE, "full-4", "full-1");
+    final CoverageReportCollector fullTableSuite =
+        buildCollectorForDecision(FullTableSuiteTest.class, FULL_TABLE, "full-2");
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(shiftedTableSuite, fullTableSuite));
+
+    // then: the run reports the positions the reported table lists the rules at
+    assertThat(runDecisionCoveragesOf(report, ShiftedTableSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds()).containsExactly("full-4", "full-1");
+              assertThat(coverage.getMatchedRuleIndices()).containsExactly(4, 1);
+            });
+
+    // and: so does the aggregated coverage
+    assertThat(report.getDecisionCoverages())
+        .filteredOn(coverage -> coverage.getDecisionDefinitionId().equals(DECISION_ID))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds())
+                  .containsExactlyInAnyOrder("full-4", "full-1", "full-2");
+              assertThat(coverage.getMatchedRuleIndices()).containsExactlyInAnyOrder(4, 1, 2);
+            });
+  }
+
+  private static List<DecisionCoverage> runDecisionCoveragesOf(
+      final CoverageReport report, final Class<?> testClass) {
+    return report.getSuites().stream()
+        .filter(suite -> suite.getId().equals(testClass.getName()))
+        .flatMap(suite -> suite.getRuns().stream())
+        .flatMap(run -> run.getDecisionCoverages().stream())
+        .collect(Collectors.toList());
+  }
+
+  /** Builds a mock collector reporting a single decision coverage against a single table. */
+  private CoverageReportCollector buildCollectorForDecision(
+      final Class<?> testClass, final DecisionModel model, final String... matchedRuleIds) {
+
+    final ImmutableDecisionCoverage.Builder coverage =
+        ImmutableDecisionCoverage.builder()
+            .decisionDefinitionId(model.getDecisionDefinitionId())
+            .addMatchedRuleIds(matchedRuleIds)
+            .coverage((double) matchedRuleIds.length / model.getTotalRuleCount());
+    for (int ruleIndex = 1; ruleIndex <= matchedRuleIds.length; ruleIndex++) {
+      coverage.addMatchedRuleIndices(ruleIndex);
+    }
+
+    final CoverageSuiteReport suite =
+        ImmutableCoverageSuiteReport.builder()
+            .id(testClass.getName())
+            .name(testClass.getSimpleName())
+            .addRuns(
+                ImmutableCoverageRunReport.builder()
+                    .name("run-1")
+                    .addDecisionCoverages(coverage.build())
+                    .build())
+            .build();
+
+    final CoverageReportCollector collector = mock(CoverageReportCollector.class);
+    when(collector.getSuite()).thenReturn(suite);
+    when(collector.getModels()).thenReturn(Collections.emptyList());
+    when(collector.getDecisionModels()).thenReturn(Collections.singletonList(model));
+    return collector;
+  }
+
   // ── JSON serialisation test (migrated from CoverageReportUtilTest) ───────────
 
   @Test
@@ -386,3 +767,13 @@ final class SuiteReportTest {}
 final class AggregatedCollectorTestA {}
 
 final class AggregatedCollectorTestB {}
+
+final class MockingSuiteTest {}
+
+final class RealProcessSuiteTest {}
+
+final class SmallTableSuiteTest {}
+
+final class FullTableSuiteTest {}
+
+final class ShiftedTableSuiteTest {}

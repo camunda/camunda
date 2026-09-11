@@ -26,6 +26,8 @@ import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
+import io.camunda.process.test.impl.coverage.core.DecisionModelCreator;
+import io.camunda.process.test.impl.coverage.core.ModelCreator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,8 +35,10 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -94,13 +98,23 @@ public class CoverageReporter {
     final Collection<ProcessModel> processModels =
         reportCollectors.stream()
             .flatMap(c -> c.getModels().stream())
-            .distinct()
-            .collect(Collectors.toList());
+            .collect(
+                Collectors.toMap(
+                    ProcessModel::getProcessDefinitionId,
+                    Function.identity(),
+                    ModelCreator::selectMostCompleteModel,
+                    LinkedHashMap::new))
+            .values();
     final Collection<DecisionModel> decisionModels =
         reportCollectors.stream()
             .flatMap(c -> c.getDecisionModels().stream())
-            .distinct()
-            .collect(Collectors.toList());
+            .collect(
+                Collectors.toMap(
+                    DecisionModel::getDecisionDefinitionId,
+                    Function.identity(),
+                    DecisionModelCreator::selectMostCompleteModel,
+                    LinkedHashMap::new))
+            .values();
 
     final CoverageReport aggregatedReport =
         CoverageReportCreator.createAggregatedCoverageReport(suites, processModels, decisionModels);

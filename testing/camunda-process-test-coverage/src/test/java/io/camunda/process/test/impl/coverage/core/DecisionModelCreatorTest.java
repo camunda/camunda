@@ -17,13 +17,16 @@ package io.camunda.process.test.impl.coverage.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionDefinitionData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
+import java.util.Map;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.junit.jupiter.api.Test;
@@ -242,5 +245,93 @@ class DecisionModelCreatorTest {
 
     // then
     assertThat(count).isEqualTo(4);
+  }
+
+  /**
+   * A decision definition id can be deployed more than once within a test run, for example when a
+   * mock deploys a stub of a decision that is also deployed for real. The model must describe the
+   * table that was evaluated, not whichever deployment the test data happens to list first.
+   */
+  @Test
+  void shouldCreateModelOfTheDeploymentThatWasEvaluated() {
+    // given: a two-rule table is listed before the five-rule table of the same decision id
+    final ImmutableCoverageTestData testData =
+        ImmutableCoverageTestData.builder()
+            .addDecisionDefinitionData(
+                decisionDefinitionDataOf(1, 111L, buildDmnXml(DECISION_ID, DECISION_NAME, 2)))
+            .addDecisionDefinitionData(
+                decisionDefinitionDataOf(2, 222L, buildDmnXml(DECISION_ID, DECISION_NAME, 5)))
+            .build();
+
+    // when: the instance evaluated the five-rule table
+    final DecisionModel model = DecisionModelCreator.createModel(testData, DECISION_ID, 222L);
+
+    // then
+    assertThat(model.getTotalRuleCount()).isEqualTo(5);
+    assertThat(model.getVersion()).isEqualTo("2");
+  }
+
+  /**
+   * Another deployment of the id describes a different decision, so reporting it would explain the
+   * evaluation by a table it never ran. Failing keeps that table out of the report.
+   */
+  @Test
+  void shouldRejectADeploymentThatTheTestDataDoesNotDescribe() {
+    // given
+    final ImmutableCoverageTestData testData =
+        ImmutableCoverageTestData.builder()
+            .addDecisionDefinitionData(
+                decisionDefinitionDataOf(1, 111L, buildDmnXml(DECISION_ID, DECISION_NAME, 2)))
+            .build();
+
+    // when: the instance evaluated a deployment that the test data does not describe
+    // then
+    assertThatThrownBy(() -> DecisionModelCreator.createModel(testData, DECISION_ID, 999L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(DECISION_ID)
+        .hasMessageContaining("999");
+  }
+
+  @Test
+  void shouldNumberTheRulesOfEachDeploymentOfADecisionDefinitionId() {
+    // given: two deployments of one decision definition id that differ in their rules
+    final DecisionModel twoRules = decisionModelOf(buildDmnXml(DECISION_ID, DECISION_NAME, 2));
+    final DecisionModel fourRules = decisionModelOf(buildDmnXml(DECISION_ID, DECISION_NAME, 4));
+
+    // when
+    final Map<String, Integer> twoRuleIndices =
+        DecisionModelCreator.coverableRuleIndicesById(twoRules);
+    final Map<String, Integer> fourRuleIndices =
+        DecisionModelCreator.coverableRuleIndicesById(fourRules);
+
+    // then
+    assertThat(twoRuleIndices).containsOnly(entry("rule1", 1), entry("rule2", 2));
+    assertThat(fourRuleIndices)
+        .containsOnly(entry("rule1", 1), entry("rule2", 2), entry("rule3", 3), entry("rule4", 4));
+  }
+
+  private static DecisionModel decisionModelOf(final String dmnXml) {
+    return ImmutableDecisionModel.builder()
+        .decisionDefinitionId(DECISION_ID)
+        .decisionName(DECISION_NAME)
+        .version("1")
+        .totalRuleCount(0)
+        .xml(dmnXml)
+        .build();
+  }
+
+  private static ImmutableCoverageDecisionDefinitionData decisionDefinitionDataOf(
+      final int version, final long decisionKey, final String dmnXml) {
+
+    final DecisionDefinition decisionDefinition = mock(DecisionDefinition.class);
+    when(decisionDefinition.getDmnDecisionId()).thenReturn(DECISION_ID);
+    when(decisionDefinition.getDmnDecisionName()).thenReturn(DECISION_NAME);
+    when(decisionDefinition.getVersion()).thenReturn(version);
+    when(decisionDefinition.getDecisionKey()).thenReturn(decisionKey);
+
+    return ImmutableCoverageDecisionDefinitionData.builder()
+        .decisionDefinition(decisionDefinition)
+        .xml(dmnXml)
+        .build();
   }
 }
