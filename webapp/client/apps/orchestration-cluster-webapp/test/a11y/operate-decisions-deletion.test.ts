@@ -15,6 +15,8 @@ import {
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 	mockGetDecisionDefinitionXmlEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
@@ -25,6 +27,7 @@ import {
 } from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 const DEFINITION = createDecisionDefinition({
 	decisionDefinitionId: 'invoiceClassification',
@@ -40,6 +43,12 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 		}),
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
 		mockQueryDecisionDefinitionsEndpoint({
 			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: [DEFINITION]})),
 		}),
@@ -54,6 +63,7 @@ test('should have no accessibility violations in the delete DRD confirmation mod
 	makeAxeBuilder,
 }) => {
 	await operateDecisionsPage.goto(SEARCH);
+	await expect(operateDecisionsPage.deleteDefinitionButton).toBeVisible();
 	await operateDecisionsPage.deleteDefinitionButton.click();
 	await expect(page.getByText('My DRD', {exact: true})).toBeVisible();
 	await page.getByRole('dialog', {name: 'Delete DRD', exact: true}).evaluate(async (dialog) => {
