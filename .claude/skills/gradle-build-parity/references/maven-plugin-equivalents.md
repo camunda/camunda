@@ -119,15 +119,29 @@ Notes:
 
 Most modules resolve Spring Boot from the catalog platform (current major). A module that must
 build against an **older** Spring Boot line (e.g. the SB3 starter / testing modules) pins via
-`resolutionStrategy.eachDependency` — centralized in `buildlogic.spring-boot-3-conventions`:
+`resolutionStrategy.eachDependency` — centralized in `buildlogic.spring-boot-3-conventions`. The
+pinned values are resolved from the module POM through the tracked `PomResolver`; they must not be
+literal library versions in Gradle:
 
 ```kotlin
+val projectPomVersions =
+  PomResolver(providers.fileContents(layout.projectDirectory.file("pom.xml")).asText.get())
+    .properties()
+val springBoot3Version = resolvePomProperty("version.spring-boot", projectPomVersions)
+val spring6Version = resolvePomProperty("version.spring", projectPomVersions)
+
 configurations.all {
   exclude(group = "org.springframework.boot", module = "spring-boot-health")  // no SB3 equivalent
   resolutionStrategy.eachDependency {
     when (requested.group) {
-      "org.springframework.boot" -> { useVersion("3.5.14"); because("Spring Boot 3.x compatibility module") }
-      "org.springframework"      -> { useVersion("6.2.18"); because("Spring 6.x required for Spring Boot 3.x") }
+      "org.springframework.boot" -> {
+        useVersion(springBoot3Version)
+        because("Spring Boot 3.x compatibility module")
+      }
+      "org.springframework" -> {
+        useVersion(spring6Version)
+        because("Spring 6.x required for Spring Boot 3.x")
+      }
     }
   }
 }
@@ -142,9 +156,9 @@ plugins {
 }
 ```
 
-**Do NOT** add a second `enforcedPlatform("...:3.5.14")` — it collides with the platform the
-server/client convention already adds (two `strictly` constraints → FAILED resolution).
-`eachDependency` overrides versions without a second platform.
+**Do NOT** add a second hardcoded `enforcedPlatform` for the older Spring Boot line — it collides
+with the platform the server/client convention already adds (two `strictly` constraints → FAILED
+resolution). `eachDependency` overrides versions without a second platform.
 
 `exclude` the modules that exist only in the newer Spring Boot line (e.g. `spring-boot-health`
 in SB4) — the older starter pulls them transitively and they won't resolve.
