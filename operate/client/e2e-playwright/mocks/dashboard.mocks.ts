@@ -1415,6 +1415,185 @@ const mockIncidentsByProcess = [
   },
 ];
 
+const mockHealthyStatistics: CoreStatisticsDto = {
+  running: 514,
+  active: 500,
+  withIncidents: 14,
+};
+
+const mockHealthyIncidentsByError: IncidentByErrorDto[] = [
+  {
+    errorMessage: 'Cannot connect to server delivery05',
+    incidentErrorHashCode: 2101,
+    instancesWithErrorCount: 5,
+    processes: [
+      {
+        processId: '2251799813687188',
+        tenantId: '<default>',
+        version: 2,
+        name: 'Order process',
+        bpmnProcessId: 'orderProcess',
+        errorMessage: 'Cannot connect to server delivery05',
+        instancesWithActiveIncidentsCount: 5,
+        activeInstancesCount: 0,
+      },
+    ],
+  },
+  {
+    errorMessage:
+      "Expected to evaluate decision 'invoiceAssignApprover', but failed to evaluate expression 'amount': no variable found for name 'amount'",
+    incidentErrorHashCode: 2102,
+    instancesWithErrorCount: 4,
+    processes: [
+      {
+        processId: '2251799813686130',
+        tenantId: '<default>',
+        version: 1,
+        name: 'DMN invoice',
+        bpmnProcessId: 'invoice',
+        errorMessage:
+          "Expected to evaluate decision 'invoiceAssignApprover', but failed to evaluate expression 'amount': no variable found for name 'amount'",
+        instancesWithActiveIncidentsCount: 4,
+        activeInstancesCount: 0,
+      },
+    ],
+  },
+  {
+    errorMessage:
+      "Expected process with BPMN process id 'called-process' to be deployed, but not found.",
+    incidentErrorHashCode: 2103,
+    instancesWithErrorCount: 3,
+    processes: [
+      {
+        processId: '2251799813686145',
+        tenantId: '<default>',
+        version: 1,
+        name: 'Call Activity Process',
+        bpmnProcessId: 'call-activity-process',
+        errorMessage:
+          "Expected process with BPMN process id 'called-process' to be deployed, but not found.",
+        instancesWithActiveIncidentsCount: 3,
+        activeInstancesCount: 0,
+      },
+    ],
+  },
+  {
+    errorMessage: 'No space left on device.',
+    incidentErrorHashCode: 2104,
+    instancesWithErrorCount: 2,
+    processes: [
+      {
+        processId: '2251799813687190',
+        tenantId: '<default>',
+        version: 2,
+        name: 'Flight registration',
+        bpmnProcessId: 'flightRegistration',
+        errorMessage: 'No space left on device.',
+        instancesWithActiveIncidentsCount: 2,
+        activeInstancesCount: 0,
+      },
+    ],
+  },
+];
+
+const mockHealthyIncidentsByProcess: ProcessInstanceByNameDto[] = [
+  {
+    bpmnProcessId: 'orderProcess',
+    tenantId: '<default>',
+    processName: 'Order process',
+    instancesWithActiveIncidentsCount: 5,
+    activeInstancesCount: 180,
+    processes: [
+      {
+        processId: '2251799813687188',
+        tenantId: '<default>',
+        version: 2,
+        name: 'Order process',
+        bpmnProcessId: 'orderProcess',
+        errorMessage: null,
+        instancesWithActiveIncidentsCount: 5,
+        activeInstancesCount: 180,
+      },
+    ],
+  },
+  {
+    bpmnProcessId: 'invoice',
+    tenantId: '<default>',
+    processName: 'DMN invoice',
+    instancesWithActiveIncidentsCount: 4,
+    activeInstancesCount: 120,
+    processes: [
+      {
+        processId: '2251799813686130',
+        tenantId: '<default>',
+        version: 1,
+        name: 'DMN invoice',
+        bpmnProcessId: 'invoice',
+        errorMessage: null,
+        instancesWithActiveIncidentsCount: 4,
+        activeInstancesCount: 120,
+      },
+    ],
+  },
+  {
+    bpmnProcessId: 'call-activity-process',
+    tenantId: '<default>',
+    processName: 'Call Activity Process',
+    instancesWithActiveIncidentsCount: 3,
+    activeInstancesCount: 95,
+    processes: [
+      {
+        processId: '2251799813686145',
+        tenantId: '<default>',
+        version: 1,
+        name: 'Call Activity Process',
+        bpmnProcessId: 'call-activity-process',
+        errorMessage: null,
+        instancesWithActiveIncidentsCount: 3,
+        activeInstancesCount: 95,
+      },
+    ],
+  },
+  {
+    bpmnProcessId: 'flightRegistration',
+    tenantId: '<default>',
+    processName: 'Flight registration',
+    instancesWithActiveIncidentsCount: 2,
+    activeInstancesCount: 60,
+    processes: [
+      {
+        processId: '2251799813687190',
+        tenantId: '<default>',
+        version: 2,
+        name: 'Flight registration',
+        bpmnProcessId: 'flightRegistration',
+        errorMessage: null,
+        instancesWithActiveIncidentsCount: 2,
+        activeInstancesCount: 60,
+      },
+    ],
+  },
+  {
+    bpmnProcessId: 'eventBasedGatewayProcess',
+    tenantId: '<default>',
+    processName: 'Event based gateway with timer start',
+    instancesWithActiveIncidentsCount: 0,
+    activeInstancesCount: 45,
+    processes: [
+      {
+        processId: '2251799813687203',
+        tenantId: '<default>',
+        version: 2,
+        name: 'Event based gateway with timer start',
+        bpmnProcessId: 'eventBasedGatewayProcess',
+        errorMessage: null,
+        instancesWithActiveIncidentsCount: 0,
+        activeInstancesCount: 45,
+      },
+    ],
+  },
+];
+
 function mockResponses({
   statistics,
   incidentsByError,
@@ -1484,5 +1663,8 @@ export {
   mockStatistics,
   mockIncidentsByError,
   mockIncidentsByProcess,
+  mockHealthyStatistics,
+  mockHealthyIncidentsByError,
+  mockHealthyIncidentsByProcess,
   mockResponses,
 };
