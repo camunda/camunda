@@ -148,8 +148,15 @@ public sealed interface ClusterConfigurationChangeOperation {
      * @param memberId the member id of the member that will start replicating the partition
      * @param partitionId id of the partition to join
      * @param priority priority of the member in the partition used for Raft's priority election
+     * @param asLearner whether the member joins as a non-voting learner that a subsequent {@link
+     *     PartitionPromoteOperation} makes a voting member, or directly as a voting member. Every
+     *     current emitter joins as a learner. Operations serialized by a version that did not know
+     *     the two-phase join decode as {@code false} and keep their original meaning of a complete,
+     *     single-step join, so a change that was in flight during a rolling upgrade still runs to
+     *     completion instead of leaving the member a learner that nothing promotes.
      */
-    record PartitionJoinOperation(MemberId memberId, int partitionId, int priority)
+    record PartitionJoinOperation(
+        MemberId memberId, int partitionId, int priority, boolean asLearner)
         implements PartitionChangeOperation {}
 
     /**
@@ -160,6 +167,29 @@ public sealed interface ClusterConfigurationChangeOperation {
      * @param minimumAllowedReplicas 0 if the operation is part of a cluster purge
      */
     record PartitionLeaveOperation(MemberId memberId, int partitionId, int minimumAllowedReplicas)
+        implements PartitionChangeOperation {}
+
+    /**
+     * Operation to promote a member that joined a partition's replication group as a non-voting
+     * learner to a full voting member - the second phase of a two-phase join. The raft leader
+     * rejects the promotion until the member has caught up, so the operation is retried until it is
+     * accepted.
+     *
+     * @param memberId the member id of the member that will become a voting member
+     * @param partitionId id of the partition
+     */
+    record PartitionPromoteOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
+
+    /**
+     * Operation to demote a member of a partition's replication group to a non-voting member - the
+     * first phase of a two-phase leave, so that the subsequent {@link PartitionLeaveOperation}
+     * commits without the departing member's participation.
+     *
+     * @param memberId the member id of the member that will stop voting
+     * @param partitionId id of the partition
+     */
+    record PartitionDemoteOperation(MemberId memberId, int partitionId)
         implements PartitionChangeOperation {}
 
     /**

@@ -19,8 +19,8 @@ import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.time.Duration;
 import java.util.List;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,6 +30,13 @@ import org.junit.jupiter.api.Timeout;
 final class ClusterEndpointIT {
   private static final int BROKER_COUNT = 2;
   private static final int PARTITION_COUNT = 2;
+
+  /**
+   * Demoting a member that currently leads the partition makes it step down, so the leave that
+   * follows can find no leader on its first attempt and only succeeds once the reconciler retries
+   * after its minimum backoff of ten seconds. That is longer than Awaitility's default timeout.
+   */
+  private static final Duration MOVE_PARTITION_TIMEOUT = Duration.ofSeconds(30);
 
   @Test
   void shouldQueryCurrentClusterTopology() {
@@ -65,13 +72,19 @@ final class ClusterEndpointIT {
       actuator = ClusterActuator.of(cluster.availableGateway());
       // when -- request a leave
       final var response = actuator.leavePartition(1, 2);
-      // then
+      // then -- the member is demoted to a non-voting member before it leaves
       assertThat(response.getPlannedChanges())
-          .singleElement()
-          .asInstanceOf(InstanceOfAssertFactories.type(Operation.class))
-          .returns(OperationEnum.PARTITION_LEAVE, Operation::getOperation)
-          .returns(1, Operation::getBrokerId)
-          .returns(2, Operation::getPartitionId);
+          .satisfiesExactly(
+              demote ->
+                  assertThat(demote)
+                      .returns(OperationEnum.PARTITION_DEMOTE, Operation::getOperation)
+                      .returns(1, Operation::getBrokerId)
+                      .returns(2, Operation::getPartitionId),
+              leave ->
+                  assertThat(leave)
+                      .returns(OperationEnum.PARTITION_LEAVE, Operation::getOperation)
+                      .returns(1, Operation::getBrokerId)
+                      .returns(2, Operation::getPartitionId));
     }
   }
 
@@ -86,11 +99,15 @@ final class ClusterEndpointIT {
       // when -- request a purge
       final var response = actuator.purge(false);
 
-      // then
+      // then -- every replica but the last one of a partition is demoted before it leaves; the
+      // last one has no other active member left to reconfigure with, so it leaves in one step.
+      // Followers re-join as learners and are promoted afterwards.
       assertThat(response.getPlannedChanges().stream().map(Operation::getOperation))
           .containsExactlyElementsOf(
               List.of(
+                  OperationEnum.PARTITION_DEMOTE,
                   OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.PARTITION_DEMOTE,
                   OperationEnum.PARTITION_LEAVE,
                   OperationEnum.PARTITION_LEAVE,
                   OperationEnum.PARTITION_LEAVE,
@@ -99,7 +116,9 @@ final class ClusterEndpointIT {
                   OperationEnum.PARTITION_BOOTSTRAP,
                   OperationEnum.PARTITION_BOOTSTRAP,
                   OperationEnum.PARTITION_JOIN,
-                  OperationEnum.PARTITION_JOIN));
+                  OperationEnum.PARTITION_PROMOTE,
+                  OperationEnum.PARTITION_JOIN,
+                  OperationEnum.PARTITION_PROMOTE));
     }
   }
 
@@ -111,14 +130,20 @@ final class ClusterEndpointIT {
       final var actuator = ClusterActuator.of(cluster.availableGateway());
       // when -- request a join
       final var response = actuator.joinPartition(0, 2, 3);
-      // then
+      // then -- the member joins as a non-voting member and is promoted afterwards
       assertThat(response.getPlannedChanges())
-          .singleElement()
-          .asInstanceOf(InstanceOfAssertFactories.type(Operation.class))
-          .returns(OperationEnum.PARTITION_JOIN, Operation::getOperation)
-          .returns(0, Operation::getBrokerId)
-          .returns(2, Operation::getPartitionId)
-          .returns(3, Operation::getPriority);
+          .satisfiesExactly(
+              join ->
+                  assertThat(join)
+                      .returns(OperationEnum.PARTITION_JOIN, Operation::getOperation)
+                      .returns(0, Operation::getBrokerId)
+                      .returns(2, Operation::getPartitionId)
+                      .returns(3, Operation::getPriority),
+              promote ->
+                  assertThat(promote)
+                      .returns(OperationEnum.PARTITION_PROMOTE, Operation::getOperation)
+                      .returns(0, Operation::getBrokerId)
+                      .returns(2, Operation::getPartitionId));
     }
   }
 
@@ -223,10 +248,12 @@ final class ClusterEndpointIT {
   private static void movePartition(final ClusterActuator actuator) {
     final var plannedJoin = actuator.joinPartition(0, 2, 1);
     Awaitility.await()
+        .atMost(MOVE_PARTITION_TIMEOUT)
         .untilAsserted(
             () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(plannedJoin));
     final var leave = actuator.leavePartition(1, 2);
     Awaitility.await()
+        .atMost(MOVE_PARTITION_TIMEOUT)
         .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(leave));
   }
 

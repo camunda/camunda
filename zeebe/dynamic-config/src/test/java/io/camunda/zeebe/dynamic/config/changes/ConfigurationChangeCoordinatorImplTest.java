@@ -142,7 +142,7 @@ final class ConfigurationChangeCoordinatorImplTest {
     clusterTopologyManager.setClusterTopology(topology);
 
     final List<ClusterConfigurationChangeOperation> operations =
-        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
+        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1, true));
 
     // when
     final var applyFuture = coordinator.applyOperations(getTransformer(operations));
@@ -167,7 +167,7 @@ final class ConfigurationChangeCoordinatorImplTest {
     clusterTopologyManager.setClusterTopology(topology);
 
     final List<ClusterConfigurationChangeOperation> operations =
-        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
+        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1, true));
 
     // when
     final var simulationResult = coordinator.simulateOperations(getTransformer(operations));
@@ -212,7 +212,7 @@ final class ConfigurationChangeCoordinatorImplTest {
     clusterTopologyManager.setClusterTopology(topology);
 
     final List<ClusterConfigurationChangeOperation> operations =
-        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
+        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1, true));
 
     final var applyResult = coordinator.applyOperations(getTransformer(operations)).join();
 
@@ -248,7 +248,7 @@ final class ConfigurationChangeCoordinatorImplTest {
     clusterTopologyManager.setClusterTopology(topology);
 
     final List<ClusterConfigurationChangeOperation> operations =
-        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
+        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1, true));
 
     final var applyResult = coordinator.applyOperations(getTransformer(operations)).join();
 
