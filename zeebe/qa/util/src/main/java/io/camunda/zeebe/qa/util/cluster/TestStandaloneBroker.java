@@ -166,39 +166,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(false));
   }
 
-  @Override
-  public TestStandaloneBroker self() {
-    return this;
-  }
-
-  @Override
-  public MemberId nodeId() {
-    final var zone = unifiedConfig.getCluster().getZone();
-    if (unifiedConfig.getCluster().getNodeIdProvider().getType() == Type.S3) {
-      // Get nodeId from BrokerBasedProperties instead of unified configuration when using S3 node
-      // id provider. If the broker is not started yet, return "null" as node id
-      if (isStarted()) {
-        final var cluster = bean(BrokerBasedProperties.class).getCluster();
-        return MemberId.from(zone, cluster.getNodeId());
-      } else {
-        return MemberId.from("null");
-      }
-    }
-    return MemberId.from(zone, unifiedConfig.getCluster().getNodeId());
-  }
-
-  @Override
-  public String host() {
-    // camunda.cluster.network.host controls the address the broker *binds* to, and defaults to a
-    // wildcard/bind-any address (e.g. 0.0.0.0) when left unset or explicitly configured as such.
-    // That is not a valid target for clients: TestApplication#host() must return an address that
-    // is actually connectable (e.g. by the actuator/monitoring HTTP client used to probe
-    // health/ready/startup), so fall back to the same "localhost" default as
-    // TestApplication#host() instead of any bind-any address.
-    final var host = unifiedConfig.getCluster().getNetwork().getHost();
-    return isWildcardAddress(host) ? "localhost" : host;
-  }
-
   /**
    * Returns true if the given host is blank, or a wildcard/bind-any address (e.g. {@code 0.0.0.0}
    * or {@code ::}) that a client cannot connect to.
@@ -209,17 +176,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         || "0.0.0.0".equals(host)
         || "::".equals(host)
         || "0:0:0:0:0:0:0:0".equals(host);
-  }
-
-  @Override
-  public HealthActuator healthActuator() {
-    return brokerHealth();
-  }
-
-  @Override
-  public boolean isGateway() {
-    // Gateway enable flag is set via property (not fully in unified config yet)
-    return isGatewayEnabled;
   }
 
   public TestStandaloneBroker withGatewayEnabled(final boolean enabled) {
@@ -295,6 +251,50 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     } finally {
       deleteSecretStoreDirectory();
     }
+  }
+
+  @Override
+  public TestStandaloneBroker self() {
+    return this;
+  }
+
+  @Override
+  public MemberId nodeId() {
+    final var zone = unifiedConfig.getCluster().getZone();
+    if (unifiedConfig.getCluster().getNodeIdProvider().getType() == Type.S3) {
+      // Get nodeId from BrokerBasedProperties instead of unified configuration when using S3 node
+      // id provider. If the broker is not started yet, return "null" as node id
+      if (isStarted()) {
+        final var cluster = bean(BrokerBasedProperties.class).getCluster();
+        return MemberId.from(zone, cluster.getNodeId());
+      } else {
+        return MemberId.from("null");
+      }
+    }
+    return MemberId.from(zone, unifiedConfig.getCluster().getNodeId());
+  }
+
+  @Override
+  public String host() {
+    // camunda.cluster.network.host controls the address the broker *binds* to, and defaults to a
+    // wildcard/bind-any address (e.g. 0.0.0.0) when left unset or explicitly configured as such.
+    // That is not a valid target for clients: TestApplication#host() must return an address that
+    // is actually connectable (e.g. by the actuator/monitoring HTTP client used to probe
+    // health/ready/startup), so fall back to the same "localhost" default as
+    // TestApplication#host() instead of any bind-any address.
+    final var host = unifiedConfig.getCluster().getNetwork().getHost();
+    return isWildcardAddress(host) ? "localhost" : host;
+  }
+
+  @Override
+  public HealthActuator healthActuator() {
+    return brokerHealth();
+  }
+
+  @Override
+  public boolean isGateway() {
+    // Gateway enable flag is set via property (not fully in unified config yet)
+    return isGatewayEnabled;
   }
 
   private void deleteSecretStoreDirectory() {
@@ -583,6 +583,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     if (retentionPolicyName != null) {
       exporterConfigArgs.put("retention", Map.of("enabled", true, "policyName", "test-policy"));
     }
+    // this manually-declared exporter and the secondary-storage-driven autoconfigured
+    // 'camundaexporter' both write to the same location whenever secondary storage is also
+    // ES/OS; disable autoconfiguration to avoid the two colliding
+    unifiedConfig.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
     withExporter(
         "CamundaExporter",
         cfg -> {

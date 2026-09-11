@@ -16,10 +16,12 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
+import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -164,11 +166,37 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void validate(final ElasticsearchExporterConfiguration configuration) {
-    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
+    final String prefix = configuration.index.prefix;
+    if (IndexPrefixValidation.isEmpty(prefix)) {
+      throw new ExporterException("Elasticsearch prefix must not be empty.");
+    }
+    if (IndexPrefixValidation.hasInvalidCharacters(prefix)) {
       throw new ExporterException(
           String.format(
-              "Elasticsearch prefix must not contain underscore. Current value: %s",
-              configuration.index.prefix));
+              "Elasticsearch prefix must not contain invalid characters [\\ / * ? \" < > | space "
+                  + "_ , # :]. Current value: %s",
+              prefix));
+    }
+    if (IndexPrefixValidation.hasInvalidLeadingCharacter(prefix)) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not begin with invalid characters [. + - _]. Current value: %s",
+              prefix));
+    }
+    if (IndexPrefixValidation.hasUppercaseCharacters(prefix)) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not contain uppercase characters. Current value: %s",
+              prefix));
+    }
+    if (IndexPrefixValidation.exceedsMaxLength(prefix)) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not exceed %d bytes (UTF-8), to keep generated index names "
+                  + "within Elasticsearch's 255-byte limit. Current value: %s (%d bytes)",
+              IndexPrefixValidation.MAX_PREFIX_LENGTH,
+              prefix,
+              prefix.getBytes(StandardCharsets.UTF_8).length));
     }
 
     if (configuration.bulk.memoryLimit > RECOMMENDED_MAX_BULK_MEMORY_LIMIT) {
