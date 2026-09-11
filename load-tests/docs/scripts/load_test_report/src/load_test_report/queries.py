@@ -37,31 +37,11 @@ class QueriesDocument(BaseModel):
             seen_keys.add(query.key)
         return self
 
-
-def load_query_document(queries_file: Path, substitutions: Mapping[str, str]) -> QueriesDocument:
-    parsed = parse_query_file(queries_file, substitutions)
-    return validate_query_document(parsed, f"queries file {queries_file}")
-
-
-def parse_query_file(queries_file: Path, substitutions: Mapping[str, str]) -> Any:
-    if queries_file.suffix.lower() not in {".yaml", ".yml"}:
-        raise ReportError(f"Queries file {queries_file} must use YAML format.")
-
-    raw_document = substitute_query_text(queries_file.read_text(encoding="utf-8"), substitutions)
-    try:
-        return yaml.safe_load(raw_document)
-    except yaml.YAMLError as error:
-        raise ReportError(f"Could not parse queries file {queries_file}: {error}") from error
-
-
-def validate_query_document(query_document: Any, source: str = "query document") -> QueriesDocument:
-    if isinstance(query_document, QueriesDocument):
-        return query_document
-    try:
-        return QueriesDocument.model_validate(query_document)
-    except ValidationError as error:
-        raise ReportError(f"{source} is invalid: {error}") from error
-
+    @classmethod
+    def from_file(cls, queries_file: Path, substitutions: Mapping[str, str]) -> Self:
+        raw_document = substitute_query_text(queries_file.read_text(encoding="utf-8"), substitutions)
+        parsed = yaml.safe_load(raw_document)
+        return cls.model_validate(parsed)
 
 def query_substitutions(options: Any) -> Mapping[str, str]:
     return {

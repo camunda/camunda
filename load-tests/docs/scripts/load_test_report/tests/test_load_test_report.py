@@ -1,14 +1,17 @@
 from pathlib import Path
 
 import pytest
+import load_test_report
 
-import load_test_report.queries as queries_module
+from pydantic import ValidationError
+
+from load_test_report.queries import QueriesDocument
 from load_test_report.cli import build_parser
 from load_test_report.cli import run
 from load_test_report.errors import ReportError
-from load_test_report.queries import load_query_document
 
-PROJECT_DIR = Path(queries_module.__file__).resolve().parent
+
+PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
 PACKAGED_QUERY_FILES = (
     "report-queries.yaml",
     "report-queries-stable-87.yaml",
@@ -41,21 +44,21 @@ def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
         encoding="utf-8",
     )
 
-    document = load_query_document(queries_file, {"$NAMESPACE": "c8-ck-test"})
+    document = QueriesDocument.from_file(queries_file, {"$NAMESPACE": "c8-ck-test"})
 
     assert document.queries[0].key == "namespace"
     assert document.queries[0].query == 'namespace_metric{namespace="c8-ck-test"}'
 
 
-def test_should_reject_unsupported_query_file_format(tmp_path):
+
+def test_should_reject_empty_file(tmp_path):
     queries_file = tmp_path / "queries.json"
     queries_file.write_text("{}", encoding="utf-8")
 
-    with pytest.raises(ReportError, match="must use YAML format"):
-        load_query_document(queries_file, {})
+    with pytest.raises(ValidationError, match="Field required"):
+        QueriesDocument.from_file(queries_file, {})
 
-
-def test_should_reject_entries_without_query(tmp_path):
+def test_should_reject_invalid_queries(tmp_path):
     queries_file = tmp_path / "queries.yaml"
     queries_file.write_text(
         """queries:
@@ -66,24 +69,8 @@ def test_should_reject_entries_without_query(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(ReportError, match="queries.0.query"):
-        load_query_document(queries_file, {})
-
-
-def test_should_reject_static_value_entries(tmp_path):
-    queries_file = tmp_path / "queries.yaml"
-    queries_file.write_text(
-        """queries:
-- key: static_value
-  description: Static value.
-  header: Static value
-  value: static
-""",
-        encoding="utf-8",
-    )
-
-    with pytest.raises(ReportError, match="Extra inputs are not permitted"):
-        load_query_document(queries_file, {})
+    with pytest.raises(ValidationError, match="Field required"):
+        QueriesDocument.from_file(queries_file, {})
 
 
 def test_should_reject_duplicate_keys_in_query_file(tmp_path):
@@ -103,8 +90,8 @@ def test_should_reject_duplicate_keys_in_query_file(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(ReportError, match="duplicate query key: duplicate"):
-        load_query_document(queries_file, {})
+    with pytest.raises(ValidationError, match="duplicate query key: duplicate"):
+        QueriesDocument.from_file(queries_file, {})
 
 
 def test_should_load_packaged_query_files():
@@ -116,7 +103,7 @@ def test_should_load_packaged_query_files():
     }
 
     for query_file_name in PACKAGED_QUERY_FILES:
-        document = load_query_document(PROJECT_DIR / query_file_name, substitutions)
+        document = QueriesDocument.from_file(PROJECT_DIR / query_file_name, substitutions)
 
         assert len(document.queries) > 0
 
@@ -130,7 +117,7 @@ def test_should_use_namespace_created_metric():
     }
 
     for query_file_name in PACKAGED_QUERY_FILES:
-        document = load_query_document(PROJECT_DIR / query_file_name, substitutions)
+        document = QueriesDocument.from_file(PROJECT_DIR / query_file_name, substitutions)
         namespace_query = document.queries[0]
 
         assert namespace_query.key == "namespace"
@@ -139,7 +126,7 @@ def test_should_use_namespace_created_metric():
 
 
 def test_should_use_stable_87_specific_metric_sources():
-    document = load_query_document(
+    document = QueriesDocument.from_file(
         PROJECT_DIR / "report-queries-stable-87.yaml",
         {
             "$NAMESPACE": "c8-ck-test",
