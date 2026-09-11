@@ -1,15 +1,12 @@
 from pathlib import Path
 
 import pytest
-import load_test_report
-
 from pydantic import ValidationError
 
-from load_test_report.queries import QueriesDocument
+import load_test_report
 from load_test_report.cli import build_parser
 from load_test_report.cli import run
-from load_test_report.errors import ReportError
-
+from load_test_report.queries import QueriesDocument
 
 PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
 PACKAGED_QUERY_FILES = (
@@ -50,13 +47,13 @@ def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
     assert document.queries[0].query == 'namespace_metric{namespace="c8-ck-test"}'
 
 
-
 def test_should_reject_empty_file(tmp_path):
     queries_file = tmp_path / "queries.json"
     queries_file.write_text("{}", encoding="utf-8")
 
     with pytest.raises(ValidationError, match="Field required"):
         QueriesDocument.from_file(queries_file, {})
+
 
 def test_should_reject_invalid_queries(tmp_path):
     queries_file = tmp_path / "queries.yaml"
@@ -105,6 +102,7 @@ def test_should_load_packaged_query_files():
     for query_file_name in PACKAGED_QUERY_FILES:
         document = QueriesDocument.from_file(PROJECT_DIR / query_file_name, substitutions)
         assert len(document.queries) > 0
+
 
 def test_should_substitute_queries(tmp_path):
     substitutions = {

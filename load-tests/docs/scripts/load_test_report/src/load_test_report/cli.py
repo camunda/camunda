@@ -1,7 +1,8 @@
 import argparse
 import sys
+from collections.abc import Mapping
 from collections.abc import Sequence
-from typing import Any, Mapping
+from typing import Any
 
 
 def build_parser() -> argparse.ArgumentParser:

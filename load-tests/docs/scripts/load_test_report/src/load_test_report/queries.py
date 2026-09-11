@@ -1,18 +1,13 @@
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, List
 from typing import Self
 
 import yaml
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
-from pydantic import ValidationError
 from pydantic import model_validator
 
-from load_test_report.cli import query_substitutions
-
-from .errors import ReportError
 
 class Query(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
