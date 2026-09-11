@@ -37,9 +37,4 @@ public final class AuroraReplicationLsnProvider implements ReplicationLsnProvide
   public List<ReplicationLsnStatus> getReplicationStatuses() {
     return mapper.getAuroraReplicationStatus();
   }
-
-  @Override
-  public String getCurrentReplicaLabel() {
-    return mapper.getAuroraCurrentReplicaLabel();
-  }
 }

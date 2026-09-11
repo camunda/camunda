@@ -42,22 +42,16 @@ public final class DelayReplicationSignalStrategy
     return List.of();
   }
 
-  /**
-   * Ignores {@code statuses}/{@code currentPrimaryRegion} - there is no replica signal, only the
-   * passage of time.
-   */
+  /** Ignores {@code statuses} - there is no replica signal, only the passage of time. */
   @Override
-  public long computeConfirmedMarker(
-      final List<ReplicationLagStatus> statuses, final Optional<String> currentPrimaryRegion) {
+  public long computeConfirmedMarker(final List<ReplicationLagStatus> statuses) {
     return clock.millis();
   }
 
   /** Never pauses - there is no replication signal to judge the exporter out of sync by. */
   @Override
   public Duration computePauseLag(
-      final List<ReplicationLagStatus> statuses,
-      final Optional<Duration> queueHeadAge,
-      final Optional<String> currentPrimaryRegion) {
+      final List<ReplicationLagStatus> statuses, final Optional<Duration> queueHeadAge) {
     return Duration.ZERO;
   }
 

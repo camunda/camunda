@@ -1195,7 +1195,8 @@ public class BrokerBasedPropertiesOverride {
 
   /**
    * {@code minSyncReplicas} and {@code regions} are mutually exclusive alternatives on {@link
-   * RdbmsAsyncReplication}
+   * RdbmsAsyncReplication}; the default region's {@code minReplicas} is {@code minSyncReplicas + 1}
+   * to also count the primary.
    */
   private static List<RegionConfiguration> toReplicationRegions(
       final RdbmsAsyncReplication asyncReplication) {
@@ -1212,14 +1213,14 @@ public class BrokerBasedPropertiesOverride {
       return regions.stream().map(BrokerBasedPropertiesOverride::toRegionConfiguration).toList();
     }
 
-    final int minReplicas =
+    final int minSyncReplicas =
         hasMinSyncReplicas
             ? asyncReplication.getMinSyncReplicas()
             : ReplicationConfiguration.DEFAULT_MIN_SYNC_REPLICAS;
     final var defaultRegion = new RegionConfiguration();
     defaultRegion.setName("default");
     defaultRegion.setPattern(".*");
-    defaultRegion.setMinReplicas(minReplicas);
+    defaultRegion.setMinReplicas(minSyncReplicas + 1);
     return List.of(defaultRegion);
   }
 

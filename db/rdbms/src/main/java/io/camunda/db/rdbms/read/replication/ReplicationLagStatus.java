@@ -13,15 +13,27 @@ package io.camunda.db.rdbms.read.replication;
  * (see {@link ReplicationStatus#replicaLabel()}).
  */
 public record ReplicationLagStatus(
-    String replicaId, Long replicationLagMs, Long replicatedUntilMs, String replicaLabel)
+    String replicaId,
+    Long replicationLagMs,
+    Long replicatedUntilMs,
+    String replicaLabel,
+    boolean isPrimary)
     implements ReplicationStatus {
 
   public ReplicationLagStatus(final String replicaId, final Long replicationLagMs) {
-    this(replicaId, replicationLagMs, null, null);
+    this(replicaId, replicationLagMs, null, null, false);
   }
 
   public ReplicationLagStatus(
       final String replicaId, final Long replicationLagMs, final Long replicatedUntilMs) {
-    this(replicaId, replicationLagMs, replicatedUntilMs, null);
+    this(replicaId, replicationLagMs, replicatedUntilMs, null, false);
+  }
+
+  public ReplicationLagStatus(
+      final String replicaId,
+      final Long replicationLagMs,
+      final Long replicatedUntilMs,
+      final String replicaLabel) {
+    this(replicaId, replicationLagMs, replicatedUntilMs, replicaLabel, false);
   }
 }

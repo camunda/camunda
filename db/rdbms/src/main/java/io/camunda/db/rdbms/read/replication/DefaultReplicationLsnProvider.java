@@ -32,9 +32,4 @@ public final class DefaultReplicationLsnProvider implements ReplicationLsnProvid
   public List<ReplicationLsnStatus> getReplicationStatuses() {
     return mapper.getReplicationStatus();
   }
-
-  @Override
-  public String getCurrentReplicaLabel() {
-    return mapper.getCurrentReplicaLabel();
-  }
 }
