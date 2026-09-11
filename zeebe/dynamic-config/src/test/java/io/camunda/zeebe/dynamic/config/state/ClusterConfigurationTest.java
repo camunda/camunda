@@ -90,6 +90,75 @@ class ClusterConfigurationTest {
   }
 
   @Test
+  void shouldPickHighestPriorityActiveReplicaAsPrimary() {
+    // given
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+            .addMember(
+                member(2),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, emptyPartitionConfig))));
+
+    // when / then
+    assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(2));
+  }
+
+  @Test
+  void shouldNotPickLearnerAsPrimary() {
+    // given - a learner catching up is routinely given the highest priority, since it is meant to
+    // take over once promoted, but it cannot lead until then
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+            .addMember(
+                member(2),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.joining(2, emptyPartitionConfig).toLearner())));
+
+    // when / then
+    assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(1));
+  }
+
+  @Test
+  void shouldNotPickLeavingMemberAsPrimary() {
+    // given
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+            .addMember(
+                member(2),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, emptyPartitionConfig).toLeaving())));
+
+    // when / then
+    assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(1));
+  }
+
+  @Test
+  void shouldHaveNoPrimaryWhenOnlyLearnersReplicatePartition() {
+    // given
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.joining(1, emptyPartitionConfig).toLearner())));
+
+    // when / then
+    assertThat(topology.getPrimaryMemberForPartition(1)).isEmpty();
+  }
+
+  @Test
   void shouldMergeConcurrentUpdatesToMembers() {
     // given
     final var topology =
