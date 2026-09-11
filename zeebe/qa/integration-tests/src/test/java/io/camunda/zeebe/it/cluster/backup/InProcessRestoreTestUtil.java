@@ -17,6 +17,7 @@ import io.camunda.client.protocol.rest.ClusterRestoreRequest;
 import io.camunda.client.protocol.rest.ClusterRestoreResponse;
 import io.camunda.client.protocol.rest.RestoreRequest;
 import io.camunda.client.protocol.rest.RestoreStatusResponse;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
@@ -56,9 +57,6 @@ import org.awaitility.Awaitility;
 public final class InProcessRestoreTestUtil {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-  /** Where a broker keeps its data underneath its working directory ({@code DataCfg}). */
-  private static final String BROKER_DATA_DIRECTORY = "data";
 
   private InProcessRestoreTestUtil() {}
 
@@ -564,7 +562,7 @@ public final class InProcessRestoreTestUtil {
   static Path partitionDirectory(
       final Path workingDirectory, final String partitionGroup, final int partitionId) {
     return workingDirectory
-        .resolve(BROKER_DATA_DIRECTORY)
+        .resolve(DataCfg.DEFAULT_DIRECTORY)
         .resolve(partitionGroup)
         .resolve("partitions")
         .resolve(String.valueOf(partitionId));

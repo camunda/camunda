@@ -55,24 +55,14 @@ import org.junit.jupiter.params.provider.EnumSource;
  * one broker's copy of one of its partitions is in - including states that stop the partition from
  * starting at all.
  *
- * <p>That is the invariant the recovery API rests on. A mode change is the operator's only way in
- * to a restore, so it has to be triggerable regardless of the health of the brokers' partitions: if
- * a partition that fails to bootstrap could block the transition, the one operation that repairs
- * such a partition would be unreachable exactly when it is needed. Only Spring Boot and the
- * broker's own required services are assumed to be up.
+ * <p>The recovery API rests on that invariant. A mode change is the operator's only way in to a
+ * restore, so a partition that fails to bootstrap must not be able to block the transition -
+ * otherwise the one operation that repairs such a partition is unreachable exactly when it is
+ * needed.
  *
- * <p>Each case breaks {@link #BROKEN_PARTITION_ID} on broker {@link #BROKEN_BROKER_ID} in a
- * different way (see {@link Break}), leaving its peers' copies and the backup store untouched so
- * the cluster keeps quorum and stays available, and then asserts the same four things:
- *
- * <ol>
- *   <li>the broker is up and still serving the other partition it holds;
- *   <li>the tenant enters {@code RECOVERING}, rather than the change plan stalling on the broken
- *       partition;
- *   <li>the accepted restore plan wipes and reloads the broken copy, not only the healthy ones;
- *   <li>after the restore the tenant processes commands again, every partition's backed-up work is
- *       back, and the broken copy is healthy on its own broker.
- * </ol>
+ * <p>Each case breaks {@link #BROKEN_PARTITION_ID} on broker {@link #BROKEN_BROKER_ID} a different
+ * way (see {@link Break}), leaving its peers' copies and the backup store untouched so the cluster
+ * keeps quorum.
  *
  * <h4>Why the plan assertion matters</h4>
  *
@@ -83,10 +73,6 @@ import org.junit.jupiter.params.provider.EnumSource;
  * which is what lets the broken copy be wiped and reloaded rather than skipped. A restore planned
  * from per-partition state would quietly skip it, still complete, and still pass every other
  * assertion here - because the partition's peers hold the same data.
- *
- * <p>The matrix runs over the per-physical-tenant API; {@link
- * #shouldEnterRecoveryAndRestoreOverClusterAdminApi} covers the cluster-admin API, on the harshest
- * break, since the API surface is independent of how the partition was broken.
  *
  * <p>{@code PartitionModeHandlerRecoveryRoundTripTest} and {@code RecoveryPartitionManagerTest} pin
  * the same confirmation logic against a stubbed partition manager. What they cannot show is that a
@@ -150,33 +136,6 @@ final class RestoreWithBrokenPartitionIT {
                   configureBackupStores(TENANTS.configure(broker.withUnauthenticatedAccess())))
           .build();
 
-  /**
-   * The ways one broker's copy of a partition is broken before the recovery transition. Every one
-   * of them has to leave the transition triggerable; whether a given one also stops the partition
-   * from starting is not asserted, because that is the product's business and it differs per mode -
-   * what has to hold either way is the invariant.
-   */
-  private enum Break {
-    /** The snapshot is gone, so the replica has only its log to rebuild state from. */
-    MISSING_SNAPSHOT,
-    /**
-     * The snapshot store cannot be opened at all. Fails the partition's first startup step, before
-     * it is ever assigned a role.
-     */
-    UNOPENABLE_SNAPSHOT_STORE,
-    /** The raft log cannot be loaded, so the replica cannot recover its own history. */
-    CORRUPT_RAFT_LOG,
-    /** The snapshot is present but its RocksDB files are damaged. */
-    CORRUPT_ROCKSDB_SNAPSHOT,
-    /** The partition runs but makes no progress, the way a wedged stream processor leaves it. */
-    STUCK_STREAM_PROCESSOR;
-
-    /** Whether the break is on disk and so needs the broker stopped and started around it. */
-    boolean isOnDisk() {
-      return this != STUCK_STREAM_PROCESSOR;
-    }
-  }
-
   @ParameterizedTest
   @EnumSource(Break.class)
   void shouldEnterRecoveryAndRestoreOverPhysicalTenantApi(final Break brokenBy) throws IOException {
@@ -226,11 +185,6 @@ final class RestoreWithBrokenPartitionIT {
     }
   }
 
-  /**
-   * The cluster-admin API on the break that stops the partition from starting outright. Which API
-   * triggers the transition is independent of how the partition was broken, so this covers the
-   * second surface without running the whole matrix over it again.
-   */
   @Test
   void shouldEnterRecoveryAndRestoreOverClusterAdminApi() throws IOException {
     try (final var defaultClient = newClient(DEFAULT_TENANT);
@@ -667,5 +621,26 @@ final class RestoreWithBrokenPartitionIT {
     final PrimaryStorageBackup backup = camunda.getData().getPrimaryStorage().getBackup();
     backup.setStore(BackupStoreType.FILESYSTEM);
     backup.getFilesystem().setBasePath(backupDir.toAbsolutePath().toString());
+  }
+
+  private enum Break {
+    /** The snapshot is gone, so the replica has only its log to rebuild state from. */
+    MISSING_SNAPSHOT,
+    /**
+     * The snapshot store cannot be opened at all. Fails the partition's first startup step, before
+     * it is ever assigned a role.
+     */
+    UNOPENABLE_SNAPSHOT_STORE,
+    /** The raft log cannot be loaded, so the replica cannot recover its own history. */
+    CORRUPT_RAFT_LOG,
+    /** The snapshot is present but its RocksDB files are damaged. */
+    CORRUPT_ROCKSDB_SNAPSHOT,
+    /** The partition runs but makes no progress, the way a wedged stream processor leaves it. */
+    STUCK_STREAM_PROCESSOR;
+
+    /** Whether the break is on disk and so needs the broker stopped and started around it. */
+    boolean isOnDisk() {
+      return this != STUCK_STREAM_PROCESSOR;
+    }
   }
 }
