@@ -75,8 +75,11 @@ public final class ConfigurationUtil {
                 final Integer partitionId = entry.getKey();
                 final PartitionState partitionState = entry.getValue();
                 if (partitionState.state().equals(State.ACTIVE)
-                    || partitionState.state().equals(State.LEAVING)) {
-                  // only add active and leaving partitions because only those has to be started
+                    || partitionState.state().equals(State.LEAVING)
+                    || partitionState.state().equals(State.LEARNER)) {
+                  // only add active, leaving and learner partitions because only those have to be
+                  // started. A learner already replicates the partition and must recover its raft
+                  // state on boot, otherwise a pending promotion could never complete.
                   memberPriorityByPartition
                       .computeIfAbsent(partitionId, k -> new HashMap<>())
                       .put(memberId, partitionState.priority());

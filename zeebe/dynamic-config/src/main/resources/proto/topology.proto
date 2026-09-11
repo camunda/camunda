@@ -200,6 +200,10 @@ enum State {
   LEAVING = 3;
   LEFT = 4;
   BOOTSTRAPPING = 5;
+  // 6 is RECOVERING in later versions; kept unused here so both versions agree on the wire.
+  // Partitions only: joined as a non-voting learner replica, catching up on the log until
+  // promoted to ACTIVE in a second configuration change.
+  LEARNER = 7;
 }
 
 enum ChangeStatus {

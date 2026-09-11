@@ -363,8 +363,8 @@ public class ProtoBufSerializer
       case JOINING -> MemberState.State.JOINING;
       case LEAVING -> MemberState.State.LEAVING;
       case LEFT -> MemberState.State.LEFT;
-      case BOOTSTRAPPING ->
-          throw new IllegalStateException("Member cannot be in BOOTSTRAPPING state");
+      case BOOTSTRAPPING, LEARNER ->
+          throw new IllegalStateException("Member cannot be in %s state".formatted(state));
     };
   }
 
@@ -375,6 +375,7 @@ public class ProtoBufSerializer
       case JOINING -> PartitionState.State.JOINING;
       case LEAVING -> PartitionState.State.LEAVING;
       case BOOTSTRAPPING -> PartitionState.State.BOOTSTRAPPING;
+      case LEARNER -> PartitionState.State.LEARNER;
     };
   }
 
@@ -385,6 +386,7 @@ public class ProtoBufSerializer
       case JOINING -> Topology.State.JOINING;
       case LEAVING -> Topology.State.LEAVING;
       case BOOTSTRAPPING -> Topology.State.BOOTSTRAPPING;
+      case LEARNER -> Topology.State.LEARNER;
     };
   }
 
