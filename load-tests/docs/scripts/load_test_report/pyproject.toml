@@ -6,6 +6,13 @@ dependencies = [
   "pyyaml==6.0.3",
 ]
 
+[project.scripts]
+load-test-report = "load_test_report.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [dependency-groups]
 dev = [
   "pytest==9.1.1",
@@ -23,4 +30,4 @@ extend-select = ["I"]
 force-single-line = true
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src"]
