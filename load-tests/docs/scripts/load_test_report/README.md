@@ -63,8 +63,8 @@ Common options:
 - `--rate-interval <dur>`: short Prometheus rate interval for dashboard-style rollups.
   Default: `5m`.
 - `--sample-step <dur>`: sample resolution for window summaries. Default: `1m`.
-- `--queries <name-or-path>`: built-in query set name or custom YAML/JSON query file
-  path. Default: `camunda`.
+- `--queries <path>`: YAML query file path. Default: packaged
+  `report-queries.yaml`.
 - `--at <time>`: Prometheus query time anchor. The report window ends at this RFC3339
   or Unix timestamp.
 - `--start <time> --end <time>`: exact reporting window. The duration is derived from
@@ -80,20 +80,27 @@ Common options:
 
 ## Query selection
 
-Use one `--queries` option for both maintained query sets and custom files:
+Use `--queries` to select a YAML query file. The default is the packaged
+[`report-queries.yaml`](src/load_test_report/report-queries.yaml), which covers the
+current Camunda 8.8+ orchestration cluster layout plus common metrics.
 
-- `camunda`: [`report-queries.yaml`](src/load_test_report/report-queries.yaml), current Camunda 8.8+
-  orchestration cluster layout plus common metrics.
-- `stable-87`: [`report-queries-stable-87.yaml`](src/load_test_report/report-queries-stable-87.yaml),
-  Camunda 8.7 Zeebe broker and gateway layout plus common metrics.
-- `<path>`: custom YAML or JSON file with the same top-level `queries:` schema.
+The package also includes
+[`report-queries-stable-87.yaml`](src/load_test_report/report-queries-stable-87.yaml)
+for the Camunda 8.7 Zeebe broker and gateway layout. Select it with:
+
+```bash
+uv run load-test-report c8-ck-base-8736-endurance \
+  --queries report-queries-stable-87.yaml
+```
+
+Custom files use the same top-level `queries:` schema.
 
 The custom file case is useful when a report needs its own column set or PromQL, for
 example a future daily load-test report.
 
 ## Output shape
 
-CSV and TSV column order follows the selected query file. The built-in query sets are
+CSV and TSV column order follows the selected query file. The packaged query sets are
 laid out for spreadsheet imports:
 
 1. namespace and Docker image
@@ -115,10 +122,9 @@ Prometheus's current evaluation time.
 
 Different column types use that window differently:
 
-- Literal columns, such as `namespace`, do not query Prometheus.
-- Label columns, such as `docker_image`, read labels from series present during the
-  window. This keeps deleted namespaces reportable while the historical series remains
-  in Prometheus retention.
+- Label columns, such as `namespace` and `docker_image`, read labels from series
+  present during the window. This keeps deleted namespaces reportable while the
+  historical series remains in Prometheus retention.
 - Resource gauges, such as pod counts, CPU limits, memory limits, disk capacity, disk
   usage, heap, and RSS, use a max over the window so a restart or deleted namespace does
   not hide the value.
@@ -143,17 +149,15 @@ Fields:
   identifier.
 - `description`: human-readable explanation of what the column measures.
 - `header`: human column label for CSV or TSV output.
-- `value`: literal value. Mutually exclusive with `query`.
-- `valueLabel`: Prometheus label to extract instead of the sample value. Requires
-  `query`.
-- `query`: PromQL query evaluated against Prometheus. Mutually exclusive with `value`.
+- `query`: PromQL query evaluated against Prometheus.
+- `valueLabel`: Prometheus label to extract instead of the sample value. Optional.
 
-Built-in YAML entries keep the field order `key`, `description`, `header`, then
-`value`, `valueLabel`, or `query` fields.
+Packaged YAML entries keep the field order `key`, `description`, `header`, then
+`valueLabel` when needed, then `query`.
 
 ## Query substitutions
 
-Variables are substituted in the raw query file before YAML or JSON decoding:
+Variables are substituted in the raw query file before YAML decoding:
 
 - `$NAMESPACE`: exact load-test namespace, for example `c8-ck-baseline-20260814`.
 - `$DURATION_S`: report window duration with an `s` suffix, for example `600s`.
@@ -187,7 +191,7 @@ missing metrics.
 
 ```bash
 uv run load-test-report c8-ck-base-8736-endurance \
-  --queries stable-87 \
+  --queries report-queries-stable-87.yaml \
   --start 2026-08-12T09:00:00Z \
   --end 2026-08-13T06:00:00Z \
   --format tsv --no-header
