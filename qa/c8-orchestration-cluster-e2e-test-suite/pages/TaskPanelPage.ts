@@ -17,29 +17,29 @@ export type TaskCard = {
 class TaskPanelPage {
   readonly availableTasks: Locator;
   readonly taskCards: Locator;
-  readonly collapseSidePanelButton: Locator;
-  readonly expandSidePanelButton: Locator;
+  readonly filterSelectButton: Locator;
   private page: Page;
   readonly taskListPageBanner: Locator;
-  readonly collapseFilter: Locator;
   readonly completedHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
     this.taskCards = this.availableTasks.locator('article');
-    this.collapseSidePanelButton = page.locator(
-      'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
-    );
-    this.expandSidePanelButton = page
-      .locator('[aria-label="Filter controls"] li')
-      .filter({hasText: 'Expand to show filters'});
-    this.taskListPageBanner = page.getByRole('link', {
-      name: 'Camunda logo Tasklist',
+    // The old Carbon expandable filter sidebar (`[aria-label="Filter
+    // controls"]`, "Expand to show filters") no longer exists. Filtering is
+    // now a single dropdown-trigger button (id="filter-select") whose
+    // accessible name is the `taskFiltersHeaderAria` string ("Filters");
+    // clicking it opens a Radix DropdownMenu of filter options.
+    this.filterSelectButton = page.getByRole('button', {
+      name: 'Filters',
+      exact: true,
     });
-    this.collapseFilter = page.locator(
-      'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
-    );
+    // The header logo's accessible name is now just "Camunda logo" (the old
+    // Carbon header appended the product name, "Camunda logo Tasklist").
+    this.taskListPageBanner = page.getByRole('link', {
+      name: 'Camunda logo',
+    });
     this.completedHeading = page.getByRole('heading', {
       name: 'completed',
     });
@@ -65,13 +65,21 @@ class TaskPanelPage {
     const maxRetries = 5;
     while (retryCount < maxRetries) {
       try {
-        const link = this.page.getByRole('link', {name: option, exact: true});
-        if (!(await link.isVisible())) {
-          await expect(this.expandSidePanelButton).toBeVisible();
-          await this.expandSidePanelButton.click();
-        }
-        await expect(link).toBeVisible({timeout: 10000});
-        await link.click();
+        // Open the filter dropdown, then pick the option from the menu that
+        // appears. Unlike the old Carbon sidebar, the trigger is always
+        // visible — there's no separate expand/collapse step.
+        await expect(this.filterSelectButton).toBeVisible({timeout: 10000});
+        await this.filterSelectButton.click();
+
+        const menuItem = this.page.getByRole('menuitem', {
+          name: option,
+          exact: true,
+        });
+        await expect(menuItem).toBeVisible({timeout: 10000});
+        await menuItem.click();
+
+        // Selecting an item closes the dropdown menu on its own.
+        await expect(menuItem).toBeHidden({timeout: 10000});
 
         if (option === 'All open tasks') {
           // "All open tasks" is the default filter, so the router omits it
@@ -91,7 +99,6 @@ class TaskPanelPage {
           const filterRegex = new RegExp(`filter=${expectedSegment}(?:&|$)`);
           await expect(this.page).toHaveURL(filterRegex, {timeout: 15000});
         }
-        await this.collapseSidePanelButton.click();
         return;
       } catch (error) {
         retryCount++;
@@ -101,10 +108,6 @@ class TaskPanelPage {
     throw new Error(
       `Failed to apply filter "${option}" after ${maxRetries} attempts.`,
     );
-  }
-
-  async clickCollapseFilter(): Promise<void> {
-    await this.collapseFilter.click({timeout: 45000});
   }
 
   async assertCompletedHeadingVisible() {

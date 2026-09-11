@@ -18,10 +18,17 @@ class TasklistHeader {
 
   constructor(page: Page) {
     this.page = page;
-    this.openSettingsButton = page.getByRole('button', {name: 'Open Settings'});
-    this.languageSelector = page.getByRole('combobox', {name: 'Language'});
+    // The shadcn AccountMenu button's accessible name is driven by
+    // `headerSettingsLabel` ("Settings"), not the old Carbon "Open Settings".
+    this.openSettingsButton = page.getByRole('button', {name: 'Settings'});
+    // The old Carbon combobox+listbox is gone; the settings dropdown now
+    // renders language options as a Radix radio group
+    // (aria-label="Language", one `role="radio"` per language).
+    this.languageSelector = page.getByRole('radiogroup', {name: 'Language'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
-    this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    // The settings dropdown's "Log out" entry is a Radix DropdownMenuItem,
+    // which renders `role="menuitem"`, not a `<button>`.
+    this.logoutButton = page.getByRole('menuitem', {name: 'Log out'});
     this.tasksTab = page
       .getByRole('navigation')
       .getByRole('link', {name: 'Tasks', exact: true});
@@ -35,8 +42,9 @@ class TasklistHeader {
   async changeLanguage(option: 'Français' | 'English' | 'Deutsch' | 'Español') {
     await this.openSettingsButton.click();
     await expect(this.languageSelector).toBeVisible();
-    await this.languageSelector.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    // Selecting a language is a direct click on its radio item (no separate
+    // listbox/option step like the old Carbon combobox required).
+    await this.page.getByRole('radio', {name: option, exact: true}).click();
   }
 
   async clickTasksTab() {

@@ -113,14 +113,19 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    this.processTab = page.getByRole('link', {
+    // Same TabListNav migration as the history tab below: this is now a
+    // `role="tab"`, not a Carbon-era nav link.
+    this.processTab = page.getByRole('tab', {
       name: 'show associated bpmn process',
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
-    this.historyTabButton = page.getByRole('link', {
+    // TabListNav renders shadcn/Radix Tabs now, not Carbon nav links — the
+    // history entry is a `role="tab"`, not a `role="link"`. Its accessible
+    // name (`taskDetailsShowHistoryLabel`) is unchanged.
+    this.historyTabButton = page.getByRole('tab', {
       name: 'Show task history',
     });
     this.historyTable = page
