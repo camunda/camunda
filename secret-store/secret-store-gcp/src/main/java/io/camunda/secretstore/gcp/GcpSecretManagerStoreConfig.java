@@ -7,6 +7,7 @@
  */
 package io.camunda.secretstore.gcp;
 
+import java.time.Duration;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -31,13 +32,27 @@ import org.jspecify.annotations.Nullable;
  *     at a local Secret Manager emulator. Requires {@code endpoint} to be set and must never be
  *     enabled against real GCP; production always leaves this {@code false} and authenticates via
  *     the Application Default Credentials chain.
+ * @param callTimeout upper bound on one {@code resolve}/{@code list} call to GCP, retries included.
+ *     Must be positive. gax's defaults let an unresponsive endpoint hold the caller far longer than
+ *     that; the background resolution calls this store from an IO-bound actor thread shared with
+ *     every partition's exporter, so an unbounded call there stalls exporting broker-wide
+ *     (camunda/camunda#62869)
  */
 public record GcpSecretManagerStoreConfig(
     @Nullable String projectId,
     @Nullable String pathPrefix,
     @Nullable String endpoint,
     @Nullable String containerSecretId,
-    boolean withoutAuthentication) {
+    boolean withoutAuthentication,
+    Duration callTimeout) {
+
+  /**
+   * Default upper bound on one call to GCP, retries included. Matches the AWS store's default, and
+   * is chosen so that a store that has stopped answering is reported unavailable within a few
+   * resolution cycles rather than after minutes: that is what lets the scheduler's retry ladder and
+   * its cooldown skip engage.
+   */
+  public static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(5);
 
   public GcpSecretManagerStoreConfig {
     if (projectId != null && projectId.isBlank()) {
@@ -50,6 +65,28 @@ public record GcpSecretManagerStoreConfig(
       throw new IllegalArgumentException(
           "endpoint must be set when authentication is disabled (emulator testing only)");
     }
+    if (callTimeout == null || !callTimeout.isPositive()) {
+      throw new IllegalArgumentException("callTimeout must be positive, but was " + callTimeout);
+    }
+  }
+
+  /**
+   * Creates a config with the default call timeout. Every caller that does not tune it goes through
+   * here, so a store is bounded whether or not an operator configured it.
+   */
+  public GcpSecretManagerStoreConfig(
+      final @Nullable String projectId,
+      final @Nullable String pathPrefix,
+      final @Nullable String endpoint,
+      final @Nullable String containerSecretId,
+      final boolean withoutAuthentication) {
+    this(
+        projectId,
+        pathPrefix,
+        endpoint,
+        containerSecretId,
+        withoutAuthentication,
+        DEFAULT_CALL_TIMEOUT);
   }
 
   /**

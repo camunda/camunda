@@ -8,6 +8,7 @@
 package io.camunda.secretstore.gcp;
 
 import com.google.api.gax.core.NoCredentialsProvider;
+import com.google.api.gax.rpc.UnaryCallSettings;
 import com.google.cloud.ServiceOptions;
 import com.google.cloud.secretmanager.v1.SecretManagerServiceClient;
 import com.google.cloud.secretmanager.v1.SecretManagerServiceSettings;
@@ -17,6 +18,7 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -141,6 +143,7 @@ public final class GcpSecretManagerSecretStore implements SecretStore {
       } else if (config.endpoint() != null && !config.endpoint().isBlank()) {
         settings.setEndpoint(config.endpoint());
       }
+      applyCallTimeout(settings, config.callTimeout());
       client = SecretManagerServiceClient.create(settings.build());
     } catch (final IOException | RuntimeException e) {
       throw new SecretStoreUnavailableException(
@@ -174,6 +177,46 @@ public final class GcpSecretManagerSecretStore implements SecretStore {
           e.getMessage(),
           e);
     }
+  }
+
+  /**
+   * Bounds every RPC the resolvers issue by {@code callTimeout}, keeping the rest of gax's retry
+   * settings as they are.
+   *
+   * <p>The bound matters beyond the call that hits it. The background resolution reads this store
+   * from an IO-bound actor thread that every partition's exporter shares, so a call with no upper
+   * bound stalls exporting broker-wide rather than only delaying secret resolution
+   * (camunda/camunda#62869). It is also what makes the scheduler's existing defense work at all: it
+   * retries an unavailable store with a backoff and skips it while it cools down, and none of that
+   * can engage until the store reports the failure.
+   *
+   * <p>Both the total and the per-attempt RPC bounds are set. gax caps one attempt separately from
+   * the total, and its defaults for these RPCs are wider than the total set here, which would let a
+   * single attempt outlive the bound.
+   *
+   * <p>Package-private so the bounds can be asserted without opening a client.
+   */
+  static void applyCallTimeout(
+      final SecretManagerServiceSettings.Builder settings, final Duration callTimeout) {
+    boundRetrySettings(settings.accessSecretVersionSettings(), callTimeout);
+    boundRetrySettings(settings.listSecretsSettings(), callTimeout);
+  }
+
+  private static void boundRetrySettings(
+      final UnaryCallSettings.Builder<?, ?> callSettings, final Duration callTimeout) {
+    final var retrySettings = callSettings.getRetrySettings();
+    callSettings.setRetrySettings(
+        retrySettings.toBuilder()
+            .setTotalTimeoutDuration(callTimeout)
+            // an attempt must not be allowed to outlive the total it sits inside
+            .setInitialRpcTimeoutDuration(
+                min(retrySettings.getInitialRpcTimeoutDuration(), callTimeout))
+            .setMaxRpcTimeoutDuration(min(retrySettings.getMaxRpcTimeoutDuration(), callTimeout))
+            .build());
+  }
+
+  private static Duration min(final Duration left, final Duration right) {
+    return left.compareTo(right) <= 0 ? left : right;
   }
 
   @Override
