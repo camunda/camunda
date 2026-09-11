@@ -7,21 +7,25 @@
  */
 
 import { FC, lazy, Suspense } from "react";
-import { ListPageFallback } from "src/components/fallbacks";
+import { ListPageFallback } from "src/components/fallbacksV2";
 import PageRoutes from "src/components/router/PageRoutes";
-import Detail from "src/pages/users/detail";
+import Detail from "src/pages/groups/detailV2";
 
-const List = lazy(() => import("./List"));
+const List = lazy(() => import("./ListV2"));
 
-const Users: FC = () => (
+type GroupsProps = {
+  isOIDC: boolean;
+};
+
+const Groups: FC<GroupsProps> = ({ isOIDC }) => (
   <PageRoutes
     indexElement={
       <Suspense fallback={<ListPageFallback />}>
         <List />
       </Suspense>
     }
-    detailElement={<Detail />}
+    detailElement={<Detail isOIDC={isOIDC} />}
   />
 );
 
-export default Users;
+export default Groups;
