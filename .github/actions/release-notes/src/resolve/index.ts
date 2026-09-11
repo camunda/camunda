@@ -67,12 +67,17 @@ export interface ClassifiedRef {
  * that a keyword cannot distinguish — the issue is still open, a human clicked
  * Close, or a bare commit pushed straight to the branch closed it.
  */
-export interface IssueClosure {
+export interface IssueFacts {
   readonly closed: boolean;
   /** GitHub's own reason enum; `NOT_PLANNED`/`DUPLICATE` mean the issue was
    *  abandoned rather than delivered, whatever any pull request claims. */
   readonly stateReason: string | null;
   readonly closerPrNumber: number | null;
+  /** The issue's own labels. `kind/*` decides customer visibility, and it
+   *  lives here and nowhere else — a delivering pull request carries no
+   *  `kind/*` label of its own, so the type in its title is all the
+   *  categorizer would otherwise have to go on. */
+  readonly labels: readonly string[];
 }
 
 export interface GraphqlResolver {
@@ -83,7 +88,7 @@ export interface GraphqlResolver {
    *  A number already known to be a merged pull request must stay strict. */
   fetchPrMetadata(numbers: readonly number[], speculative?: boolean): Promise<PrMetadata[]>;
   classifyRefs(numbers: readonly number[]): Promise<Map<number, ClassifiedRef>>;
-  fetchIssueClosers(numbers: readonly number[]): Promise<Map<number, IssueClosure>>;
+  fetchIssueFacts(numbers: readonly number[]): Promise<Map<number, IssueFacts>>;
 }
 
 const GRAPHQL_URL = 'https://api.github.com/graphql';
@@ -193,9 +198,10 @@ interface PrMetadataNode {
   readonly closingIssuesReferences?: { nodes?: readonly { number: number }[]; pageInfo?: { hasNextPage?: boolean } };
 }
 
-interface IssueClosureNode {
+interface IssueFactsNode {
   readonly closed?: boolean;
   readonly stateReason?: string | null;
+  readonly labels?: { readonly nodes?: readonly { readonly name: string }[] } | null;
   readonly timelineItems?: {
     readonly nodes?: readonly ({
       readonly closer?: {
@@ -328,8 +334,8 @@ export class GithubGraphqlResolver implements GraphqlResolver {
   }
 
   /**
-   * Reads each issue's own close event: was it closed, why, and by which pull
-   * request's merge. Same batching as `classifyRefs` — a direct node lookup per
+   * Reads what only the ISSUE knows: its labels, and its own close event —
+   * was it closed, why, and by which pull request's merge. Same batching as `classifyRefs` — a direct node lookup per
    * alias, 100 to a request — and the same NOT_FOUND tolerance, because the
    * number set comes from references that may point at something deleted.
    *
@@ -338,8 +344,8 @@ export class GithubGraphqlResolver implements GraphqlResolver {
    * earlier close never shadows it. A number that resolves to a pull request
    * rather than an issue answers null and is treated as "nothing closed here".
    */
-  async fetchIssueClosers(numbers: readonly number[]): Promise<Map<number, IssueClosure>> {
-    const out = new Map<number, IssueClosure>();
+  async fetchIssueFacts(numbers: readonly number[]): Promise<Map<number, IssueFacts>> {
+    const out = new Map<number, IssueFacts>();
     for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
       const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
       const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
@@ -347,7 +353,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
           ${batch
             .map(
               (_, j) =>
-                `i${j}: issue(number: $n${j}) { closed stateReason timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
+                `i${j}: issue(number: $n${j}) { closed stateReason labels(first: 20) { nodes { name } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
             )
             .join('\n')}
         }
@@ -356,7 +362,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
       batch.forEach((number, j) => (variables[`n${j}`] = number));
       const repository = await this.requestRepository(query, variables, true);
       batch.forEach((number, j) => {
-        const node = repository[`i${j}`] as IssueClosureNode | null | undefined;
+        const node = repository[`i${j}`] as IssueFactsNode | null | undefined;
         if (!node) return;
         const closer = node.timelineItems?.nodes?.[0]?.closer;
         // A pull request in ANOTHER repository can close an issue here, and
@@ -369,6 +375,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
           closed: node.closed ?? false,
           stateReason: node.stateReason ?? null,
           closerPrNumber: closer?.__typename === 'PullRequest' && sameRepo ? (closer.number ?? null) : null,
+          labels: (node.labels?.nodes ?? []).map((label) => label.name),
         });
       });
     }

@@ -32,6 +32,42 @@ const SECTION_BY_TYPE: Record<string, string | null> = {
 /** The one section hidden from the customer-facing body — still in the full asset. */
 const INTERNAL_SECTION = 'Maintenance';
 
+/**
+ * Issue kinds a customer must never be shown, whatever the delivering pull
+ * request's title says.
+ *
+ * Section comes from the conventional-commit type, which describes the CHANGE,
+ * not who it is for: a CI gate lands as `feat:`, a flaky-test repair as `fix:`,
+ * a load-test folder marker as `docs:`. Each of those then reads to a customer
+ * as a feature, a bug fix and a documentation change respectively. The issue's
+ * `kind/*` label is the only place the audience is actually recorded — and it
+ * lives on the issue alone; the delivering pull request carries no `kind/*` of
+ * its own. Measured on 8.9.19: 3 of the 23 customer-facing lines were internal
+ * work before this rule.
+ */
+const INTERNAL_ISSUE_KINDS: ReadonlySet<string> = new Set(['kind/task', 'kind/epic']);
+
+/** The `kind/*` label that marks one issue internal, or null. Returns the
+ *  label rather than a boolean so the audit line can name which one did it. */
+export function internalIssueKind(issueLabels: readonly string[]): string | null {
+  return issueLabels.find((label) => INTERNAL_ISSUE_KINDS.has(label)) ?? null;
+}
+
+/**
+ * The kind that hides an ENTRY from the customer body, or null to show it.
+ *
+ * Hidden only when EVERY linked issue is internal. One pull request routinely
+ * closes a customer bug and a QA task together — 8.9.19's #61857 closed both
+ * `kind/bug` #61719 and `kind/task` #56995 — and hiding on any internal label
+ * would have suppressed a real customer-facing fix along with the task. A pull
+ * request linking no issue at all is not hidden: absence is not a signal.
+ */
+export function hiddenFromCustomerBody(issueLabelSets: readonly (readonly string[])[]): string | null {
+  if (issueLabelSets.length === 0) return null;
+  const kinds = issueLabelSets.map(internalIssueKind);
+  return kinds.every((kind) => kind !== null) ? kinds[0]! : null;
+}
+
 // `type` + optional `(scope)` + optional `!` + `: ` + subject. The caller
 // (pipeline/index.ts) already runs stripBackportPrefix on the title before
 // this ever sees it, so no bracket tolerance is needed here — a leading
@@ -59,23 +95,41 @@ const DEPENDABOT_BUMP = /Bump (\S+) from (\S+) to (\S+)/i;
 // the column count varies between renovate's table shapes.
 const RENOVATE_TABLE_ROW = /^\|\s*\[([^\]]+)\].*?`([^`]+)`\s*→\s*`([^`]+)`.*\|\s*$/gm;
 
+/** One package's version move, as the bot described it. */
+export interface DependencyUpdate {
+  readonly name: string;
+  readonly from: string;
+  readonly to: string;
+}
+
 /**
- * For a `deps:` PR, the dependency name and its old/new version — the customer
- * wants "name: old → new", not the bot's verbose prose. Renovate only puts the
- * new version in its title, so its body table is read instead. null when
- * neither shape matches; the caller then keeps the plain title.
+ * For a `deps:` PR, each dependency it moves and the versions it moved them
+ * between — the customer wants "name: old → new", not the bot's verbose prose.
+ * Renovate only puts the new version in its title, so its body table is read
+ * instead, and one renovate PR can carry several rows. Empty when neither
+ * shape matches; the caller then keeps the plain title.
+ *
+ * Structured rather than pre-formatted because the renderer collapses repeated
+ * updates of one package across a release into a single first-to-last line,
+ * which it cannot do from a string it would have to parse back.
  */
-export function parseDependencyUpdate(input: { readonly title: string; readonly body: string }): string | null {
+export function parseDependencyUpdate(input: { readonly title: string; readonly body: string }): DependencyUpdate[] {
   const bump = DEPENDABOT_BUMP.exec(input.title);
   if (bump) {
     const [, name, from, to] = bump;
-    return `${name}: ${from} → ${to}`;
+    return [{ name: name!, from: from!, to: to! }];
   }
 
-  const rows = [...input.body.matchAll(RENOVATE_TABLE_ROW)].map(
-    (match) => `${match[1]}: ${match[2]} → ${match[3]}`,
-  );
-  return rows.length > 0 ? rows.join('; ') : null;
+  return [...input.body.matchAll(RENOVATE_TABLE_ROW)].map((match) => ({
+    name: match[1]!,
+    from: match[2]!,
+    to: match[3]!,
+  }));
+}
+
+/** The one-line form used as an entry title. */
+export function formatDependencyUpdates(updates: readonly DependencyUpdate[]): string {
+  return updates.map((update) => `${update.name}: ${update.from} → ${update.to}`).join('; ');
 }
 
 export interface CategorizeInput {

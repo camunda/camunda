@@ -1,5 +1,5 @@
 import type { DeliveryPath } from '../attribution/types';
-import type { IssueClosure } from '../resolve';
+import type { IssueFacts } from '../resolve';
 
 /**
  * Decides, per issue, whether THIS pull request is the one that delivered it —
@@ -52,7 +52,7 @@ const ABANDONED_REASONS: ReadonlySet<string> = new Set(['NOT_PLANNED', 'DUPLICAT
  * the backport hop: whatever a body claims, GitHub's own record says that issue
  * was abandoned, not shipped.
  */
-export function closesIssueNumbers(input: DeliveryInput, closures: ReadonlyMap<number, IssueClosure>): number[] {
+export function closesIssueNumbers(input: DeliveryInput, closures: ReadonlyMap<number, IssueFacts>): number[] {
   if (input.deliveryPath === 'backportHop') return [...input.issueNumbers];
 
   return input.issueNumbers.filter((issueNumber) => {

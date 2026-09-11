@@ -2,17 +2,17 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { closesIssueNumbers } from '../src/delivery';
 import type { DeliveryInput } from '../src/delivery';
-import type { IssueClosure } from '../src/resolve';
+import type { IssueFacts } from '../src/resolve';
 
 function input(overrides: Partial<DeliveryInput> = {}): DeliveryInput {
   return { prNumber: 101, issueNumbers: [500], deliveryPath: 'direct', declaredCloses: [], ...overrides };
 }
 
-function closures(entries: Record<number, Partial<IssueClosure>>): Map<number, IssueClosure> {
+function closures(entries: Record<number, Partial<IssueFacts>>): Map<number, IssueFacts> {
   return new Map(
     Object.entries(entries).map(([number, closure]) => [
       Number(number),
-      { closed: true, stateReason: 'COMPLETED', closerPrNumber: null, ...closure },
+      { closed: true, stateReason: 'COMPLETED', closerPrNumber: null, labels: [], ...closure },
     ]),
   );
 }

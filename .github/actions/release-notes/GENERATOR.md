@@ -45,13 +45,13 @@ Inputs and outputs are declared in [`generate/action.yml`](generate/action.yml).
 **read-only**: it writes files and one step output, and never labels an issue, comments on one, or
 touches the release. Publishing is the separate cutover work unit (#57714).
 
-| Written to `output-dir`  |                                                                                                  Contents                                                                                                   |
-|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `CHANGELOG-<version>.md` | The full asset. Every shipped pull request, including the internal-only `Maintenance` section and the unattributed bucket. This is the file attached to the GitHub release.                                 |
-| `changelog.json`         | One record per pull request: number, title, section, visibility, component, breaking, `issueNumbers`, `closesIssueNumbers`, `attributionSource`. The machine-readable form of the same run.                 |
-| `labels.json`            | Flat lists of every issue number and pull request number in the release — what the cutover work unit will label.                                                                                            |
-| `audit.json`             | The `allow-unattributed` overrides actually applied, one row per pull request with the reason given. Empty when nothing was overridden **and** empty when the guard failed — a failed run overrode nothing. |
-| `comments.json`          | **One entry per issue**, naming every pull request that delivered it, with the comment text and a stable marker so a re-run updates rather than duplicates.                                                 |
+| Written to `output-dir`  |                                                                                                                                                                                                                         Contents                                                                                                                                                                                                                         |
+|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CHANGELOG-<version>.md` | The full asset. Every shipped pull request, including the internal-only `Maintenance` section and the unattributed bucket. This is the file attached to the GitHub release.                                                                                                                                                                                                                                                                              |
+| `changelog.json`         | One record per pull request: number, title, section, visibility, component, breaking, `issueNumbers`, `closesIssueNumbers`, `attributionSource`. The machine-readable form of the same run.                                                                                                                                                                                                                                                              |
+| `labels.json`            | Flat lists of every issue number and pull request number in the release — what the cutover work unit will label.                                                                                                                                                                                                                                                                                                                                         |
+| `audit.json`             | Two lists. `overrides`: the `allow-unattributed` exceptions actually applied, one row per pull request with its reason — empty when nothing was overridden, and empty when the guard FAILED, since a failed run overrode nothing. `warnings`: every audit line the run produced, in walk order — range anomalies, ruleset bypasses, truncated fields, attribution and categorization reasons, post-gate anomalies. Always present, empty on a clean run. |
+| `comments.json`          | **One entry per issue**, naming every pull request that delivered it, with the comment text and a stable marker so a re-run updates rather than duplicates.                                                                                                                                                                                                                                                                                              |
 
 |   Step output   |                                                               Contents                                                               |
 |-----------------|--------------------------------------------------------------------------------------------------------------------------------------|
@@ -123,17 +123,17 @@ read any code.
 Range <baseline-sha-or-tag>..<target>: <N> first-parent commits.
 Mapped <N> commits from their own subject; <M> need the commit-to-PR query.
 Pre-classified <N> distinct references in <M> requests.
-Read the close event of <N> of <M> referenced issue(s).
+Read labels and the close event of <N> of <M> referenced issue(s).
 Generated release notes for <version>: <N> attributed PR(s).
 ```
 
-|                Line                 |                                                                                                               What it tells you                                                                                                               |
-|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Range ...`                         | The baseline was resolved and git walked it. A wrong range is visible **here** — check it before reading anything else.                                                                                                                       |
-| `Mapped ... from their own subject` | How many commits carried their pull request number in the merge subject (the fast path) versus how many needed the expensive `associatedPullRequests` query. On a healthy squash-merge repo the second number is small: 32 of 3,694 on 8.9.0. |
-| `Pre-classified ...`                | Every same-repo reference in every pull request body, classified in one batched pass.                                                                                                                                                         |
-| `Read the close event of N of M`    | `M` is how many issues needed the closer lookup; `N` how many resolved. `M - N` are references to deleted or transferred issues, which is normal. Issues already settled by a backport hop are not counted — they are never looked up.        |
-| `Generated release notes ...`       | Success. Files are on disk.                                                                                                                                                                                                                   |
+|                    Line                     |                                                                                                                                                      What it tells you                                                                                                                                                      |
+|---------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Range ...`                                 | The baseline was resolved and git walked it. A wrong range is visible **here** — check it before reading anything else.                                                                                                                                                                                                     |
+| `Mapped ... from their own subject`         | How many commits carried their pull request number in the merge subject (the fast path) versus how many needed the expensive `associatedPullRequests` query. On a healthy squash-merge repo the second number is small: 32 of 3,694 on 8.9.0.                                                                               |
+| `Pre-classified ...`                        | Every same-repo reference in every pull request body, classified in one batched pass.                                                                                                                                                                                                                                       |
+| `Read labels and the close event of N of M` | `M` is every issue attribution produced; `N` how many resolved. `M - N` are references to deleted or transferred issues, which is normal. Every attributed issue is asked about, including ones a backport hop already settled — the delivery rule does not need those, but the `kind/*` visibility rule needs all of them. |
+| `Generated release notes ...`               | Success. Files are on disk.                                                                                                                                                                                                                                                                                                 |
 
 Everything else is a `::warning::`. Warnings are **collected and emitted in walk order**, not as
 they occur, so the audit log reads the same on every run of the same release. They are also flushed
@@ -337,6 +337,23 @@ from renovate's body table. If neither shape matches, the plain title is kept.
 Component comes from component labels: none → `null`, one → that label, several → `Multiple components`
 plus a warning naming them. `breaking` comes from the breaking-change label.
 
+**The issue's `kind/*` label overrides visibility.** A section describes the *change*; it says nothing
+about who the change is for. A CI gate lands as `feat:`, a flaky-test repair as `fix:`, a load-test
+folder marker as `docs:` — and each then reads to a customer as a feature, a bug fix and a
+documentation change. The audience is recorded only on the issue, and only there: a delivering pull
+request carries no `kind/*` label of its own. So an entry whose linked issues are **all**
+`kind/task` or `kind/epic` is forced to `internal` — kept in the full asset, hidden from the
+customer body, never dropped, with a warning naming the label that did it.
+
+Hidden only when *every* linked issue is internal. One pull request routinely closes a customer bug
+and a QA task together — 8.9.19's #61857 closed both `kind/bug` #61719 and `kind/task` #56995 — and
+hiding on any internal label would suppress the real fix along with the task. A pull request linking
+no issue at all is never hidden: absence is not a signal.
+
+Measured on 8.9.19: this removed 3 of 23 customer-facing lines, all internal work — the PR-gate
+epic under **Features**, a flaky integration test under **Bug Fixes**, and an *8.10* load-test epic
+under **Documentation**.
+
 ### 5. The delivery claim — released, or partially delivered?
 
 **File:** [`src/delivery/index.ts`](src/delivery/index.ts) (pure), fed by `fetchIssueClosers` in [`src/resolve/index.ts`](src/resolve/index.ts).
@@ -383,8 +400,38 @@ unattributed) has nothing to group under and stays a single-PR entry.
 ```
 - Add agent history API (#55) — #101, #102, #103, #104
 - Fix draining state never written (#61277) — #61874
+- Rework the scheduler (#59931) — #61717 (partially delivered)   ← issue still open
 - ci: bump the runner image (#60840)          ← no issue: pull request only
 ```
+
+**An entry whose issue is still open says so.** Grouping puts one line under the
+issue's own title, which reads as the whole feature shipping — so an entry whose
+issue GitHub still reports as `OPEN` is marked `(partially delivered)`. Keyed on the
+issue being open, deliberately *not* on "did a pull request in this range close it":
+8.9.19's #55699 is closed as `COMPLETED` with no recorded closer, because a human
+clicked Close, and calling that partially delivered would be a false claim about
+finished work rather than caution. An issue absent from the lookup is never marked —
+absence is not evidence.
+
+**Dependency bumps group by package, not by pull request.** A release that moves one
+package five times published five lines a reader had to reconcile by hand, and 8.9.19
+shipped two byte-identical `io.github.classgraph: 4.8.193 → 4.8.194` lines from #61527
+and #61528. Each package now gets one line spanning where the release started to where
+it ended, citing every pull request that moved it:
+
+```
+- io.github.classgraph:classgraph: 4.8.193 → 4.8.194 (#61527, #61528)
+```
+
+Across pull requests the walk order settles which update came first — newest first, so
+the earliest is last. Within one pull request it cannot: a grouped renovate body lists
+rows per lockfile, not in time order, and the positional answer gave
+`browserslist: 4.28.2` when the release really started at `4.28.1`. So versions are
+compared numerically where they can be, and walk order is the fallback for anything
+unorderable — a digest or a short sha, where walk order *is* the chronology. The same
+collapse fixes a single renovate pull request listing one package twice, and a pull
+request bumping several packages now produces one line each instead of a `;`-joined
+run-on.
 
 Where a group's pull requests disagree on section — a `feat`, a `fix` and two `refactor`s delivering
 one issue — the **most customer-visible** section wins, ranked by the section order below. Deliberately
@@ -604,7 +651,10 @@ src/
   delivery/index.ts  released vs partially delivered, from the issue's own close event
   render/index.ts    grouping, both bodies, the four JSON outputs, the unattributed guard
   title/index.ts     title lint and the bot link exemption (shared with the gate)
+  types.ts           the reference/resolution types both entrypoints share
   gha.ts             the ~7 Actions toolkit calls this package uses, inlined
+  lint.ts            the OTHER entrypoint — the PR-gate. Not part of this flow;
+                     documented in README.md
 
 test/                one file per module; the pure modules need no network at all
 generate/action.yml  the generator's inputs and outputs
