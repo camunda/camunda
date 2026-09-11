@@ -17,8 +17,10 @@ package io.atomix.raft.rebalance;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.utils.concurrent.Scheduled;
 import java.util.concurrent.CompletableFuture;
@@ -31,11 +33,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Promotes the desired leader by sending it TimeoutNow, resending every {@code heartbeatInterval}
- * until leadership actually moves or {@code maxTransferAttempts} sends are spent. Completes with
- * {@link LeadershipTransferResult#TRANSFERRED} only once the <em>selected</em> target is observed
- * to have become leader; if a different node wins instead, or leadership otherwise moves away, we
- * report {@link LeadershipTransferResult#LEADER_CHANGED}. If the leadership doesn't move before our
- * attempt budget runs out, we report {@link LeadershipTransferResult#TIMEOUT_NOW_EXHAUSTED}.
+ * until leadership actually moves or {@code maxTransferAttempts} sends are spent. Once the target
+ * acknowledges a TimeoutNow we step down, in order to ensure that we won't have a race between
+ * resuming the partition on the current leader and the election triggered on the desired leader.
+ *
+ * <p>Completes with {@link LeadershipTransferResult#TRANSFERRED} only once the <em>selected</em>
+ * target is observed to have become leader; if a different node wins instead, or leadership
+ * otherwise moves away, we report {@link LeadershipTransferResult#LEADER_CHANGED}. If the
+ * leadership doesn't move before our attempt budget runs out, we report {@link
+ * LeadershipTransferResult#TIMEOUT_NOW_EXHAUSTED}.
  */
 @NullMarked
 final class TimeoutNowPromotion implements TransferPhase {
@@ -129,11 +135,29 @@ final class TimeoutNowPromotion implements TransferPhase {
             (response, error) -> {
               if (error != null) {
                 LOG.trace("TimeoutNow to {} failed, will retry if budget remains", target, error);
+              } else if (response.status() == RaftResponse.Status.OK) {
+                onTimeoutNowAccepted();
               } else {
-                LOG.trace("TimeoutNow to {} acknowledged: {}", target, response);
+                LOG.debug(
+                    "TimeoutNow to {} rejected with {}, will retry if budget remains",
+                    target,
+                    response.error());
               }
             },
             raft.getThreadContext());
+  }
+
+  private void onTimeoutNowAccepted() {
+    raft.checkThread();
+    if (result.isDone() || steppedDown || !leaderRunning.getAsBoolean()) {
+      return;
+    }
+    LOG.info(
+        "Target {} accepted TimeoutNow on attempt {}; stepping down so it can win the election",
+        target,
+        attempts);
+    // the step-down calls back into onLeaderStopped, which cancels the retries
+    raft.transition(Role.FOLLOWER);
   }
 
   private void onLeaderObserved(final RaftMember newLeader) {
