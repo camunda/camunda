@@ -12,16 +12,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,6 +66,29 @@ final class ManifestManagerTest {
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),
         new NamedFileSetImpl(Map.of()));
+  }
+
+  @Test
+  void shouldListManifestsAcrossPages() {
+    // given
+    final var identifiers =
+        IntStream.range(0, 1001)
+            .mapToObj(checkpointId -> new BackupIdentifierImpl(1337, 0, checkpointId))
+            .toList();
+    identifiers.forEach(
+        identifier -> manifestManager.createInitialManifest(createBackup(identifier)));
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(Optional.empty(), Optional.of(0), CheckpointPattern.any());
+
+    // when
+    final var manifests = manifestManager.listManifests(wildcard);
+
+    // then
+    assertThat(manifests)
+        .hasSize(1001)
+        .extracting(manifest -> manifest.id())
+        .containsExactlyInAnyOrderElementsOf(identifiers)
+        .doesNotHaveDuplicates();
   }
 
   @Nested
