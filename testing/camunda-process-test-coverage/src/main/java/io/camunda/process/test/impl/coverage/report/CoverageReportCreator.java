@@ -16,10 +16,12 @@
 package io.camunda.process.test.impl.coverage.report;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
+import io.camunda.process.test.api.coverage.model.CoverageRunReport;
 import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverageRunReport;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
@@ -44,9 +46,41 @@ public class CoverageReportCreator {
     return ImmutableCoverageSuiteReport.builder()
         .id(suite.getId())
         .name(suite.getName())
-        .addAllRuns(suite.getRuns())
+        .addAllRuns(
+            suite.getRuns().stream()
+                .map(run -> createRunCoverageReport(run, processModels, decisionModels))
+                .collect(Collectors.toList()))
         .addAllProcessCoverages(processCoverages)
         .addAllDecisionCoverages(decisionCoverages)
+        .build();
+  }
+
+  /**
+   * Measures a test run against the models the report describes its processes and decisions by.
+   *
+   * <p>A run reports the coverage of the deployments it ran, which are not necessarily the ones the
+   * report describes: a process can be deployed both for real and as a mock stub under one id, and
+   * suites can deploy tables that differ in their rules under one decision definition id. The
+   * report renders a run against the model it selected, so a run left as it was collected would
+   * claim a percentage of a model it did not run and highlight elements that the rendered diagram
+   * does not contain.
+   *
+   * @param run The run as it was collected
+   * @param processModels The models the report describes the processes by
+   * @param decisionModels The tables the report describes the decisions by
+   * @return The run, its coverages measured against those models
+   */
+  private static CoverageRunReport createRunCoverageReport(
+      final CoverageRunReport run,
+      final Collection<ProcessModel> processModels,
+      final Collection<DecisionModel> decisionModels) {
+    return ImmutableCoverageRunReport.builder()
+        .name(run.getName())
+        .displayName(run.getDisplayName())
+        .addAllProcessCoverages(
+            CoverageCreator.aggregateCoverages(run.getProcessCoverages(), processModels))
+        .addAllDecisionCoverages(
+            DecisionCoverageCreator.aggregateCoverages(run.getDecisionCoverages(), decisionModels))
         .build();
   }
 
