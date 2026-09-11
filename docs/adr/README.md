@@ -68,8 +68,8 @@ ADR for that domain is written.
   resolution, exporter assignment, and async context propagation. See
   [`orchestration-cluster/README.md`](orchestration-cluster/README.md).
 - `gradle/001-gradle-experimental-ci-integration.md` — how the experimental
-  Gradle build is compiled for relevant pull requests, merge groups, and
-  protected pushes while keeping Maven authoritative for Java and Maven
-  changes, restricting full Gradle testing to Gradle-only pull requests, and
-  deferring nightly and automated-repair validation.
+  Gradle build stays aligned with Maven as the source of truth for module
+  behavior and dependency versions, plus how it is compiled and tested in
+  relevant pull requests, merge groups, and protected pushes while deferring
+  nightly validation and automated repair.
 
