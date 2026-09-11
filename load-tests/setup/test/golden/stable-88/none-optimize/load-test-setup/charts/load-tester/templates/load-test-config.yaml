@@ -15,5 +15,6 @@ metadata:
 data:
   load-test-config.yaml: |
     # Extra configuration for the load test applications
+    camunda.client.auth.token-fetch-non-retryable-cooldown: PT30S
     load-tester:
       monitor-data-availability: false
