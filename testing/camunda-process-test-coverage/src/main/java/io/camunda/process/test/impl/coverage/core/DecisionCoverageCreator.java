@@ -94,41 +94,62 @@ public class DecisionCoverageCreator {
 
     final List<DecisionCoverage> aggregatedCoverages = new ArrayList<>();
     coveragesByDecisionDefinition.forEach(
-        (decisionDefinitionId, coveragesForDecision) -> {
-          final DecisionModel model =
-              models.stream()
-                  .filter(m -> m.getDecisionDefinitionId().equals(decisionDefinitionId))
-                  .findFirst()
-                  .orElseThrow(
-                      () ->
-                          new IllegalStateException(
-                              "No model found for decision definition id: "
-                                  + decisionDefinitionId));
-
-          final Map<String, Integer> matchedRules = new LinkedHashMap<>();
-          coveragesForDecision.forEach(
-              coverage -> {
-                final List<String> ruleIds = coverage.getMatchedRuleIds();
-                final List<Integer> ruleIndices = coverage.getMatchedRuleIndices();
-                for (int i = 0; i < ruleIds.size(); i++) {
-                  matchedRules.putIfAbsent(
-                      ruleIds.get(i), i < ruleIndices.size() ? ruleIndices.get(i) : null);
-                }
-              });
-          final Map<String, Integer> coveredRules = retainCoverable(matchedRules, model);
-
-          aggregatedCoverages.add(
-              ImmutableDecisionCoverage.builder()
-                  .decisionDefinitionId(decisionDefinitionId)
-                  .addAllMatchedRuleIds(coveredRules.keySet())
-                  .addAllMatchedRuleIndices(
-                      coveredRules.values().stream()
-                          .filter(Objects::nonNull)
-                          .collect(Collectors.toList()))
-                  .coverage(calculateCoverage(coveredRules.keySet(), model))
-                  .build());
-        });
+        (decisionDefinitionId, coveragesForDecision) ->
+            aggregatedCoverages.add(aggregate(decisionDefinitionId, coveragesForDecision, models)));
     return aggregatedCoverages;
+  }
+
+  /**
+   * Measures a coverage against the table the report describes its decision by.
+   *
+   * <p>A coverage is collected against the deployment that was evaluated, which is not necessarily
+   * the deployment the report describes the decision by: suites can deploy tables that differ in
+   * their rules under one decision definition id. The report renders the coverage against the table
+   * it selected, so rules of another deployment neither count towards the percentage nor are
+   * highlighted in that table.
+   *
+   * @param coverage The coverage as it was collected
+   * @param models The tables the report describes the decisions by
+   * @return The coverage, measured against the table of its decision definition id
+   */
+  public static DecisionCoverage measureAgainstReportedModel(
+      final DecisionCoverage coverage, final Collection<DecisionModel> models) {
+    return aggregate(
+        coverage.getDecisionDefinitionId(), Collections.singletonList(coverage), models);
+  }
+
+  private static DecisionCoverage aggregate(
+      final String decisionDefinitionId,
+      final List<DecisionCoverage> coverages,
+      final Collection<DecisionModel> models) {
+    final DecisionModel model =
+        models.stream()
+            .filter(m -> m.getDecisionDefinitionId().equals(decisionDefinitionId))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "No model found for decision definition id: " + decisionDefinitionId));
+
+    final Map<String, Integer> matchedRules = new LinkedHashMap<>();
+    coverages.forEach(
+        coverage -> {
+          final List<String> ruleIds = coverage.getMatchedRuleIds();
+          final List<Integer> ruleIndices = coverage.getMatchedRuleIndices();
+          for (int i = 0; i < ruleIds.size(); i++) {
+            matchedRules.putIfAbsent(
+                ruleIds.get(i), i < ruleIndices.size() ? ruleIndices.get(i) : null);
+          }
+        });
+    final Map<String, Integer> coveredRules = retainCoverable(matchedRules, model);
+
+    return ImmutableDecisionCoverage.builder()
+        .decisionDefinitionId(decisionDefinitionId)
+        .addAllMatchedRuleIds(coveredRules.keySet())
+        .addAllMatchedRuleIndices(
+            coveredRules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()))
+        .coverage(calculateCoverage(coveredRules.keySet(), model))
+        .build();
   }
 
   /**
