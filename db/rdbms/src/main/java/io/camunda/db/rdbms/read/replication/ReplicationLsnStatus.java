@@ -9,14 +9,37 @@ package io.camunda.db.rdbms.read.replication;
 
 /**
  * Per-replica replication state reported by a {@link ReplicationLsnProvider}: log-sequence number,
- * replica id, replication lag in milliseconds, and {@code replicatedUntilMs}
+ * replica id, replication lag in milliseconds, {@code replicatedUntilMs}, and the replica's
+ * self-declared label (see {@link ReplicationStatus#replicaLabel()}).
  */
 public record ReplicationLsnStatus(
-    Long logStatus, String replicaId, Long replicationLagMs, Long replicatedUntilMs)
+    Long logStatus,
+    String replicaId,
+    Long replicationLagMs,
+    Long replicatedUntilMs,
+    String replicaLabel,
+    boolean isPrimary)
     implements ReplicationStatus {
 
   public ReplicationLsnStatus(
       final Long logStatus, final String replicaId, final Long replicationLagMs) {
-    this(logStatus, replicaId, replicationLagMs, null);
+    this(logStatus, replicaId, replicationLagMs, null, null, false);
+  }
+
+  public ReplicationLsnStatus(
+      final Long logStatus,
+      final String replicaId,
+      final Long replicationLagMs,
+      final Long replicatedUntilMs) {
+    this(logStatus, replicaId, replicationLagMs, replicatedUntilMs, null, false);
+  }
+
+  public ReplicationLsnStatus(
+      final Long logStatus,
+      final String replicaId,
+      final Long replicationLagMs,
+      final Long replicatedUntilMs,
+      final String replicaLabel) {
+    this(logStatus, replicaId, replicationLagMs, replicatedUntilMs, replicaLabel, false);
   }
 }

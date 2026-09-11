@@ -63,8 +63,7 @@ class DelayReplicationSignalStrategyTest {
     when(clock.millis()).thenReturn(5_000L);
     final var strategy = createStrategy();
 
-    // when / then - ignores statuses entirely; combined with a marker of flushTime + delay, this
-    // reproduces "releaseTimeMs <= now" without any replica signal
+    // when / then - ignores statuses entirely, reproducing "releaseTimeMs <= now"
     assertThat(strategy.computeConfirmedMarker(List.of())).isEqualTo(5_000L);
     assertThat(strategy.computeConfirmedMarker(List.of(new ReplicationLagStatus("r1", 0L))))
         .isEqualTo(5_000L);

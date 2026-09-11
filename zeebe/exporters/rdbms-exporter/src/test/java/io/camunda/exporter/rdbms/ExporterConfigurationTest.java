@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -502,7 +504,7 @@ class ExporterConfigurationTest {
     replication.setEnabled(true);
     replication.setType(ReplicationType.LOG_SEQ);
     replication.setPollingInterval(Duration.ofSeconds(10));
-    replication.setMinSyncReplicas(1);
+    replication.setRegions(List.of(region("default", ".*", 1)));
     replication.setMaxLag(Duration.ofMinutes(5));
     configuration.setAsyncReplication(replication);
 
@@ -520,7 +522,7 @@ class ExporterConfigurationTest {
     replication.setEnabled(true);
     replication.setType(ReplicationType.TIME_LAG);
     replication.setPollingInterval(Duration.ofSeconds(10));
-    replication.setMinSyncReplicas(1);
+    replication.setRegions(List.of(region("default", ".*", 1)));
     replication.setMaxLag(Duration.ofMinutes(5));
     configuration.setAsyncReplication(replication);
 
@@ -540,6 +542,7 @@ class ExporterConfigurationTest {
     replication.setDelay(Duration.ofMinutes(10));
     replication.setQueueDebounceTime(Duration.ZERO);
     replication.setQueueCapacity(10);
+    replication.setRegions(List.of(region("default", ".*", 1)));
     configuration.setAsyncReplication(replication);
 
     // when
@@ -562,6 +565,25 @@ class ExporterConfigurationTest {
     configuration.validate();
 
     // then - no error, pollingInterval and maxLag are only validated when enabled
+  }
+
+  @Test
+  public void shouldBeOkWithValidMultiRegionConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
+    replication.setType(ReplicationType.LOG_SEQ);
+    replication.setPollingInterval(Duration.ofSeconds(10));
+    replication.setMaxLag(Duration.ofMinutes(5));
+    replication.setRegions(
+        List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
   }
 
   @ParameterizedTest
@@ -596,20 +618,6 @@ class ExporterConfigurationTest {
                   r.setPollingInterval(Duration.ZERO);
                 },
             "asyncReplication.pollingInterval must be a positive duration"),
-        Arguments.of(
-            (Consumer<ReplicationConfiguration>)
-                r -> {
-                  r.setEnabled(true);
-                  r.setMinSyncReplicas(-1);
-                },
-            "asyncReplication.minSyncReplicas must be greater 0"),
-        Arguments.of(
-            (Consumer<ReplicationConfiguration>)
-                r -> {
-                  r.setEnabled(true);
-                  r.setMinSyncReplicas(0);
-                },
-            "asyncReplication.minSyncReplicas must be greater 0"),
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
@@ -738,6 +746,48 @@ class ExporterConfigurationTest {
                   r.setDelay(Duration.ofMinutes(10));
                   r.setMaxLag(Duration.ofMillis(-1000));
                 },
-            "asyncReplication.maxLag must be a positive duration"));
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>) r -> r.setEnabled(true),
+            "asyncReplication.regions must not be empty"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setRegions(List.of(region("", "us-east-.*", 1)));
+                },
+            "asyncReplication.regions[].name must not be blank"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setRegions(
+                      List.of(
+                          region("us-east", "us-east-.*", 1), region("us-east", "us-east-2.*", 1)));
+                },
+            "asyncReplication.regions[].name 'us-east' is declared more than once"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setRegions(List.of(region("us-east", "[", 1)));
+                },
+            "asyncReplication.regions[us-east].pattern is not a valid regex"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setRegions(List.of(region("us-east", "us-east-.*", 0)));
+                },
+            "asyncReplication.regions[us-east].minReplicas must be at least 1"));
+  }
+
+  private static RegionConfiguration region(
+      final String name, final String pattern, final int minReplicas) {
+    final var region = new RegionConfiguration();
+    region.setName(name);
+    region.setPattern(pattern);
+    region.setMinReplicas(minReplicas);
+    return region;
   }
 }
