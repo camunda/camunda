@@ -10,6 +10,8 @@ package io.camunda.zeebe.dynamic.config.api;
 import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -19,9 +21,6 @@ import io.camunda.zeebe.dynamic.config.util.MemberIdArbitraries;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Comparator;
 import java.util.Set;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.domains.Domain;
 import org.junit.jupiter.api.Test;
 
 class RemoveMembersTransformerTest {
@@ -78,10 +77,10 @@ class RemoveMembersTransformerTest {
     assertThat(result.get()).isEmpty();
   }
 
-  @Property(tries = 100)
-  @Domain(MemberIdArbitraries.class)
-  void shouldSortOperationsByMemberId(@ForAll final Set<MemberId> candidateMembers) {
+  @HegelTest(testCases = 100)
+  void shouldSortOperationsByMemberId(final TestCase tc) {
     // given
+    final var candidateMembers = tc.draw(MemberIdArbitraries.memberIds(), "candidateMembers");
     final var removeRequest = new RemoveMembersTransformer(candidateMembers);
 
     // when

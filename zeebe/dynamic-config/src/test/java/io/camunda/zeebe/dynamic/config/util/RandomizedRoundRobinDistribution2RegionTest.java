@@ -7,24 +7,24 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static dev.hegel.Generators.integers;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.constraints.IntRange;
 
 public class RandomizedRoundRobinDistribution2RegionTest {
 
-  @Property(tries = 10)
-  void shouldDistributedPartitionsEquallyIn2Regions(
-      @ForAll @IntRange(min = 2, max = 100) final int clusterSizeFactor,
-      @ForAll @IntRange(min = 1, max = 200) final int partitionCount) {
+  @HegelTest(testCases = 10)
+  void shouldDistributedPartitionsEquallyIn2Regions(final TestCase tc) {
+    final int clusterSizeFactor = tc.draw(integers().min(2).max(100), "clusterSizeFactor");
+    final int partitionCount = tc.draw(integers().min(1).max(200), "partitionCount");
     // cluster size should be always multiple of 2 for a 2-region deployment
     final var clusterSize = 2 * clusterSizeFactor;
     allPartitionHaveTwoReplicasInEachRegion(clusterSize, partitionCount);

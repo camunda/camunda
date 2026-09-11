@@ -129,7 +129,7 @@
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jetbrains-annotations>26.1.0</version.jetbrains-annotations>
-    <version.jqwik>1.10.1</version.jqwik>
+    <version.hegel>0.5.1</version.hegel>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.6.0</version.json-smart>
@@ -1698,21 +1698,9 @@
       </dependency>
 
       <dependency>
-        <groupId>net.jqwik</groupId>
-        <artifactId>jqwik</artifactId>
-        <version>${version.jqwik}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>net.jqwik</groupId>
-        <artifactId>jqwik-api</artifactId>
-        <version>${version.jqwik}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>net.jqwik</groupId>
-        <artifactId>jqwik-time</artifactId>
-        <version>${version.jqwik}</version>
+        <groupId>dev.hegel</groupId>
+        <artifactId>hegel-jna</artifactId>
+        <version>${version.hegel}</version>
       </dependency>
 
       <dependency>
