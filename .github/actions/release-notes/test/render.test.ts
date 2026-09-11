@@ -27,9 +27,13 @@ test('a single closing PR appears in the customer body under its section, linkin
   assert.match(result.customerBody, /#100/);
 });
 
-test('an unattributed bucket fails the render by default', () => {
+test('an unattributed bucket reports a failure reason by default, but still renders every output — audit.json must exist to explain why', () => {
   const unattributed = [pr({ number: 2, attributionSource: 'unattributed', issueNumbers: [] })];
-  assert.throws(() => render([], unattributed, { version: '8.8.30', allowUnattributed: false }), /#2/);
+  const result = render([], unattributed, { version: '8.8.30', allowUnattributed: false });
+  assert.match(result.failureReason ?? '', /#2/);
+  assert.ok(
+    (result.auditJson as { overrides: { number: number; reason: string }[] }).overrides.some((o) => o.number === 2),
+  );
 });
 
 test('allow-unattributed with a reason overrides the failure and records the reason in audit.json', () => {
@@ -48,7 +52,8 @@ test('allow-unattributed with a reason overrides the failure and records the rea
 
 test('allow-unattributed without a reason still fails — the reason is required, not optional', () => {
   const unattributed = [pr({ number: 2, attributionSource: 'unattributed', issueNumbers: [] })];
-  assert.throws(() => render([], unattributed, { version: '8.8.30', allowUnattributed: true }));
+  const result = render([], unattributed, { version: '8.8.30', allowUnattributed: true });
+  assert.ok(result.failureReason);
 });
 
 test('all four JSON outputs carry the literal schemaVersion', () => {
@@ -117,6 +122,17 @@ test('a no-issue (opt-out) customer-visible PR renders under "Changes without a 
   );
   assert.match(result.customerBody, /## Changes without a tracked issue/);
   assert.match(result.customerBody, /#40/);
+});
+
+test('a bot-exempt PR (e.g. renovate) renders under its normal type section, NOT "Changes without a tracked issue" — the exemption is structural, not a declaration', () => {
+  const result = render(
+    [pr({ number: 41, title: 'deps: bump foo', section: 'Dependency updates', attributionSource: 'botExempt', issueNumbers: [] })],
+    [],
+    { version: '8.8.30', allowUnattributed: false },
+  );
+  assert.doesNotMatch(result.customerBody, /Changes without a tracked issue/);
+  assert.match(result.customerBody, /## Dependency updates/);
+  assert.match(result.customerBody, /#41/);
 });
 
 test('BREAKING CHANGE is cross-listed at the top of the customer body in addition to its normal section', () => {
