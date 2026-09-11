@@ -346,11 +346,13 @@
             <typeMapping>ElementInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>MappingRuleIdFilterProperty=StringFilterProperty</typeMapping>
             <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ProcessDefinitionIdFilterProperty=StringFilterProperty</typeMapping>
             <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>RoleIdFilterProperty=StringFilterProperty</typeMapping>
             <typeMapping>ScopeKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>VariableKeyFilterProperty=BasicStringFilterProperty</typeMapping>
           </typeMappings>
