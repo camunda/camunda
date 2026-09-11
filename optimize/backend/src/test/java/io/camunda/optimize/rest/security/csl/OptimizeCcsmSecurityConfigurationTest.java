@@ -16,13 +16,14 @@ import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
+import java.lang.reflect.Method;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -67,14 +68,15 @@ class OptimizeCcsmSecurityConfigurationTest {
   }
 
   @Test
-  void shouldBuildOidcIdTokenDecoderFactoryForLogin() {
-    when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
-
-    final TokenValidatorFactory factory =
-        config.tokenValidatorFactory(
-            oidcProviderConfigurationPort, cslProperties, ccsmTokenService);
-
-    assertThat(config.idTokenDecoderFactory(factory)).isInstanceOf(OidcIdTokenDecoderFactory.class);
+  void shouldNotOverrideIdTokenDecoderFactory() {
+    // The login id_token is audienced to the OIDC client-id, not camunda.identity.audience, so
+    // routing it through OptimizeIdentityPermissionValidator would reject every real login (see
+    // class javadoc). CSL defines no id_token decoder of its own to override, so simply not
+    // declaring this bean here leaves Spring's stock decoder in charge of the id_token untouched.
+    assertThat(
+            Arrays.stream(OptimizeCcsmSecurityConfiguration.class.getDeclaredMethods())
+                .map(Method::getName))
+        .doesNotContain("idTokenDecoderFactory");
   }
 
   private static ClientRegistration clientRegistration() {
