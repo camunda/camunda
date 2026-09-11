@@ -3750,11 +3750,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   /**
    * Command to resolve a batch of secret references in a single round-trip.
    *
-   * <p><strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
    * <p>Each reference is authorized and resolved independently, so a reference that cannot be
    * resolved never fails the others. Such a failure is returned as data on the response, not as an
    * exception: the resolved references are available on {@link
@@ -3771,17 +3766,11 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/56661")
   ResolveSecretsCommandStep1 newResolveSecretsCommand();
 
   /**
    * Command to list the secret reference names the caller is authorized to see. It never returns
    * secret values, only the reference names.
-   *
-   * <p><strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
    *
    * <pre>
    *   camundaClient
@@ -3791,6 +3780,5 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/56661")
   ListSecretsCommandStep1 newListSecretsCommand();
 }
