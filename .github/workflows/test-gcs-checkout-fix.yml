@@ -1,0 +1,78 @@
+name: TEMP - verify GCS checkout-order fix
+
+# Throwaway workflow to empirically verify the fix in the aggregate-metrics job of
+# camunda-daily-load-tests.yml (checkout wipes an untracked workspace regardless of `clean`).
+# Never meant to merge to main - delete before closing the throwaway PR that triggers this.
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/test-gcs-checkout-fix.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  old-order:
+    name: OLD order (write files, then checkout) - expect failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Write dummy metrics files
+        run: |
+          echo '[{"key":"grpc"}]' > variants.json
+          echo '{"foo":1}' > metrics-grpc.json
+          ls -la
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Show workspace after checkout
+        run: ls -la
+      - name: Authenticate to GCS load-test-results
+        continue-on-error: true
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          secret-path: secret/data/products/camunda/ci/load-test-results/load-test-results-sa
+      - name: Upload to GCS test prefix (expected to fail)
+        continue-on-error: true
+        run: |
+          shopt -s nullglob
+          files=(metrics-*.json variants.json)
+          echo "Files to copy: ${files[*]:-<none>}"
+          gcloud storage cp "${files[@]}" "gs://camunda-benchmark-load-test-results-prod/automated/_test/checkout-fix/${{ github.run_id }}/old-order/"
+
+  new-order:
+    name: NEW order (checkout, then write files) - expect success
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Show workspace after checkout
+        run: ls -la
+      - name: Write dummy metrics files
+        run: |
+          echo '[{"key":"grpc"}]' > variants.json
+          echo '{"foo":1}' > metrics-grpc.json
+          ls -la
+      - name: Authenticate to GCS load-test-results
+        continue-on-error: true
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          secret-path: secret/data/products/camunda/ci/load-test-results/load-test-results-sa
+      - name: Upload to GCS test prefix (expected to succeed)
+        run: |
+          shopt -s nullglob
+          files=(metrics-*.json variants.json)
+          echo "Files to copy: ${files[*]:-<none>}"
+          gcloud storage cp "${files[@]}" "gs://camunda-benchmark-load-test-results-prod/automated/_test/checkout-fix/${{ github.run_id }}/new-order/"
