@@ -40,23 +40,27 @@ final class AdvertisedAddressTest {
   private static final String TOXIPROXY_IMAGE = "shopify/toxiproxy:2.1.0";
 
   @Container
-  private static final ToxiproxyContainer TOXIPROXY =
+  private final ToxiproxyContainer toxiproxy =
       ProxyRegistry.addExposedPorts(new ToxiproxyContainer(DockerImageName.parse(TOXIPROXY_IMAGE)))
           .withAccessToHost(true);
 
-  private static final ProxyRegistry PROXY_REGISTRY = new ProxyRegistry(TOXIPROXY);
+  private final ProxyRegistry proxyRegistry = new ProxyRegistry(toxiproxy);
 
-  @TestZeebe(autoStart = false)
-  private final TestCluster cluster =
-      TestCluster.builder()
-          .withEmbeddedGateway(false)
-          .withGatewaysCount(1)
-          .withBrokersCount(3)
-          .withPartitionsCount(1)
-          .withReplicationFactor(3)
-          .withBrokerConfig(this::configureBroker)
-          .withGatewayConfig(this::configureGateway)
-          .build();
+  @TestZeebe(autoStart = false, initMethod = "initCluster")
+  private TestCluster cluster;
+
+  private void initCluster() {
+    cluster =
+        TestCluster.builder()
+            .withEmbeddedGateway(false)
+            .withGatewaysCount(1)
+            .withBrokersCount(3)
+            .withPartitionsCount(1)
+            .withReplicationFactor(3)
+            .withBrokerConfig(this::configureBroker)
+            .withGatewayConfig(this::configureGateway)
+            .build();
+  }
 
   /**
    * A beforeEach is needed to rebuild the initial contact points using proxies, something the
@@ -103,9 +107,9 @@ final class AdvertisedAddressTest {
           cluster.brokers().values().stream()
               .map(
                   node ->
-                      PROXY_REGISTRY.getOrCreateHostProxy(node.mappedPort(TestZeebePort.COMMAND)))
+                      proxyRegistry.getOrCreateHostProxy(node.mappedPort(TestZeebePort.COMMAND)))
               .map(ContainerProxy::internalPort)
-              .map(TOXIPROXY::getMappedPort)
+              .map(toxiproxy::getMappedPort)
               .toList();
       TopologyAssert.assertThat(topology)
           .hasClusterSize(3)
@@ -115,38 +119,38 @@ final class AdvertisedAddressTest {
               b ->
                   assertThat(b.getAddress())
                       .as("broker 0 advertises the correct proxied address")
-                      .isEqualTo(TOXIPROXY.getHost() + ":" + proxiedPorts.get(0)))
+                      .isEqualTo(toxiproxy.getHost() + ":" + proxiedPorts.get(0)))
           .hasBrokerSatisfying(
               b ->
                   assertThat(b.getAddress())
                       .as("broker 1 advertises the correct proxied address")
-                      .isEqualTo(TOXIPROXY.getHost() + ":" + proxiedPorts.get(1)))
+                      .isEqualTo(toxiproxy.getHost() + ":" + proxiedPorts.get(1)))
           .hasBrokerSatisfying(
               b ->
                   assertThat(b.getAddress())
                       .as("broker 2 advertises the correct proxied address")
-                      .isEqualTo(TOXIPROXY.getHost() + ":" + proxiedPorts.get(2)));
+                      .isEqualTo(toxiproxy.getHost() + ":" + proxiedPorts.get(2)));
       assertThat(messageSend.getMessageKey()).isPositive();
     }
   }
 
   private void configureBroker(final TestStandaloneBroker broker) {
     final var commandApiProxy =
-        PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.COMMAND));
+        proxyRegistry.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.COMMAND));
     final var internalApiProxy =
-        PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
+        proxyRegistry.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
 
     broker.withUnifiedConfig(
         cfg -> {
           final var network = cfg.getCluster().getNetwork();
-          network.getInternalApi().setAdvertisedHost(TOXIPROXY.getHost());
+          network.getInternalApi().setAdvertisedHost(toxiproxy.getHost());
           network
               .getInternalApi()
-              .setAdvertisedPort(TOXIPROXY.getMappedPort(internalApiProxy.internalPort()));
-          network.getCommandApi().setAdvertisedHost(TOXIPROXY.getHost());
+              .setAdvertisedPort(toxiproxy.getMappedPort(internalApiProxy.internalPort()));
+          network.getCommandApi().setAdvertisedHost(toxiproxy.getHost());
           network
               .getCommandApi()
-              .setAdvertisedPort(TOXIPROXY.getMappedPort(commandApiProxy.internalPort()));
+              .setAdvertisedPort(toxiproxy.getMappedPort(commandApiProxy.internalPort()));
 
           // Since gossip does not work with Toxiproxy, increase the sync interval so changes are
           // propagated faster
@@ -156,14 +160,14 @@ final class AdvertisedAddressTest {
 
   private void configureGateway(final TestGateway<?> gateway) {
     final var gatewayClusterProxy =
-        PROXY_REGISTRY.getOrCreateHostProxy(gateway.mappedPort(TestZeebePort.CLUSTER));
+        proxyRegistry.getOrCreateHostProxy(gateway.mappedPort(TestZeebePort.CLUSTER));
 
     gateway.withUnifiedConfig(
         cfg -> {
           final var internalApi = cfg.getCluster().getNetwork().getInternalApi();
-          internalApi.setAdvertisedHost(TOXIPROXY.getHost());
+          internalApi.setAdvertisedHost(toxiproxy.getHost());
           internalApi.setAdvertisedPort(
-              TOXIPROXY.getMappedPort(gatewayClusterProxy.internalPort()));
+              toxiproxy.getMappedPort(gatewayClusterProxy.internalPort()));
         });
   }
 
@@ -172,9 +176,9 @@ final class AdvertisedAddressTest {
 
     for (final var broker : cluster.brokers().values()) {
       final var internalApiProxy =
-          PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
+          proxyRegistry.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
       contactPoints.add(
-          TOXIPROXY.getHost() + ":" + TOXIPROXY.getMappedPort(internalApiProxy.internalPort()));
+          toxiproxy.getHost() + ":" + toxiproxy.getMappedPort(internalApiProxy.internalPort()));
     }
 
     return contactPoints;

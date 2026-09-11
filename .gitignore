@@ -106,4 +106,5 @@ load-tests/setup/c8-*
 **/__pycache__/**
 
 # Used by agents to persist session state
-STATE.md
+/.agent-sessions/
+/STATE.md

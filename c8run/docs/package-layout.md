@@ -14,7 +14,7 @@
 | `internal/connectors/`        | Connectors launcher compatibility logic                     |
 | `internal/packages/`          | Distribution download, clean, extract, and package logic    |
 | `configuration/`              | Default runtime configuration loaded by every start         |
-| `e2e_tests/`                  | API and Playwright checks used by C8Run CI                  |
+| `e2e_tests/`                  | API-level checks used by C8Run CI                           |
 
 ## Runtime and Generated Artifacts
 

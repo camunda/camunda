@@ -50,6 +50,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
 | `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
 | `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
+| `session-state`                | Persist and resume Claude Code session progress across restarts, `--resume`/`--continue`, and compaction        |
 | `tasklist-frontend`            | Build or change Tasklist pod features in the OC webapp at `src/tasklist/`                                      |
 
 ## Adding a new skill

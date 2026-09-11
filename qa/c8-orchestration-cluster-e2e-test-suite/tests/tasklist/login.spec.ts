@@ -26,7 +26,18 @@ test.describe.parallel('Login Tests', () => {
     await expect(taskPanelPage.taskListPageBanner).toBeVisible();
   });
 
-  test('have no a11y violations', async ({makeAxeBuilder}) => {
+  test('have no a11y violations', async ({loginPage, makeAxeBuilder}) => {
+    // TasklistLoginPage does render a <main> and an <h1> ("Tasklist"), but
+    // the SPA shell mounts asynchronously: main.tsx gates the initial React
+    // render behind loadOsano(), and the login route's beforeLoad makes its
+    // own async getCurrentUser() request before rendering the form -- until
+    // both settle, #app is the empty shell from index.html (no landmarks,
+    // no heading at all). analyze() must not run until the actual page has
+    // mounted, or axe can catch that empty intermediate DOM and report
+    // "no main landmark" / "no level-one heading" for a state nothing ever
+    // renders to the user.
+    await expect(loginPage.tasklistHeading).toBeVisible();
+
     const results = await makeAxeBuilder().analyze();
 
     expect(results.violations).toHaveLength(0);

@@ -50,6 +50,12 @@ cd load-tests/docs/scripts
 
 Args: `<namespace> [duration_seconds] [endpoint] [extra_curl_opts]`.
 
+## Via GCS archive (namespace/Prometheus retention already expired)
+
+The only option once both have expired, no kubectl or Grafana access needed. See
+`load-tests/README.md` → **Historical results archive (GCS)** for the listing/download commands
+and how to check and backfill a run whose upload failed.
+
 ## Additional metrics via Prometheus (kubectl required)
 
 When the headline metrics aren't enough, query the full set from
