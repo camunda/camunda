@@ -50,15 +50,9 @@ public final class LsnReplicationSignalStrategy
    * position, or if quorum isn't met.
    */
   @Override
-  public long computeConfirmedMarker(
-      final List<ReplicationLsnStatus> statuses, final Optional<String> currentPrimaryRegion) {
+  public long computeConfirmedMarker(final List<ReplicationLsnStatus> statuses) {
     return RegionAwareQuorum.evaluate(
-            statuses,
-            config,
-            regionResolver,
-            currentPrimaryRegion,
-            ReplicationLsnStatus::logStatus,
-            true)
+            statuses, config, regionResolver, ReplicationLsnStatus::logStatus, true)
         .orElse(UNCONFIRMED);
   }
 
@@ -70,12 +64,9 @@ public final class LsnReplicationSignalStrategy
    */
   @Override
   public Duration computePauseLag(
-      final List<ReplicationLsnStatus> statuses,
-      final Optional<Duration> queueHeadAge,
-      final Optional<String> currentPrimaryRegion) {
+      final List<ReplicationLsnStatus> statuses, final Optional<Duration> queueHeadAge) {
     final boolean quorumNotMet =
-        queueHeadAge.isEmpty()
-            && !RegionAwareQuorum.quorumMet(statuses, config, regionResolver, currentPrimaryRegion);
+        queueHeadAge.isEmpty() && !RegionAwareQuorum.quorumMet(statuses, config, regionResolver);
     if (quorumNotMet) {
       return PAUSE_WORST_CASE;
     }
@@ -83,18 +74,7 @@ public final class LsnReplicationSignalStrategy
   }
 
   @Override
-  public List<String> regionsBelowQuorum(
-      final List<ReplicationLsnStatus> statuses, final Optional<String> currentPrimaryRegion) {
-    return RegionAwareQuorum.regionsBelowQuorum(
-        statuses, config, regionResolver, currentPrimaryRegion);
-  }
-
-  /**
-   * Resolved fresh on every call from the primary's live connection (never from static config), so
-   * it reflects whichever region currently hosts the primary, including after a failover.
-   */
-  @Override
-  public Optional<String> resolveCurrentPrimaryRegion() {
-    return regionResolver.resolve(lsnProvider.getCurrentReplicaLabel());
+  public List<String> regionsBelowQuorum(final List<ReplicationLsnStatus> statuses) {
+    return RegionAwareQuorum.regionsBelowQuorum(statuses, config, regionResolver);
   }
 }

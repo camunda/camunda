@@ -84,7 +84,7 @@ class LsnReplicationSignalStrategyTest {
       final var strategy = createStrategy();
 
       // when
-      final long result = strategy.computeConfirmedMarker(List.of(), Optional.empty());
+      final long result = strategy.computeConfirmedMarker(List.of());
 
       // then
       assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
@@ -99,8 +99,7 @@ class LsnReplicationSignalStrategyTest {
 
       // when - only 1 replica but 2 required
       final long result =
-          strategy.computeConfirmedMarker(
-              List.of(new ReplicationLsnStatus(100L, "replica-1", 0L)), Optional.empty());
+          strategy.computeConfirmedMarker(List.of(new ReplicationLsnStatus(100L, "replica-1", 0L)));
 
       // then
       assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
@@ -120,7 +119,7 @@ class LsnReplicationSignalStrategyTest {
               new ReplicationLsnStatus(50L, "replica-3", 0L));
 
       // when
-      final long result = strategy.computeConfirmedMarker(statuses, Optional.empty());
+      final long result = strategy.computeConfirmedMarker(statuses);
 
       // then - top 2 by lsn are 30 and 50; min of those is 30
       assertThat(result).isEqualTo(30L);
@@ -135,27 +134,24 @@ class LsnReplicationSignalStrategyTest {
       final var statuses = List.of(new ReplicationLsnStatus(40L, "replica-1", 0L));
 
       // when
-      final long result = strategy.computeConfirmedMarker(statuses, Optional.empty());
+      final long result = strategy.computeConfirmedMarker(statuses);
 
       // then
       assertThat(result).isEqualTo(40L);
     }
 
     @Test
-    void shouldNotCreditThePrimaryInAFlatCatchAllRegion() {
-      // given - flat/default mode (a single ".*" region); even though the primary's own
-      // (unstubbed, so null -> "") label trivially matches the catch-all, it must never count
-      // toward quorum there, or a bare minSyncReplicas=1 would be satisfied by the primary alone
-      // with zero real replicas
+    void shouldCountThePrimarysOwnEntryLikeAnyOtherTowardTheFlatRegion() {
+      // given - the primary's own entry alone satisfies the flat ".*" region's minReplicas=1
       final var strategy = createStrategy();
+      final var statuses =
+          List.of(new ReplicationLsnStatus(90L, "primary", 0L, null, "primary-label", true));
 
-      // when - resolveCurrentPrimaryRegion() is exercised for real here, exactly as
-      // DefaultReplicationController would call it once and pass the result along
-      final long result =
-          strategy.computeConfirmedMarker(List.of(), strategy.resolveCurrentPrimaryRegion());
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
 
       // then
-      assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+      assertThat(result).isEqualTo(90L);
     }
   }
 
@@ -172,9 +168,7 @@ class LsnReplicationSignalStrategyTest {
       // when
       final Duration lag =
           strategy.computePauseLag(
-              List.of(new ReplicationLsnStatus(10L, "replica-1", 0L)),
-              Optional.empty(),
-              Optional.empty());
+              List.of(new ReplicationLsnStatus(10L, "replica-1", 0L)), Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(ReplicationSignalStrategy.PAUSE_WORST_CASE);
@@ -192,8 +186,7 @@ class LsnReplicationSignalStrategyTest {
       final Duration lag =
           strategy.computePauseLag(
               List.of(new ReplicationLsnStatus(10L, "replica-1", 0L)),
-              Optional.of(Duration.ofSeconds(3)),
-              Optional.empty());
+              Optional.of(Duration.ofSeconds(3)));
 
       // then
       assertThat(lag).isEqualTo(Duration.ofSeconds(3));
@@ -207,8 +200,7 @@ class LsnReplicationSignalStrategyTest {
       final var statuses = List.of(new ReplicationLsnStatus(10L, "replica-1", 0L));
 
       // when
-      final Duration lag =
-          strategy.computePauseLag(statuses, Optional.of(Duration.ofSeconds(7)), Optional.empty());
+      final Duration lag = strategy.computePauseLag(statuses, Optional.of(Duration.ofSeconds(7)));
 
       // then
       assertThat(lag).isEqualTo(Duration.ofSeconds(7));
@@ -221,7 +213,7 @@ class LsnReplicationSignalStrategyTest {
       final var statuses = List.of(new ReplicationLsnStatus(10L, "replica-1", 0L));
 
       // when
-      final Duration lag = strategy.computePauseLag(statuses, Optional.empty(), Optional.empty());
+      final Duration lag = strategy.computePauseLag(statuses, Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(Duration.ZERO);
@@ -249,7 +241,7 @@ class LsnReplicationSignalStrategyTest {
               new ReplicationLsnStatus(60L, "replica-2", 0L, null, "us-east-2"));
 
       // when
-      final long result = strategy.computeConfirmedMarker(statuses, Optional.empty());
+      final long result = strategy.computeConfirmedMarker(statuses);
 
       // then
       assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
@@ -268,7 +260,7 @@ class LsnReplicationSignalStrategyTest {
               new ReplicationLsnStatus(90L, "replica-3", 0L, null, "us-west-1"));
 
       // when
-      final long result = strategy.computeConfirmedMarker(statuses, Optional.empty());
+      final long result = strategy.computeConfirmedMarker(statuses);
 
       // then - us-east's own top 2 are 10 and 30, worst of those is 10; us-west's top 1 is 90;
       // the worst across both mandatory regions is 10
@@ -283,59 +275,27 @@ class LsnReplicationSignalStrategyTest {
           List.of(new ReplicationLsnStatus(80L, "replica-1", 0L, null, "eu-central-1"));
 
       // when
-      final long result = strategy.computeConfirmedMarker(statuses, Optional.empty());
+      final long result = strategy.computeConfirmedMarker(statuses);
 
       // then - us-east still has 0 matching replicas against its minReplicas=1
       assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
     }
 
     @Test
-    void shouldCreditThePrimaryRegionSoOnlyRemainingSecondariesAreRequired() {
-      // given - us-east hosts the primary and wants 2 nodes total; DefaultReplicationController
-      // resolves the primary's region once per check and passes it in here - crediting us-east
-      // leaves only 1 real secondary required
+    void shouldCountThePrimarysOwnEntryTowardItsResolvedRegion() {
+      // given - us-east wants 2 nodes total; the primary plus one real secondary satisfies that
       config.setRegions(List.of(region("us-east", "us-east-.*", 2)));
       final var strategy = createStrategy();
       final var statuses =
-          List.of(new ReplicationLsnStatus(70L, "replica-1", 0L, null, "us-east-1"));
+          List.of(
+              new ReplicationLsnStatus(70L, "replica-1", 0L, null, "us-east-1"),
+              new ReplicationLsnStatus(100L, "primary", 0L, null, "us-east-primary", true));
 
       // when
-      final long result = strategy.computeConfirmedMarker(statuses, Optional.of("us-east"));
+      final long result = strategy.computeConfirmedMarker(statuses);
 
-      // then - the primary's synthetic credit is always-best, so the real secondary's own lsn
-      // (the worse of the two) is what gets returned
+      // then - the worse of the primary (100) and the real secondary (70) is returned
       assertThat(result).isEqualTo(70L);
-    }
-
-    @Test
-    void shouldNotCreditAPrimaryResolvedToACatchAllRegion() {
-      // given - us-east is a specific pattern eligible for credit, but the primary is resolved to
-      // a *different*, catch-all region instead - that region must not be credited, and us-east
-      // still has zero real replicas
-      config.setRegions(
-          List.of(region("us-east", "us-east-.*", 2), region("everything-else", ".*", 1)));
-      final var strategy = createStrategy();
-
-      // when
-      final long result =
-          strategy.computeConfirmedMarker(List.of(), Optional.of("everything-else"));
-
-      // then
-      assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
-    }
-
-    @Test
-    void shouldResolvePrimaryRegionFromItsLiveLabel() {
-      // given - resolveCurrentPrimaryRegion() is what DefaultReplicationController calls once per
-      // check; it must delegate to the provider's live label, not any static config
-      when(lsnProvider.getCurrentReplicaLabel()).thenReturn("us-east-primary");
-      final var strategy = createStrategy();
-
-      // when
-      final var result = strategy.resolveCurrentPrimaryRegion();
-
-      // then
-      assertThat(result).contains("us-east");
     }
 
     @Test
@@ -344,7 +304,7 @@ class LsnReplicationSignalStrategyTest {
       final var strategy = createStrategy();
 
       // when
-      final Duration lag = strategy.computePauseLag(List.of(), Optional.empty(), Optional.empty());
+      final Duration lag = strategy.computePauseLag(List.of(), Optional.empty());
 
       // then
       assertThat(lag).isEqualTo(ReplicationSignalStrategy.PAUSE_WORST_CASE);
@@ -356,7 +316,7 @@ class LsnReplicationSignalStrategyTest {
       final var strategy = createStrategy();
 
       // when
-      final var below = strategy.regionsBelowQuorum(List.of(), Optional.empty());
+      final var below = strategy.regionsBelowQuorum(List.of());
 
       // then
       assertThat(below).containsExactly("us-east");
@@ -370,7 +330,7 @@ class LsnReplicationSignalStrategyTest {
           List.of(new ReplicationLsnStatus(50L, "replica-1", 0L, null, "us-east-1"));
 
       // when
-      final var below = strategy.regionsBelowQuorum(statuses, Optional.empty());
+      final var below = strategy.regionsBelowQuorum(statuses);
 
       // then
       assertThat(below).isEmpty();

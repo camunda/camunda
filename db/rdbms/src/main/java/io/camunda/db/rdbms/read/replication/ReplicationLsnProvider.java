@@ -21,15 +21,6 @@ public interface ReplicationLsnProvider {
   /** Returns the primary's own clock. */
   long getCurrentDbTime();
 
-  /**
-   * Returns per-replica state: last applied position/timestamp, a stable unique identifier, and an
-   * optional replication lag estimate in milliseconds.
-   */
+  /** Returns per-replica state, including a synthetic entry for the primary itself. */
   List<ReplicationLsnStatus> getReplicationStatuses();
-
-  /**
-   * Returns the primary's own self-declared label (see {@code replicaLabel} on {@link
-   * ReplicationStatus}).
-   */
-  String getCurrentReplicaLabel();
 }

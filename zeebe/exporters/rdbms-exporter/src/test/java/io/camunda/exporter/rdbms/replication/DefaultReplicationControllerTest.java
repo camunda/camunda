@@ -71,9 +71,8 @@ class DefaultReplicationControllerTest {
     when(clock.millis()).thenReturn(0L);
     when(controller.scheduleCancellableTask(any(), any())).thenReturn(scheduledTask);
     when(strategy.fetchStatuses()).thenReturn(List.of());
-    when(strategy.computeConfirmedMarker(any(), any()))
-        .thenReturn(ReplicationSignalStrategy.UNCONFIRMED);
-    when(strategy.computePauseLag(any(), any(), any())).thenReturn(Duration.ZERO);
+    when(strategy.computeConfirmedMarker(any())).thenReturn(ReplicationSignalStrategy.UNCONFIRMED);
+    when(strategy.computePauseLag(any(), any())).thenReturn(Duration.ZERO);
     // a mocked strategy does not run the interface's own default method body, so this must be
     // stubbed explicitly even though it mirrors the default's behavior
     when(strategy.nextCheckDelay(any(), any())).thenReturn(POLLING_INTERVAL);
@@ -233,7 +232,7 @@ class DefaultReplicationControllerTest {
     replicationController.onFlush(100L);
 
     // when - the strategy reports the entry's marker as confirmed
-    when(strategy.computeConfirmedMarker(any(), any())).thenReturn(10L);
+    when(strategy.computeConfirmedMarker(any())).thenReturn(10L);
     replicationController.checkReplication();
 
     // then
@@ -248,8 +247,7 @@ class DefaultReplicationControllerTest {
     replicationController.onFlush(100L);
 
     // when - the strategy reports nothing confirmable this round
-    when(strategy.computeConfirmedMarker(any(), any()))
-        .thenReturn(ReplicationSignalStrategy.UNCONFIRMED);
+    when(strategy.computeConfirmedMarker(any())).thenReturn(ReplicationSignalStrategy.UNCONFIRMED);
     replicationController.checkReplication();
 
     // then
@@ -262,7 +260,7 @@ class DefaultReplicationControllerTest {
     final var replicationController = createController();
 
     // when
-    when(strategy.computePauseLag(any(), any(), any())).thenReturn(MAX_LAG.plusSeconds(1));
+    when(strategy.computePauseLag(any(), any())).thenReturn(MAX_LAG.plusSeconds(1));
     replicationController.checkReplication();
 
     // then
@@ -273,12 +271,12 @@ class DefaultReplicationControllerTest {
   void shouldResumeWhenPauseLagFallsWithinMaxLag() {
     // given - first trigger a pause
     final var replicationController = createController();
-    when(strategy.computePauseLag(any(), any(), any())).thenReturn(MAX_LAG.plusSeconds(1));
+    when(strategy.computePauseLag(any(), any())).thenReturn(MAX_LAG.plusSeconds(1));
     replicationController.checkReplication();
     assertThat(replicationController.isReplicationInSync()).isFalse();
 
     // when - the lag recovers
-    when(strategy.computePauseLag(any(), any(), any())).thenReturn(Duration.ZERO);
+    when(strategy.computePauseLag(any(), any())).thenReturn(Duration.ZERO);
     replicationController.checkReplication();
 
     // then
@@ -292,7 +290,7 @@ class DefaultReplicationControllerTest {
     final var replicationController = createController();
 
     // when - a huge lag is reported, which would otherwise trigger a pause
-    when(strategy.computePauseLag(any(), any(), any()))
+    when(strategy.computePauseLag(any(), any()))
         .thenReturn(ReplicationSignalStrategy.PAUSE_WORST_CASE);
     replicationController.checkReplication();
 
@@ -310,7 +308,7 @@ class DefaultReplicationControllerTest {
     // when - the strategy reports PAUSE_WORST_CASE, regardless of queue state; the shared
     // controller always trusts whatever the strategy decides, whether or not a particular
     // strategy's own logic happens to be gated by queue emptiness.
-    when(strategy.computePauseLag(any(), any(), any()))
+    when(strategy.computePauseLag(any(), any()))
         .thenReturn(ReplicationSignalStrategy.PAUSE_WORST_CASE);
     replicationController.checkReplication();
 
@@ -336,7 +334,7 @@ class DefaultReplicationControllerTest {
       replicationController.onFlush(300L); // debounced
 
       // when - checked with a confirmation threshold well after all three markers
-      when(strategy.computeConfirmedMarker(any(), any())).thenReturn(100L);
+      when(strategy.computeConfirmedMarker(any())).thenReturn(100L);
       replicationController.checkReplication();
 
       // then - only the first, actually-queued entry is acknowledged
@@ -358,7 +356,7 @@ class DefaultReplicationControllerTest {
       when(strategy.captureFlushMarker()).thenReturn(20L);
       replicationController.onFlush(200L); // queued at t=6000
 
-      when(strategy.computeConfirmedMarker(any(), any())).thenReturn(20L);
+      when(strategy.computeConfirmedMarker(any())).thenReturn(20L);
       replicationController.checkReplication();
 
       // then - both entries were queued, so the latest is acknowledged

@@ -31,12 +31,8 @@ public final class LsnBackedReplicationLagProvider implements ReplicationLagProv
                     status.replicaId(),
                     status.replicationLagMs(),
                     status.replicatedUntilMs(),
-                    status.replicaLabel()))
+                    status.replicaLabel(),
+                    status.isPrimary()))
         .toList();
-  }
-
-  @Override
-  public String getCurrentReplicaLabel() {
-    return lsnProvider.getCurrentReplicaLabel();
   }
 }

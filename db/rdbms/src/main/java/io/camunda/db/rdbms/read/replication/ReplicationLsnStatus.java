@@ -17,12 +17,13 @@ public record ReplicationLsnStatus(
     String replicaId,
     Long replicationLagMs,
     Long replicatedUntilMs,
-    String replicaLabel)
+    String replicaLabel,
+    boolean isPrimary)
     implements ReplicationStatus {
 
   public ReplicationLsnStatus(
       final Long logStatus, final String replicaId, final Long replicationLagMs) {
-    this(logStatus, replicaId, replicationLagMs, null, null);
+    this(logStatus, replicaId, replicationLagMs, null, null, false);
   }
 
   public ReplicationLsnStatus(
@@ -30,6 +31,15 @@ public record ReplicationLsnStatus(
       final String replicaId,
       final Long replicationLagMs,
       final Long replicatedUntilMs) {
-    this(logStatus, replicaId, replicationLagMs, replicatedUntilMs, null);
+    this(logStatus, replicaId, replicationLagMs, replicatedUntilMs, null, false);
+  }
+
+  public ReplicationLsnStatus(
+      final Long logStatus,
+      final String replicaId,
+      final Long replicationLagMs,
+      final Long replicatedUntilMs,
+      final String replicaLabel) {
+    this(logStatus, replicaId, replicationLagMs, replicatedUntilMs, replicaLabel, false);
   }
 }

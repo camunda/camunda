@@ -15,4 +15,6 @@ public interface ReplicationStatus {
   Long replicationLagMs();
 
   String replicaLabel();
+
+  boolean isPrimary();
 }

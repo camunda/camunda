@@ -50,13 +50,11 @@ public final class TimeMonitoringReplicationSignalStrategy
    * quorum isn't met.
    */
   @Override
-  public long computeConfirmedMarker(
-      final List<ReplicationLagStatus> statuses, final Optional<String> currentPrimaryRegion) {
+  public long computeConfirmedMarker(final List<ReplicationLagStatus> statuses) {
     return RegionAwareQuorum.evaluate(
             statuses,
             config,
             regionResolver,
-            currentPrimaryRegion,
             s -> s.replicatedUntilMs() != null ? s.replicatedUntilMs() : UNCONFIRMED,
             true)
         .orElse(UNCONFIRMED);
@@ -72,15 +70,12 @@ public final class TimeMonitoringReplicationSignalStrategy
    */
   @Override
   public Duration computePauseLag(
-      final List<ReplicationLagStatus> statuses,
-      final Optional<Duration> queueHeadAge,
-      final Optional<String> currentPrimaryRegion) {
+      final List<ReplicationLagStatus> statuses, final Optional<Duration> queueHeadAge) {
     final OptionalLong worstLagMs =
         RegionAwareQuorum.evaluate(
             statuses,
             config,
             regionResolver,
-            currentPrimaryRegion,
             s -> s.replicationLagMs() != null ? s.replicationLagMs() : Long.MAX_VALUE,
             false);
     if (worstLagMs.isEmpty()) {
@@ -90,18 +85,7 @@ public final class TimeMonitoringReplicationSignalStrategy
   }
 
   @Override
-  public List<String> regionsBelowQuorum(
-      final List<ReplicationLagStatus> statuses, final Optional<String> currentPrimaryRegion) {
-    return RegionAwareQuorum.regionsBelowQuorum(
-        statuses, config, regionResolver, currentPrimaryRegion);
-  }
-
-  /**
-   * Resolved fresh on every call from the primary's live connection (never from static config), so
-   * it reflects whichever region currently hosts the primary, including after a failover.
-   */
-  @Override
-  public Optional<String> resolveCurrentPrimaryRegion() {
-    return regionResolver.resolve(statusProvider.getCurrentReplicaLabel());
+  public List<String> regionsBelowQuorum(final List<ReplicationLagStatus> statuses) {
+    return RegionAwareQuorum.regionsBelowQuorum(statuses, config, regionResolver);
   }
 }

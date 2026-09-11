@@ -32,8 +32,6 @@ import org.slf4j.LoggerFactory;
  */
 final class RegionAwareQuorum {
 
-  private static final String CATCH_ALL_PATTERN = ".*";
-
   private static final Logger LOG = LoggerFactory.getLogger(RegionAwareQuorum.class);
 
   private RegionAwareQuorum() {}
@@ -41,28 +39,19 @@ final class RegionAwareQuorum {
   static boolean quorumMet(
       final List<? extends ReplicationStatus> statuses,
       final ReplicationConfiguration config,
-      final ReplicaRegionResolver resolver,
-      final Optional<String> currentPrimaryRegion) {
-    return regionsBelowQuorum(statuses, config, resolver, currentPrimaryRegion).isEmpty();
+      final ReplicaRegionResolver resolver) {
+    return regionsBelowQuorum(statuses, config, resolver).isEmpty();
   }
 
-  /**
-   * The names of mandatory regions currently short of their own {@code minReplicas} (counting the
-   * primary's automatic credit where eligible). Used for diagnostic logging when the exporter
-   * pauses, see {@link DefaultReplicationController}.
-   */
+  /** The names of mandatory regions currently short of their own {@code minReplicas}. */
   static List<String> regionsBelowQuorum(
       final List<? extends ReplicationStatus> statuses,
       final ReplicationConfiguration config,
-      final ReplicaRegionResolver resolver,
-      final Optional<String> currentPrimaryRegion) {
+      final ReplicaRegionResolver resolver) {
     final Map<String, Long> countsByRegion = countByRegion(statuses, resolver);
     final List<String> below = new ArrayList<>();
     for (final RegionConfiguration region : config.getRegions()) {
-      long count = countsByRegion.getOrDefault(region.getName(), 0L);
-      if (isPrimaryCreditedTo(region, currentPrimaryRegion)) {
-        count++;
-      }
+      final long count = countsByRegion.getOrDefault(region.getName(), 0L);
       if (count < region.getMinReplicas()) {
         below.add(region.getName());
       }
@@ -80,19 +69,13 @@ final class RegionAwareQuorum {
       final List<T> statuses,
       final ReplicationConfiguration config,
       final ReplicaRegionResolver resolver,
-      final Optional<String> currentPrimaryRegion,
       final ToLongFunction<? super T> valueExtractor,
       final boolean higherIsBetter) {
     final Map<String, List<Long>> valuesByRegion =
         groupValuesByRegion(statuses, resolver, valueExtractor);
-    final long primaryCreditValue = higherIsBetter ? Long.MAX_VALUE : Long.MIN_VALUE;
     final List<Long> regionResults = new ArrayList<>();
     for (final RegionConfiguration region : config.getRegions()) {
-      final List<Long> values =
-          new ArrayList<>(valuesByRegion.getOrDefault(region.getName(), List.of()));
-      if (isPrimaryCreditedTo(region, currentPrimaryRegion)) {
-        values.add(primaryCreditValue);
-      }
+      final List<Long> values = valuesByRegion.getOrDefault(region.getName(), List.of());
       final OptionalLong regionResult =
           worstOfTopN(values, region.getMinReplicas(), higherIsBetter);
       if (regionResult.isEmpty()) {
@@ -103,12 +86,6 @@ final class RegionAwareQuorum {
     // every region is mandatory, so the overall result is simply the worst across all of them -
     // reuse the same reduction with n == regionResults.size() (no top-N truncation needed).
     return worstOfTopN(regionResults, regionResults.size(), higherIsBetter);
-  }
-
-  private static boolean isPrimaryCreditedTo(
-      final RegionConfiguration region, final Optional<String> currentPrimaryRegion) {
-    return !CATCH_ALL_PATTERN.equals(region.getPattern())
-        && currentPrimaryRegion.filter(region.getName()::equals).isPresent();
   }
 
   private static OptionalLong worstOfTopN(
