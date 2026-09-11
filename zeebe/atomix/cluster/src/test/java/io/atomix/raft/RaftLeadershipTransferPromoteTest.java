@@ -19,11 +19,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.PollRequest;
+import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
@@ -153,6 +156,112 @@ public class RaftLeadershipTransferPromoteTest {
     Awaitility.await("the target becomes leader")
         .atMost(Duration.ofSeconds(15))
         .until(() -> target.getRole() == RaftServer.Role.LEADER);
+  }
+
+  @Test
+  public void shouldTransferWhenTheTargetAcknowledgesButItsTransitionStalls() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    final var stalled = new CountDownLatch(1);
+    final var heldVotes = new CompletableFuture<Void>();
+    stallTransitionTo(target, RaftServer.Role.CANDIDATE, stalled);
+    holdVotes(target, heldVotes);
+
+    try {
+      // when
+      final var ack = driver.initiate(target);
+
+      // then
+      assertThat(ack.accepted()).isTrue();
+      Awaitility.await("the leader steps down on the acknowledgement, not on the transition")
+          .atMost(Duration.ofSeconds(15))
+          .until(() -> leader.getRole() != RaftServer.Role.LEADER);
+    } finally {
+      stalled.countDown();
+      heldVotes.complete(null);
+    }
+
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+    Awaitility.await("the target becomes leader")
+        .atMost(Duration.ofSeconds(15))
+        .until(() -> target.getRole() == RaftServer.Role.LEADER);
+  }
+
+  @Test
+  public void shouldKeepLeadershipAndRetryWhenTheTargetRejectsTimeoutNow() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    final var sends = countTimeoutNow(leader);
+    rejectTimeoutNow(target);
+
+    // when
+    final var ack = driver.initiate(target);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+    assertThat(sends.sum())
+        .as("a rejection is not an acknowledgement, so the leader keeps retrying")
+        .isGreaterThanOrEqualTo(2);
+    assertThat(leader.getRole())
+        .as("the leader only steps down for an acknowledgement, not for a rejection")
+        .isEqualTo(RaftServer.Role.LEADER);
+  }
+
+  private static void rejectTimeoutNow(final RaftServer member) {
+    ((TestRaftServerProtocol) member.getContext().getProtocol())
+        .registerTimeoutNowHandler(
+            request ->
+                CompletableFuture.completedFuture(
+                    TimeoutNowResponse.builder()
+                        .withStatus(RaftResponse.Status.ERROR)
+                        .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
+                        .build()));
+  }
+
+  private static LongAdder countTimeoutNow(final RaftServer leader) {
+    final var sends = new LongAdder();
+    ((TestRaftServerProtocol) leader.getContext().getProtocol())
+        .interceptRequest(
+            TimeoutNowRequest.class,
+            request -> {
+              sends.increment();
+            });
+    return sends;
+  }
+
+  private static void holdVotes(final RaftServer member, final CompletableFuture<Void> release) {
+    ((TestRaftServerProtocol) member.getContext().getProtocol())
+        .interceptRequest(VoteRequest.class, request -> release);
+  }
+
+  private static void stallTransitionTo(
+      final RaftServer member, final RaftServer.Role role, final CountDownLatch release) {
+    member
+        .getContext()
+        .addRoleChangeListener(
+            (newRole, term) -> {
+              if (newRole != role) {
+                return;
+              }
+              try {
+                release.await(30, TimeUnit.SECONDS);
+              } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            });
   }
 
   /** A barrier that freezes nothing but counts how often the writes were reopened. */
