@@ -32,8 +32,10 @@ import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -62,6 +64,59 @@ import org.mockito.MockedStatic;
  * out of the box) so that tests do not require a live Camunda engine.
  */
 class CoverageReporterTest {
+
+  private static final String PROCESS_ID = "process-a";
+
+  /** The real, fully deployed model: 4 flow nodes and 3 sequence flows. */
+  private static final ProcessModel REAL_MODEL =
+      ImmutableProcessModel.builder()
+          .processDefinitionId(PROCESS_ID)
+          .totalElementCount(7)
+          .version("1")
+          .xml(
+              Bpmn.convertToString(
+                  Bpmn.createExecutableProcess(PROCESS_ID)
+                      .startEvent("startA")
+                      .sequenceFlowId("flowA1")
+                      .serviceTask("taskA1")
+                      .sequenceFlowId("flowA2")
+                      .serviceTask("taskA2")
+                      .sequenceFlowId("flowA3")
+                      .endEvent("endA")
+                      .done()))
+          .build();
+
+  /** The stub that {@code MOCK_CHILD_PROCESS} deploys under the mocked process id. */
+  private static final ProcessModel MOCK_STUB_MODEL =
+      ImmutableProcessModel.builder()
+          .processDefinitionId(PROCESS_ID)
+          .totalElementCount(3)
+          .version("1")
+          .xml(
+              Bpmn.convertToString(
+                  Bpmn.createExecutableProcess(PROCESS_ID)
+                      .startEvent("child-start")
+                      .sequenceFlowId("child-flow")
+                      .endEvent("child-end")
+                      .done()))
+          .build();
+
+  /** The real suite covers 5 of the 7 elements: the process instance is still running. */
+  private static final ProcessCoverage REAL_COVERAGE =
+      ImmutableProcessCoverage.builder()
+          .processDefinitionId(PROCESS_ID)
+          .addCompletedElements("startA", "taskA1", "taskA2")
+          .addTakenSequenceFlows("flowA1", "flowA2")
+          .coverage(5.0 / 7.0)
+          .build();
+
+  private static final ProcessCoverage MOCK_STUB_COVERAGE =
+      ImmutableProcessCoverage.builder()
+          .processDefinitionId(PROCESS_ID)
+          .addCompletedElements("child-start", "child-end")
+          .addTakenSequenceFlows("child-flow")
+          .coverage(1.0)
+          .build();
 
   @TempDir File tempDir;
 
@@ -346,6 +401,87 @@ class CoverageReporterTest {
     assertThat(report.getSuites()).hasSize(2);
   }
 
+  // ── process mocked in another suite (SUPPORT-34357) ──────────────────────────
+
+  /**
+   * A process that another suite mocks via {@code MOCK_CHILD_PROCESS} is deployed twice under the
+   * same process definition id: once as the real model, and once as the tiny stub the mock deploys.
+   * The aggregated report must describe the process by its real model, not by the stub.
+   */
+  @Test
+  void shouldReportRealModelWhenProcessIsAlsoMockedInAnotherSuite() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: the suite that mocks the process is reported before the suite that tests it
+    final CoverageReportCollector mockingSuite =
+        buildCollectorForProcess(MockingSuiteTest.class, MOCK_STUB_MODEL, MOCK_STUB_COVERAGE);
+    final CoverageReportCollector realSuite =
+        buildCollectorForProcess(RealProcessSuiteTest.class, REAL_MODEL, REAL_COVERAGE);
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(mockingSuite, realSuite));
+
+    // then
+    assertThat(report.getProcessModels())
+        .filteredOn(model -> model.getProcessDefinitionId().equals(PROCESS_ID))
+        .singleElement()
+        .extracting(ProcessModel::getXml)
+        .isEqualTo(REAL_MODEL.getXml());
+  }
+
+  /**
+   * The elements of the mock stub do not exist in the real model, so they must not count towards
+   * the real process's coverage - otherwise the aggregated coverage exceeds 100%.
+   */
+  @Test
+  void shouldIgnoreMockStubElementsWhenProcessIsAlsoMockedInAnotherSuite() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: the suite that mocks the process is reported before the suite that tests it
+    final CoverageReportCollector mockingSuite =
+        buildCollectorForProcess(MockingSuiteTest.class, MOCK_STUB_MODEL, MOCK_STUB_COVERAGE);
+    final CoverageReportCollector realSuite =
+        buildCollectorForProcess(RealProcessSuiteTest.class, REAL_MODEL, REAL_COVERAGE);
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(mockingSuite, realSuite));
+
+    // then: only the 5 of 7 elements covered by the real suite count
+    assertThat(report.getProcessCoverages())
+        .filteredOn(coverage -> coverage.getProcessDefinitionId().equals(PROCESS_ID))
+        .singleElement()
+        .extracting(ProcessCoverage::getCoverage)
+        .isEqualTo(5.0 / 7.0);
+  }
+
+  /** Builds a mock collector reporting a single process coverage against a single model. */
+  private CoverageReportCollector buildCollectorForProcess(
+      final Class<?> testClass, final ProcessModel model, final ProcessCoverage coverage) {
+
+    final CoverageSuiteReport suite =
+        ImmutableCoverageSuiteReport.builder()
+            .id(testClass.getName())
+            .name(testClass.getSimpleName())
+            .addRuns(
+                ImmutableCoverageRunReport.builder()
+                    .name("run-1")
+                    .addProcessCoverages(coverage)
+                    .build())
+            .build();
+
+    final CoverageReportCollector collector = mock(CoverageReportCollector.class);
+    when(collector.getSuite()).thenReturn(suite);
+    when(collector.getModels()).thenReturn(Collections.singletonList(model));
+    when(collector.getDecisionModels()).thenReturn(Collections.emptyList());
+    return collector;
+  }
+
   // ── JSON serialisation test (migrated from CoverageReportUtilTest) ───────────
 
   @Test
@@ -386,3 +522,7 @@ final class SuiteReportTest {}
 final class AggregatedCollectorTestA {}
 
 final class AggregatedCollectorTestB {}
+
+final class MockingSuiteTest {}
+
+final class RealProcessSuiteTest {}
