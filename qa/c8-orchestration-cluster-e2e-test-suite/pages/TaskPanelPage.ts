@@ -40,8 +40,17 @@ class TaskPanelPage {
     this.taskListPageBanner = page.getByRole('link', {
       name: 'Camunda logo',
     });
-    this.completedHeading = page.getByRole('heading', {
-      name: 'completed',
+    // There is no page heading for the "Completed" filter post-redesign --
+    // that assumption dates back to the old Carbon sidebar, where each
+    // filter link routed to a page with its own <h1>. FilterSelect.tsx now
+    // renders every filter (including "Completed") as plain visible text
+    // inside the filter-select trigger button (id="filter-select"); the
+    // button's accessible name is the static `taskFiltersHeaderAria` string
+    // ("Filters"), not the filter's label, because it carries a static
+    // aria-label, so this has to be a text lookup scoped to that button
+    // rather than an accessible-name lookup.
+    this.completedHeading = this.filterSelectButton.getByText('Completed', {
+      exact: true,
     });
   }
 
@@ -49,13 +58,17 @@ class TaskPanelPage {
     const timeout = options.timeout ?? 10000;
     const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
 
-    // The available-tasks query fires once on page load and is never polled
-    // (unlike the pre-migration UI), so a task created moments ago can be
-    // absent from that first response if the backend hasn't finished
-    // indexing it yet — no amount of waiting on the existing DOM will make
-    // it appear, only a fresh query will. Retry with a reload in between
-    // attempts, same pattern as assertCompletedHeadingVisible below, instead
-    // of relying on a single fetch plus Playwright's built-in element wait.
+    // The parent tasklist layout route (routes/_shadcn/_auth/tasklist/_tasks/
+    // route.tsx) does poll this query every 5s (refetchInterval: 5000), so a
+    // task that isn't indexed yet should normally show up on its own within a
+    // few seconds. A page reload is a strictly faster, deterministic way to
+    // force an immediate fresh fetch rather than wait out however much of
+    // the next 5s tick remains, and it's also the only thing that helps if
+    // polling isn't keeping up (e.g. under CI load) -- no amount of waiting
+    // on the existing DOM without either will make a just-created task
+    // appear. Retry with a reload in between attempts, same pattern as
+    // assertCompletedHeadingVisible below, instead of relying on a single
+    // fetch plus Playwright's built-in element wait.
     await waitForAssertion({
       assertion: async () => {
         await expect(task).toBeVisible({timeout});
@@ -134,8 +147,15 @@ class TaskPanelPage {
         await expect(this.completedHeading).toBeVisible();
       },
       onFailure: async () => {
-        console.log('Filter not applied, retrying...');
-        await this.filterBy('Completed'); // Reapply the filter if necessary
+        // Re-selecting "Completed" here is a no-op when it's already the
+        // active filter: filterBy() only waits for the URL to reflect the
+        // filter, and the URL already does, so it returns immediately
+        // without ever forcing a new fetch. Reload instead, same as
+        // openTask() above, to force one.
+        console.log(
+          'Completed filter not reflected yet, reloading and retrying...',
+        );
+        await this.reloadPage();
       },
     });
   }

@@ -218,14 +218,13 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('processWithDeployedForm')
-          .first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('processWithDeployedForm');
+    // openTask() already retries-with-reload internally to cover exactly the
+    // "not indexed yet" race this precheck was working around, and it does
+    // so with a bounded, deterministic budget instead of an open-ended
+    // toPass() loop that never forces a fresh fetch on its own -- give it a
+    // generous per-attempt timeout since this specific process is one of
+    // many the file's beforeAll deploys.
+    await taskPanelPage.openTask('processWithDeployedForm', {timeout: 60000});
 
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.unassignButton).toBeVisible({timeout: 30000});
@@ -258,14 +257,7 @@ test.describe('task details page', () => {
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('processWithDeployedForm')
-          .first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('processWithDeployedForm');
+    await taskPanelPage.openTask('processWithDeployedForm', {timeout: 60000});
 
     await taskDetailsPage.assertFieldValue('Client Name*', 'Jon');
     await taskDetailsPage.assertFieldValue('Client Address*', 'Earth');

@@ -50,17 +50,27 @@ test.describe('task panel page', () => {
 
   test('filter selection', async ({taskPanelPage}) => {
     test.slow();
+    // AvailableTasks.tsx now renders the list through @tanstack/react-virtual
+    // (useVirtualizer), which only mounts DOM nodes for the rows within the
+    // scroll container's viewport plus a small overscan -- unlike the
+    // pre-migration list, which rendered every fetched row. All 50 fetched
+    // tasks are still there (confirmed via the query's page size,
+    // DEFAULT_MAX_ITEM_PER_PAGE = 50), but only a window of them (observed:
+    // ~10 at the suite's default viewport) is ever actually in the DOM at
+    // once, so asserting an exact toHaveCount(50) is asserting an
+    // implementation detail of virtualization, not the filter behavior this
+    // test is about. Assert presence/absence instead.
     await expect(
-      taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50);
+      taskPanelPage.availableTasks.getByText('Some user activity').first(),
+    ).toBeVisible();
 
     await taskPanelPage.filterBy('Assigned to me');
     await expect(taskPanelPage.availableTasks).toContainText('No tasks found');
 
     await taskPanelPage.filterBy('All open tasks');
     await expect(
-      taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50);
+      taskPanelPage.availableTasks.getByText('Some user activity').first(),
+    ).toBeVisible();
     await expect(
       taskPanelPage.availableTasks.getByText('No tasks found'),
     ).toHaveCount(0);
