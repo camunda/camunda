@@ -24,6 +24,8 @@ import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -36,6 +38,7 @@ import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -53,6 +56,16 @@ import org.slf4j.Logger;
 public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRepository
     implements IncidentUpdateRepository {
   private static final int RETRY_COUNT = 3;
+
+  /**
+   * Caps how many update operations go into a single bulk request. The number of documents a cycle
+   * touches is driven by the incidents' tree paths, not by the configured incident batch size, so
+   * without this cap a few incidents spanning a deep or wide call hierarchy can build a request
+   * large enough to trip the cluster's request circuit breaker. Mirrors the record exporter's own
+   * bulk size.
+   */
+  @VisibleForTesting static final int BULK_CHUNK_SIZE = 5_000;
+
   private static final List<FieldValue> DELETED_OPERATION_STATES =
       List.of(
           FieldValue.of(OperationState.SENT.name()),
@@ -272,7 +285,22 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
       return CompletableFuture.completedFuture(List.of());
     }
 
-    return sendBulkRequest(updates, refresh);
+    final var chunks = Lists.partition(updates, BULK_CHUNK_SIZE);
+    final var updatedIds = new ArrayList<String>();
+    var result = CompletableFuture.<Void>completedFuture(null);
+    for (int i = 0; i < chunks.size(); i++) {
+      final var chunk = chunks.get(i);
+      // Only the final chunk carries the caller's refresh mode. A refresh is index-wide, so
+      // waiting on the last one also makes the preceding chunks visible, whereas waiting per
+      // chunk would add a full refresh interval of latency for every chunk.
+      final var chunkRefresh = i == chunks.size() - 1 ? refresh : Refresh.False;
+      result =
+          result.thenComposeAsync(
+              ignored -> sendBulkRequest(chunk, chunkRefresh).thenAccept(updatedIds::addAll),
+              executor);
+    }
+
+    return result.thenApply(ignored -> List.copyOf(updatedIds));
   }
 
   private CompletableFuture<List<String>> sendBulkRequest(

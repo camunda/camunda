@@ -11,17 +11,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesAsyncClient;
 import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
@@ -31,6 +36,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -128,6 +134,67 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     // "[es/bulk] failed: [parse_exception] request body is required"
     assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(List.of());
     verify(client, Mockito.never()).bulk(Mockito.any(BulkRequest.class));
+  }
+
+  @Test
+  void shouldChunkBulkUpdateExceedingTheChunkSize() {
+    // given - one more update than fits in a single request
+    final var repository = createRepository();
+    final var updateCount = ElasticsearchIncidentUpdateRepository.BULK_CHUNK_SIZE + 1;
+    final var bulk = bulkUpdateOf(updateCount);
+    final var requests = ArgumentCaptor.forClass(BulkRequest.class);
+    Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
+        .thenAnswer(i -> CompletableFuture.completedFuture(buildBulkResponse(i.getArgument(0))));
+
+    // when
+    final var result = repository.bulkUpdate(bulk);
+
+    // then - the updates are spread over bounded requests, and every updated id is still reported
+    assertThat(result)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .asInstanceOf(InstanceOfAssertFactories.list(String.class))
+        .hasSize(updateCount);
+    verify(client, Mockito.times(2)).bulk(requests.capture());
+    assertThat(requests.getAllValues())
+        .extracting(r -> r.operations().size())
+        .containsExactly(ElasticsearchIncidentUpdateRepository.BULK_CHUNK_SIZE, 1);
+  }
+
+  @Test
+  void shouldWaitForRefreshOnlyOnTheFinalChunk() {
+    // given
+    final var repository = createRepository();
+    final var bulk = bulkUpdateOf(ElasticsearchIncidentUpdateRepository.BULK_CHUNK_SIZE + 1);
+    final var requests = ArgumentCaptor.forClass(BulkRequest.class);
+    Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
+        .thenAnswer(i -> CompletableFuture.completedFuture(buildBulkResponse(i.getArgument(0))));
+
+    // when
+    repository.bulkUpdate(bulk);
+
+    // then - a refresh is index wide, so only the last chunk needs to wait for one; waiting on
+    // every chunk would add a refresh interval of latency per chunk
+    verify(client, Mockito.times(2)).bulk(requests.capture());
+    assertThat(requests.getAllValues())
+        .extracting(BulkRequest::refresh)
+        .containsExactly(Refresh.False, Refresh.WaitFor);
+  }
+
+  @Test
+  void shouldNotSendRemainingChunksWhenAChunkFails() {
+    // given - the first of three chunks fails
+    final var repository = createRepository();
+    final var bulk = bulkUpdateOf(2 * ElasticsearchIncidentUpdateRepository.BULK_CHUNK_SIZE + 1);
+    Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("circuit breaker")));
+
+    // when
+    final var result = repository.bulkUpdate(bulk);
+
+    // then - the batch fails as a whole so it is retried from its recorded position, rather than
+    // pushing the remaining chunks at an already struggling cluster
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(client, Mockito.times(1)).bulk(Mockito.any(BulkRequest.class));
   }
 
   @Test
@@ -278,6 +345,35 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
     modifier.accept(response);
     return response.build();
+  }
+
+  private IncidentBulkUpdate bulkUpdateOf(final int updateCount) {
+    final var bulk = new IncidentBulkUpdate();
+    for (int i = 0; i < updateCount; i++) {
+      bulk.incidentRequests()
+          .add(
+              IncidentUpdate.id(String.valueOf(i))
+                  .index("incidentIndex")
+                  .state(IncidentState.ACTIVE)
+                  .build());
+    }
+    return bulk;
+  }
+
+  private BulkResponse buildBulkResponse(final BulkRequest request) {
+    final var items =
+        request.operations().stream()
+            .map(
+                operation ->
+                    new BulkResponseItem.Builder()
+                        .operationType(OperationType.Update)
+                        .status(200)
+                        .index("incidentIndex")
+                        .id(operation.update().id())
+                        .result("updated")
+                        .build())
+            .toList();
+    return new BulkResponse.Builder().took(1).errors(false).items(items).build();
   }
 
   private ElasticsearchIncidentUpdateRepository createRepository() {

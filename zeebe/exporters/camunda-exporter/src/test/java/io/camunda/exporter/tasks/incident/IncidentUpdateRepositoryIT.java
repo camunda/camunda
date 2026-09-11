@@ -809,6 +809,56 @@ abstract class IncidentUpdateRepositoryIT {
     }
 
     @Test
+    void shouldApplyEveryUpdateWhenTheBulkSpansMultipleChunks()
+        throws PersistenceException, IOException {
+      // given - more updates than fit in one bulk request, so the write is split into chunks
+      final var repository = createRepository();
+      final var bulk = new IncidentBulkUpdate();
+      final var updateCount = ElasticsearchIncidentUpdateRepository.BULK_CHUNK_SIZE + 1;
+      final var batchRequest = clientAdapter.createBatchRequest();
+      for (int i = 0; i < updateCount; i++) {
+        batchRequest.addWithId(
+            TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
+            String.valueOf(i),
+            new IncidentEntity()
+                .setKey(i)
+                .setState(IncidentState.PENDING)
+                .setErrorMessage("failure"));
+        bulk.incidentRequests()
+            .add(
+                IncidentUpdate.id(String.valueOf(i))
+                    .index(incidentTemplate.getFullQualifiedName())
+                    .state(IncidentState.ACTIVE)
+                    .build());
+      }
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var result = repository.bulkUpdate(bulk);
+
+      // then - no update is lost at a chunk boundary, and the caller still learns about all of them
+      assertThat(result)
+          .succeedsWithin(Duration.ofSeconds(30))
+          .asInstanceOf(InstanceOfAssertFactories.list(String.class))
+          .hasSize(updateCount);
+      // the first update, the last of the first chunk, and the only update of the second chunk
+      final var boundaryIds =
+          List.of(
+              "0",
+              String.valueOf(ElasticsearchIncidentUpdateRepository.BULK_CHUNK_SIZE - 1),
+              String.valueOf(updateCount - 1));
+      final var incidents =
+          search(
+              incidentTemplate.getFullQualifiedName(),
+              IncidentTemplate.KEY,
+              boundaryIds,
+              IncidentEntity.class);
+      assertThat(incidents)
+          .hasSize(boundaryIds.size())
+          .allSatisfy(incident -> assertThat(incident.getState()).isEqualTo(IncidentState.ACTIVE));
+    }
+
+    @Test
     void shouldBulkUpdateListView() throws PersistenceException, IOException {
       // given
       final var repository = createRepository();
