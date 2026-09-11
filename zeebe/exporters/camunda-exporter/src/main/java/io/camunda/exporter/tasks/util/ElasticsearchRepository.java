@@ -8,13 +8,16 @@
 package io.camunda.exporter.tasks.util;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.transport.TransportException;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +34,8 @@ public class ElasticsearchRepository implements AutoCloseable {
 
   public static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
   public static final int SCROLL_PAGE_SIZE = 100;
+  private static final String CIRCUIT_BREAKER_ERROR_TYPE = "circuit_breaking_exception";
+  private static final int CONTENT_TOO_LARGE_STATUS_CODE = 413;
   protected final ElasticsearchAsyncClient client;
   protected final Executor executor;
   protected final Logger logger;
@@ -149,6 +154,36 @@ public class ElasticsearchRepository implements AutoCloseable {
                         errors.size(), type, errors.getFirst().reason())));
 
     return new ExporterException("Failed to flush bulk request: " + collectedErrors);
+  }
+
+  /**
+   * Recognizes the ways in which Elasticsearch refuses a request for being too large, so that
+   * callers can react by writing less rather than by retrying the same request forever.
+   *
+   * <p>A breaker trip at the coordinating node fails the request itself and carries a structured
+   * error type. Exceeding {@code http.max_content_length} is refused at the HTTP layer instead,
+   * before there is any error body to parse, so it is only recognizable by its status code.
+   *
+   * <p>Only a refused request counts. A breaker that trips while the shards process an accepted
+   * request reports itself per item, but that is driven by the node's overall heap rather than by
+   * this request's size, so it is back pressure to retry rather than a reason to write less.
+   */
+  public Throwable translateBulkFailure(final Throwable error) {
+    final var cause = FuturesUtil.unwrapCompletionException(error);
+
+    if (cause instanceof final ElasticsearchException e
+        && CIRCUIT_BREAKER_ERROR_TYPE.equals(e.error().type())) {
+      return new BulkRequestTooLargeException(
+          "Elasticsearch rejected the bulk request: " + e.error().reason(), cause);
+    }
+
+    if (cause instanceof final TransportException e
+        && e.statusCode() == CONTENT_TOO_LARGE_STATUS_CODE) {
+      return new BulkRequestTooLargeException(
+          "Elasticsearch refused the bulk request as larger than http.max_content_length", cause);
+    }
+
+    return cause;
   }
 
   @Override
