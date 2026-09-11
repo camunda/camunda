@@ -21,8 +21,10 @@ import io.camunda.process.test.impl.coverage.data.CoverageDecisionDefinitionData
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.camunda.bpm.model.dmn.Dmn;
@@ -140,33 +142,39 @@ public class DecisionModelCreator {
   }
 
   /**
-   * Collects the ids of the rules a model can cover, which are the rules counted by {@link
-   * #createModel}.
+   * Numbers the rules a model can cover the way the engine numbers them: by their position in the
+   * table, starting at one. The rules counted by {@link #createModel} are the rules numbered here.
    *
-   * <p>Yields no id when the rules of the model cannot be identified, for example because its DMN
+   * <p>A rule id can sit at a different position in another deployment of the decision definition
+   * id, so a coverage measured against this model must take its indices from here rather than from
+   * the table that was evaluated.
+   *
+   * <p>Yields no rule when the rules of the model cannot be identified, for example because its DMN
    * cannot be read or its rules carry no id. A caller cannot tell the rules of this table from the
    * rules of another table then, and must not mistake the empty result for a table without rules.
    *
-   * @param model The model to collect the rule ids of
-   * @return The ids of the rules of the decision table
+   * @param model The model to number the rules of
+   * @return The position of each rule of the decision table by its id, in table order
    */
-  public static Set<String> coverableRuleIds(final DecisionModel model) {
-    final DmnModelInstance modelInstance;
+  public static Map<String, Integer> coverableRuleIndicesById(final DecisionModel model) {
+    final List<Rule> rules;
     try {
-      modelInstance = Dmn.readModelFromStream(new ByteArrayInputStream(model.getXml().getBytes()));
+      rules =
+          rulesOf(
+              Dmn.readModelFromStream(new ByteArrayInputStream(model.getXml().getBytes())),
+              model.getDecisionDefinitionId());
     } catch (final RuntimeException e) {
-      return Collections.emptySet();
+      return Collections.emptyMap();
     }
 
-    final Decision decision = modelInstance.getModelElementById(model.getDecisionDefinitionId());
-    if (decision == null) {
-      return Collections.emptySet();
+    final Map<String, Integer> ruleIndicesById = new LinkedHashMap<>();
+    for (int position = 0; position < rules.size(); position++) {
+      final String ruleId = rules.get(position).getId();
+      if (ruleId != null && !ruleId.isEmpty()) {
+        ruleIndicesById.putIfAbsent(ruleId, position + 1);
+      }
     }
-    return decision.getChildElementsByType(DecisionTable.class).stream()
-        .flatMap(decisionTable -> decisionTable.getChildElementsByType(Rule.class).stream())
-        .map(Rule::getId)
-        .filter(ruleId -> ruleId != null && !ruleId.isEmpty())
-        .collect(Collectors.toSet());
+    return ruleIndicesById;
   }
 
   /**
@@ -190,21 +198,30 @@ public class DecisionModelCreator {
   /**
    * Counts the number of rules in the decision table for the specified decision.
    *
-   * <p>Navigates from the decision element (by ID) to its decision table child and counts the rule
-   * elements directly.
-   *
    * @param modelInstance The parsed DMN model instance
    * @param decisionDefinitionId The ID of the decision to count rules for
    * @return The number of rules in the decision table, or 0 if the decision has no table
    */
   static int countRulesForDecision(
       final DmnModelInstance modelInstance, final String decisionDefinitionId) {
+    return rulesOf(modelInstance, decisionDefinitionId).size();
+  }
+
+  /**
+   * Collects the rules of a decision, in the order its tables list them.
+   *
+   * @param modelInstance The parsed DMN model instance
+   * @param decisionDefinitionId The ID of the decision to collect the rules of
+   * @return The rules of the decision, or none if the model does not define it
+   */
+  private static List<Rule> rulesOf(
+      final DmnModelInstance modelInstance, final String decisionDefinitionId) {
     final Decision decision = modelInstance.getModelElementById(decisionDefinitionId);
     if (decision == null) {
-      return 0;
+      return Collections.emptyList();
     }
     return decision.getChildElementsByType(DecisionTable.class).stream()
-        .mapToInt(dt -> dt.getChildElementsByType(Rule.class).size())
-        .sum();
+        .flatMap(decisionTable -> decisionTable.getChildElementsByType(Rule.class).stream())
+        .collect(Collectors.toList());
   }
 }
