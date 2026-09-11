@@ -281,6 +281,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
 
     return client
         .bulk(request)
+        .exceptionallyCompose(error -> CompletableFuture.failedFuture(translateBulkFailure(error)))
         .thenComposeAsync(
             r -> {
               if (r.errors()) {
