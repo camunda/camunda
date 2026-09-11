@@ -12,10 +12,11 @@ describe('present-when-shape', () => {
 
   before(() => {
     // Scope: this suite lints only the synthetic `present-when` fixture, so it
-    // verifies the marker's shape — not the production `jobs.yaml` binding. A
-    // typo'd `request` (e.g. `withLeese`) in the live spec would still pass; add
-    // a production-spec / semantic-resolver check if x-present-when sees broader
-    // adoption (see the matching note in `.spectral.yaml`).
+    // verifies the marker's shape — not that `request` names a real request-body
+    // field. That referential-integrity check lives in the
+    // `present-when-request-resolves` rule and its suite
+    // (`presentWhenReferentialIntegrity.test.js`), which resolves each operation
+    // against the real spec and catches a typo'd `request` (e.g. `withLeese`).
     const allResults = lintFixture(FIXTURE);
     shape = filterByRule(allResults, SHAPE_RULE);
   });
