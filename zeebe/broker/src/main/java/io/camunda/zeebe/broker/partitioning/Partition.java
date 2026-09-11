@@ -182,6 +182,64 @@ final class Partition {
         });
   }
 
+  /**
+   * Promotes this member to a full voting member of the partition's replication group - the second
+   * phase of a two-phase join for a member that joined as a learner. The future fails while the
+   * raft leader rejects the promotion because this member is not caught up yet; the caller retries.
+   */
+  ActorFuture<Void> promoteMember() {
+    final var concurrencyControl = context.concurrencyControl();
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var raftPartition = raftPartition();
+          if (raftPartition == null) {
+            result.completeExceptionally(errorPartitionNotAvailable("promote member of"));
+            return;
+          }
+          raftPartition
+              .promoteMember()
+              .whenComplete(
+                  (ok, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(error);
+                    } else {
+                      result.complete(null);
+                    }
+                  });
+        });
+    return result;
+  }
+
+  /**
+   * Demotes this member to a non-voting member of the partition's replication group - the first
+   * phase of a two-phase leave, so that the subsequent {@link #leave()} commits without this
+   * member's participation. The partition keeps running; nothing is shut down or deleted here.
+   */
+  ActorFuture<Void> demoteMember() {
+    final var concurrencyControl = context.concurrencyControl();
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var raftPartition = raftPartition();
+          if (raftPartition == null) {
+            result.completeExceptionally(errorPartitionNotAvailable("demote member of"));
+            return;
+          }
+          raftPartition
+              .demoteMember()
+              .whenComplete(
+                  (ok, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(error);
+                    } else {
+                      result.complete(null);
+                    }
+                  });
+        });
+    return result;
+  }
+
   ActorFuture<Void> reconfigurePriority(final int newPriority) {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Void>createFuture();
