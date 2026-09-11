@@ -31,13 +31,17 @@ public class CancelProcessInstanceBatchOperationExecutor implements BatchOperati
   }
 
   @Override
-  public void execute(final long itemKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long itemKey,
+      final int storageOrdinalKey,
+      final PersistedBatchOperation batchOperation) {
     LOGGER.trace("Cancelling process instance with key '{}'", itemKey);
 
     final var authentication = batchOperation.getAuthentication();
     final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(itemKey);
+
     commandWriter.appendFollowUpCommand(
         itemKey,
         ProcessInstanceIntent.CANCEL,

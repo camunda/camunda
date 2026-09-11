@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
+import io.camunda.zeebe.engine.state.immutable.BatchOperationState.ItemKeysAndStorageOrdinalKey;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
@@ -131,9 +132,9 @@ public final class BatchOperationExecutionExecuteProcessor
       return;
     }
 
-    final var entityKeys = batchOperationState.getNextItemKeys(batchKey, BATCH_SIZE);
+    final var maybeItemKeys = batchOperationState.getNextItemKeys(batchKey, BATCH_SIZE);
     // If there are no more items to process, we can mark the partition as completed
-    if (entityKeys.isEmpty()) {
+    if (maybeItemKeys.isEmpty()) {
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}",
           batchKey,
@@ -146,18 +147,22 @@ public final class BatchOperationExecutionExecuteProcessor
       return;
     }
 
+    final var itemKeys = maybeItemKeys.map(ItemKeysAndStorageOrdinalKey::itemKeys).get();
+    final var storageOrdinalKey =
+        maybeItemKeys.map(ItemKeysAndStorageOrdinalKey::storageOrdinalKey).get();
+
     // This is only done for the first batch operation execution iteration
     metrics.stopStartExecuteLatencyMeasure(batchKey);
 
     // mark the items as in progress
-    appendBatchOperationExecutionExecutingEvent(command.getValue(), Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutingEvent(command.getValue(), Set.copyOf(itemKeys));
 
     // retrieve the handler for the batch operation type and execute each itemKey with it
     final var handler = handlers.get(batchOperation.getBatchOperationType());
-    entityKeys.forEach(entityKey -> handler.execute(entityKey, batchOperation));
+    itemKeys.forEach(entityKey -> handler.execute(entityKey, storageOrdinalKey, batchOperation));
 
     // schedule the next EXECUTE command to continue processing the next batch of items
-    appendBatchOperationExecutionExecutedEvent(batchOperation, Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutedEvent(batchOperation, Set.copyOf(itemKeys));
     appendBatchOperationExecuteCommand(command, batchKey, batchOperation);
 
     metrics.startExecuteCycleLatencyMeasure(batchKey, batchOperation.getBatchOperationType());

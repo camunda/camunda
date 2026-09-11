@@ -54,5 +54,7 @@ public interface BatchOperationState {
    * @param batchSize the maximum number of itemKeys to retrieve
    * @return a list of itemKeys for the batch operations, up to the specified batch size
    */
-  List<Long> getNextItemKeys(long batchOperationKey, int batchSize);
+  Optional<ItemKeysAndStorageOrdinalKey> getNextItemKeys(long batchOperationKey, int batchSize);
+
+  record ItemKeysAndStorageOrdinalKey(List<Long> itemKeys, int storageOrdinalKey) {}
 }

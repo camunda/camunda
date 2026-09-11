@@ -29,7 +29,10 @@ public class UpdateJobBatchOperationExecutor implements BatchOperationExecutor {
   }
 
   @Override
-  public void execute(final long jobKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long jobKey,
+      final int storageOrdinalKey,
+      final PersistedBatchOperation batchOperation) {
     final var plan = batchOperation.getJobUpdatePlan();
     final var record = new JobRecord();
     final Set<String> changedAttributes = new LinkedHashSet<>();

@@ -11,5 +11,5 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 
 public interface BatchOperationExecutor {
 
-  void execute(long itemKey, PersistedBatchOperation batchOperation);
+  void execute(long itemKey, final int storageOrdinalKey, PersistedBatchOperation batchOperation);
 }
