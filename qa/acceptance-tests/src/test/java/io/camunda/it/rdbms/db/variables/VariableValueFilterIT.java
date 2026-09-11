@@ -168,6 +168,72 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
   }
 
+  // NOT_IN matches broadly by design, so a single variable plus an unrelated exclusion list
+  // can't tell a correct NOT_IN predicate from one that's silently a no-op: with nothing else
+  // sharing its name, the lone variable would be "found" either way. Each of these instead pairs
+  // an excluded value with a kept value under the same name, so a no-op predicate would wrongly
+  // return both and fail the "exactly one match" assertion.
+
+  @TestTemplate
+  public void shouldExcludeVariableWithNameAndNotInValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two variables sharing a name, one holding an excluded value and one not
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel excludedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("excluded-value"));
+    createAndSaveVariable(rdbmsService, excludedVariable);
+    final VariableDbModel keptVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("kept-value"));
+    createAndSaveVariable(rdbmsService, keptVariable);
+
+    // and a notIn filter excluding the first variable's value
+    final Operation<String> operation = Operation.notIn("excluded-value");
+
+    // when only the non-excluded variable is returned
+    searchAndAssertVariableValueFilter(rdbmsService, keptVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldExcludeVariableWithNameAndNotInWholeNumberStoredAsDouble(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two variables sharing a name, one holding an excluded value and one not
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel excludedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("42000.0"));
+    createAndSaveVariable(rdbmsService, excludedVariable);
+    final VariableDbModel keptVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("99999.0"));
+    createAndSaveVariable(rdbmsService, keptVariable);
+
+    // and a notIn filter excluding the first variable's value
+    final Operation<String> operation = Operation.notIn("42000");
+
+    // when only the non-excluded variable is returned
+    searchAndAssertVariableValueFilter(rdbmsService, keptVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldExcludeVariableWithNameAndNotInBooleanValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two variables sharing a name, one holding an excluded value and one not
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel excludedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("true"));
+    createAndSaveVariable(rdbmsService, excludedVariable);
+    final VariableDbModel keptVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("false"));
+    createAndSaveVariable(rdbmsService, keptVariable);
+
+    // and a notIn filter excluding the first variable's value
+    final Operation<String> operation = Operation.notIn("true");
+
+    // when only the non-excluded variable is returned
+    searchAndAssertVariableValueFilter(rdbmsService, keptVariable, varName, operation);
+  }
+
   @TestTemplate
   public void shouldFindVariableWithNameAndEqNullValue(
       final CamundaRdbmsTestApplication testApplication) {
