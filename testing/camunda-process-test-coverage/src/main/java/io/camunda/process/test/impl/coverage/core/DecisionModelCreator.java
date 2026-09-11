@@ -81,6 +81,24 @@ public class DecisionModelCreator {
   }
 
   /**
+   * Selects the table that describes more of the decision out of two models sharing a decision
+   * definition id.
+   *
+   * <p>A decision definition id can be deployed with different tables within the same test run, for
+   * example when suites use fixtures that differ in their rules. The report describes such a
+   * decision by its richest table, so that the rules of the other tables cannot count as coverage
+   * of a table that does not have them.
+   *
+   * @param model A model of the decision
+   * @param otherModel Another model of the same decision
+   * @return The model with the higher rule count, or the first one if both are equal
+   */
+  public static DecisionModel selectMostCompleteModel(
+      final DecisionModel model, final DecisionModel otherModel) {
+    return otherModel.getTotalRuleCount() > model.getTotalRuleCount() ? otherModel : model;
+  }
+
+  /**
    * Counts the number of rules in the decision table for the specified decision.
    *
    * <p>Navigates from the decision element (by ID) to its decision table child and counts the rule

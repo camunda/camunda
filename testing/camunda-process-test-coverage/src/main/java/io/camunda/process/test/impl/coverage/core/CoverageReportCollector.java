@@ -172,25 +172,39 @@ public final class CoverageReportCollector {
                         decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId()))
             .collect(Collectors.toList());
 
-    return filteredDecisionInstanceData.stream()
-        .map(
-            decisionInstanceResult -> {
-              try {
-                return DecisionCoverageCreator.createCoverage(
-                    decisionInstanceResult,
-                    decisionModels.computeIfAbsent(
+    // the decision models of this run, which are not necessarily the models of the previous runs: a
+    // test can deploy a different table under an already covered decision definition id
+    final Map<String, DecisionModel> runDecisionModels = new HashMap<>();
+
+    final List<DecisionCoverage> decisionCoverages =
+        filteredDecisionInstanceData.stream()
+            .map(
+                decisionInstanceResult -> {
+                  try {
+                    return DecisionCoverageCreator.createCoverage(
+                        decisionInstanceResult,
+                        runDecisionModels.computeIfAbsent(
+                            decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId(),
+                            key -> DecisionModelCreator.createModel(dataSource, key)));
+                  } catch (final Exception e) {
+                    LOG.warn(
+                        "Failed to collect coverage for decision '{}': {}",
                         decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId(),
-                        key -> DecisionModelCreator.createModel(dataSource, key)));
-              } catch (final Exception e) {
-                LOG.warn(
-                    "Failed to collect coverage for decision '{}': {}",
-                    decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId(),
-                    e.getMessage());
-                return null;
-              }
-            })
-        .filter(dc -> dc != null)
-        .collect(Collectors.toList());
+                        e.getMessage());
+                    return null;
+                  }
+                })
+            .filter(dc -> dc != null)
+            .collect(Collectors.toList());
+
+    runDecisionModels.forEach(
+        (decisionDefinitionId, runDecisionModel) ->
+            decisionModels.merge(
+                decisionDefinitionId,
+                runDecisionModel,
+                DecisionModelCreator::selectMostCompleteModel));
+
+    return decisionCoverages;
   }
 
   private static String extractCollectorClassName(final Class<?> testClass) {

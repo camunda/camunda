@@ -107,6 +107,16 @@ class CoverageReporterTest {
           .coverage(1.0)
           .build();
 
+  private static final String DECISION_ID = "decision-a";
+
+  /** The full decision table, as one suite deploys it. */
+  private static final DecisionModel FULL_TABLE =
+      DecisionModelFixtures.modelOf(DECISION_ID, "full-1", "full-2", "full-3", "full-4", "full-5");
+
+  /** A smaller table that another suite deploys under the same decision definition id. */
+  private static final DecisionModel SMALL_TABLE =
+      DecisionModelFixtures.modelOf(DECISION_ID, "small-1", "small-2");
+
   @TempDir File tempDir;
 
   /**
@@ -474,6 +484,65 @@ class CoverageReporterTest {
     return collector;
   }
 
+  // ── decision deployed as different tables under one id ───────────────────────
+
+  /**
+   * Suites can deploy different tables under the same decision definition id, for example when
+   * their fixtures differ in the rules they define. The aggregated report must describe the
+   * decision by the table that has the most rules, otherwise the rules matched by the other suites
+   * are counted against a table that does not have them.
+   */
+  @Test
+  void shouldReportMostCompleteTableWhenSuitesDeployDifferentDecisionTables() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: the suite with the smaller table is reported first
+    final CoverageReportCollector smallTableSuite =
+        buildCollectorForDecision(SmallTableSuiteTest.class, SMALL_TABLE, "small-1", "small-2");
+    final CoverageReportCollector fullTableSuite =
+        buildCollectorForDecision(FullTableSuiteTest.class, FULL_TABLE, "full-1");
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(smallTableSuite, fullTableSuite));
+
+    // then
+    assertThat(report.getDecisionModels())
+        .filteredOn(model -> model.getDecisionDefinitionId().equals(DECISION_ID))
+        .singleElement()
+        .extracting(DecisionModel::getTotalRuleCount)
+        .isEqualTo(5);
+  }
+
+  /** Builds a mock collector reporting a single decision coverage against a single table. */
+  private CoverageReportCollector buildCollectorForDecision(
+      final Class<?> testClass, final DecisionModel model, final String... matchedRuleIds) {
+
+    final CoverageSuiteReport suite =
+        ImmutableCoverageSuiteReport.builder()
+            .id(testClass.getName())
+            .name(testClass.getSimpleName())
+            .addRuns(
+                ImmutableCoverageRunReport.builder()
+                    .name("run-1")
+                    .addDecisionCoverages(
+                        ImmutableDecisionCoverage.builder()
+                            .decisionDefinitionId(model.getDecisionDefinitionId())
+                            .addMatchedRuleIds(matchedRuleIds)
+                            .coverage((double) matchedRuleIds.length / model.getTotalRuleCount())
+                            .build())
+                    .build())
+            .build();
+
+    final CoverageReportCollector collector = mock(CoverageReportCollector.class);
+    when(collector.getSuite()).thenReturn(suite);
+    when(collector.getModels()).thenReturn(Collections.emptyList());
+    when(collector.getDecisionModels()).thenReturn(Collections.singletonList(model));
+    return collector;
+  }
+
   // ── JSON serialisation test (migrated from CoverageReportUtilTest) ───────────
 
   @Test
@@ -518,3 +587,7 @@ final class AggregatedCollectorTestB {}
 final class MockingSuiteTest {}
 
 final class RealProcessSuiteTest {}
+
+final class SmallTableSuiteTest {}
+
+final class FullTableSuiteTest {}

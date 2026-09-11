@@ -26,6 +26,7 @@ import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
+import io.camunda.process.test.impl.coverage.core.DecisionModelCreator;
 import io.camunda.process.test.impl.coverage.core.ModelCreator;
 import java.io.File;
 import java.io.IOException;
@@ -107,8 +108,13 @@ public class CoverageReporter {
     final Collection<DecisionModel> decisionModels =
         reportCollectors.stream()
             .flatMap(c -> c.getDecisionModels().stream())
-            .distinct()
-            .collect(Collectors.toList());
+            .collect(
+                Collectors.toMap(
+                    DecisionModel::getDecisionDefinitionId,
+                    Function.identity(),
+                    DecisionModelCreator::selectMostCompleteModel,
+                    LinkedHashMap::new))
+            .values();
 
     final CoverageReport aggregatedReport =
         CoverageReportCreator.createAggregatedCoverageReport(suites, processModels, decisionModels);
