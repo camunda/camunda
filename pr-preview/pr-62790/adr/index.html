@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Decision Records | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-62790/adr/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Architecture Decision Records | Camunda Platform"><meta data-rh="true" name="description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><meta data-rh="true" property="og:description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-62790/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-62790/adr/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-62790/adr/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-62790/adr/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-62790/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-62790/assets/js/runtime~main.45c2bd9d.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-62790/assets/js/main.f5a02454.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-62790/assets/js/runtime~main.8bd9ac27.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-62790/assets/js/main.c30cabfb.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -66,6 +66,13 @@ uniform <code>TenantAccessProvider</code> seam across the read (search) and writ
 (engine) paths, behavior-preserving, with the engine keeping its own
 anonymous/mt-off resolver rather than a decorator over the core provider
 (camunda-security-library#582).</li>
+<li class=""><code>secrets/001-central-secret-resolution-architecture.md</code> — the central secret
+resolution architecture: references established at authoring or write time,
+placeholders on the log with values injected only into the job hand-out, a
+memory-only lookup on the activation path with park-and-resolve on a miss,
+store-owned per-store caching bounded by TTL and size, one store per physical
+tenant configured under <code>camunda.secrets.*</code>, and per-reference
+<code>SECRET:REVEAL</code> on the gateway path only (camunda/camunda#56572).</li>
 <li class=""><code>orchestration-cluster/</code> — decisions spanning the broker, gateways, and
 auth/authz layer: JVM/JRE image strategy, physical-tenant request scoping,
 provider selection, authorization routing, gRPC authentication, configuration

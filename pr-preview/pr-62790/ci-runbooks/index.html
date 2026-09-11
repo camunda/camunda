@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-62790/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-62790/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-62790/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-62790/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-62790/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-62790/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-62790/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-62790/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-62790/assets/js/runtime~main.45c2bd9d.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-62790/assets/js/main.f5a02454.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-62790/assets/js/runtime~main.8bd9ac27.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-62790/assets/js/main.c30cabfb.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -253,41 +253,23 @@ by verifying artifact-metadata-exporter service status.</p>
 issues.</p>
 <hr>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="snapshot-artifact-no-longer-published">Snapshot Artifact No Longer Published<a href="#snapshot-artifact-no-longer-published" class="hash-link" aria-label="Direct link to Snapshot Artifact No Longer Published" title="Direct link to Snapshot Artifact No Longer Published" translate="no">​</a></h3>
-<p>Either alert can also fire because the artifact was intentionally retired (e.g. a module removed
-from the monorepo), not because publishing broke. The artifact-metadata-exporter tracks only the
-single globally-highest version ever seen per Maven coordinate (<code>latest_patch=&quot;true&quot;</code> in
-Artifactory&#x27;s metadata), so it can keep reporting on a now-dead version long after the branch that
-produced it stopped building that module.</p>
+<p>Either snapshot alert can also fire because the artifact was intentionally retired (e.g. a module
+removed from the monorepo), not because publishing broke.</p>
+<p>The artifact-metadata-exporter only tracks the highest version it has ever seen per Maven
+coordinate, so alerts effectively cover the latest minor release only. Once a module is dropped
+from <code>main</code>, that frozen version keeps alerting even though the older <code>stable/X.Y</code> branches that
+still build it are publishing fine.</p>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="troubleshooting-7">Troubleshooting<a href="#troubleshooting-7" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting" translate="no">​</a></h4>
 <ul>
-<li class="">Check the alert&#x27;s <code>tag</code> label. If it points at a version higher than what any actively
-maintained branch currently builds, the exporter is likely still tracking a dead version.</li>
-<li class="">Confirm the module is actually gone from whichever branch produced that tag (grep that branch&#x27;s
-<code>pom.xml</code> for the module, or look for a known removal PR).</li>
-<li class="">Check whether any still-maintained <code>stable/X.Y</code> branch still builds that artifact and is still
-getting green pushes. If so, do not remove detection outright — that branch is still a
-legitimate publisher, and removing the artifact from the watchlist would silence a real
-regression there too.</li>
+<li class="">Check the alert&#x27;s <code>tag</code> label. A version higher than anything an active branch builds means the
+exporter is tracking a retired artifact.</li>
+<li class="">Confirm the module is gone from the branch that produced that tag (grep that branch&#x27;s <code>pom.xml</code>,
+or look for the removal PR).</li>
 </ul>
-<p>For example, Tasklist was removed from <code>main</code> in
-<a href="https://github.com/camunda/camunda/pull/60894" target="_blank" rel="noopener noreferrer" class="">#60894</a> (8.10+), which dropped the
-<code>tasklist-parent</code> module and its SNAPSHOT publish from <code>main</code>. <code>stable/8.7</code>, <code>stable/8.8</code>, and
-<code>stable/8.9</code> still contain <code>tasklist-parent</code> and still republish it on every green push. An alert
-tagged <code>8.11.0-SNAPSHOT</code> for that artifact is <code>main</code>&#x27;s frozen pre-removal version, not a sign that
-the stable branches&#x27; publishing is broken.</p>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="solutions-7">Solutions<a href="#solutions-7" class="hash-link" aria-label="Direct link to Solutions" title="Direct link to Solutions" translate="no">​</a></h4>
-<p>If the artifact is genuinely retired everywhere (no maintained branch still builds it), remove it
-from the artifact-metadata-exporter&#x27;s watched set in <code>camunda/infra-core</code>: the Prometheus scrape
-config&#x27;s <code>artifacts:</code> label and the <code>Snapshot_Artifacts_Stale</code>/<code>Snapshot_Artifacts_Missing</code> alert
-rules under <code>camunda-int/kustomize/{dev,stage,prod}/monitoring/monitor.int.camunda.com/prometheus-config/</code>,
-plus its row in <code>kustomize/base/artifact-metadata-exporter/README.md</code>. See
+<p>Ask the Infra team to drop it from the
+artifact-metadata-exporter&#x27;s watchlist — see
 <a href="https://github.com/camunda/infra-core/pull/14262" target="_blank" rel="noopener noreferrer" class="">infra-core#14262</a> for an example.</p>
-<p>Known limitation: because the exporter tracks only the single globally-highest version per
-artifact, once that top version&#x27;s line stops publishing, a real regression in an actively
-maintained <em>lower</em>-numbered branch (e.g. <code>stable/8.9</code>&#x27;s snapshot deploy silently breaking) will not
-be caught by this alert — that branch&#x27;s version can never become the tracked &quot;latest&quot; while the
-higher, dead version&#x27;s metadata still exists in Artifactory. This is a design gap that needs a
-larger exporter change in <code>infra-core</code>, not a quick artifact-removal PR.</p>
 <hr>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="camunda-helm-chart-integration-test-failure">Camunda Helm Chart Integration Test Failure<a href="#camunda-helm-chart-integration-test-failure" class="hash-link" aria-label="Direct link to Camunda Helm Chart Integration Test Failure" title="Direct link to Camunda Helm Chart Integration Test Failure" translate="no">​</a></h3>
 <p>You may observe one or more of the following:</p>
