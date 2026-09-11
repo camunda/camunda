@@ -744,6 +744,8 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async expectEditorToBeLoaded() {
-    await expect(this.page.getByRole('code')).toBeVisible();
+    // Modification mode renders one inline CodeMirror editor per variable, so
+    // assert on the focused one (the variable currently being edited).
+    await expect(this.page.locator('.cm-content:focus')).toBeVisible();
   }
 }

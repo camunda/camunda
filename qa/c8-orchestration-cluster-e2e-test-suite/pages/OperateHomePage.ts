@@ -50,7 +50,7 @@ class OperateHomePage {
     });
     this.editVariableButton = page.getByTestId('edit-variable-button');
     this.variableValueInput = page.getByTestId('edit-variable-value');
-    this.variableValueEditor = page.getByRole('code');
+    this.variableValueEditor = page.locator('.cm-content');
     this.saveVariableButton = page.getByLabel('Save');
     this.editVariableSpinner = page
       .getByTestId('variable-operation-spinner')
