@@ -168,16 +168,7 @@ group = "io.camunda.optimize"
 
 description = "Optimize Backend"
 
-val testSupport =
-  sourceSets.create("testSupport") {
-    java.srcDir("src/test/java")
-    java.srcDir("src/it/java")
-    resources.srcDir("src/test/resources")
-    resources.srcDir("src/it/resources")
-    compileClasspath += sourceSets["main"].output + configurations["testCompileClasspath"]
-    runtimeClasspath += output + compileClasspath + configurations["testRuntimeClasspath"]
-  }
-
-extensions.configure<TestJarPublishingExtension>("publishedTestJar") {
-  sourceSetName.set(testSupport.name)
+sourceSets.named("test") {
+  java.srcDir("src/it/java")
+  resources.srcDir("src/it/resources")
 }
