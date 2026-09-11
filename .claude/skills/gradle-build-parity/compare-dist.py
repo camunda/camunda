@@ -13,6 +13,7 @@ root and JAR names/versions under `lib/`; other file contents are intentionally 
     python3 compare-dist.py <gradle-zip> <maven-zip>
 """
 
+from collections.abc import Iterable
 import re
 import sys
 import tarfile
@@ -33,9 +34,9 @@ KOTLIN_MULTIPLATFORM_METADATA_VARIANTS = {
 def jars_from_tar(path: str) -> dict[str, list[str]]:
     result: dict[str, list[str]] = {}
     with tarfile.open(path, "r:gz") as tf:
-        for m in tf.getmembers():
-            if "/lib/" in m.name and m.name.endswith(".jar"):
-                name = m.name.split("/lib/", 1)[1]
+        for member in tf.getmembers():
+            if "/lib/" in member.name and member.name.endswith(".jar"):
+                name = member.name.split("/lib/", 1)[1]
                 base = strip_version(name)
                 result.setdefault(base, []).append(name)
     return result
@@ -43,33 +44,27 @@ def jars_from_tar(path: str) -> dict[str, list[str]]:
 
 def jars_from_dir(path: str) -> dict[str, list[str]]:
     result: dict[str, list[str]] = {}
-    for f in Path(path).glob("lib/*.jar"):
-        base = strip_version(f.name)
-        result.setdefault(base, []).append(f.name)
+    for file in Path(path).glob("lib/*.jar"):
+        base = strip_version(file.name)
+        result.setdefault(base, []).append(file.name)
     return result
 
 
-def archive_files(path: str) -> tuple[str, dict[str, bytes]]:
+def archive_inventory(path: str) -> tuple[str, list[str]]:
+    """Return the archive root and member names without reading member payloads."""
     with ZipFile(path) as archive:
-        files = {
-            name.rstrip("/"): archive.read(name)
-            for name in archive.namelist()
-            if not name.endswith("/")
-        }
+        files = [name.rstrip("/") for name in archive.namelist() if not name.endswith("/")]
 
     roots = {name.split("/", 1)[0] for name in files}
     if len(roots) != 1:
         raise ValueError(f"expected one distribution root in {path}, found {sorted(roots)}")
 
     root = roots.pop()
-    relative_files = {
-        name.split("/", 1)[1] if "/" in name else "": content
-        for name, content in files.items()
-    }
+    relative_files = [name.split("/", 1)[1] if "/" in name else "" for name in files]
     return root, relative_files
 
 
-def jars_from_archive(files: dict[str, bytes]) -> dict[str, list[str]]:
+def jars_from_archive(files: Iterable[str]) -> dict[str, list[str]]:
     result: dict[str, list[str]] = {}
     for path in files:
         if path.startswith("lib/") and path.endswith(".jar"):
@@ -95,11 +90,12 @@ def ignore_maven_metadata_variants(
     return ignored
 
 
-def compare_archives(gradle_path: str, maven_path: str) -> int:
-    gradle_root, gradle_files = archive_files(gradle_path)
-    maven_root, maven_files = archive_files(maven_path)
-    gradle = jars_from_archive(gradle_files)
-    maven = jars_from_archive(maven_files)
+def compare_inventories(
+    gradle: dict[str, list[str]],
+    maven: dict[str, list[str]],
+    gradle_root: str | None = None,
+    maven_root: str | None = None,
+) -> int:
     ignored_metadata_variants = ignore_maven_metadata_variants(gradle, maven)
 
     all_bases = sorted(set(gradle) | set(maven))
@@ -118,9 +114,10 @@ def compare_archives(gradle_path: str, maven_path: str) -> int:
         else:
             maven_only.append((base, sorted(maven[base])))
 
-    total_g = sum(len(v) for v in gradle.values())
-    total_m = sum(len(v) for v in maven.values())
-    print(f"Distribution roots: Gradle={gradle_root}, Maven={maven_root}")
+    total_g = sum(len(values) for values in gradle.values())
+    total_m = sum(len(values) for values in maven.values())
+    if gradle_root is not None and maven_root is not None:
+        print(f"Distribution roots: Gradle={gradle_root}, Maven={maven_root}")
     print(f"Total JARs: Gradle={total_g}, Maven={total_m}")
     print(
         f"Artifact-level: {len(version_diffs)} version mismatches, "
@@ -129,7 +126,7 @@ def compare_archives(gradle_path: str, maven_path: str) -> int:
     if ignored_metadata_variants:
         print(f"Ignored Maven-only Kotlin metadata variants: {sorted(ignored_metadata_variants)}")
 
-    if gradle_root != maven_root:
+    if gradle_root is not None and maven_root is not None and gradle_root != maven_root:
         print("VERSION MISMATCH: distribution root")
     if version_diffs:
         print("=== Version mismatches ===")
@@ -144,7 +141,10 @@ def compare_archives(gradle_path: str, maven_path: str) -> int:
         for base, jars in maven_only:
             print(f"  {jars}")
 
-    if gradle_root != maven_root or version_diffs or gradle_only or maven_only:
+    differences = version_diffs or gradle_only or maven_only
+    if gradle_root is not None and maven_root is not None:
+        differences = differences or gradle_root != maven_root
+    if differences:
         print("DIFFERENCES FOUND")
         return 2
 
@@ -152,64 +152,22 @@ def compare_archives(gradle_path: str, maven_path: str) -> int:
     return 0
 
 
+def compare_archives(gradle_path: str, maven_path: str) -> int:
+    gradle_root, gradle_files = archive_inventory(gradle_path)
+    maven_root, maven_files = archive_inventory(maven_path)
+    return compare_inventories(
+        jars_from_archive(gradle_files),
+        jars_from_archive(maven_files),
+        gradle_root,
+        maven_root,
+    )
+
+
 def compare(gradle_path: str, maven_path: str) -> int:
     if gradle_path.lower().endswith(".zip") and maven_path.lower().endswith(".zip"):
         return compare_archives(gradle_path, maven_path)
 
-    gradle = jars_from_tar(gradle_path)
-    maven = jars_from_dir(maven_path)
-    ignored_metadata_variants = ignore_maven_metadata_variants(gradle, maven)
-
-    all_bases = sorted(set(gradle) | set(maven))
-
-    version_diffs: list[tuple[str, list[str], list[str]]] = []
-    gradle_only: list[tuple[str, list[str]]] = []
-    maven_only: list[tuple[str, list[str]]] = []
-
-    for base in all_bases:
-        if base in gradle and base in maven:
-            gv = sorted(gradle[base])
-            mv = sorted(maven[base])
-            if gv != mv:
-                version_diffs.append((base, gv, mv))
-        elif base in gradle:
-            gradle_only.append((base, sorted(gradle[base])))
-        else:
-            maven_only.append((base, sorted(maven[base])))
-
-    total_g = sum(len(v) for v in gradle.values())
-    total_m = sum(len(v) for v in maven.values())
-    print(f"Total JARs: Gradle={total_g}, Maven={total_m}")
-    print(
-        f"Artifact-level: {len(version_diffs)} version mismatches, "
-        f"{len(gradle_only)} Gradle-only, {len(maven_only)} Maven-only"
-    )
-    if ignored_metadata_variants:
-        print(f"Ignored Maven-only Kotlin metadata variants: {sorted(ignored_metadata_variants)}")
-
-    if version_diffs:
-        print("\n=== Version mismatches ===")
-        for base, gv, mv in version_diffs:
-            print(f"  G:{gv}")
-            print(f"  M:{mv}")
-            print()
-
-    if gradle_only:
-        print("=== Only in Gradle ===")
-        for base, jars in gradle_only:
-            print(f"  {jars}")
-
-    if maven_only:
-        print("=== Only in Maven ===")
-        for base, jars in maven_only:
-            print(f"  {jars}")
-
-    if version_diffs or gradle_only or maven_only:
-        print("DIFFERENCES FOUND")
-        return 2
-
-    print("OK — no differences")
-    return 0
+    return compare_inventories(jars_from_tar(gradle_path), jars_from_dir(maven_path))
 
 
 if __name__ == "__main__":
