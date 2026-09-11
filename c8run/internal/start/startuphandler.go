@@ -475,6 +475,20 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 		return
 	}
 
+	if err := overrides.SetConnectorsAuthEnvVars(state.Settings); err != nil {
+		log.Warn().Err(err).Msg("Failed to set Connectors authentication env vars; Connectors may fail to authenticate")
+	}
+
+	// Connectors is an optional component. A failure to start or become healthy must
+	// not tear down the rest of the cluster, so its failure handler only logs guidance
+	// instead of cancelling the shared context (which would stop Camunda too).
+	connectorsFailed := func() {
+		log.Warn().Msg(
+			"Connectors did not start; Camunda keeps running. If authorizations are enabled, " +
+				"Connectors needs the seeded user's credentials: pass --username/--password matching " +
+				"the seeded user, or start with --disable-connectors to skip the bundled Connectors runtime.")
+	}
+
 	processInfo := state.ProcessInfo
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
 		connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
@@ -482,10 +496,9 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
 		if err != nil {
 			log.Err(err).Msg("Failed to start Connectors process")
-			stop()
 			return
 		}
 	}, func() error {
 		return health.QueryConnectors(ctx, "Connectors", startupHealthCheckRetries)
-	}, stop)
+	}, connectorsFailed)
 }

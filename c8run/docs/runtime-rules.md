@@ -55,6 +55,14 @@ Pass `--no-browser` to skip opening a browser window entirely (for example, in a
 
 C8Run starts Connectors from the connector bundle plus `custom_connectors/*`. Connectors runs alongside the main Camunda process and shares the same shutdown lifecycle.
 
+### Authenticated API access
+
+Connectors talks to the local Camunda API as a client. When the API requires authentication — `camunda.security.authorizations.enabled: true` or `camunda.security.authentication.unprotected-api: false` in `application.yaml` — C8Run passes the seeded user's basic-auth credentials to the Connectors process via `CAMUNDA_CLIENT_AUTH_USERNAME` / `CAMUNDA_CLIENT_AUTH_PASSWORD`. The credentials come from `--username` / `--password` (default `demo` / `demo`); if you change the seeded user in `application.yaml`, pass matching flags. Pre-existing values for those environment variables are never overwritten. When the API is unprotected (the default), no credentials are set.
+
+### Connectors failure is non-fatal
+
+Connectors is an optional component. If it fails to start or its health check does not turn green, C8Run logs a warning and keeps Camunda running instead of tearing down the whole cluster. To skip the bundled Connectors runtime entirely, start with `--disable-connectors`.
+
 ## Logs and PIDs
 
 - `log/camunda.log` — Camunda process output
