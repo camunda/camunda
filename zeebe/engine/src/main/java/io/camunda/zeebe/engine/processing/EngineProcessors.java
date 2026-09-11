@@ -558,7 +558,8 @@ public final class EngineProcessors {
         processingState,
         incidentMetrics,
         secretResolutionScheduler,
-        bpmnBehaviors.jobActivationBehavior());
+        bpmnBehaviors.jobActivationBehavior(),
+        secretStoreRegistry.isConfigured(SecretStoreRegistry.DEFAULT_STORE_ID));
 
     return typedRecordProcessors;
   }
