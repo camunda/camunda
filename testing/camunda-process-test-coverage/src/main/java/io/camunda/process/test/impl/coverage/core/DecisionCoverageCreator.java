@@ -28,7 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -153,32 +152,35 @@ public class DecisionCoverageCreator {
   }
 
   /**
-   * Retains the rules that the reported table can cover.
+   * Retains the rules that the reported table can cover, numbered as that table lists them.
    *
    * <p>A decision definition id can be covered by more than one table, for example when suites
    * deploy fixtures that differ in their rules. The report describes such a decision by a single
    * table, so rules of the other tables are not part of its coverage: they are neither counted nor
-   * highlighted.
+   * highlighted. A retained rule takes its index from the reported table, because the table that
+   * was evaluated can list it at another position.
    *
-   * <p>Nothing is retained away when the rules of the reported table cannot be identified, because
-   * the rules of the other tables cannot be told apart from them then.
+   * <p>Nothing is retained away or renumbered when the rules of the reported table cannot be
+   * identified, because the rules of the other tables cannot be told apart from them then.
    *
    * @param matchedRules The matched rules by their id, in the order they were matched
    * @param model The model the report describes the decision by
-   * @return The matched rules that are rules of the reported table
+   * @return The matched rules that are rules of the reported table, by their index in it
    */
   private static Map<String, Integer> retainCoverable(
       final Map<String, Integer> matchedRules, final DecisionModel model) {
-    final Set<String> coverableRuleIds = DecisionModelCreator.coverableRuleIds(model);
-    if (coverableRuleIds.isEmpty()) {
+    final Map<String, Integer> coverableRuleIndices =
+        DecisionModelCreator.coverableRuleIndicesById(model);
+    if (coverableRuleIndices.isEmpty()) {
       return matchedRules;
     }
 
     final Map<String, Integer> coveredRules = new LinkedHashMap<>();
     matchedRules.forEach(
         (ruleId, ruleIndex) -> {
-          if (coverableRuleIds.contains(ruleId)) {
-            coveredRules.put(ruleId, ruleIndex);
+          final Integer indexInReportedTable = coverableRuleIndices.get(ruleId);
+          if (indexInReportedTable != null) {
+            coveredRules.put(ruleId, indexInReportedTable);
           }
         });
     return coveredRules;

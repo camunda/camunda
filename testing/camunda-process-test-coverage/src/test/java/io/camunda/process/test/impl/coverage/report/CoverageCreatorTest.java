@@ -166,6 +166,38 @@ class CoverageCreatorTest {
     assertThat(coverage.getCoverage()).isEqualTo(1.0);
   }
 
+  /**
+   * The index of a rule is its position in the table the report describes the decision by. Taking
+   * it from the evaluation instead would point at another rule whenever the table that was
+   * evaluated lists the rule elsewhere.
+   */
+  @Test
+  void shouldNumberMatchedRulesAsTheReportedTableListsThem() {
+    // given: a table that lists the matched rule second
+    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
+    final MatchedDecisionRule matchedRule = mock(MatchedDecisionRule.class);
+    final DecisionModel model = DecisionModelFixtures.modelOf("decision", "rule-a", "rule-b");
+
+    // and: an evaluation that matched it as the first rule of another table
+    when(decisionInstance.getDecisionInstanceId()).thenReturn("instance-1");
+    when(decisionInstance.getDecisionDefinitionId()).thenReturn("decision");
+    when(matchedRule.getRuleId()).thenReturn("rule-b");
+    when(matchedRule.getRuleIndex()).thenReturn(1);
+    when(decisionInstance.getMatchedRules())
+        .thenReturn(java.util.Collections.singletonList(matchedRule));
+
+    final ImmutableCoverageDecisionInstanceData decisionInstanceResult =
+        ImmutableCoverageDecisionInstanceData.builder().decisionInstance(decisionInstance).build();
+
+    // when
+    final DecisionCoverage coverage =
+        DecisionCoverageCreator.createCoverage(decisionInstanceResult, model);
+
+    // then
+    assertThat(coverage.getMatchedRuleIds()).containsExactly("rule-b");
+    assertThat(coverage.getMatchedRuleIndices()).containsExactly(2);
+  }
+
   @Test
   void shouldCreatePartialProcessCoverageWhenOnlySomeElementsAreCompleted() {
     // given: a process with 3 flow nodes (start, task, end) and 2 sequence flows = 5 total

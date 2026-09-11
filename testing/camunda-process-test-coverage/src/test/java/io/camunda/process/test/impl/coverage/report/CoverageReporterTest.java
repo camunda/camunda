@@ -119,6 +119,10 @@ class CoverageReporterTest {
   private static final DecisionModel SMALL_TABLE =
       DecisionModelFixtures.modelOf(DECISION_ID, "small-1", "small-2");
 
+  /** A smaller table listing rules of the full table, at other positions. */
+  private static final DecisionModel SHIFTED_TABLE =
+      DecisionModelFixtures.modelOf(DECISION_ID, "full-4", "full-1");
+
   @TempDir File tempDir;
 
   /**
@@ -641,6 +645,48 @@ class CoverageReporterTest {
             });
   }
 
+  /**
+   * A rule id can sit at another position in the table that was evaluated than in the table the
+   * report describes the decision by. The report must number a covered rule as the table it renders
+   * lists it, otherwise the index points at a rule that was never matched.
+   */
+  @Test
+  void shouldNumberCoveredRulesAsTheReportedTableListsThem() {
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+
+    // and: a suite that matched rules 1 and 2 of a table that lists them as 4 and 1
+    final CoverageReportCollector shiftedTableSuite =
+        buildCollectorForDecision(ShiftedTableSuiteTest.class, SHIFTED_TABLE, "full-4", "full-1");
+    final CoverageReportCollector fullTableSuite =
+        buildCollectorForDecision(FullTableSuiteTest.class, FULL_TABLE, "full-2");
+
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(shiftedTableSuite, fullTableSuite));
+
+    // then: the run reports the positions the reported table lists the rules at
+    assertThat(runDecisionCoveragesOf(report, ShiftedTableSuiteTest.class))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds()).containsExactly("full-4", "full-1");
+              assertThat(coverage.getMatchedRuleIndices()).containsExactly(4, 1);
+            });
+
+    // and: so does the aggregated coverage
+    assertThat(report.getDecisionCoverages())
+        .filteredOn(coverage -> coverage.getDecisionDefinitionId().equals(DECISION_ID))
+        .singleElement()
+        .satisfies(
+            coverage -> {
+              assertThat(coverage.getMatchedRuleIds())
+                  .containsExactlyInAnyOrder("full-4", "full-1", "full-2");
+              assertThat(coverage.getMatchedRuleIndices()).containsExactlyInAnyOrder(4, 1, 2);
+            });
+  }
+
   private static List<DecisionCoverage> runDecisionCoveragesOf(
       final CoverageReport report, final Class<?> testClass) {
     return report.getSuites().stream()
@@ -729,3 +775,5 @@ final class RealProcessSuiteTest {}
 final class SmallTableSuiteTest {}
 
 final class FullTableSuiteTest {}
+
+final class ShiftedTableSuiteTest {}
