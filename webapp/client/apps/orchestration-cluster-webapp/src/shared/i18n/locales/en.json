@@ -22,6 +22,8 @@
 		"headerNotificationsLoading": "Loading notifications...",
 		"headerNotificationsEmptyDescription": "You have no notifications.",
 		"headerNotificationsDismissAll": "Dismiss all",
+		"headerNotificationsError": "Notifications could not be loaded.",
+		"headerNotificationsRetry": "Retry",
 		"notificationLogOutTitle": "Log Out",
 		"notificationLogOutSubtitle": "You are being logged out...",
 		"loginErrorUsernamePasswordMismatch": "Username and password do not match",

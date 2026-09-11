@@ -17,7 +17,7 @@ import {queries} from '#/shared/http/queries';
 import {reactQueryClient} from '#/shared/http/reactQueryClient';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
 import {C3Provider} from '#/shared/c3/components/C3Provider';
-import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
+import {fetchSaasToken} from '#/shared/saas/fetchSaasToken';
 import {Header} from '#/shared/header/components/Header';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {NotFoundPage} from '#/shared/pages/NotFoundPage';
