@@ -344,11 +344,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.dateFormat = dateFormat;
   }
 
-  /**
-   * See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. The field is
-   * unset by default, so comparing a legacy timeout against the unified {@code null} would fail
-   * startup.
-   */
+  /** See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. */
   public Duration getSocketTimeout() {
     final var socketTimeout =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -364,11 +360,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.socketTimeout = socketTimeout;
   }
 
-  /**
-   * See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. The field is
-   * unset by default, so comparing a legacy timeout against the unified {@code null} would fail
-   * startup.
-   */
+  /** See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. */
   public Duration getConnectionTimeout() {
     final var connectionTimeoutInt =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -386,10 +378,12 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   /**
    * Resolved with {@link BackwardsCompatibilityMode#SUPPORTED} rather than the {@code
-   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use. The neighbours all have a non-null default,
-   * so a legacy value has something to be compared against; this property is unset by default.
-   * Under {@code SUPPORTED_ONLY_IF_VALUES_MATCH} every deployment that configures only the legacy
-   * property would compare it against the unset unified value and fail to start.
+   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use. Unlike matching mode, {@code SUPPORTED}
+   * never throws when an explicitly configured unified value differs from the legacy one - it
+   * silently prefers the unified value and logs a warning instead. (Matching mode's separate
+   * failure on an unset unified value - the reason {@code SUPPORTED} was originally chosen here -
+   * is fixed in {@link UnifiedConfigurationHelper}; this getter keeps {@code SUPPORTED} for the
+   * explicit-mismatch behaviour described above.)
    *
    * @throws IllegalArgumentException if configured with a non-positive value
    */
