@@ -1,13 +1,17 @@
-# Rebase POM-to-Gradle audit
+# Rebase POM audit
 
-Use this procedure when a Gradle branch is rebased and the commits replayed from the old branch
-may contain Maven `pom.xml` changes. Maven remains the source of truth. The goal is to produce an
-actionable port list, including version-catalog work for new external dependencies.
+Use this procedure only when a Gradle branch has been rebased and it is unclear which Maven
+changes were replayed onto it. Maven remains the source of truth. The result of this audit is a
+final, actionable POM diff; use [pom-change-porting.md](pom-change-porting.md) to apply that diff
+to Gradle.
+
+After a normal merge, or when the relevant Maven changes are already known, this audit is usually
+not necessary. Go directly to the porting guide.
 
 ## 1. Identify the correct commit range
 
-A rebased branch commonly tracks the old, pre-rebase remote branch. Start by recording both
-references and the graph shape:
+A rebased branch can track the old, pre-rebase remote branch. Start by recording both references
+and the graph shape:
 
 ```bash
 git status --short --branch
@@ -17,9 +21,9 @@ git log -1 --format='%H %ad %s' --date=iso HEAD
 git rev-list --left-right --count "$tracking"...HEAD
 ```
 
-Do **not** interpret a status such as `ahead 855, behind 5` as 855 new Gradle commits. After a
-rebase, the 855 commits can be the old main history rewritten under the five Gradle commits. Find
-the old branch merge-base and count each side explicitly:
+Do not interpret a status such as `ahead 855, behind 5` as 855 new Gradle commits. After a rebase,
+the 855 commits may be old main history rewritten underneath five local Gradle commits. Find the
+old branch merge-base and count each side explicitly:
 
 ```bash
 base=$(git merge-base "$tracking" HEAD)
@@ -30,7 +34,7 @@ printf 'base..HEAD=%s\n' "$(git rev-list --count "$base"..HEAD)"
 printf 'base..tracking=%s\n' "$(git rev-list --count "$base".."$tracking")"
 ```
 
-For a branch rebased directly onto `origin/main`, audit `"$base".."$main_ref"` for source Maven
+For a branch rebased directly onto `origin/main`, audit `"$base".."$main_ref"` for Maven source
 changes. Audit `"$main_ref"..HEAD` separately only for local Gradle commits; do not re-port the
 Gradle implementation commit itself. Validate the assumption before continuing:
 
@@ -77,15 +81,15 @@ git show -s --format='%H%n%P%n%s' "$sha"
 git show --cc --no-ext-diff --no-textconv --unified=0 "$sha" -- "$pom_path"
 ```
 
-## 3. Separate version-only and transient changes
+## 3. Reduce the result to the final net POM state
 
 A commit is version-only only when its complete POM diff changes versions and nothing else. Do not
 exclude a commit just because it contains a version change: a new dependency, module, exclusion,
 plugin configuration, scope, test filter, or code-generation mapping in the same commit still needs
 porting.
 
-Inspect the diff manually after using a quick candidate filter. A simple filter is only a review aid
-and must not decide the result:
+Inspect candidates manually after using a quick filter. The filter is only a review aid and must
+not decide the result:
 
 ```bash
 git show --format= --no-ext-diff --no-textconv --unified=1 "$sha" -- "$pom_path" \
@@ -94,9 +98,8 @@ git show --format= --no-ext-diff --no-textconv --unified=1 "$sha" -- "$pom_path"
   | grep -vE '^[+-].*version\.[A-Za-z0-9_.-]+.*</'
 ```
 
-Then calculate the final net Maven state once. This collapses add/remove sequences where an
-intermediate dependency was later removed and re-added, and prevents porting a state that no longer
-exists:
+Calculate the final net Maven state once. This collapses add/remove sequences where an
+intermediate dependency was later removed and re-added:
 
 ```bash
 git diff --no-ext-diff --no-textconv --unified=3 "$base".."$main_ref" -- "$pom_path" \
@@ -107,12 +110,12 @@ Examples of sequences that must be reduced to the final state:
 
 - AWS STS was added, removed because the distribution supplied it, then added again when source
   code explicitly used STS. The final Gradle port needs STS, not the intermediate removal.
-- A test AssertJ dependency was added and later removed after the test was refactored. Port only the
-  dependency that remains in the final POM.
+- A test AssertJ dependency was added and later removed after the test was refactored. Port only
+  the dependency that remains in the final POM.
 - A test exclusion removed by a later annotation-based fix must not be restored.
 
-Also check the current Gradle file before adding anything. The initial Gradle implementation may
-already contain a dependency even though the post-baseline POM diff mentions it:
+Also check the current Gradle files before creating porting work. The initial Gradle
+implementation may already contain a dependency mentioned by the POM diff:
 
 ```bash
 rg -n --glob '*.gradle.kts' '<artifact-or-project-name>' .
@@ -120,134 +123,25 @@ rg -n --glob '*.gradle.kts' '<artifact-or-project-name>' .
 
 Treat an already-present dependency as verify-only, not as an unconditional duplicate-add task.
 
-## 4. Translate Maven changes to Gradle, including the catalog
+## 4. Hand off to the porting guide
 
-For each final POM change, classify it before editing:
+For every final, non-version-only Maven behavior change, record:
 
-1. **New reactor module** — add `include(":<artifactId>")` and its `projectDir` mapping in
-   `settings.gradle.kts`; add the module `build.gradle.kts`.
-2. **Internal reactor dependency** — add `implementation(project(":<artifactId>"))`, `api`, or a
-   test configuration according to the API boundary. Use `api` only when the dependency's classes
-   are exposed in the module's public/protected signatures and consumed by code outside the module;
-   use `implementation` when the dependency is internal to the module. Do not add an external
-   catalog alias for a reactor artifact.
-3. **New external dependency** — add a version-catalog alias **and** a Gradle dependency line.
-4. **Scope/exclusion change** — map Maven compile/provided/test/optional behavior to the matching
-   Gradle configuration and exclusions. Maven compile scope alone is not evidence for `api`; check
-   whether dependency types cross the module boundary. Because Gradle `implementation` dependencies
-   are absent from consumers' compile classpaths, add a direct dependency to every consumer that
-   imports those classes; choose that consumer's `api` versus `implementation` from its own API
-   boundary. Check the optional and test-jar rules in `SKILL.md`.
-5. **Plugin, profile, test filter, or code-generation change** — mirror it in the appropriate
-   convention/module task, or explicitly mark it as a known Maven-only/deferred gap.
+- the source commit(s) and POM path;
+- the final Maven behavior after reverted/intermediate changes are collapsed;
+- the target Gradle project and build file; and
+- whether the Gradle side is missing, already present and needs verification, or intentionally
+  deferred as Maven-only behavior.
 
-### Add external dependencies to the catalog
+Then follow [pom-change-porting.md](pom-change-porting.md), one final change at a time. Do not
+port the history mechanically: the final Maven state and the current Gradle state are what matter.
 
-The catalog is generated in `settings.gradle.kts`; it is not a free-form TOML file. First inspect
-whether the artifact or its BOM is already represented:
-
-```bash
-# Search by artifact and by group, because aliases are normalized.
-rg -n -i '<artifact-id-fragment>|<group-id-fragment>' settings.gradle.kts
-rg -n 'version\(|pomVersion\(' settings.gradle.kts
-```
-
-Use the Maven source of truth for the version:
-
-```bash
-rg -n '<version\.' parent/pom.xml
-rg -n '<artifact-id-fragment>|<group-id-fragment>' --glob 'pom.xml' .
-```
-
-Choose the catalog declaration as follows:
-
-- A dependency managed by an already imported BOM uses `.withoutVersion()`; for example, AWS SDK
-  modules use the existing AWS SDK BOM.
-- A dependency whose version is a parent property uses a catalog version sourced with
-  `pomVersion("version.<name>")`, then `versionRef(...)` on the library.
-- If Maven has an inline version in a module POM, first promote it to a parent property and use
-  `${version.<name>}` in Maven. Then source the Gradle catalog from that property.
-- Never hardcode a library version in a module `build.gradle.kts`. A genuinely versionless
-  dependency still needs a catalog alias if it is referenced as `libs...`.
-
-Typical declarations look like:
-
-```kotlin
-version("some-lib", pomVersion("version.some-lib"))
-library("com-example-some-lib", "com.example", "some-lib").versionRef("some-lib")
-
-// Dependency managed by a Maven BOM already represented in the catalog.
-library("software-amazon-awssdk-new-service", "software.amazon.awssdk", "new-service")
-  .withoutVersion()
-```
-
-Follow the existing alias naming convention and verify the generated Kotlin accessor by searching
-for comparable use sites. For example, `software-amazon-awssdk-new-service` becomes a nested
-`libs.software.amazon.awssdk.new.service` accessor. If the dependency is an `io.camunda` artifact,
-confirm it is actually a reactor project first; separately released Camunda libraries still belong
-in the catalog.
-
-### Compare dependency graphs
-
-After the settings/module entry exists and the Gradle dependency is wired, compare one module at a
-time:
-
-```bash
-python .claude/skills/gradle-build-parity/compare-module-deps.py --dir <module-dir> --scope compile
-python .claude/skills/gradle-build-parity/compare-module-deps.py --dir <module-dir> --scope runtime
-python .claude/skills/gradle-build-parity/compare-module-deps.py --dir <module-dir> --scope test --versions
-```
-
-Use Maven to explain, rather than blindly fix, a discrepancy:
-
-```bash
-./mvnw dependency:list -pl <module-dir>
-./mvnw dependency:tree -pl <module-dir> -Dincludes=<group>:<artifact>
-```
-
-The comparison can report false Maven runtime extras for classifier variants reached through a
- test-scoped dependency. Confirm the per-artifact Maven scope and the Gradle
-`testRuntimeClasspath` before changing the build. A transitive dependency is not a substitute for
-a direct dependency when the Java source uses it or Maven declares it explicitly; the direct
-relationship is what the Gradle port must preserve.
-
-## 5. Record decisions and validate narrowly
-
-Create a TODO entry with the source commit(s), module/POM path, final behavior, and target Gradle
-file. Mark entries that are already present as verify-only. Mark Maven-only release/plugin behavior
-as deferred rather than silently dropping it.
-
-For a build change, use the affected module only:
-
-```bash
-./gradlew :<project>:compileJava --configuration-cache
-./gradlew :<project>:test --tests '<TestClass>' --configuration-cache
-python .claude/skills/gradle-build-parity/compare-module-deps.py <gradle-project> --scope test --versions
-```
-
-The commands above show the Gradle task shape for the parity investigation. Do not run a
-full-repository experiment for every POM commit.
-For a documentation-only audit, no build is necessary, but run `git diff --check` on the generated
-TODO/reference file.
-
-## Edge cases observed in the rebase audit
+## Rebase-specific edge cases
 
 - The tracking remote can make a rebased branch appear hundreds of commits ahead and a few commits
-  behind. Use the merge-base and explicit counts; the upstream status alone is insufficient.
-- `origin/main..HEAD` after the rebase contains only the local Gradle commits, so it misses the main
-  commits that were replayed under them.
-- POM history includes version-only Renovate commits, merge commits, and commits whose POM change is
-  later reverted. Count them, but port only the final non-version behavior.
+  behind. Use the merge-base and explicit counts; upstream status alone is insufficient.
+- `origin/main..HEAD` after the rebase contains only local Gradle commits, so it misses the main
+  commits replayed underneath them.
+- POM history includes version-only Renovate commits, merge commits, and commits whose POM change
+  is later reverted. Count them, but port only the final non-version behavior.
 - XML diff presentation can hide ordinary additions/removals unless `--no-textconv` is used.
-- A new parent-POM dependency has two independent Gradle tasks: add the module dependency and add
-  the catalog alias. Missing either one causes a compile failure or violates catalog parity.
-- Gradle `implementation` is not compile-transitive to consumers, unlike Maven's usual compile
-  dependency propagation. A Maven consumer that imports a provider's transitive dependency may need
-  an additional direct Gradle declaration; this is expected and is not a reason to make the
-  provider's dependency `api`.
-- A POM plugin setting can be important to Maven publication but have no Gradle equivalent in the
-  current scope (flattened POMs, source/javadoc attachment, dependency analysis). Keep these in a
-  deferred section so they remain visible.
-- A new dependency may be supplied transitively in Gradle and therefore not fail compilation. Keep
-  the explicit Gradle declaration anyway when Maven declares it directly, then verify `api` versus
-  `implementation` rather than relying on the transitive path.
