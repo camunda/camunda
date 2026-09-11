@@ -1,0 +1,65 @@
+---
+# owner: @camunda/engineering-operations
+name: Setup Java with retry
+
+description: >
+  Runs `actions/setup-java` with retries so a transient failure while resolving
+  or downloading the JDK does not fail the whole job (INC-7417).
+
+inputs:
+  distribution:
+    description: Java distribution to install.
+    required: true
+  java-version:
+    description: Java version to install.
+    required: true
+
+runs:
+  using: composite
+  # GitHub Actions has no retry primitive for a `uses:` step, so each attempt is
+  # a literal copy of the step gated on the previous attempt's outcome. Editing
+  # one attempt means editing all of them -- keep the `with:` blocks identical.
+  #
+  # A skipped step reports `outcome: skipped`, never `failure`, so gating each
+  # attempt on its immediate predecessor is enough: attempt 3 can only run if
+  # attempt 2 ran and failed, which in turn required attempt 1 to fail.
+  #
+  # The last attempt deliberately omits `continue-on-error` so an exhausted
+  # retry fails the job.
+  steps:
+    - name: Setup Java (attempt 1 of 3)
+      id: attempt-1
+      continue-on-error: true
+      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      with:
+        distribution: ${{ inputs.distribution }}
+        java-version: ${{ inputs.java-version }}
+        token: ${{ github.token }}
+
+    - name: Wait before attempt 2
+      if: steps.attempt-1.outcome == 'failure'
+      shell: bash
+      run: sleep 10
+
+    - name: Setup Java (attempt 2 of 3)
+      id: attempt-2
+      if: steps.attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      with:
+        distribution: ${{ inputs.distribution }}
+        java-version: ${{ inputs.java-version }}
+        token: ${{ github.token }}
+
+    - name: Wait before attempt 3
+      if: steps.attempt-2.outcome == 'failure'
+      shell: bash
+      run: sleep 10
+
+    - name: Setup Java (attempt 3 of 3)
+      if: steps.attempt-2.outcome == 'failure'
+      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      with:
+        distribution: ${{ inputs.distribution }}
+        java-version: ${{ inputs.java-version }}
+        token: ${{ github.token }}
