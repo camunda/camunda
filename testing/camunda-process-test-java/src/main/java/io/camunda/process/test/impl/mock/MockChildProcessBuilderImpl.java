@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -33,11 +34,14 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
   private static final Logger LOGGER = LoggerFactory.getLogger(MockChildProcessBuilderImpl.class);
 
   private final CamundaClient client;
+  private final Consumer<String> mockedProcessCallback;
   private String childProcessId;
   private String versionTag;
 
-  public MockChildProcessBuilderImpl(final CamundaClient client) {
+  public MockChildProcessBuilderImpl(
+      final CamundaClient client, final Consumer<String> mockedProcessCallback) {
     this.client = client;
+    this.mockedProcessCallback = mockedProcessCallback;
   }
 
   @Override
@@ -153,5 +157,6 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
   private void deploy(final BpmnModelInstance processModel) {
     final String resourceName = childProcessId + ".bpmn";
     client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+    mockedProcessCallback.accept(childProcessId);
   }
 }

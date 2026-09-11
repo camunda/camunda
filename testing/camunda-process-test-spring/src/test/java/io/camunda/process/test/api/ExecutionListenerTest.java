@@ -18,10 +18,13 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +55,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -479,8 +484,76 @@ public class ExecutionListenerTest {
 
     // then
     verify(processCoverageBuilder).build();
-    verify(processCoverage).collectTestRunCoverage(any(), any(), any(), any());
+    verify(processCoverage).collectTestRunCoverage(any(), any(), any(), any(), any());
     verify(processCoverage).generateReport(any());
+  }
+
+  @Test
+  void shouldNotCollectCoverageOfMockedChildProcesses() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener = coverageCollectingListener();
+
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    mockChildProcess("child-process");
+    setManagementClientDummy(listener);
+
+    // when
+    listener.afterTestMethod(testContext);
+
+    // then: the mocked child process is reported as mocked for this test run
+    verify(processCoverage)
+        .collectTestRunCoverage(
+            any(), any(), any(), any(), eq(Collections.singleton("child-process")));
+  }
+
+  @Test
+  void shouldForgetMockedChildProcessesOfThePreviousTest() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener = coverageCollectingListener();
+
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    mockChildProcess("child-process");
+    setManagementClientDummy(listener);
+    listener.afterTestMethod(testContext);
+
+    // when: a second test runs without mocking a child process
+    listener.beforeTestMethod(testContext);
+    listener.afterTestMethod(testContext);
+
+    // then: the mock of the first test is not reported for the second one
+    final ArgumentCaptor<Collection<String>> mockedProcessIds =
+        ArgumentCaptor.forClass(Collection.class);
+    verify(processCoverage, times(2))
+        .collectTestRunCoverage(any(), any(), any(), any(), mockedProcessIds.capture());
+
+    assertThat(mockedProcessIds.getAllValues())
+        .containsExactly(Collections.singleton("child-process"), Collections.emptySet());
+  }
+
+  private CamundaProcessTestExecutionListener coverageCollectingListener() {
+    when(camundaContainerRuntime.getCamundaClientBuilderFactory())
+        .thenReturn(() -> camundaClientBuilder);
+    when(camundaClientBuilder.build()).thenReturn(camundaClient);
+
+    final Method testMethod = mock(Method.class);
+    when(processCoverageBuilder.build()).thenReturn(processCoverage);
+    when(testContext.getTestMethod()).thenReturn(testMethod);
+    when(testMethod.getName()).thenReturn("test");
+
+    return new CamundaProcessTestExecutionListener(
+        camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+  }
+
+  /** Mocks a child process on the test context that the listener provides to the test. */
+  private void mockChildProcess(final String childProcessId) {
+    verify(camundaProcessTestContextProxy, atLeastOnce())
+        .setDelegate(camundaProcessTestContextArgumentCaptor.capture());
+
+    camundaProcessTestContextArgumentCaptor.getValue().mockChildProcess(childProcessId);
   }
 
   @Test
