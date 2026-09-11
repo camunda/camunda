@@ -27,7 +27,6 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefini
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ModelCreatorTest {
@@ -248,12 +247,32 @@ class ModelCreatorTest {
                 .done());
 
     // when
-    final Set<String> firstElements = ModelCreator.coverableElementIds(firstDeployment);
-    final Set<String> secondElements = ModelCreator.coverableElementIds(secondDeployment);
+    final CoverableElements firstElements = ModelCreator.coverableElements(firstDeployment);
+    final CoverableElements secondElements = ModelCreator.coverableElements(secondDeployment);
 
     // then
-    assertThat(firstElements).contains("start", "end").doesNotContain("task");
-    assertThat(secondElements).contains("start", "task", "end");
+    assertThat(firstElements.getFlowNodeIds()).containsExactlyInAnyOrder("start", "end");
+    assertThat(secondElements.getFlowNodeIds()).containsExactlyInAnyOrder("start", "task", "end");
+  }
+
+  @Test
+  void shouldTellTheFlowNodesOfAModelFromItsSequenceFlows() {
+    // given
+    final ProcessModel model =
+        processModelOf(
+            Bpmn.createExecutableProcess("shared-id")
+                .startEvent("start")
+                .sequenceFlowId("flow")
+                .endEvent("end")
+                .done());
+
+    // when
+    final CoverableElements elements = ModelCreator.coverableElements(model);
+
+    // then: an id is coverable as the kind of element it is, so that it cannot count twice
+    assertThat(elements.getFlowNodeIds()).containsExactlyInAnyOrder("start", "end");
+    assertThat(elements.getSequenceFlowIds()).containsExactly("flow");
+    assertThat(elements.count()).isEqualTo(3);
   }
 
   private static ProcessModel processModelOf(final BpmnModelInstance bpmnModel) {
