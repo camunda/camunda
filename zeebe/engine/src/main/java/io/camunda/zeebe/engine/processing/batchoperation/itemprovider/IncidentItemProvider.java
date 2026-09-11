@@ -134,7 +134,10 @@ public class IncidentItemProvider implements ItemProvider {
             .map(
                 pi ->
                     new Item(
-                        pi.incidentKey(), pi.processInstanceKey(), pi.rootProcessInstanceKey()))
+                        pi.incidentKey(),
+                        pi.processInstanceKey(),
+                        pi.rootProcessInstanceKey(),
+                        null))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

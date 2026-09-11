@@ -50,8 +50,8 @@ class BatchOperationChunkAppenderTest {
   @Test
   void shouldChunkAndAppendWithSingleChunk() {
     // given
-    final var item1 = new Item(100L, 200L, null);
-    final var item2 = new Item(101L, 201L, null);
+    final var item1 = new Item(100L, 200L, null, null);
+    final var item2 = new Item(101L, 201L, null, null);
     final var page = new ItemPage(List.of(item1, item2), "cursor123", 2L, false);
     final var context = createContext("cursor0", 10);
 
@@ -81,11 +81,11 @@ class BatchOperationChunkAppenderTest {
     // given - 5 items with chunk size 2 should create 3 chunks (2+2+1)
     final var items =
         List.of(
-            new Item(100L, 200L, null),
-            new Item(101L, 201L, null),
-            new Item(102L, 202L, null),
-            new Item(103L, 203L, null),
-            new Item(104L, 204L, null));
+            new Item(100L, 200L, null, null),
+            new Item(101L, 201L, null, null),
+            new Item(102L, 202L, null, null),
+            new Item(103L, 203L, null, null),
+            new Item(104L, 204L, null, null));
     final var page = new ItemPage(items, "cursor456", 5L, true);
     final var context = createContext("cursor0", 10);
 
@@ -114,7 +114,7 @@ class BatchOperationChunkAppenderTest {
   @Test
   void shouldNotAppendChunksWhenTaskResultBuilderCannotAccommodate() {
     // given
-    final var items = List.of(new Item(100L, 200L, null), new Item(101L, 201L, null));
+    final var items = List.of(new Item(100L, 200L, null, null), new Item(101L, 201L, null, null));
     final var page = new ItemPage(items, "cursor789", 2L, false);
     final var context = createContext("cursor0", 10);
 
@@ -171,9 +171,9 @@ class BatchOperationChunkAppenderTest {
   @Test
   void shouldCreateCorrectChunkRecords() {
     // given
-    final var item1 = new Item(100L, 200L, null);
-    final var item2 = new Item(101L, 201L, 111L);
-    final var item3 = new Item(102L, 202L, 112L);
+    final var item1 = new Item(100L, 200L, null, null);
+    final var item2 = new Item(101L, 201L, 111L, null);
+    final var item3 = new Item(102L, 202L, 112L, null);
     final var items = List.of(item1, item2, item3);
     final var page = new ItemPage(items, "cursor", 3L, false);
     final var context = createContext("cursor0", 10);
@@ -213,7 +213,10 @@ class BatchOperationChunkAppenderTest {
     // given
     final var largeChunkProcessor = new BatchOperationChunkAppender(10);
     final var items =
-        List.of(new Item(100L, 200L, null), new Item(101L, 201L, null), new Item(102L, 202L, null));
+        List.of(
+            new Item(100L, 200L, null, null),
+            new Item(101L, 201L, null, null),
+            new Item(102L, 202L, null, null));
     final var page = new ItemPage(items, "cursor", 3L, false);
     final var context = createContext("cursor0", 10);
 
