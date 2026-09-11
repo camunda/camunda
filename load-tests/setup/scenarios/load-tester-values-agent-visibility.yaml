@@ -1,0 +1,105 @@
+# Agent-visibility benchmark scenario values for the load-tester subchart.
+# Ad-hoc sub-process ("AI Agent" orchestrator) driving a fixed 4-round tool-calling schedule,
+# plus 3 tool roles - see docs/testing/reliability-testing.md and (locally, not committed)
+# ctxt/agent-visibility-load-test-scenario-plan.md for the full design.
+#
+# All 4 roles are deployments of the same load-tester image (Worker.java) - the orchestrator
+# is distinguished purely by its own jobType, not a different container or Spring profile.
+#
+# Baseline vs. treatment: this file alone is the baseline (no AgentInstance/AgentHistory
+# traffic). The treatment run adds env vars on top via global.extraEnvVars in the
+# load-test-load Helm input - NOT a per-role key here, since agentInstanceSimulationEnabled
+# and with-lease/stream-enabled are not in this chart's per-worker whitelist
+# (capacity/threads/completionDelay/jobType/payloadPath/message/logLevel only). Applying them
+# release-wide is harmless for the 3 tool roles, which never read these flags. See
+# load-tests/README.md's agent-visibility section for the exact dispatch commands.
+load-tester:
+  workers:
+    worker: null
+
+    #####
+    # Ad-hoc sub-process orchestrator ("AI Agent" element). Drives the fixed 4-round
+    # tool-calling schedule (Worker.AD_HOC_SUB_PROCESS_ROUND_SCHEDULE) and, only in the
+    # treatment run, the AgentInstance/AgentHistory simulation calls.
+    #
+    # replicas MUST stay at 1: Worker's round counter (Worker#adHocSubProcessRounds) is an
+    # in-memory, per-pod map - with more than one replica, rounds for the same process
+    # instance could be picked up by different pods and the count would become approximate.
+    orchestrator:
+      replicas: 1
+      capacity: 30
+      jobType: "agent-visibility-orchestrator"
+      completionDelay: 0ms
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    #####
+    # Tool: lookup account - read-only/side-effect-free, the common case. Activated in
+    # rounds 1 and 3 of the schedule.
+    tool-lookup-account:
+      replicas: 3
+      capacity: 30
+      jobType: "tool-lookup-account"
+      payloadPath: "bpmn/agent-visibility/lookupAccountPayload.json"
+      completionDelay: 0ms
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    #####
+    # Tool: calculate score - a computation tool, distinct payload shape. Activated
+    # alongside tool-send-notification in round 2 (parallel tool calls).
+    tool-calculate-score:
+      replicas: 3
+      capacity: 30
+      jobType: "tool-calculate-score"
+      payloadPath: "bpmn/agent-visibility/calculateScorePayload.json"
+      completionDelay: 0ms
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    #####
+    # Tool: send notification - a slower/side-effecting tool, independently tunable delay.
+    # Activated alongside tool-calculate-score in round 2.
+    tool-send-notification:
+      replicas: 3
+      capacity: 30
+      jobType: "tool-send-notification"
+      payloadPath: "bpmn/emptyPayload.json"
+      completionDelay: 50ms
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+  # Starter configuration for the to-be-deployed starter application.
+  # 20 PI/s is a conservative starting dial for the first ad-hoc smoke run, not a
+  # pre-committed SLO - see the plan doc's "Running baseline vs. treatment" section.
+  starter:
+    replicas: 1
+    rate: 20
+    logLevel: "INFO"
+    processId: "agentVisibilityBenchmark"
+    payloadPath: "bpmn/big_payload.json"
+    bpmnXmlPath: "bpmn/agent-visibility/agentTools.bpmn"
