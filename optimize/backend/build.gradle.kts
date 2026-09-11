@@ -1,4 +1,3 @@
-import buildlogic.TestJarPublishingExtension
 import buildlogic.mavenResourceFilterArgs
 import buildlogic.optimizeBackendTestResourceTokens
 import org.apache.tools.ant.filters.ReplaceTokens
