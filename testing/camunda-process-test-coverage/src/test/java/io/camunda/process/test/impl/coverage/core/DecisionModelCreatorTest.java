@@ -17,13 +17,16 @@ package io.camunda.process.test.impl.coverage.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionDefinitionData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
+import java.util.Map;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.junit.jupiter.api.Test;
@@ -287,6 +290,34 @@ class DecisionModelCreatorTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(DECISION_ID)
         .hasMessageContaining("999");
+  }
+
+  @Test
+  void shouldNumberTheRulesOfEachDeploymentOfADecisionDefinitionId() {
+    // given: two deployments of one decision definition id that differ in their rules
+    final DecisionModel twoRules = decisionModelOf(buildDmnXml(DECISION_ID, DECISION_NAME, 2));
+    final DecisionModel fourRules = decisionModelOf(buildDmnXml(DECISION_ID, DECISION_NAME, 4));
+
+    // when
+    final Map<String, Integer> twoRuleIndices =
+        DecisionModelCreator.coverableRuleIndicesById(twoRules);
+    final Map<String, Integer> fourRuleIndices =
+        DecisionModelCreator.coverableRuleIndicesById(fourRules);
+
+    // then
+    assertThat(twoRuleIndices).containsOnly(entry("rule1", 1), entry("rule2", 2));
+    assertThat(fourRuleIndices)
+        .containsOnly(entry("rule1", 1), entry("rule2", 2), entry("rule3", 3), entry("rule4", 4));
+  }
+
+  private static DecisionModel decisionModelOf(final String dmnXml) {
+    return ImmutableDecisionModel.builder()
+        .decisionDefinitionId(DECISION_ID)
+        .decisionName(DECISION_NAME)
+        .version("1")
+        .totalRuleCount(0)
+        .xml(dmnXml)
+        .build();
   }
 
   private static ImmutableCoverageDecisionDefinitionData decisionDefinitionDataOf(
