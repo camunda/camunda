@@ -72,18 +72,13 @@ public class AnalyticsExporter implements Exporter {
     otelSdkManager.initialize(config, analyticsContext, metadata, meterRegistry);
     scheduleMetricFlush();
     scheduleHeartbeat();
-    // Logged here, in the runtime lifecycle, rather than in configure(): configure() also runs
-    // for a throwaway context during ExporterRepository.validate() (partitionId=0, clusterId="")
-    // and during ExporterHistoryPurger.purgeExporter() (a real partitionId but no live runtime),
-    // and neither of those call open(). Only a genuinely starting, live partition exporter
-    // reaches this line (see https://github.com/camunda/camunda/issues/62741).
+    // Only logged on open(), not configure(), to avoid logging during validation/history-purge.
     LOG.info(
         "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
         config.getEndpoint(),
         analyticsContext.clusterId(),
         analyticsContext.partitionId(),
         analyticsContext.exporterDigest());
-    LOG.info("Analytics exporter opened");
   }
 
   @Override

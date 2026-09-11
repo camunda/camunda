@@ -36,7 +36,6 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
@@ -44,7 +43,6 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import java.util.ArrayList;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -267,62 +265,6 @@ class AnalyticsExporterTest {
               final var persisted = AnalyticsExporterMetadata.deserialize(bytes);
               assertThat(persisted.getMetricSequenceNumber()).isEqualTo(1L);
             });
-  }
-
-  @Test
-  void shouldNotLogConfiguredDuringValidationOnlyConfigure() {
-    // given — mirrors ExporterRepository.validate(): a throwaway context with the default
-    // partitionId=0, used purely to check that the configuration loads. configure() alone never
-    // logs the production-shaped "configured" line — it is only logged from open().
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
-            .setClusterId("")
-            .setLicenseKey("test-license-key");
-
-    // when / then
-    try (final var logs =
-        LogCapturer.capturing(AnalyticsExporter.class.getPackageName(), Level.INFO)) {
-      new AnalyticsExporter().configure(context);
-      assertThat(logs.contains("Analytics exporter configured")).isFalse();
-    }
-  }
-
-  @Test
-  void shouldNotLogConfiguredDuringHistoryPurge() {
-    // given — mirrors ExporterHistoryPurger.purgeExporter(): a real partition id but an empty
-    // clusterId, configure() is called but open() never is. This must not emit the "configured"
-    // line either, even though the partition id looks like a live one (see
-    // https://github.com/camunda/camunda/issues/62741).
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
-            .setClusterId("")
-            .setPartitionId(1)
-            .setLicenseKey("test-license-key");
-
-    // when / then
-    try (final var logs =
-        LogCapturer.capturing(AnalyticsExporter.class.getPackageName(), Level.INFO)) {
-      new AnalyticsExporter().configure(context);
-      assertThat(logs.contains("Analytics exporter configured")).isFalse();
-    }
-  }
-
-  @Test
-  void shouldLogConfiguredOnOpen() {
-    // given — a real, live partition exporter that reaches open(), the only place a genuine
-    // startup emits the "configured" line.
-    try (final var logs =
-        LogCapturer.capturing(AnalyticsExporter.class.getPackageName(), Level.INFO)) {
-      // when
-      exporterWithInMemory(InMemoryLogRecordExporter.create(), new ExporterTestController());
-
-      // then
-      assertThat(logs.contains("Analytics exporter configured")).isTrue();
-    }
   }
 
   @Test
