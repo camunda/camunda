@@ -17,6 +17,8 @@ package io.camunda.process.test.impl.coverage;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * API for process coverage collection and report generation.
@@ -35,8 +37,33 @@ public interface CoverageCollector {
    * @param testData Snapshot of all test run data required for coverage calculation
    * @return Coverage report for the current suite
    */
+  default CoverageReport collectTestRunCoverage(
+      final Class<?> testClass,
+      final String runName,
+      final String displayName,
+      final CoverageTestData testData) {
+    return collectTestRunCoverage(
+        testClass, runName, displayName, testData, Collections.emptyList());
+  }
+
+  /**
+   * Collects coverage data for one test run and returns the suite-level coverage report.
+   *
+   * @param testClass The test class for identification in reports
+   * @param runName Name of the test method for identification in reports
+   * @param displayName Optional custom display name (e.g. from {@code @DisplayName}), or {@code
+   *     null} if not set
+   * @param testData Snapshot of all test run data required for coverage calculation
+   * @param mockedProcessDefinitionIds Ids of the processes that this run mocked, whose instances
+   *     are stubs rather than the process under test
+   * @return Coverage report for the current suite
+   */
   CoverageReport collectTestRunCoverage(
-      Class<?> testClass, String runName, String displayName, CoverageTestData testData);
+      Class<?> testClass,
+      String runName,
+      String displayName,
+      CoverageTestData testData,
+      Collection<String> mockedProcessDefinitionIds);
 
   /**
    * Generates coverage reports (JSON/HTML), prints coverage summary, and returns the aggregated

@@ -19,6 +19,7 @@ import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.report.CoverageReporter;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,8 @@ public final class CoverageCollectorImpl implements CoverageCollector {
       final Class<?> testClass,
       final String runName,
       final String displayName,
-      final CoverageTestData testData) {
+      final CoverageTestData testData,
+      final Collection<String> mockedProcessDefinitionIds) {
 
     final String testClassName = getCollectorKey(testClass);
     final CoverageReportCollector coverageReportCollector =
@@ -61,7 +63,8 @@ public final class CoverageCollectorImpl implements CoverageCollector {
                 new CoverageReportCollector(
                     testClass, excludedProcessDefinitionIds, excludedDecisionDefinitionIds));
 
-    coverageReportCollector.collectTestRunCoverage(runName, displayName, testData);
+    coverageReportCollector.collectTestRunCoverage(
+        runName, displayName, testData, mockedProcessDefinitionIds);
     return coverageReporter.createSuiteCoverageReport(coverageReportCollector);
   }
 
