@@ -640,14 +640,6 @@ public class ExporterConfiguration {
     private Duration queueDebounceTime = DEFAULT_QUEUE_DEBOUNCE_TIME;
     private int queueCapacity = DEFAULT_QUEUE_CAPACITY;
 
-    /**
-     * Every declared region is mandatory: if any one of them doesn't meet its own {@link
-     * RegionConfiguration#getMinReplicas()}, the position stays unconfirmed / the exporter pauses,
-     * even if the other regions are fully healthy. Always non-empty when {@link #enabled} - a flat
-     * quorum (the old {@code minSyncReplicas}) is represented as a single region matching every
-     * replica; see {@code RdbmsAsyncReplication} in the {@code configuration} module for where that
-     * conversion happens. See {@code docs/adr/0001-region-aware-replication-quorum.md}.
-     */
     private List<RegionConfiguration> regions = new ArrayList<>();
 
     public boolean isEnabled() {
@@ -793,23 +785,6 @@ public class ExporterConfiguration {
       }
     }
 
-    public enum ReplicationType {
-      LOG_SEQ,
-      TIME_LAG,
-      DELAY
-    }
-
-    /**
-     * A single region: replicas whose label (see {@code replicaLabel} in {@link
-     * io.camunda.db.rdbms.read.replication.ReplicationStatus}) matches {@link #pattern} are grouped
-     * into this region and counted against its own {@link #minReplicas}.
-     *
-     * <p>A region whose pattern is exactly {@code ".*"} - a catch-all, such as the single region
-     * synthesized from a flat {@code minSyncReplicas} - never receives the primary's automatic
-     * credit (see {@code RegionAwareQuorum}), since a catch-all can't meaningfully claim to
-     * specifically host the primary without silently satisfying the whole quorum with the primary
-     * alone.
-     */
     public static class RegionConfiguration {
       private String name;
       private String pattern;
@@ -839,6 +814,12 @@ public class ExporterConfiguration {
       public void setMinReplicas(final int minReplicas) {
         this.minReplicas = minReplicas;
       }
+    }
+
+    public enum ReplicationType {
+      LOG_SEQ,
+      TIME_LAG,
+      DELAY
     }
   }
 }

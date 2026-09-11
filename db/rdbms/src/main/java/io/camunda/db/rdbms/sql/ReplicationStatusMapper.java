@@ -43,11 +43,7 @@ public interface ReplicationStatusMapper {
   /** Returns per-replica replication status for Aurora Global Database. */
   List<ReplicationLsnStatus> getAuroraReplicationStatus();
 
-  /**
-   * Returns the primary's own self-declared label, read live from the connected write instance so
-   * it reflects the region hosting the primary even after a failover - analogous to {@code
-   * replicaLabel} on secondaries.
-   */
+  /** Returns the primary's own self-declared label. */
   String getCurrentReplicaLabel();
 
   /** Aurora Global Database variant of {@link #getCurrentReplicaLabel()}. */

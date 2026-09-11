@@ -14,13 +14,5 @@ public interface ReplicationStatus {
 
   Long replicationLagMs();
 
-  /**
-   * The replica's self-declared connection label - Postgres {@code application_name}, MSSQL AG
-   * {@code replica_server_name}, or Aurora Global Database {@code server_id} - as opposed to {@link
-   * #replicaId()}, which identifies a connection/session rather than the replica itself (e.g.
-   * Postgres' WAL-sender PID changes on every reconnect). Optional replication region awareness
-   * maps this label to a region via a configured regex; {@code null} if the vendor doesn't report
-   * one.
-   */
   String replicaLabel();
 }
