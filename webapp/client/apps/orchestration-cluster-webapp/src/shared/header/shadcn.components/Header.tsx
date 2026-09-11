@@ -10,23 +10,24 @@ import {
 	AppHeader,
 	AppSidebar,
 	CamundaLogo,
-	NavBreadcrumbSwitcher,
 	SidebarProvider,
 	toast,
 	TooltipProvider,
-	type NavBreadcrumbDescriptor,
 	useMediaQuery,
 } from '@camunda/design-system';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
+import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
 import {AccountMenu} from './AccountMenu';
+import {useBreadcrumbs} from './useBreadcrumbs';
 import {HelpMenu} from './HelpMenu';
 import {LicenseBadges} from './LicenseBadges';
+import {SaasNotifications} from './SaasNotifications';
 import {useCallback, useMemo} from 'react';
 
 const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
@@ -42,20 +43,22 @@ const Header: React.FC<Props> = ({children}) => {
 	const {data: license} = useSuspenseQuery(queries.getLicense());
 	const {ariaLabel, homeRoute, items, product} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
+	const {organizationId, clusterId} = getBootConfig();
+	const isSaas = organizationId !== null && clusterId !== null;
 	const isBelowLg = useMediaQuery('(width < 64rem)');
-	const breadcrumbItems = useMemo<NavBreadcrumbDescriptor[]>(
+	const breadcrumb = useBreadcrumbs({webappLinks: currentUser.c8Links});
+	const globalActions = useMemo(
 		() =>
-			product === undefined
-				? []
-				: [
+			isSaas
+				? [
 						{
-							key: 'app',
-							label: product.label,
-							icon: product.icon,
-							linkProps: {to: homeRoute},
+							key: 'notifications',
+							label: t('headerNotificationsLabel'),
+							element: <SaasNotifications />,
 						},
-					],
-		[homeRoute, product],
+					]
+				: undefined,
+		[isSaas, t],
 	);
 
 	const handleLogout = useCallback(() => {
@@ -89,16 +92,9 @@ const Header: React.FC<Props> = ({children}) => {
 								<CamundaLogo />
 							</Link>
 						}
-						breadcrumb={
-							breadcrumbItems.length === 0 ? undefined : (
-								<NavBreadcrumbSwitcher
-									items={breadcrumbItems}
-									linkComponent={Link}
-									aria-label={t('headerContextLabel')}
-								/>
-							)
-						}
+						breadcrumb={product === undefined ? undefined : breadcrumb}
 						trailing={isBelowLg ? undefined : <LicenseBadges license={license} />}
+						globalActions={globalActions}
 						actions={
 							<>
 								<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />
