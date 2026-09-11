@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
@@ -88,7 +89,9 @@ public class HttpClientFactory {
       Pattern.compile(Pattern.quote(PHYSICAL_TENANT_PATH_SEGMENT) + "[a-zA-Z0-9]+$");
 
   private static final ObjectMapper JSON_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+      new ObjectMapper()
+          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+          .registerModule(new StringFilterPropertyModule());
 
   private final CamundaClientConfiguration config;
 
