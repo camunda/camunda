@@ -448,3 +448,98 @@ test('a NON-NotFound GraphQL error still fails loudly, even where absences are t
   };
   await assert.rejects(() => resolver(fakeFetch([page])).classifyRefs([10]), /Resource not accessible/);
 });
+
+/** One `fetchIssueClosers` alias. `closer` omitted means the issue has a close
+ *  event with no pull request behind it — a human, or a bare commit. */
+function issueNode(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    closed: true,
+    stateReason: 'COMPLETED',
+    timelineItems: { nodes: [{ closer: null }] },
+    ...overrides,
+  };
+}
+
+test('an issue closed by a pull request reports that pull request as the closer', async () => {
+  const page = {
+    data: {
+      repository: {
+        i0: issueNode({ timelineItems: { nodes: [{ closer: { __typename: 'PullRequest', number: 101, repository: { nameWithOwner: 'camunda/camunda' } } }] } }),
+      },
+    },
+  };
+  const got = await resolver(fakeFetch([page])).fetchIssueClosers([500]);
+  assert.deepEqual(got.get(500), { closed: true, stateReason: 'COMPLETED', closerPrNumber: 101 });
+});
+
+test('an issue closed by a bare commit reports no closing pull request', async () => {
+  // The closer is a Commit, not a PullRequest — a keyword pushed straight to
+  // the branch. Reporting its oid as a PR number would be a wrong attribution.
+  const page = {
+    data: { repository: { i0: issueNode({ timelineItems: { nodes: [{ closer: { __typename: 'Commit', oid: 'abc' } }] } }) } },
+  };
+  const got = await resolver(fakeFetch([page])).fetchIssueClosers([500]);
+  assert.equal(got.get(500)!.closerPrNumber, null);
+});
+
+test('an open issue reports closed false and no closer', async () => {
+  const page = { data: { repository: { i0: { closed: false, stateReason: null, timelineItems: { nodes: [] } } } } };
+  const got = await resolver(fakeFetch([page])).fetchIssueClosers([500]);
+  assert.deepEqual(got.get(500), { closed: false, stateReason: null, closerPrNumber: null });
+});
+
+test('stateReason travels through so an abandoned issue can be told from a delivered one', async () => {
+  const page = { data: { repository: { i0: issueNode({ stateReason: 'NOT_PLANNED' }) } } };
+  const got = await resolver(fakeFetch([page])).fetchIssueClosers([500]);
+  assert.equal(got.get(500)!.stateReason, 'NOT_PLANNED');
+});
+
+test('a number that is a pull request rather than an issue is simply absent', async () => {
+  // `repository.issue(number:)` answers null for a pull request's number. An
+  // absent entry means "no close event to read", which the delivery rule reads
+  // as "fall back to what the pull request declared".
+  const page = { data: { repository: { i0: null } } };
+  const got = await resolver(fakeFetch([page])).fetchIssueClosers([500]);
+  assert.equal(got.has(500), false);
+});
+
+test('a dead issue number does not fail the closer batch', async () => {
+  const page = {
+    data: { repository: { i0: issueNode(), i1: null } },
+    errors: [{ type: 'NOT_FOUND', message: 'Could not resolve to an Issue with the number of 99999999.' }],
+  };
+  const got = await resolver(fakeFetch([page])).fetchIssueClosers([500, 99999999]);
+  assert.equal(got.has(500), true);
+  assert.equal(got.has(99999999), false);
+});
+
+test('closer lookups batch at 100 per request and every number travels as a variable', async () => {
+  const calls: Call[] = [];
+  const page = (count: number): unknown => ({
+    data: { repository: Object.fromEntries(Array.from({ length: count }, (_, i) => [`i${i}`, issueNode()])) },
+  });
+  const numbers = Array.from({ length: 150 }, (_, i) => i + 1);
+  const got = await resolver(fakeFetch([page(100), page(50)], calls)).fetchIssueClosers(numbers);
+  assert.equal(got.size, 150);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0]!.body.variables.n0, 1);
+  assert.equal(calls[1]!.body.variables.n0, 101);
+  assert.match(calls[0]!.body.query, /issue\(number: \$n0\)/);
+});
+
+test('a closer in another repository is not read as a pull request of this one', async () => {
+  // camunda/camunda-docs#4852 really does close camunda/camunda#26937. Its
+  // number belongs to the other repository's numbering, so crediting it here
+  // would hand the release to whichever pull request shares the number.
+  const page = {
+    data: {
+      repository: {
+        i0: issueNode({
+          timelineItems: { nodes: [{ closer: { __typename: 'PullRequest', number: 4852, repository: { nameWithOwner: 'camunda/camunda-docs' } } }] },
+        }),
+      },
+    },
+  };
+  const got = await resolver(fakeFetch([page])).fetchIssueClosers([26937]);
+  assert.equal(got.get(26937)!.closerPrNumber, null);
+});

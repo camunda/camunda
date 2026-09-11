@@ -57,10 +57,29 @@ export interface ClassifiedRef {
   readonly title: string | null;
 }
 
+/**
+ * What GitHub itself recorded about an issue being closed, read from the issue
+ * rather than inferred from any pull request's prose.
+ *
+ * `closerPrNumber` is the ground truth a `closes` keyword only approximates: a
+ * keyword states an author's intent at merge time, this states which merge the
+ * state transition was actually attributed to. Null covers three real cases
+ * that a keyword cannot distinguish — the issue is still open, a human clicked
+ * Close, or a bare commit pushed straight to the branch closed it.
+ */
+export interface IssueClosure {
+  readonly closed: boolean;
+  /** GitHub's own reason enum; `NOT_PLANNED`/`DUPLICATE` mean the issue was
+   *  abandoned rather than delivered, whatever any pull request claims. */
+  readonly stateReason: string | null;
+  readonly closerPrNumber: number | null;
+}
+
 export interface GraphqlResolver {
   mapCommitsToPrs(shas: readonly string[]): Promise<CommitPrMapping[]>;
   fetchPrMetadata(numbers: readonly number[]): Promise<PrMetadata[]>;
   classifyRefs(numbers: readonly number[]): Promise<Map<number, ClassifiedRef>>;
+  fetchIssueClosers(numbers: readonly number[]): Promise<Map<number, IssueClosure>>;
 }
 
 const GRAPHQL_URL = 'https://api.github.com/graphql';
@@ -168,6 +187,20 @@ interface PrMetadataNode {
   readonly author?: { login?: string; __typename?: string } | null;
   readonly labels?: { nodes?: readonly { name: string }[]; pageInfo?: { hasNextPage?: boolean } };
   readonly closingIssuesReferences?: { nodes?: readonly { number: number }[]; pageInfo?: { hasNextPage?: boolean } };
+}
+
+interface IssueClosureNode {
+  readonly closed?: boolean;
+  readonly stateReason?: string | null;
+  readonly timelineItems?: {
+    readonly nodes?: readonly ({
+      readonly closer?: {
+        readonly __typename?: string;
+        readonly number?: number;
+        readonly repository?: { readonly nameWithOwner?: string } | null;
+      } | null;
+    } | null)[];
+  } | null;
 }
 
 /** The one `associatedPullRequests` selection both query shapes share.
@@ -284,6 +317,54 @@ export class GithubGraphqlResolver implements GraphqlResolver {
         out.set(number, {
           target: node.__typename === 'PullRequest' ? 'pullRequest' : 'issue',
           title: node.title ?? null,
+        });
+      });
+    }
+    return out;
+  }
+
+  /**
+   * Reads each issue's own close event: was it closed, why, and by which pull
+   * request's merge. Same batching as `classifyRefs` — a direct node lookup per
+   * alias, 100 to a request — and the same NOT_FOUND tolerance, because the
+   * number set comes from references that may point at something deleted.
+   *
+   * `timelineItems(last: 1)` is the LAST close, which is the one that matters
+   * for a reopened-then-reclosed issue; the timeline is append-only, so an
+   * earlier close never shadows it. A number that resolves to a pull request
+   * rather than an issue answers null and is treated as "nothing closed here".
+   */
+  async fetchIssueClosers(numbers: readonly number[]): Promise<Map<number, IssueClosure>> {
+    const out = new Map<number, IssueClosure>();
+    for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
+      const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
+      const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
+        repository(owner: $owner, name: $name) {
+          ${batch
+            .map(
+              (_, j) =>
+                `i${j}: issue(number: $n${j}) { closed stateReason timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
+            )
+            .join('\n')}
+        }
+      }`;
+      const variables: Json = { owner: this.owner, name: this.repo };
+      batch.forEach((number, j) => (variables[`n${j}`] = number));
+      const repository = await this.requestRepository(query, variables, true);
+      batch.forEach((number, j) => {
+        const node = repository[`i${j}`] as IssueClosureNode | null | undefined;
+        if (!node) return;
+        const closer = node.timelineItems?.nodes?.[0]?.closer;
+        // A pull request in ANOTHER repository can close an issue here, and
+        // camunda/camunda-docs#4852 really does close camunda/camunda#26937.
+        // Its number means nothing in this repository's numbering, so reading
+        // it as one would credit whichever unrelated pull request happens to
+        // share the number.
+        const sameRepo = closer?.repository?.nameWithOwner === `${this.owner}/${this.repo}`;
+        out.set(number, {
+          closed: node.closed ?? false,
+          stateReason: node.stateReason ?? null,
+          closerPrNumber: closer?.__typename === 'PullRequest' && sameRepo ? (closer.number ?? null) : null,
         });
       });
     }

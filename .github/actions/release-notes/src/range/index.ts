@@ -16,7 +16,7 @@ const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
 // Release candidates are 1-based too, and appear at every level: `8.9.0-rc1`,
 // `8.7.6-rc2`, `8.10.0-alpha1-rc3`. Only the suffix is matched here — what it
 // is attached to still has to satisfy VERSION.
-const RC_SUFFIX = /-rc[1-9]\d*$/;
+const RC_SUFFIX = /-rc([1-9]\d*)$/;
 
 interface ParsedVersion {
   readonly major: number;
@@ -57,14 +57,12 @@ export type BaselineStrategy =
 /** The baseline to diff `target` against, from the version string alone — no
  *  tag list to consult, every case is arithmetic on the version number. */
 export function resolveBaselineStrategy(target: string): BaselineStrategy {
-  // A candidate is a candidate *for* a version, so its notes cover that
-  // version's whole range: drop `-rcN` and resolve the version it stands for.
-  // Deliberately unlike zcl, which walks rcN back to rc(N-1) — that suits its
-  // incremental issue labelling, but would reduce a candidate's changelog to
-  // the delta since the last candidate rather than the release's contents.
-  // Only the baseline is computed from the stripped string; callers keep
-  // walking and labelling with the real `-rcN` tag.
-  const v = parseVersion(target.replace(RC_SUFFIX, ''), target);
+  // A candidate is resolved from the version it is a candidate *for*, so the
+  // shape of that version is validated first and names the errors below, even
+  // though `rcN` for N > 1 short-circuits to the previous candidate.
+  const rc = RC_SUFFIX.exec(target);
+  const baseVersion = target.replace(RC_SUFFIX, '');
+  const v = parseVersion(baseVersion, target);
 
   // An alpha is a pre-release of a minor, so it only ever carries patch 0.
   // Without this, `X.Y.1-alpha1` falls through to the previous-alpha branch and
@@ -73,6 +71,20 @@ export function resolveBaselineStrategy(target: string): BaselineStrategy {
     throw new Error(
       `Unsupported release version "${target}": an alpha is a pre-release of a minor, so it must carry patch 0.`,
     );
+  }
+
+  // Candidates chain: `rcN` is diffed against `rc(N-1)`, matching how the
+  // release actually publishes them. Each candidate is cut as its own GitHub
+  // release, and zcl labels issues per candidate tag (`version:8.9.0-rc2`), so
+  // a candidate's notes are the delta since the previous one; the final
+  // untagged version then resolves normally and carries the whole release.
+  // Reporting the full contents under every candidate instead would republish
+  // rc1's entire changelog under rc2, rc3 and rc4.
+  //
+  // `rc1` has no previous candidate, so it falls through to the version it
+  // stands for — which is also what makes the chain terminate somewhere real.
+  if (rc && Number(rc[1]) > 1) {
+    return { kind: 'previousTag', ref: `${baseVersion}-rc${Number(rc[1]) - 1}` };
   }
 
   // alpha1-of-cycle: no prior tag on this line exists yet, so always the fork
