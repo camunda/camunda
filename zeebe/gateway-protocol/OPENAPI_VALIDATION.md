@@ -244,11 +244,15 @@ ActivatedJobResult:
         - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
 ```
 
-Semantics SDK generators derive from the marker: when the request field equals
-the literal, the property is **present** (required, non-null); when it is
-`false`/`null`/omitted, the property is **absent** (omitted for nominal
-languages, typed `?: never` for JS/Python); when the request field is not a
-compile-time literal, the base nullable shape is preserved. The marker is inert
+Semantics SDK generators derive from the marker: when the request field is the
+compile-time literal `equals` value (`V`), the property is **present** (required,
+non-null); when it is any other compile-time literal — `false`/`null`/omitted, or
+a non-matching string/number such as `mode: "compact"` when `equals: "full"` —
+the property is **absent** (omitted for nominal languages; typed `?: never` for
+JS/TS; for Python, which has no `?: never` equivalent, modelled via an overload
+whose return type omits the property, e.g. a `TypedDict` without the key); when
+the request field is not a compile-time literal, the base nullable shape is
+preserved. The marker is inert
 on the wire — the property keeps its declared `nullable` shape and stays in
 `required`, so any consumer that does not derive from it is unaffected. See §2.21
 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md)

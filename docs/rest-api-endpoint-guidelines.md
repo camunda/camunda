@@ -1455,18 +1455,23 @@ property of `R`. Project the property three ways on the compile-time value of
 `F`, and propagate the projection outward through every enclosing type (e.g.
 `JobActivationResult.jobs[] → ActivatedJobResult.leaseToken`):
 
-|                   `F` at the call site                   |                           Projection of the annotated property                            |
-|----------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| equals `V` (literal)                                     | **present** — required, non-null                                                          |
-| `false` / `null` / omitted (literal)                     | **absent** — omitted for nominal languages (Go, Rust, C#); typed `?: never` for JS/Python |
-| not a compile-time literal (dynamic `boolean`, variable) | base schema unchanged — property stays nullable (preserves backward compatibility)        |
+|                            `F` at the call site                             |                                               Projection of the annotated property                                                |
+|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| the literal `V`                                                             | **present** — required, non-null                                                                                                  |
+| any other compile-time literal ≠ `V` — `false` / `null` / omitted, or a non-matching string/number (e.g. `mode: "summary"` when `equals: "full"`) | **absent** — omitted for nominal languages (Go, Rust, C#); typed `?: never` for JS/TS; for Python (no `?: never` equivalent) modelled via an overload whose return type omits the property (e.g. a `TypedDict` without the key) |
+| not a compile-time literal (dynamic value of `F`'s type, variable)          | base schema unchanged — property stays nullable (preserves backward compatibility)                                                |
 
-Method surface derived from the marker:
+Method surface derived from the marker (stated generally in terms of the
+request field `F` and its match literal `V`; the `withLease: true` / boolean
+case is the current production instance):
 
 - **Overload languages (JS/TS, Python, C#):** emit overloads keyed on the `F`
-  literal — `withLease: true` returns the present projection, `withLease?:
-  false | null | undefined` returns the absent projection, and the general
-  `boolean` overload returns the dynamic (base, nullable) projection.
+  literal — `F` set to `V` returns the present projection, `F` set to any other
+  compile-time literal returns the absent projection, and a non-literal `F`
+  (dynamic value of `F`'s declared type) returns the base, nullable projection.
+  For `activateJobs` this is: `withLease: true` returns the present projection,
+  `withLease?: false | null | undefined` returns the absent projection, and the
+  general `boolean` overload returns the dynamic (base, nullable) projection.
 - **Two-method languages (Go, Rust):** emit the base method for the absent
   projection (`activateJobs`, no token field) and a second method named
   `<baseMethod> + PascalCase(F)` — `activateJobsWithLease` — for the present
