@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -195,6 +196,39 @@ final class SuspensionBehaviorTest {
   }
 
   @Test
+  void shouldCarryCustomRejectionReasonWhenProcessorRejects() {
+    // given
+    markerIs(State.SUSPENDED);
+    final var command = command();
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+    stubRejectionReason(processor, command, "custom user-task reason");
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then - Engine can use this instead of the generic suspended-process-instance message
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
+    assertThat(result.rejectionReason()).isEqualTo("custom user-task reason");
+    verifyOnSuspended(processor, command);
+  }
+
+  @Test
+  void shouldUseDefaultRejectionReasonWhenProcessorDoesNotOverrideIt() {
+    // given
+    markerIs(State.SUSPENDED);
+    final var command = command();
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then - the interface default names the suspended process instance
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
+    assertThat(result.rejectionReason())
+        .isEqualTo(SuspensionAware.ERROR_MESSAGE_SUSPENDED_PI.formatted(PROCESS_INSTANCE_KEY));
+  }
+
+  @Test
   void shouldReturnProcessInstanceKeyResolvedFromCommandValue() {
     // given
     markerIs(State.SUSPENDED);
@@ -357,5 +391,13 @@ final class SuspensionBehaviorTest {
   private static void verifyNoClassification(final TypedRecordProcessor<?> processor) {
     verify((SuspensionAware) processor, never()).onSuspended(any());
     verify((SuspensionAware) processor, never()).onResuming(any());
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static void stubRejectionReason(
+      final TypedRecordProcessor<?> processor, final TypedRecord<?> command, final String reason) {
+    doReturn(reason)
+        .when((SuspensionAware) processor)
+        .rejectionReason(eq(command), eq(PROCESS_INSTANCE_KEY));
   }
 }
