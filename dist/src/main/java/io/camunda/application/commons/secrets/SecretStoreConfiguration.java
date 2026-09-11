@@ -277,7 +277,9 @@ public class SecretStoreConfiguration {
             null,
             AwsSecretsManagerStoreConfig.DEFAULT_MAX_RETRIES,
             config.isBatchEnabled(),
-            config.getBatchSize()));
+            config.getBatchSize(),
+            config.getCallTimeout(),
+            config.getAttemptTimeout()));
   }
 
   private static SecretStore gcpStore(
@@ -287,7 +289,9 @@ public class SecretStoreConfiguration {
             config.getProjectId(),
             config.getPathPrefix(),
             config.getEndpoint(),
-            config.getContainerSecretId()));
+            config.getContainerSecretId(),
+            false,
+            config.getCallTimeout()));
   }
 
   /**
