@@ -272,6 +272,11 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
       return CompletableFuture.completedFuture(List.of());
     }
 
+    return sendBulkRequest(updates, refresh);
+  }
+
+  private CompletableFuture<List<String>> sendBulkRequest(
+      final List<BulkOperation> updates, final Refresh refresh) {
     final var request =
         new BulkRequest.Builder()
             .operations(updates)
