@@ -331,11 +331,13 @@ components:
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/MappingRuleId'
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/MappingRuleId'
         $like:
@@ -435,11 +437,13 @@ components:
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/RoleId'
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/RoleId'
         $like:

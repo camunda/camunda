@@ -48,12 +48,17 @@ public class MappingRulesByTenantSearchRequestImpl
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
+  private final LegacyIdEqualityFilterFallback mappingRuleIdFallback;
 
   public MappingRulesByTenantSearchRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final String tenantId) {
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper,
+      final String tenantId,
+      final LegacyIdEqualityFilterFallback mappingRuleIdFallback) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.tenantId = tenantId;
+    this.mappingRuleIdFallback = mappingRuleIdFallback;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new MappingRuleSearchQueryRequest();
   }
@@ -68,9 +73,11 @@ public class MappingRulesByTenantSearchRequestImpl
   public CamundaFuture<SearchResponse<MappingRule>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
     final HttpCamundaFuture<SearchResponse<MappingRule>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    mappingRuleIdFallback.post(
+        httpClient,
         String.format("/tenants/%s/mapping-rules/search", tenantId),
-        jsonMapper.toJson(request),
+        request,
+        jsonMapper,
         httpRequestConfig.build(),
         MappingRuleSearchQueryResult.class,
         SearchResponseMapper::toMappingRulesResponse,

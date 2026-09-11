@@ -46,10 +46,15 @@ public class RolesSearchRequestImpl
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final JsonMapper jsonMapper;
+  private final LegacyIdEqualityFilterFallback roleIdFallback;
 
-  public RolesSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public RolesSearchRequestImpl(
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper,
+      final LegacyIdEqualityFilterFallback roleIdFallback) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
+    this.roleIdFallback = roleIdFallback;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new RoleSearchQueryRequest();
   }
@@ -63,9 +68,11 @@ public class RolesSearchRequestImpl
   @Override
   public CamundaFuture<SearchResponse<Role>> send() {
     final HttpCamundaFuture<SearchResponse<Role>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    roleIdFallback.post(
+        httpClient,
         "/roles/search",
-        jsonMapper.toJson(request),
+        request,
+        jsonMapper,
         httpRequestConfig.build(),
         RoleSearchQueryResult.class,
         SearchResponseMapper::toRolesResponse,

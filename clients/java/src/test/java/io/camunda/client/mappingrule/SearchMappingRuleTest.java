@@ -15,24 +15,31 @@
  */
 package io.camunda.client.mappingrule;
 
+import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.filter.MappingRuleFilterBase;
 import io.camunda.client.protocol.rest.MappingRuleFilter;
 import io.camunda.client.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.client.protocol.rest.MappingRuleSearchQuerySortRequest;
 import io.camunda.client.protocol.rest.MappingRuleSearchQuerySortRequest.FieldEnum;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayService;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class SearchMappingRuleTest extends ClientRestTest {
@@ -232,6 +239,72 @@ public class SearchMappingRuleTest extends ClientRestTest {
     assertThat(filter.get$Or()).hasSize(2);
     assertThat(filter.get$Or().get(0).getMappingRuleId().get$Eq()).isEqualTo("rule-1");
     assertThat(filter.get$Or().get(1).getMappingRuleId().get$Eq()).isEqualTo("rule-2");
+  }
+
+  @Test
+  void shouldFallBackToPlainMappingRuleIdFilterOnLegacyClusterRejection() {
+    // given -- an 8.9-or-earlier cluster rejects the advanced { "$eq": ... } shape
+    gatewayService.errorThenSuccessOnPostRequest(
+        REST_API_PATH + "/mapping-rules/search",
+        new ProblemDetail()
+            .title("INVALID_ARGUMENT")
+            .status(400)
+            .detail("Request property [filter.mappingRuleId] cannot be parsed"),
+        Instancio.create(MappingRuleSearchQueryResult.class));
+
+    // when -- the first search retries once and falls back to the plain-string shape
+    client.newMappingRulesSearchRequest().filter(fn -> fn.mappingRuleId("rule-1")).send().join();
+
+    // then
+    final List<LoggedRequest> requests = RestGatewayService.getAllRequests();
+    assertThat(requests).hasSize(2);
+    assertThat(requests)
+        .anySatisfy(r -> assertThat(r.getBodyAsString()).contains("\"$eq\":\"rule-1\""));
+    assertThat(requests)
+        .anySatisfy(
+            r ->
+                assertThat(r.getBodyAsString())
+                    .contains("\"mappingRuleId\":\"rule-1\"")
+                    .doesNotContain("$eq"));
+
+    // when -- a second search on the same client goes straight to the remembered plain-string
+    // shape, without repeating the doomed first attempt
+    client.newMappingRulesSearchRequest().filter(fn -> fn.mappingRuleId("rule-2")).send().join();
+
+    // then
+    final List<LoggedRequest> allRequests = RestGatewayService.getAllRequests();
+    assertThat(allRequests).hasSize(3);
+    final List<LoggedRequest> rule2Requests =
+        allRequests.stream()
+            .filter(r -> r.getBodyAsString().contains("rule-2"))
+            .collect(Collectors.toList());
+    assertThat(rule2Requests).hasSize(1);
+    assertThat(rule2Requests.get(0).getBodyAsString())
+        .contains("\"mappingRuleId\":\"rule-2\"")
+        .doesNotContain("$eq");
+  }
+
+  @Test
+  void shouldNotFallBackForAdvancedMappingRuleIdFilterOnLegacyClusterRejection() {
+    // given -- an advanced operator has no plain-string equivalent, so no fallback is attempted
+    gatewayService.errorOnRequest(
+        REST_API_PATH + "/mapping-rules/search",
+        () ->
+            new ProblemDetail()
+                .title("INVALID_ARGUMENT")
+                .status(400)
+                .detail("Request property [filter.mappingRuleId] cannot be parsed"));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newMappingRulesSearchRequest()
+                    .filter(fn -> fn.mappingRuleId(b -> b.like("rule*")))
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class);
+    assertThat(RestGatewayService.getAllRequests()).hasSize(1);
   }
 
   @Test

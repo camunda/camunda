@@ -30,10 +30,13 @@ import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.RoleFilter;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.client.protocol.rest.RoleSearchQueryRequest;
+import io.camunda.client.protocol.rest.RoleSearchQueryResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayService;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.instancio.Instancio;
@@ -182,6 +185,72 @@ public class SearchRoleTest extends ClientRestTest {
     final RoleFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getRoleId().get$Like()).isEqualTo("role*");
+  }
+
+  @Test
+  void shouldFallBackToPlainRoleIdFilterOnLegacyClusterRejection() {
+    // given -- an 8.9-or-earlier cluster rejects the advanced { "$eq": ... } shape for roleId
+    gatewayService.errorThenSuccessOnPostRequest(
+        REST_API_PATH + "/roles/search",
+        new ProblemDetail()
+            .title("INVALID_ARGUMENT")
+            .status(400)
+            .detail("Request property [filter.roleId] cannot be parsed"),
+        Instancio.create(RoleSearchQueryResult.class));
+
+    // when -- the first search retries once and falls back to the plain-string shape
+    client.newRolesSearchRequest().filter(fn -> fn.roleId("role-1")).send().join();
+
+    // then
+    final List<LoggedRequest> requests = RestGatewayService.getAllRequests();
+    assertThat(requests).hasSize(2);
+    assertThat(requests)
+        .anySatisfy(r -> assertThat(r.getBodyAsString()).contains("\"$eq\":\"role-1\""));
+    assertThat(requests)
+        .anySatisfy(
+            r ->
+                assertThat(r.getBodyAsString())
+                    .contains("\"roleId\":\"role-1\"")
+                    .doesNotContain("$eq"));
+
+    // when -- a second search on the same client goes straight to the remembered plain-string
+    // shape, without repeating the doomed first attempt
+    client.newRolesSearchRequest().filter(fn -> fn.roleId("role-2")).send().join();
+
+    // then
+    final List<LoggedRequest> allRequests = RestGatewayService.getAllRequests();
+    assertThat(allRequests).hasSize(3);
+    final List<LoggedRequest> role2Requests =
+        allRequests.stream()
+            .filter(r -> r.getBodyAsString().contains("role-2"))
+            .collect(Collectors.toList());
+    assertThat(role2Requests).hasSize(1);
+    assertThat(role2Requests.get(0).getBodyAsString())
+        .contains("\"roleId\":\"role-2\"")
+        .doesNotContain("$eq");
+  }
+
+  @Test
+  void shouldNotFallBackForAdvancedRoleIdFilterOnLegacyClusterRejection() {
+    // given -- an advanced operator has no plain-string equivalent, so no fallback is attempted
+    gatewayService.errorOnRequest(
+        REST_API_PATH + "/roles/search",
+        () ->
+            new ProblemDetail()
+                .title("INVALID_ARGUMENT")
+                .status(400)
+                .detail("Request property [filter.roleId] cannot be parsed"));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newRolesSearchRequest()
+                    .filter(fn -> fn.roleId(b -> b.like("role*")))
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class);
+    assertThat(RestGatewayService.getAllRequests()).hasSize(1);
   }
 
   @Test

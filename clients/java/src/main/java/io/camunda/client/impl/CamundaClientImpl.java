@@ -379,6 +379,7 @@ import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentsByElementInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentsByProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.JobSearchRequestImpl;
+import io.camunda.client.impl.search.request.LegacyIdEqualityFilterFallback;
 import io.camunda.client.impl.search.request.MappingRulesByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingRulesByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingRulesByTenantSearchRequestImpl;
@@ -455,6 +456,10 @@ public final class CamundaClientImpl implements CamundaClient {
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
   private final HttpClient httpClient;
+  private final LegacyIdEqualityFilterFallback roleIdFallback =
+      new LegacyIdEqualityFilterFallback("roleId");
+  private final LegacyIdEqualityFilterFallback mappingRuleIdFallback =
+      new LegacyIdEqualityFilterFallback("mappingRuleId");
 
   public CamundaClientImpl(final CamundaClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
@@ -1187,7 +1192,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public RolesSearchRequest newRolesSearchRequest() {
-    return new RolesSearchRequestImpl(httpClient, jsonMapper);
+    return new RolesSearchRequestImpl(httpClient, jsonMapper, roleIdFallback);
   }
 
   @Override
@@ -1242,7 +1247,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public RolesByTenantSearchRequest newRolesByTenantSearchRequest(final String tenantId) {
-    return new RolesByTenantSearchRequestImpl(httpClient, jsonMapper, tenantId);
+    return new RolesByTenantSearchRequestImpl(httpClient, jsonMapper, tenantId, roleIdFallback);
   }
 
   @Override
@@ -1678,28 +1683,31 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public MappingRulesByGroupSearchRequest newMappingRulesByGroupSearchRequest(
       final String groupId) {
-    return new MappingRulesByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
+    return new MappingRulesByGroupSearchRequestImpl(
+        httpClient, jsonMapper, groupId, mappingRuleIdFallback);
   }
 
   @Override
   public MappingRulesByRoleSearchRequest newMappingRulesByRoleSearchRequest(final String roleId) {
-    return new MappingRulesByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
+    return new MappingRulesByRoleSearchRequestImpl(
+        httpClient, jsonMapper, roleId, mappingRuleIdFallback);
   }
 
   @Override
   public MappingRulesByTenantSearchRequest newMappingRulesByTenantSearchRequest(
       final String tenantId) {
-    return new MappingRulesByTenantSearchRequestImpl(httpClient, jsonMapper, tenantId);
+    return new MappingRulesByTenantSearchRequestImpl(
+        httpClient, jsonMapper, tenantId, mappingRuleIdFallback);
   }
 
   @Override
   public MappingRulesSearchRequest newMappingRulesSearchRequest() {
-    return new MappingRulesSearchRequestImpl(httpClient, jsonMapper);
+    return new MappingRulesSearchRequestImpl(httpClient, jsonMapper, mappingRuleIdFallback);
   }
 
   @Override
   public RolesByGroupSearchRequest newRolesByGroupSearchRequest(final String groupId) {
-    return new RolesByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
+    return new RolesByGroupSearchRequestImpl(httpClient, jsonMapper, groupId, roleIdFallback);
   }
 
   @Override

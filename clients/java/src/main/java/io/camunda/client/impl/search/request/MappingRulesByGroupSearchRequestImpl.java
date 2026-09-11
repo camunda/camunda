@@ -48,12 +48,17 @@ public class MappingRulesByGroupSearchRequestImpl
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
+  private final LegacyIdEqualityFilterFallback mappingRuleIdFallback;
 
   public MappingRulesByGroupSearchRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final String groupId) {
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper,
+      final String groupId,
+      final LegacyIdEqualityFilterFallback mappingRuleIdFallback) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.groupId = groupId;
+    this.mappingRuleIdFallback = mappingRuleIdFallback;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new MappingRuleSearchQueryRequest();
   }
@@ -68,9 +73,11 @@ public class MappingRulesByGroupSearchRequestImpl
   public CamundaFuture<SearchResponse<MappingRule>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
     final HttpCamundaFuture<SearchResponse<MappingRule>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    mappingRuleIdFallback.post(
+        httpClient,
         String.format("/groups/%s/mapping-rules/search", groupId),
-        jsonMapper.toJson(request),
+        request,
+        jsonMapper,
         httpRequestConfig.build(),
         MappingRuleSearchQueryResult.class,
         SearchResponseMapper::toMappingRulesResponse,

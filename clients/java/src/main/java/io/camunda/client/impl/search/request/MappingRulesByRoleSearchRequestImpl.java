@@ -48,12 +48,17 @@ public class MappingRulesByRoleSearchRequestImpl
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
+  private final LegacyIdEqualityFilterFallback mappingRuleIdFallback;
 
   public MappingRulesByRoleSearchRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final String roleId) {
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper,
+      final String roleId,
+      final LegacyIdEqualityFilterFallback mappingRuleIdFallback) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.roleId = roleId;
+    this.mappingRuleIdFallback = mappingRuleIdFallback;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new MappingRuleSearchQueryRequest();
   }
@@ -68,9 +73,11 @@ public class MappingRulesByRoleSearchRequestImpl
   public CamundaFuture<SearchResponse<MappingRule>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     final HttpCamundaFuture<SearchResponse<MappingRule>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    mappingRuleIdFallback.post(
+        httpClient,
         String.format("/roles/%s/mapping-rules/search", roleId),
-        jsonMapper.toJson(request),
+        request,
+        jsonMapper,
         httpRequestConfig.build(),
         MappingRuleSearchQueryResult.class,
         SearchResponseMapper::toMappingRulesResponse,

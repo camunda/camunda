@@ -18,6 +18,7 @@ package io.camunda.client.util;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
@@ -92,6 +93,7 @@ import io.camunda.client.protocol.rest.VariableResult;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.instancio.Instancio;
 
@@ -190,6 +192,17 @@ public class RestGatewayService {
   }
 
   /**
+   * Fetch all requests served so far, oldest first.
+   *
+   * @return all logged requests, in the order they arrived
+   */
+  public static List<LoggedRequest> getAllRequests() {
+    return WireMock.getAllServeEvents().stream()
+        .map(ServeEvent::getRequest)
+        .collect(Collectors.toList());
+  }
+
+  /**
    * Register the given error response for a URL. The client will receive a response with the status
    * provided by the given problem detail upon a request to the URL with any HTTP method. If the
    * problem detail does not contain a status, BAD_REQUEST (HTTP status 400) is used.
@@ -210,6 +223,40 @@ public class RestGatewayService {
                             JSON_MAPPER.toJson(problemDetail),
                             problemDetail.getStatus() == null ? 400 : problemDetail.getStatus())
                         .withHeader("Content-Type", "application/problem+json")));
+  }
+
+  /**
+   * Register a sequenced response for POST requests to the given URL: the first request receives
+   * the given error, and every request after that receives the given success response. Used to
+   * simulate a server that rejects the first attempt (e.g. an older cluster rejecting a newer
+   * request shape) but succeeds on a corrected retry.
+   *
+   * @param url the URL to register the sequenced response for
+   * @param problemDetail the error the first request receives
+   * @param successResponse the response every following request receives
+   */
+  public void errorThenSuccessOnPostRequest(
+      final String url, final ProblemDetail problemDetail, final Object successResponse) {
+    final String scenario = url + "-error-then-success";
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(WireMock.urlEqualTo(url))
+                .inScenario(scenario)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(
+                    WireMock.jsonResponse(
+                            JSON_MAPPER.toJson(problemDetail),
+                            problemDetail.getStatus() == null ? 400 : problemDetail.getStatus())
+                        .withHeader("Content-Type", "application/problem+json"))
+                .willSetStateTo("recovered"));
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(WireMock.urlEqualTo(url))
+                .inScenario(scenario)
+                .whenScenarioStateIs("recovered")
+                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(successResponse))));
   }
 
   private void registerPost(final String url, final Object response) {

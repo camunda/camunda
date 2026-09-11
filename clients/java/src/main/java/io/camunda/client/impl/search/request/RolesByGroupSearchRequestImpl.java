@@ -48,12 +48,17 @@ public class RolesByGroupSearchRequestImpl
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
+  private final LegacyIdEqualityFilterFallback roleIdFallback;
 
   public RolesByGroupSearchRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final String groupId) {
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper,
+      final String groupId,
+      final LegacyIdEqualityFilterFallback roleIdFallback) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.groupId = groupId;
+    this.roleIdFallback = roleIdFallback;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new RoleSearchQueryRequest();
   }
@@ -68,9 +73,11 @@ public class RolesByGroupSearchRequestImpl
   public CamundaFuture<SearchResponse<Role>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
     final HttpCamundaFuture<SearchResponse<Role>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    roleIdFallback.post(
+        httpClient,
         String.format("/groups/%s/roles/search", groupId),
-        jsonMapper.toJson(request),
+        request,
+        jsonMapper,
         httpRequestConfig.build(),
         RoleSearchQueryResult.class,
         SearchResponseMapper::toRolesResponse,
