@@ -89,7 +89,8 @@ async function run(): Promise<void> {
     message: commit.message,
     associatedPrs: commitMappings[i]?.associatedPrs ?? [],
   }));
-  const { prNumbers, reasons: rangeReasons } = resolveCommitsToPrs(commitsForDedupe, input.releaseBranch);
+  const rangeShas = new Set(walked.map((commit) => commit.sha));
+  const { prNumbers, reasons: rangeReasons } = resolveCommitsToPrs(commitsForDedupe, input.releaseBranch, rangeShas);
   for (const reason of rangeReasons) core.warning(reason);
 
   const metadata = await graphql.fetchPrMetadata(prNumbers);

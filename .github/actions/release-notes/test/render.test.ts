@@ -36,6 +36,30 @@ test('an unattributed bucket reports a failure reason by default, but still rend
   );
 });
 
+test('the two failures sharing the gate bucket are named apart, each with its own remedy', () => {
+  // A PR that declared nothing and one whose refs were all dead need opposite
+  // fixes, so the message must not report both as merely "unattributed".
+  const bucket = [
+    pr({ number: 2, attributionSource: 'unattributed', issueNumbers: [] }),
+    pr({ number: 3, attributionSource: 'resolutionFailed', issueNumbers: [] }),
+  ];
+  const reason = render([], bucket, { version: '8.8.30', allowUnattributed: false }).failureReason ?? '';
+
+  assert.match(reason, /No issue reference found: #2/);
+  assert.match(reason, /Every referenced issue was unresolvable: #3/);
+  // #3 must not be described as having no reference — that is the misread.
+  assert.doesNotMatch(reason, /No issue reference found: [^.]*#3/);
+  assert.match(reason, /allow-unattributed=true/);
+});
+
+test('the gate message names only the failure kinds actually present', () => {
+  const onlyDead = [pr({ number: 7, attributionSource: 'resolutionFailed', issueNumbers: [] })];
+  const reason = render([], onlyDead, { version: '8.8.30', allowUnattributed: false }).failureReason ?? '';
+
+  assert.match(reason, /Every referenced issue was unresolvable: #7/);
+  assert.doesNotMatch(reason, /No issue reference found/);
+});
+
 test('allow-unattributed with a reason overrides the failure and records the reason in audit.json', () => {
   const unattributed = [pr({ number: 2, attributionSource: 'unattributed', issueNumbers: [] })];
   const result = render([], unattributed, {
@@ -133,6 +157,69 @@ test('a bot-exempt PR (e.g. renovate) renders under its normal type section, NOT
   assert.doesNotMatch(result.customerBody, /Changes without a tracked issue/);
   assert.match(result.customerBody, /## Dependency updates/);
   assert.match(result.customerBody, /#41/);
+});
+
+test('several PRs delivering one issue render as a single line naming every PR — four lines read as four features', () => {
+  // given four PRs whose display title has already resolved to issue #55's title
+  const delivering = [101, 102, 103, 104].map((number) =>
+    pr({ number, title: 'Add agent history API', issueNumbers: [55], closesIssueNumbers: number === 104 ? [55] : [] }),
+  );
+
+  // when
+  const body = render(delivering, [], { version: '8.8.38', allowUnattributed: false }).customerBody;
+
+  // then the issue is named once, with every contributing PR as provenance
+  const featureLines = body.split('\n').filter((line) => line.startsWith('- '));
+  assert.equal(featureLines.length, 1);
+  assert.equal(featureLines[0], '- Add agent history API (#55) — #101, #102, #103, #104');
+});
+
+test('an issue whose PRs span sections lands once, in the most customer-visible of them', () => {
+  // given one issue delivered by a refactor, a feature, a test and a fix
+  const delivering = [
+    pr({ number: 101, title: 'Add agent history API', section: 'Maintenance', visibility: 'internal', issueNumbers: [55] }),
+    pr({ number: 102, title: 'Add agent history API', section: 'Bug Fixes', issueNumbers: [55] }),
+    pr({ number: 103, title: 'Add agent history API', section: 'Maintenance', visibility: 'internal', issueNumbers: [55] }),
+    pr({ number: 104, title: 'Add agent history API', section: 'Features', issueNumbers: [55] }),
+  ];
+
+  // when
+  const asset = render(delivering, [], { version: '8.8.38', allowUnattributed: false }).fullAsset;
+
+  // then Features outranks Bug Fixes and Maintenance, and the entry appears there alone
+  assert.match(asset, /## Features/);
+  assert.doesNotMatch(asset, /## Bug Fixes/);
+  assert.doesNotMatch(asset, /## Maintenance/);
+  assert.equal(asset.split('\n').filter((line) => line.startsWith('- ')).length, 1);
+});
+
+test('the customer body names only the PRs it may show; the full asset names every contributor', () => {
+  // The visibility filter decides which PRs an entry may cite, not just which
+  // entries exist — a maintenance PR number in customer notes is noise.
+  const delivering = [
+    pr({ number: 101, title: 'Add agent history API', section: 'Maintenance', visibility: 'internal', issueNumbers: [55] }),
+    pr({ number: 102, title: 'Add agent history API', section: 'Features', issueNumbers: [55] }),
+  ];
+
+  // when
+  const result = render(delivering, [], { version: '8.8.38', allowUnattributed: false });
+
+  // then
+  assert.match(result.customerBody, /- Add agent history API \(#55\) — #102$/m);
+  assert.match(result.fullAsset, /- Add agent history API \(#55\) — #101, #102$/m);
+});
+
+test('grouping never merges PRs that share no issue — two issues stay two lines', () => {
+  const delivering = [
+    pr({ number: 101, title: 'Add agent history API', issueNumbers: [55] }),
+    pr({ number: 102, title: 'Add audit log export', issueNumbers: [56] }),
+  ];
+
+  const body = render(delivering, [], { version: '8.8.38', allowUnattributed: false }).customerBody;
+
+  assert.equal(body.split('\n').filter((line) => line.startsWith('- ')).length, 2);
+  assert.match(body, /Add agent history API \(#55\) — #101/);
+  assert.match(body, /Add audit log export \(#56\) — #102/);
 });
 
 test('BREAKING CHANGE is cross-listed at the top of the customer body in addition to its normal section', () => {

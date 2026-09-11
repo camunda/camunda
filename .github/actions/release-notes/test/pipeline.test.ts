@@ -127,6 +127,75 @@ test('a backport bot PR with only a marker hops to the original and inherits its
   assert.equal(out.categorization.section, 'Bug Fixes');
 });
 
+test('a backport whose injected refs RESOLVE still defers to the original — the bot copied the template placeholder in', async () => {
+  // The real 8.9.19 defect. backport-action fills `relates to ${issue_refs}`
+  // from the original's body without stripping HTML comments, so the PR
+  // template's own `<!-- closes #1234 -->` examples arrive as visible refs —
+  // four of them, ahead of the real one. A body-wide scan succeeds on those, so
+  // gating the hop on failure left #1234 (a 2018 issue) describing the fix.
+  const resolver = fakeResolver(
+    { 200: { body: '## Related issues\ncloses #100', title: 'fix: distinguish restarted members' } },
+    { 100: 'Members restarting are treated as long-lived', 1234: 'MessageCorrelationTest is unstable' },
+  );
+  const out = await processPr(
+    resolver,
+    prInput({
+      number: 300,
+      title: '[Backport stable/8.9] fix: distinguish restarted members',
+      body: 'Backport of #200\n\nrelates to #1234 #1234 #1234 #1234 #100',
+      authorLogin: 'monorepo-devops-automation[bot]',
+    }),
+    { gateRequiredAt: null },
+  );
+
+  assert.equal(out.attribution.deliveryPath, 'backportHop');
+  assert.deepEqual(out.attribution.issueNumbers, [100]);
+  assert.ok(!out.attribution.issueNumbers.includes(1234));
+  // and the customer-facing title comes from the real issue, not the placeholder
+  assert.equal(out.title, 'Members restarting are treated as long-lived');
+});
+
+test('the hop is not escapable by giving the injected refs a Related issues heading', async () => {
+  // Guards the fix against its own fragility: keying the hop on which parse
+  // path fired would break the moment backport-action's description template
+  // gained a section heading, silently restoring the placeholder attribution.
+  const resolver = fakeResolver(
+    { 200: { body: '## Related issues\ncloses #100', title: 'fix: real work' } },
+    { 100: 'The real issue', 1234: 'MessageCorrelationTest is unstable' },
+  );
+  const out = await processPr(
+    resolver,
+    prInput({
+      number: 300,
+      title: '[Backport stable/8.9] fix: real work',
+      body: 'Backport of #200\n\n## Related issues\nrelates to #1234',
+      authorLogin: 'monorepo-devops-automation[bot]',
+    }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.deliveryPath, 'backportHop');
+  assert.deepEqual(out.attribution.issueNumbers, [100]);
+});
+
+test('an opt-out ticked on the backport itself outranks the original — it is a statement, not a copied ref', async () => {
+  const resolver = fakeResolver({ 200: { body: '## Related issues\ncloses #100', title: 'fix: real work' } });
+  const out = await processPr(
+    resolver,
+    prInput({
+      number: 300,
+      title: '[Backport stable/8.9] fix: real work',
+      // The tick counts only inside the section, which is where the template
+      // puts it — a stray checkbox elsewhere in a body is not a declaration.
+      body: 'Backport of #200\n\n## Related issues\n\n- [x] This PR does not need a linked issue',
+      authorLogin: 'monorepo-devops-automation[bot]',
+    }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'optOut');
+  assert.equal(out.attribution.deliveryPath, 'direct');
+  assert.deepEqual(out.attribution.issueNumbers, []);
+});
+
 test('renovate[bot] with no linked issue is exempt, not unattributed — mirrors the gate\'s BOT_LINK_EXEMPT', async () => {
   const out = await processPr(
     fakeResolver(),
