@@ -10,6 +10,108 @@ export const GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
 
+/** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
+const MAX_RETRIES = 5;
+
+/** Longest `retry-after` this honours; beyond it the job should fail rather
+ *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
+const MAX_RETRY_AFTER_MS = 60_000;
+
+/** GitHub reports a throttled REST request as HTTP 429, or HTTP 403 carrying a
+ *  `retry-after` (a 403 without one is a real permission failure and must not
+ *  be retried). 5xx is a transient backend failure. Mirrors resolve/index.ts's
+ *  GraphQL-side retryableStatus — same throttle shapes, REST transport. */
+async function retryableStatus(res: Response): Promise<boolean> {
+  if (res.status === 429 || res.status >= 500) return true;
+  if (res.status !== 403) return false;
+  if (res.headers.get('retry-after') !== null) return true;
+  if (res.headers.get('x-ratelimit-remaining') === '0') return true;
+  // GitHub's SECONDARY rate limit — the one that fires on concurrency rather
+  // than on volume — answers 403 and often names itself only in the body, with
+  // the primary counter still reading full. Indistinguishable from a permission
+  // failure by status alone, so read the body of a 403 (from a clone, leaving
+  // the caller's stream intact) before deciding this job cannot proceed.
+  try {
+    return /rate limit/i.test(await res.clone().text());
+  } catch {
+    return false;
+  }
+}
+
+/** The server's own wait, when it names one, else exponential backoff. `null`
+ *  when the request never produced a response at all. */
+function backoffMs(res: Response | null, attempt: number): number {
+  const header = res?.headers.get('retry-after') ?? null;
+  const seconds = header === null ? NaN : Number(header);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
+  return 2 ** attempt * 1000;
+}
+
+/**
+ * `fetch`, retrying a throttled or transiently failed REST request with
+ * backoff instead of aborting the whole generation job on one bad response.
+ * Never retries a non-throttle failure (e.g. a bare 403, a 404) — the caller
+ * sees those immediately.
+ */
+export async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(url, init);
+    } catch (error) {
+      // `fetch` REJECTS on a socket-level failure — connection reset, socket
+      // hang-up, DNS blip — rather than returning a Response, so none of the
+      // status handling below ever sees it. Left unguarded this aborts the
+      // whole job on one blip, which over the thousands of calls a minor
+      // release makes is close to certain.
+      if (attempt >= MAX_RETRIES - 1) {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`GitHub API request never completed past ${MAX_RETRIES} attempts (${url}): ${detail}`);
+      }
+      await sleepImpl(backoffMs(null, attempt));
+      continue;
+    }
+    if (res.ok || !(await retryableStatus(res))) return res;
+    if (attempt >= MAX_RETRIES - 1) {
+      throw new Error(`GitHub API kept returning HTTP ${res.status} past ${MAX_RETRIES} attempts (${url}).`);
+    }
+    await sleepImpl(backoffMs(res, attempt));
+  }
+}
+
+/** A JSON response that survived the retries, or the status that explains why
+ *  there is no body to read. */
+export type JsonResult<T> = { readonly ok: true; readonly status: number; readonly data: T } | { readonly ok: false; readonly status: number };
+
+/**
+ * `fetchWithRetry` plus the body read, so a truncated or empty body is retried
+ * like any other transient instead of throwing a SyntaxError past the retry
+ * loop. GitHub answers that way under load exactly as readily as it answers
+ * 502, and parsing outside the loop meant one such body killed the run.
+ */
+export async function fetchJsonWithRetry<T>(
+  url: string,
+  init: RequestInit,
+  sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<JsonResult<T>> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetchWithRetry(url, init, sleepImpl);
+    if (!res.ok) return { ok: false, status: res.status };
+    try {
+      return { ok: true, status: res.status, data: (await res.json()) as T };
+    } catch {
+      if (attempt >= MAX_RETRIES - 1) {
+        throw new Error(`GitHub API returned an unparseable body past ${MAX_RETRIES} attempts (${url}).`);
+      }
+      await sleepImpl(backoffMs(null, attempt));
+    }
+  }
+}
+
 /** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
  *  caller passes in. This action resolves from the PR head on `pull_request`
  *  (see the gate workflow's security-model header), so it must never be

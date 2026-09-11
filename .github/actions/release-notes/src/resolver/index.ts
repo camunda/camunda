@@ -1,4 +1,4 @@
-import { githubHeaders, repoApiUrl } from '../github';
+import { fetchJsonWithRetry, githubHeaders, repoApiUrl } from '../github';
 import type { ParsedRef, PullMeta, ResolvedRef, Resolver } from '../types';
 
 /** A PR body can carry at most this many refs to the API. A legitimate PR never
@@ -29,15 +29,38 @@ function priorityOf(ref: ParsedRef): number {
  *
  * ponytail: plain fetch (Node 24 global) over octokit — we hit exactly one
  * endpoint; octokit would inline the whole REST client into the bundle.
+ * Throttled/transient responses are retried via fetchWithRetry (../github) —
+ * the generator processes PRs serially, so one un-retried 5xx or secondary
+ * rate limit anywhere in that chain would otherwise abort the whole job.
  */
+/**
+ * The refs a caller will actually classify: closing/backport refs sorted ahead
+ * of merely-informational ones so that when the cap has to drop something, it
+ * drops the least consequential first.
+ *
+ * Exported so a caller that pre-resolves in bulk applies the SAME policy. A
+ * copied `MAX_REFS` would let the gate cap at one number and the generator at
+ * another the moment either changed — the gate/generator divergence C4 exists
+ * to prevent. One function, two callers, no constant to copy.
+ */
+export function prioritizeAndCap(refs: readonly ParsedRef[]): ParsedRef[] {
+  return [...refs].sort((first, second) => priorityOf(first) - priorityOf(second)).slice(0, MAX_REFS);
+}
+
 export class GithubResolver implements Resolver {
   private readonly repoUrl: string;
   private readonly headers: Record<string, string>;
+  /** Titles seen while classifying refs, keyed by same-repo number (issues and
+   *  PRs alike — `/issues/N` serves both). `classify` and `fetchIssueTitle` hit
+   *  that same endpoint, and the generator asks for the title of a ref it has
+   *  just classified, so the second call is served from here. */
+  private readonly titlesByNumber = new Map<number, string | null>();
 
   constructor(
     private readonly token: string,
     private readonly owner: string,
     private readonly repo: string,
+    private readonly sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   ) {
     this.repoUrl = repoApiUrl(owner, repo);
     this.headers = githubHeaders(token);
@@ -55,8 +78,7 @@ export class GithubResolver implements Resolver {
     // original order, so when the cap below has to drop something, it drops
     // the least consequential refs first instead of whichever came last in
     // the body.
-    const prioritized = [...refs].sort((first, second) => priorityOf(first) - priorityOf(second));
-    const capped = prioritized.slice(0, MAX_REFS);
+    const capped = prioritizeAndCap(refs);
     const cache = new Map<string, Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>>>();
     const classifyCached = (ref: ParsedRef): Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>> => {
       const key = `${ref.repo ?? ''}#${ref.number}`;
@@ -98,6 +120,18 @@ export class GithubResolver implements Resolver {
   }
 
   /**
+   * Fetch a same-repo pull request's full fields for the generator's backport
+   * hop (attribution + inherit-original title/mergedAt), or null if it does
+   * not exist. A cross-repo marker (`Backport of owner/other#N`) resolves to
+   * null for the same reason as {@link fetchPullBody}: #N there would name an
+   * unrelated PR in THIS repo.
+   */
+  async fetchOriginalPull(number: number, repo: string | null): Promise<PullMeta | null> {
+    if (this.isCrossRepo(repo)) return null;
+    return this.fetchPull(number);
+  }
+
+  /**
    * Fetch the fields the gate evaluates for one same-repo pull request, or null
    * if it does not exist.
    *
@@ -107,17 +141,45 @@ export class GithubResolver implements Resolver {
    * can never evaluate an out-of-date body.
    */
   async fetchPull(number: number): Promise<PullMeta | null> {
-    const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
-      headers: this.headers,
-    });
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
-    const data = (await res.json()) as {
+    const res = await fetchJsonWithRetry<{
       body?: string | null;
       title?: string | null;
       user?: { login?: string } | null;
+      merged_at?: string | null;
+    }>(`${this.repoUrl}/pulls/${number}`, { headers: this.headers }, this.sleepImpl);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
+    const { data } = res;
+    return {
+      body: data.body ?? '',
+      title: data.title ?? '',
+      authorLogin: data.user?.login,
+      mergedAt: data.merged_at ?? undefined,
     };
-    return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
+  }
+
+  /**
+   * The live title of a same-repo issue, or null if it doesn't exist. Used by
+   * the generator (#57713) to show the issue's own customer-facing wording
+   * in release notes rather than the delivering PR's dev-facing title.
+   */
+  async fetchIssueTitle(number: number): Promise<string | null> {
+    const cached = this.titlesByNumber.get(number);
+    if (cached !== undefined) return cached;
+
+    const res = await fetchJsonWithRetry<{ title?: string | null }>(
+      `${this.repoUrl}/issues/${number}`,
+      { headers: this.headers },
+      this.sleepImpl,
+    );
+    if (res.status === 404) {
+      this.titlesByNumber.set(number, null);
+      return null;
+    }
+    if (!res.ok) throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
+    const title = res.data.title ?? null;
+    this.titlesByNumber.set(number, title);
+    return title;
   }
 
   /** A ref points at a different repo than the one being gated (case-insensitive). */
@@ -132,13 +194,15 @@ export class GithubResolver implements Resolver {
   private async classify(ref: ParsedRef): Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>> {
     if (this.isCrossRepo(ref.repo)) return { target: 'missing', crossRepo: true };
 
-    const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
-      headers: this.headers,
-    });
+    const res = await fetchJsonWithRetry<{ pull_request?: unknown; title?: string | null }>(
+      `${this.repoUrl}/issues/${ref.number}`,
+      { headers: this.headers },
+      this.sleepImpl,
+    );
     if (res.status === 404) return { target: 'missing', crossRepo: false };
     if (!res.ok) throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
 
-    const data = (await res.json()) as { pull_request?: unknown };
-    return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
+    this.titlesByNumber.set(ref.number, res.data.title ?? null);
+    return { target: res.data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
   }
 }

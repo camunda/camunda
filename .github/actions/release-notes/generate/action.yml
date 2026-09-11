@@ -1,0 +1,44 @@
+name: Release-notes generator
+description: >
+  Builds the changelog for a release range from the actual PRs shipped
+  (PR-as-unit), attributing each via the shared reference parser and the
+  unconditional attribution chain. Read-only — writes no labels or comments;
+  publishing is the separate cutover work unit's job.
+inputs:
+  token:
+    description: Token used to read commit/PR/issue metadata. Read-only scopes only.
+    required: true
+  target-version:
+    description: The version being released, e.g. 8.8.31 or 8.10.0-alpha1.
+    required: true
+  release-branch:
+    description: The branch this release ships from, e.g. stable/8.8.
+    required: true
+  gate-required-at:
+    description: >
+      ISO-8601 timestamp of when the PR-gate became required on release-branch.
+      Empty when the branch isn't gated yet. Affects anomaly severity only,
+      never attribution itself.
+    required: false
+    default: ''
+  allow-unattributed:
+    description: >
+      Overrides the fail-by-default bucket gate for PRs with no linked issue
+      (unattributed) or every linked issue dead (resolutionFailed). Requires
+      unattributed-reason.
+    required: false
+    default: 'false'
+  unattributed-reason:
+    description: Required reason when allow-unattributed is true; recorded per PR in audit.json.
+    required: false
+    default: ''
+  output-dir:
+    description: Directory to write CHANGELOG-<version>.md and the JSON outputs into.
+    required: false
+    default: '.'
+outputs:
+  customer-body:
+    description: The curated, customer-facing release notes body (Markdown).
+runs:
+  using: node24
+  main: dist/index.js
