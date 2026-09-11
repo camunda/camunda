@@ -956,4 +956,112 @@ class SecretsTest {
       assertThat(secrets.getMaxConcurrency()).isEqualTo(EXPECTED_DEFAULT_MAX_CONCURRENCY);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws.tuned.call-timeout=8s",
+        "camunda.secrets.stores.aws.tuned.attempt-timeout=3s",
+        "camunda.secrets.stores.gcp.tuned.project-id=my-project",
+        "camunda.secrets.stores.gcp.tuned.call-timeout=9s"
+      })
+  class WithStoreTimeoutsConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithStoreTimeoutsConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindAwsTimeouts() {
+      // given call-timeout/attempt-timeout are set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both are bound onto the named store
+      final var aws = secrets.getStores().getAws().get("tuned");
+      assertThat(aws.getCallTimeout()).isEqualTo(Duration.ofSeconds(8));
+      assertThat(aws.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(3));
+    }
+
+    @Test
+    void shouldBindGcpCallTimeout() {
+      // given call-timeout is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound onto the named store
+      assertThat(secrets.getStores().getGcp().get("tuned").getCallTimeout())
+          .isEqualTo(Duration.ofSeconds(9));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.aws.untimed.region=eu-west-1"})
+  class WithoutStoreTimeoutsConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutStoreTimeoutsConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultAwsTimeouts() {
+      // given no timeout is configured (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the store is still bounded, so an unconfigured store cannot block indefinitely
+      final var aws = secrets.getStores().getAws().get("untimed");
+      assertThat(aws.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(aws.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.aws.slow.call-timeout=0s"})
+  class WithNonPositiveCallTimeout {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithNonPositiveCallTimeout(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectNonPositiveCallTimeout() {
+      // given call-timeout is zero (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws.inverted.call-timeout=2s",
+        "camunda.secrets.stores.aws.inverted.attempt-timeout=5s"
+      })
+  class WithAttemptTimeoutWiderThanCallTimeout {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithAttemptTimeoutWiderThanCallTimeout(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectAttemptTimeoutWiderThanCallTimeout() {
+      // given an attempt bound wider than the total bound (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws, since the attempt bound could never take effect
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
 }
