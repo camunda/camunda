@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
-import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.ToxiproxyContainer;
 
 /**
@@ -36,6 +35,9 @@ public final class ProxyRegistry {
   private static final int MAX_EXPOSED_PORT = MIN_EXPOSED_PORT + 32;
   private static final AtomicInteger PORT_GENERATOR = new AtomicInteger(MIN_EXPOSED_PORT);
 
+  // the name under which the container reaches ports bound on the host running the tests
+  private static final String HOST_ALIAS = "host.testcontainers.internal";
+
   // concurrent to allow static usage along with static containers and parallel tests
   private final ConcurrentMap<String, ContainerProxy> proxies = new ConcurrentHashMap<>();
   private final ToxiproxyContainer toxiproxy;
@@ -45,9 +47,19 @@ public final class ProxyRegistry {
     this.toxiproxy = toxiproxy;
   }
 
+  /**
+   * Exposes the ports proxies listen on, and lets the container reach ports bound on the host, as
+   * {@link #getOrCreateHostProxy(int)} requires.
+   *
+   * <p>The host is reached over Docker's {@code host-gateway}, i.e. directly through the bridge
+   * network, and deliberately not via {@link ToxiproxyContainer#withAccessToHost(boolean)}. That
+   * would send every proxied connection through an SSH tunnel whose client runs inside the test
+   * JVM; a cluster's membership and Raft traffic saturates it under CI load, and the sub-second
+   * membership timeouts then fail for minutes at a time.
+   */
   public static ToxiproxyContainer addExposedPorts(final ToxiproxyContainer container) {
     container.addExposedPorts(IntStream.range(MIN_EXPOSED_PORT, MAX_EXPOSED_PORT).toArray());
-    container.withAccessToHost(true);
+    container.withExtraHost(HOST_ALIAS, "host-gateway");
     return container;
   }
 
@@ -63,14 +75,15 @@ public final class ProxyRegistry {
 
   /**
    * Returns the proxy associated with the given port on the local host, or creates a new instance.
+   * The port must be bound on an interface the Docker bridge network can reach, e.g. {@code
+   * 0.0.0.0}, and the container must have been prepared with {@link
+   * #addExposedPorts(ToxiproxyContainer)}.
    *
    * @param port the upstream port that the proxy points to
    * @return a {@link ContainerProxy} which can be used to access the proxy
    */
   public ContainerProxy getOrCreateHostProxy(final int port) {
-    final var upstream = "host.testcontainers.internal:" + port;
-    Testcontainers.exposeHostPorts(port);
-    return getOrCreateProxy(upstream);
+    return getOrCreateProxy(HOST_ALIAS + ":" + port);
   }
 
   private ContainerProxy createProxy(final String upstream) {

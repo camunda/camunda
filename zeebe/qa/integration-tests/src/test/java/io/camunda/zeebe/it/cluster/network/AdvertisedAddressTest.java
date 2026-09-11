@@ -41,8 +41,7 @@ final class AdvertisedAddressTest {
 
   @Container
   private static final ToxiproxyContainer TOXIPROXY =
-      ProxyRegistry.addExposedPorts(new ToxiproxyContainer(DockerImageName.parse(TOXIPROXY_IMAGE)))
-          .withAccessToHost(true);
+      ProxyRegistry.addExposedPorts(new ToxiproxyContainer(DockerImageName.parse(TOXIPROXY_IMAGE)));
 
   private static final ProxyRegistry PROXY_REGISTRY = new ProxyRegistry(TOXIPROXY);
 
