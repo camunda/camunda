@@ -20,6 +20,19 @@ public class Cache {
   /** Maximum cache size */
   private int maxSize = DEFAULT_MAX_SIZE;
 
+  /**
+   * No-arg constructor solely so spring-boot-configuration-processor does not treat this class as
+   * constructor-bound — with a single parameterized constructor, the processor derives metadata
+   * only from that constructor's parameters and silently ignores every getter/setter below.
+   * Deliberately unused and {@code private}: nothing — not even a test — should ever call it;
+   * {@link #Cache(String, String)} remains the only real construction path (see {@link
+   * DocumentBasedSecondaryStorageDatabase}). Do not remove as dead code.
+   */
+  private Cache() {
+    prefix = null;
+    legacyProperty = null;
+  }
+
   public Cache(final String databaseName, final String cacheName) {
     prefix = "camunda.data.secondary-storage.%s.%s-cache".formatted(databaseName, cacheName);
     legacyProperty =
