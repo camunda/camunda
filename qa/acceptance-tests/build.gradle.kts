@@ -199,7 +199,6 @@ val allItPatterns =
     "**/*Tests.class",
     "**/*TestCase.class",
   )
-val physicalTenantItPatterns = arrayOf("**/IT*.class", "**/*IT.class", "**/*ITCase.class")
 val physicalTenantIdentityPatterns =
   arrayOf(
     "**/io/camunda/it/auth/**",
@@ -227,19 +226,6 @@ fun Test.configureAcceptanceProfile(
   junitOptions.excludeTags(*excludeTags)
   preferredExtension?.let { systemProperty("camunda.test.preferred.extension", it) }
 }
-
-fun Test.configurePhysicalTenantProfile(
-  includePatterns: Array<String>,
-  includeTags: Array<String>,
-  excludeTags: Array<String>,
-  exclusions: Array<String> = emptyArray(),
-) =
-  configureAcceptanceProfile(
-    includePatterns,
-    includeTags,
-    excludeTags,
-    exclusions,
-  )
 
 tasks.register<Test>("itMultiDb") {
   description = "Runs the Maven multi-db-test acceptance-test profile."
@@ -282,25 +268,24 @@ tasks.register<Test>("itRdbms") {
 
 tasks.register<Test>("itPhysicalTenant") {
   description = "Runs the Maven physical-tenant acceptance-test profile."
-  configurePhysicalTenantProfile(
-    includePatterns = physicalTenantItPatterns,
+  configureAcceptanceProfile(
+    includePatterns = allItPatterns,
     includeTags = arrayOf("multi-db-test"),
     excludeTags = arrayOf("rdbms", "history", "multi-db-physical-tenants"),
     exclusions =
-      arrayOf(
-        "**/io/camunda/it/auth/**",
-        "**/auth/UsageMetricAuthorizationIT.class",
-        "**/*$*.class",
-        "**/ClusterPurgeMultiDbIT.class",
-        "**/mcp/authentication/BasicAuthMcpServerIT.class",
-        "**/mcp/authentication/OidcMcpServerIT.class",
-      ),
+      physicalTenantIdentityPatterns +
+        arrayOf(
+          "**/*$*.class",
+          "**/ClusterPurgeMultiDbIT.class",
+          "**/mcp/authentication/BasicAuthMcpServerIT.class",
+          "**/mcp/authentication/OidcMcpServerIT.class",
+        ),
   )
 }
 
 tasks.register<Test>("itPhysicalTenantIdentity") {
   description = "Runs the Maven physical-tenant-identity acceptance-test profile."
-  configurePhysicalTenantProfile(
+  configureAcceptanceProfile(
     includePatterns = physicalTenantIdentityPatterns,
     includeTags = arrayOf("multi-db-test"),
     excludeTags = arrayOf("rdbms", "history", "multi-db-physical-tenants"),
@@ -310,8 +295,8 @@ tasks.register<Test>("itPhysicalTenantIdentity") {
 
 tasks.register<Test>("itPhysicalTenantHistory") {
   description = "Runs the Maven physical-tenant-history acceptance-test profile."
-  configurePhysicalTenantProfile(
-    includePatterns = physicalTenantItPatterns,
+  configureAcceptanceProfile(
+    includePatterns = allItPatterns,
     includeTags = arrayOf("history"),
     excludeTags = arrayOf("rdbms"),
   )
