@@ -83,6 +83,15 @@ class DefaultReplicationControllerTest {
         controller, strategy, config, PARTITION_ID, clock, metrics);
   }
 
+  /** A single region matching every replica - the flat quorum, degenerate case of regions. */
+  private static RegionConfiguration defaultRegion(final int minReplicas) {
+    final var region = new RegionConfiguration();
+    region.setName("default");
+    region.setPattern(".*");
+    region.setMinReplicas(minReplicas);
+    return region;
+  }
+
   @Test
   void shouldScheduleCheckTaskOnConstruct() {
     // when
@@ -497,14 +506,5 @@ class DefaultReplicationControllerTest {
       // then - age is measured from head (t=0), not tail (t=5000)
       assertThat(age).contains(Duration.ofMillis(6_000));
     }
-  }
-
-  /** A single region matching every replica - the flat quorum, degenerate case of regions. */
-  private static RegionConfiguration defaultRegion(final int minReplicas) {
-    final var region = new RegionConfiguration();
-    region.setName("default");
-    region.setPattern(".*");
-    region.setMinReplicas(minReplicas);
-    return region;
   }
 }
