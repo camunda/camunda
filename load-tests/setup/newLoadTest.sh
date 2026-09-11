@@ -193,12 +193,13 @@ mkdir -p "$TARGET_DIRECTORY"
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  "$VERSION_DIR/Makefile"                                                  "$TARGET_DIRECTORY/"
 cp -rv "$SCRIPT_DIR/charts"                                                     "$TARGET_DIRECTORY/"
+cp -v  "$VERSION_DIR/values/load-test-setup-values-defaults.yaml"               "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-override-values.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-defaults.yaml"                 "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
-cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
+cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"  "$TARGET_DIRECTORY/"
 
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)
