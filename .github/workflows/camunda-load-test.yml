@@ -38,6 +38,7 @@ on:
           - typical
           - max
           - archiver
+          - agent-visibility
         default: max
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform'
@@ -157,7 +158,7 @@ on:
         default: ""
         required: false
       scenario:
-        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver.'
+        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver, agent-visibility.'
         type: string
         required: false
         default: ""
