@@ -199,7 +199,11 @@ public final class VariableDocumentUpdateWhileSuspendedTest {
     // then - the task is untouched and no listener job was created
     assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
-    assertThat(rejection.getRejectionReason()).contains(String.valueOf(processInstanceKey));
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            "Variable updates on Camunda user tasks are not allowed while the process instance is suspended")
+        .contains(String.valueOf(userTask.getValue().getElementInstanceKey()))
+        .contains(String.valueOf(processInstanceKey));
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getPosition() >= rejection.getPosition())
