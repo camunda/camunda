@@ -106,6 +106,28 @@ class CoverageReportCollectorTest {
         .isEmpty();
   }
 
+  /**
+   * The report cannot tell a stub from the process it mocks by its model alone, so the collector
+   * has to remember which processes its suite mocked - in any of its runs, as the run that reports
+   * a stub model is not the run that mocked the process.
+   */
+  @Test
+  void shouldRememberTheProcessesThatAnyRunMocked() {
+    // given
+    final CoverageReportCollector collector =
+        new CoverageReportCollector(
+            CoverageReportCollectorTest.class, Collections.emptyList(), Collections.emptyList());
+
+    // when: only one of the runs mocks the child process
+    collector.collectTestRunCoverage(
+        "mockingRun", null, testDataOf(MOCK_STUB_XML), Collections.singletonList(PROCESS_ID));
+    collector.collectTestRunCoverage(
+        "realRun", null, testDataOf(REAL_XML), Collections.emptyList());
+
+    // then
+    assertThat(collector.getMockedProcessDefinitionIds()).containsExactly(PROCESS_ID);
+  }
+
   /** Builds the data of a test run that ran a single instance of the given process model. */
   private static CoverageTestData testDataOf(final String xml) {
     final ProcessDefinition processDefinition = mock(ProcessDefinition.class);
