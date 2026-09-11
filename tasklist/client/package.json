@@ -12,7 +12,7 @@
     "@carbon/elements": "11.84.0",
     "@carbon/react": "1.100.0",
     "@monaco-editor/react": "4.7.0",
-    "@tanstack/eslint-plugin-query": "5.91.4",
+    "@tanstack/eslint-plugin-query": "5.91.5",
     "@tanstack/react-query": "5.90.21",
     "@uidotdev/usehooks": "2.4.1",
     "bpmn-js": "18.12.1",
