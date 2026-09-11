@@ -140,6 +140,11 @@ public class CamundaDataSource {
         findProcessDefinitionByProcessDefinitionId(bpmnProcessId).getProcessDefinitionKey());
   }
 
+  public ProcessDefinition getProcessDefinitionByProcessDefinitionKey(
+      final long processDefinitionKey) {
+    return client.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+  }
+
   public String getProcessDefinitionXmlByProcessDefinitionKey(final long processDefinitionKey) {
     return client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join();
   }
@@ -320,6 +325,11 @@ public class CamundaDataSource {
             () ->
                 new IllegalArgumentException(
                     "Decision definition not found: " + decisionDefinitionId));
+  }
+
+  public DecisionDefinition getDecisionDefinitionByDecisionDefinitionKey(
+      final long decisionDefinitionKey) {
+    return client.newDecisionDefinitionGetRequest(decisionDefinitionKey).send().join();
   }
 
   public String getDecisionDefinitionXmlByDecisionDefinitionKey(final long decisionDefinitionKey) {

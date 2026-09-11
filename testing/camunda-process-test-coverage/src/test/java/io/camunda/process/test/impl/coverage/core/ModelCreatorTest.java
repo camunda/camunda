@@ -204,11 +204,11 @@ class ModelCreatorTest {
   }
 
   /**
-   * Without the deployment that ran, the report would have no model for the process at all, which
-   * is worse than a model of another deployment of it.
+   * Another deployment of the id describes a different process, so reporting it would explain the
+   * instance by a model it never ran. Failing keeps that model out of the report.
    */
   @Test
-  void shouldFallBackToAnyDeploymentWhenTheOneThatRanIsUnknown() {
+  void shouldRejectADeploymentThatTheTestDataDoesNotDescribe() {
     // given
     final ImmutableCoverageTestData testData =
         ImmutableCoverageTestData.builder()
@@ -224,10 +224,11 @@ class ModelCreatorTest {
             .build();
 
     // when: the instance ran a deployment that the test data does not describe
-    final ProcessModel model = ModelCreator.createModel(testData, "process", 999L);
-
     // then
-    assertThat(model.getVersion()).isEqualTo("1");
+    assertThatThrownBy(() -> ModelCreator.createModel(testData, "process", 999L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("process")
+        .hasMessageContaining("999");
   }
 
   private static ImmutableCoverageProcessDefinitionData processDefinitionDataOf(

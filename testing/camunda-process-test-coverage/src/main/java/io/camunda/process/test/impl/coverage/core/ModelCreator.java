@@ -26,8 +26,6 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.io.ByteArrayInputStream;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -66,8 +64,7 @@ public class ModelCreator {
    * <p>A process definition id can be deployed several times within a test run, for example when a
    * mock deploys a stub of a process that is also deployed for real. The deployment that the
    * instance ran describes it; the other deployments describe a different process under the same
-   * id. The first deployment of the id is used when the one that ran is not known, as a model of
-   * another deployment still describes the process better than no model at all.
+   * id, so no other deployment stands in for it.
    *
    * @param testResults The data source to retrieve process definition data
    * @param processDefinitionId The ID of the process definition to create a model for
@@ -85,7 +82,11 @@ public class ModelCreator {
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "No process definition data found for ID: " + processDefinitionId));
+                        "No process definition data found for ID: "
+                            + processDefinitionId
+                            + (processDefinitionKey == null
+                                ? ""
+                                : " deployed under key: " + processDefinitionKey)));
 
     final BpmnModelInstance modelInstance =
         readModel(processDefinitionData.getXml(), processDefinitionId);
@@ -106,35 +107,36 @@ public class ModelCreator {
    * Selects the deployment that the instance ran, out of the deployments of a process definition
    * id.
    *
+   * <p>Another deployment of the id does not stand in for it: it describes a different process, so
+   * its model would neither explain what the instance ran nor let its elements count as coverage.
+   *
    * @param testResults The data source to retrieve process definition data
    * @param processDefinitionId The ID of the process definition
    * @param processDefinitionKey The key of the deployment that ran, or {@code null} if unknown
-   * @return The deployment that ran, or the first deployment of the id if it is not among them
+   * @return The deployment that ran, or any deployment of the id when the key is unknown
    */
   private static Optional<CoverageProcessDefinitionData> selectDeployment(
       final CoverageTestData testResults,
       final String processDefinitionId,
       final Long processDefinitionKey) {
 
-    final List<CoverageProcessDefinitionData> deploymentsOfId =
+    final Stream<CoverageProcessDefinitionData> deploymentsOfId =
         testResults.getProcessDefinitionData().stream()
             .filter(
                 data ->
                     data.getProcessDefinition()
                         .getProcessDefinitionId()
-                        .equals(processDefinitionId))
-            .collect(Collectors.toList());
+                        .equals(processDefinitionId));
 
-    final Optional<CoverageProcessDefinitionData> deploymentThatRan =
-        deploymentsOfId.stream()
-            .filter(
-                data ->
-                    Objects.equals(
-                        processDefinitionKey,
-                        data.getProcessDefinition().getProcessDefinitionKey()))
-            .findFirst();
+    if (processDefinitionKey == null) {
+      return deploymentsOfId.findFirst();
+    }
 
-    return deploymentThatRan.isPresent() ? deploymentThatRan : deploymentsOfId.stream().findFirst();
+    return deploymentsOfId
+        .filter(
+            data ->
+                processDefinitionKey.equals(data.getProcessDefinition().getProcessDefinitionKey()))
+        .findFirst();
   }
 
   /**
