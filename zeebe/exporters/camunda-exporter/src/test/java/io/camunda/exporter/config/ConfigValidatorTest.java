@@ -73,6 +73,32 @@ public class ConfigValidatorTest {
         .isInstanceOf(ExporterException.class);
   }
 
+  @Test
+  void shouldNotAllowPlusCharacterInIndexPrefixWhenConnectTypeIsOpensearch() {
+    // given - OpenSearch forbids `+` anywhere in an index name, unlike Elasticsearch, which only
+    // forbids it as a leading character (covered by
+    // shouldNotAllowInvalidCharactersAtStartOfIndexPrefix)
+    config.getConnect().setType(ConnectionTypes.OPENSEARCH.getType());
+    config.getConnect().setIndexPrefix("char+prefix");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .hasMessageContaining(
+            "CamundaExporter index.prefix must not contain invalid characters [+] when "
+                + "connect.type is opensearch")
+        .isInstanceOf(ExporterException.class);
+  }
+
+  @Test
+  void shouldAllowPlusCharacterInIndexPrefixWhenConnectTypeIsElasticsearch() {
+    // given
+    config.getConnect().setType(ConnectionTypes.ELASTICSEARCH.getType());
+    config.getConnect().setIndexPrefix("char+prefix");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config)).doesNotThrowAnyException();
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"Prefix", "Test-Prefix", "TEST-PREFIX", "test-Prefix"})
   void shouldNotAllowUppercaseCharactersInIndexPrefix(final String testPrefix) {
