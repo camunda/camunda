@@ -6,8 +6,11 @@ import { resolveBaselineStrategy, resolveCommitsToPrs } from './range';
 import { resolveBaselineRef, walkFirstParent } from './range/walk';
 import type { RenderPrInput } from './render';
 import { render } from './render';
+import { extractSection, parseRefs } from './parser';
 import { GithubGraphqlResolver } from './resolve';
-import { GithubResolver } from './resolver';
+import type { AssociatedPr, ClassifiedRef, PrMetadata } from './resolve';
+import { buildPipelineResolver } from './resolve/warm';
+import { GithubResolver, prioritizeAndCap } from './resolver';
 
 /**
  * The `generate` entrypoint (release time). Wires the steps in order: range
@@ -72,35 +75,113 @@ async function run(): Promise<void> {
   const input = readInputs();
   const graphql = new GithubGraphqlResolver(input.token, input.owner, input.repo);
   const restResolver = new GithubResolver(input.token, input.owner, input.repo);
-  const pipelineResolver: PipelineResolver = {
-    resolveRefs: (refs) => restResolver.resolve(refs),
-    fetchOriginalPull: (number, repo) => restResolver.fetchOriginalPull(number, repo),
-    fetchIssueTitle: (number) => restResolver.fetchIssueTitle(number),
-  };
+  const warmRefs = new Map<number, ClassifiedRef>();
+  const pipelineResolver = buildPipelineResolver(restResolver, warmRefs);
 
   const strategy = resolveBaselineStrategy(input.targetVersion);
   const baseline = resolveBaselineRef(process.cwd(), strategy, input.targetVersion);
   const walked = walkFirstParent(process.cwd(), baseline, input.targetVersion);
   core.info(`Range ${baseline}..${input.targetVersion}: ${walked.length} first-parent commits.`);
 
-  const commitMappings = await graphql.mapCommitsToPrs(walked.map((commit) => commit.sha));
-  const commitsForDedupe = walked.map((commit, i) => ({
-    sha: commit.sha,
-    message: commit.message,
-    associatedPrs: commitMappings[i]?.associatedPrs ?? [],
-  }));
   const rangeShas = new Set(walked.map((commit) => commit.sha));
+
+  // GitHub writes the pull request number into the subject of the commit it
+  // squashes onto the branch, so for nearly every commit the mapping is already
+  // in hand: 3662 of 8.9.0's 3694, and 5486 of 8.8.0's 5514. Asking
+  // `associatedPullRequests` to rediscover it means walking branch history for
+  // every commit — 148 requests for one minor, the slowest phase of the run.
+  //
+  // Derived, never trusted: the candidate is confirmed against the pull
+  // request's own `mergeCommit`, which must BE this commit. That is a stronger
+  // signal than `associatedPullRequests`, which reports every pull request
+  // whose branch history contains the commit and is what once credited a
+  // release to its own merge-back. Anything unconfirmed — no number in the
+  // subject, unknown pull request, no merge commit, or a merge commit that is
+  // some other commit — falls back to the original query, so a wrong guess
+  // cannot become a wrong attribution.
+  const candidateBySha = new Map<string, number>();
+  for (const commit of walked) {
+    const match = /\(#(\d+)\)\s*$/.exec(commit.message);
+    if (match) candidateBySha.set(commit.sha, Number(match[1]));
+  }
+
+  const metaByNumber = new Map<number, PrMetadata>();
+  for (const meta of await graphql.fetchPrMetadata([...new Set(candidateBySha.values())])) {
+    metaByNumber.set(meta.number, meta);
+  }
+
+  const confirmed = new Map<string, AssociatedPr>();
+  const unconfirmed: string[] = [];
+  for (const commit of walked) {
+    const candidate = candidateBySha.get(commit.sha);
+    const meta = candidate === undefined ? undefined : metaByNumber.get(candidate);
+    if (meta && meta.mergeCommitOid === commit.sha) {
+      confirmed.set(commit.sha, {
+        number: meta.number,
+        baseRefName: meta.baseRefName,
+        headRefName: meta.headRefName,
+        mergeCommitOid: meta.mergeCommitOid,
+      });
+    } else {
+      unconfirmed.push(commit.sha);
+    }
+  }
+  core.info(`Mapped ${confirmed.size} commits from their own subject; ${unconfirmed.length} need the commit-to-PR query.`);
+
+  const fallbackBySha = new Map(
+    (await graphql.mapCommitsToPrs(unconfirmed)).map((mapping) => [mapping.sha, mapping.associatedPrs]),
+  );
+  const commitsForDedupe = walked.map((commit) => {
+    const one = confirmed.get(commit.sha);
+    return {
+      sha: commit.sha,
+      message: commit.message,
+      associatedPrs: one ? [one] : (fallbackBySha.get(commit.sha) ?? []),
+    };
+  });
   const { prNumbers, reasons: rangeReasons } = resolveCommitsToPrs(commitsForDedupe, input.releaseBranch, rangeShas);
   for (const reason of rangeReasons) core.warning(reason);
 
-  const metadata = await graphql.fetchPrMetadata(prNumbers);
+  // Only the pull requests the fallback discovered are still unfetched.
+  for (const meta of await graphql.fetchPrMetadata(prNumbers.filter((number) => !metaByNumber.has(number)))) {
+    metaByNumber.set(meta.number, meta);
+  }
+  // Keyed off prNumbers, which is in walk order, so the output stays stable.
+  const metadata = prNumbers.map((number) => metaByNumber.get(number)).filter((meta): meta is PrMetadata => meta !== undefined);
 
-  const attributed: RenderPrInput[] = [];
-  const unattributed: RenderPrInput[] = [];
+  // Every reference the per-pull-request phase can ask about, learned in one
+  // pass. The pipeline resolves the "Related issues" section and, when that
+  // yields nothing, scans the whole body — so pre-warm the union of both,
+  // each capped by the same policy the resolver applies per call.
+  const wanted = new Set<number>();
   for (const pr of metadata) {
-    for (const field of pr.truncatedFields ?? []) {
-      core.warning(`PR #${pr.number}: ${field} exceeded the 20-entry query cap — some entries were not read.`);
+    const section = extractSection(pr.body);
+    for (const refs of [section ? parseRefs(section) : [], parseRefs(pr.body)]) {
+      for (const ref of prioritizeAndCap(refs)) {
+        if (ref.repo === null) wanted.add(ref.number);
+      }
     }
+  }
+  for (const [number, classified] of await graphql.classifyRefs([...wanted])) {
+    warmRefs.set(number, classified);
+  }
+  core.info(`Pre-classified ${warmRefs.size} distinct references in ${Math.ceil(wanted.size / 100)} requests.`);
+
+  /** One pull request's attribution, plus the warnings it produced. Warnings are
+   *  collected rather than emitted so the log stays in walk order no matter
+   *  which worker finishes first — an interleaved audit log is unreadable and,
+   *  worse, differs between runs of the same release. */
+  interface Processed {
+    readonly renderPr: RenderPrInput;
+    readonly bucketed: boolean;
+    readonly warnings: readonly string[];
+  }
+
+  const processOne = async (pr: PrMetadata): Promise<Processed> => {
+    const warnings: string[] = (pr.truncatedFields ?? []).map(
+      (field) => `PR #${pr.number}: ${field} exceeded the 20-entry query cap — some entries were not read.`,
+    );
+
     const output = await processPr(
       pipelineResolver,
       {
@@ -115,34 +196,74 @@ async function run(): Promise<void> {
       { gateRequiredAt: input.gateRequiredAt },
     );
 
-    if (output.anomaly) core.warning(`PR #${output.number}: ${output.anomaly} (${output.attribution.source}).`);
-    for (const reason of output.attribution.reasons) core.warning(`PR #${output.number}: ${reason}`);
-    for (const reason of output.categorization.reasons) core.warning(`PR #${output.number}: ${reason}`);
+    if (output.anomaly) warnings.push(`PR #${output.number}: ${output.anomaly} (${output.attribution.source}).`);
+    for (const reason of output.attribution.reasons) warnings.push(`PR #${output.number}: ${reason}`);
+    for (const reason of output.categorization.reasons) warnings.push(`PR #${output.number}: ${reason}`);
 
-    const renderPr: RenderPrInput = {
-      number: output.number,
-      title: output.title,
-      section: output.categorization.section,
-      visibility: output.categorization.visibility,
-      component: output.categorization.component,
-      breaking: output.categorization.breaking,
-      issueNumbers: output.attribution.issueNumbers,
-      // A backport hop delivers via THIS PR's merge, but the backport bot never
-      // writes a closing keyword — closingIssuesReferences is always empty for
-      // it, so the general signal below would under-report every single one.
-      closesIssueNumbers:
-        output.attribution.deliveryPath === 'backportHop'
-          ? output.attribution.issueNumbers
-          : output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
-      attributionSource: output.attribution.source,
+    return {
+      renderPr: {
+        number: output.number,
+        title: output.title,
+        section: output.categorization.section,
+        visibility: output.categorization.visibility,
+        component: output.categorization.component,
+        breaking: output.categorization.breaking,
+        issueNumbers: output.attribution.issueNumbers,
+        // A backport hop delivers via THIS PR's merge, but the backport bot never
+        // writes a closing keyword — closingIssuesReferences is always empty for
+        // it, so the general signal below would under-report every single one.
+        closesIssueNumbers:
+          output.attribution.deliveryPath === 'backportHop'
+            ? output.attribution.issueNumbers
+            : output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
+        attributionSource: output.attribution.source,
+      },
+      // A `merge`-type PR (section: null) is excluded from every render() output
+      // regardless of attribution, so it must never trip the unattributed guard.
+      bucketed:
+        output.categorization.section !== null &&
+        (output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed'),
+      warnings,
     };
+  };
 
-    // A `merge`-type PR (section: null) is excluded from every render() output
-    // regardless of attribution, so it must never trip the unattributed guard.
-    const bucketed =
-      output.categorization.section !== null &&
-      (output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed');
-    (bucketed ? unattributed : attributed).push(renderPr);
+  // Each pull request's work is independent and almost entirely waiting on the
+  // network, so a serial loop spends a minor release's runtime idle: 8.9.0 took
+  // ~35 minutes here. Results land in index-keyed slots, never pushed, because
+  // completion order is arbitrary while the release notes' order must not be.
+  //
+  // ponytail: 3 workers, not more. `resolve()` already runs up to CONCURRENCY
+  // refs per pull request, so the two limits multiply. Six here — about 30
+  // requests in flight — tripped GitHub's SECONDARY rate limit on 8.9.0, which
+  // fires on concurrency rather than volume: the primary counter still read
+  // 5000/5000 when it hit. The ceiling is burst width, not quota, so the fix is
+  // fewer in flight rather than a bigger budget. Raising this wants one shared
+  // limit across both levels, not a bigger number here.
+  const WORKERS = 3;
+  const processed = new Array<Processed | undefined>(metadata.length);
+  let cursor = 0;
+  try {
+    await Promise.all(
+      Array.from({ length: Math.min(WORKERS, metadata.length) }, async () => {
+        for (let index = cursor++; index < metadata.length; index = cursor++) {
+          processed[index] = await processOne(metadata[index]!);
+        }
+      }),
+    );
+  } finally {
+    // Deferring warnings to keep them in walk order must not mean losing them
+    // when the run dies partway: a failed run's diagnostics are the ones most
+    // worth reading.
+    for (const entry of processed) {
+      if (entry) for (const warning of entry.warnings) core.warning(warning);
+    }
+  }
+
+  const attributed: RenderPrInput[] = [];
+  const unattributed: RenderPrInput[] = [];
+  for (const entry of processed) {
+    if (!entry) continue;
+    (entry.bucketed ? unattributed : attributed).push(entry.renderPr);
   }
 
   const result = render(attributed, unattributed, {

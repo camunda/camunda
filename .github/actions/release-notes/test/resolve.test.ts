@@ -64,6 +64,9 @@ function prNode(overrides: Record<string, unknown> = {}): Record<string, unknown
     title: 'fix: x',
     body: '',
     mergedAt: '2026-01-01T00:00:00Z',
+    baseRefName: 'main',
+    headRefName: 'feature-1',
+    mergeCommit: { oid: 'merge-1' },
     author: { login: 'someone', __typename: 'User' },
     labels: { nodes: [] },
     closingIssuesReferences: { nodes: [] },
@@ -295,4 +298,153 @@ test('a status that never clears throws at the retry cap, naming the cause', asy
   const fetchImpl = fakeHttp([{ status: 502 }], calls);
   await assert.rejects(() => resolver(fetchImpl).mapCommitsToPrs(['abc']), /HTTP 502.*past 5 attempts/);
   assert.equal(calls.count, 5);
+});
+
+test('a 200 carrying a truncated body is retried, not thrown — GitHub answers that way under load', async () => {
+  // given a first response whose body is not valid JSON at all
+  let call = 0;
+  const fetchImpl = (async () => {
+    call++;
+    return call === 1
+      ? new Response('', { status: 200 })
+      : new Response(JSON.stringify(mergedPage), { status: 200 });
+  }) as typeof fetch;
+
+  // when
+  const result = await resolver(fetchImpl).mapCommitsToPrs(['abc123']);
+
+  // then the run survives it, exactly as it survives a 502
+  assert.equal(call, 2);
+  assert.deepEqual(result[0]!.associatedPrs, [expectedAssoc(1, 'main')]);
+});
+
+test('a commit batch too costly for GitHub is bisected until it succeeds, never dropped', async () => {
+  // given an endpoint that 502s any commit query above two aliases — the shape
+  // of the real failure, where retrying the same size can never clear it
+  const sizes: number[] = [];
+  const fetchImpl = (async (_url: string, init: RequestInit) => {
+    const body = JSON.parse(init.body as string) as { query: string };
+    const aliases = (body.query.match(/c\d+: object/g) ?? []).length;
+    sizes.push(aliases);
+    if (aliases > 2) return new Response('gateway timeout', { status: 502 });
+    const data: Record<string, unknown> = {};
+    for (let i = 0; i < aliases; i++) {
+      data[`c${i}`] = {
+        associatedPullRequests: { nodes: [{ number: 1, baseRefName: 'main', state: 'MERGED' }], pageInfo: { hasNextPage: false, endCursor: null } },
+      };
+    }
+    return new Response(JSON.stringify({ data: { repository: data } }), { status: 200 });
+  }) as typeof fetch;
+
+  // when eight commits are mapped
+  const shas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  const result = await resolver(fetchImpl).mapCommitsToPrs(shas);
+
+  // then every commit still comes back, and the client did shrink its requests
+  assert.equal(result.length, shas.length);
+  assert.deepEqual(
+    result.map((mapping) => mapping.sha),
+    shas,
+  );
+  assert.ok(Math.min(...sizes) <= 2, `expected the client to bisect below 3 aliases, saw ${sizes.join(',')}`);
+});
+
+test('the two batch queries keep their own sizes — commits 25, PR metadata 100', async () => {
+  // Pins them apart: sharing one size is what made every range over 100
+  // commits fail on its first request.
+  const commitCalls: Call[] = [];
+  // Every alias the query asks for must come back, or the response is
+  // malformed and the client is right to reject it rather than bisect.
+  const commitPageFor = (n: number) => ({
+    data: {
+      repository: Object.fromEntries(
+        Array.from({ length: n }, (_, i) => [
+          `c${i}`,
+          { associatedPullRequests: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } } },
+        ]),
+      ),
+    },
+  });
+  const sizedFetch = (async (url: string, init: RequestInit) => {
+    const body = JSON.parse(init.body as string) as { query: string; variables: Record<string, unknown> };
+    commitCalls.push({ url, body });
+    const aliases = (body.query.match(/c\d+: object/g) ?? []).length;
+    return new Response(JSON.stringify(commitPageFor(aliases)), { status: 200 });
+  }) as typeof fetch;
+  await resolver(sizedFetch).mapCommitsToPrs(Array.from({ length: 60 }, (_, i) => `sha${i}`));
+  assert.equal(commitCalls.length, 3, '60 commits should be three requests of 25');
+
+  const prCalls: Call[] = [];
+  const metaPage = { data: { repository: Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`pr${i}`, { number: i, title: 't', body: '', mergedAt: '2026-01-01T00:00:00Z', baseRefName: 'main', headRefName: `f${i}`, mergeCommit: { oid: `m${i}` }, author: { login: 'a' }, labels: { nodes: [] }, closingIssuesReferences: { nodes: [] } }])) } };
+  await resolver(fakeFetch([metaPage], prCalls)).fetchPrMetadata(Array.from({ length: 60 }, (_, i) => i));
+  assert.equal(prCalls.length, 1, '60 PRs should be a single request');
+});
+
+test('a socket-level rejection on the GraphQL client is retried too, then bisectable', async () => {
+  let calls = 0;
+  const fetchImpl = (async () => {
+    calls++;
+    if (calls === 1) throw new TypeError('fetch failed');
+    return new Response(JSON.stringify(mergedPage), { status: 200 });
+  }) as typeof fetch;
+
+  const result = await resolver(fetchImpl).mapCommitsToPrs(['abc123']);
+
+  assert.equal(calls, 2);
+  assert.deepEqual(result[0]!.associatedPrs, [expectedAssoc(1, 'main')]);
+});
+
+test('classifyRefs maps the union exactly as the REST classifier does: issue, pull request, missing', async () => {
+  const page = {
+    data: {
+      repository: {
+        r0: { __typename: 'Issue', title: 'A real issue' },
+        r1: { __typename: 'PullRequest', title: 'A pull request' },
+        r2: null,
+      },
+    },
+  };
+  const got = await resolver(fakeFetch([page])).classifyRefs([10, 20, 30]);
+
+  assert.deepEqual(got.get(10), { target: 'issue', title: 'A real issue' });
+  assert.deepEqual(got.get(20), { target: 'pullRequest', title: 'A pull request' });
+  // Neither an issue nor a PR is what a REST 404 means for the same number.
+  assert.deepEqual(got.get(30), { target: 'missing', title: null });
+});
+
+test('classifyRefs batches at 100 per request, not one per reference', async () => {
+  const calls: Call[] = [];
+  const sized = (async (url: string, init: RequestInit) => {
+    const body = JSON.parse(init.body as string) as { query: string };
+    calls.push({ url, body: body as never });
+    const n = (body.query.match(/r\d+: issueOrPullRequest/g) ?? []).length;
+    const data: Record<string, unknown> = {};
+    for (let i = 0; i < n; i++) data[`r${i}`] = { __typename: 'Issue', title: 't' };
+    return new Response(JSON.stringify({ data: { repository: data } }), { status: 200 });
+  }) as typeof fetch;
+
+  const got = await resolver(sized).classifyRefs(Array.from({ length: 250 }, (_, i) => i + 1));
+  assert.equal(got.size, 250);
+  assert.equal(calls.length, 3, '250 references should be three requests, not 250');
+});
+
+test('one dead reference does not fail the whole batch — GitHub reports it as an error, not a null', async () => {
+  // issueOrPullRequest raises NOT_FOUND for a number that does not exist while
+  // still returning every alias that resolved. Failing the batch would make a
+  // single deleted issue fatal to a release; 8.9.0's range carries 136.
+  const page = {
+    data: { repository: { r0: { __typename: 'Issue', title: 'Alive' }, r1: null } },
+    errors: [{ type: 'NOT_FOUND', message: 'Could not resolve to an issue or pull request with the number of 99999999.' }],
+  };
+  const got = await resolver(fakeFetch([page])).classifyRefs([10, 99999999]);
+  assert.deepEqual(got.get(10), { target: 'issue', title: 'Alive' });
+  assert.deepEqual(got.get(99999999), { target: 'missing', title: null });
+});
+
+test('a NON-NotFound GraphQL error still fails loudly, even where absences are tolerated', async () => {
+  const page = {
+    data: { repository: { r0: null } },
+    errors: [{ type: 'FORBIDDEN', message: 'Resource not accessible' }],
+  };
+  await assert.rejects(() => resolver(fakeFetch([page])).classifyRefs([10]), /Resource not accessible/);
 });

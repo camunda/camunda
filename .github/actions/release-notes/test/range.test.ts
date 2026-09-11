@@ -222,3 +222,19 @@ test('a MERGED PR with no merge commit is kept, with its unverified membership s
   assert.deepEqual(r.prNumbers, [4242]);
   assert.ok(r.reasons.some((line) => line.includes('#4242') && line.includes('unverified')));
 });
+
+test('a candidate PR whose merge commit is some OTHER commit is not accepted for this one', () => {
+  // The verification that makes deriving the number from the commit subject
+  // safe: a subject can legitimately end in "(#N)" without N having produced
+  // that commit, so the claim is checked against the PR's own merge commit.
+  const commits = [
+    {
+      sha: 'real',
+      message: 'fix: something (#500)',
+      associatedPrs: [assoc(500, 'stable/8.9', { mergeCommitOid: 'a-different-commit' })],
+    },
+  ];
+  const r = resolveCommitsToPrs(commits, 'stable/8.9', walked('real'));
+  assert.deepEqual(r.prNumbers, []);
+  assert.ok(r.reasons.some((line) => line.includes('#500') && line.includes('did not merge inside this range')));
+});

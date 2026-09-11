@@ -225,7 +225,9 @@ const pipeline_1 = __nccwpck_require__(782);
 const range_1 = __nccwpck_require__(53);
 const walk_1 = __nccwpck_require__(600);
 const render_1 = __nccwpck_require__(624);
+const parser_1 = __nccwpck_require__(883);
 const resolve_1 = __nccwpck_require__(940);
+const warm_1 = __nccwpck_require__(579);
 const resolver_1 = __nccwpck_require__(306);
 /** `owner/repo` from the runner's own environment. Empty halves would reach
  *  GraphQL and come back as an opaque schema error, so they fail here instead. */
@@ -258,32 +260,93 @@ async function run() {
     const input = readInputs();
     const graphql = new resolve_1.GithubGraphqlResolver(input.token, input.owner, input.repo);
     const restResolver = new resolver_1.GithubResolver(input.token, input.owner, input.repo);
-    const pipelineResolver = {
-        resolveRefs: (refs) => restResolver.resolve(refs),
-        fetchOriginalPull: (number, repo) => restResolver.fetchOriginalPull(number, repo),
-        fetchIssueTitle: (number) => restResolver.fetchIssueTitle(number),
-    };
+    const warmRefs = new Map();
+    const pipelineResolver = (0, warm_1.buildPipelineResolver)(restResolver, warmRefs);
     const strategy = (0, range_1.resolveBaselineStrategy)(input.targetVersion);
     const baseline = (0, walk_1.resolveBaselineRef)(process.cwd(), strategy, input.targetVersion);
     const walked = (0, walk_1.walkFirstParent)(process.cwd(), baseline, input.targetVersion);
     core.info(`Range ${baseline}..${input.targetVersion}: ${walked.length} first-parent commits.`);
-    const commitMappings = await graphql.mapCommitsToPrs(walked.map((commit) => commit.sha));
-    const commitsForDedupe = walked.map((commit, i) => ({
-        sha: commit.sha,
-        message: commit.message,
-        associatedPrs: commitMappings[i]?.associatedPrs ?? [],
-    }));
     const rangeShas = new Set(walked.map((commit) => commit.sha));
+    // GitHub writes the pull request number into the subject of the commit it
+    // squashes onto the branch, so for nearly every commit the mapping is already
+    // in hand: 3662 of 8.9.0's 3694, and 5486 of 8.8.0's 5514. Asking
+    // `associatedPullRequests` to rediscover it means walking branch history for
+    // every commit — 148 requests for one minor, the slowest phase of the run.
+    //
+    // Derived, never trusted: the candidate is confirmed against the pull
+    // request's own `mergeCommit`, which must BE this commit. That is a stronger
+    // signal than `associatedPullRequests`, which reports every pull request
+    // whose branch history contains the commit and is what once credited a
+    // release to its own merge-back. Anything unconfirmed — no number in the
+    // subject, unknown pull request, no merge commit, or a merge commit that is
+    // some other commit — falls back to the original query, so a wrong guess
+    // cannot become a wrong attribution.
+    const candidateBySha = new Map();
+    for (const commit of walked) {
+        const match = /\(#(\d+)\)\s*$/.exec(commit.message);
+        if (match)
+            candidateBySha.set(commit.sha, Number(match[1]));
+    }
+    const metaByNumber = new Map();
+    for (const meta of await graphql.fetchPrMetadata([...new Set(candidateBySha.values())])) {
+        metaByNumber.set(meta.number, meta);
+    }
+    const confirmed = new Map();
+    const unconfirmed = [];
+    for (const commit of walked) {
+        const candidate = candidateBySha.get(commit.sha);
+        const meta = candidate === undefined ? undefined : metaByNumber.get(candidate);
+        if (meta && meta.mergeCommitOid === commit.sha) {
+            confirmed.set(commit.sha, {
+                number: meta.number,
+                baseRefName: meta.baseRefName,
+                headRefName: meta.headRefName,
+                mergeCommitOid: meta.mergeCommitOid,
+            });
+        }
+        else {
+            unconfirmed.push(commit.sha);
+        }
+    }
+    core.info(`Mapped ${confirmed.size} commits from their own subject; ${unconfirmed.length} need the commit-to-PR query.`);
+    const fallbackBySha = new Map((await graphql.mapCommitsToPrs(unconfirmed)).map((mapping) => [mapping.sha, mapping.associatedPrs]));
+    const commitsForDedupe = walked.map((commit) => {
+        const one = confirmed.get(commit.sha);
+        return {
+            sha: commit.sha,
+            message: commit.message,
+            associatedPrs: one ? [one] : (fallbackBySha.get(commit.sha) ?? []),
+        };
+    });
     const { prNumbers, reasons: rangeReasons } = (0, range_1.resolveCommitsToPrs)(commitsForDedupe, input.releaseBranch, rangeShas);
     for (const reason of rangeReasons)
         core.warning(reason);
-    const metadata = await graphql.fetchPrMetadata(prNumbers);
-    const attributed = [];
-    const unattributed = [];
+    // Only the pull requests the fallback discovered are still unfetched.
+    for (const meta of await graphql.fetchPrMetadata(prNumbers.filter((number) => !metaByNumber.has(number)))) {
+        metaByNumber.set(meta.number, meta);
+    }
+    // Keyed off prNumbers, which is in walk order, so the output stays stable.
+    const metadata = prNumbers.map((number) => metaByNumber.get(number)).filter((meta) => meta !== undefined);
+    // Every reference the per-pull-request phase can ask about, learned in one
+    // pass. The pipeline resolves the "Related issues" section and, when that
+    // yields nothing, scans the whole body — so pre-warm the union of both,
+    // each capped by the same policy the resolver applies per call.
+    const wanted = new Set();
     for (const pr of metadata) {
-        for (const field of pr.truncatedFields ?? []) {
-            core.warning(`PR #${pr.number}: ${field} exceeded the 20-entry query cap — some entries were not read.`);
+        const section = (0, parser_1.extractSection)(pr.body);
+        for (const refs of [section ? (0, parser_1.parseRefs)(section) : [], (0, parser_1.parseRefs)(pr.body)]) {
+            for (const ref of (0, resolver_1.prioritizeAndCap)(refs)) {
+                if (ref.repo === null)
+                    wanted.add(ref.number);
+            }
         }
+    }
+    for (const [number, classified] of await graphql.classifyRefs([...wanted])) {
+        warmRefs.set(number, classified);
+    }
+    core.info(`Pre-classified ${warmRefs.size} distinct references in ${Math.ceil(wanted.size / 100)} requests.`);
+    const processOne = async (pr) => {
+        const warnings = (pr.truncatedFields ?? []).map((field) => `PR #${pr.number}: ${field} exceeded the 20-entry query cap — some entries were not read.`);
         const output = await (0, pipeline_1.processPr)(pipelineResolver, {
             number: pr.number,
             title: pr.title,
@@ -294,32 +357,73 @@ async function run() {
             closingIssuesReferences: pr.closingIssuesReferences,
         }, { gateRequiredAt: input.gateRequiredAt });
         if (output.anomaly)
-            core.warning(`PR #${output.number}: ${output.anomaly} (${output.attribution.source}).`);
+            warnings.push(`PR #${output.number}: ${output.anomaly} (${output.attribution.source}).`);
         for (const reason of output.attribution.reasons)
-            core.warning(`PR #${output.number}: ${reason}`);
+            warnings.push(`PR #${output.number}: ${reason}`);
         for (const reason of output.categorization.reasons)
-            core.warning(`PR #${output.number}: ${reason}`);
-        const renderPr = {
-            number: output.number,
-            title: output.title,
-            section: output.categorization.section,
-            visibility: output.categorization.visibility,
-            component: output.categorization.component,
-            breaking: output.categorization.breaking,
-            issueNumbers: output.attribution.issueNumbers,
-            // A backport hop delivers via THIS PR's merge, but the backport bot never
-            // writes a closing keyword — closingIssuesReferences is always empty for
-            // it, so the general signal below would under-report every single one.
-            closesIssueNumbers: output.attribution.deliveryPath === 'backportHop'
-                ? output.attribution.issueNumbers
-                : output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
-            attributionSource: output.attribution.source,
+            warnings.push(`PR #${output.number}: ${reason}`);
+        return {
+            renderPr: {
+                number: output.number,
+                title: output.title,
+                section: output.categorization.section,
+                visibility: output.categorization.visibility,
+                component: output.categorization.component,
+                breaking: output.categorization.breaking,
+                issueNumbers: output.attribution.issueNumbers,
+                // A backport hop delivers via THIS PR's merge, but the backport bot never
+                // writes a closing keyword — closingIssuesReferences is always empty for
+                // it, so the general signal below would under-report every single one.
+                closesIssueNumbers: output.attribution.deliveryPath === 'backportHop'
+                    ? output.attribution.issueNumbers
+                    : output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
+                attributionSource: output.attribution.source,
+            },
+            // A `merge`-type PR (section: null) is excluded from every render() output
+            // regardless of attribution, so it must never trip the unattributed guard.
+            bucketed: output.categorization.section !== null &&
+                (output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed'),
+            warnings,
         };
-        // A `merge`-type PR (section: null) is excluded from every render() output
-        // regardless of attribution, so it must never trip the unattributed guard.
-        const bucketed = output.categorization.section !== null &&
-            (output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed');
-        (bucketed ? unattributed : attributed).push(renderPr);
+    };
+    // Each pull request's work is independent and almost entirely waiting on the
+    // network, so a serial loop spends a minor release's runtime idle: 8.9.0 took
+    // ~35 minutes here. Results land in index-keyed slots, never pushed, because
+    // completion order is arbitrary while the release notes' order must not be.
+    //
+    // ponytail: 3 workers, not more. `resolve()` already runs up to CONCURRENCY
+    // refs per pull request, so the two limits multiply. Six here — about 30
+    // requests in flight — tripped GitHub's SECONDARY rate limit on 8.9.0, which
+    // fires on concurrency rather than volume: the primary counter still read
+    // 5000/5000 when it hit. The ceiling is burst width, not quota, so the fix is
+    // fewer in flight rather than a bigger budget. Raising this wants one shared
+    // limit across both levels, not a bigger number here.
+    const WORKERS = 3;
+    const processed = new Array(metadata.length);
+    let cursor = 0;
+    try {
+        await Promise.all(Array.from({ length: Math.min(WORKERS, metadata.length) }, async () => {
+            for (let index = cursor++; index < metadata.length; index = cursor++) {
+                processed[index] = await processOne(metadata[index]);
+            }
+        }));
+    }
+    finally {
+        // Deferring warnings to keep them in walk order must not mean losing them
+        // when the run dies partway: a failed run's diagnostics are the ones most
+        // worth reading.
+        for (const entry of processed) {
+            if (entry)
+                for (const warning of entry.warnings)
+                    core.warning(warning);
+        }
+    }
+    const attributed = [];
+    const unattributed = [];
+    for (const entry of processed) {
+        if (!entry)
+            continue;
+        (entry.bucketed ? unattributed : attributed).push(entry.renderPr);
     }
     const result = (0, render_1.render)(attributed, unattributed, {
         version: input.targetVersion,
@@ -442,6 +546,7 @@ exports.summary = new Summary();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GITHUB_API = void 0;
 exports.fetchWithRetry = fetchWithRetry;
+exports.fetchJsonWithRetry = fetchJsonWithRetry;
 exports.githubHeaders = githubHeaders;
 exports.repoApiUrl = repoApiUrl;
 exports.GITHUB_API = 'https://api.github.com';
@@ -456,14 +561,31 @@ const MAX_RETRY_AFTER_MS = 60_000;
  *  `retry-after` (a 403 without one is a real permission failure and must not
  *  be retried). 5xx is a transient backend failure. Mirrors resolve/index.ts's
  *  GraphQL-side retryableStatus — same throttle shapes, REST transport. */
-function retryableStatus(res) {
+async function retryableStatus(res) {
     if (res.status === 429 || res.status >= 500)
         return true;
-    return res.status === 403 && res.headers.get('retry-after') !== null;
+    if (res.status !== 403)
+        return false;
+    if (res.headers.get('retry-after') !== null)
+        return true;
+    if (res.headers.get('x-ratelimit-remaining') === '0')
+        return true;
+    // GitHub's SECONDARY rate limit — the one that fires on concurrency rather
+    // than on volume — answers 403 and often names itself only in the body, with
+    // the primary counter still reading full. Indistinguishable from a permission
+    // failure by status alone, so read the body of a 403 (from a clone, leaving
+    // the caller's stream intact) before deciding this job cannot proceed.
+    try {
+        return /rate limit/i.test(await res.clone().text());
+    }
+    catch {
+        return false;
+    }
 }
-/** The server's own wait, when it names one, else exponential backoff. */
+/** The server's own wait, when it names one, else exponential backoff. `null`
+ *  when the request never produced a response at all. */
 function backoffMs(res, attempt) {
-    const header = res.headers.get('retry-after');
+    const header = res?.headers.get('retry-after') ?? null;
     const seconds = header === null ? NaN : Number(header);
     if (Number.isFinite(seconds) && seconds >= 0)
         return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
@@ -477,13 +599,51 @@ function backoffMs(res, attempt) {
  */
 async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
     for (let attempt = 0;; attempt++) {
-        const res = await fetch(url, init);
-        if (res.ok || !retryableStatus(res))
+        let res;
+        try {
+            res = await fetch(url, init);
+        }
+        catch (error) {
+            // `fetch` REJECTS on a socket-level failure — connection reset, socket
+            // hang-up, DNS blip — rather than returning a Response, so none of the
+            // status handling below ever sees it. Left unguarded this aborts the
+            // whole job on one blip, which over the thousands of calls a minor
+            // release makes is close to certain.
+            if (attempt >= MAX_RETRIES - 1) {
+                const detail = error instanceof Error ? error.message : String(error);
+                throw new Error(`GitHub API request never completed past ${MAX_RETRIES} attempts (${url}): ${detail}`);
+            }
+            await sleepImpl(backoffMs(null, attempt));
+            continue;
+        }
+        if (res.ok || !(await retryableStatus(res)))
             return res;
         if (attempt >= MAX_RETRIES - 1) {
             throw new Error(`GitHub API kept returning HTTP ${res.status} past ${MAX_RETRIES} attempts (${url}).`);
         }
         await sleepImpl(backoffMs(res, attempt));
+    }
+}
+/**
+ * `fetchWithRetry` plus the body read, so a truncated or empty body is retried
+ * like any other transient instead of throwing a SyntaxError past the retry
+ * loop. GitHub answers that way under load exactly as readily as it answers
+ * 502, and parsing outside the loop meant one such body killed the run.
+ */
+async function fetchJsonWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+    for (let attempt = 0;; attempt++) {
+        const res = await fetchWithRetry(url, init, sleepImpl);
+        if (!res.ok)
+            return { ok: false, status: res.status };
+        try {
+            return { ok: true, status: res.status, data: (await res.json()) };
+        }
+        catch {
+            if (attempt >= MAX_RETRIES - 1) {
+                throw new Error(`GitHub API returned an unparseable body past ${MAX_RETRIES} attempts (${url}).`);
+            }
+            await sleepImpl(backoffMs(null, attempt));
+        }
     }
 }
 /** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
@@ -1127,14 +1287,39 @@ function render(prs, unattributed, options) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GithubGraphqlResolver = exports.RATE_LIMITED_ERROR_TYPE = void 0;
+exports.GithubGraphqlResolver = exports.RetriesExhaustedError = exports.RATE_LIMITED_ERROR_TYPE = void 0;
 const github_1 = __nccwpck_require__(631);
 const GRAPHQL_URL = 'https://api.github.com/graphql';
-/** Bounds query cost and request count against a burst of thousands of commits (V7: 50-100 PRs/request). */
-const BATCH_SIZE = 100;
+/**
+ * The two batch queries differ by an order of magnitude in server-side cost, so
+ * they cannot share one size. `associatedPullRequests` makes GitHub walk branch
+ * history per commit; `pullRequest(number:)` is a direct node lookup.
+ *
+ * Measured against camunda/camunda: 100 commit aliases return HTTP 502 after
+ * ~11s (a server-side timeout, not a throttle — it fails identically on retry),
+ * 50 take 7.2s, 25 take 3.3s. 25 is also marginally faster per commit overall,
+ * so the margin costs nothing. A shared size of 100 meant every range longer
+ * than 100 commits — every alpha and every minor — died on its first request.
+ */
+const COMMIT_BATCH_SIZE = 25;
+/** 100 aliases return in 0.9s: a direct lookup, not a history walk. */
+const PR_METADATA_BATCH_SIZE = 100;
 /** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
 const MAX_RETRIES = 5;
 exports.RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
+/** GitHub reports "no such node" as a field-level error, not a null field, and
+ *  still returns the rest of the batch alongside it. */
+const NOT_FOUND_ERROR_TYPE = 'NOT_FOUND';
+/**
+ * Thrown when a request failed every retry for a reason that a smaller request
+ * might survive — a timeout, a 5xx, an unparseable body. Distinct from a
+ * malformed-but-well-formed-HTTP response, which fails identically at any size:
+ * bisecting one of those turns a single clear error into a storm of requests
+ * and buries it.
+ */
+class RetriesExhaustedError extends Error {
+}
+exports.RetriesExhaustedError = RetriesExhaustedError;
 /** Longest `retry-after` this honours; beyond it the job should fail rather
  *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
 const MAX_RETRY_AFTER_MS = 60_000;
@@ -1145,10 +1330,23 @@ const MAX_RETRY_AFTER_MS = 60_000;
  * be retried). 5xx is separate — a transient GraphQL backend failure, routine
  * on the multi-alias batch queries this client sends.
  */
-function retryableStatus(res) {
+async function retryableStatus(res) {
     if (res.status === 429 || res.status >= 500)
         return true;
-    return res.status === 403 && res.headers.get('retry-after') !== null;
+    if (res.status !== 403)
+        return false;
+    if (res.headers.get('retry-after') !== null)
+        return true;
+    if (res.headers.get('x-ratelimit-remaining') === '0')
+        return true;
+    // The secondary rate limit fires on concurrency, answers 403, and names
+    // itself only in the body while the primary counter still reads full.
+    try {
+        return /rate limit/i.test(await res.clone().text());
+    }
+    catch {
+        return false;
+    }
 }
 /** The server's own wait, when it names one, else exponential backoff. */
 function backoffMs(res, attempt) {
@@ -1203,15 +1401,82 @@ class GithubGraphqlResolver {
     }
     async mapCommitsToPrs(shas) {
         const results = [];
-        for (let i = 0; i < shas.length; i += BATCH_SIZE) {
-            results.push(...(await this.mapCommitBatch(shas.slice(i, i + BATCH_SIZE))));
+        for (let i = 0; i < shas.length; i += COMMIT_BATCH_SIZE) {
+            results.push(...(await this.mapCommitBatchBisecting(shas.slice(i, i + COMMIT_BATCH_SIZE))));
         }
         return results;
     }
+    /**
+     * ponytail: bisect on failure rather than tuning COMMIT_BATCH_SIZE harder.
+     * The 502 this guards against is GitHub timing out on query cost, which
+     * retrying an identical request can never clear — the request has to get
+     * smaller. The constant is calibrated against today's repository; history
+     * grows, and one commit tied to many pull requests costs more than its
+     * neighbours, so treat the constant as the fast path and this as the ceiling.
+     * Floors at a single commit, where a failure is real and must surface.
+     */
+    async mapCommitBatchBisecting(shas) {
+        try {
+            return await this.mapCommitBatch(shas);
+        }
+        catch (error) {
+            // Only a retry-exhausted failure can plausibly be fixed by asking for
+            // less. A malformed response fails the same at every size, so bisecting
+            // it would replace one clear error with a storm of requests.
+            if (!(error instanceof RetriesExhaustedError) || shas.length <= 1)
+                throw error;
+            const half = Math.ceil(shas.length / 2);
+            return [
+                ...(await this.mapCommitBatchBisecting(shas.slice(0, half))),
+                ...(await this.mapCommitBatchBisecting(shas.slice(half))),
+            ];
+        }
+    }
+    /**
+     * Classifies same-repo reference numbers in bulk. The REST classifier this
+     * replaces costs one round trip per reference — 1738 of them for one minor,
+     * a burst wide enough to trip GitHub's secondary rate limit, which fires on
+     * concurrency rather than volume. `issueOrPullRequest` answers the same
+     * question for 100 numbers in a single request.
+     *
+     * Cross-repo references are deliberately NOT handled here: the REST path
+     * classifies those without an API call at all, so leaving them to it costs
+     * nothing and avoids restating the same-repo rule in a second place.
+     */
+    async classifyRefs(numbers) {
+        const out = new Map();
+        for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
+            const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
+            const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
+        repository(owner: $owner, name: $name) {
+          ${batch
+                .map((_, j) => `r${j}: issueOrPullRequest(number: $n${j}) { __typename ... on Issue { title } ... on PullRequest { title } }`)
+                .join('\n')}
+        }
+      }`;
+            const variables = { owner: this.owner, name: this.repo };
+            batch.forEach((number, j) => (variables[`n${j}`] = number));
+            const repository = await this.requestRepository(query, variables, true);
+            batch.forEach((number, j) => {
+                const node = repository[`r${j}`];
+                // A number that resolves to neither is missing — deleted, transferred,
+                // or never existed — exactly what a REST 404 means for the same number.
+                if (!node) {
+                    out.set(number, { target: 'missing', title: null });
+                    return;
+                }
+                out.set(number, {
+                    target: node.__typename === 'PullRequest' ? 'pullRequest' : 'issue',
+                    title: node.title ?? null,
+                });
+            });
+        }
+        return out;
+    }
     async fetchPrMetadata(numbers) {
         const results = [];
-        for (let i = 0; i < numbers.length; i += BATCH_SIZE) {
-            results.push(...(await this.fetchMetadataBatch(numbers.slice(i, i + BATCH_SIZE))));
+        for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
+            results.push(...(await this.fetchMetadataBatch(numbers.slice(i, i + PR_METADATA_BATCH_SIZE))));
         }
         return results;
     }
@@ -1267,7 +1532,7 @@ class GithubGraphqlResolver {
         const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
         ${numbers
-            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`)
+            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt baseRefName headRefName mergeCommit { oid } author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`)
             .join('\n')}
       }
     }`;
@@ -1284,6 +1549,9 @@ class GithubGraphqlResolver {
             return {
                 number: assertField(pr.number, `number on PR #${number}`),
                 title: assertField(pr.title, `title on PR #${number}`),
+                baseRefName: assertField(pr.baseRefName, `baseRefName on PR #${number}`),
+                headRefName: assertField(pr.headRefName, `headRefName on PR #${number}`),
+                mergeCommitOid: pr.mergeCommit?.oid ?? null,
                 body: pr.body ?? '',
                 authorLogin: normalizeAuthorLogin(pr.author),
                 mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
@@ -1293,32 +1561,66 @@ class GithubGraphqlResolver {
             };
         });
     }
-    async requestRepository(query, variables) {
-        const data = await this.request(query, variables);
+    async requestRepository(query, variables, tolerateNotFound = false) {
+        const data = await this.request(query, variables, tolerateNotFound);
         return assertField(data.repository, 'repository');
     }
     /** One GraphQL request, retrying a throttled or transiently failed one with
      *  backoff. Never logs the token, headers, or the raw response. */
-    async request(query, variables) {
+    async request(query, variables, tolerateNotFound = false) {
         for (let attempt = 0;; attempt++) {
-            const res = await this.fetchImpl(GRAPHQL_URL, {
-                method: 'POST',
-                headers: (0, github_1.githubHeaders)(this.token, { json: true }),
-                body: JSON.stringify({ query, variables }),
-            });
+            // `fetch` rejects outright on a socket-level failure instead of
+            // returning a Response, so every status check below is bypassed. Treated
+            // as retry-exhausted rather than a plain Error so a batch that keeps
+            // failing can still be bisected — an oversized query is one of the ways
+            // a connection gets dropped.
+            let res;
+            try {
+                res = await this.fetchImpl(GRAPHQL_URL, {
+                    method: 'POST',
+                    headers: (0, github_1.githubHeaders)(this.token, { json: true }),
+                    body: JSON.stringify({ query, variables }),
+                });
+            }
+            catch (error) {
+                const detail = error instanceof Error ? error.message : String(error);
+                await this.waitForRetry(null, attempt, `request never completed: ${detail}`);
+                continue;
+            }
             if (!res.ok) {
-                if (!retryableStatus(res))
+                if (!(await retryableStatus(res)))
                     throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
                 await this.waitForRetry(res, attempt, `HTTP ${res.status}`);
                 continue;
             }
-            const payload = (await res.json());
+            // An overloaded GraphQL endpoint answers 200 with an empty or truncated
+            // body as readily as it answers 502. That arrives here as a SyntaxError
+            // from JSON.parse, which is exactly as transient as the status codes
+            // above — and, left unguarded, escaped the retry loop and killed a run
+            // three minutes in.
+            let payload;
+            try {
+                payload = (await res.json());
+            }
+            catch {
+                await this.waitForRetry(res, attempt, 'unparseable response body');
+                continue;
+            }
             if (payload.errors?.some((error) => error.type === exports.RATE_LIMITED_ERROR_TYPE)) {
                 await this.waitForRetry(null, attempt, 'secondary rate limit');
                 continue;
             }
-            if (payload.errors?.length) {
-                throw new Error(`GitHub GraphQL error: ${payload.errors.map((error) => error.message).join('; ')}`);
+            // A batch asking about many numbers will contain some that no longer
+            // exist, and GitHub answers that with a NOT_FOUND error per alias while
+            // still returning every alias that did resolve. Failing the whole batch
+            // on one dead reference would make a single deleted issue fatal to the
+            // release — 8.9.0's range carries 136 of them. Only the caller that
+            // expects absences opts in; a missing commit SHA stays fatal.
+            const fatal = tolerateNotFound
+                ? (payload.errors ?? []).filter((error) => error.type !== NOT_FOUND_ERROR_TYPE)
+                : (payload.errors ?? []);
+            if (fatal.length) {
+                throw new Error(`GitHub GraphQL error: ${fatal.map((error) => error.message).join('; ')}`);
             }
             return assertField(payload.data, 'data');
         }
@@ -1327,12 +1629,73 @@ class GithubGraphqlResolver {
      *  one place that decides a retry loop is over. */
     async waitForRetry(res, attempt, cause) {
         if (attempt >= MAX_RETRIES - 1) {
-            throw new Error(`GitHub GraphQL request kept failing (${cause}) past ${MAX_RETRIES} attempts.`);
+            throw new RetriesExhaustedError(`GitHub GraphQL request kept failing (${cause}) past ${MAX_RETRIES} attempts.`);
         }
         await this.sleepImpl(backoffMs(res, attempt));
     }
 }
 exports.GithubGraphqlResolver = GithubGraphqlResolver;
+
+
+/***/ }),
+
+/***/ 579:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.buildPipelineResolver = buildPipelineResolver;
+const resolver_1 = __nccwpck_require__(306);
+/**
+ * The per-pull-request phase's view of the API, served from classifications
+ * learned in bulk beforehand so the phase itself makes almost no requests.
+ * Anything not pre-warmed — a cross-repo ref, or one the bulk pass missed —
+ * falls through to the REST resolver unchanged.
+ */
+function buildPipelineResolver(rest, warmRefs) {
+    /** Only same-repo refs are pre-warmed: the REST path classifies a cross-repo
+     *  one without an API call, so there is nothing to save and nothing to
+     *  restate about what counts as same-repo. */
+    const sameRepoNumber = (ref) => (ref.repo === null ? ref.number : null);
+    return {
+        async resolveRefs(refs) {
+            // The SAME cap and priority the REST resolver applies — imported, not
+            // restated, so the two can never disagree about which refs survive.
+            const capped = (0, resolver_1.prioritizeAndCap)(refs);
+            const cold = capped.filter((ref) => {
+                const number = sameRepoNumber(ref);
+                return number === null || !warmRefs.has(number);
+            });
+            const fresh = cold.length > 0 ? await rest.resolve(cold) : [];
+            // Keyed by the ref's own position, not by its number: a body may cite the
+            // same issue twice — #42118 cites #41769 at index 1 and again at 2680 —
+            // and keying by number collapses the two, leaving one occurrence carrying
+            // the other's index. Sorting by index then silently reorders the refs,
+            // which changes which issue is "first" and so which issue the entry is
+            // grouped and titled by.
+            const freshByPosition = new Map(fresh.map((ref) => [ref.index, ref]));
+            return capped
+                .map((ref) => {
+                const number = sameRepoNumber(ref);
+                const warm = number === null ? undefined : warmRefs.get(number);
+                if (warm)
+                    return { ...ref, target: warm.target, crossRepo: false };
+                // Never invent an answer: anything not pre-warmed came back from the
+                // REST path above, and if even that has no verdict the ref is left to
+                // the same 'missing' the resolver itself would report.
+                return freshByPosition.get(ref.index) ?? { ...ref, target: 'missing', crossRepo: ref.repo !== null };
+            })
+                .sort((first, second) => first.index - second.index);
+        },
+        fetchOriginalPull: (number, repo) => rest.fetchOriginalPull(number, repo),
+        fetchIssueTitle: async (number) => {
+            const warm = warmRefs.get(number);
+            // A pre-warmed classification already carries the title, so the separate
+            // per-issue fetch this phase used to make is redundant for those.
+            return warm ? warm.title : rest.fetchIssueTitle(number);
+        },
+    };
+}
 
 
 /***/ }),
@@ -1343,6 +1706,7 @@ exports.GithubGraphqlResolver = GithubGraphqlResolver;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubResolver = void 0;
+exports.prioritizeAndCap = prioritizeAndCap;
 const github_1 = __nccwpck_require__(631);
 /** A PR body can carry at most this many refs to the API. A legitimate PR never
  *  needs more than a handful — this bounds the worst case (a body stuffed with
@@ -1375,6 +1739,19 @@ function priorityOf(ref) {
  * the generator processes PRs serially, so one un-retried 5xx or secondary
  * rate limit anywhere in that chain would otherwise abort the whole job.
  */
+/**
+ * The refs a caller will actually classify: closing/backport refs sorted ahead
+ * of merely-informational ones so that when the cap has to drop something, it
+ * drops the least consequential first.
+ *
+ * Exported so a caller that pre-resolves in bulk applies the SAME policy. A
+ * copied `MAX_REFS` would let the gate cap at one number and the generator at
+ * another the moment either changed — the gate/generator divergence C4 exists
+ * to prevent. One function, two callers, no constant to copy.
+ */
+function prioritizeAndCap(refs) {
+    return [...refs].sort((first, second) => priorityOf(first) - priorityOf(second)).slice(0, MAX_REFS);
+}
 class GithubResolver {
     token;
     owner;
@@ -1407,8 +1784,7 @@ class GithubResolver {
         // original order, so when the cap below has to drop something, it drops
         // the least consequential refs first instead of whichever came last in
         // the body.
-        const prioritized = [...refs].sort((first, second) => priorityOf(first) - priorityOf(second));
-        const capped = prioritized.slice(0, MAX_REFS);
+        const capped = prioritizeAndCap(refs);
         const cache = new Map();
         const classifyCached = (ref) => {
             const key = `${ref.repo ?? ''}#${ref.number}`;
@@ -1469,14 +1845,12 @@ class GithubResolver {
      * can never evaluate an out-of-date body.
      */
     async fetchPull(number) {
-        const res = await (0, github_1.fetchWithRetry)(`${this.repoUrl}/pulls/${number}`, {
-            headers: this.headers,
-        }, this.sleepImpl);
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/pulls/${number}`, { headers: this.headers }, this.sleepImpl);
         if (res.status === 404)
             return null;
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
-        const data = (await res.json());
+        const { data } = res;
         return {
             body: data.body ?? '',
             title: data.title ?? '',
@@ -1493,17 +1867,14 @@ class GithubResolver {
         const cached = this.titlesByNumber.get(number);
         if (cached !== undefined)
             return cached;
-        const res = await (0, github_1.fetchWithRetry)(`${this.repoUrl}/issues/${number}`, {
-            headers: this.headers,
-        }, this.sleepImpl);
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/issues/${number}`, { headers: this.headers }, this.sleepImpl);
         if (res.status === 404) {
             this.titlesByNumber.set(number, null);
             return null;
         }
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
-        const data = (await res.json());
-        const title = data.title ?? null;
+        const title = res.data.title ?? null;
         this.titlesByNumber.set(number, title);
         return title;
     }
@@ -1518,16 +1889,13 @@ class GithubResolver {
     async classify(ref) {
         if (this.isCrossRepo(ref.repo))
             return { target: 'missing', crossRepo: true };
-        const res = await (0, github_1.fetchWithRetry)(`${this.repoUrl}/issues/${ref.number}`, {
-            headers: this.headers,
-        }, this.sleepImpl);
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/issues/${ref.number}`, { headers: this.headers }, this.sleepImpl);
         if (res.status === 404)
             return { target: 'missing', crossRepo: false };
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
-        const data = (await res.json());
-        this.titlesByNumber.set(ref.number, data.title ?? null);
-        return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
+        this.titlesByNumber.set(ref.number, res.data.title ?? null);
+        return { target: res.data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
     }
 }
 exports.GithubResolver = GithubResolver;

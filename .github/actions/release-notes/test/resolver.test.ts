@@ -135,3 +135,72 @@ test('a title never classified is still fetched, and a 404 is remembered as abse
   assert.equal(await resolver.fetchIssueTitle(999999), null);
   assert.equal(calls, 1, 'a known-missing issue is not re-requested');
 });
+
+test('a socket-level fetch rejection is retried, not fatal — fetch throws instead of returning a Response', async () => {
+  // The failure that killed a 20-minute 8.9.0 run: undici rejects on a
+  // connection reset, so every status check downstream is bypassed.
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    if (calls === 1) throw new TypeError('fetch failed');
+    return new Response(JSON.stringify({ title: 'Real issue title' }), { status: 200 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda', async () => {});
+  const title = await resolver.fetchIssueTitle(100);
+
+  assert.equal(calls, 2, 'the rejected attempt must be retried');
+  assert.equal(title, 'Real issue title');
+});
+
+test('a truncated REST body is retried rather than throwing a SyntaxError past the retry loop', async () => {
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return calls === 1
+      ? new Response('', { status: 200 })
+      : new Response(JSON.stringify({ title: 'Recovered' }), { status: 200 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda', async () => {});
+  assert.equal(await resolver.fetchIssueTitle(101), 'Recovered');
+  assert.equal(calls, 2);
+});
+
+test('a fetch that never stops rejecting eventually surfaces, naming the cause', async () => {
+  globalThis.fetch = (async () => {
+    throw new TypeError('fetch failed');
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda', async () => {});
+  await assert.rejects(() => resolver.fetchIssueTitle(102), /never completed past 5 attempts.*fetch failed/s);
+});
+
+test('a secondary-rate-limit 403 is retried — it names itself only in the body, unlike a permission 403', async () => {
+  // The failure that killed the parallelised 8.9.0 run. GitHub's secondary
+  // limit fires on concurrency, answers 403, and leaves the primary counter
+  // reading full, so status alone cannot tell it from "you may not read this".
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return calls === 1
+      ? new Response(JSON.stringify({ message: 'API rate limit exceeded for user ID 102810391.' }), { status: 403 })
+      : new Response(JSON.stringify({ title: 'Recovered' }), { status: 200 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda', async () => {});
+  assert.equal(await resolver.fetchIssueTitle(200), 'Recovered');
+  assert.equal(calls, 2, 'the throttled attempt must be retried, not surfaced as a permission failure');
+});
+
+test('a genuine permission 403 still fails immediately, never retried', async () => {
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return new Response(JSON.stringify({ message: 'Resource not accessible by integration' }), { status: 403 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda', async () => {});
+  await assert.rejects(() => resolver.fetchIssueTitle(201), /GitHub API 403/);
+  assert.equal(calls, 1, 'a permission failure must surface at once, not after five retries');
+});
