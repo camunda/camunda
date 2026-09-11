@@ -10,6 +10,8 @@ from .cli import run
 from .errors import ReportError
 from .queries import BUILTIN_QUERY_FILES
 from .queries import DEFAULT_QUERIES
+from .queries import QueriesDocument
+from .queries import Query
 from .queries import load_query_document
 from .queries import parse_query_file
 from .queries import query_substitutions
@@ -20,6 +22,8 @@ from .queries import validate_query_document
 __all__ = [
     "BUILTIN_QUERY_FILES",
     "DEFAULT_QUERIES",
+    "QueriesDocument",
+    "Query",
     "ReportError",
     "build_parser",
     "load_query_document",

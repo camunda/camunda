@@ -3,6 +3,7 @@ name = "load-test-report"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
+  "pydantic==2.12.5",
   "pyyaml==6.0.3",
 ]
 

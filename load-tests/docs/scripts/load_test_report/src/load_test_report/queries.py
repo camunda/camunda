@@ -1,11 +1,15 @@
 """Query-file loading, substitution, and validation."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+
+from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import ValidationError
+from pydantic import model_validator
 
 from .errors import ReportError
 
@@ -14,6 +18,31 @@ BUILTIN_QUERY_FILES = {
     "camunda": "report-queries.yaml",
     "stable-87": "report-queries-stable-87.yaml",
 }
+
+
+class Query(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    key: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    header: str = Field(min_length=1)
+    query: str = Field(min_length=1)
+    value_label: str | None = Field(default=None, alias="valueLabel", min_length=1)
+
+
+class QueriesDocument(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    queries: list[Query] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def reject_duplicate_keys(self) -> "QueriesDocument":
+        seen_keys: set[str] = set()
+        for query in self.queries:
+            if query.key in seen_keys:
+                raise ValueError(f"duplicate query key: {query.key}")
+            seen_keys.add(query.key)
+        return self
 
 
 def resolve_queries_file(script_dir: Path, queries: str) -> Path:
@@ -33,12 +62,9 @@ def resolve_queries_file(script_dir: Path, queries: str) -> Path:
     )
 
 
-def load_query_document(queries_file: Path, substitutions: Mapping[str, str]) -> Mapping[str, Any]:
+def load_query_document(queries_file: Path, substitutions: Mapping[str, str]) -> QueriesDocument:
     parsed = parse_query_file(queries_file, substitutions)
-    if not isinstance(parsed, Mapping):
-        raise ReportError(f"queries file {queries_file} must contain a JSON/YAML object.")
-    validate_query_document(parsed, f"queries file {queries_file}")
-    return parsed
+    return validate_query_document(parsed, f"queries file {queries_file}")
 
 
 def parse_query_file(queries_file: Path, substitutions: Mapping[str, str]) -> Any:
@@ -59,45 +85,13 @@ def parse_query_file(queries_file: Path, substitutions: Mapping[str, str]) -> An
         raise ReportError(f"Could not parse queries file {queries_file}: {error}") from error
 
 
-def validate_query_document(
-    query_document: Mapping[str, Any], source: str = "query document"
-) -> list[Mapping[str, Any]]:
-    queries = query_document.get("queries")
-    if not isinstance(queries, list) or not queries:
-        raise ReportError(f"{source} must contain a non-empty 'queries' list.")
-
-    validated_queries: list[Mapping[str, Any]] = []
-    seen_keys: set[str] = set()
-    for index, query in enumerate(queries):
-        if not isinstance(query, Mapping):
-            raise ReportError(f"query entry {index} must be an object.")
-
-        key = query.get("key")
-        if not isinstance(key, str) or not key:
-            raise ReportError("each query entry must have a non-empty string key.")
-        if key in seen_keys:
-            raise ReportError(f"duplicate query key: {key}")
-        seen_keys.add(key)
-
-        has_query = is_non_empty_string(query.get("query"))
-        has_value = is_non_empty_string(query.get("value"))
-        if has_query == has_value:
-            raise ReportError(f"query entry {key} must set exactly one of query or value.")
-
-        value_label = query.get("valueLabel")
-        if value_label is not None:
-            if not is_non_empty_string(value_label):
-                raise ReportError(f"query entry {key} has an invalid valueLabel.")
-            if not has_query:
-                raise ReportError(f"query entry {key} sets valueLabel without query.")
-
-        validated_queries.append(query)
-
-    return validated_queries
-
-
-def is_non_empty_string(value: Any) -> bool:
-    return isinstance(value, str) and len(value) > 0
+def validate_query_document(query_document: Any, source: str = "query document") -> QueriesDocument:
+    if isinstance(query_document, QueriesDocument):
+        return query_document
+    try:
+        return QueriesDocument.model_validate(query_document)
+    except ValidationError as error:
+        raise ReportError(f"{source} is invalid: {error}") from error
 
 
 def query_substitutions(options: Any) -> Mapping[str, str]:

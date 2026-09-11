@@ -14,10 +14,13 @@
 
 queries:
   - key: namespace
-    description: The load-test namespace this report was generated for. A literal value substituted from
-      the namespace argument, not queried from Prometheus.
+    description: The load-test namespace this report was generated for. Read from the namespace label over
+      the full report window, so a namespace that has already been deleted still resolves as long as the
+      metric series hasn't expired from Prometheus's retention.
     header: Namespace
-    value: $NAMESPACE
+    valueLabel: namespace
+    query: |-
+      count by (namespace) (max_over_time(kube_pod_info{namespace="$NAMESPACE"}[$DURATION_S]))
 
   - key: docker_image
     description: Deployed Docker image tag(s), read from the image label rather than a value field. Extracted
@@ -394,15 +397,19 @@ queries:
 
   - key: data_availability_p50_seconds
     description: Camunda 8.7 does not emit the REST API based data-availability measurement, so the stable
-      8.7 report keeps this column as a literal N/A.
+      8.7 report keeps this column as N/A.
     header: DataAvail p50 (sec)
-    value: N/A
+    valueLabel: report_value
+    query: |-
+      label_replace(vector(1), "report_value", "N/A", "__name__", ".*")
 
   - key: data_availability_p99_seconds
     description: Camunda 8.7 does not emit the REST API based data-availability measurement, so the stable
-      8.7 report keeps this column as a literal N/A.
+      8.7 report keeps this column as N/A.
     header: DataAvail p99 (sec)
-    value: N/A
+    valueLabel: report_value
+    query: |-
+      label_replace(vector(1), "report_value", "N/A", "__name__", ".*")
 
   - key: response_latency_p50_ms
     description: 'Time from sending a request in the client to receiving a response (p50, in milliseconds).
