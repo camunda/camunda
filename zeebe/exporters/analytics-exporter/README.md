@@ -19,7 +19,11 @@ shown below.
 
 ### Prerequisites
 
-The exporter requires a Camunda license key and a cluster ID.
+The exporter requires a Camunda license key and a cluster ID. Both are resolved
+automatically from the broker context — see
+[cluster id](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#cluster)
+and [license key](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#licensing).
+No additional setup is needed.
 
 **License key.** The exporter authenticates to the Camunda analytics endpoint using your
 Camunda 8 Self-Managed license key. The raw key is never sent over the network — it is
@@ -34,25 +38,7 @@ deduplication key used by the analytics backend (`camunda.cluster.id` +
 `camunda.partition.id` + `camunda.log.position`). The value should be stable per cluster —
 changing it makes existing events look like they come from a different cluster.
 
-How the exporter obtains these values depends on your Camunda version:
-
-- **Camunda 8.10 and later:** [cluster id](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#cluster)
-  and [license key](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#licensing)
-  values are resolved automatically from the broker context. No additional setup is needed.
-- **Camunda 8.9 and earlier:** the broker does not expose the license key or cluster ID
-  through the context API. Provide them via environment variables on every broker:
-  - `CAMUNDA_LICENSE_KEY` — the Camunda license key.
-  - `ZEEBE_BROKER_CLUSTER_CLUSTERID` — the cluster identifier. This is the broker's
-    standard cluster-ID setting (`zeebe.broker.cluster.clusterId`); if it is already
-    configured on the broker, the analytics exporter picks it up automatically.
-
-  Without these variables, the exporter fails to start on 8.9 and earlier.
-
 ### YAML configuration
-
-Two configuration styles are supported.
-
-**Unified configuration (Camunda 8.9 and later, recommended):**
 
 ```yaml
 camunda:
@@ -74,34 +60,10 @@ camunda:
             - optional
 ```
 
-**Legacy configuration (Camunda 8.8 and earlier):**
-
-```yaml
-zeebe:
-  broker:
-    exporters:
-      analytics:
-        className: io.camunda.exporter.analytics.AnalyticsExporter
-        jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
-        args:
-          endpoint: https://telemetry.camunda.io
-          pushInterval: PT5M
-          maxQueueSize: 2048
-          maxBatchSize: 512
-          httpConnectTimeout: PT3S
-          httpRequestTimeout: PT3S
-          httpMaxRetryAttempts: 3
-          samplingRate: 1.0
-          categories:
-            - contractual
-            - optional
-```
-
 ### Environment variables
 
-The same settings can be provided via environment variables.
-
-**Unified (8.9+):** `CAMUNDA_DATA_EXPORTERS_ANALYTICS_*`
+The same settings can be provided via environment variables, prefixed
+`CAMUNDA_DATA_EXPORTERS_ANALYTICS_*`:
 
 ```sh
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
@@ -116,20 +78,45 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ```
 
-**Legacy (8.8 and earlier):** `ZEEBE_BROKER_EXPORTERS_ANALYTICS_*`
+### Configuring as an external JAR
 
-```sh
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://telemetry.camunda.io
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPCONNECTTIMEOUT=PT3S
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPREQUESTTIMEOUT=PT3S
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPMAXRETRYATTEMPTS=3
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
+**This section applies to Camunda 8.10 and later only.** The examples above assume the
+exporter class is already on the broker's classpath, which is the case from 8.10 onward,
+where the exporter ships in-tree. If you need to load a different build of the exporter jar
+than the in-tree one — for example, a locally built jar with a fix or customization — point
+`jarPath` at it under the classic `zeebe.broker.exporters.<name>` configuration, the same way
+you would for any external Zeebe exporter:
+
+```yaml
+zeebe:
+  broker:
+    exporters:
+      analytics:
+        className: io.camunda.exporter.analytics.AnalyticsExporter
+        jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
+        args:
+          endpoint: https://telemetry.camunda.io
+          categories:
+            - contractual
+            - optional
 ```
+
+**Not supported on Camunda 8.9 and earlier.** The exporter module was intentionally reverted
+from both the `stable/8.8` and `stable/8.9` branches (#59298) and is not tested against those
+brokers. It also depends on the broker context exposing the license key
+(`AnalyticsExporter#resolveLicenseKey`, which throws if `Context#getLicenseKey()` returns
+null or blank, with no environment-variable fallback of its own) — older brokers that don't
+populate that context field will fail the exporter at startup. Loading a self-built jar on
+8.9 or earlier is expected to hit that failure; running the exporter there would be a product
+decision to make separately, not something this doc enables.
+
+The classic style also has an environment-variable form (`ZEEBE_BROKER_EXPORTERS_ANALYTICS_*`
+with `CLASSNAME`/`JARPATH`), for anyone already using that style elsewhere. The unified
+`camunda.data.exporters.<name>` style (used in the sections above) supports `jar-path`
+directly too, with the same `args`. Either way, this section only covers configuring the
+broker directly; it makes no claim about whether or how a particular deployment tool (an
+operator, a Helm chart, etc.) exposes `jarPath`/`jar-path` for you — check that tool's own
+documentation.
 
 ### Verify the exporter is running
 
@@ -145,18 +132,18 @@ Analytics exporter configured: endpoint=https://telemetry.camunda.io, clusterId=
 All options live under `args`. Defaults are tuned for typical Self-Managed deployments and
 rarely need to be changed.
 
-|          Option           |   Type   |                                                                                                  Description                                                                                                  |            Default             |
-|---------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|
-| `endpoint`                | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                                 | `https://telemetry.camunda.io` |
-| `push-interval`           | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                               | `PT5M`                         |
-| `heartbeat-interval`      | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                                  | `PT10M`                        |
-| `max-queue-size`          | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                              | `2048`                         |
-| `max-batch-size`          | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                                      | `512`                          |
-| `http-connect-timeout`    | duration | Timeout for the OTLP HTTP client's TCP/TLS connect phase (logs and metrics).                                                                                                                                  | `PT3S`                         |
-| `http-request-timeout`    | duration | Per-attempt timeout for a whole OTLP export request (logs and metrics), from connect through response. Bounds how long the OTel SDK's batch worker thread can be blocked on a slow or unreachable endpoint.   | `PT3S`                         |
-| `http-max-retry-attempts` | int      | Maximum attempts per OTLP export request (the first attempt plus retries), with the OTel SDK's default backoff (1s initial, 5s max, 1.5x multiplier) between them.                                            | `3`                            |
-| `sampling-rate`           | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                               | `1.0`                          |
-| `categories`              | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted or empty, all categories are enabled. | `[contractual, optional]`      |
+|          Option           |   Type   |                                                                                                                                                                                                                                                                        Description                                                                                                                                                                                                                                                                        |            Default             |
+|---------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|
+| `endpoint`                | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `https://telemetry.camunda.io` |
+| `push-interval`           | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                                                                                                                                                                                                                                                                                                                                                                           | `PT5M`                         |
+| `heartbeat-interval`      | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `PT10M`                        |
+| `max-queue-size`          | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `2048`                         |
+| `max-batch-size`          | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `512`                          |
+| `http-connect-timeout`    | duration | Timeout for the OTLP HTTP client's TCP/TLS connect phase (logs and metrics).                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `PT3S`                         |
+| `http-request-timeout`    | duration | Per-attempt timeout for a whole OTLP export request (logs and metrics), from connect through response. Bounds how long the OTel SDK's batch worker thread can be blocked on a slow or unreachable endpoint.                                                                                                                                                                                                                                                                                                                                               | `PT3S`                         |
+| `http-max-retry-attempts` | int      | Maximum attempts per OTLP export request (the first attempt plus retries), with the OTel SDK's default backoff (1s initial, 5s max, 1.5x multiplier) between them.                                                                                                                                                                                                                                                                                                                                                                                        | `3`                            |
+| `sampling-rate`           | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                                                                                                                                                                                                                                                                                                                                                                           | `1.0`                          |
+| `categories`              | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted, both categories are enabled (the default). **An explicit empty list (`categories: []`) disables all categories** — no per-category events are registered — rather than falling back to "all". The periodic `camunda.telemetry.heartbeat` event is not gated by `categories` at all and keeps being sent regardless of this setting; see [Known limitations](#known-limitations). | `[contractual, optional]`      |
 
 ## What data is exported
 
@@ -398,6 +385,12 @@ of these attributes as a composite key.
 - **Fixed event set per category.** The exporter emits a small, hardcoded set of event
   types. The `categories` option controls which categories of events are exported, but
   individual event types within a category cannot be toggled independently.
+- **`categories: []` disables events, not the heartbeat.** Setting `categories` to an
+  explicit empty list registers no per-category handlers, so no
+  `PROCESS_INSTANCE`/`USER_TASK`/etc. events are exported — but the periodic
+  `camunda.telemetry.heartbeat` event is scheduled independently of `categories` and is
+  still sent. To silence the exporter entirely, disable it (remove its declaration from
+  the broker configuration) rather than emptying `categories`.
 
 ## How it works
 
