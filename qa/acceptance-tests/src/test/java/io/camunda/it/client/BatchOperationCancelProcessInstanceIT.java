@@ -13,6 +13,7 @@ import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -119,5 +120,58 @@ public class BatchOperationCancelProcessInstanceIT {
     assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
         .containsExactly(BatchOperationItemState.COMPLETED);
     assertThat(itemKeys).containsExactlyInAnyOrder(activeKeys.toArray(Long[]::new));
+  }
+
+  @Test
+  void shouldCancelSuspendedProcessInstancesWithBatch() {
+    final List<Long> activeProcessInstanceKeys =
+        activeProcessInstances.stream().map(ProcessInstanceEvent::getProcessInstanceKey).toList();
+
+    // given
+    camundaClient
+        .newCreateBatchOperationCommand()
+        .processInstanceSuspend()
+        .filter(f -> f.processInstanceKey(k -> k.in(activeProcessInstanceKeys)))
+        .send()
+        .join();
+    waitForProcessInstancesToBeSuspended(
+        camundaClient,
+        f -> f.variables(getScopedVariables(testScopeId)),
+        activeProcessInstances.size());
+
+    // when
+    final var result =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .processInstanceCancel()
+            .filter(b -> b.variables(getScopedVariables(testScopeId)))
+            .send()
+            .join();
+    final var batchOperationKey = result.getBatchOperationKey();
+
+    // then
+    assertThat(result).isNotNull();
+
+    waitForBatchOperationWithCorrectTotalCount(
+        camundaClient, batchOperationKey, activeProcessInstances.size());
+    waitForBatchOperationCompleted(
+        camundaClient, batchOperationKey, activeProcessInstances.size(), 0);
+
+    for (final Long key : activeProcessInstanceKeys) {
+      waitForProcessInstanceToBeTerminated(camundaClient, key);
+    }
+
+    final var itemsObj =
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .filter(f -> f.batchOperationKey(batchOperationKey))
+            .send()
+            .join();
+    final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();
+
+    assertThat(itemsObj.items()).hasSize(activeProcessInstances.size());
+    assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
+        .containsExactly(BatchOperationItemState.COMPLETED);
+    assertThat(itemKeys).containsExactlyInAnyOrder(activeProcessInstanceKeys.toArray(Long[]::new));
   }
 }
