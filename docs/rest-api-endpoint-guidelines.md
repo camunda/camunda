@@ -1455,11 +1455,11 @@ property of `R`. Project the property three ways on the compile-time value of
 `F`, and propagate the projection outward through every enclosing type (e.g.
 `JobActivationResult.jobs[] → ActivatedJobResult.leaseToken`):
 
-|                            `F` at the call site                             |                                               Projection of the annotated property                                                |
-|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| the literal `V`                                                             | **present** — required, non-null                                                                                                  |
+|                                                               `F` at the call site                                                                |                                                                                              Projection of the annotated property                                                                                               |
+|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| the literal `V`                                                                                                                                   | **present** — required, non-null                                                                                                                                                                                                |
 | any other compile-time literal ≠ `V` — `false` / `null` / omitted, or a non-matching string/number (e.g. `mode: "summary"` when `equals: "full"`) | **absent** — omitted for nominal languages (Go, Rust, C#); typed `?: never` for JS/TS; for Python (no `?: never` equivalent) modelled via an overload whose return type omits the property (e.g. a `TypedDict` without the key) |
-| not a compile-time literal (dynamic value of `F`'s type, variable)          | base schema unchanged — property stays nullable (preserves backward compatibility)                                                |
+| not a compile-time literal (dynamic value of `F`'s type, variable)                                                                                | base schema unchanged — property stays nullable (preserves backward compatibility)                                                                                                                                              |
 
 Method surface derived from the marker (stated generally in terms of the
 request field `F` and its match literal `V`; the `withLease: true` / boolean
