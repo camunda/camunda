@@ -56,6 +56,37 @@ If this is set, the next login opens the same page the user logged out from, rat
 For troubleshooting, the logout origin URL is stored in the `CamundaOidcLogoutSuccessHandler` class, where it is read from `request.getHeader("referer")`.
 Propagation of the `logout_hint` parameter is also handled in this class.
 
+### Disabling the post-logout redirect
+
+By default, RP-initiated logout asks the IdP to send the browser back to the host's `/post-logout`
+route afterwards, by submitting it as `post_logout_redirect_uri`. Turn that off with:
+
+```
+CAMUNDA_SECURITY_AUTHENTICATION_OIDC_POSTLOGOUTREDIRECTENABLED=false
+```
+
+Or in `.yaml`:
+
+```yaml
+camunda:
+  security:
+    authentication:
+      oidc:
+        post-logout-redirect-enabled: false
+```
+
+Do this when the IdP cannot have the resulting URL registered as an allowed post-logout redirect.
+Auth0, for example, matches `post_logout_redirect_uri` against its *Allowed Logout URLs* exactly and
+supports wildcards only in the subdomain position (`https://*.example.com`), never in the path — so a
+deployment served under a per-cluster or per-tenant path prefix, such as
+`https://<host>/<clusterId>/post-logout`, has no entry that can ever match it, and Auth0 rejects the
+whole end-session request with `invalid_request` instead of logging the user out.
+
+This is orthogonal to `idp-logout-enabled`: that decides whether to contact the IdP at all, this
+decides only whether to ask it for a redirect back. Disabling it still terminates the IdP session —
+the IdP renders its own logged-out page rather than returning the browser to `PostLogoutController`,
+so the user is not sent back to the page they logged out from.
+
 ## RP (Relying Party)-initiated logout troubleshooting
 
 Both `PostLogoutController` and `CamundaOidcLogoutSuccessHandler` emit logs at the `TRACE` level.
