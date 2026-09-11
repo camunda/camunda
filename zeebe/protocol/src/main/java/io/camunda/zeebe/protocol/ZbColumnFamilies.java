@@ -343,12 +343,19 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // means the process instance has a suspension marker (either SUSPENDED or still draining as
   // RESUMING) — the marker is only removed once resuming has fully completed
   SUSPENDED_PROCESS_INSTANCES(156, PARTITION_LOCAL),
-  // commands diverted while their target process instance is suspended, keyed by a
-  // KeyGenerator-issued bufferedCommandKey -> BufferedCommandRecord
-  BUFFERED_PROCESS_INSTANCE_COMMANDS(157, PARTITION_LOCAL),
-  // secondary index: (processInstanceKey, bufferedCommandKey) → ∅; supports FIFO prefix iteration
-  // of buffered commands for a process instance (bufferedCommandKey is KeyGenerator-issued and
-  // therefore monotonically increasing, so key order == FIFO insertion order)
+  /**
+   * @deprecated commands diverted while their target process instance is suspended used to be keyed
+   *     here by a flat bufferedCommandKey, with {@link
+   *     #BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY} as a secondary FIFO index
+   *     pointing into it. Merged into that single column family, which now stores the record
+   *     directly, since every caller already had the process instance key on hand.
+   */
+  @Deprecated
+  DEPRECATED_BUFFERED_PROCESS_INSTANCE_COMMANDS(157, PARTITION_LOCAL),
+  // (processInstanceKey, bufferedCommandKey) -> BufferedCommandRecord; the composite key supports
+  // FIFO prefix iteration of buffered commands for a process instance (bufferedCommandKey is
+  // KeyGenerator-issued and therefore monotonically increasing, so key order == FIFO insertion
+  // order), and also stores the record directly so a visit/drain never needs a second point lookup
   BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL),
 
   // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a

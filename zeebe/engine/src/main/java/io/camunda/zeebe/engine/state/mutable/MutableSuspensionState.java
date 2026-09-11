@@ -30,11 +30,13 @@ public interface MutableSuspensionState extends SuspensionState {
   void bufferCommand(long bufferedCommandKey, BufferedCommandRecord command);
 
   /**
-   * Removes a single buffered command entry. No-op if it does not exist. The process instance it
-   * belongs to is read from the stored record itself, mirroring {@link #bufferCommand} — there is
-   * no separate parameter to desync from it.
+   * Removes a single buffered command entry. No-op if it does not exist. Callers must pass the same
+   * processInstanceKey the command was buffered under (available on every caller's own event, since
+   * a command can only be looked up in the first place by visiting or draining its process
+   * instance's buffer) — a mismatched key is a no-op, not a desync, since there is a single entry
+   * keyed by both.
    */
-  void removeBufferedCommand(long bufferedCommandKey);
+  void removeBufferedCommand(long processInstanceKey, long bufferedCommandKey);
 
   /** Removes all remaining buffered commands for the process instance. */
   void clearBufferedCommands(long processInstanceKey);
