@@ -231,12 +231,13 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: daily-load-test-metrics-${{ needs.benchmark-data.outputs.benchmark }}
+          path: data
       - name: Download flamegraph artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true # profiling is best-effort; a run with no flamegraphs still persists its metrics
         with:
           pattern: flamegraph-*
-          path: flamegraphs
+          path: data/flamegraphs
           # No merge-multiple: every artifact contains identically-named files (flamegraph-cpu.html
           # etc.), so each needs its own per-artifact-name folder to avoid one pod's report
           # overwriting another's.
@@ -258,16 +259,8 @@ jobs:
           timeout_minutes: 2
           shell: bash
           command: |
-            set -euo pipefail
-            shopt -s nullglob
-            prefix="gs://${GCS_LOAD_TEST_RESULTS_BUCKET}/automated/daily/stress/${BENCHMARK}"
-            # metrics-*.json only exists per-variant when that variant's collect-metrics ran;
-            # variants.json is always written by the merge step above, even when empty.
-            metrics_files=(metrics-*.json variants.json)
-            gcloud storage cp "${metrics_files[@]}" "${prefix}/"
-            if [ -d flamegraphs ] && [ -n "$(ls -A flamegraphs)" ]; then
-              gcloud storage cp -r flamegraphs/* "${prefix}/flamegraphs/"
-            fi
+            target="gs://${GCS_LOAD_TEST_RESULTS_BUCKET}/automated/daily/stress/${BENCHMARK}/"
+            gcloud storage cp "data" "${target}"
       - name: Observe build status
         if: always()
         continue-on-error: true
