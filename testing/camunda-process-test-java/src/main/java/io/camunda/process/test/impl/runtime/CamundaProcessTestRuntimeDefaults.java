@@ -48,6 +48,8 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final String DEFAULT_COVERAGE_REPORT_DIRECTORY = "target/coverage-report";
 
+  public static final int DEFAULT_QUERY_PAGE_LIMIT = 100;
+
   private static final ContainerRuntimePropertiesUtil PROPERTIES_UTIL =
       ContainerRuntimePropertiesUtil.readProperties();
 
@@ -103,6 +105,8 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final AssertionProperties ASSERTION_PROPERTIES =
       PROPERTIES_UTIL.getAssertionProperties();
+
+  public static final int QUERY_PAGE_LIMIT = PROPERTIES_UTIL.getQueryPageLimit();
 
   public static final JudgeProperties JUDGE_PROPERTIES = PROPERTIES_UTIL.getJudgeProperties();
   public static final SemanticSimilarityProperties SEMANTIC_SIMILARITY_PROPERTIES =
