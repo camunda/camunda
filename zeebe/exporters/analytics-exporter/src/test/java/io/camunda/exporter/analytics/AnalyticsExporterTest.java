@@ -272,8 +272,8 @@ class AnalyticsExporterTest {
   @Test
   void shouldNotLogConfiguredDuringValidationOnlyConfigure() {
     // given — mirrors ExporterRepository.validate(): a throwaway context with the default
-    // partitionId=0, used purely to check that the configuration loads. configure() must not
-    // log a production-shaped "configured" line for this dry run.
+    // partitionId=0, used purely to check that the configuration loads. configure() alone never
+    // logs the production-shaped "configured" line — it is only logged from open().
     final var context =
         new ExporterTestContext()
             .setConfiguration(
@@ -290,13 +290,16 @@ class AnalyticsExporterTest {
   }
 
   @Test
-  void shouldLogConfiguredWhenARealPartitionIsConfigured() {
-    // given — a context shaped like a live partition exporter (partitionId >= START_PARTITION_ID)
+  void shouldNotLogConfiguredDuringHistoryPurge() {
+    // given — mirrors ExporterHistoryPurger.purgeExporter(): a real partition id but an empty
+    // clusterId, configure() is called but open() never is. This must not emit the "configured"
+    // line either, even though the partition id looks like a live one (see
+    // https://github.com/camunda/camunda/issues/62741).
     final var context =
         new ExporterTestContext()
             .setConfiguration(
                 new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
-            .setClusterId("test-cluster")
+            .setClusterId("")
             .setPartitionId(1)
             .setLicenseKey("test-license-key");
 
@@ -304,6 +307,20 @@ class AnalyticsExporterTest {
     try (final var logs =
         LogCapturer.capturing(AnalyticsExporter.class.getPackageName(), Level.INFO)) {
       new AnalyticsExporter().configure(context);
+      assertThat(logs.contains("Analytics exporter configured")).isFalse();
+    }
+  }
+
+  @Test
+  void shouldLogConfiguredOnOpen() {
+    // given — a real, live partition exporter that reaches open(), the only place a genuine
+    // startup emits the "configured" line.
+    try (final var logs =
+        LogCapturer.capturing(AnalyticsExporter.class.getPackageName(), Level.INFO)) {
+      // when
+      exporterWithInMemory(InMemoryLogRecordExporter.create(), new ExporterTestController());
+
+      // then
       assertThat(logs.contains("Analytics exporter configured")).isTrue();
     }
   }

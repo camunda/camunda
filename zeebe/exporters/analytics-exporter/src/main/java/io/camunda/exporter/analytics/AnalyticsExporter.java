@@ -11,7 +11,6 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -60,20 +59,6 @@ public class AnalyticsExporter implements Exporter {
             context.getPartitionId(),
             context.getPhysicalTenantId(),
             resolveDigest(handlers, config));
-
-    // ExporterRepository.validate() calls configure() once at broker startup against a
-    // throwaway context (partitionId=0, clusterId="") purely to check that the configuration
-    // loads; it never calls open() on that instance. Only log here when a real partition
-    // exporter is starting, so this line can't be mistaken for a live exporter (see
-    // https://github.com/camunda/camunda/issues/62741).
-    if (context.getPartitionId() >= Protocol.START_PARTITION_ID) {
-      LOG.info(
-          "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
-          config.getEndpoint(),
-          analyticsContext.clusterId(),
-          analyticsContext.partitionId(),
-          analyticsContext.exporterDigest());
-    }
   }
 
   @Override
@@ -87,6 +72,17 @@ public class AnalyticsExporter implements Exporter {
     otelSdkManager.initialize(config, analyticsContext, metadata, meterRegistry);
     scheduleMetricFlush();
     scheduleHeartbeat();
+    // Logged here, in the runtime lifecycle, rather than in configure(): configure() also runs
+    // for a throwaway context during ExporterRepository.validate() (partitionId=0, clusterId="")
+    // and during ExporterHistoryPurger.purgeExporter() (a real partitionId but no live runtime),
+    // and neither of those call open(). Only a genuinely starting, live partition exporter
+    // reaches this line (see https://github.com/camunda/camunda/issues/62741).
+    LOG.info(
+        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
+        config.getEndpoint(),
+        analyticsContext.clusterId(),
+        analyticsContext.partitionId(),
+        analyticsContext.exporterDigest());
     LOG.info("Analytics exporter opened");
   }
 
