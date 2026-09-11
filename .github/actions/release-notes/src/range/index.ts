@@ -118,7 +118,27 @@ const AUTOMATION_WHITELIST = /^(?:Revert ")?\[maven-release-plugin\]/;
 /** A release branch is `release-<version>` — `release-8.9.19`,
  *  `release-8.10.0-alpha5`. Anchored on the version so it cannot swallow a
  *  feature branch that merely starts with the word. */
-const RELEASE_BRANCH = /^release-\d+\.\d+\.\d+/;
+const RELEASE_BRANCH = /^release-(\d+)\.(\d+)\.\d+/;
+
+/**
+ * The branches a delivered pull request in this release could have targeted.
+ *
+ * The release workflow's `RELEASE_BRANCH` is the TEMPORARY `release-X.Y.Z`
+ * branch the tag is cut on, and nothing merges into that — delivered work
+ * targets the line it was cut from. Passing the temporary branch straight into
+ * the ambiguity rule below meant no candidate ever matched, so every commit
+ * with more than one shipped pull request was skipped instead of resolved.
+ *
+ * Both line branches are accepted because either can be right: a patch and a
+ * post-branch alpha ship from `stable/X.Y`, while an alpha cut before the
+ * stable branch exists ships from `main`. Guessing between them would be
+ * wrong half the time, and accepting both only ever narrows an ambiguity that
+ * would otherwise be abandoned.
+ */
+function releaseLineBranches(releaseBranch: string): string[] {
+  const match = RELEASE_BRANCH.exec(releaseBranch);
+  return match ? [`stable/${match[1]}.${match[2]}`, 'main'] : [releaseBranch];
+}
 
 export interface WalkedCommit {
   readonly sha: string;
@@ -160,7 +180,8 @@ function isReleaseMergeBack(pr: WalkedCommit['associatedPrs'][number]): boolean 
 
 /**
  * Dedupe a first-parent commit walk to one entry per PR. Ambiguity rule: prefer
- * the PR targeting the release branch; still tied -> audit, never guess.
+ * the PR targeting the release LINE (see `releaseLineBranches`); still tied ->
+ * audit, never guess.
  *
  * `rangeShas` is the walk's own commits. A pull request ships in this range only
  * if its merge landed among them: commits pushed straight onto a release branch
@@ -176,6 +197,7 @@ export function resolveCommitsToPrs(
   rangeShas: ReadonlySet<string>,
 ): RangeResolution {
   const reasons: string[] = [];
+  const lineBranches = releaseLineBranches(releaseBranch);
   // Insertion-ordered, so this both dedupes and preserves walk order.
   const prNumbers = new Set<number>();
 
@@ -217,13 +239,13 @@ export function resolveCommitsToPrs(
       continue;
     }
 
-    const matchingBranch = shipped.filter((pr) => pr.baseRefName === releaseBranch);
+    const matchingBranch = shipped.filter((pr) => lineBranches.includes(pr.baseRefName));
     if (matchingBranch.length === 1) {
       prNumbers.add(matchingBranch[0]!.number);
     } else {
       const list = shipped.map((pr) => `#${pr.number}`).join(', ');
       reasons.push(
-        `Ambiguous commit ${commit.sha}: associated with multiple pull requests (${list}) and no unique match targeting ${releaseBranch} — never guessing.`,
+        `Ambiguous commit ${commit.sha}: associated with multiple pull requests (${list}) and no unique match targeting ${lineBranches.join(' or ')} — never guessing.`,
       );
     }
   }

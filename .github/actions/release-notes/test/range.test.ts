@@ -132,6 +132,45 @@ test('still-ambiguous commit (no unique branch match) -> audit line, never guess
   assert.ok(r.reasons.some((line) => line.includes('#1') && line.includes('#2')));
 });
 
+test('the workflow\'s temporary release-X.Y.Z branch resolves to the line it was cut from', () => {
+  // given — `RELEASE_BRANCH` in camunda-platform-release.yml is the temporary
+  // branch the tag is cut on. Nothing merges into it: delivered work targets
+  // stable/8.8. Matched literally, no candidate ever wins and every ambiguous
+  // commit is skipped instead of resolved.
+  const commits = [{ sha: 'a', message: 'x', associatedPrs: [assoc(1, 'some-feature'), assoc(2, 'stable/8.8')] }];
+
+  // when
+  const r = resolveCommitsToPrs(commits, 'release-8.8.31', walked('a'));
+
+  // then
+  assert.deepEqual(r.prNumbers, [2]);
+  assert.deepEqual(r.reasons, []);
+});
+
+test('a pre-branch alpha cut on main resolves through the same release-X.Y.Z input', () => {
+  // given — an alpha tagged before stable/8.10 exists ships from main, so both
+  // line branches have to be accepted; guessing one would be wrong half the time.
+  const commits = [{ sha: 'a', message: 'x', associatedPrs: [assoc(1, 'some-feature'), assoc(2, 'main')] }];
+
+  // when
+  const r = resolveCommitsToPrs(commits, 'release-8.10.0-alpha5', walked('a'));
+
+  // then
+  assert.deepEqual(r.prNumbers, [2]);
+});
+
+test('a release-line branch passed directly is still matched literally', () => {
+  // given — `releaseBranch` is not always the temporary branch; when the caller
+  // already names the line, that name must not be rewritten.
+  const commits = [{ sha: 'a', message: 'x', associatedPrs: [assoc(1, 'main'), assoc(2, 'stable/8.8')] }];
+
+  // when
+  const r = resolveCommitsToPrs(commits, 'stable/8.8', walked('a'));
+
+  // then
+  assert.deepEqual(r.prNumbers, [2]);
+});
+
 test('a PR-less commit matching the automation whitelist is silently skipped', () => {
   const commits = [{ sha: 'a', message: '[maven-release-plugin] prepare release 8.8.31', associatedPrs: [] }];
   const r = resolveCommitsToPrs(commits, 'stable/8.8', walked('a'));

@@ -336,7 +336,7 @@ async function run() {
             candidateBySha.set(commit.sha, Number(match[1]));
     }
     const metaByNumber = new Map();
-    for (const meta of await graphql.fetchPrMetadata([...new Set(candidateBySha.values())])) {
+    for (const meta of await graphql.fetchPrMetadata([...new Set(candidateBySha.values())], true)) {
         metaByNumber.set(meta.number, meta);
     }
     const confirmed = new Map();
@@ -488,11 +488,20 @@ async function run() {
         };
         (entry.bucketed ? unattributed : attributed).push(renderPr);
     }
+    // The same lines the job logs as warnings, carried into the artifact: a log
+    // is not something the cutover unit can read, diff between runs, or archive
+    // beyond the runner's retention.
+    const auditWarnings = [...rangeReasons, ...processed.flatMap((entry) => entry?.warnings ?? [])];
     const result = (0, render_1.render)(attributed, unattributed, {
         version: input.targetVersion,
         allowUnattributed: input.allowUnattributed,
         unattributedReason: input.unattributedReason,
+        warnings: auditWarnings,
     });
+    // The workflow names a directory that does not exist yet, and `writeFileSync`
+    // does not create one — every shadow run died with ENOENT here, after doing
+    // all of the work. Recursive so a nested `output-dir` also works.
+    (0, node_fs_1.mkdirSync)(input.outputDir, { recursive: true });
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/CHANGELOG-${input.targetVersion}.md`, result.fullAsset);
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/changelog.json`, JSON.stringify(result.changelogJson, null, 2));
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/labels.json`, JSON.stringify(result.labelsJson, null, 2));
@@ -1072,7 +1081,26 @@ const AUTOMATION_WHITELIST = /^(?:Revert ")?\[maven-release-plugin\]/;
 /** A release branch is `release-<version>` — `release-8.9.19`,
  *  `release-8.10.0-alpha5`. Anchored on the version so it cannot swallow a
  *  feature branch that merely starts with the word. */
-const RELEASE_BRANCH = /^release-\d+\.\d+\.\d+/;
+const RELEASE_BRANCH = /^release-(\d+)\.(\d+)\.\d+/;
+/**
+ * The branches a delivered pull request in this release could have targeted.
+ *
+ * The release workflow's `RELEASE_BRANCH` is the TEMPORARY `release-X.Y.Z`
+ * branch the tag is cut on, and nothing merges into that — delivered work
+ * targets the line it was cut from. Passing the temporary branch straight into
+ * the ambiguity rule below meant no candidate ever matched, so every commit
+ * with more than one shipped pull request was skipped instead of resolved.
+ *
+ * Both line branches are accepted because either can be right: a patch and a
+ * post-branch alpha ship from `stable/X.Y`, while an alpha cut before the
+ * stable branch exists ships from `main`. Guessing between them would be
+ * wrong half the time, and accepting both only ever narrows an ambiguity that
+ * would otherwise be abandoned.
+ */
+function releaseLineBranches(releaseBranch) {
+    const match = RELEASE_BRANCH.exec(releaseBranch);
+    return match ? [`stable/${match[1]}.${match[2]}`, 'main'] : [releaseBranch];
+}
 /**
  * A release-branch merge-back delivers nothing of its own. It merges
  * `release-X.Y.Z` back into the line it was cut from, and everything it carries
@@ -1096,7 +1124,8 @@ function isReleaseMergeBack(pr) {
 }
 /**
  * Dedupe a first-parent commit walk to one entry per PR. Ambiguity rule: prefer
- * the PR targeting the release branch; still tied -> audit, never guess.
+ * the PR targeting the release LINE (see `releaseLineBranches`); still tied ->
+ * audit, never guess.
  *
  * `rangeShas` is the walk's own commits. A pull request ships in this range only
  * if its merge landed among them: commits pushed straight onto a release branch
@@ -1108,6 +1137,7 @@ function isReleaseMergeBack(pr) {
  */
 function resolveCommitsToPrs(commits, releaseBranch, rangeShas) {
     const reasons = [];
+    const lineBranches = releaseLineBranches(releaseBranch);
     // Insertion-ordered, so this both dedupes and preserves walk order.
     const prNumbers = new Set();
     for (const commit of commits) {
@@ -1145,13 +1175,13 @@ function resolveCommitsToPrs(commits, releaseBranch, rangeShas) {
             prNumbers.add(shipped[0].number);
             continue;
         }
-        const matchingBranch = shipped.filter((pr) => pr.baseRefName === releaseBranch);
+        const matchingBranch = shipped.filter((pr) => lineBranches.includes(pr.baseRefName));
         if (matchingBranch.length === 1) {
             prNumbers.add(matchingBranch[0].number);
         }
         else {
             const list = shipped.map((pr) => `#${pr.number}`).join(', ');
-            reasons.push(`Ambiguous commit ${commit.sha}: associated with multiple pull requests (${list}) and no unique match targeting ${releaseBranch} — never guessing.`);
+            reasons.push(`Ambiguous commit ${commit.sha}: associated with multiple pull requests (${list}) and no unique match targeting ${lineBranches.join(' or ')} — never guessing.`);
         }
     }
     return { prNumbers: [...prNumbers], reasons };
@@ -1204,8 +1234,13 @@ exports.render = render;
  * non-final PR must not stamp a premature "Released".
  */
 /** V6: every JSON output carries this, so a format change has to bump it
- *  deliberately instead of consumers misreading a shape they weren't built for. */
-exports.SCHEMA_VERSION = '1.0.0';
+ *  deliberately instead of consumers misreading a shape they weren't built for.
+ *
+ *  2.0.0: `comments.json` entries went from one row per (issue, pull request)
+ *  to one row per issue carrying `prNumbers`. Breaking, so a major bump, even
+ *  though the only consumer is the not-yet-built cutover unit (#57714) — the
+ *  point of the field is that a shape change is never silent. */
+exports.SCHEMA_VERSION = '2.0.0';
 const SECTION_ORDER = [
     'Features',
     'Bug Fixes',
@@ -1293,10 +1328,24 @@ function renderLine(entry) {
         return `- ${entry.title} (${prs})`;
     return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}`;
 }
-function commentFor(pr, issueNumber, version) {
-    return pr.closesIssueNumbers.includes(issueNumber)
-        ? { relationKind: 'closing', text: `Released in ${version} (#${pr.number}).` }
-        : { relationKind: 'contributor', text: `Partially delivered in ${version} by #${pr.number}.` };
+/**
+ * One comment per issue, not per pull request that touched it.
+ *
+ * The marker is keyed on `<version>:issue-<N>`, which is what lets a re-run
+ * update the comment it posted last time instead of adding a second one. Two
+ * pull requests delivering one issue therefore produced two rows carrying the
+ * SAME marker: publishing them would have overwritten one with the other and
+ * left whichever happened to be applied last, silently dropping the other.
+ *
+ * Aggregating also makes the sentence true. An issue delivered by four pull
+ * requests is released when ANY of them closed it, and one sentence should
+ * name all four rather than four sentences each naming one.
+ */
+function commentFor(prs, issueNumber, version) {
+    const numbers = prs.map((pr) => `#${pr.number}`).join(', ');
+    return prs.some((pr) => pr.closesIssueNumbers.includes(issueNumber))
+        ? { relationKind: 'closing', text: `Released in ${version} (${numbers}).` }
+        : { relationKind: 'contributor', text: `Partially delivered in ${version} by ${numbers}.` };
 }
 /**
  * The gate bucket holds two different failures — a PR that declared no issue at
@@ -1330,13 +1379,24 @@ function render(prs, unattributed, options) {
     const assetPrs = all.filter((pr) => pr.section !== null);
     const customerBody = renderSectionedBody(customerPrs);
     const fullAsset = renderSectionedBody(assetPrs);
-    const commentEntries = all.flatMap((pr) => pr.issueNumbers.map((issueNumber) => ({
+    // Insertion-ordered, so issues come out in walk order like everything else.
+    const prsByIssue = new Map();
+    for (const pr of all) {
+        for (const issueNumber of pr.issueNumbers) {
+            prsByIssue.set(issueNumber, [...(prsByIssue.get(issueNumber) ?? []), pr]);
+        }
+    }
+    const commentEntries = [...prsByIssue].map(([issueNumber, prs]) => ({
         issueNumber,
-        prNumber: pr.number,
-        ...commentFor(pr, issueNumber, options.version),
+        prNumbers: prs.map((pr) => pr.number),
+        ...commentFor(prs, issueNumber, options.version),
         marker: `<!-- release-notes:${options.version}:issue-${issueNumber} -->`,
-    })));
-    const overrides = unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
+    }));
+    // Only an override that actually LET the guard pass is an override. Recorded
+    // unconditionally, a failed default run wrote the same rows with an empty
+    // reason, so an approved exception and a plain failure looked identical in
+    // the one file whose job is telling them apart.
+    const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
     return {
         customerBody,
         fullAsset,
@@ -1347,7 +1407,12 @@ function render(prs, unattributed, options) {
             issues: [...new Set(all.flatMap((pr) => pr.issueNumbers))],
             pullRequests: all.map((pr) => pr.number),
         },
-        auditJson: { schemaVersion: exports.SCHEMA_VERSION, version: options.version, overrides },
+        auditJson: {
+            schemaVersion: exports.SCHEMA_VERSION,
+            version: options.version,
+            overrides,
+            warnings: options.warnings ?? [],
+        },
         commentsJson: { schemaVersion: exports.SCHEMA_VERSION, version: options.version, entries: commentEntries },
         failureReason,
     };
@@ -1592,10 +1657,10 @@ class GithubGraphqlResolver {
         }
         return out;
     }
-    async fetchPrMetadata(numbers) {
+    async fetchPrMetadata(numbers, speculative = false) {
         const results = [];
         for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
-            results.push(...(await this.fetchMetadataBatch(numbers.slice(i, i + PR_METADATA_BATCH_SIZE))));
+            results.push(...(await this.fetchMetadataBatch(numbers.slice(i, i + PR_METADATA_BATCH_SIZE), speculative)));
         }
         return results;
     }
@@ -1647,7 +1712,16 @@ class GithubGraphqlResolver {
             mergeCommitOid: node.mergeCommit?.oid ?? null,
         }));
     }
-    async fetchMetadataBatch(numbers) {
+    /**
+     * `speculative` decides what an alias that resolves to nothing means. A
+     * number scraped out of a merge subject is a guess: `fix: thing (#1234)` can
+     * cite an issue, or a number typed by hand, and `pullRequest(number:)`
+     * answers NOT_FOUND for it. Strictly, one such commit aborts the whole
+     * release before the documented `associatedPullRequests` fallback ever runs.
+     * Absent here means "not confirmed", which is exactly what sends the commit
+     * down that fallback.
+     */
+    async fetchMetadataBatch(numbers, speculative = false) {
         const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
         ${numbers
@@ -1657,27 +1731,30 @@ class GithubGraphqlResolver {
     }`;
         const variables = { owner: this.owner, name: this.repo };
         numbers.forEach((number, i) => (variables[`n${i}`] = number));
-        const repository = await this.requestRepository(query, variables);
-        return numbers.map((number, i) => {
-            const pr = assertField(repository[`pr${i}`], `repository.pr${i} (PR #${number})`);
+        const repository = await this.requestRepository(query, variables, speculative);
+        return numbers.flatMap((number, i) => {
+            const node = repository[`pr${i}`];
+            if (speculative && (node === null || node === undefined))
+                return [];
+            const pr = assertField(node, `repository.pr${i} (PR #${number})`);
             const truncatedFields = [];
             if (pr.labels?.pageInfo?.hasNextPage)
                 truncatedFields.push('labels');
             if (pr.closingIssuesReferences?.pageInfo?.hasNextPage)
                 truncatedFields.push('closingIssuesReferences');
-            return {
-                number: assertField(pr.number, `number on PR #${number}`),
-                title: assertField(pr.title, `title on PR #${number}`),
-                baseRefName: assertField(pr.baseRefName, `baseRefName on PR #${number}`),
-                headRefName: assertField(pr.headRefName, `headRefName on PR #${number}`),
-                mergeCommitOid: pr.mergeCommit?.oid ?? null,
-                body: pr.body ?? '',
-                authorLogin: normalizeAuthorLogin(pr.author),
-                mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
-                labels: assertField(pr.labels?.nodes, `labels.nodes on PR #${number}`).map((label) => label.name),
-                closingIssuesReferences: assertField(pr.closingIssuesReferences?.nodes, `closingIssuesReferences.nodes on PR #${number}`).map((issue) => issue.number),
-                ...(truncatedFields.length > 0 ? { truncatedFields } : {}),
-            };
+            return [{
+                    number: assertField(pr.number, `number on PR #${number}`),
+                    title: assertField(pr.title, `title on PR #${number}`),
+                    baseRefName: assertField(pr.baseRefName, `baseRefName on PR #${number}`),
+                    headRefName: assertField(pr.headRefName, `headRefName on PR #${number}`),
+                    mergeCommitOid: pr.mergeCommit?.oid ?? null,
+                    body: pr.body ?? '',
+                    authorLogin: normalizeAuthorLogin(pr.author),
+                    mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
+                    labels: assertField(pr.labels?.nodes, `labels.nodes on PR #${number}`).map((label) => label.name),
+                    closingIssuesReferences: assertField(pr.closingIssuesReferences?.nodes, `closingIssuesReferences.nodes on PR #${number}`).map((issue) => issue.number),
+                    ...(truncatedFields.length > 0 ? { truncatedFields } : {}),
+                }];
         });
     }
     async requestRepository(query, variables, tolerateNotFound = false) {
