@@ -151,16 +151,11 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
             .withBasicAuth();
 
     testInstance.start();
-    // Build the client once and reuse it for both the topology check below and deployResource
-    // afterwards, so the gRPC channel is already in READY state by the time deployResource is
-    // called. Creating a temporary client for the topology check and then closing it would force
-    // camundaClient to re-negotiate a new TCP connection at a potentially busy moment (e.g. during
-    // MSSQL AG seeding), causing CONNECTING-state failures.
+    // Build the client before the topology check so the gRPC channel is already in READY state
+    // when deployResource is called. Creating a temporary client for the topology check and then
+    // closing it would force camundaClient to re-negotiate a new TCP connection at a potentially
+    // busy moment (e.g. during MSSQL AG seeding), causing CONNECTING-state failures.
     camundaClient = testInstance.newClientBuilder().build();
-    // start()'ing only guarantees the Spring context has finished refreshing, not that the
-    // broker/gateway is actually ready to answer commands yet - unlike awaitCompleteTopology's own
-    // retrying wait, deployResource below is a single gRPC call with a fixed ~10s deadline, so
-    // calling it before the gateway is truly ready fails outright instead of just being slow.
     testInstance.awaitCompleteTopology(1, 1, 1, Duration.ofSeconds(60), camundaClient);
     meterRegistry = testInstance.bean(MeterRegistry.class);
 

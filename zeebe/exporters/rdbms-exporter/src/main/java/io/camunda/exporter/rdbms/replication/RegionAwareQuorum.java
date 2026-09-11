@@ -28,19 +28,7 @@ import org.slf4j.LoggerFactory;
  * independently - "sort best-replicas-first, take the region's own {@code minReplicas}, return the
  * worst of that slice" - and every region is mandatory: the overall result is the worst value
  * across all of them, so if any one region falls short of its own {@code minReplicas} the whole
- * position is unconfirmed. See {@code docs/adr/0001-region-aware-replication-quorum.md}.
- *
- * <p>A flat quorum (the old {@code minSyncReplicas}) is just the degenerate case of a single region
- * matching every replica - see {@link ReplicationConfiguration#getRegions()} - so there is only
- * ever this one code path.
- *
- * <p>{@code currentPrimaryRegion}, freshly resolved by the caller from the primary's own live
- * connection every check (see {@code getCurrentReplicaLabel()} on the providers in {@code
- * db/rdbms}), gets one synthetic, always-best entry credited to whichever region it resolves to -
- * except a catch-all region (pattern exactly {@code ".*"}), which never receives it, since a
- * catch-all can't meaningfully claim to specifically host the primary without silently satisfying
- * the whole quorum with the primary alone. The primary's region is resolved dynamically, not from
- * static config, because it can change after a failover.
+ * position is unconfirmed.
  */
 final class RegionAwareQuorum {
 

@@ -33,8 +33,7 @@
   <!-- Neither replicationLagMs nor replicatedUntilMs is coalesced when replay_lag is NULL, so an
        unmeasured replica (e.g. missing the pg_monitor grant - see hasRequiredPrivileges below) is
        never mistaken for one that is perfectly caught up. application_name is the replica's own
-       self-declared label (set via its connection string), exposed as replicaLabel for optional
-       replication region awareness - unlike pid, it stays stable across reconnects. -->
+       self-declared label (set via its connection string) -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
     SELECT COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint AS logStatus,
@@ -80,10 +79,7 @@
     GUID identifying the same AG-member database across replicas, unlike database_id which is a
     replica-local id). pri.database_id = DB_ID() scopes the primary side to the exporter's own
     database - see getCurrentLogStatus above for why that's necessary; the secondary side is then
-    already correctly scoped transitively via the group_database_id join. replica_server_name -
-    the name the replica was given when added to the availability group - is joined in from
-    sys.availability_replicas and exposed as replicaLabel for optional replication region
-    awareness; unlike replica_id (a GUID), it's a human-chosen, stable name.
+    already correctly scoped transitively via the group_database_id join.
       -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="mssql">
     SELECT CONVERT(bigint, ISNULL(secondary.last_commit_lsn, 0)) AS logStatus,
@@ -191,25 +187,10 @@
     WHERE session_id = 'MASTER_SESSION_ID'
   </select>
 
-  <!--
-    cluster_name is a built-in Postgres GUC (since 9.5), settable only at server start, meant
-    exactly for per-instance self-identification - unlike application_name (a property of the
-    connecting client, already used for replicaLabel on secondaries), this is a property of the
-    server itself, so reading it live returns whichever physical instance currently serves as
-    primary, correctly reflecting the region hosting it after a failover. Defaults to '' (never
-    NULL) when unset, which optional region-awareness treats the same as no label.
-  -->
   <select id="getCurrentReplicaLabel" resultType="java.lang.String" databaseId="postgresql">
     SELECT current_setting('cluster_name')
   </select>
 
-  <!--
-    MSSQL: mirrors getCurrentLogStatus/getCurrentDbTime above (is_local = 1 identifies the row for
-    whichever replica this connection is local to - the primary when connected directly to it,
-    reflecting a failover automatically) joined to sys.availability_replicas the same way
-    getReplicationStatus already does for secondaries, to read this instance's own
-    replica_server_name.
-  -->
   <select id="getCurrentReplicaLabel" resultType="java.lang.String" databaseId="mssql">
     SELECT ar.replica_server_name
     FROM sys.dm_hadr_database_replica_states rs
@@ -218,12 +199,6 @@
     WHERE rs.is_local = 1 AND rs.database_id = DB_ID()
   </select>
 
-  <!--
-    Returns the primary's own server_id for Aurora Global Database (PostgreSQL) - the same column
-    getAuroraReplicationStatus below already reads for secondaries, just from the MASTER_SESSION_ID
-    row instead. Read live so a Global Database failover (which changes which region's instance
-    holds MASTER_SESSION_ID) is reflected without any static config.
-  -->
   <select id="getAuroraCurrentReplicaLabel" resultType="java.lang.String" databaseId="postgresql">
     SELECT server_id
     FROM aurora_global_db_instance_status()
@@ -253,10 +228,7 @@
     instance reports its durable_lsn together with visibility_lag_in_msec; neither replicationLagMs
     nor replicatedUntilMs (the database's own current time minus that lag) is coalesced when the lag
     itself is NULL, so an unmeasured replica is never mistaken for one that is perfectly caught up.
-    server_id is also exposed as replicaLabel for optional replication region awareness - each
-    secondary instance in a Global Database lives in its own AWS region, so an operator-provided
-    naming convention on server_id (or the instance's endpoint) is what a region pattern matches
-    against.
+    server_id is also exposed as replicaLabel.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
@@ -274,8 +246,7 @@
     Returns per-replica replication status for Aurora Global Database (MySQL). Reads from
     information_schema.aurora_global_db_instance_status (table, not function on MySQL);
     replicationLagMs/replicatedUntilMs mirror the PostgreSQL variant above, including leaving
-    both un-coalesced when the lag itself is NULL. SERVER_ID is also exposed as replicaLabel -
-    see the PostgreSQL variant above for why.
+    both un-coalesced when the lag itself is NULL. SERVER_ID is also exposed as replicaLabel.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="mysql">

@@ -1195,10 +1195,7 @@ public class BrokerBasedPropertiesOverride {
 
   /**
    * {@code minSyncReplicas} and {@code regions} are mutually exclusive alternatives on {@link
-   * RdbmsAsyncReplication} - the former is converted here into a single region matching every
-   * replica, so the exporter-side {@link ReplicationConfiguration} always deals with one shape (see
-   * {@code docs/adr/0001-region-aware-replication-quorum.md}). When neither is set, falls back to
-   * {@link ReplicationConfiguration#DEFAULT_MIN_SYNC_REPLICAS}.
+   * RdbmsAsyncReplication}
    */
   private static List<RegionConfiguration> toReplicationRegions(
       final RdbmsAsyncReplication asyncReplication) {

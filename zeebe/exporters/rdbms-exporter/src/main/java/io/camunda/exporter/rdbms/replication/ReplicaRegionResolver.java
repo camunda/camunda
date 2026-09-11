@@ -17,11 +17,6 @@ import java.util.regex.Pattern;
  * io.camunda.db.rdbms.read.replication.ReplicationStatus#replicaLabel()}) to the region it belongs
  * to, using the ordered regex patterns from the configured {@link RegionConfiguration} list.
  * Patterns are compiled once at construction time; the first matching region wins.
- *
- * <p>A {@code null} label is matched as the empty string, so a catch-all region (pattern {@code
- * ".*"}) still counts a replica that reports no label at all - this is what lets a flat {@code
- * minSyncReplicas} (converted into a single catch-all region, see {@code RdbmsAsyncReplication} in
- * the {@code configuration} module) behave exactly like the pre-region-awareness flat count.
  */
 final class ReplicaRegionResolver {
 
