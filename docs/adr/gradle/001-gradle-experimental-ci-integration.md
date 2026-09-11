@@ -1,45 +1,94 @@
-# Experimental Gradle build integration in CI
+# Experimental Gradle build and CI integration
 
 **DRI**: Carlo Sana
 
 **Status**: Proposed
 
-**Purpose**: Defines the CI integration for the experimental Gradle build while keeping Maven
-authoritative for application and Java changes. Relevant pull requests, merge groups, and protected
-branch pushes must prove that Gradle can compile production and test sources. This ADR does not
-make the full Gradle test path the default build path.
+**Purpose**: Define how the parallel Gradle build coexists with Maven and how CI exercises it
+without allowing the two build systems to drift. Maven is the source of truth for now, including
+module behavior, dependency versions, and published or packaged output.
 
-**Audience**: Monorepo DevOps, and any engineer changing `pom.xml`, Gradle build files, or CI
+**Audience**: Monorepo DevOps, and engineers changing `pom.xml`, Gradle build files, or CI
 workflows.
 
 ## Context
 
-The monorepo builds with Maven. A parallel Gradle build exists and can already run most of CI, but
-it can drift whenever `pom.xml` files or Java sources change: most of those problems should surface as
-compilation failures, but sometime they might make a test failing instead.
+The monorepo builds with Maven. A parallel Gradle build exists so that Gradle can eventually serve
+as an alternative build path, but it is not an independent build definition. Both builds must work
+against the same source tree at the same time. A change to Java sources, a POM, or Gradle build
+logic must not leave the other build unusable.
 
-We want to surface Gradle regressions during pull requests and protect the merge queue without
-replacing Maven's authoritative application tests. The Gradle compilation check is additive and
-runs in Unified CI for pull requests, merge groups, and protected branch pushes. It compiles both
-production and test sources with `./gradlew testClasses`.
+Maven remains authoritative for the moment. When the build systems differ, the Gradle build must
+be brought into line with Maven rather than redefining the behavior in Gradle. Parity includes the
+module graph, dependency scopes and versions, generated sources, resource processing, test-jar
+usage, published metadata, and packaged artifacts.
 
-The experimental Gradle application test path is selected automatically for pure Gradle-only pull
-requests. Other non-Java, non-Maven pull requests can opt in through the `gradle-build` label,
-allowing CI-only changes to exercise the Gradle path without allowing Java, Maven-build,
-merge-queue, or push runs to select Gradle. Unlabeled and non-PR runs continue to use Maven.
+We also want Gradle regressions to be visible in pull requests and to protect the merge queue
+without replacing Maven's authoritative application tests. The Gradle compilation check is
+additive: it compiles production and test sources with `./gradlew testClasses` and checks
+distribution packaging and dependency parity.
 
 ## Decision
 
-**D1. Maven remains the default and the landing-gate authority.**
+### D1. Maven is the source of truth for the parallel build
 
-Maven remains the authoritative application test path for unlabeled pull requests, pull requests
-with Java or Maven-build changes, merge groups, and pushes. Pure Gradle-only pull requests select the
-experimental Gradle application path automatically; other non-Java, non-Maven pull requests may opt
-in with the `gradle-build` label. This does not change the Maven requirement for Java or Maven-build
-changes or the merge queue, which always selects Maven.
+Gradle mirrors Maven's active modules and behavior. Maven POMs and their associated build plugins
+are the reference when adding or changing Gradle configuration. Gradle build logic must preserve
+Maven's observable dependency, compilation, test, publication, and packaging behavior rather than
+introducing Gradle-specific alternatives.
 
-The Gradle compilation check also runs for pull requests that change Gradle build inputs. For this
-ADR, Gradle build inputs are:
+This is a coexistence decision, not a decision that Maven must remain the long-term build tool. A
+future change may establish another source of truth, but it must be recorded explicitly; until then,
+Maven remains authoritative.
+
+### D2. Gradle must not define independent library versions
+
+Gradle must never contain a free-standing version for a library, tool, BOM, buildscript dependency,
+convention-plugin dependency, or version-catalog entry. Versions must come from Maven or be omitted
+when an already-represented BOM manages them.
+
+The Gradle version catalog is generated from Maven properties through `settings.gradle.kts` and
+`pomVersion(...)`. When Maven currently declares a version inline in a module POM, the version is
+first promoted to a Maven property; the Gradle catalog then resolves that property instead of
+hardcoding a second copy. Maven remains the single version source, and the catalog is only a Gradle
+view of it.
+
+The only exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
+Maven-sourced version. This exception does not apply to libraries used by that plugin or to ordinary
+buildscript dependencies; those must still use Maven-sourced catalog versions.
+
+### D3. Maven and Gradle changes are kept in parity
+
+A Maven build change is not complete if it leaves the parallel Gradle build with a different
+observable behavior. When a POM changes, the corresponding Gradle project, dependency configuration,
+test configuration, generated-source setup, resource processing, or packaging must be updated when
+needed. When Gradle build logic changes, it must be checked against the relevant module and parent
+POMs.
+
+Gradle configurations are chosen according to Maven's boundary and scope semantics, not by
+mechanically translating every Maven compile dependency to `api()`. Optional Maven dependencies
+must not leak to consumers; the Gradle equivalent is `compileOnly` plus explicit test coverage when
+appropriate. Maven test JARs must remain consumable as Gradle test variants. Published metadata and
+distribution contents must remain aligned with Maven.
+
+### D4. Maven remains the CI landing-gate authority
+
+Maven remains the authoritative application-test path except for eligible pull requests. Build-tool
+selection is:
+
+| Context | Application-test path |
+| --- | --- |
+| Pure Gradle-only pull request | Gradle automatically |
+| Other non-Java, non-Maven pull request with the `gradle-build` label | Gradle |
+| Unlabeled pull request, or any pull request with Java or Maven-build changes | Maven |
+| Merge group, protected-branch push, schedule, or manual run | Maven |
+
+A label cannot select Gradle when the pull request changes Java sources or Maven build inputs. The
+merge queue and protected pushes therefore always use Maven for application tests. This does not
+make the builds independent: Gradle-only changes are exercised by Gradle before the merge queue,
+and the Maven merge-group run validates that the result still works with Maven before landing.
+
+For this ADR, Gradle build inputs are:
 
 - `*.gradle.kts` files;
 - `gradle.properties`;
@@ -47,94 +96,51 @@ ADR, Gradle build inputs are:
 - files below `gradle/`; and
 - files below `buildSrc/`.
 
-**D2. Gradle application tests are selected only for gradle only pull requests**
+### D5. Add a relevant Gradle compilation and distribution check to Unified CI
 
-A pure Gradle-only pull request selects the Gradle application test path automatically. Other
-non-Java, non-Maven pull requests can select it with the `gradle-build` label, making it possible to
-exercise Gradle when the pull request changes CI configuration rather than Java sources or Maven
-build inputs. Any Java or Maven-build change forces Maven, regardless of the label.
-
-In non-PR contexts, including `push` and `merge_group`, and on unlabeled, Java, or Maven-build pull
-requests, the build tool remains Maven. The Gradle compilation check described in D3 is still run in
-those contexts when its change filters match.
-
-**D3. Add a relevant Gradle compilation check to Unified CI.**
-
-The `Gradle / Test Classes` job runs when the change set contains Java/resource sources, Maven build
-inputs, Gradle build inputs, or CI inputs that can change build behavior. It runs `testClasses` and
-`:camunda-zeebe:distZip` in the same Gradle invocation so the distribution reuses the compilation
+The `Gradle / Test Classes` job runs when the change set contains Java or resource sources, Maven
+build inputs, Gradle build inputs, or CI inputs that can change build behavior. It runs
+`testClasses` and `:camunda-zeebe:distZip` together so the distribution reuses the compilation
 outputs:
 
 ```text
 ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses :camunda-zeebe:distZip
 ```
 
-The job uploads the Gradle ZIP as artifact. A separate `Gradle / Distribution Parity` job waits for both this
-job and `build-distball`, downloads the Gradle and Maven ZIPs, and compares their versioned roots
-and bundled JAR names and versions. Other file paths and byte contents are not compared. In general, the jar bytes
-differ (for example manifest metadata)
+The job uploads the Gradle ZIP as an artifact. A separate `Gradle / Distribution Parity` job waits
+for this job and `build-distball`, downloads the Gradle and Maven ZIPs, and compares their versioned
+roots and bundled JAR names and versions. Other file paths and byte contents are not compared; the
+JAR bytes generally differ, for example because of manifest metadata.
 
-Both jobs are included in Unified CI's `check-results` gate. They therefore block relevant pull
-requests and merge groups when Gradle compilation, packaging, or distribution parity fails.
-Protected branch pushes run the same checks to provide post-merge health feedback and warm the
-shared Gradle cache; a push failure cannot prevent the commit that triggered it from having already
-landed.
+Both jobs are included in Unified CI's `check-results` gate. They block relevant pull requests and
+merge groups when Gradle compilation, packaging, or distribution parity fails. Protected-branch
+pushes run the same checks for post-merge health and to warm the shared Gradle cache; a push failure
+cannot prevent the commit that triggered it from having already landed.
 
-**D4. Build-tool selection defaults to Maven outside labeled pull requests.**
-
-Maven is the default build tool. Pure Gradle-only pull requests select Gradle automatically; other
-non-Java, non-Maven pull requests need the `gradle-build` label. Pushes, merge groups, schedules,
-manually dispatched workflows, unlabeled pull requests, and all pull requests with Java or Maven
-build changes use Maven for the application test path.
-
-**D5. The Gradle compilation check and Maven jobs are independently gated.**
+### D6. Keep the Gradle and Maven jobs independently gated
 
 The Gradle compilation job is a member of the Unified CI result gate, but Maven test jobs must not
-depend on it. A Gradle compilation failure may fail `check-results` and prevent a merge-group
-landing, but it must not skip, cancel, or make Maven tests unavailable.
+depend on it. A Gradle failure may fail `check-results` and prevent a merge-group landing, but it
+must not skip, cancel, or make Maven tests unavailable.
 
-**D6. Configure per-test retries in the shared Gradle test convention.**
-
-`buildlogic.java-conventions` applies the Gradle Test Retry plugin to every Gradle `Test` task. The
-plugin reads the Gradle property `test.max.retries`; when the property is absent, its default is
-`0`, so local Gradle runs do not retry tests implicitly.
-
-CI maps the existing `FLAKY_TEST_RERUN_COUNT` environment value to the Gradle property on each
-Gradle test invocation:
-
-```text
--Ptest.max.retries=${FLAKY_TEST_RERUN_COUNT}
-```
-
-Gradle therefore uses the same retry budget as Maven without reading the CI environment directly.
-The retry plugin reruns individual failed test cases. CI must not wrap the complete Gradle task in
-an additional retry loop, since that would apply a different and potentially multiplied retry
-policy.
-
-**D7. Migrate the remaining Unified CI database suites to Gradle.**
-
-The standard database, history, identity, physical-tenant acceptance, physical-tenant identity,
-physical-tenant history, and RDBMS integration jobs use dedicated Gradle test tasks when the Gradle
-path is selected: `itMultiDb`, `itHistory`, `itIdentity`, `itPhysicalTenant`,
-`itPhysicalTenantIdentity`, `itPhysicalTenantHistory`, and `itRdbms`. Maven remains the default for
-all other contexts. Standalone database workflows outside Unified CI continue to use Maven until
-they are explicitly migrated.
-
-Unified CI keeps `build-distball` in the static dependency list for these jobs because Maven runs
-still consume the shared Maven artifacts. Gradle runs do not consume the distball; when the Gradle-only
-path is selected, the distball job is skipped and `always()` allows the Gradle job to proceed.
-Splitting the dependency graph into separate Maven and Gradle jobs is intentionally deferred to keep
-this workflow structure simple.
 
 ## Deferred work
 
 The following work is intentionally excluded from this change:
 
 - **Nightly Gradle validation.** A scheduled Gradle test run requires a confirmed alerting model.
-- **Automated Gradle repair.** Repair automation will be designed after the CI signal is stable.
+- **Changing the source of truth.** Maven remains authoritative until a future decision explicitly
+  changes that arrangement.
 
 ## Alternatives considered
 
+- **Let Gradle own its dependency versions.** Rejected: duplicated versions would allow the two
+  builds to resolve different graphs and make parity failures difficult to diagnose.
+- **Treat Gradle as an independent build definition.** Rejected: the project would have to maintain
+  two sources of truth for modules, dependencies, generated sources, and packaging.
+- **Run both complete build paths on every pull request.** Rejected: this doubles CI cost without
+  improving the landing guarantee; the merge queue already revalidates Gradle-labeled changes with
+  Maven.
 - **Run the Gradle compilation check only for Java changes.** Rejected: Gradle-only and Maven-only
   build changes can independently break Gradle compilation and must also be covered.
 - **Make Maven test jobs depend on the Gradle compilation job.** Rejected: a Gradle failure must
@@ -146,20 +152,19 @@ The following work is intentionally excluded from this change:
 
 ## Consequences
 
+- Maven POMs remain the single source for dependency versions and build behavior for now.
+- Maven and Gradle can be used concurrently against the same source tree without intentionally
+  diverging module, dependency, test, or distribution behavior.
+- Gradle changes require parity checks against Maven, and Maven build changes may require a matching
+  Gradle update before they are complete.
 - Relevant pull requests receive direct Gradle production-and-test compilation feedback.
-- Merge groups are blocked when relevant Gradle production or test sources do not compile.
+- Distribution parity catches differences in the versioned archive root and bundled JAR set.
+- Merge groups are blocked when relevant Gradle compilation, packaging, or parity checks fail.
 - Protected pushes provide post-merge Gradle health feedback and warm the shared cache.
-- Maven remains the authoritative application test path for Java and Maven changes.
-- Pure Gradle-only PRs select the experimental Gradle application path automatically; other
-  non-Java, non-Maven PRs need the label for mixed or CI-only changes. Java or Maven-build changes,
-  merge-queue runs, and push runs always use Maven.
-- Maven jobs remain independently runnable when the Gradle compilation job fails.
-- Gradle and Maven use the same CI retry budget, while local Gradle runs remain retry-disabled by
-  default.
-- Nightly parity and automated repair remain deliberate follow-up work.
+- Maven application tests remain authoritative for Java and Maven changes and remain independently
+  runnable when Gradle compilation fails.
 
 ## Source
 
 - Pull request #52869 review discussion and this conversation.
 - The `gradle-build-parity` repository skill.
-
