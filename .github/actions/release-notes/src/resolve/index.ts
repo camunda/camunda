@@ -10,9 +10,19 @@ import { githubHeaders } from '../github';
  * headers, responses, or anything that could echo the token.
  */
 
+export interface AssociatedPr {
+  readonly number: number;
+  readonly baseRefName: string;
+  readonly headRefName: string;
+  /** Null only if GitHub reports a MERGED PR without one — a data anomaly the
+   *  range resolver treats as "membership unverified" rather than a reason to
+   *  drop the PR. */
+  readonly mergeCommitOid: string | null;
+}
+
 export interface CommitPrMapping {
   readonly sha: string;
-  readonly associatedPrs: readonly { readonly number: number; readonly baseRefName: string }[];
+  readonly associatedPrs: readonly AssociatedPr[];
 }
 
 export interface PrMetadata {
@@ -85,7 +95,9 @@ type Json = Record<string, unknown>;
 interface PrNode {
   readonly number: number;
   readonly baseRefName: string;
+  readonly headRefName: string;
   readonly state: string;
+  readonly mergeCommit?: { readonly oid?: string } | null;
 }
 
 interface PageInfo {
@@ -103,9 +115,13 @@ interface PrMetadataNode {
   readonly closingIssuesReferences?: { nodes?: readonly { number: number }[]; pageInfo?: { hasNextPage?: boolean } };
 }
 
-/** The one `associatedPullRequests` selection both query shapes share. */
+/** The one `associatedPullRequests` selection both query shapes share.
+ *
+ *  `headRefName` and `mergeCommit` are read here rather than in the metadata
+ *  phase because both feed range membership, which is decided before any PR
+ *  metadata is fetched — and they are free on a connection already selected. */
 const prConnection = (afterArg = ''): string =>
-  `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } }`;
+  `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName headRefName state mergeCommit { oid } } pageInfo { hasNextPage endCursor } }`;
 
 function assertField<T>(value: T | null | undefined, description: string): T {
   if (value === null || value === undefined) throw new Error(`Malformed GraphQL response: missing ${description}`);
@@ -184,7 +200,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
    * branch that is every PR opened against it afterward, which makes nearly
    * every commit look ambiguous to the range resolver.
    */
-  private async drainAssociatedPrs(sha: string, firstPage: Json): Promise<{ readonly number: number; readonly baseRefName: string }[]> {
+  private async drainAssociatedPrs(sha: string, firstPage: Json): Promise<AssociatedPr[]> {
     let page = readPrPage(firstPage, sha);
     const all = [...page.nodes];
 
@@ -200,7 +216,14 @@ export class GithubGraphqlResolver implements GraphqlResolver {
       all.push(...page.nodes);
     }
 
-    return all.filter((node) => node.state === 'MERGED').map((node) => ({ number: node.number, baseRefName: node.baseRefName }));
+    return all
+      .filter((node) => node.state === 'MERGED')
+      .map((node) => ({
+        number: node.number,
+        baseRefName: node.baseRefName,
+        headRefName: node.headRefName,
+        mergeCommitOid: node.mergeCommit?.oid ?? null,
+      }));
   }
 
   private async fetchMetadataBatch(numbers: readonly number[]): Promise<PrMetadata[]> {
