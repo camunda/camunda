@@ -431,9 +431,9 @@ test.describe('Identity User Flows', () => {
       // eventual-consistency waits.
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('identityProcess').first()).toBeVisible(
-            {timeout: 20000},
-          );
+          await expect(page.getByText('identityProcess').first()).toBeVisible({
+            timeout: 20000,
+          });
         },
         onFailure: async () => {
           await page.reload();

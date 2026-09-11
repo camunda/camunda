@@ -329,9 +329,8 @@ class OperateProcessInstancePage {
       // See the comment on `this.editor` below: the inline variable editor is
       // CodeMirror now (#62782), not Monaco, so it no longer exposes
       // `role="code"`.
-      editor: this.variableValueCellLocator(name).getByTestId(
-        'code-mirror-editor',
-      ),
+      editor:
+        this.variableValueCellLocator(name).getByTestId('code-mirror-editor'),
       editVariableModal: {
         button: this.variableButtonsCellLocator(name).getByRole('button', {
           name: 'Edit',
