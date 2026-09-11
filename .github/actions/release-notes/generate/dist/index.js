@@ -1,0 +1,1196 @@
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ 233:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.decideAttribution = decideAttribution;
+exports.hopToBackportOriginal = hopToBackportOriginal;
+exports.evaluatePostGateAnomaly = evaluatePostGateAnomaly;
+/** Fallback sources are only reachable when the section contract wasn't observed
+ *  (bypass, outage, post-merge body edit, parser drift) — 'section' and 'optOut'
+ *  are the gated PASS paths and never anomalous on their own. */
+const FALLBACK_SOURCES = new Set([
+    'closingIssuesReferences',
+    'legacyBodyScan',
+]);
+/**
+ * The unconditional attribution chain (D20), applied to every PR in range, no
+ * legacy heuristic. Pure: takes already-resolved facts for one PR's own body
+ * and decides which issue(s) it attributes to. Backport hop composition
+ * (deliveryPath: 'backportHop') is the orchestrator's job, same as the gate's
+ * evaluateGate wraps evaluateLink — not this function's concern.
+ */
+/** A section ref is eligible for attribution only if it targets this repo and
+ *  isn't a bare `Backport of #N` marker (that's a delivery-hop signal, not an
+ *  attribution ref — mirrors policy.ts's own `sameRepo` filter). */
+function eligible(refs) {
+    return refs.filter((ref) => !ref.crossRepo && ref.kind !== 'backport');
+}
+function uniqueNumbers(numbers) {
+    return [...new Set(numbers)];
+}
+function uniqueRefNumbers(refs) {
+    return uniqueNumbers(refs.map((ref) => ref.number));
+}
+function decideAttribution(input) {
+    if (input.optOut) {
+        return { source: 'optOut', issueNumbers: [], deliveryPath: 'direct', reasons: [] };
+    }
+    const sectionEligible = eligible(input.sectionRefs);
+    if (sectionEligible.length > 0) {
+        const live = sectionEligible.filter((ref) => ref.target === 'issue');
+        const notLive = sectionEligible.filter((ref) => ref.target !== 'issue');
+        const reasons = notLive.length
+            ? [`These section refs do not resolve to a live issue in this repo: ${uniqueRefNumbers(notLive).map((n) => `#${n}`).join(', ')}.`]
+            : [];
+        if (live.length > 0) {
+            return { source: 'section', issueNumbers: uniqueRefNumbers(live), deliveryPath: 'direct', reasons };
+        }
+        return { source: 'resolutionFailed', issueNumbers: [], deliveryPath: 'direct', reasons };
+    }
+    if (input.closingIssuesReferences.length > 0) {
+        return {
+            source: 'closingIssuesReferences',
+            issueNumbers: uniqueNumbers(input.closingIssuesReferences),
+            deliveryPath: 'direct',
+            reasons: [],
+        };
+    }
+    const legacyLive = eligible(input.legacyRefs).filter((ref) => ref.target === 'issue');
+    if (legacyLive.length > 0) {
+        return {
+            source: 'legacyBodyScan',
+            issueNumbers: uniqueRefNumbers(legacyLive),
+            deliveryPath: 'direct',
+            reasons: [],
+        };
+    }
+    return { source: 'unattributed', issueNumbers: [], deliveryPath: 'direct', reasons: [] };
+}
+/**
+ * Compose a backport PR's decision from its ORIGINAL PR's decision (C7/V2):
+ * same source and issue numbers, but deliveryPath flips to 'backportHop' so
+ * the anomaly evaluation below can still key on the original's own mergedAt.
+ */
+function hopToBackportOriginal(original) {
+    return { ...original, deliveryPath: 'backportHop' };
+}
+/**
+ * D20's post-gate anomaly rule: a PR merged after its branch's gate watermark
+ * terminates at the section step by construction (gated PRs have a section
+ * ref or an opt-out) — any fallback source hit past that point means the
+ * section contract wasn't observed. Evaluated on the ORIGINAL PR's mergedAt +
+ * source for a backport hop (a post-gate backport of a pre-gate original is
+ * NOT an anomaly — the caller passes the original's own mergedAt for that).
+ */
+function evaluatePostGateAnomaly(input) {
+    if (input.gateRequiredAt === null)
+        return undefined;
+    if (!FALLBACK_SOURCES.has(input.source))
+        return undefined;
+    if (Date.parse(input.mergedAt) < Date.parse(input.gateRequiredAt))
+        return undefined;
+    return 'post_gate_fallback_attribution';
+}
+
+
+/***/ }),
+
+/***/ 493:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+/**
+ * Pure title-type -> release-notes-section categorization (D16/D17/D18/D19).
+ * No IO — the caller (entrypoint wiring, step 7) supplies the already-resolved
+ * title (see `resolveCategorizeTitle` for the backport-inherit composition,
+ * mirroring `hopToBackportOriginal` in ../attribution) and the labels already
+ * fetched from the API.
+ *
+ * Type -> section table copied verbatim from the signed design
+ * (53605-issue-proposals.html) — do not reinvent it:
+ *   feat -> Features · fix -> Bug Fixes · perf -> Performance ·
+ *   docs -> Documentation · deps -> Dependency updates · revert -> Reverts ·
+ *   refactor/build/ci/test/style -> Maintenance (internal-only, asset-only) ·
+ *   merge -> excluded entirely (release-merge PRs, D25) ·
+ *   unparseable/unknown type -> Uncategorized (C10 safety net, never drop).
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BOT_CATEGORY_OVERRIDES = void 0;
+exports.resolveCategorizeTitle = resolveCategorizeTitle;
+exports.categorize = categorize;
+/** D16: known bots whose own title/body can't be trusted as the category source. */
+exports.BOT_CATEGORY_OVERRIDES = {
+    'backport-action': 'inherit-original',
+    'monorepo-devops-automation[bot]': 'inherit-original',
+    'renovate[bot]': 'deps',
+    'dependabot[bot]': 'deps',
+};
+const SECTION_BY_TYPE = {
+    feat: 'Features',
+    fix: 'Bug Fixes',
+    perf: 'Performance',
+    docs: 'Documentation',
+    deps: 'Dependency updates',
+    revert: 'Reverts',
+    refactor: 'Maintenance',
+    build: 'Maintenance',
+    ci: 'Maintenance',
+    test: 'Maintenance',
+    style: 'Maintenance',
+    merge: null,
+};
+/** Sections hidden from the customer-facing body — still present in the full asset. */
+const INTERNAL_SECTIONS = new Set(['Maintenance']);
+// `type` + optional `(scope)` + optional `!` + `: ` + subject, tolerating a
+// leading "[Backport ...]" prefix a human-opened backport PR may still carry.
+const HEADER = /^(?:\[[^\]]*\]\s*)?(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
+function parseType(title) {
+    return HEADER.exec(title)?.groups?.type?.toLowerCase() ?? null;
+}
+/**
+ * Decide which title to feed `categorize()`. Pure composition, same shape as
+ * `hopToBackportOriginal` in ../attribution: `deps`-override bots are handled
+ * inside `categorize()` itself (their title is irrelevant either way); only
+ * `inherit-original` needs a substitute title, and only once the caller has
+ * one to offer (`originalTitle` undefined otherwise degrades to the bot's own
+ * title rather than throwing — a missing original is a resolver-layer concern).
+ */
+function resolveCategorizeTitle(input) {
+    const override = input.authorLogin ? exports.BOT_CATEGORY_OVERRIDES[input.authorLogin] : undefined;
+    if (override === 'inherit-original' && input.originalTitle !== undefined)
+        return input.originalTitle;
+    return input.title;
+}
+function categorize(input) {
+    const reasons = [];
+    const override = input.authorLogin ? exports.BOT_CATEGORY_OVERRIDES[input.authorLogin] : undefined;
+    const type = override === 'deps' ? 'deps' : parseType(input.title);
+    if (type === null && input.authorLogin) {
+        reasons.push(`Unknown bot ${input.authorLogin}'s title does not parse as a conventional commit: "${input.title}".`);
+    }
+    const section = type === null ? 'Uncategorized' : (type in SECTION_BY_TYPE ? SECTION_BY_TYPE[type] : 'Uncategorized');
+    const visibility = section !== null && INTERNAL_SECTIONS.has(section) ? 'internal' : 'customer';
+    let component;
+    if (input.componentLabels.length === 0) {
+        component = null;
+    }
+    else if (input.componentLabels.length === 1) {
+        component = input.componentLabels[0];
+    }
+    else {
+        component = 'Multiple components';
+        reasons.push(`Multiple components: ${input.componentLabels.join(', ')}.`);
+    }
+    return { section, visibility, breaking: input.breakingChangeLabel, component, reasons };
+}
+
+
+/***/ }),
+
+/***/ 516:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const node_fs_1 = __nccwpck_require__(24);
+const core = __importStar(__nccwpck_require__(93));
+const pipeline_1 = __nccwpck_require__(782);
+const range_1 = __nccwpck_require__(53);
+const walk_1 = __nccwpck_require__(600);
+const render_1 = __nccwpck_require__(624);
+const resolve_1 = __nccwpck_require__(940);
+const resolver_1 = __nccwpck_require__(306);
+function readInputs() {
+    const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
+    const gateRequiredAt = core.getInput('gate-required-at').trim();
+    return {
+        token: core.getInput('token', { required: true }),
+        owner: owner ?? '',
+        repo: repo ?? '',
+        targetVersion: core.getInput('target-version', { required: true }),
+        releaseBranch: core.getInput('release-branch', { required: true }),
+        gateRequiredAt: gateRequiredAt.length > 0 ? gateRequiredAt : null,
+        allowUnattributed: core.getBooleanInput('allow-unattributed'),
+        unattributedReason: core.getInput('unattributed-reason').trim() || undefined,
+        outputDir: core.getInput('output-dir') || '.',
+    };
+}
+async function run() {
+    const input = readInputs();
+    const graphql = new resolve_1.GithubGraphqlResolver(input.token, input.owner, input.repo);
+    const restResolver = new resolver_1.GithubResolver(input.token, input.owner, input.repo);
+    const pipelineResolver = {
+        resolveRefs: (refs) => restResolver.resolve(refs),
+        fetchOriginalPull: (number) => restResolver.fetchPull(number),
+    };
+    const strategy = (0, range_1.resolveBaselineStrategy)(input.targetVersion);
+    const baseline = (0, walk_1.resolveBaselineRef)(process.cwd(), strategy, input.targetVersion);
+    const walked = (0, walk_1.walkFirstParent)(process.cwd(), baseline, input.targetVersion);
+    core.info(`Range ${baseline}..${input.targetVersion}: ${walked.length} first-parent commits.`);
+    const commitMappings = await graphql.mapCommitsToPrs(walked.map((commit) => commit.sha));
+    const commitsForDedupe = walked.map((commit, i) => ({
+        sha: commit.sha,
+        message: commit.message,
+        associatedPrs: commitMappings[i]?.associatedPrs ?? [],
+    }));
+    const { prNumbers, reasons: rangeReasons } = (0, range_1.resolveCommitsToPrs)(commitsForDedupe, input.releaseBranch);
+    for (const reason of rangeReasons)
+        core.warning(reason);
+    const metadata = await graphql.fetchPrMetadata(prNumbers);
+    const attributed = [];
+    const unattributed = [];
+    for (const pr of metadata) {
+        const output = await (0, pipeline_1.processPr)(pipelineResolver, {
+            number: pr.number,
+            title: pr.title,
+            body: pr.body,
+            authorLogin: pr.authorLogin,
+            mergedAt: pr.mergedAt,
+            labels: pr.labels,
+            closingIssuesReferences: pr.closingIssuesReferences,
+        }, { gateRequiredAt: input.gateRequiredAt });
+        if (output.anomaly)
+            core.warning(`PR #${output.number}: ${output.anomaly} (${output.attribution.source}).`);
+        for (const reason of output.attribution.reasons)
+            core.warning(`PR #${output.number}: ${reason}`);
+        for (const reason of output.categorization.reasons)
+            core.warning(`PR #${output.number}: ${reason}`);
+        const renderPr = {
+            number: output.number,
+            title: output.title,
+            section: output.categorization.section,
+            visibility: output.categorization.visibility,
+            component: output.categorization.component,
+            breaking: output.categorization.breaking,
+            issueNumbers: output.attribution.issueNumbers,
+            closesIssueNumbers: output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
+            attributionSource: output.attribution.source,
+        };
+        const bucketed = output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed';
+        (bucketed ? unattributed : attributed).push(renderPr);
+    }
+    const result = (0, render_1.render)(attributed, unattributed, {
+        version: input.targetVersion,
+        allowUnattributed: input.allowUnattributed,
+        unattributedReason: input.unattributedReason,
+    });
+    (0, node_fs_1.writeFileSync)(`${input.outputDir}/CHANGELOG-${input.targetVersion}.md`, result.fullAsset);
+    (0, node_fs_1.writeFileSync)(`${input.outputDir}/changelog.json`, JSON.stringify(result.changelogJson, null, 2));
+    (0, node_fs_1.writeFileSync)(`${input.outputDir}/labels.json`, JSON.stringify(result.labelsJson, null, 2));
+    (0, node_fs_1.writeFileSync)(`${input.outputDir}/audit.json`, JSON.stringify(result.auditJson, null, 2));
+    (0, node_fs_1.writeFileSync)(`${input.outputDir}/comments.json`, JSON.stringify(result.commentsJson, null, 2));
+    core.setOutput('customer-body', result.customerBody);
+    core.info(`Generated release notes for ${input.targetVersion}: ${attributed.length} attributed PR(s).`);
+}
+run().catch((err) => core.setFailed(err instanceof Error ? err.message : String(err)));
+
+
+/***/ }),
+
+/***/ 93:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.summary = exports.setFailed = exports.warning = exports.info = exports.setOutput = exports.getBooleanInput = exports.getInput = void 0;
+const node_fs_1 = __nccwpck_require__(24);
+/**
+ * ponytail: the ~7 GitHub Actions toolkit calls we actually use, inlined.
+ * @actions/core drags in @actions/exec + http-client + io (~400kB) for OIDC and
+ * command features this action never touches. These are the documented Actions
+ * command/file protocols — nothing clever.
+ */
+const escape = (msg) => msg.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+// The step summary is built as HTML, so escape anything interpolated into it —
+// reasons carry user-controlled PR title/body fragments.
+const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const appendEnvFile = (envVar, content) => {
+    const file = process.env[envVar];
+    if (file)
+        (0, node_fs_1.appendFileSync)(file, content);
+};
+const getInput = (name, opts = {}) => {
+    const value = (process.env[`INPUT_${name.toUpperCase().replace(/ /g, '_')}`] ?? '').trim();
+    if (opts.required && !value)
+        throw new Error(`Input required and not supplied: ${name}`);
+    return value;
+};
+exports.getInput = getInput;
+const getBooleanInput = (name) => (0, exports.getInput)(name).toLowerCase() === 'true';
+exports.getBooleanInput = getBooleanInput;
+// GITHUB_OUTPUT file protocol with a heredoc delimiter (safe for multiline values).
+const setOutput = (name, value) => appendEnvFile('GITHUB_OUTPUT', `${name}<<_GHA_EOF_\n${value}\n_GHA_EOF_\n`);
+exports.setOutput = setOutput;
+const info = (msg) => {
+    process.stdout.write(`${msg}\n`);
+};
+exports.info = info;
+const warning = (msg) => {
+    process.stdout.write(`::warning::${escape(msg)}\n`);
+};
+exports.warning = warning;
+const setFailed = (msg) => {
+    process.stdout.write(`::error::${escape(msg)}\n`);
+    process.exitCode = 1;
+};
+exports.setFailed = setFailed;
+class Summary {
+    buf = '';
+    addHeading(text, level = 1) {
+        this.buf += `<h${level}>${escapeHtml(text)}</h${level}>\n`;
+        return this;
+    }
+    addList(items) {
+        this.buf += `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>\n`;
+        return this;
+    }
+    async write() {
+        appendEnvFile('GITHUB_STEP_SUMMARY', this.buf);
+        this.buf = '';
+    }
+}
+exports.summary = new Summary();
+
+
+/***/ }),
+
+/***/ 631:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+/**
+ * Shared GitHub REST plumbing for the three fetch-based adapters (resolver,
+ * comment, labels). One definition of the bot's auth / API-version / user-agent
+ * headers and the per-repo base URL — previously copied verbatim into each
+ * adapter. The adapters stay octokit-free (a handful of endpoints each); this is
+ * just the common boilerplate, not a client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GITHUB_API = void 0;
+exports.githubHeaders = githubHeaders;
+exports.repoApiUrl = repoApiUrl;
+exports.GITHUB_API = 'https://api.github.com';
+const USER_AGENT = 'camunda-release-notes-gate';
+const GITHUB_API_VERSION = '2022-11-28';
+/** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
+ *  caller passes in. This action resolves from the PR head on `pull_request`
+ *  (see the gate workflow's security-model header), so it must never be
+ *  given a privileged token such as MONOREPO_RELEASE_APP. Pass `json: true`
+ *  for write requests that send a JSON body. */
+function githubHeaders(token, opts = {}) {
+    const headers = {
+        authorization: `Bearer ${token}`,
+        accept: 'application/vnd.github+json',
+        'x-github-api-version': GITHUB_API_VERSION,
+        'user-agent': USER_AGENT,
+    };
+    if (opts.json)
+        headers['content-type'] = 'application/json';
+    return headers;
+}
+/** `https://api.github.com/repos/<owner>/<repo>` — the common request prefix. */
+function repoApiUrl(owner, repo) {
+    return `${exports.GITHUB_API}/repos/${owner}/${repo}`;
+}
+
+
+/***/ }),
+
+/***/ 883:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SECTION_HEADING = exports.OPT_OUT_PHRASE = void 0;
+exports.stripHtmlComments = stripHtmlComments;
+exports.stripCode = stripCode;
+exports.parseRefs = parseRefs;
+exports.extractSection = extractSection;
+exports.isOptOutTicked = isOptOutTicked;
+/**
+ * Pure, section-scoped reference parser. Shared verbatim with the generator
+ * (#57713) — no IO, no repo awareness. Cross-repo detection and issue-vs-PR
+ * classification belong to the Resolver, not here.
+ */
+/** The template's opt-out phrase. Kept as an exported constant so the PR template
+ *  and the parser cannot drift (enforced by the repo-constant grep in CI). */
+exports.OPT_OUT_PHRASE = 'this pr does not need a linked issue';
+/** The section whose refs the gate evaluates. */
+exports.SECTION_HEADING = 'Related issues';
+// GitHub's closing keywords + our custom "completes". Case-insensitive.
+const CLOSING = /^(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|completes?)$/i;
+const RELATES = /^relates?\s+to$/i;
+const BACKPORT = /^backport\s+of$/i;
+// Optional keyword prefix shared by both ref shapes.
+const KW = String.raw `(?:\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?|completes?|relates?\s+to|backport\s+of)\b[\s:]+)?`;
+const OWNER_REPO = String.raw `([A-Za-z0-9][\w.-]*\/[A-Za-z0-9][\w.-]*)`;
+// "closes #12", "camunda/other#7", bare "#12".
+const SHORTHAND = new RegExp(KW + `(?:${OWNER_REPO})?#(\\d+)`, 'gi');
+// Full GitHub URLs: ".../owner/repo/issues/12" or ".../pull/12".
+const URL = new RegExp(KW + String.raw `https?:\/\/github\.com\/${OWNER_REPO}\/(?:issues|pull)\/(\d+)`, 'gi');
+function kindOf(keyword) {
+    if (keyword && BACKPORT.test(keyword))
+        return 'backport';
+    if (keyword && RELATES.test(keyword))
+        return 'contributor';
+    if (keyword && CLOSING.test(keyword))
+        return 'closing';
+    return 'contributor'; // bare "#N"
+}
+/**
+ * Strip HTML comments before any parsing. The PR template's own instructional
+ * `<!-- ... closes #1234 ... -->` block lives inside "## Related issues" and is
+ * invisible in GitHub's rendered body, so a PR that leaves the boilerplate
+ * untouched must NOT be attributed to whatever issue the comment names.
+ */
+function stripHtmlComments(text) {
+    return text.replace(/<!--[\s\S]*?-->/g, '');
+}
+/**
+ * Strip fenced and inline Markdown code before any parsing. A reviewer citing
+ * an example — `` `closes #1234` `` in prose, or a fenced snippet quoting the
+ * template — must not be mistaken for the author's own ref or opt-out tick.
+ */
+function stripCode(text) {
+    return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
+}
+/** Extract every reference from the given text (already scoped by the caller). */
+function parseRefs(text) {
+    text = stripCode(stripHtmlComments(text));
+    const refs = [];
+    const seen = new Set(); // dedupe by match offset
+    const push = (match, repo, num) => {
+        if (seen.has(match.index))
+            return;
+        seen.add(match.index);
+        const keyword = match[1] ? match[1].toLowerCase().replace(/\s+/g, ' ') : null;
+        refs.push({
+            raw: match[0].trim(),
+            number: Number(num),
+            repo: repo ?? null,
+            keyword,
+            kind: kindOf(keyword),
+            index: match.index,
+        });
+    };
+    for (const match of text.matchAll(URL))
+        push(match, match[2] ?? null, match[3]);
+    for (const match of text.matchAll(SHORTHAND))
+        push(match, match[2] ?? null, match[3]);
+    return refs.sort((first, second) => first.index - second.index);
+}
+/**
+ * Slice out a markdown section body: everything after the matching heading up
+ * to the next heading of any level (or EOF). Returns null if absent.
+ */
+function extractSection(body, heading = exports.SECTION_HEADING) {
+    const lines = stripHtmlComments(body).split(/\r?\n/);
+    const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');
+    const start = lines.findIndex((line) => headingRe.test(line.trim()));
+    if (start < 0)
+        return null;
+    const rest = lines.slice(start + 1);
+    const end = rest.findIndex((line) => /^#{1,6}\s+\S/.test(line.trim()));
+    return (end < 0 ? rest : rest.slice(0, end)).join('\n');
+}
+/** True when the opt-out checkbox is present and ticked. */
+function isOptOutTicked(body) {
+    const re = new RegExp(String.raw `^\s*[-*]\s*\[x\]\s*.*${escapeRe(exports.OPT_OUT_PHRASE)}`, 'im');
+    return re.test(stripCode(stripHtmlComments(body)));
+}
+function escapeRe(literal) {
+    return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+
+/***/ }),
+
+/***/ 782:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.processPr = processPr;
+const attribution_1 = __nccwpck_require__(233);
+const categorize_1 = __nccwpck_require__(493);
+const parser_1 = __nccwpck_require__(883);
+async function attributeDirectly(resolver, body, closingIssuesReferences) {
+    const section = (0, parser_1.extractSection)(body);
+    const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
+    const sectionRefs = section ? await resolver.resolveRefs((0, parser_1.parseRefs)(section)) : [];
+    const legacyRefs = await resolver.resolveRefs((0, parser_1.parseRefs)(body));
+    return (0, attribution_1.decideAttribution)({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
+}
+async function attributePr(resolver, pr) {
+    const direct = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
+    if (direct.source !== 'unattributed')
+        return direct;
+    const backport = (0, parser_1.parseRefs)(pr.body).find((ref) => ref.kind === 'backport');
+    if (!backport)
+        return direct;
+    const original = await resolver.fetchOriginalPull(backport.number);
+    if (!original)
+        return direct;
+    const originalDecision = await attributeDirectly(resolver, original.body, []);
+    return (0, attribution_1.hopToBackportOriginal)(originalDecision);
+}
+async function categorizePr(resolver, pr) {
+    const override = pr.authorLogin ? categorize_1.BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
+    let originalTitle;
+    if (override === 'inherit-original') {
+        const backport = (0, parser_1.parseRefs)(pr.body).find((ref) => ref.kind === 'backport');
+        if (backport)
+            originalTitle = (await resolver.fetchOriginalPull(backport.number))?.title;
+    }
+    const title = (0, categorize_1.resolveCategorizeTitle)({ title: pr.title, authorLogin: pr.authorLogin, originalTitle });
+    const componentLabels = pr.labels.filter((label) => label.startsWith('component/'));
+    const breakingChangeLabel = pr.labels.includes('BREAKING CHANGE');
+    return (0, categorize_1.categorize)({ title, authorLogin: pr.authorLogin, componentLabels, breakingChangeLabel });
+}
+async function processPr(resolver, pr, options) {
+    const attribution = await attributePr(resolver, pr);
+    const categorization = await categorizePr(resolver, pr);
+    const anomaly = (0, attribution_1.evaluatePostGateAnomaly)({
+        mergedAt: pr.mergedAt,
+        gateRequiredAt: options.gateRequiredAt,
+        source: attribution.source,
+    });
+    return { number: pr.number, title: pr.title, attribution, categorization, anomaly };
+}
+
+
+/***/ }),
+
+/***/ 53:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+/**
+ * The pure part of the range resolver (#50968): baseline STRATEGY selection
+ * (which previous point to diff against — never the actual git call) and the
+ * commit-to-PR dedupe/ambiguity rules. The actual `merge-base`/`git log` calls
+ * are the I/O part (a later step) — this module only decides what to ask git,
+ * and how to turn its answer into a deduped PR list.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveBaselineStrategy = resolveBaselineStrategy;
+exports.resolveCommitsToPrs = resolveCommitsToPrs;
+const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha(\d+))?$/;
+function parseVersion(version) {
+    const match = VERSION.exec(version);
+    if (!match)
+        throw new Error(`Not a recognized release version: "${version}"`);
+    return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]), alpha: match[4] ? Number(match[4]) : null };
+}
+function format(v) {
+    const base = `${v.major}.${v.minor}.${v.patch}`;
+    return v.alpha ? `${base}-alpha${v.alpha}` : base;
+}
+/**
+ * Decide the baseline to diff `target` against, from the version string
+ * alone — V5's alpha1-of-cycle rule is deliberately "always the fork point,
+ * never a tag lookup", so this needs no tag list to consult; every other
+ * case is pure arithmetic on the version number too (previous patch/alpha,
+ * or the previous minor's own release tag by construction).
+ */
+function resolveBaselineStrategy(target) {
+    const v = parseVersion(target);
+    // alpha1-of-cycle: the first alpha of a brand-new minor, no prior tag on
+    // this line exists yet — ALWAYS the fork point off the previous minor's
+    // stable branch, never a tag lookup (V5).
+    if (v.alpha === 1 && v.patch === 0) {
+        return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${v.minor - 1}` };
+    }
+    if (v.alpha !== null) {
+        return { kind: 'previousTag', ref: format({ ...v, alpha: v.alpha - 1 }) };
+    }
+    if (v.patch > 0) {
+        return { kind: 'previousTag', ref: format({ ...v, patch: v.patch - 1 }) };
+    }
+    // Minor release (patch 0, not alpha): fork point between the previous
+    // minor's own release tag and this target — kills the ancestry warning.
+    const previousMinorTag = format({ major: v.major, minor: v.minor - 1, patch: 0 });
+    return { kind: 'forkPoint', otherRef: previousMinorTag };
+}
+/** `[maven-release-plugin]` stub-segment commits are the only legitimate
+ *  PR-less commits (C12) — everything else on a protected branch without a PR
+ *  is a ruleset-bypass anomaly. */
+const AUTOMATION_WHITELIST = /^\[maven-release-plugin\]/;
+/**
+ * Dedupe a first-parent commit walk down to one entry per PR, applying the
+ * ambiguity rule (prefer the PR targeting the release branch; still tied ->
+ * audit, never guess) and the PR-less-commit whitelist (C10/C12).
+ */
+function resolveCommitsToPrs(commits, releaseBranch) {
+    const prNumbers = [];
+    const reasons = [];
+    const seen = new Set();
+    const attribute = (pr) => {
+        if (seen.has(pr.number))
+            return;
+        seen.add(pr.number);
+        prNumbers.push(pr.number);
+    };
+    for (const commit of commits) {
+        if (commit.associatedPrs.length === 0) {
+            if (AUTOMATION_WHITELIST.test(commit.message))
+                continue;
+            reasons.push(`Ruleset-bypass anomaly: commit ${commit.sha} has no associated pull request and does not match the automation whitelist.`);
+            continue;
+        }
+        if (commit.associatedPrs.length === 1) {
+            attribute(commit.associatedPrs[0]);
+            continue;
+        }
+        const matchingBranch = commit.associatedPrs.filter((pr) => pr.baseRefName === releaseBranch);
+        if (matchingBranch.length === 1) {
+            attribute(matchingBranch[0]);
+        }
+        else {
+            const list = commit.associatedPrs.map((pr) => `#${pr.number}`).join(', ');
+            reasons.push(`Ambiguous commit ${commit.sha}: associated with multiple pull requests (${list}) and no unique match targeting ${releaseBranch} — never guessing.`);
+        }
+    }
+    return { prNumbers, reasons };
+}
+
+
+/***/ }),
+
+/***/ 600:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveBaselineRef = resolveBaselineRef;
+exports.walkFirstParent = walkFirstParent;
+const node_child_process_1 = __nccwpck_require__(421);
+// Unit separator: never appears in a commit subject, unlike ":" or "|".
+const FIELD_SEP = '\x1f';
+/**
+ * Turn a `BaselineStrategy` (the pure decision from `resolveBaselineStrategy`)
+ * into an actual commit SHA/ref. A previousTag strategy already names the ref
+ * to diff against; a forkPoint strategy needs the one real git call this
+ * package makes for that purpose (`merge-base`).
+ */
+function resolveBaselineRef(repoDir, strategy, target) {
+    if (strategy.kind === 'previousTag')
+        return strategy.ref;
+    return (0, node_child_process_1.execFileSync)('git', ['merge-base', target, strategy.otherRef], { cwd: repoDir, encoding: 'utf8' }).trim();
+}
+function walkFirstParent(repoDir, baseline, target) {
+    const output = (0, node_child_process_1.execFileSync)('git', ['log', `${baseline}..${target}`, '--first-parent', `--format=%H${FIELD_SEP}%s`], { cwd: repoDir, encoding: 'utf8' });
+    return output
+        .split('\n')
+        .filter((line) => line.length > 0)
+        .map((line) => {
+        const [sha, message] = line.split(FIELD_SEP);
+        return { sha: sha, message: message ?? '' };
+    });
+}
+
+
+/***/ }),
+
+/***/ 624:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SCHEMA_VERSION = void 0;
+exports.render = render;
+/**
+ * Turns the attributed-and-categorized PR list into the outputs everyone
+ * downstream reads. Pure — no IO, no fetching; every fact it needs (which
+ * issues a PR actually closes, per real GitHub issue state) is supplied by
+ * the caller, never derived here from a keyword (the AC this generator
+ * exists to satisfy: an accidental closing keyword on a non-final PR must
+ * not stamp a premature "Released").
+ */
+/** V6: every JSON output carries this so a future format change must bump it
+ *  deliberately, rather than downstream consumers silently misreading a
+ *  shape they weren't built for. */
+exports.SCHEMA_VERSION = '1.0.0';
+const SECTION_ORDER = [
+    'Features',
+    'Bug Fixes',
+    'Performance',
+    'Documentation',
+    'Dependency updates',
+    'Reverts',
+    'Changes without a tracked issue',
+    'Uncategorized',
+];
+/** D19: an opt-out PR is grouped under its own section for display, never
+ *  its type's normal section — but only when its type is customer-visible;
+ *  an internal-only opt-out type stays asset-only, same as a linked one. */
+function groupNameFor(pr) {
+    if (pr.attributionSource === 'optOut')
+        return 'Changes without a tracked issue';
+    return pr.section ?? 'Uncategorized';
+}
+function renderSectionedBody(prs) {
+    const breaking = prs.filter((pr) => pr.breaking);
+    const groups = new Map();
+    for (const pr of prs) {
+        const name = groupNameFor(pr);
+        const list = groups.get(name) ?? [];
+        list.push(pr);
+        groups.set(name, list);
+    }
+    const lines = [];
+    if (breaking.length > 0) {
+        lines.push('## Breaking changes', '', ...breaking.map((pr) => renderLine(pr)), '');
+    }
+    const orderedNames = [...SECTION_ORDER, ...[...groups.keys()].filter((name) => !SECTION_ORDER.includes(name))];
+    for (const name of orderedNames) {
+        const list = groups.get(name);
+        if (!list?.length)
+            continue;
+        lines.push(`## ${name}`, '', ...list.map((pr) => renderLine(pr)), '');
+    }
+    return lines.join('\n').trim();
+}
+function renderLine(pr) {
+    const issues = pr.issueNumbers.length ? ` (${pr.issueNumbers.map((n) => `#${n}`).join(', ')})` : '';
+    return `- ${pr.title} (#${pr.number})${issues}`;
+}
+function relationFor(pr, issueNumber) {
+    return pr.closesIssueNumbers.includes(issueNumber) ? 'closing' : 'contributor';
+}
+function commentTextFor(pr, issueNumber, version) {
+    const relation = relationFor(pr, issueNumber);
+    return relation === 'closing'
+        ? `Released in ${version} (#${pr.number}).`
+        : `Partially delivered in ${version} by #${pr.number}.`;
+}
+function render(prs, unattributed, options) {
+    if (unattributed.length > 0) {
+        if (!options.allowUnattributed || !options.unattributedReason) {
+            throw new Error(`Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
+                'Set allow-unattributed=true with a non-empty unattributed-reason to override.');
+        }
+    }
+    const all = [...prs, ...unattributed];
+    const customerPrs = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
+    const assetPrs = all.filter((pr) => pr.section !== null);
+    const customerBody = renderSectionedBody(customerPrs);
+    const fullAsset = renderSectionedBody(assetPrs);
+    const commentEntries = all.flatMap((pr) => pr.issueNumbers.map((issueNumber) => ({
+        issueNumber,
+        relationKind: relationFor(pr, issueNumber),
+        prNumber: pr.number,
+        text: commentTextFor(pr, issueNumber, options.version),
+        marker: `<!-- release-notes:${options.version}:issue-${issueNumber} -->`,
+    })));
+    const overrides = unattributed.map((pr) => ({ number: pr.number, reason: options.unattributedReason ?? '' }));
+    return {
+        customerBody,
+        fullAsset,
+        changelogJson: { schemaVersion: exports.SCHEMA_VERSION, version: options.version, prs: all },
+        labelsJson: {
+            schemaVersion: exports.SCHEMA_VERSION,
+            version: options.version,
+            issues: [...new Set(all.flatMap((pr) => pr.issueNumbers))],
+            pullRequests: all.map((pr) => pr.number),
+        },
+        auditJson: { schemaVersion: exports.SCHEMA_VERSION, version: options.version, overrides },
+        commentsJson: { schemaVersion: exports.SCHEMA_VERSION, version: options.version, entries: commentEntries },
+    };
+}
+
+
+/***/ }),
+
+/***/ 940:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GithubGraphqlResolver = exports.RATE_LIMITED_ERROR_TYPE = void 0;
+const github_1 = __nccwpck_require__(631);
+const GRAPHQL_URL = 'https://api.github.com/graphql';
+/** A legitimate release never needs more than this many commits/PRs per
+ *  request; batching bounds query cost and request count against a burst of
+ *  thousands of commits (V7: 50-100 PRs/request). */
+const BATCH_SIZE = 100;
+/** A real secondary rate limit clears within seconds to a couple of minutes;
+ *  past this many attempts something else is wrong and must surface, not loop. */
+const MAX_RETRIES = 5;
+exports.RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
+function assertField(value, description) {
+    if (value === null || value === undefined)
+        throw new Error(`Malformed GraphQL response: missing ${description}`);
+    return value;
+}
+class GithubGraphqlResolver {
+    token;
+    owner;
+    repo;
+    fetchImpl;
+    sleepImpl;
+    constructor(token, owner, repo, fetchImpl = fetch, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+        this.token = token;
+        this.owner = owner;
+        this.repo = repo;
+        this.fetchImpl = fetchImpl;
+        this.sleepImpl = sleepImpl;
+    }
+    async mapCommitsToPrs(shas) {
+        const results = [];
+        for (let i = 0; i < shas.length; i += BATCH_SIZE) {
+            results.push(...(await this.mapCommitBatch(shas.slice(i, i + BATCH_SIZE))));
+        }
+        return results;
+    }
+    async fetchPrMetadata(numbers) {
+        const results = [];
+        for (let i = 0; i < numbers.length; i += BATCH_SIZE) {
+            results.push(...(await this.fetchMetadataBatch(numbers.slice(i, i + BATCH_SIZE))));
+        }
+        return results;
+    }
+    async mapCommitBatch(shas) {
+        const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: String!`).join(', ')}) {
+      repository(owner: $owner, name: $name) {
+        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { associatedPullRequests(first: 10) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } } `).join('\n')}
+      }
+    }`;
+        const variables = { owner: this.owner, name: this.repo };
+        shas.forEach((sha, i) => (variables[`sha${i}`] = sha));
+        const repository = assertField((await this.request(query, variables)).repository, 'repository');
+        const mappings = [];
+        for (const [i, sha] of shas.entries()) {
+            const commit = assertField(repository[`c${i}`], `repository.c${i} (commit ${sha})`);
+            mappings.push({ sha, associatedPrs: await this.drainAssociatedPrs(sha, commit) });
+        }
+        return mappings;
+    }
+    /** Follows `pageInfo.hasNextPage` for one commit's `associatedPullRequests`
+     *  connection until exhausted — rare (a commit tied to many PRs), but never
+     *  silently truncated at the first page. */
+    async drainAssociatedPrs(sha, firstPage) {
+        const connection = assertField(firstPage.associatedPullRequests, `associatedPullRequests on commit ${sha}`);
+        let nodes = assertField(connection.nodes, `associatedPullRequests.nodes on commit ${sha}`);
+        let pageInfo = assertField(connection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`);
+        const all = [...nodes];
+        while (pageInfo.hasNextPage) {
+            const query = `query($owner: String!, $name: String!, $sha: String!, $after: String) {
+        repository(owner: $owner, name: $name) {
+          c: object(oid: $sha) { ... on Commit { associatedPullRequests(first: 10, after: $after) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } }
+        }
+      }`;
+            const repository = assertField((await this.request(query, { owner: this.owner, name: this.repo, sha, after: pageInfo.endCursor })).repository, 'repository');
+            const commit = assertField(repository.c, `repository.c (commit ${sha})`);
+            const nextConnection = assertField(commit.associatedPullRequests, `associatedPullRequests on commit ${sha}`);
+            nodes = assertField(nextConnection.nodes, `associatedPullRequests.nodes on commit ${sha}`);
+            pageInfo = assertField(nextConnection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`);
+            all.push(...nodes);
+        }
+        return all;
+    }
+    async fetchMetadataBatch(numbers) {
+        const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
+      repository(owner: $owner, name: $name) {
+        ${numbers
+            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`)
+            .join('\n')}
+      }
+    }`;
+        const variables = { owner: this.owner, name: this.repo };
+        numbers.forEach((number, i) => (variables[`n${i}`] = number));
+        const repository = assertField((await this.request(query, variables)).repository, 'repository');
+        return numbers.map((number, i) => {
+            const pr = assertField(repository[`pr${i}`], `repository.pr${i} (PR #${number})`);
+            const labels = assertField(pr.labels, `labels on PR #${number}`);
+            const closingIssuesReferences = assertField(pr.closingIssuesReferences, `closingIssuesReferences on PR #${number}`);
+            return {
+                number: assertField(pr.number, `number on PR #${number}`),
+                title: assertField(pr.title, `title on PR #${number}`),
+                body: pr.body ?? '',
+                authorLogin: pr.author?.login,
+                mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
+                labels: (assertField(labels.nodes, `labels.nodes on PR #${number}`)).map((l) => l.name),
+                closingIssuesReferences: (assertField(closingIssuesReferences.nodes, `closingIssuesReferences.nodes on PR #${number}`)).map((n) => n.number),
+            };
+        });
+    }
+    /** Post one GraphQL request, retrying a secondary rate limit with
+     *  exponential backoff up to MAX_RETRIES. Never logs the token, headers, or
+     *  the raw response — only the error type/message once retries are exhausted. */
+    async request(query, variables) {
+        for (let attempt = 0;; attempt++) {
+            const res = await this.fetchImpl(GRAPHQL_URL, {
+                method: 'POST',
+                headers: (0, github_1.githubHeaders)(this.token, { json: true }),
+                body: JSON.stringify({ query, variables }),
+            });
+            if (!res.ok)
+                throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
+            const payload = (await res.json());
+            const rateLimited = payload.errors?.some((error) => error.type === exports.RATE_LIMITED_ERROR_TYPE) ?? false;
+            if (rateLimited) {
+                if (attempt >= MAX_RETRIES - 1) {
+                    throw new Error(`GitHub GraphQL secondary rate limit persisted past ${MAX_RETRIES} attempts.`);
+                }
+                await this.sleepImpl(2 ** attempt * 1000);
+                continue;
+            }
+            if (payload.errors?.length) {
+                throw new Error(`GitHub GraphQL error: ${payload.errors.map((error) => error.message).join('; ')}`);
+            }
+            return assertField(payload.data, 'data');
+        }
+    }
+}
+exports.GithubGraphqlResolver = GithubGraphqlResolver;
+
+
+/***/ }),
+
+/***/ 306:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GithubResolver = void 0;
+const github_1 = __nccwpck_require__(631);
+/** A PR body can carry at most this many refs to the API. A legitimate PR never
+ *  needs more than a handful — this bounds the worst case (a body stuffed with
+ *  hundreds of `#N` shorthands on `pull_request_target`) to a fixed cost. */
+const MAX_REFS = 20;
+/** How many classify calls run concurrently. Caps the fan-out against GitHub's
+ *  API even after dedup + the cap above, so a burst of distinct numbers cannot
+ *  open dozens of sockets at once. */
+const CONCURRENCY = 5;
+/** Lower sorts first. Closing/backport refs decide the gate's verdict, so they
+ *  must survive the MAX_REFS cap ahead of merely-informational refs. */
+function priorityOf(ref) {
+    if (ref.kind === 'closing')
+        return 0;
+    if (ref.kind === 'backport')
+        return 1;
+    return 2;
+}
+/**
+ * GitHub-API resolver: the only part of the pipeline that touches the network.
+ * Classifies each ref as issue vs PR vs missing and flags cross-repo refs.
+ *
+ * GitHub's issues API returns PRs too (a PR is an issue with a `pull_request`
+ * field), so one lookup per number classifies both. Cross-repo refs are not
+ * queried — they never satisfy the gate, so their target stays "missing".
+ *
+ * ponytail: plain fetch (Node 24 global) over octokit — we hit exactly one
+ * endpoint; octokit would inline the whole REST client into the bundle.
+ */
+class GithubResolver {
+    token;
+    owner;
+    repo;
+    repoUrl;
+    headers;
+    constructor(token, owner, repo) {
+        this.token = token;
+        this.owner = owner;
+        this.repo = repo;
+        this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
+        this.headers = (0, github_1.githubHeaders)(token);
+    }
+    /**
+     * Resolve every ref, deduped (repeats of the same "#N" cost one API call),
+     * capped at MAX_REFS (a legitimate PR never needs more), and bounded to
+     * CONCURRENCY in flight — defense against a body engineered to fan out
+     * unbounded concurrent requests through the gate's token.
+     */
+    async resolve(refs) {
+        // Closing/backport refs decide the gate's verdict; bare/"relates to" refs
+        // are informational. A stable sort keeps refs of equal priority in their
+        // original order, so when the cap below has to drop something, it drops
+        // the least consequential refs first instead of whichever came last in
+        // the body.
+        const prioritized = [...refs].sort((first, second) => priorityOf(first) - priorityOf(second));
+        const capped = prioritized.slice(0, MAX_REFS);
+        const cache = new Map();
+        const classifyCached = (ref) => {
+            const key = `${ref.repo ?? ''}#${ref.number}`;
+            let promise = cache.get(key);
+            if (!promise) {
+                promise = this.classify(ref);
+                cache.set(key, promise);
+            }
+            return promise;
+        };
+        const results = [];
+        for (let i = 0; i < capped.length; i += CONCURRENCY) {
+            const batch = capped.slice(i, i + CONCURRENCY);
+            const classified = await Promise.all(batch.map(classifyCached));
+            batch.forEach((ref, index) => {
+                const { target, crossRepo } = classified[index];
+                results.push({ ...ref, target, crossRepo });
+            });
+        }
+        // Restore body order for the policy's messages — the priority sort above
+        // only controls what survives the cap, not how resolved refs get reported.
+        return results.sort((first, second) => first.index - second.index);
+    }
+    /**
+     * Fetch a same-repo pull request's body for backport-hop validation, or null
+     * if it does not exist. Used to follow `Backport of #N` to the original PR and
+     * validate that PR's attribution (the backport inherits it — C7).
+     *
+     * A cross-repo marker (`Backport of owner/other#N`) resolves to null: this
+     * resolver is hardcoded to its own owner/repo, so #N there would name an
+     * unrelated PR in THIS repo. We only inherit attribution from our own repo.
+     */
+    async fetchPullBody(number, repo) {
+        if (this.isCrossRepo(repo))
+            return null;
+        const pull = await this.fetchPull(number);
+        return pull?.body ?? null;
+    }
+    /**
+     * Fetch the fields the gate evaluates for one same-repo pull request, or null
+     * if it does not exist.
+     *
+     * This is how the entrypoint obtains the PR under `workflow_run`, where the
+     * event payload carries no `pull_request` object at all. Fetching also means
+     * the body is read at evaluation time, so a stale or superseded trigger run
+     * can never evaluate an out-of-date body.
+     */
+    async fetchPull(number) {
+        const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
+            headers: this.headers,
+        });
+        if (res.status === 404)
+            return null;
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
+        const data = (await res.json());
+        return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
+    }
+    /** A ref points at a different repo than the one being gated (case-insensitive). */
+    isCrossRepo(repo) {
+        return repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
+    }
+    /** Classify one (repo, number) pair — the part of a ref that actually needs
+     *  an API call. Keyed independently of the ParsedRef's own fields (raw,
+     *  keyword, kind, index) so `resolve()` can cache and reuse it across every
+     *  ref that shares the same repo/number. */
+    async classify(ref) {
+        if (this.isCrossRepo(ref.repo))
+            return { target: 'missing', crossRepo: true };
+        const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
+            headers: this.headers,
+        });
+        if (res.status === 404)
+            return { target: 'missing', crossRepo: false };
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
+        const data = (await res.json());
+        return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
+    }
+}
+exports.GithubResolver = GithubResolver;
+
+
+/***/ }),
+
+/***/ 421:
+/***/ ((module) => {
+
+module.exports = require("node:child_process");
+
+/***/ }),
+
+/***/ 24:
+/***/ ((module) => {
+
+module.exports = require("node:fs");
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __nccwpck_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		var threw = true;
+/******/ 		try {
+/******/ 			__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nccwpck_require__);
+/******/ 			threw = false;
+/******/ 		} finally {
+/******/ 			if(threw) delete __webpack_module_cache__[moduleId];
+/******/ 		}
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat */
+/******/ 	
+/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(516);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
+/******/ })()
+;
