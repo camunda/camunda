@@ -61,10 +61,12 @@ public class AdHocSubProcessInstructionCompleteProcessor
                   createBpmnElementContext(elementInstance),
                   recordValue.isCancelRemainingInstances());
 
+              recordValue.setStorageOrdinalKey(elementInstance.getValue().getStorageOrdinalKey());
+
               stateWriter.appendFollowUpEvent(
                   recordValue.getAdHocSubProcessInstanceKey(),
                   AdHocSubProcessInstructionIntent.COMPLETED,
-                  record.getValue());
+                  recordValue);
             },
             rejection ->
                 rejectionWriter.appendRejection(record, rejection.type(), rejection.reason()));

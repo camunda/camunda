@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -46,15 +47,18 @@ public class DecisionEvaluationEvaluateProcessor
   private final CslAuthorizationCheck cslCheck;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final StorageOrdinalKeyProvider storageOrdinalKeyProvider;
 
   public DecisionEvaluationEvaluateProcessor(
       final DecisionBehavior decisionBehavior,
       final KeyGenerator keyGenerator,
+      final StorageOrdinalKeyProvider storageOrdinalKeyProvider,
       final Writers writers,
       final CslAuthorizationCheck cslCheck) {
 
     this.decisionBehavior = decisionBehavior;
     this.keyGenerator = keyGenerator;
+    this.storageOrdinalKeyProvider = storageOrdinalKeyProvider;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -119,15 +123,14 @@ public class DecisionEvaluationEvaluateProcessor
                   evaluationRecordTuple =
                       decisionBehavior.createDecisionEvaluationEvent(
                           decision, evaluationResult, evaluationRecordKey);
+
+              final DecisionEvaluationRecord evaluationRecord =
+                  withStorageOrdinalKey(evaluationRecordTuple.getRight());
+
               stateWriter.appendFollowUpEvent(
-                  evaluationRecordKey,
-                  evaluationRecordTuple.getLeft(),
-                  evaluationRecordTuple.getRight());
+                  evaluationRecordKey, evaluationRecordTuple.getLeft(), evaluationRecord);
               responseWriter.writeAcceptedResponseOnCommand(
-                  evaluationRecordKey,
-                  evaluationRecordTuple.getLeft(),
-                  evaluationRecordTuple.getRight(),
-                  command);
+                  evaluationRecordKey, evaluationRecordTuple.getLeft(), evaluationRecord, command);
             },
             rejection -> {
               final String reason = rejection.reason();
@@ -155,5 +158,11 @@ public class DecisionEvaluationEvaluateProcessor
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
+  }
+
+  private DecisionEvaluationRecord withStorageOrdinalKey(
+      final DecisionEvaluationRecord evaluationRecord) {
+    evaluationRecord.setStorageOrdinalKey(storageOrdinalKeyProvider.getStorageOrdinalKey());
+    return evaluationRecord;
   }
 }
