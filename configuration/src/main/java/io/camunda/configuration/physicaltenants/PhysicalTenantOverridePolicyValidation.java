@@ -105,6 +105,12 @@ final class PhysicalTenantOverridePolicyValidation {
               "api.long-polling",
               // camunda.data.* cluster wide
               "data.secondary-storage.rdbms.max-varchar-field-length",
+              // camunda.webapps.*.url — announced cluster-wide by the
+              // /.well-known/camunda/webapps discovery endpoint (camunda/camunda#46649); the
+              // controller is cluster-scoped, so a per-tenant override would be silently ignored
+              "webapps.identity.url",
+              "webapps.operate.url",
+              "webapps.tasklist.url",
               // #56648: a per-tenant override of the partition data directory is not allowed,
               // because this directory refers to the root directory shared by all partitions and
               // physical tenants. The root directory also consists of shared data such as
