@@ -394,6 +394,81 @@ public class IndexSchemaValidatorTest {
     assertThat(difference).isEmpty();
   }
 
+  @Test
+  void shouldDetectTemplateWithAddedPropertyWhenNoBackingIndexExists() throws IOException {
+    // given - all indices of the template were dropped, only the template itself remains
+    final var indexTemplate =
+        createTestTemplateDescriptor("template_name", "/mappings-added-property.json");
+    final var templateMappings =
+        Map.of(
+            indexTemplate.getTemplateName(),
+            jsonToIndexMappingProperties("/mappings.json", indexTemplate.getTemplateName()));
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), templateMappings);
+
+    // then
+    assertThat(difference)
+        .containsExactly(
+            entry(
+                indexTemplate,
+                Set.of(
+                    new IndexMappingProperty.Builder()
+                        .name("foo")
+                        .typeDefinition(Map.of("type", "text"))
+                        .build())));
+  }
+
+  @Test
+  void shouldTreatUpToDateTemplateAsValidWhenNoBackingIndexExists() throws IOException {
+    // given
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
+    final var templateMappings =
+        Map.of(
+            indexTemplate.getTemplateName(),
+            jsonToIndexMappingProperties("/mappings.json", indexTemplate.getTemplateName()));
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), templateMappings);
+
+    // then
+    assertThat(difference).isEmpty();
+  }
+
+  @Test
+  void shouldUpdateTemplateWithChangedPropertyTypeWhenNoBackingIndexExists() throws IOException {
+    // given - a changed field type would be an unsupported change for an existing index (data
+    // migration required), but there is no backing index/data here, so it must not be rejected
+    final var indexTemplate =
+        createTestTemplateDescriptor("template_name", "/mappings-changed-property-invalid.json");
+    final var templateMappings =
+        Map.of(
+            indexTemplate.getTemplateName(),
+            jsonToIndexMappingProperties("/mappings.json", indexTemplate.getTemplateName()));
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), templateMappings);
+
+    // then
+    assertThat(difference).containsKey(indexTemplate);
+  }
+
+  @Test
+  void shouldIgnoreTemplateThatDoesNotExistEitherWhenNoBackingIndexExists() {
+    // given - neither the index nor the template itself has been created yet
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), Map.of());
+
+    // then
+    assertThat(difference).isEmpty();
+  }
+
   @SuppressWarnings("unchecked")
   private IndexMapping jsonToIndexMappingProperties(
       final String mappingsFileName, final String indexName) throws IOException {
