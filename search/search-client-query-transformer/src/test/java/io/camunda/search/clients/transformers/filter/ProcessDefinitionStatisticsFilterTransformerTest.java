@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
@@ -20,6 +21,8 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.filter.UntypedOperation;
+import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
@@ -201,6 +204,51 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
     final var hasParentQuery =
         assertIsSearchHasParentQuery(searchBoolQuery.must().get(2).queryOption());
     assertIsSearchTermQuery(hasParentQuery, "businessId", "order-1");
+  }
+
+  @Test
+  public void shouldQueryByVariableValueNotIn() {
+    // Covers the same VariableValueFilterTransformer -> SearchQueryBuilders.variableOperation()
+    // code path as the other affected endpoints, via this endpoint's has-child variable query.
+    // given
+    final var variableFilter =
+        new VariableValueFilter.Builder()
+            .name("status")
+            .valueOperation(UntypedOperation.of(Operation.notIn("done", "cancelled")))
+            .build();
+    final var processInstanceFilter =
+        FilterBuilders.processDefinitionStatisticsFilter(
+            PROCESS_DEFINITION_KEY, f -> f.variables(List.of(variableFilter)));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    final var searchBoolQuery = assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 3);
+    final var hasParentQuery =
+        assertIsSearchHasParentQuery(searchBoolQuery.must().get(2).queryOption());
+    assertThat(hasParentQuery).isInstanceOf(SearchHasChildQuery.class);
+    final var hasChildQuery = (SearchHasChildQuery) hasParentQuery;
+    assertThat(hasChildQuery.type()).isEqualTo("variable");
+    final var variableQueryOption = hasChildQuery.query().queryOption();
+    assertThat(variableQueryOption)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            variableBoolQuery -> {
+              assertThat(variableBoolQuery.must()).hasSize(2);
+              assertIsSearchTermQuery(
+                  variableBoolQuery.must().getFirst().queryOption(), "varName", "status");
+              final var valueBoolQuery =
+                  (SearchBoolQuery) variableBoolQuery.must().get(1).queryOption();
+              assertThat(valueBoolQuery.mustNot()).hasSize(1);
+              final var termsQuery =
+                  (SearchTermsQuery) valueBoolQuery.mustNot().getFirst().queryOption();
+              assertThat(termsQuery.field()).isEqualTo("varValue");
+              assertThat(termsQuery.values())
+                  .extracting(TypedValue::stringValue)
+                  .containsExactlyInAnyOrder("done", "cancelled");
+            });
   }
 
   @Test
