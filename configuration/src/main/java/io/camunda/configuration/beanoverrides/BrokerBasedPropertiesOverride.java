@@ -286,6 +286,13 @@ public class BrokerBasedPropertiesOverride {
     override
         .getExperimental()
         .getEngine()
+        .getStartup()
+        .setRpaReexportMigrationEnabled(
+            camunda.getProcessing().getEngine().getStartup().isRpaReexportMigrationEnabled());
+
+    override
+        .getExperimental()
+        .getEngine()
         .setInputMappingMode(
             toEngineMode(camunda.getProcessing().getEngine().getMappings().getInputMode()));
 
@@ -485,6 +492,8 @@ public class BrokerBasedPropertiesOverride {
       final BrokerBasedProperties override, final Camunda camunda) {
     final var grpc = camunda.getApi().getGrpc().withBrokerNetworkProperties();
 
+    override.getGateway().setEnable(camunda.getApi().isEnabled());
+
     final NetworkCfg networkCfg = override.getGateway().getNetwork();
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
@@ -498,6 +507,8 @@ public class BrokerBasedPropertiesOverride {
     final io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg threadsCfg =
         override.getGateway().getThreads();
     threadsCfg.setManagementThreads(grpc.getManagementThreads());
+    threadsCfg.setGrpcMinThreads(grpc.getGrpcMinThreads());
+    threadsCfg.setGrpcMaxThreads(grpc.getGrpcMaxThreads());
   }
 
   private static void populateFromSsl(final BrokerBasedProperties override, final Camunda camunda) {
@@ -739,8 +750,10 @@ public class BrokerBasedPropertiesOverride {
     socketBindingCfg.setHost(internalApi.getHost());
     socketBindingCfg.setPort(internalApi.getPort());
     socketBindingCfg.setAdvertisedHost(internalApi.getAdvertisedHost());
-    Optional.ofNullable(internalApi.getAdvertisedPort())
-        .ifPresent(socketBindingCfg::setAdvertisedPort);
+    final Integer advertisedPort = internalApi.getAdvertisedPort();
+    if (advertisedPort != null) {
+      socketBindingCfg.setAdvertisedPort(advertisedPort);
+    }
   }
 
   private static void populateFromCommandApi(
@@ -784,6 +797,8 @@ public class BrokerBasedPropertiesOverride {
 
     final var enableVersionCheck = system.getUpgrade().getEnableVersionCheck();
     override.getExperimental().setVersionCheckRestrictionEnabled(enableVersionCheck);
+
+    override.getExperimental().getQueryApi().setEnabled(system.getQueryApi().isEnabled());
   }
 
   private static void populateFromData(
@@ -878,6 +893,7 @@ public class BrokerBasedPropertiesOverride {
     brokerRocksDb.setMemoryLimit(unifiedRocksDb.getMemoryLimit());
     brokerRocksDb.setMemoryAllocationStrategy(unifiedRocksDb.getMemoryAllocationStrategy());
     brokerRocksDb.setMemoryFraction(unifiedRocksDb.getMemoryFraction());
+    brokerRocksDb.setMaxMemoryFraction(unifiedRocksDb.getMaxMemoryFraction());
     brokerRocksDb.setMaxOpenFiles(unifiedRocksDb.getMaxOpenFiles());
     brokerRocksDb.setMaxWriteBufferNumber(unifiedRocksDb.getMaxWriteBufferNumber());
     brokerRocksDb.setMinWriteBufferNumberToMerge(unifiedRocksDb.getMinWriteBufferNumberToMerge());

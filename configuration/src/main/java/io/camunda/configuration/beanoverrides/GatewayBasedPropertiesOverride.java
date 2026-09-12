@@ -117,6 +117,8 @@ public class GatewayBasedPropertiesOverride {
 
     final ThreadsCfg threadsCfg = override.getThreads();
     threadsCfg.setManagementThreads(grpc.getManagementThreads());
+    threadsCfg.setGrpcMinThreads(grpc.getGrpcMinThreads());
+    threadsCfg.setGrpcMaxThreads(grpc.getGrpcMaxThreads());
   }
 
   private void populateFromSsl(final GatewayBasedProperties override) {

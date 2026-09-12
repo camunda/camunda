@@ -26,13 +26,17 @@ public class Grpc implements Cloneable {
           "host", "zeebe.gateway.network.host",
           "port", "zeebe.gateway.network.port",
           "minKeepAliveInterval", "zeebe.gateway.network.minKeepAliveInterval",
-          "managementThreads", "zeebe.gateway.threads.managementThreads");
+          "managementThreads", "zeebe.gateway.threads.managementThreads",
+          "grpcMinThreads", "zeebe.gateway.threads.grpcMinThreads",
+          "grpcMaxThreads", "zeebe.gateway.threads.grpcMaxThreads");
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
           "host", "zeebe.broker.gateway.network.host",
           "port", "zeebe.broker.gateway.network.port",
           "minKeepAliveInterval", "zeebe.broker.gateway.network.minKeepAliveInterval",
-          "managementThreads", "zeebe.broker.gateway.threads.managementThreads");
+          "managementThreads", "zeebe.broker.gateway.threads.managementThreads",
+          "grpcMinThreads", "zeebe.broker.gateway.threads.grpcMinThreads",
+          "grpcMaxThreads", "zeebe.broker.gateway.threads.grpcMaxThreads");
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
@@ -57,6 +61,12 @@ public class Grpc implements Cloneable {
 
   /** Sets the number of threads the gateway will use to communicate with the broker cluster */
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
+
+  /** Sets the minimum number of threads the gateway will use to handle gRPC requests */
+  private int grpcMinThreads = Runtime.getRuntime().availableProcessors();
+
+  /** Sets the maximum number of threads the gateway will use to handle gRPC requests */
+  private int grpcMaxThreads = 2 * Runtime.getRuntime().availableProcessors();
 
   /**
    * Sets the maximum age of a gRPC connection before the gateway proactively closes it (via
@@ -131,6 +141,32 @@ public class Grpc implements Cloneable {
 
   public void setManagementThreads(final int managementThreads) {
     this.managementThreads = managementThreads;
+  }
+
+  public int getGrpcMinThreads() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".grpc-min-threads",
+        grpcMinThreads,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("grpcMinThreads")));
+  }
+
+  public void setGrpcMinThreads(final int grpcMinThreads) {
+    this.grpcMinThreads = grpcMinThreads;
+  }
+
+  public int getGrpcMaxThreads() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".grpc-max-threads",
+        grpcMaxThreads,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("grpcMaxThreads")));
+  }
+
+  public void setGrpcMaxThreads(final int grpcMaxThreads) {
+    this.grpcMaxThreads = grpcMaxThreads;
   }
 
   public @Nullable Duration getMaxConnectionAge() {
