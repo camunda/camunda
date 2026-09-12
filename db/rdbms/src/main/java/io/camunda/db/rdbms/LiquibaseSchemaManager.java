@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -24,6 +25,11 @@ import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
+import liquibase.exception.DuplicateChangeSetException;
+import liquibase.exception.LiquibaseParseException;
+import liquibase.exception.SetupException;
+import liquibase.exception.UnknownChangelogFormatException;
+import liquibase.exception.ValidationFailedException;
 import liquibase.integration.spring.SpringLiquibase;
 import liquibase.lockservice.LockService;
 import liquibase.lockservice.LockServiceFactory;
@@ -165,9 +171,19 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
     LOG.info("[RDBMS Schema] Running Liquibase migration with prefix '{}'.", prefix);
     final var runner = buildRunner();
     releaseStaleLockIfPresent();
-    seedSchemaVersion();
-    versionStore.checkCompatibility();
-    performMigrationWithRetry(runner);
+    try {
+      seedSchemaVersion();
+      versionStore.checkCompatibility();
+      performMigrationWithRetry(runner);
+    } catch (final Exception e) {
+      throw isDeterministicFailure(e)
+          ? new RdbmsSchemaMigrationFailedException(
+              "[RDBMS Schema] Liquibase migration for prefix '"
+                  + prefix
+                  + "' cannot succeed as configured and will not be retried.",
+              e)
+          : e;
+    }
     versionStore.recordCurrentVersion();
     LOG.debug("[RDBMS Schema] Liquibase migration completed for prefix '{}'.", prefix);
   }
@@ -298,6 +314,30 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
       Thread.currentThread().interrupt();
       throw e;
     }
+  }
+
+  /**
+   * Whether re-running the changelog could change the outcome. Walks the cause chain because
+   * Liquibase nests these: a checksum mismatch arrives as {@code LiquibaseException ->
+   * CommandExecutionException -> ValidationFailedException}.
+   *
+   * <p>Only {@link ValidationFailedException}, not its supertype {@code MigrationFailedException}:
+   * that also covers a changeset failing for want of a DDL grant, which retrying does repair.
+   */
+  @VisibleForTesting
+  static boolean isDeterministicFailure(final Throwable throwable) {
+    var current = throwable;
+    while (current != null) {
+      if (current instanceof ValidationFailedException
+          || current instanceof LiquibaseParseException
+          || current instanceof UnknownChangelogFormatException
+          || current instanceof DuplicateChangeSetException
+          || current instanceof SetupException) {
+        return true;
+      }
+      current = current.getCause();
+    }
+    return false;
   }
 
   private boolean isRetryableException(final Throwable throwable) {

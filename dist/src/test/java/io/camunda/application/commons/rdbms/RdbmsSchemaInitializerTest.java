@@ -14,6 +14,7 @@ import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer.TerminalSchemaInitializationException;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionUnreadableException;
@@ -230,6 +231,12 @@ final class RdbmsSchemaInitializerTest {
     assertThat(
             RdbmsSchemaInitializer.isTerminal(
                 new TerminalSchemaInitializationException("no schema manager")))
+        .isTrue();
+    assertThat(
+            RdbmsSchemaInitializer.isTerminal(
+                new RdbmsSchemaMigrationFailedException(
+                    "changelog cannot be applied", new IllegalStateException("checksum mismatch"))))
+        .as("an edited changeset stays mismatched however often the changelog is re-run")
         .isTrue();
   }
 
