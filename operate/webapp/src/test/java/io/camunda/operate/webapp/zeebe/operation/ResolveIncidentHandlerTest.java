@@ -7,8 +7,12 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,14 +24,17 @@ import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.OperationExecutorProperties;
+import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.elasticsearch.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -51,6 +58,8 @@ public class ResolveIncidentHandlerTest {
   @Mock Metrics metrics;
 
   @Mock OperateProperties operateProperties;
+
+  @Mock OperationsManager operationsManager;
 
   @InjectMocks private ResolveIncidentHandler resolveIncidentHandler;
 
@@ -97,5 +106,71 @@ public class ResolveIncidentHandlerTest {
     verify(operateServicesAdapter, times(1)).resolveIncident(incidentKey, operationId);
     inOrder.verify(operateServicesAdapter).updateJobRetries(jobKey, 1, operationId);
     inOrder.verify(operateServicesAdapter).resolveIncident(incidentKey, operationId);
+    verify(operationsManager, never()).completeOperation(any());
+  }
+
+  @Test
+  public void shouldCompleteWhenIncidentAlreadyGoneInEngine() throws Exception {
+    final Long incidentKey = 123L;
+    final String workerId = "1";
+    when(incidentReader.getIncidentById(incidentKey))
+        .thenReturn(new IncidentEntity().setKey(incidentKey));
+
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .setType(OperationType.RESOLVE_INCIDENT)
+            .setIncidentKey(incidentKey)
+            .setId("456")
+            .setState(OperationState.LOCKED)
+            .setLockOwner(workerId);
+
+    doThrow(
+            new CompletionException(
+                new ServiceException(
+                    "Expected to resolve incident with key '123', but no such incident was found",
+                    ServiceException.Status.NOT_FOUND)))
+        .when(operateServicesAdapter)
+        .resolveIncident(incidentKey, "456");
+
+    resolveIncidentHandler.handleWithException(operationEntity);
+
+    verify(operationsManager).completeOperation(operationEntity);
+    verify(batchOperationWriter, never()).updateOperation(any());
+  }
+
+  @Test
+  public void shouldRethrowWhenResolveFailsForOtherReason() {
+    final Long incidentKey = 123L;
+    when(incidentReader.getIncidentById(incidentKey))
+        .thenReturn(new IncidentEntity().setKey(incidentKey));
+
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .setType(OperationType.RESOLVE_INCIDENT)
+            .setIncidentKey(incidentKey)
+            .setId("456")
+            .setState(OperationState.LOCKED)
+            .setLockOwner("1");
+
+    doThrow(
+            new CompletionException(
+                new ServiceException("broker unavailable", ServiceException.Status.UNAVAILABLE)))
+        .when(operateServicesAdapter)
+        .resolveIncident(incidentKey, "456");
+
+    assertThatThrownBy(() -> resolveIncidentHandler.handleWithException(operationEntity))
+        .isInstanceOf(CompletionException.class);
+  }
+
+  @Test
+  public void isIncidentNotFoundRecognizesWrappedServiceException() {
+    final var wrapped =
+        new CompletionException(
+            new ServiceException("no such incident", ServiceException.Status.NOT_FOUND));
+    assertThat(ResolveIncidentHandler.isIncidentNotFound(wrapped)).isTrue();
+    assertThat(
+            ResolveIncidentHandler.isIncidentNotFound(
+                new ServiceException("bad", ServiceException.Status.INVALID_ARGUMENT)))
+        .isFalse();
   }
 }
