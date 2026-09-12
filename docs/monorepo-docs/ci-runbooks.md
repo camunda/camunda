@@ -287,6 +287,31 @@ issues.
 
 ---
 
+### Snapshot Artifact No Longer Published
+
+Either snapshot alert can also fire because the artifact was intentionally retired (e.g. a module
+removed from the monorepo), not because publishing broke.
+
+The artifact-metadata-exporter only tracks the highest version it has ever seen per Maven
+coordinate, so alerts effectively cover the latest minor release only. Once a module is dropped
+from `main`, that frozen version keeps alerting even though the older `stable/X.Y` branches that
+still build it are publishing fine.
+
+#### Troubleshooting
+
+- Check the alert's `tag` label. A version higher than anything an active branch builds means the
+  exporter is tracking a retired artifact.
+- Confirm the module is gone from the branch that produced that tag (grep that branch's `pom.xml`,
+  or look for the removal PR).
+
+#### Solutions
+
+Ask the Infra team to drop it from the
+artifact-metadata-exporter's watchlist — see
+[infra-core#14262](https://github.com/camunda/infra-core/pull/14262) for an example.
+
+---
+
 ### Camunda Helm Chart Integration Test Failure
 
 You may observe one or more of the following:
