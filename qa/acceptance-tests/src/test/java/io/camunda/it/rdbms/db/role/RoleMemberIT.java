@@ -17,6 +17,7 @@ import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.RoleMemberEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.RoleMemberFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.RoleMemberQuery;
@@ -24,6 +25,7 @@ import io.camunda.search.sort.RoleMemberSort;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,6 +63,39 @@ public class RoleMemberIT {
     assertThat(searchResult.items()).hasSize(2);
     assertThat(searchResult.items().stream().map(RoleMemberEntity::id))
         .contains("user-1", "user-2");
+  }
+
+  @TestTemplate
+  public void shouldFindRoleMemberByMemberIdLike(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RoleMemberDbReader reader = rdbmsService.getRoleMemberReader();
+
+    // given
+    final var role = RoleFixtures.createAndSaveRole(rdbmsWriters, b -> b);
+    addUserToRole(rdbmsWriters, role.roleId(), "jonny");
+    addUserToRole(rdbmsWriters, role.roleId(), "mrjonas");
+    addUserToRole(rdbmsWriters, role.roleId(), "jane");
+    addUserToRole(rdbmsWriters, role.roleId(), "mark");
+
+    // when
+    final var searchResult =
+        reader.search(
+            new RoleMemberQuery(
+                RoleMemberFilter.of(
+                    b ->
+                        b.memberType(EntityType.USER)
+                            .roleId(role.roleId())
+                            .memberIdOperations(List.of(Operation.like("*jo*")))),
+                RoleMemberSort.of(b -> b),
+                SearchQueryPage.of(b -> b)),
+            ResourceAccessChecks.disabled());
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items().stream().map(RoleMemberEntity::id))
+        .containsExactlyInAnyOrder("jonny", "mrjonas");
   }
 
   private void addUserToRole(

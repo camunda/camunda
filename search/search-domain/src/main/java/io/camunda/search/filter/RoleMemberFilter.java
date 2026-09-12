@@ -7,11 +7,18 @@
  */
 package io.camunda.search.filter;
 
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
+
 import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.List;
 import java.util.function.Function;
 
-public record RoleMemberFilter(String roleId, EntityType memberType) implements FilterBase {
+public record RoleMemberFilter(
+    String roleId, EntityType memberType, List<Operation<String>> memberIdOperations)
+    implements FilterBase {
 
   public static RoleMemberFilter of(
       final Function<RoleMemberFilter.Builder, RoleMemberFilter.Builder> builderFunction) {
@@ -19,12 +26,16 @@ public record RoleMemberFilter(String roleId, EntityType memberType) implements 
   }
 
   public Builder toBuilder() {
-    return new Builder().roleId(roleId).memberType(memberType);
+    return new Builder()
+        .roleId(roleId)
+        .memberType(memberType)
+        .memberIdOperations(memberIdOperations);
   }
 
   public static final class Builder implements ObjectBuilder<RoleMemberFilter> {
     private String roleId;
     private EntityType memberType;
+    private List<Operation<String>> memberIdOperations;
 
     public Builder roleId(final String value) {
       roleId = value;
@@ -36,9 +47,30 @@ public record RoleMemberFilter(String roleId, EntityType memberType) implements 
       return this;
     }
 
+    public Builder memberIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        memberIdOperations = addValuesToList(memberIdOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder memberId(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return memberIdOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder memberIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return memberIdOperations(collectValues(operation, operations));
+    }
+
     @Override
     public RoleMemberFilter build() {
-      return new RoleMemberFilter(roleId, memberType);
+      return new RoleMemberFilter(roleId, memberType, memberIdOperations);
     }
   }
 }

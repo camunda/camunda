@@ -111,6 +111,8 @@ const Members: FC<MembersProps> = ({ roleId, isOIDC }) => {
         addEntityLabel={t("assignUser")}
         onAddEntity={openAssignModal}
         searchPlaceholder={t("searchByUsername")}
+        searchKey="username"
+        searchOperator="like"
         menuItems={[
           {
             label: t("remove"),
