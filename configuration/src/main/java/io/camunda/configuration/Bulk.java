@@ -29,6 +29,18 @@ public class Bulk {
   /** Bulk memory utilisation before flush (in MB) */
   private DataSize memoryLimit = DEFAULT_MEMORY_LIMIT;
 
+  /**
+   * No-arg constructor solely so spring-boot-configuration-processor does not treat this class as
+   * constructor-bound — with a single parameterized constructor, the processor derives metadata
+   * only from that constructor's parameters and silently ignores every getter/setter below.
+   * Deliberately unused and {@code private}: nothing — not even a test — should ever call it;
+   * {@link #Bulk(String)} remains the only real construction path (see {@link
+   * DocumentBasedSecondaryStorageDatabase}). Do not remove as dead code.
+   */
+  private Bulk() {
+    prefix = null;
+  }
+
   public Bulk(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.bulk".formatted(databaseName);
   }
