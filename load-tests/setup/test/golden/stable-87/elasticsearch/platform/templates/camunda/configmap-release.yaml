@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-87-elasticsearch
       namespace: c8-golden-stable-87-elasticsearch
-      version: 12.13.4
+      version: 12.13.5
       components:
       - name: Keycloak
         id: keycloak
@@ -33,7 +33,7 @@ data:
         metrics: http://identity.c8-golden-stable-87-elasticsearch:82/actuator/prometheus
       - name: Operate
         id: operate
-        version: 8.7.38
+        version: 8.7.39
         url: http://localhost:8081
         readiness: http://operate.c8-golden-stable-87-elasticsearch:9600/actuator/health/readiness
         metrics: http://operate.c8-golden-stable-87-elasticsearch:9600/actuator/prometheus
@@ -45,13 +45,13 @@ data:
         metrics: http://optimize.c8-golden-stable-87-elasticsearch:8092/actuator/prometheus
       - name: Connectors
         id: connectors
-        version: 8.7.24
+        version: 8.7.25
         url: http://connectors.c8-golden-stable-87-elasticsearch:8080
         readiness: http://connectors.c8-golden-stable-87-elasticsearch:8080/actuator/health/readiness
         metrics: http://connectors.c8-golden-stable-87-elasticsearch:8080/actuator/prometheus
       - name: Tasklist
         id: tasklist
-        version: 8.7.38
+        version: 8.7.39
         url: http://localhost:8082
         readiness: http://tasklist.c8-golden-stable-87-elasticsearch:9600/actuator/health/readiness
         metrics: http://tasklist.c8-golden-stable-87-elasticsearch:9600/actuator/prometheus
