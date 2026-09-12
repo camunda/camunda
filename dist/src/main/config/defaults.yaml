@@ -1703,6 +1703,8 @@ camunda: # Type: io.camunda.configuration.Camunda
       # cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is enabled, the
       # discovery endpoint announces the webapp's default path relative to the API (e.g. `/operate`). If the
       # webapp UI is disabled and no URL is set, the webapp is not announced.
+      # Currently only Operate and Tasklist are announced by the discovery endpoint; setting a URL for other
+      # webapps has no effect.
       url: null # Type: String, Env: CAMUNDA_WEBAPPS_IDENTITY_URL
     
     operate: # Type: io.camunda.configuration.Webapp  
@@ -1717,6 +1719,8 @@ camunda: # Type: io.camunda.configuration.Camunda
       # cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is enabled, the
       # discovery endpoint announces the webapp's default path relative to the API (e.g. `/operate`). If the
       # webapp UI is disabled and no URL is set, the webapp is not announced.
+      # Currently only Operate and Tasklist are announced by the discovery endpoint; setting a URL for other
+      # webapps has no effect.
       url: null # Type: String, Env: CAMUNDA_WEBAPPS_OPERATE_URL
     
     tasklist: # Type: io.camunda.configuration.Webapp  
@@ -1731,6 +1735,8 @@ camunda: # Type: io.camunda.configuration.Camunda
       # cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is enabled, the
       # discovery endpoint announces the webapp's default path relative to the API (e.g. `/operate`). If the
       # webapp UI is disabled and no URL is set, the webapp is not announced.
+      # Currently only Operate and Tasklist are announced by the discovery endpoint; setting a URL for other
+      # webapps has no effect.
       url: null # Type: String, Env: CAMUNDA_WEBAPPS_TASKLIST_URL
 
 zeebe: # Type:   

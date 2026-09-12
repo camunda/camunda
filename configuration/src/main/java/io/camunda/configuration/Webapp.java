@@ -28,6 +28,9 @@ public class Webapp {
    * orchestration cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is
    * enabled, the discovery endpoint announces the webapp's default path relative to the API (e.g.
    * {@code /operate}). If the webapp UI is disabled and no URL is set, the webapp is not announced.
+   *
+   * <p>Currently only Operate and Tasklist are announced by the discovery endpoint; setting a URL
+   * for other webapps has no effect.
    */
   private @Nullable String url;
 
