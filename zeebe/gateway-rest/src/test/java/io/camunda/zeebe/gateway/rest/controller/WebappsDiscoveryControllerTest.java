@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.env.MockEnvironment;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(WebappsDiscoveryController.class)
 class WebappsDiscoveryControllerTest extends RestControllerTest {
@@ -35,7 +36,23 @@ class WebappsDiscoveryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json("{\"operateUrl\":\"/operate\",\"tasklistUrl\":\"/tasklist\"}");
+        .json(
+            "{\"operateUrl\":\"/operate\",\"tasklistUrl\":\"/tasklist\"}", JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldIncludeServletContextPathInFallback() {
+    // given — the UIs are mounted below the servlet context path, e.g. /camunda/operate
+    final var properties = new WebappsDiscoveryProperties();
+    final var environment =
+        new MockEnvironment().withProperty("server.servlet.context-path", "/camunda");
+
+    // when
+    final var response = invokeController(properties, environment);
+
+    // then
+    assertThat(response.operateUrl()).isEqualTo("/camunda/operate");
+    assertThat(response.tasklistUrl()).isEqualTo("/camunda/tasklist");
   }
 
   @Test

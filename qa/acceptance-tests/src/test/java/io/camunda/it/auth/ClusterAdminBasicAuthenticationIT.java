@@ -70,7 +70,12 @@ public class ClusterAdminBasicAuthenticationIT {
               "camunda.security.cluster-admin.basic.users[0].password", CLUSTER_ADMIN_PASSWORD)
           .withProperty("camunda.security.cluster-admin.basic.users[1].name", CLUSTER_ADMIN_USER_2)
           .withProperty(
-              "camunda.security.cluster-admin.basic.users[1].password", CLUSTER_ADMIN_PASSWORD_2);
+              "camunda.security.cluster-admin.basic.users[1].password", CLUSTER_ADMIN_PASSWORD_2)
+          // an explicit webapp location, announced even though this broker serves no webapp
+          // profiles — the standalone-gateway deployment model
+          .withProperty("camunda.webapps.operate.url", "http://operate.example.test")
+          // the broker runs no Tasklist profile, so it must not be announced
+          .withUnifiedConfig(cfg -> cfg.getWebapps().getTasklist().setEnabled(false));
 
   // A real, secondary-storage-backed user — used to prove it cannot reach the cluster-admin chain.
   @UserDefinition
@@ -196,15 +201,16 @@ public class ClusterAdminBasicAuthenticationIT {
 
   @Test
   void shouldAllowWebappsDiscoveryEndpointWithoutCredentials() throws Exception {
-    // when — the webapps discovery document is fetched with no credentials
+    // when — the webapps discovery document is fetched with no credentials. This broker serves no
+    // webapp profiles, but an explicit location makes discovery announce it anyway: the deployment
+    // model where a bare gateway points at webapps hosted elsewhere.
     final HttpResponse<String> response = send(clusterUri(PATH_WELL_KNOWN_WEBAPPS), null);
 
-    // then — it announces the setup's webapps, by default as paths relative to the API origin,
-    // so the answer stays correct behind TLS-terminating proxies
+    // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     final var body = new ObjectMapper().readTree(response.body());
-    assertThat(body.get("operateUrl").asText()).isEqualTo("/operate");
-    assertThat(body.get("tasklistUrl").asText()).isEqualTo("/tasklist");
+    assertThat(body.get("operateUrl").asText()).isEqualTo("http://operate.example.test");
+    assertThat(body.has("tasklistUrl")).isFalse();
   }
 
   @Test

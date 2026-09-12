@@ -29,14 +29,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
  *
  * <p>The cluster cannot detect where frontends are exposed (they may sit behind a different
  * ingress), so operators announce split deployments explicitly via {@code
- * camunda.webapps.<app>.url}. Without an explicit URL, a webapp with its UI enabled is announced
- * under its default path, relative to the API — the layout of the default Helm chart and c8run.
+ * camunda.webapps.<app>.url}. Without an explicit URL, a webapp is announced under its default path
+ * (servlet context path included), relative to the API — the layout of the default Helm chart and
+ * c8run.
  *
- * <p>The fallback deliberately returns a root-relative path rather than an absolute URL derived
- * from the servlet request: behind a TLS-terminating proxy the request reaches the app as plain
- * HTTP with a rewritten Host, so the derived absolute URL would advertise the wrong scheme and
- * port. Relative URLs resolve against the origin the client used for the API call, which is correct
- * by construction. Deployments where the webapps live on a different origin than the API must set
+ * <p>The fallback deliberately returns a relative path rather than an absolute URL derived from the
+ * servlet request: behind a TLS-terminating proxy the request reaches the app as plain HTTP with a
+ * rewritten Host, so the derived absolute URL would advertise the wrong scheme and port. Relative
+ * URLs resolve against the origin the client used for the API call, which is correct by
+ * construction. Deployments where the webapps live on a different origin than the API must set
  * {@code camunda.webapps.<app>.url} explicitly (the Helm chart derives these from its ingress
  * values).
  */
@@ -46,8 +47,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/.well-known/camunda")
 public class WebappsDiscoveryController {
 
-  private static final String OPERATE_PATH = "/operate";
-  private static final String TASKLIST_PATH = "/tasklist";
+  private static final String OPERATE_PATH = "operate";
+  private static final String TASKLIST_PATH = "tasklist";
+  private static final String CONTEXT_PATH_PROPERTY = "server.servlet.context-path";
 
   private final WebappsDiscoveryProperties properties;
   private final Environment environment;
@@ -70,13 +72,21 @@ public class WebappsDiscoveryController {
     if (webapp.getUrl() != null && !webapp.getUrl().isBlank()) {
       return webapp.getUrl();
     }
-    // Mirror WebappsHelper: a webapp is served only when both the unified key and the legacy
-    // per-app kill-switch (camunda.<app>.webappEnabled) allow it.
-    final var legacyWebappEnabled =
-        environment.getProperty("camunda." + webappName + ".webappEnabled", Boolean.class, true);
-    if (!webapp.isEnabled() || !webapp.isUiEnabled() || !legacyWebappEnabled) {
+    if (!isServedByThisApp(webapp, webappName)) {
       return null;
     }
-    return defaultPath;
+    // The UIs are mounted below the servlet context path (e.g. /camunda/operate for
+    // server.servlet.context-path=/camunda), so the relative fallback must include it.
+    return environment.getProperty(CONTEXT_PATH_PROPERTY, "") + "/" + defaultPath;
+  }
+
+  /**
+   * Whether the webapp is available to link to, mirroring {@code WebappsHelper}: both the unified
+   * keys and the legacy kill-switch {@code camunda.<app>.webappEnabled} must allow it.
+   */
+  private boolean isServedByThisApp(final Webapp webapp, final String webappName) {
+    final var legacyWebappEnabled =
+        environment.getProperty("camunda." + webappName + ".webappEnabled", Boolean.class, true);
+    return webapp.isEnabled() && webapp.isUiEnabled() && legacyWebappEnabled;
   }
 }
