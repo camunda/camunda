@@ -38,7 +38,7 @@
     "react-router-dom": "7.18.3",
     "react-transition-group": "4.4.5",
     "styled-components": "6.5.3",
-    "zod": "4.5.4"
+    "zod": "4.6.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

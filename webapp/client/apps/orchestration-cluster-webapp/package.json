@@ -67,7 +67,7 @@
 		"tailwind-merge": "3.6.0",
 		"tailwindcss": "4.3.3",
 		"xstate": "5.32.6",
-		"zod": "4.5.4"
+		"zod": "4.6.1"
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.13.0",
