@@ -429,7 +429,9 @@ jobs:
           secrets: |
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
+            secret/data/products/camunda/ci/github-actions REGISTRY_ECHO_USR | echo-username;
+            secret/data/products/camunda/ci/github-actions REGISTRY_ECHO_PSW | echo-token
       - name: Login to DockerHub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -441,6 +443,12 @@ jobs:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
+      - name: Login to Echo
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: reg.echohq.com
+          username: ${{ steps.secrets.outputs.echo-username }}
+          password: ${{ steps.secrets.outputs.echo-token }}
       - id: "auth"
         name: "Authenticate to Google Cloud"
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -564,7 +572,9 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
+            secret/data/products/camunda/ci/github-actions REGISTRY_ECHO_USR | echo-username;
+            secret/data/products/camunda/ci/github-actions REGISTRY_ECHO_PSW | echo-token
       - name: Login to DockerHub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -576,6 +586,12 @@ jobs:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
+      - name: Logs on to Echo
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: reg.echohq.com
+          username: ${{ steps.secrets.outputs.echo-username }}
+          password: ${{ steps.secrets.outputs.echo-token }}
       - name: Download Release Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
