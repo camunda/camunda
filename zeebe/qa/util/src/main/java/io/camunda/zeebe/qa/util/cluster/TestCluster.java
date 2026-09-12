@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.configuration.Zone;
@@ -266,21 +265,17 @@ public final class TestCluster implements CloseableSilently {
   }
 
   /**
-   * Builds a new client builder by picking a random gateway started gateway for it and disabling
-   * transport security.
+   * Builds a new client builder by picking a random started gateway for it.
    *
-   * <p>NOTE: this will properly automatically configure the security level, but will not configure
-   * authentication.
+   * <p>The gateway configures transport security and, when enabled, authentication with the default
+   * admin user.
    *
-   * @return a new client builder with the gateway and transport security pre-configured
+   * @return a new client builder with the gateway configuration
    * @throws NoSuchElementException if there are no started gateways
    */
   @SuppressWarnings("resource")
   public CamundaClientBuilder newClientBuilder() {
-    return CamundaClient.newClientBuilder()
-        .preferRestOverGrpc(false)
-        .restAddress(availableGateway().restAddress())
-        .grpcAddress(availableGateway().grpcAddress());
+    return availableGateway().newClientBuilder();
   }
 
   /**
@@ -325,6 +320,7 @@ public final class TestCluster implements CloseableSilently {
       final Duration timeout) {
     Awaitility.await("until cluster topology is complete")
         .atMost(timeout)
+        .ignoreExceptions()
         .untilAsserted(
             () ->
                 assertThat(allGateways())
@@ -343,6 +339,7 @@ public final class TestCluster implements CloseableSilently {
   public TestCluster awaitHealthyTopology(final Duration timeout) {
     Awaitility.await("until cluster topology is complete")
         .atMost(timeout)
+        .ignoreExceptions()
         .untilAsserted(
             () -> assertThat(allGateways()).allSatisfy(TestCluster::assertHealthyTopology));
     return this;
