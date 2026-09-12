@@ -107,7 +107,7 @@
     <version.snakeyaml>2.7</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.2</version.wiremock>
-    <version.wiremock-spring-boot>4.2.2</version.wiremock-spring-boot>
+    <version.wiremock-spring-boot>4.2.3</version.wiremock-spring-boot>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.10.1</version.asm>
     <version.testcontainers>2.0.5</version.testcontainers>
