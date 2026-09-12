@@ -22,6 +22,7 @@ import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStoreUnavailableException;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -723,5 +724,43 @@ class AwsSecretsManagerSecretStoreTest {
 
     // then — the client is kept open so the error surfaces on first real use instead
     verify(resolver).validateConnectivity();
+  }
+
+  @Test
+  void shouldBoundClientCallsByTheConfiguredTimeouts() {
+    // given
+    final var config =
+        new AwsSecretsManagerStoreConfig(
+            null,
+            null,
+            null,
+            null,
+            AwsSecretsManagerStoreConfig.DEFAULT_MAX_RETRIES,
+            false,
+            20,
+            Duration.ofSeconds(7),
+            Duration.ofSeconds(3));
+
+    // when
+    final var override = AwsSecretsManagerSecretStore.overrideConfiguration(config);
+
+    // then - an unresponsive endpoint cannot hold the caller past these bounds
+    assertThat(override.apiCallTimeout()).hasValue(Duration.ofSeconds(7));
+    assertThat(override.apiCallAttemptTimeout()).hasValue(Duration.ofSeconds(3));
+  }
+
+  @Test
+  void shouldBoundClientCallsByTheDefaultTimeouts() {
+    // given a config that does not mention timeouts at all
+    final var config = AwsSecretsManagerStoreConfig.of("camunda/");
+
+    // when
+    final var override = AwsSecretsManagerSecretStore.overrideConfiguration(config);
+
+    // then - the defaults still bound the call, so an unconfigured store is never unbounded
+    assertThat(override.apiCallTimeout())
+        .hasValue(AwsSecretsManagerStoreConfig.DEFAULT_CALL_TIMEOUT);
+    assertThat(override.apiCallAttemptTimeout())
+        .hasValue(AwsSecretsManagerStoreConfig.DEFAULT_ATTEMPT_TIMEOUT);
   }
 }
