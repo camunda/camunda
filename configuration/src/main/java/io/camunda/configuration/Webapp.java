@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import org.jspecify.annotations.Nullable;
+
 public class Webapp {
 
   /** Whether the webapp is enabled or not. This also affects the webapp API. */
@@ -17,6 +19,17 @@ public class Webapp {
    * the webapp itself will not be accessible with a web browser.
    */
   private boolean uiEnabled = true;
+
+  /**
+   * The external base URL of the webapp UI (e.g. {@code https://operate.example.com}), announced to
+   * clients via the unauthenticated {@code /.well-known/camunda/webapps} discovery endpoint.
+   *
+   * <p>Set this when the webapp is reachable under a different origin or path than the
+   * orchestration cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is
+   * enabled, the discovery endpoint announces the webapp's default path on the same origin as the
+   * API. If the webapp UI is disabled and no URL is set, the webapp is not announced.
+   */
+  private @Nullable String url;
 
   public boolean isEnabled() {
     return enabled;
@@ -32,5 +45,13 @@ public class Webapp {
 
   public void setUiEnabled(final boolean uiEnabled) {
     this.uiEnabled = uiEnabled;
+  }
+
+  public @Nullable String getUrl() {
+    return url;
+  }
+
+  public void setUrl(final @Nullable String url) {
+    this.url = url;
   }
 }

@@ -50,6 +50,7 @@ public class ClusterAdminBasicAuthenticationIT {
   public static final String PATH_CLUSTER_RUNTIME_BACKUP_STATE = "cluster/v2/backups/runtime/state";
   public static final String PATH_CLUSTER_REBALANCE = "cluster/v2/rebalance";
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";
+  public static final String PATH_WELL_KNOWN_WEBAPPS = ".well-known/camunda/webapps";
 
   private static final String CLUSTER_ADMIN_USER = "cluster-operator";
   private static final String CLUSTER_ADMIN_PASSWORD = "cluster-secret";
@@ -191,6 +192,29 @@ public class ClusterAdminBasicAuthenticationIT {
 
     // then — cluster-admin users exist only for /cluster/v2/**
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  @Test
+  void shouldAllowWebappsDiscoveryEndpointWithoutCredentials() throws Exception {
+    // when — the webapps discovery document is fetched with no credentials
+    final HttpResponse<String> response = send(clusterUri(PATH_WELL_KNOWN_WEBAPPS), null);
+
+    // then — it announces the setup's webapps, by default co-located with the API
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    final var body = new ObjectMapper().readTree(response.body());
+    assertThat(body.get("operateUrl").asText()).endsWith("/operate");
+    assertThat(body.get("tasklistUrl").asText()).endsWith("/tasklist");
+  }
+
+  @Test
+  void shouldAllowWebappsDiscoveryEndpointWithWrongCredentials() throws Exception {
+    // when — a discovery client sends credentials a Basic chain would reject if it inspected them
+    final HttpResponse<String> response =
+        send(clusterUri(PATH_WELL_KNOWN_WEBAPPS), basicAuth(CLUSTER_ADMIN_USER, "wrong-password"));
+
+    // then — the unprotected chain installs no authentication filter, so the header is ignored.
+    // Discovery must work before a client knows how (or whether) to authenticate.
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test

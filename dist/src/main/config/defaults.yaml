@@ -1697,6 +1697,13 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the
       # webapp itself will not be accessible with a web browser.
       ui-enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_IDENTITY_UIENABLED
+      # The external base URL of the webapp UI (e.g. `https://operate.example.com`), announced to clients
+      # via the unauthenticated `/.well-known/camunda/webapps` discovery endpoint.
+      # Set this when the webapp is reachable under a different origin or path than the orchestration
+      # cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is enabled, the
+      # discovery endpoint announces the webapp's default path on the same origin as the API. If the webapp
+      # UI is disabled and no URL is set, the webapp is not announced.
+      url: null # Type: String, Env: CAMUNDA_WEBAPPS_IDENTITY_URL
     
     operate: # Type: io.camunda.configuration.Webapp  
       # Whether the webapp is enabled or not. This also affects the webapp API.
@@ -1704,6 +1711,13 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the
       # webapp itself will not be accessible with a web browser.
       ui-enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_OPERATE_UIENABLED
+      # The external base URL of the webapp UI (e.g. `https://operate.example.com`), announced to clients
+      # via the unauthenticated `/.well-known/camunda/webapps` discovery endpoint.
+      # Set this when the webapp is reachable under a different origin or path than the orchestration
+      # cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is enabled, the
+      # discovery endpoint announces the webapp's default path on the same origin as the API. If the webapp
+      # UI is disabled and no URL is set, the webapp is not announced.
+      url: null # Type: String, Env: CAMUNDA_WEBAPPS_OPERATE_URL
     
     tasklist: # Type: io.camunda.configuration.Webapp  
       # Whether the webapp is enabled or not. This also affects the webapp API.
@@ -1711,6 +1725,13 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the
       # webapp itself will not be accessible with a web browser.
       ui-enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_TASKLIST_UIENABLED
+      # The external base URL of the webapp UI (e.g. `https://operate.example.com`), announced to clients
+      # via the unauthenticated `/.well-known/camunda/webapps` discovery endpoint.
+      # Set this when the webapp is reachable under a different origin or path than the orchestration
+      # cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is enabled, the
+      # discovery endpoint announces the webapp's default path on the same origin as the API. If the webapp
+      # UI is disabled and no URL is set, the webapp is not announced.
+      url: null # Type: String, Env: CAMUNDA_WEBAPPS_TASKLIST_URL
 
 zeebe: # Type:   
   broker: # Type: io.camunda.configuration.beans.LegacyBrokerBasedProperties  
