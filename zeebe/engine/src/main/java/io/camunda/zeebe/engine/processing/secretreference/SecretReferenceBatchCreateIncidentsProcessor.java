@@ -187,6 +187,7 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(job.getProcessDefinitionKey())
         .setProcessInstanceKey(job.getProcessInstanceKey())
+        .setStorageOrdinalKey(job.getStorageOrdinalKey())
         .setElementId(job.getElementIdBuffer())
         .setElementInstanceKey(job.getElementInstanceKey())
         .setJobKey(jobKey)

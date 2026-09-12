@@ -168,6 +168,7 @@ public final class JobFailProcessor
             value.getProcessDefinitionKey(),
             value.getProcessInstanceKey(),
             value.getRootProcessInstanceKey(),
+            value.getStorageOrdinalKey(),
             value.getBpmnProcessIdBuffer(),
             value.getTenantId(),
             variables);
@@ -202,6 +203,7 @@ public final class JobFailProcessor
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setStorageOrdinalKey(value.getStorageOrdinalKey())
         .setElementId(value.getElementIdBuffer())
         .setElementInstanceKey(value.getElementInstanceKey())
         .setJobKey(key)
