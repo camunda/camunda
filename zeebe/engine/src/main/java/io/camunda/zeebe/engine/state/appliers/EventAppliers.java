@@ -586,6 +586,11 @@ public final class EventAppliers implements EventApplier {
         new MessageSubscriptionRejectedApplier(
             state.getMessageState(), state.getMessageSubscriptionState()));
     register(
+        MessageSubscriptionIntent.REJECTED,
+        2,
+        new MessageSubscriptionRejectedV2Applier(
+            state.getMessageState(), state.getMessageSubscriptionState()));
+    register(
         MessageSubscriptionIntent.DELETED,
         new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
     register(

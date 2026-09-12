@@ -65,30 +65,25 @@ public final class MessageSubscriptionRejectProcessor
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
+    stateWriter.appendFollowUpEvent(
+        record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
+
     final var stored =
         subscriptionState.get(
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
     final long requestedKey = subscriptionRecord.getSubscriptionKey();
-    if (stored != null && requestedKey != -1L && stored.getKey() != requestedKey) {
-      // Stale reject: the stored row is a newer generation. REJECTED removes by element/message
-      // name, which would delete the live replacement, so reject instead; its own
-      // correlateNextMessage picks up any buffered message.
-      final var reason =
-          String.format(
-              STALE_REJECT_MESSAGE,
-              subscriptionRecord.getElementInstanceKey(),
-              subscriptionRecord.getMessageName(),
-              requestedKey,
-              stored.getKey());
-      rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
-      return;
-    }
+    final boolean isStale =
+        stored != null && requestedKey != -1L && stored.getKey() != requestedKey;
 
-    stateWriter.appendFollowUpEvent(
-        record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
-
-    final var foundSubscription = findSubscriptionToCorrelate(subscriptionRecord);
-    if (!foundSubscription) {
+    // For a stale reject (newer generation exists), the REJECTED applier releases the
+    // correlation lock without deleting the live replacement. Skip reroute — the replacement
+    // subscription's own correlateNextMessage handles any buffered messages.
+    if (!isStale) {
+      final var foundSubscription = findSubscriptionToCorrelate(subscriptionRecord);
+      if (!foundSubscription) {
+        writeNotCorrelatedResponse(record);
+      }
+    } else {
       writeNotCorrelatedResponse(record);
     }
   }
