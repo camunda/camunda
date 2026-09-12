@@ -28,6 +28,18 @@ public class BatchOperation {
    */
   private boolean exportItemsOnCreation = true;
 
+  /**
+   * No-arg constructor solely so spring-boot-configuration-processor does not treat this class as
+   * constructor-bound — with a single parameterized constructor, the processor derives metadata
+   * only from that constructor's parameters and silently ignores every getter/setter below.
+   * Deliberately unused and {@code private}: nothing — not even a test — should ever call it;
+   * {@link #BatchOperation(String)} remains the only real construction path (see {@link
+   * DocumentBasedSecondaryStorageDatabase}). Do not remove as dead code.
+   */
+  private BatchOperation() {
+    databaseName = null;
+  }
+
   public BatchOperation(final String databaseName) {
     this.databaseName = databaseName;
   }
