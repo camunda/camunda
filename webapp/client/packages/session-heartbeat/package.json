@@ -51,13 +51,13 @@
 		"@playwright/test": "1.62.1",
 		"@types/react": "19.2.18",
 		"@types/react-dom": "19.2.7",
-		"@vitest/browser-playwright": "4.1.11",
+		"@vitest/browser-playwright": "5.0.0",
 		"react": "19.2.8",
 		"react-dom": "19.2.8",
 		"typescript": "7.0.2",
 		"vite": "8.2.2",
 		"vite-plugin-dts": "5.1.0",
-		"vitest": "4.1.11",
+		"vitest": "5.0.0",
 		"vitest-browser-react": "2.3.0"
 	},
 	"peerDependencies": {

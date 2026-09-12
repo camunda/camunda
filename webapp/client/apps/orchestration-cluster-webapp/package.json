@@ -82,15 +82,15 @@
 		"@types/react-dom": "19.2.7",
 		"@types/react-transition-group": "4.4.12",
 		"@vitejs/plugin-react": "6.1.1",
-		"@vitest/browser-playwright": "4.1.11",
-		"@vitest/ui": "4.1.11",
+		"@vitest/browser-playwright": "5.0.0",
+		"@vitest/ui": "5.0.0",
 		"cross-env": "10.1.0",
 		"knip": "6.35.0",
 		"msw": "2.15.0",
 		"rollup-plugin-sbom": "4.0.0",
 		"typescript": "7.0.2",
 		"vite": "8.2.2",
-		"vitest": "4.1.11",
+		"vitest": "5.0.0",
 		"vitest-browser-react": "2.3.0"
 	}
 }
