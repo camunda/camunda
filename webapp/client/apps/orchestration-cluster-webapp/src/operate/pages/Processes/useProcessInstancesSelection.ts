@@ -12,7 +12,7 @@ import {mapProcessInstancesFilter, type ProcessesSearch} from './processesFilter
 import {buildInstanceKeyCriterion} from '#/operate/shared/utils/buildInstanceKeyCriterion';
 import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';
 
-type ProcessBulkAction = 'delete' | 'cancel' | 'retry';
+type ProcessBulkAction = 'delete' | 'cancel' | 'retry' | 'suspend' | 'resume';
 type SelectedInstance = Pick<ProcessInstance, 'processInstanceKey' | 'state' | 'hasIncident'>;
 
 function useProcessInstancesSelection(
@@ -53,11 +53,16 @@ function useProcessInstancesSelection(
 	const running = selected.filter(({state}) => state === 'ACTIVE');
 	const finished = selected.filter(({state}) => state === 'COMPLETED' || state === 'TERMINATED');
 	const incidents = running.filter(({hasIncident}) => hasIncident);
-	const hasStateFilter = search.active || search.incidents || search.completed || search.canceled;
+	const suspended = selected.filter(({state}) => state === 'SUSPENDED');
+	const hasStateFilter = search.active || search.incidents || search.completed || search.canceled || search.suspended;
 	const eligibility = {
 		delete: mode === 'INCLUDE' ? finished.length > 0 : !hasStateFilter || search.completed || search.canceled,
 		cancel: mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents,
 		retry: mode === 'INCLUDE' ? incidents.length > 0 : !hasStateFilter || search.incidents,
+		// Suspend targets the same running set as Cancel — legacy suspends any active instance
+		// regardless of incident state, it does not require re-selecting by incident status.
+		suspend: mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents,
+		resume: mode === 'INCLUDE' ? suspended.length > 0 : !hasStateFilter || search.suspended,
 	};
 
 	return {
@@ -69,9 +74,10 @@ function useProcessInstancesSelection(
 		eligibility,
 		runningCount: running.length,
 		incidentCount: incidents.length,
+		suspendedCount: suspended.length,
 		toggle: selection.select,
 		getRequest: (action: ProcessBulkAction): CreateCancellationBatchOperationRequestBody => {
-			const eligible = action === 'delete' ? finished : running;
+			const eligible = action === 'delete' ? finished : action === 'resume' ? suspended : running;
 			const included =
 				eligible.length > 0 ? eligible.map(({processInstanceKey}) => processInstanceKey) : selection.includedIds;
 			const criterion = buildInstanceKeyCriterion(mode === 'INCLUDE' ? included : [], selection.excludedIds);

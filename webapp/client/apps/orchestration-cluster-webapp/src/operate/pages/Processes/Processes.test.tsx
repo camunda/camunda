@@ -41,6 +41,7 @@ type RenderProps = {
 	incidents?: boolean;
 	completed?: boolean;
 	canceled?: boolean;
+	suspended?: boolean;
 };
 
 function renderPage(props?: RenderProps) {
@@ -52,6 +53,7 @@ function renderPage(props?: RenderProps) {
 				elementId={props?.elementId}
 				active={props?.active ?? true}
 				incidents={props?.incidents ?? true}
+				suspended={props?.suspended ?? true}
 				completed={props?.completed ?? false}
 				canceled={props?.canceled ?? false}
 			/>
@@ -205,6 +207,46 @@ describe('<Processes />', () => {
 
 			await expect.element(screen.getByRole('checkbox', {name: 'Finished Instances'})).not.toBeChecked();
 			await expect.element(screen.getByRole('checkbox', {name: 'Finished Instances'})).toBePartiallyChecked();
+		});
+
+		it('shows the running checkbox indeterminate when suspended alone differs from active/incidents', async ({
+			worker,
+		}) => {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
+
+			const screen = await renderPage({active: true, incidents: true, suspended: false});
+
+			await expect.element(screen.getByRole('checkbox', {name: 'Running Instances'})).not.toBeChecked();
+			await expect.element(screen.getByRole('checkbox', {name: 'Running Instances'})).toBePartiallyChecked();
+		});
+	});
+
+	describe('suspended filter', () => {
+		it('defaults to visible and checked', async ({worker}) => {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
+
+			const screen = await renderPage();
+
+			await expect.element(screen.getByRole('checkbox', {name: 'Suspended'})).toBeChecked();
+		});
+
+		it('updates the URL search state when toggled', async ({worker}) => {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
+
+			const screen = await renderPage();
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Suspended'}), {force: true});
+
+			const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+			await expect.poll(getSearch).toMatchObject({suspended: false});
 		});
 	});
 

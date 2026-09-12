@@ -232,10 +232,22 @@ const mockCreateDeletionBatchOperationEndpoint = createEndpointMock({
 	method: endpoints.createDeletionBatchOperation.method,
 });
 
+const mockCreateSuspensionBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.suspendProcessInstancesBatchOperation.getUrl(),
+	method: endpoints.suspendProcessInstancesBatchOperation.method,
+});
+
+const mockCreateResumptionBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.resumeProcessInstancesBatchOperation.getUrl(),
+	method: endpoints.resumeProcessInstancesBatchOperation.method,
+});
+
 export {
 	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateIncidentResolutionBatchOperationEndpoint,
 	mockCreateDeletionBatchOperationEndpoint,
+	mockCreateSuspensionBatchOperationEndpoint,
+	mockCreateResumptionBatchOperationEndpoint,
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
 	mockLogoutEndpoint,

@@ -9,7 +9,7 @@
 import {useState, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Modal, TableBatchAction, TableBatchActions, TableToolbar} from '@carbon/react';
-import {Error, RetryFailed, TrashCan} from '@carbon/react/icons';
+import {Error, Pause, Play, RetryFailed, TrashCan} from '@carbon/react/icons';
 import type {ProcessInstancesSelection, ProcessBulkAction} from './useProcessInstancesSelection';
 
 type Props = {
@@ -19,8 +19,8 @@ type Props = {
 	additionalActions?: ReactNode;
 	onSubmit: (action: ProcessBulkAction) => void;
 };
-const ICONS = {delete: TrashCan, cancel: Error, retry: RetryFailed};
-const ACTIONS = ['delete', 'cancel', 'retry'] as const;
+const ICONS = {delete: TrashCan, cancel: Error, retry: RetryFailed, suspend: Pause, resume: Play};
+const ACTIONS = ['delete', 'cancel', 'retry', 'suspend', 'resume'] as const;
 
 function ProcessesToolbar({selection, isSubmitting, isActionMode, additionalActions, onSubmit}: Props) {
 	const {t} = useTranslation();
@@ -31,11 +31,15 @@ function ProcessesToolbar({selection, isSubmitting, isActionMode, additionalActi
 		delete: t('operate.processes.toolbar.delete'),
 		cancel: t('operate.processes.toolbar.cancel'),
 		retry: t('operate.processes.toolbar.retry'),
+		suspend: t('operate.processes.toolbar.suspend'),
+		resume: t('operate.processes.toolbar.resume'),
 	};
 	const disabledTitles = {
 		delete: t('operate.processes.toolbar.noFinished'),
 		cancel: t('operate.processes.toolbar.noRunning'),
 		retry: t('operate.processes.toolbar.noIncidents'),
+		suspend: t('operate.processes.toolbar.noRunningToSuspend'),
+		resume: t('operate.processes.toolbar.noSuspended'),
 	};
 	const count = `${selectedCount}${isCountTruncated ? '+' : ''}`;
 
@@ -115,11 +119,27 @@ function ProcessesToolbar({selection, isSubmitting, isActionMode, additionalActi
 					{action === 'delete' && ` ${t('operate.processes.toolbar.permanent')}`}
 					{action === 'cancel' && ` ${t('operate.processes.toolbar.calledInstances')}`}
 					{action === 'cancel' &&
+						selection.mode === 'INCLUDE' &&
 						selectedCount > selection.runningCount &&
 						` ${t('operate.processes.toolbar.ignoreFinished')}`}
 					{action === 'retry' &&
+						selection.mode === 'INCLUDE' &&
 						selectedCount > selection.incidentCount &&
 						` ${t('operate.processes.toolbar.ignoreNonIncident')}`}
+					{action === 'suspend' &&
+						selection.mode === 'INCLUDE' &&
+						selectedCount > selection.runningCount &&
+						` ${t('operate.processes.toolbar.ignoreNonActive')}`}
+					{action === 'resume' &&
+						selection.mode === 'INCLUDE' &&
+						selectedCount > selection.suspendedCount &&
+						` ${t('operate.processes.toolbar.ignoreNonSuspended')}`}
+					{action === 'suspend' &&
+						selectedCount > selection.runningCount &&
+						` ${t('operate.processes.toolbar.ignoreNonActive')}`}
+					{action === 'resume' &&
+						selectedCount > selection.suspendedCount &&
+						` ${t('operate.processes.toolbar.ignoreNonSuspended')}`}
 				</p>
 			</Modal>
 		</>

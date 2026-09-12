@@ -25,7 +25,7 @@ const RUNNING_INSTANCES_REFETCH_INTERVAL_MS = 5000;
 function useProcessInstancesSearch(search: ProcessesSearch) {
 	const filter = mapProcessInstancesFilter(search);
 	const sort = mapProcessInstancesSort(search.sort);
-	const isShowingRunningInstances = search.active || search.incidents;
+	const isShowingRunningInstances = search.active || search.incidents || search.suspended;
 
 	const query = useInfiniteQuery({
 		queryKey: ['processInstances', filter, sort] as const,
