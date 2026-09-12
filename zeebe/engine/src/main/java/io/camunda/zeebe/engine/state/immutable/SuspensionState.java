@@ -51,8 +51,7 @@ public interface SuspensionState {
    * draining one command per {@code DRAIN} cycle stays cheap no matter how much is buffered.
    *
    * @return the oldest buffered command, or {@link Optional#empty()} if the process instance has
-   *     none buffered, or if the secondary index has an entry with no matching primary record (an
-   *     inconsistency that is logged but must not throw here, as it sits on the resume hot path)
+   *     none buffered
    */
   Optional<BufferedCommand> getOldestBufferedCommand(long processInstanceKey);
 

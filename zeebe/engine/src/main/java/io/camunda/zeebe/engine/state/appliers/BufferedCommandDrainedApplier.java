@@ -24,6 +24,6 @@ final class BufferedCommandDrainedApplier
 
   @Override
   public void applyState(final long key, final BufferedCommandRecord value) {
-    suspensionState.removeBufferedCommand(key);
+    suspensionState.removeBufferedCommand(value.getProcessInstanceKey(), key);
   }
 }
