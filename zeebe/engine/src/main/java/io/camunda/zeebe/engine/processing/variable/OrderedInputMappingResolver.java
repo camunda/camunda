@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
@@ -31,16 +32,20 @@ public final class OrderedInputMappingResolver implements MappingResolver<InputM
         new InputMappingResultBuilder(
             name -> {
               final var value = processor.getEvaluationContext().getVariable(name);
-              return value.isLeft() ? value.getLeft() : null;
+              return value.isLeft()
+                      && value.getLeft() instanceof ContextValue.MsgPack(final var buffer)
+                  ? buffer
+                  : null;
             });
-    final var boundProcessor = processor.prependContext(resultBuilder::get);
+    final var boundProcessor =
+        processor.prependContext(name -> Either.left(resultBuilder.getVariable(name)));
 
     for (final InputMapping mapping : inputMappings.mappings()) {
       final var result = boundProcessor.evaluateVariableMappingExpression(mapping.source());
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
-      resultBuilder.put(mapping.targetPath(), result.get());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.Evaluated(result.get()));
     }
     return Either.right(resultBuilder.toDocument());
   }

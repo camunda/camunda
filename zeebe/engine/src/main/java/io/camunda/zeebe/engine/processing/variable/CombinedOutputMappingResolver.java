@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
@@ -28,6 +29,8 @@ public final class CombinedOutputMappingResolver implements MappingResolver<Outp
   @Override
   public Either<Failure, DirectBuffer> resolve(
       final OutputMappings mappings, final MappingExpressionProcessor processor) {
-    return processor.evaluateVariableMappingExpression(mappings.combinedExpression());
+    return processor
+        .evaluateVariableMappingExpression(mappings.combinedExpression())
+        .map(EvaluationResult::toBuffer);
   }
 }

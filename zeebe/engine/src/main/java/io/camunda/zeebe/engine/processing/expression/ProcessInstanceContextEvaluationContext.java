@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.NullMarked;
@@ -54,7 +54,7 @@ public final class ProcessInstanceContextEvaluationContext implements ScopedEval
   }
 
   @Override
-  public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
+  public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
     if (scopeKey == -1L) {
       return ScopedEvaluationContext.NONE_INSTANCE.getVariable(variableName);
     }
@@ -66,7 +66,7 @@ public final class ProcessInstanceContextEvaluationContext implements ScopedEval
       }
       final long processInstanceKey = elementInstance.getValue().getProcessInstanceKey();
       final var msgPackBytes = MsgPackConverter.convertToMsgPack(processInstanceKey);
-      return Either.left(BufferUtil.wrapArray(msgPackBytes));
+      return Either.left(new ContextValue.MsgPack(BufferUtil.wrapArray(msgPackBytes)));
     }
 
     if ("businessId".equals(variableName)) {
@@ -90,7 +90,7 @@ public final class ProcessInstanceContextEvaluationContext implements ScopedEval
       final var buffer = new ExpandableArrayBuffer();
       writer.wrap(buffer, 0);
       writer.writeString(BufferUtil.wrapString(businessId));
-      return Either.left(new UnsafeBuffer(buffer, 0, writer.getOffset()));
+      return Either.left(new ContextValue.MsgPack(new UnsafeBuffer(buffer, 0, writer.getOffset())));
     }
 
     return ScopedEvaluationContext.NONE_INSTANCE.getVariable(variableName);

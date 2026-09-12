@@ -34,7 +34,7 @@ import io.camunda.zeebe.util.Either;
  * ScopedEvaluationContext tenantCtx = processCtx.tenantScoped("acme-tenant");
  *
  * // Use like a regular EvaluationContext:
- * Either<DirectBuffer, EvaluationContext> v = tenantCtx.getVariable("orderId");
+ * Either<ContextValue, EvaluationContext> v = tenantCtx.getVariable("orderId");
  * }</pre>
  */
 @FunctionalInterface

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.ExpressionLanguage;
@@ -216,14 +217,15 @@ public final class VariableOutputMappingTransformerTest {
     for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.get(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       assertThat(result.isFailure())
           .describedAs("Expected successful evaluation: %s", result.getFailureMessage())
           .isFalse();
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
 
     // then
@@ -250,15 +252,16 @@ public final class VariableOutputMappingTransformerTest {
     for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.get(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       if (result.isFailure()) {
         failure = result;
         break;
       }
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
 
     // then
@@ -290,11 +293,12 @@ public final class VariableOutputMappingTransformerTest {
     for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.get(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
 
     // then
@@ -323,11 +327,12 @@ public final class VariableOutputMappingTransformerTest {
     for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.get(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
 
     // then
@@ -358,7 +363,8 @@ public final class VariableOutputMappingTransformerTest {
     // when: evaluate combinedExpression against job scope (no accumulated context)
     final var result =
         expressionLanguage.evaluateExpression(
-            outputMappings.combinedExpression(), name -> Either.left(scope.get(name)));
+            outputMappings.combinedExpression(),
+            name -> Either.left(ContextValue.msgPack(scope.get(name))));
 
     // then: same result as ORDERED for non-overlapping targets
     assertThat(result.isFailure()).isFalse();
