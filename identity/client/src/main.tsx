@@ -8,29 +8,14 @@
 
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./index.scss";
-import "./c4-ui.css";
-import "@camunda/design-system/styles.css";
-import {
-  C4Provider,
-  TooltipProvider,
-  SidebarProvider,
-} from "@camunda/design-system";
 import { IS_NEW_DESIGN_SYSTEM_ENABLED } from "./feature-flags";
 
-const app = IS_NEW_DESIGN_SYSTEM_ENABLED ? (
-  <C4Provider>
-    <TooltipProvider>
-      <SidebarProvider>
-        <App />
-      </SidebarProvider>
-    </TooltipProvider>
-  </C4Provider>
-) : (
-  <App />
-);
+const App = IS_NEW_DESIGN_SYSTEM_ENABLED
+  ? (await import("./AppV2")).default
+  : (await import("./App")).default;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>{app}</React.StrictMode>,
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
 );

@@ -11,12 +11,13 @@ import { Heading, Text } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import ForbiddenIcon from "src/assets/images/forbidden.svg";
 import { DocumentationLink } from "src/components/documentationV2";
+import Page from "src/components/layoutV2/Page";
 
 const ForbiddenPage: FC = () => {
   const { t, Translate } = useTranslate();
 
   return (
-    <div className="flex h-full flex-col px-10 pt-8 pb-12">
+    <Page className="flex h-full flex-col px-10 pt-8 pb-12">
       <div className="grid flex-1 content-center p-20">
         <div className="flex max-w-100 flex-col gap-6">
           <ForbiddenIcon />
@@ -38,7 +39,7 @@ const ForbiddenPage: FC = () => {
           </DocumentationLink>
         </div>
       </div>
-    </div>
+    </Page>
   );
 };
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Link } from "@camunda/design-system";
+import { Link, Text } from "@camunda/design-system";
 import { FC } from "react";
 import useTranslate from "src/utility/localization";
 import ErrorPage from "src/components/globalV2/ErrorPage";
@@ -16,9 +16,11 @@ const NotFound: FC = () => {
 
   return (
     <ErrorPage title={<Translate>Failmunda - 404 not found</Translate>}>
-      <Translate>
-        What you&apos;re looking for isn&apos;t here, sorry!
-      </Translate>
+      <Text>
+        <Translate>
+          What you&apos;re looking for isn&apos;t here, sorry!
+        </Translate>
+      </Text>
       <Link href="/">
         <Translate>Click here to go back home</Translate>
       </Link>
