@@ -1,14 +1,38 @@
 ---
 name: Configure apt fast mirror failover
 description: |
-  Drops an apt.conf.d snippet so apt abandons a hung mirror quickly instead
-  of riding out its ~120s default per-mirror timeout. GitHub's Ubuntu
-  runner image lists http://azure.archive.ubuntu.com as the priority-1
-  mirror, which intermittently hangs instead of erroring; apt then wastes
-  up to two minutes per attempt before failing over to the working
-  archive.ubuntu.com/security.ubuntu.com mirrors. See INC-6639 / #58992.
+  Hardens `apt-get update` against third-party repositories that neither
+  respond nor serve valid indexes.
 
-inputs: {}
+  Two failure modes are covered:
+
+  1. A hung mirror. GitHub's Ubuntu runner image lists
+     http://azure.archive.ubuntu.com as the priority-1 mirror, which
+     intermittently hangs instead of erroring; apt then wastes up to two
+     minutes per attempt before failing over to the working
+     archive.ubuntu.com/security.ubuntu.com mirrors. Shorter timeouts let it
+     fail over quickly. See INC-6639 / #58992.
+
+  2. A third-party repository serving a corrupt index. The runner image
+     preconfigures repositories we do not install from (Google Chrome,
+     Microsoft). `apt-get update` refreshes every configured repository and
+     exits 100 if *any* index fails to validate, so a corrupt
+     dl.google.com index fails jobs that only ever install from the Ubuntu
+     archives. Retries do not help: a `Hash Sum mismatch` is deterministic,
+     so every attempt re-fetches the same broken index. See INC-7943.
+
+  By default the third-party lists in /etc/apt/sources.list.d are disabled,
+  leaving only the Ubuntu archives. Jobs that genuinely install from a
+  third-party repository must set `keep-third-party-repos: 'true'` and add
+  their own list *after* this action runs.
+
+inputs:
+  keep-third-party-repos:
+    description: |
+      Set to 'true' to leave /etc/apt/sources.list.d intact, for jobs that
+      install packages from a third-party repository (e.g. google-chrome-stable).
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -21,3 +45,21 @@ runs:
         Acquire::https::Timeout "10";
         Acquire::Retries "2";
         EOF
+
+    - name: Disable preconfigured third-party apt repositories
+      if: inputs.keep-third-party-repos != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # The runner image ships lists we never install from. Renaming rather
+        # than deleting keeps the originals recoverable within the job, and
+        # makes the skipped repositories visible in the log.
+        shopt -s nullglob
+        disabled=0
+        for list in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+          echo "Disabling third-party apt repository: ${list}"
+          sudo mv "${list}" "${list}.disabled-by-ci"
+          disabled=$((disabled + 1))
+        done
+        echo "Disabled ${disabled} third-party apt repository list(s); apt-get update now uses the Ubuntu archives only."

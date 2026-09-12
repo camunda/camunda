@@ -493,6 +493,10 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
+      # Runs with the default `keep-third-party-repos: 'false'`: the preconfigured
+      # runner-image lists are disabled here, and the google-chrome.list this job
+      # needs is written further down, after this action -- so it survives and the
+      # second `apt-get update` below still sees it.
       - uses: ./.github/actions/apt-fast-mirror-failover
       # Every network-bound, sudo'd step below is wrapped in its own `sudo timeout ...`
       # so a hang self-terminates inside the sudo'd root process tree instead of
