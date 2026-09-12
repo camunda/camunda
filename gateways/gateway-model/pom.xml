@@ -204,11 +204,13 @@
                 <typeMapping>FormKeyFilterProperty=String</typeMapping>
                 <typeMapping>IntegerFilterProperty=Integer</typeMapping>
                 <typeMapping>JobKeyFilterProperty=String</typeMapping>
+                <typeMapping>MappingRuleIdFilterProperty=String</typeMapping>
                 <typeMapping>MessageSubscriptionKeyFilterProperty=String</typeMapping>
                 <typeMapping>ProcessDefinitionIdFilterProperty=String</typeMapping>
                 <typeMapping>ProcessDefinitionKeyFilterProperty=String</typeMapping>
                 <typeMapping>ProcessInstanceKeyFilterProperty=String</typeMapping>
                 <typeMapping>ResourceKeyFilterProperty=String</typeMapping>
+                <typeMapping>RoleIdFilterProperty=String</typeMapping>
                 <typeMapping>ScopeKeyFilterProperty=String</typeMapping>
                 <typeMapping>StringFilterProperty=String</typeMapping>
                 <typeMapping>VariableKeyFilterProperty=String</typeMapping>

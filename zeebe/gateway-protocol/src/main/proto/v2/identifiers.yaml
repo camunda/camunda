@@ -302,6 +302,58 @@ components:
         - propertyName: "$like"
           addedInVersion: "8.10"
 
+    MappingRuleIdFilterProperty:
+      description: MappingRuleId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/MappingRuleId'
+        - $ref: '#/components/schemas/AdvancedMappingRuleIdFilter'
+
+    AdvancedMappingRuleIdFilter:
+      title: Advanced filter
+      description: Advanced MappingRuleId filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/MappingRuleId'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/MappingRuleId'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/MappingRuleId'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/MappingRuleId'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.10"
+        - propertyName: "$neq"
+          addedInVersion: "8.10"
+        - propertyName: "$exists"
+          addedInVersion: "8.10"
+        - propertyName: "$in"
+          addedInVersion: "8.10"
+        - propertyName: "$notIn"
+          addedInVersion: "8.10"
+        - propertyName: "$like"
+          addedInVersion: "8.10"
+
     ProcessDefinitionIdFilterProperty:
       description: ProcessDefinitionId property with full advanced search capabilities.
       oneOf:
@@ -338,6 +390,58 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProcessDefinitionId'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.10"
+        - propertyName: "$neq"
+          addedInVersion: "8.10"
+        - propertyName: "$exists"
+          addedInVersion: "8.10"
+        - propertyName: "$in"
+          addedInVersion: "8.10"
+        - propertyName: "$notIn"
+          addedInVersion: "8.10"
+        - propertyName: "$like"
+          addedInVersion: "8.10"
+
+    RoleIdFilterProperty:
+      description: RoleId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/RoleId'
+        - $ref: '#/components/schemas/AdvancedRoleIdFilter'
+
+    AdvancedRoleIdFilter:
+      title: Advanced filter
+      description: Advanced RoleId filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/RoleId'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/RoleId'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleId'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleId'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
       x-properties-added-in-version:
