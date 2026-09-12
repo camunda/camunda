@@ -216,7 +216,16 @@ public final class FollowerRole extends ActiveRole {
 
     final var response =
         logResponse(TimeoutNowResponse.builder().withStatus(RaftResponse.Status.OK).build());
-    raft.transition(RaftServer.Role.CANDIDATE);
+
+    raft.getThreadContext()
+        .execute(
+            () -> {
+              if (!isRunning()
+                  || !isTimeoutNowFromCurrentLeader(request.term(), request.leader())) {
+                return;
+              }
+              raft.transition(RaftServer.Role.CANDIDATE);
+            });
 
     return CompletableFuture.completedFuture(response);
   }
