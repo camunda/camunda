@@ -18,7 +18,10 @@ import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -833,6 +836,47 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
     }
     return actor.call(() -> state.getLowestPosition());
+  }
+
+  /**
+   * Whether every exporter on this replica has finished exporting and acknowledging every record
+   * written under a previous application version, for the upgrade-readiness endpoint.
+   */
+  public ActorFuture<PartitionMigrationStatus> getExportingMigrationStatus() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(
+          new PartitionMigrationStatus(
+              MigrationStatusCode.UNKNOWN,
+              "partition " + partitionId.number() + ": exporter director is closed"));
+    }
+    return actor.call(this::computeExportingMigrationStatus);
+  }
+
+  /**
+   * Gathers the two already-durable facts {@link ExportingMigrationStatusCalculator} needs, reading
+   * the lowest exported position and peeking the next unexported record's version within a single,
+   * uninterrupted actor job so a compaction pass can't invalidate the position in between.
+   */
+  private PartitionMigrationStatus computeExportingMigrationStatus() {
+    final var hasExporters = state.hasExporters();
+    if (!hasExporters) {
+      return ExportingMigrationStatusCalculator.compute(partitionId.number(), false, null);
+    }
+
+    final long lowestExportedPosition = state.getLowestPosition();
+    final String nextUnexportedRecordVersion;
+    try (final LogStreamReader reader = logStream.newLogStreamReader()) {
+      reader.seekToNextEvent(lowestExportedPosition);
+      if (reader.hasNext()) {
+        final var metadata = new RecordMetadata();
+        reader.peekNext().readMetadata(metadata);
+        nextUnexportedRecordVersion = metadata.getBrokerVersion().toString();
+      } else {
+        nextUnexportedRecordVersion = null;
+      }
+    }
+    return ExportingMigrationStatusCalculator.compute(
+        partitionId.number(), true, nextUnexportedRecordVersion);
   }
 
   /**
