@@ -12,6 +12,9 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.RetryDelayStrategy;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Retries an operation with delays between attempts. The first attempt runs immediately; retries
@@ -23,17 +26,29 @@ import java.util.function.BooleanSupplier;
  */
 public final class AbortableDelayedRetryStrategy implements RetryStrategy {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AbortableDelayedRetryStrategy.class);
+
   private final ActorControl actor;
   private final RetryDelayStrategy delayStrategy;
+  private final @Nullable String operationName;
 
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier currentTerminateCondition;
   private OperationToRetry currentCallable;
+  private int retryCount;
 
   public AbortableDelayedRetryStrategy(
       final ActorControl actor, final RetryDelayStrategy delayStrategy) {
+    this(actor, delayStrategy, null);
+  }
+
+  public AbortableDelayedRetryStrategy(
+      final ActorControl actor,
+      final RetryDelayStrategy delayStrategy,
+      final @Nullable String operationName) {
     this.actor = actor;
     this.delayStrategy = delayStrategy;
+    this.operationName = operationName;
   }
 
   @Override
@@ -47,6 +62,7 @@ public final class AbortableDelayedRetryStrategy implements RetryStrategy {
     currentFuture = new CompletableActorFuture<>();
     currentTerminateCondition = terminateCondition;
     currentCallable = callable;
+    retryCount = 0;
     delayStrategy.reset();
 
     actor.run(this::run);
@@ -61,6 +77,10 @@ public final class AbortableDelayedRetryStrategy implements RetryStrategy {
       } else if (currentTerminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
       } else {
+        if (operationName != null) {
+          LOG.trace(
+              "Operation '{}' did not complete, scheduling retry {}", operationName, ++retryCount);
+        }
         backOff();
       }
     } catch (final Exception exception) {
