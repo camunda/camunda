@@ -41,7 +41,7 @@ final class CustomBasePathIT {
     @SuppressWarnings("resource")
     @Container
     private static final GenericContainer<?> S3 =
-        new GenericContainer<>(DockerImageName.parse("minio/minio"))
+        new GenericContainer<>(DockerImageName.parse("quay.io/minio/minio"))
             .withCommand("server /data")
             .withExposedPorts(DEFAULT_PORT)
             .withEnv("MINIO_ACCESS_KEY", ACCESS_KEY)
@@ -94,7 +94,7 @@ final class CustomBasePathIT {
     @SuppressWarnings("resource")
     @Container
     private static final GenericContainer<?> S3 =
-        new GenericContainer<>(DockerImageName.parse("minio/minio"))
+        new GenericContainer<>(DockerImageName.parse("quay.io/minio/minio"))
             .withCommand("server /data")
             .withExposedPorts(DEFAULT_PORT)
             .withEnv("MINIO_ACCESS_KEY", ACCESS_KEY)

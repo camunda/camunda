@@ -32,7 +32,8 @@ public class MinioLegacyMd5IT implements S3BackupStoreTests {
   public static final String SECRET_KEY = "letmein1234";
   public static final int DEFAULT_PORT = 9000;
   // Deliberately using an old MinIO image to verify AWS legacy MD5 support
-  private static final String LEGACY_MINIO_IMAGE = "minio/minio:RELEASE.2023-11-20T22-40-07Z";
+  private static final String LEGACY_MINIO_IMAGE =
+      "quay.io/minio/minio:RELEASE.2023-11-20T22-40-07Z";
   private static final Logger LOG = LoggerFactory.getLogger(MinioLegacyMd5IT.class);
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
