@@ -89,6 +89,10 @@ public final class VariableBehavior {
    * @param scopeKey the scope key for each variable
    * @param processDefinitionKey the process key to be associated with each variable
    * @param processInstanceKey the process instance key to be associated with each variable
+   * @param rootProcessInstanceKey the associated root process instance key
+   * @param storageOrdinalKey the storage ordinal key for the variable
+   * @param bpmnProcessId the BPMN process ID to be associated with each variable
+   * @param tenantId the tenant ID to be associated with each variable
    * @param document the document to merge
    */
   public void mergeLocalDocument(
@@ -96,6 +100,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final long rootProcessInstanceKey,
+      final int storageOrdinalKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer document)
@@ -110,6 +115,7 @@ public final class VariableBehavior {
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinalKey(storageOrdinalKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
         .setSource(variableSourceRecord);
@@ -143,6 +149,7 @@ public final class VariableBehavior {
    * @param processDefinitionKey the process key to be associated with each variable
    * @param processInstanceKey the process instance key to be associated with each variable
    * @param rootProcessInstanceKey the root process instance key to be associated with each variable
+   * @param storageOrdinalKey the storage ordinal key for the variable
    * @param document the document to merge
    */
   public void mergeDocument(
@@ -150,6 +157,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final long rootProcessInstanceKey,
+      final int storageOrdinalKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer document)
@@ -167,6 +175,7 @@ public final class VariableBehavior {
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinalKey(storageOrdinalKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
         .setSource(variableSourceRecord);
@@ -214,6 +223,8 @@ public final class VariableBehavior {
    * @param scopeKey the key of the scope on which to set the variable
    * @param processDefinitionKey the associated process key
    * @param processInstanceKey the associated process instance key
+   * @param rootProcessInstanceKey the associated root process instance key
+   * @param storageOrdinalKey the storage ordinal key for the variable
    * @param name a buffer containing only the name of the variable
    * @param value a buffer containing the value of the variable as MessagePack
    * @param valueOffset the offset of the value in the {@code value} buffer
@@ -224,6 +235,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final long rootProcessInstanceKey,
+      final int storageOrdinalKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer name,
@@ -236,6 +248,7 @@ public final class VariableBehavior {
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinalKey(storageOrdinalKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
         .setName(name)
