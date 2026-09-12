@@ -2859,6 +2859,72 @@ jobs:
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
 
+  # Re-run jobs whose runner was terminated mid-job (spot preemption, autoscaler
+  # scale-down, node eviction) rather than by anything the change did. Those jobs
+  # fail with "The runner has received a shutdown signal" while the test step is
+  # still running, which says nothing about the code under test.
+  #
+  # The action re-runs failed jobs only, so a killed matrix leg such as
+  # `database-integration-tests (mysql)` comes back on its own while every green
+  # job is left untouched. It also reads the run logs first and does nothing unless
+  # a shutdown message is present, so a genuine failure still ends the run red.
+  # `check-results` re-runs as a dependent of the failed jobs, which re-arms this
+  # job, so run_attempt caps the whole thing at two retries.
+  #
+  # Scoped to `pull_request` deliberately. `merge_group` is excluded so the merge
+  # queue never auto-retries, since a retry there would hold the queue open longer
+  # and could let a co-occurring flake reach main. Fork PRs are excluded because
+  # they cannot reach Vault to mint the retrigger token.
+  #
+  # No `deploy-` job can be re-run by this, and neither the position of this job in
+  # the file nor its `needs` is what prevents it: every `deploy-` job requires
+  # `needs.check-results.result == 'success'` where this one requires `'failure'`, so
+  # the two are mutually exclusive within an attempt. The `pull_request` scope makes
+  # it doubly unreachable, since the deploy jobs also require a `main`/`stable/*` ref
+  # and are therefore skipped on PR runs, and a re-run of failed jobs does not revive
+  # skipped ones. Widening this job past `pull_request` would remove that second
+  # guarantee and let a green re-run release the deploys the failed attempt skipped.
+  utils-rerun-failed-jobs:
+    name: rerun jobs killed by runner shutdown
+    needs: [ check-results ]
+    if: >
+      always() && needs.check-results.result == 'failure'
+      && github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.fork != true
+      && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Rerun failed jobs on runner shutdown
+        uses: camunda/infra-global-github-actions/rerun-failed-run@475528365f4010480dccff71ccac554cc3352e7c # rerun-failed-run-1.1.2
+        with:
+          error-messages: |
+            The runner has received a shutdown signal
+            lost communication with the server
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+
   # Dynamically generate the concurrency group based on branch name
   utils-get-concurrency-group-for-maven-snapshot:
     needs: [ check-results ]
