@@ -1,12 +1,28 @@
 ---
 name: Configure apt fast mirror failover
 description: |
-  Drops an apt.conf.d snippet so apt abandons a hung mirror quickly instead
-  of riding out its ~120s default per-mirror timeout. GitHub's Ubuntu
-  runner image lists http://azure.archive.ubuntu.com as the priority-1
-  mirror, which intermittently hangs instead of erroring; apt then wastes
-  up to two minutes per attempt before failing over to the working
-  archive.ubuntu.com/security.ubuntu.com mirrors. See INC-6639 / #58992.
+  Hardens apt against Ubuntu mirror outages, in two layers.
+
+  Layer 1 -- timeouts. Drops an apt.conf.d snippet so apt abandons a hung
+  mirror quickly instead of riding out its ~120s default per-mirror
+  timeout. GitHub's Ubuntu runner image lists http://azure.archive
+  .ubuntu.com as the priority-1 mirror, which intermittently hangs instead
+  of erroring; apt then wastes up to two minutes per attempt before failing
+  over to the working archive.ubuntu.com/security.ubuntu.com mirrors.
+  See INC-6639 / #58992.
+
+  Layer 2 -- destination. Timeouts only help when the fallback is healthy.
+  During INC-7985 security.ubuntu.com was itself down, so failing over to
+  it faster changed nothing and every apt-using job broke. On cloud
+  runners we can leave Canonical's public CDN entirely: both GCP and AWS
+  host in-network Ubuntu archive mirrors, reachable over the provider's
+  own backbone. This step repoints apt at the mirror matching the runner's
+  cloud, so a Canonical CDN outage no longer reaches us at all.
+
+  The repoint is best-effort and fail-safe: if cloud detection is
+  inconclusive, or the candidate mirror does not answer, sources are left
+  untouched and apt keeps its stock configuration plus layer 1. It never
+  leaves apt pointed somewhere less reachable than where it started.
 
 inputs: {}
 
@@ -21,3 +37,81 @@ runs:
         Acquire::https::Timeout "10";
         Acquire::Retries "2";
         EOF
+
+    - name: Repoint apt at the in-network cloud mirror
+      shell: bash
+      run: |
+        set -uo pipefail
+
+        # Identify the cloud from the instance metadata service. Both providers
+        # require their own header, so a response to one is positive ID; the
+        # short timeout keeps a non-cloud runner (GitHub-hosted) from stalling
+        # here, where neither endpoint is routable.
+        cloud=""
+        region=""
+        if zone=$(curl -fsS --max-time 3 -H 'Metadata-Flavor: Google' \
+            http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null); then
+          cloud="gce"
+          # Zone is ".../zones/europe-west1-b"; the mirror is keyed by region,
+          # which is the zone minus its trailing availability-zone letter.
+          zone="${zone##*/}"
+          region="${zone%-*}"
+        elif token=$(curl -fsS --max-time 3 -X PUT \
+            -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' \
+            http://169.254.169.254/latest/api/token 2>/dev/null); then
+          cloud="ec2"
+          region=$(curl -fsS --max-time 3 -H "X-aws-ec2-metadata-token: $token" \
+            http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null)
+        fi
+
+        if [ -z "$cloud" ] || [ -z "$region" ]; then
+          echo "No cloud metadata service reachable -- keeping stock apt mirrors."
+          exit 0
+        fi
+
+        mirror="http://${region}.${cloud}.archive.ubuntu.com/ubuntu"
+        echo "Detected ${cloud} region ${region}; candidate mirror ${mirror}"
+
+        # Never repoint at a mirror we have not just seen answer. A regional
+        # mirror can be missing (a new region, or one Canonical does not serve),
+        # and silently pointing apt at a dead host would turn the next outage
+        # into a harder failure than the stock configuration. Check the security
+        # pocket too -- that is the one that went down in INC-7985.
+        suite=$(. /etc/os-release && echo "$VERSION_CODENAME")
+        for pocket in "$suite" "$suite-security"; do
+          if ! curl -fsS --max-time 10 -o /dev/null "${mirror}/dists/${pocket}/Release"; then
+            echo "Candidate mirror did not serve ${pocket} -- keeping stock apt mirrors."
+            exit 0
+          fi
+        done
+
+        # Ubuntu 24.04 ships deb822 (.sources); earlier releases use one-line
+        # .list entries. Rewrite whichever this image actually uses, and only
+        # the Ubuntu archive hosts -- third-party sources (Docker, Google
+        # Chrome, ...) must keep their own URIs.
+        hosts='(azure\.archive\.ubuntu\.com|archive\.ubuntu\.com|security\.ubuntu\.com|[a-z0-9-]+\.(gce|ec2)\.archive\.ubuntu\.com)'
+        rewrote=""
+        for candidate in /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list; do
+          if [ -s "$candidate" ] && grep -Eq "$hosts" "$candidate"; then
+            sudo cp "$candidate" "${candidate}.bak"
+            sudo sed -ri "s#https?://${hosts}(/ubuntu)?#${mirror}#g" "$candidate"
+            rewrote="$candidate"
+            break
+          fi
+        done
+
+        if [ -z "$rewrote" ]; then
+          echo "No recognised Ubuntu sources file -- keeping stock apt mirrors."
+          exit 0
+        fi
+
+        # Prove the rewritten sources actually resolve before handing them to
+        # the caller's install step. On failure, restore the backup so the job
+        # proceeds on stock mirrors rather than dying here on our own change.
+        if sudo apt-get update -o Acquire::Retries=1; then
+          echo "apt now using ${mirror} (via ${rewrote})."
+        else
+          echo "apt-get update failed against ${mirror} -- restoring stock mirrors."
+          sudo mv "${rewrote}.bak" "$rewrote"
+          sudo apt-get update || true
+        fi
