@@ -55,7 +55,7 @@ class SecurityPathAdapterTest {
             "/favicon.ico",
             "/cluster/v2/status",
             "/cluster/v2/status/upgrade",
-            "/.well-known/camunda/**");
+            "/.well-known/camunda/webapps");
   }
 
   @Test

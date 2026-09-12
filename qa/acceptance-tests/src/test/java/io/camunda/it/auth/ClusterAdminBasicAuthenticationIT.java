@@ -199,11 +199,12 @@ public class ClusterAdminBasicAuthenticationIT {
     // when — the webapps discovery document is fetched with no credentials
     final HttpResponse<String> response = send(clusterUri(PATH_WELL_KNOWN_WEBAPPS), null);
 
-    // then — it announces the setup's webapps, by default co-located with the API
+    // then — it announces the setup's webapps, by default as paths relative to the API origin,
+    // so the answer stays correct behind TLS-terminating proxies
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     final var body = new ObjectMapper().readTree(response.body());
-    assertThat(body.get("operateUrl").asText()).endsWith("/operate");
-    assertThat(body.get("tasklistUrl").asText()).endsWith("/tasklist");
+    assertThat(body.get("operateUrl").asText()).isEqualTo("/operate");
+    assertThat(body.get("tasklistUrl").asText()).isEqualTo("/tasklist");
   }
 
   @Test

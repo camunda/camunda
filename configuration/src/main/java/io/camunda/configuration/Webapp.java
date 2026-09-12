@@ -26,8 +26,8 @@ public class Webapp {
    *
    * <p>Set this when the webapp is reachable under a different origin or path than the
    * orchestration cluster REST API, e.g. behind a dedicated ingress. If unset and the webapp UI is
-   * enabled, the discovery endpoint announces the webapp's default path on the same origin as the
-   * API. If the webapp UI is disabled and no URL is set, the webapp is not announced.
+   * enabled, the discovery endpoint announces the webapp's default path relative to the API (e.g.
+   * {@code /operate}). If the webapp UI is disabled and no URL is set, the webapp is not announced.
    */
   private @Nullable String url;
 

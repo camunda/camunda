@@ -424,10 +424,7 @@ security.saas.organization-id
 system.clock-controlled
 webapps.identity.enabled
 webapps.identity.ui-enabled
-webapps.identity.url
 webapps.operate.enabled
 webapps.operate.ui-enabled
-webapps.operate.url
 webapps.tasklist.enabled
 webapps.tasklist.ui-enabled
-webapps.tasklist.url

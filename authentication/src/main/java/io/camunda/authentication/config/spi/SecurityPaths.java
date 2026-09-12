@@ -43,10 +43,11 @@ public final class SecurityPaths {
   // a health endpoint. Here the Authorization header is never inspected. The exact path is listed,
   // so the rest of /cluster/v2/** stays with the cluster-admin chains. /cluster/v2/status/upgrade
   // is listed for the identical reason (camunda/camunda#61619).
-  // /.well-known/camunda/** is the discovery document for the setup's webapps
+  // /.well-known/camunda/webapps is the discovery document for the setup's webapps
   // (camunda/camunda#46649). Clients fetch it before they know how (or whether) to authenticate
   // against the cluster, so it needs the same credential-agnostic treatment as the health
-  // endpoints above.
+  // endpoints above. Listed as an exact path for the same reason: any future well-known document
+  // must opt into the filter-less chain explicitly.
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           "/error",
@@ -57,7 +58,7 @@ public final class SecurityPaths {
           "/favicon.ico",
           "/cluster/v2/status",
           "/cluster/v2/status/upgrade",
-          "/.well-known/camunda/**");
+          "/.well-known/camunda/webapps");
 
   private SecurityPaths() {}
 }

@@ -8,17 +8,13 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.startsWith;
 
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.WebappsDiscoveryProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.mock.env.MockEnvironment;
 
 @WebMvcTest(WebappsDiscoveryController.class)
 class WebappsDiscoveryControllerTest extends RestControllerTest {
@@ -26,8 +22,9 @@ class WebappsDiscoveryControllerTest extends RestControllerTest {
   static final String WEBAPPS_DISCOVERY_URL = "/.well-known/camunda/webapps";
 
   @Test
-  void shouldAnnounceWebappsOnApiOriginByDefault() {
-    // given no explicit camunda.webapps.*.url configuration
+  void shouldAnnounceWebappsAsRelativePathsByDefault() {
+    // given no explicit camunda.webapps.*.url configuration — relative URLs resolve against the
+    // origin the client used for the API call, correct behind proxies by construction
 
     // when / then
     webClient
@@ -38,14 +35,7 @@ class WebappsDiscoveryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .jsonPath("$.operateUrl")
-        .value(startsWith("http"))
-        .jsonPath("$.operateUrl")
-        .value(endsWith("/operate"))
-        .jsonPath("$.tasklistUrl")
-        .value(startsWith("http"))
-        .jsonPath("$.tasklistUrl")
-        .value(endsWith("/tasklist"));
+        .json("{\"operateUrl\":\"/operate\",\"tasklistUrl\":\"/tasklist\"}");
   }
 
   @Test
@@ -64,19 +54,6 @@ class WebappsDiscoveryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldDeriveUrlFromRequestOriginWhenNoUrlConfigured() {
-    // given
-    final var properties = new WebappsDiscoveryProperties();
-
-    // when
-    final var response = invokeController(properties);
-
-    // then
-    assertThat(response.operateUrl()).isEqualTo("https://cluster.example.com/operate");
-    assertThat(response.tasklistUrl()).isEqualTo("https://cluster.example.com/tasklist");
-  }
-
-  @Test
   void shouldNotAnnounceWebappWhenDisabled() {
     // given
     final var properties = new WebappsDiscoveryProperties();
@@ -87,7 +64,7 @@ class WebappsDiscoveryControllerTest extends RestControllerTest {
 
     // then
     assertThat(response.operateUrl()).isNull();
-    assertThat(response.tasklistUrl()).isEqualTo("https://cluster.example.com/tasklist");
+    assertThat(response.tasklistUrl()).isEqualTo("/tasklist");
   }
 
   @Test
@@ -100,8 +77,23 @@ class WebappsDiscoveryControllerTest extends RestControllerTest {
     final var response = invokeController(properties);
 
     // then
-    assertThat(response.operateUrl()).isEqualTo("https://cluster.example.com/operate");
+    assertThat(response.operateUrl()).isEqualTo("/operate");
     assertThat(response.tasklistUrl()).isNull();
+  }
+
+  @Test
+  void shouldNotAnnounceWebappWhenLegacyWebappEnabledIsFalse() {
+    // given — disabled via the legacy kill-switch, which still gates the actual webapp
+    final var properties = new WebappsDiscoveryProperties();
+    final var environment =
+        new MockEnvironment().withProperty("camunda.operate.webappEnabled", "false");
+
+    // when
+    final var response = invokeController(properties, environment);
+
+    // then
+    assertThat(response.operateUrl()).isNull();
+    assertThat(response.tasklistUrl()).isEqualTo("/tasklist");
   }
 
   @Test
@@ -120,15 +112,11 @@ class WebappsDiscoveryControllerTest extends RestControllerTest {
 
   private static WebappsDiscoveryResponse invokeController(
       final WebappsDiscoveryProperties properties) {
-    final var request = new MockHttpServletRequest("GET", WEBAPPS_DISCOVERY_URL);
-    request.setScheme("https");
-    request.setServerName("cluster.example.com");
-    request.setServerPort(443);
-    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-    try {
-      return new WebappsDiscoveryController(properties).getWebapps();
-    } finally {
-      RequestContextHolder.resetRequestAttributes();
-    }
+    return invokeController(properties, new MockEnvironment());
+  }
+
+  private static WebappsDiscoveryResponse invokeController(
+      final WebappsDiscoveryProperties properties, final MockEnvironment environment) {
+    return new WebappsDiscoveryController(properties, environment).getWebapps();
   }
 }
