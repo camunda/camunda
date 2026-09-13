@@ -55,7 +55,7 @@
 		"react": "19.2.8",
 		"react-dom": "19.2.8",
 		"typescript": "7.0.2",
-		"vite": "8.2.2",
+		"vite": "8.3.0",
 		"vite-plugin-dts": "5.1.0",
 		"vitest": "4.1.11",
 		"vitest-browser-react": "2.3.0"
