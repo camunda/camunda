@@ -24,6 +24,7 @@ tasks.named<ProcessResources>("processTestResources") {
 
 tasks.named<ProcessResources>("processResources") {
   from(layout.settingsDirectory.dir("optimize/client/dist")) { into("META-INF/resources") }
+  mustRunAfter(":optimize-client:yarnBuild")
 }
 
 sourceSets { main { resources { srcDir("src/main/ssl") } } }
