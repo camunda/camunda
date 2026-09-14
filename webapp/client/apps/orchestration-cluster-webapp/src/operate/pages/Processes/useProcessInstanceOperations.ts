@@ -17,7 +17,11 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 
 type OperationType = Extract<
 	BatchOperationType,
-	'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | 'DELETE_PROCESS_INSTANCE'
+	| 'RESOLVE_INCIDENT'
+	| 'CANCEL_PROCESS_INSTANCE'
+	| 'DELETE_PROCESS_INSTANCE'
+	| 'SUSPEND_PROCESS_INSTANCE'
+	| 'RESUME_PROCESS_INSTANCE'
 >;
 
 // Listed as "still going" rather than "done" so a state the API adds later ends the wait instead
@@ -25,6 +29,24 @@ type OperationType = Extract<
 // the operation-state column rather than leaving a spinner up forever.
 const IN_PROGRESS_BATCH_OPERATION_STATES: BatchOperation['state'][] = ['CREATED', 'ACTIVE'];
 const TERMINAL_PROCESS_INSTANCE_STATES: ProcessInstance['state'][] = ['COMPLETED', 'TERMINATED'];
+
+// A 403 on these means "you can't do this", not "something broke" — legacy shows the same
+// permission warning for all three rather than a generic error. Cancel and Delete are
+// deliberately excluded, not missing: legacy's own delete-instance mutation test asserts a plain
+// error propagates on 403 with no special-cased warning, so a generic error here matches legacy.
+const PERMISSION_WARNING_OPERATIONS: OperationType[] = [
+	'RESOLVE_INCIDENT',
+	'SUSPEND_PROCESS_INSTANCE',
+	'RESUME_PROCESS_INSTANCE',
+];
+
+// Matches legacy's `useChangeProcessInstanceState` bound for suspend/resume specifically: enough
+// attempts for secondary-storage indexing lag, finite so a state that's never reached (e.g. the
+// instance was canceled elsewhere while this command was in flight) still surfaces as a failure
+// instead of spinning forever. Cancel keeps the unbounded wait below — legacy's own
+// `useCancelProcessInstance` never gives up either, since canceling a large instance tree can
+// legitimately take longer than this bound.
+const SUSPEND_RESUME_POLL_RETRY = {retry: 30, retryDelay: 1000};
 
 function getOperationErrorSubtitle(error: unknown): string | undefined {
 	if (error instanceof Error) {
@@ -69,20 +91,38 @@ async function waitForBatchOperation(queryClient: QueryClient, batchOperationKey
  * observed on the instance itself, as legacy does.
  */
 async function waitForInstanceToFinish(queryClient: QueryClient, processInstanceKey: string) {
+	await waitForInstanceState(queryClient, processInstanceKey, 'finish', (state) =>
+		TERMINAL_PROCESS_INSTANCE_STATES.includes(state),
+	);
+}
+
+/**
+ * Suspend/resume also return 204 with no body, as legacy does. A resumed instance may report
+ * either ACTIVE or an already-finished state depending on timing, so "resumed" means "left
+ * SUSPENDED" rather than a single exact state, matching legacy's `useChangeProcessInstanceState`.
+ * `retryConfig` defaults to Cancel's unbounded wait; suspend/resume pass the bounded one above.
+ */
+async function waitForInstanceState(
+	queryClient: QueryClient,
+	processInstanceKey: string,
+	label: string,
+	hasReachedExpectedState: (state: ProcessInstance['state']) => boolean,
+	retryConfig: {retry: number | true; retryDelay?: number} = {retry: true},
+) {
 	await queryClient.fetchQuery({
-		queryKey: ['processInstanceState', processInstanceKey] as const,
+		queryKey: ['processInstanceState', processInstanceKey, label] as const,
 		queryFn: async (): Promise<ProcessInstance> => {
 			const {response, error} = await request(endpoints.getProcessInstance(processInstanceKey));
 			if (error !== null) {
 				throw mapQueryError(error);
 			}
 			const processInstance: ProcessInstance = await response.json();
-			if (!TERMINAL_PROCESS_INSTANCE_STATES.includes(processInstance.state)) {
-				throw new Error('process instance is still running');
+			if (!hasReachedExpectedState(processInstance.state)) {
+				throw new Error(`process instance has not reached the expected state (${label})`);
 			}
 			return processInstance;
 		},
-		retry: true,
+		...retryConfig,
 	});
 }
 
@@ -99,11 +139,12 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 	const invalidateProcessInstances = () => queryClient.invalidateQueries({queryKey: ['processInstances']});
 
 	const showOperationError = (operationType: OperationType, error: unknown, errorTitle: string) => {
-		const isForbiddenIncidentRetry = operationType === 'RESOLVE_INCIDENT' && error instanceof ForbiddenError;
+		const isForbiddenOperation =
+			PERMISSION_WARNING_OPERATIONS.includes(operationType) && error instanceof ForbiddenError;
 		notificationsStore.displayNotification({
-			kind: isForbiddenIncidentRetry ? 'warning' : 'error',
-			title: isForbiddenIncidentRetry ? t('operate.processes.instancesTable.operations.forbiddenTitle') : errorTitle,
-			subtitle: isForbiddenIncidentRetry
+			kind: isForbiddenOperation ? 'warning' : 'error',
+			title: isForbiddenOperation ? t('operate.processes.instancesTable.operations.forbiddenTitle') : errorTitle,
+			subtitle: isForbiddenOperation
 				? t('operate.processes.instancesTable.operations.forbiddenSubtitle')
 				: getOperationErrorSubtitle(error),
 			isDismissable: true,
@@ -145,6 +186,52 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 			),
 	});
 
+	const suspend = useMutation({
+		mutationFn: async () => {
+			const {error} = await request(endpoints.suspendProcessInstance(processInstanceKey));
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			await waitForInstanceState(
+				queryClient,
+				processInstanceKey,
+				'suspend',
+				(state) => state === 'SUSPENDED',
+				SUSPEND_RESUME_POLL_RETRY,
+			);
+		},
+		onSuccess: invalidateProcessInstances,
+		onError: (error) =>
+			showOperationError(
+				'SUSPEND_PROCESS_INSTANCE',
+				error,
+				t('operate.processes.instancesTable.operations.suspendFailed'),
+			),
+	});
+
+	const resume = useMutation({
+		mutationFn: async () => {
+			const {error} = await request(endpoints.resumeProcessInstance(processInstanceKey));
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			await waitForInstanceState(
+				queryClient,
+				processInstanceKey,
+				'resume',
+				(state) => state !== 'SUSPENDED',
+				SUSPEND_RESUME_POLL_RETRY,
+			);
+		},
+		onSuccess: invalidateProcessInstances,
+		onError: (error) =>
+			showOperationError(
+				'RESUME_PROCESS_INSTANCE',
+				error,
+				t('operate.processes.instancesTable.operations.resumeFailed'),
+			),
+	});
+
 	const remove = useMutation({
 		mutationFn: async () => {
 			const {error} = await request(endpoints.deleteProcessInstance(processInstanceKey));
@@ -176,12 +263,20 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 	if (remove.isPending) {
 		pendingOperations.add('DELETE_PROCESS_INSTANCE');
 	}
+	if (suspend.isPending) {
+		pendingOperations.add('SUSPEND_PROCESS_INSTANCE');
+	}
+	if (resume.isPending) {
+		pendingOperations.add('RESUME_PROCESS_INSTANCE');
+	}
 
 	return {
 		pendingOperations,
 		resolveIncidents: resolveIncidents.mutate,
 		cancel: cancel.mutate,
 		remove: remove.mutate,
+		suspend: suspend.mutate,
+		resume: resume.mutate,
 	};
 }
 
