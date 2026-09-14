@@ -11,7 +11,8 @@ It intentionally stays simple:
     Gradle project name equals its Maven artifactId. If they ever diverge, fix the Gradle project
     name (this tool will flag it as a false diff).
   * Add `--versions` to also diff the resolved version of third-party coordinates present
-    on both sides.
+    on both sides. Patch-only version differences are reported under `ignored_differences`
+    but do not affect the comparison status.
 
 The comparison uses resolved dependency graphs, including transitive dependencies; it does
 not compare only the dependencies declared directly in each build file:
@@ -269,6 +270,19 @@ _GRADLE_RE = re.compile(r"---\s+([\w.-]+):([\w.-]+)(?::([\w.\-]+))?\s*(?:->\s*([
 # Gradle 9 renders project dependencies as `project ':module'`; older output used
 # `project :module`. Accept both forms.
 _GRADLE_PROJECT_RE = re.compile(r"---\s+project ['\"]?:([\w.-]+)['\"]?")
+_NUMERIC_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+
+
+def is_patch_only_version_difference(maven: str, gradle: str) -> bool:
+    """Return whether two versions differ only in their numeric patch component."""
+    maven_version = _NUMERIC_VERSION_RE.fullmatch(maven)
+    gradle_version = _NUMERIC_VERSION_RE.fullmatch(gradle)
+    return bool(
+        maven_version
+        and gradle_version
+        and maven_version.groups()[:2] == gradle_version.groups()[:2]
+        and maven_version.group(3) != gradle_version.group(3)
+    )
 
 
 def gradle_deps(project: str, configuration: str):
@@ -366,13 +380,23 @@ def compare_project(
     common = sorted(set(mvn) & set(grd))
     int_only_mvn = sorted(mvn_int - grd_int)
     int_only_grd = sorted(grd_int - mvn_int)
-    mismatches = [
-        {"coordinate": coordinate, "maven": mv, "gradle": gv}
-        for coordinate in common
-        if (mv := mvn[coordinate]) != (gv := grd[coordinate])
-    ]
-    if not versions:
-        mismatches = []
+    mismatches = []
+    ignored_version_mismatches = []
+    if versions:
+        for coordinate in common:
+            maven_version = mvn[coordinate]
+            gradle_version = grd[coordinate]
+            if maven_version == gradle_version:
+                continue
+            mismatch = {
+                "coordinate": coordinate,
+                "maven": maven_version,
+                "gradle": gradle_version,
+            }
+            if is_patch_only_version_difference(maven_version, gradle_version):
+                ignored_version_mismatches.append(mismatch)
+            else:
+                mismatches.append(mismatch)
 
     differences = {
         "third_party_missing": [{"coordinate": coordinate, "version": mvn[coordinate]} for coordinate in only_mvn],
@@ -381,6 +405,7 @@ def compare_project(
         "internal_extra": sorted(int_only_grd),
         "version_mismatches": mismatches,
     }
+    ignored_differences = {"version_mismatches": ignored_version_mismatches}
     has_differences = any(differences.values())
     return {
         "project": project,
@@ -400,6 +425,7 @@ def compare_project(
             "gradle": {"third_party": grd, "internal": sorted(grd_int)},
         },
         "differences": differences,
+        "ignored_differences": ignored_differences,
     }
 
 
@@ -442,6 +468,10 @@ def report(scope: str, results: list[dict]) -> dict:
         "total": len(results),
         "ok": sum(result["status"] == "ok" for result in results),
         "differences": sum(result["status"] == "differences" for result in results),
+        "ignored_version_mismatches": sum(
+            len(result.get("ignored_differences", {}).get("version_mismatches", []))
+            for result in results
+        ),
         "missing_gradle_projects": sum(
             result["status"] == "missing-gradle-project" for result in results
         ),
@@ -493,6 +523,17 @@ def print_result(result: dict) -> None:
                 for entry in entries:
                     print(f"  {prefix} project :{entry}")
                 print()
+        ignored_version_mismatches = result.get("ignored_differences", {}).get(
+            "version_mismatches", []
+        )
+        if ignored_version_mismatches:
+            print(f"IGNORED VERSION mismatches ({len(ignored_version_mismatches)}):")
+            for entry in ignored_version_mismatches:
+                print(
+                    f"  ~ {entry['coordinate']}  "
+                    f"maven={entry['maven']} gradle={entry['gradle']}"
+                )
+            print()
         if differences["version_mismatches"]:
             print(f"VERSION mismatches ({len(differences['version_mismatches'])}):")
             for entry in differences["version_mismatches"]:
@@ -501,7 +542,9 @@ def print_result(result: dict) -> None:
                     f"maven={entry['maven']} gradle={entry['gradle']}"
                 )
             print()
-    print("OK — no differences" if result["status"] == "ok" else result["status"].upper())
+    print(
+        "OK — no blocking differences" if result["status"] == "ok" else result["status"].upper()
+    )
 
 
 def exit_code(results: list[dict]) -> int:

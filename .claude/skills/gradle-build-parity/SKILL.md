@@ -279,6 +279,9 @@ It reports, per module:
   diffed by name. This relies on the convention **Gradle project name == Maven
   artifactId**. If they diverge, fix the Gradle project name — the tool flags it as a
   false diff, which is itself a signal.
+- **resolved versions** — with `--versions`, major/minor version mismatches remain blocking;
+  numeric patch-only mismatches are reported under `ignored_differences` in JSON output and
+  do not fail the comparison.
 
 Note: not every `io.camunda:*` artifact is a reactor module — some are separately-released
 libs (e.g. `camunda-security-library-*`, an alpha-versioned dependency). The tool
