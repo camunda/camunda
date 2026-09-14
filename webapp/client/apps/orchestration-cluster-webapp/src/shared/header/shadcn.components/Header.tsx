@@ -20,7 +20,7 @@ import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {getBootConfig} from '#/shared/config/getBootConfig';
-import {getCloudStage} from '#/shared/config/getCloudStage';
+import {getStage} from '#/shared/config/getStage';
 import {getNotificationsUrl} from '#/shared/config/getNotificationsUrl';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
@@ -46,8 +46,8 @@ const Header: React.FC<Props> = ({children}) => {
 	const {ariaLabel, homeRoute, items, product} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
 	const {organizationId, clusterId} = getBootConfig();
-	const cloudStage = getCloudStage();
-	const notificationsUrl = cloudStage === undefined ? undefined : getNotificationsUrl(cloudStage);
+	const stage = getStage(window.location.hostname);
+	const notificationsUrl = stage === 'unknown' ? undefined : getNotificationsUrl(stage);
 	const notificationsConfig = useMemo(
 		() =>
 			organizationId !== null && clusterId !== null && notificationsUrl !== undefined
