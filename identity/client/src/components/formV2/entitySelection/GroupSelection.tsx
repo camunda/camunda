@@ -18,7 +18,8 @@ import { groupQueries } from "src/utility/api/groups/queries";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (group: Group) => group.groupId;
-const itemLabel = (group: Group) => `${group.groupId} — ${group.name}`;
+const itemLabel = (group: Group) =>
+  `${group.groupId} ${group.name ? `— ${group.name}` : ""}`;
 const search = (search: string) =>
   groupQueries.search(
     search === ""

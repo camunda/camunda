@@ -19,7 +19,7 @@ import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (user: User) => user.username;
 const itemLabel = (user: User) =>
-  `${user.name || user.username} — ${user.email}`;
+  `${user.name || user.username} ${user.email ? `— ${user.email}` : ""}`;
 const search = (search: string) =>
   userQueries.search(
     search === ""
