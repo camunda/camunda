@@ -83,6 +83,7 @@
     <version.opensearch-java>2.19.0</version.opensearch-java>
     <version.opensearch.testcontainers>4.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
+    <version.s3mock-testcontainers>4.11.0</version.s3mock-testcontainers>
     <version.protobuf>4.31.1</version.protobuf>
     <version.protobuf-common>2.59.2</version.protobuf-common>
     <version.micrometer>1.15.12</version.micrometer>
@@ -1635,6 +1636,12 @@
         <groupId>org.opensearch</groupId>
         <artifactId>opensearch-testcontainers</artifactId>
         <version>${version.opensearch.testcontainers}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.adobe.testing</groupId>
+        <artifactId>s3mock-testcontainers</artifactId>
+        <version>${version.s3mock-testcontainers}</version>
       </dependency>
 
       <dependency>
