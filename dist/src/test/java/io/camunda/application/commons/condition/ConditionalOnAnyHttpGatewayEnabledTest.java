@@ -65,6 +65,14 @@ public class ConditionalOnAnyHttpGatewayEnabledTest {
         .run(context -> assertThat(context).doesNotHaveBean(FooService.class));
   }
 
+  @Test
+  void disabledWhenCamundaApiDisabled() {
+    contextRunner()
+        .withPropertyValues(
+            "camunda.rest.enabled=true", "camunda.mcp.enabled=true", "camunda.api.enabled=false")
+        .run(context -> assertThat(context).doesNotHaveBean(FooService.class));
+  }
+
   @TestConfiguration
   @ConditionalOnAnyHttpGatewayEnabled
   static class ConditionalOnAnyHttpGatewayEnabledTestConfiguration {

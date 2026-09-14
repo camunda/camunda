@@ -19,9 +19,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.annotation.Conditional;
 
 /**
- * The MCP gateway is disabled when either the {@code zeebe.broker.gateway.enable} or {@code
- * camunda.mcp.enabled} property is set to {@code false}. By default, the latter is considered to be
- * set to {@code false} when missing, the MCP gateway is thus disabled by default.
+ * The MCP gateway is disabled when the {@code zeebe.broker.gateway.enable} or {@code
+ * camunda.api.enabled} property is set to {@code false}, or when {@code camunda.mcp.enabled} is not
+ * set to {@code true}. By default, {@code camunda.mcp.enabled} is considered to be set to {@code
+ * false} when missing, the MCP gateway is thus disabled by default.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
@@ -37,7 +38,7 @@ public @interface ConditionalOnMcpGatewayEnabled {
     }
 
     @ConditionalOnProperty(
-        name = {"zeebe.broker.gateway.enable"},
+        name = {"zeebe.broker.gateway.enable", "camunda.api.enabled"},
         havingValue = "true",
         matchIfMissing = true)
     static class ZeebeBrokerGatewayEnabled {}

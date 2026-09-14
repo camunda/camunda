@@ -46,6 +46,7 @@ public @interface ConditionalOnAnyHttpGatewayEnabled {
      */
     public static boolean isAnyHttpGatewayEnabled(final Environment env) {
       return env.getProperty("zeebe.broker.gateway.enable", Boolean.class, true)
+          && env.getProperty("camunda.api.enabled", Boolean.class, true)
           && (env.getProperty("camunda.rest.enabled", Boolean.class, true)
               || env.getProperty("camunda.mcp.enabled", Boolean.class, false));
     }
