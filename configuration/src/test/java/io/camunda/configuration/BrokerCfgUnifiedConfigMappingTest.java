@@ -17,6 +17,7 @@ import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -73,6 +74,7 @@ class BrokerCfgUnifiedConfigMappingTest {
           String.class,
           Duration.class,
           DataSize.class,
+          File.class,
           // Enum base class check is done separately
           Object.class);
 
@@ -137,8 +139,11 @@ class BrokerCfgUnifiedConfigMappingTest {
           "gateway.cluster.messageCompression",
           "gateway.cluster.port",
           "gateway.cluster.requestTimeout",
+          "gateway.cluster.security.certificateChainPath",
           "gateway.cluster.security.enabled",
+          "gateway.cluster.security.keyStore.filePath",
           "gateway.cluster.security.keyStore.password",
+          "gateway.cluster.security.privateKeyPath",
           "gateway.cluster.socketReceiveBuffer",
           "gateway.cluster.socketSendBuffer");
 
