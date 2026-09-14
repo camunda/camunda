@@ -19,7 +19,7 @@ import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (mappingRule: MappingRule) => mappingRule.mappingRuleId;
 const itemLabel = (mappingRule: MappingRule) =>
-  `${mappingRule.mappingRuleId} — ${mappingRule.name}`;
+  `${mappingRule.mappingRuleId} ${mappingRule.name ? `— ${mappingRule.name}` : ""}`;
 const search = (search: string) =>
   mappingRuleQueries.search(
     search.trim()

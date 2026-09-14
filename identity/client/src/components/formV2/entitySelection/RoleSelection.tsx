@@ -18,7 +18,8 @@ import { roleQueries } from "src/utility/api/roles/queries";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (role: Role) => role.roleId;
-const itemLabel = (role: Role) => `${role.roleId} — ${role.name}`;
+const itemLabel = (role: Role) =>
+  `${role.roleId} ${role.name ? `— ${role.name}` : ""}`;
 const search = (search: string) =>
   roleQueries.search(
     search === ""
