@@ -873,8 +873,9 @@ jobs:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release succeeded
+    # Report the release result back to the C8 release process always (including dry-runs)
+    # so the process never hangs at `receive-release-result-camunda`.
+    # Slack notifications are skipped for dry-runs to reduce noise (gated per-step below).
     if: ${{ always() && (
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
@@ -883,9 +884,10 @@ jobs:
       needs.tasklist-docker.result == 'success' &&
       needs.camunda-docker.result == 'success' &&
       needs.snyk.result == 'success'
-      ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
+      ) }}
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      actions: read  # needed to fetch the release job's logs to extract the Maven Central deployment ID
     steps:
       - name: Import Secrets
         id: secrets
@@ -898,9 +900,85 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig;
+
+      - name: Extract Maven Central deployment ID
+        id: extract-deployment-id
+        # Best-effort: the release job may have failed before publishing to Maven Central,
+        # in which case there will be no deployment ID to extract. Never block notifications.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
+        run: |
+          # The central-publishing-maven-plugin only emits the deployment ID via a log line:
+          #   "Uploaded bundle successfully, deployment name: ..., deploymentId: <uuid>..."
+          # It is not persisted to disk by the plugin, so we fetch the release job's log archive
+          # from the GHA API (the release job has completed by this point) and grep it.
+          api="https://api.github.com/repos/${{ github.repository }}"
+
+          # When this workflow is invoked as a reusable workflow (e.g., by the dry-run
+          # wrapper with a matrix), the run-level jobs API surfaces the inner job as
+          # "<caller-job-display-name> / Maven Release" rather than just "Maven Release".
+          # Match both forms and disambiguate matrix invocations via the release version,
+          # which callers conventionally embed in their job display name.
+          job_id=$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
+            | jq -r --arg rv "$RELEASE_VERSION" '
+                .jobs[]
+                | select(.name == "Maven Release"
+                         or ((.name | endswith(" / Maven Release"))
+                             and (.name | contains($rv))))
+                | .id
+              ' \
+            | tail -1 || true)
+
+          if [[ -z "${job_id}" ]]; then
+            echo "::warning::Could not locate the Maven Release job via the API"
+            job_logs=""
+          else
+            job_logs=$(curl -fsSL \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${api}/actions/jobs/${job_id}/logs" || true)
+          fi
+
+          deployment_id=$(printf '%s' "$job_logs" \
+            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+            | tail -1 \
+            | awk '{print $2}' || true)
+
+          if [[ -n "${deployment_id}" ]]; then
+            echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
+            echo "::notice::Maven Central deployment ID: ${deployment_id}"
+          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
+            echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Dry run — emitting placeholder deployment ID"
+          else
+            echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ No Maven Central deployment ID found in build output" >&2
+          fi
+
+      - name: Report release success to C8
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
+        with:
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
+          operation: publishMessage
+          messageName: Release result in Camunda
+          correlationKey: ${{ inputs.releaseVersion }}
+          variables: |
+            {
+              "is_camunda_release_successful": "true",
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
 
       - name: Send success Slack notification
-        if: ${{ needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
@@ -920,7 +998,7 @@ jobs:
             }
 
       - name: Send success Slack notification with manual follow-up
-        if: ${{ needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
@@ -950,8 +1028,9 @@ jobs:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release failed
+    # Report the release result back to the C8 release process always (including dry-runs)
+    # so the process never hangs at `receive-release-result-camunda`.
+    # Slack notifications are skipped for dry-runs to reduce noise (gated per-step below).
     if: ${{ always() && (
         needs.release.result == 'failure' ||
         needs.github.result == 'failure' ||
@@ -960,9 +1039,10 @@ jobs:
         needs.tasklist-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure'
-        ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        ) }}
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      actions: read  # needed to fetch the release job's logs to extract the Maven Central deployment ID
     steps:
       - name: Import Secrets
         id: secrets
@@ -975,8 +1055,85 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig;
+
+      - name: Extract Maven Central deployment ID
+        id: extract-deployment-id
+        # Best-effort: the release job may have failed before publishing to Maven Central,
+        # in which case there will be no deployment ID to extract. Never block notifications.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
+        run: |
+          # The central-publishing-maven-plugin only emits the deployment ID via a log line:
+          #   "Uploaded bundle successfully, deployment name: ..., deploymentId: <uuid>..."
+          # It is not persisted to disk by the plugin, so we fetch the release job's log archive
+          # from the GHA API (the release job has completed by this point) and grep it.
+          api="https://api.github.com/repos/${{ github.repository }}"
+
+          # When this workflow is invoked as a reusable workflow (e.g., by the dry-run
+          # wrapper with a matrix), the run-level jobs API surfaces the inner job as
+          # "<caller-job-display-name> / Maven Release" rather than just "Maven Release".
+          # Match both forms and disambiguate matrix invocations via the release version,
+          # which callers conventionally embed in their job display name.
+          job_id=$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
+            | jq -r --arg rv "$RELEASE_VERSION" '
+                .jobs[]
+                | select(.name == "Maven Release"
+                         or ((.name | endswith(" / Maven Release"))
+                             and (.name | contains($rv))))
+                | .id
+              ' \
+            | tail -1 || true)
+
+          if [[ -z "${job_id}" ]]; then
+            echo "::warning::Could not locate the Maven Release job via the API"
+            job_logs=""
+          else
+            job_logs=$(curl -fsSL \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${api}/actions/jobs/${job_id}/logs" || true)
+          fi
+
+          deployment_id=$(printf '%s' "$job_logs" \
+            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+            | tail -1 \
+            | awk '{print $2}' || true)
+
+          if [[ -n "${deployment_id}" ]]; then
+            echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
+            echo "::notice::Maven Central deployment ID: ${deployment_id}"
+          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
+            echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Dry run — emitting placeholder deployment ID"
+          else
+            echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ No Maven Central deployment ID found in build output" >&2
+          fi
+
+      - name: Report release failure to C8
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
+        with:
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
+          operation: publishMessage
+          messageName: Release result in Camunda
+          correlationKey: ${{ inputs.releaseVersion }}
+          variables: |
+            {
+              "is_camunda_release_successful": "false",
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
 
       - name: Send failure Slack notification
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
