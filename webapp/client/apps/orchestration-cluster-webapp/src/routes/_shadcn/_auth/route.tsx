@@ -16,7 +16,6 @@ import {queries} from '#/shared/http/queries';
 import {reactQueryClient} from '#/shared/http/reactQueryClient';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
 import {Header} from '#/shared/header/shadcn.components/Header';
-import {C3Provider} from '#/shared/c3/components/C3Provider';
 import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
@@ -72,11 +71,9 @@ export const Route = createFileRoute('/_shadcn/_auth')({
 		return (
 			<>
 				<SessionWatcher />
-				<C3Provider currentApp="tasklist" initialSaasToken={initialSaasToken}>
-					<Header>
-						<Outlet />
-					</Header>
-				</C3Provider>
+				<Header initialSaasToken={initialSaasToken}>
+					<Outlet />
+				</Header>
 			</>
 		);
 	},
