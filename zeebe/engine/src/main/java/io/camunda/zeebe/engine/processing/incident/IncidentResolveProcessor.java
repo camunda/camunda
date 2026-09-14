@@ -173,12 +173,20 @@ public final class IncidentResolveProcessor
     responseWriter.writeAcceptedResponseOnCommand(key, IncidentIntent.RESOLVED, incident, command);
     incidentMetrics.incidentResolved();
 
-    if (!requestSecretResolutionAgain(incident, jobKey)) {
+    final boolean secretResolutionRequested = requestSecretResolutionAgain(incident, jobKey);
+    if (!secretResolutionRequested) {
       publishIncidentRelatedJob(jobKey);
     }
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, incident);
+
+    // waking the scheduler is not transactional, so it runs only once every step that could throw
+    // has succeeded: a rollback would otherwise leave it woken for a resolution the log no longer
+    // asks for
+    if (secretResolutionRequested) {
+      secretResolutionScheduler.stayAwake();
+    }
   }
 
   /**
@@ -192,15 +200,19 @@ public final class IncidentResolveProcessor
    * producers of {@link ErrorType#SECRET_RESOLUTION_ERROR} apart. A missing secret leaves its
    * reference uncached, so it is requested and the incident returns if it is still gone. An
    * injection failure ({@code JobSecretLookup.SecretPointerMismatchException}) resolved its secret
-   * fine and failed on where the value had to go, so all of its references are cached, nothing is
-   * requested, and the job goes back to the activation path exactly as before — re-parking it would
-   * only strand it on references that are already available.
+   * fine and failed on where the value had to go, so its references are normally still cached,
+   * nothing is requested, and the job goes back to the activation path as before — re-parking it
+   * would only strand it on references that are already available. Once the cache has evicted them
+   * that retry does request a resolution: the reference resolves, the job is reactivated, and the
+   * injection fails again on the next activation. Same outcome, longer route.
    *
    * <p>Every uncached reference is requested, not only the incidented one: a job carrying several
    * missing references gets a single incident, so requesting just that one would leave the others
    * with nothing to ask for them again.
    *
    * <p>A job parked here must not also be published: it cannot run until the resolution answers.
+   * Only the requests are appended here — the caller wakes the scheduler, once every step that
+   * could throw has succeeded.
    */
   private boolean requestSecretResolutionAgain(final IncidentRecord incident, final long jobKey) {
     if (incident.getErrorType() != ErrorType.SECRET_RESOLUTION_ERROR
@@ -222,7 +234,6 @@ public final class IncidentResolveProcessor
         request ->
             stateWriter.appendFollowUpEvent(
                 keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, request));
-    secretResolutionScheduler.stayAwake();
     return true;
   }
 
