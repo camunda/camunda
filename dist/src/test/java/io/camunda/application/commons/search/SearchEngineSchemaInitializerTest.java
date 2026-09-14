@@ -31,6 +31,7 @@ import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -221,12 +222,25 @@ class SearchEngineSchemaInitializerTest {
                     "missing 'monitor' privilege", new RuntimeException())))
         .as("a missing cluster:monitor privilege will not be granted by retrying")
         .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new IndexSchemaValidationException(
+                    "Unsupported index changes have been introduced. Data migration is required.")))
+        .as("a field whose type changed needs a data migration, not another attempt")
+        .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new IndexSchemaValidationException(
+                    "Ambiguous schema update. Multiple indices for mapping 'foo' have different"
+                        + " fields.")))
+        .as("indices behind one alias that disagree are refused the same way on every attempt")
+        .isTrue();
   }
 
   @Test
   void shouldClassifyStorageFailuresAsRetryable() {
-    // given / when / then - an unreachable cluster, a rejected request and a mapping the attempt
-    // could not validate are all repairable without restarting the node
+    // given / when / then - an unreachable cluster and a rejected request are both repairable
+    // without restarting the node
     assertThat(SearchEngineSchemaInitializer.isTerminal(new IOException("connection refused")))
         .isFalse();
     assertThat(
