@@ -34,8 +34,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Promotes the desired leader by sending it TimeoutNow, resending every {@code heartbeatInterval}
  * until leadership actually moves or {@code maxTransferAttempts} sends are spent. Once the target
- * acknowledges a TimeoutNow we step down, in order to ensure that we won't have a race between
- * resuming the partition on the current leader and the election triggered on the desired leader.
+ * acknowledges a TimeoutNow we stop resending and wait for its election to actually reach us, which
+ * steps us down naturally through the normal Raft term rules - this way, a target that accepted but
+ * then fails to start up doesn't leave the partition leaderless. If the attempt budget runs out
+ * before that happens, we step down anyway rather than resume as leader and race the target's
+ * now-likely election.
  *
  * <p>Completes with {@link LeadershipTransferResult#TRANSFERRED} only once the <em>selected</em>
  * target is observed to have become leader; if a different node wins instead, or leadership
@@ -56,6 +59,7 @@ final class TimeoutNowPromotion implements TransferPhase {
   private @Nullable Consumer<RaftMember> leaderListener;
   private int attempts;
   private boolean steppedDown;
+  private boolean timeoutNowAccepted;
 
   TimeoutNowPromotion(
       final RaftContext raft,
@@ -107,11 +111,22 @@ final class TimeoutNowPromotion implements TransferPhase {
       return;
     }
     if (attempts >= maxAttempts) {
-      LOG.info(
-          "TimeoutNow transfer to {} did not move leadership within {} attempts while still "
-              + "leader; giving up",
-          target,
-          attempts);
+      if (timeoutNowAccepted) {
+        LOG.info(
+            "Target {} accepted TimeoutNow but its election never reached us within {} attempts "
+                + "while still leader; stepping down anyway so it can still win",
+            target,
+            attempts);
+        // it may still be about to (or already have) called its own election - resuming here
+        // would race that, so give up leadership ourselves instead
+        raft.transition(Role.FOLLOWER);
+      } else {
+        LOG.info(
+            "TimeoutNow transfer to {} did not move leadership within {} attempts while still "
+                + "leader; giving up",
+            target,
+            attempts);
+      }
       complete(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
       return;
     }
@@ -123,6 +138,11 @@ final class TimeoutNowPromotion implements TransferPhase {
   private void sendTimeoutNow() {
     raft.checkThread();
     attempts++;
+    if (timeoutNowAccepted) {
+      // already accepted; resending would only prompt a redundant election, so just wait out the
+      // remaining budget for its election to reach us naturally
+      return;
+    }
     final var request =
         TimeoutNowRequest.builder()
             .withTerm(raft.getTerm())
@@ -149,15 +169,15 @@ final class TimeoutNowPromotion implements TransferPhase {
 
   private void onTimeoutNowAccepted() {
     raft.checkThread();
-    if (result.isDone() || steppedDown || !leaderRunning.getAsBoolean()) {
+    if (result.isDone() || steppedDown || timeoutNowAccepted || !leaderRunning.getAsBoolean()) {
       return;
     }
     LOG.info(
-        "Target {} accepted TimeoutNow on attempt {}; stepping down so it can win the election",
+        "Target {} accepted TimeoutNow on attempt {}; waiting for its election to reach us "
+            + "instead of stepping down right away",
         target,
         attempts);
-    // the step-down calls back into onLeaderStopped, which cancels the retries
-    raft.transition(Role.FOLLOWER);
+    timeoutNowAccepted = true;
   }
 
   private void onLeaderObserved(final RaftMember newLeader) {
