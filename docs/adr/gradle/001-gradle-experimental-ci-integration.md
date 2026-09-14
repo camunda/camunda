@@ -71,22 +71,16 @@ must not leak to consumers; the Gradle equivalent is `compileOnly` plus explicit
 appropriate. Maven test JARs must remain consumable as Gradle test variants. Published metadata and
 distribution contents must remain aligned with Maven.
 
-### D4. Maven remains the CI landing-gate authority
+### D4. Maven remains the CI application-test and landing-gate authority
 
-Maven remains the authoritative application-test path except for eligible pull requests. Build-tool
-selection is:
+Maven runs the application-test path for every event. The experimental Gradle path does not select
+or replace application tests; it is an additive compilation and distribution-parity signal. The
+`gradle-changes` filter independently triggers the Gradle `testClasses` and distribution-parity
+jobs when Gradle, Maven, Java, or relevant CI inputs change.
 
-| Context | Application-test path |
-| --- | --- |
-| Pure Gradle-only pull request | Gradle automatically |
-| Other non-Java, non-Maven pull request with the `gradle-build` label | Gradle |
-| Unlabeled pull request, or any pull request with Java or Maven-build changes | Maven |
-| Merge group, protected-branch push, schedule, or manual run | Maven |
-
-A label cannot select Gradle when the pull request changes Java sources or Maven build inputs. The
-merge queue and protected pushes therefore always use Maven for application tests. This does not
-make the builds independent: Gradle-only changes are exercised by Gradle before the merge queue,
-and the Maven merge-group run validates that the result still works with Maven before landing.
+This keeps Maven and Gradle independently observable without claiming that Gradle executes the
+application-test suite. The merge queue and protected-branch pushes continue to validate the
+application with Maven before or after landing.
 
 For this ADR, Gradle build inputs are:
 
@@ -130,7 +124,6 @@ The Gradle compilation job is a member of the Unified CI result gate, but Maven 
 depend on it. A Gradle failure may fail `check-results` and prevent a merge-group landing, but it
 must not skip, cancel, or make Maven tests unavailable.
 
-
 ## Deferred work
 
 The following work is intentionally excluded from this change:
@@ -149,8 +142,7 @@ The following work is intentionally excluded from this change:
 - **Treat Gradle as an independent build definition.** Rejected: the project would have to maintain
   two sources of truth for modules, dependencies, generated sources, and packaging.
 - **Run both complete build paths on every pull request.** Rejected: this doubles CI cost without
-  improving the landing guarantee; the merge queue already revalidates Gradle-labeled changes with
-  Maven.
+  improving the landing guarantee; the merge queue already revalidates the result with Maven.
 - **Run the Gradle compilation check only for Java changes.** Rejected: Gradle-only and Maven-only
   build changes can independently break Gradle compilation and must also be covered.
 - **Make Maven test jobs depend on the Gradle compilation job.** Rejected: a Gradle failure must
