@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ForceRemoveBrokersRequestTransformer;
-import io.camunda.zeebe.dynamic.config.api.ForceRemoveZoneTransformer;
+import io.camunda.zeebe.dynamic.config.api.RemoveZoneTransformer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
@@ -119,7 +119,7 @@ final class PhysicalTenantForcedRemovalTest {
             cluster(members, members)));
 
     // when — zone-b fails over
-    final var configuration = forceRemove(new ForceRemoveZoneTransformer(ZONE_B));
+    final var configuration = forceRemove(new RemoveZoneTransformer(ZONE_B));
 
     // then — every tenant is left on the surviving zone, which is also the only one the persisted
     // layout still names

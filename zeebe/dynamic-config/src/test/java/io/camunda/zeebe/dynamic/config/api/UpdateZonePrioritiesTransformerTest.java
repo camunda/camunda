@@ -41,7 +41,7 @@ final class UpdateZonePrioritiesTransformerTest {
       IntStream.rangeClosed(1, 2).mapToObj(i -> new PartitionId(GROUP_NAME, i)).toList();
 
   // Builds a fully zone-aware cluster topology with one member per zone. Modeled on
-  // ForceRemoveZoneTransformerTest#buildTopology /
+  // RemoveZoneTransformerTest#buildTopology /
   // UpdatePartitionDistributionTransformerTest#buildTopology.
   private CurrentClusterConfiguration zoneAwareCluster(final ZoneSpec... zones) {
     final var config = new ZoneAwareConfig(List.of(zones));

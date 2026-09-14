@@ -21,13 +21,13 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -276,8 +276,8 @@ public final class ClusterConfigurationManagementRequestSender {
         TIMEOUT);
   }
 
-  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
-      forceRemoveZone(final ForceZoneRemoveRequest request) {
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> removeZone(
+      final RemoveZoneRequest request) {
     final var coordinator = coordinatorSupplier.getNextCoordinatorExcludingZone(request.zoneId());
     if (coordinator.isEmpty()) {
       // No member outside the zone means it is the only remaining zone; removing it is invalid and
@@ -290,9 +290,9 @@ public final class ClusterConfigurationManagementRequestSender {
                       .formatted(request.zoneId()))));
     }
     return communicationService.send(
-        ClusterConfigurationRequestTopics.FORCE_REMOVE_ZONE.topic(),
+        ClusterConfigurationRequestTopics.REMOVE_ZONE.topic(),
         request,
-        serializer::encodeForceRemoveZoneRequest,
+        serializer::encodeRemoveZoneRequest,
         serializer::decodeTopologyChangeResponse,
         coordinator.get(),
         TIMEOUT);

@@ -499,7 +499,7 @@ public interface ClusterActuator {
    */
   @RequestLine("DELETE /zones/{zoneId}?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PlannedOperationsResponse forceRemoveZone(@Param final String zoneId, @Param boolean dryRun);
+  PlannedOperationsResponse removeZone(@Param final String zoneId, @Param boolean dryRun);
 
   /**
    * Adds back the given zone: re-adds the given brokers and re-includes the zone in the partition
