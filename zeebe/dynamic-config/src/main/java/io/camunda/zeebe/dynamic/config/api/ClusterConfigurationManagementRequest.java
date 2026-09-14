@@ -230,10 +230,15 @@ public sealed interface ClusterConfigurationManagementRequest {
   }
 
   /**
-   * Force-evicts a failed zone's brokers from the member set and drops the zone from the persisted
+   * Removes a zone: its brokers leave the member set and the zone is dropped from the persisted
    * {@code ZoneAwareConfig}, in one atomic change.
+   *
+   * @param force when true, the zone's brokers are evicted without moving their partitions off them
+   *     first — the bail-out for a zone that is already down, at the cost of the replicas it held.
+   *     Normally left false, so the partitions are moved onto the surviving zones and the zone's
+   *     brokers must be running.
    */
-  record RemoveZoneRequest(String zoneId, boolean dryRun)
+  record RemoveZoneRequest(String zoneId, boolean dryRun, boolean force)
       implements ClusterConfigurationManagementRequest {}
 
   /**

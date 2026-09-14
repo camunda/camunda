@@ -324,7 +324,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       cluster.brokers().get(memberIdForBroker(2)).close();
 
       // when - force-remove zoneA: force-evict its brokers and drop it from the distribution config
-      final var forceRemoveResponse = actuator.removeZone(ZONE_A, false);
+      final var forceRemoveResponse = actuator.removeZone(ZONE_A, false, true);
       Awaitility.await()
           .ignoreException(FeignException.class)
           .untilAsserted(
@@ -455,7 +455,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           ClusterActuator.of(clusterAfterZoneRemoval.brokers().get(memberIdForBroker(1)));
       clusterAfterZoneRemoval.brokers().get(memberIdForBroker(0)).close();
       clusterAfterZoneRemoval.brokers().get(memberIdForBroker(2)).close();
-      final var forceRemoveResponse = actuatorAfterZoneRemoval.removeZone(ZONE_A, false);
+      final var forceRemoveResponse = actuatorAfterZoneRemoval.removeZone(ZONE_A, false, true);
       Awaitility.await()
           .untilAsserted(
               () ->
@@ -468,7 +468,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // given - the shared cluster is running with both zones present
 
       // when - then
-      assertThatCode(() -> actuator.removeZone("zoneUnknown", false))
+      assertThatCode(() -> actuator.removeZone("zoneUnknown", false, true))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("unknown zone");
     }
@@ -478,7 +478,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // given - zoneA has already been force-removed from the shared cluster
 
       // when - then - force-removing the last remaining zone is rejected
-      assertThatCode(() -> actuatorAfterZoneRemoval.removeZone(ZONE_B, false))
+      assertThatCode(() -> actuatorAfterZoneRemoval.removeZone(ZONE_B, false, true))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("last remaining zone");
     }

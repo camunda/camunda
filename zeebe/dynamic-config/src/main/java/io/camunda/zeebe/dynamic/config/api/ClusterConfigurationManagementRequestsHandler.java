@@ -211,7 +211,8 @@ public final class ClusterConfigurationManagementRequestsHandler
   public ActorFuture<ClusterConfigurationChangeResponse> removeZone(
       final RemoveZoneRequest removeZoneRequest) {
     return handleRequest(
-        removeZoneRequest.dryRun(), new RemoveZoneTransformer(removeZoneRequest.zoneId()));
+        removeZoneRequest.dryRun(),
+        new RemoveZoneTransformer(removeZoneRequest.zoneId(), removeZoneRequest.force()));
   }
 
   @Override

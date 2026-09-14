@@ -784,7 +784,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 new ZoneAwareConfig(
                     List.of(new ZoneSpec("zone-a", 2, 1), new ZoneSpec("zone-b", 2, 2))));
     setCurrentTopology(currentTopology);
-    final var request = new RemoveZoneRequest("zone-a", false);
+    final var request = new RemoveZoneRequest("zone-a", false, true);
 
     // when
     final var changeStatus = clientApi.removeZone(request).join().get();

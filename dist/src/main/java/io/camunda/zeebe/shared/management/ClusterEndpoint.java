@@ -668,9 +668,10 @@ public class ClusterEndpoint {
   @DeleteMapping(path = "/zones/{zoneId}")
   public ResponseEntity<?> removeZone(
       @PathVariable final String zoneId,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(defaultValue = "false") final boolean force) {
     try {
-      final var removeZoneRequest = new RemoveZoneRequest(zoneId, dryRun);
+      final var removeZoneRequest = new RemoveZoneRequest(zoneId, dryRun, force);
       return ClusterApiUtils.mapOperationResponse(
           requestSender.removeZone(removeZoneRequest).join());
     } catch (final Exception exception) {

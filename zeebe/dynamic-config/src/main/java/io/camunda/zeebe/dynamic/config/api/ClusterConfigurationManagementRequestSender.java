@@ -276,25 +276,39 @@ public final class ClusterConfigurationManagementRequestSender {
         TIMEOUT);
   }
 
+  /**
+   * Routes the request past the zone being removed only when it is forced. A forced removal is the
+   * answer to a zone that is down, so the elected coordinator may be inside it and unreachable, and
+   * the receiving broker executes the request itself. A graceful removal is an ordinary
+   * configuration change: it has to reach the elected coordinator, which rejects it outright when
+   * it did not — and the zone is up anyway, so there is nothing to route around.
+   */
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> removeZone(
       final RemoveZoneRequest request) {
-    final var coordinator = coordinatorSupplier.getNextCoordinatorExcludingZone(request.zoneId());
-    if (coordinator.isEmpty()) {
-      // No member outside the zone means it is the only remaining zone; removing it is invalid and
-      // there is no live coordinator to reject it, so short-circuit here.
-      return CompletableFuture.completedFuture(
-          Either.left(
-              new ErrorResponse(
-                  ErrorResponse.ErrorCode.INVALID_REQUEST,
-                  "Cannot force remove zone '%s' because it is the last remaining zone."
-                      .formatted(request.zoneId()))));
+    final MemberId coordinator;
+    if (request.force()) {
+      final var outsideTheZone =
+          coordinatorSupplier.getNextCoordinatorExcludingZone(request.zoneId());
+      if (outsideTheZone.isEmpty()) {
+        // No member outside the zone means it is the only remaining zone; removing it is invalid
+        // and there is no live coordinator to reject it, so short-circuit here.
+        return CompletableFuture.completedFuture(
+            Either.left(
+                new ErrorResponse(
+                    ErrorResponse.ErrorCode.INVALID_REQUEST,
+                    "Cannot remove zone '%s' because it is the last remaining zone."
+                        .formatted(request.zoneId()))));
+      }
+      coordinator = outsideTheZone.get();
+    } else {
+      coordinator = coordinatorSupplier.getDefaultCoordinator();
     }
     return communicationService.send(
         ClusterConfigurationRequestTopics.REMOVE_ZONE.topic(),
         request,
         serializer::encodeRemoveZoneRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator.get(),
+        coordinator,
         TIMEOUT);
   }
 

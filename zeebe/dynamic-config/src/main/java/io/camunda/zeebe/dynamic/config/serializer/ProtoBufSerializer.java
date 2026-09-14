@@ -1241,6 +1241,7 @@ public class ProtoBufSerializer
     return Requests.RemoveZoneRequest.newBuilder()
         .setZoneId(request.zoneId())
         .setDryRun(request.dryRun())
+        .setForce(request.force())
         .build()
         .toByteArray();
   }
@@ -1632,7 +1633,7 @@ public class ProtoBufSerializer
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
-    return new RemoveZoneRequest(proto.getZoneId(), proto.getDryRun());
+    return new RemoveZoneRequest(proto.getZoneId(), proto.getDryRun(), proto.getForce());
   }
 
   @Override
