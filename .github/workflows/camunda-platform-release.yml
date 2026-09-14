@@ -876,6 +876,9 @@ jobs:
     # Report the release result back to the C8 release process always (including dry-runs)
     # so the process never hangs at `receive-release-result-camunda`.
     # Slack notifications are skipped for dry-runs to reduce noise (gated per-step below).
+    # snyk is intentionally skipped for pre-release versions (those containing '-'),
+    # so treat a skipped snyk as acceptable here; only real failures/cancellations should
+    # divert to the failure job below.
     if: ${{ always() && (
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
@@ -883,7 +886,7 @@ jobs:
       needs.operate-docker.result == 'success' &&
       needs.tasklist-docker.result == 'success' &&
       needs.camunda-docker.result == 'success' &&
-      needs.snyk.result == 'success'
+      (needs.snyk.result == 'success' || needs.snyk.result == 'skipped')
       ) }}
     timeout-minutes: 5
     permissions:
@@ -935,20 +938,33 @@ jobs:
               ' \
             | tail -1 || true)
 
+          # The /logs endpoint returns a ZIP archive, so download it to a temp file and stream
+          # it through `unzip -p` before grepping. Capturing the binary archive into a shell
+          # variable and grepping it directly never matches the compressed Maven output.
+          logs_zip=""
           if [[ -z "${job_id}" ]]; then
             echo "::warning::Could not locate the Maven Release job via the API"
-            job_logs=""
           else
-            job_logs=$(curl -fsSL \
+            logs_zip=$(mktemp)
+            if ! curl -fsSL \
                 -H "Authorization: Bearer ${GH_TOKEN}" \
                 -H "Accept: application/vnd.github+json" \
-                "${api}/actions/jobs/${job_id}/logs" || true)
+                -o "${logs_zip}" \
+                "${api}/actions/jobs/${job_id}/logs"; then
+              rm -f "${logs_zip}"
+              logs_zip=""
+            fi
           fi
 
-          deployment_id=$(printf '%s' "$job_logs" \
-            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-            | tail -1 \
-            | awk '{print $2}' || true)
+          if [[ -n "${logs_zip}" ]]; then
+            deployment_id=$(unzip -p "${logs_zip}" \
+              | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+              | tail -1 \
+              | awk '{print $2}' || true)
+            rm -f "${logs_zip}"
+          else
+            deployment_id=""
+          fi
 
           if [[ -n "${deployment_id}" ]]; then
             echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
@@ -1090,20 +1106,33 @@ jobs:
               ' \
             | tail -1 || true)
 
+          # The /logs endpoint returns a ZIP archive, so download it to a temp file and stream
+          # it through `unzip -p` before grepping. Capturing the binary archive into a shell
+          # variable and grepping it directly never matches the compressed Maven output.
+          logs_zip=""
           if [[ -z "${job_id}" ]]; then
             echo "::warning::Could not locate the Maven Release job via the API"
-            job_logs=""
           else
-            job_logs=$(curl -fsSL \
+            logs_zip=$(mktemp)
+            if ! curl -fsSL \
                 -H "Authorization: Bearer ${GH_TOKEN}" \
                 -H "Accept: application/vnd.github+json" \
-                "${api}/actions/jobs/${job_id}/logs" || true)
+                -o "${logs_zip}" \
+                "${api}/actions/jobs/${job_id}/logs"; then
+              rm -f "${logs_zip}"
+              logs_zip=""
+            fi
           fi
 
-          deployment_id=$(printf '%s' "$job_logs" \
-            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-            | tail -1 \
-            | awk '{print $2}' || true)
+          if [[ -n "${logs_zip}" ]]; then
+            deployment_id=$(unzip -p "${logs_zip}" \
+              | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+              | tail -1 \
+              | awk '{print $2}' || true)
+            rm -f "${logs_zip}"
+          else
+            deployment_id=""
+          fi
 
           if [[ -n "${deployment_id}" ]]; then
             echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
