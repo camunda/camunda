@@ -1,3 +1,4 @@
+import com.github.gradle.node.npm.task.NpmTask
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.frontend-webjar-conventions")
@@ -12,6 +13,25 @@ java { disableAutoTargetJvm() }
 
 tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
 
+val skipFrontendBuild =
+  providers
+    .gradleProperty("skip.fe.build")
+    .orElse(providers.gradleProperty("quickly"))
+    .map { value -> value.isEmpty() || value.toBoolean() }
+    .orElse(false)
+
+val npmTest =
+  tasks.register<NpmTask>("npmTest") {
+    enabled = !skipFrontendBuild.get()
+    dependsOn(tasks.named("npmCi"))
+    args.set(listOf("test"))
+    inputs.files(
+      layout.projectDirectory.file("package.json"),
+      layout.projectDirectory.file("package-lock.json"),
+      layout.projectDirectory.file("jest.config.cjs"),
+    )
+    outputs.cacheIf { true }
+  }
 dependencies {
   implementation(project(":camunda-client-java"))
   implementation(project(":zeebe-bpmn-model"))
