@@ -23,7 +23,7 @@ public final class SocketUtil {
   // most unix based systems reserve ports from 0-1024; picking 1025 as our base port gives us
   // plenty of ports before we will collide with Docker's base port
   private static final int BASE_PORT = 1025;
-  // defines the upper bound for how many forks can be ran in parallel; this should be the number of
+  // defines the upper bound for how many forks can be run in parallel; this should be the number of
   // maven threads (-T option) times the configured surefire/failsafe forkCount (see the surefire
   // or failsafe config in the pom)
   private static final int MAX_TEST_FORKS = 30;
