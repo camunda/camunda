@@ -17,17 +17,17 @@ public class EngineStorageOrdinals {
 
   public static final boolean DEFAULT_ENABLE_ARCHIVERLESS =
       EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
-  public static final int DEFAULT_FIXED_STORAGE_ORDINAL_KEY =
-      EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY;
+  public static final int DEFAULT_FIXED_STORAGE_ORDINAL =
+      EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL;
 
   /** Controls whether the archiverless mode is enabled. */
   private boolean enableArchiverless = DEFAULT_ENABLE_ARCHIVERLESS;
 
   /**
-   * Override default storage ordinal key with fixed value, mainly used during initial testing. The
+   * Override default storage ordinal with fixed value, mainly used during initial testing. The
    * default value of -1 means no override is applied.
    */
-  private int fixedStorageOrdinalKey = DEFAULT_FIXED_STORAGE_ORDINAL_KEY;
+  private int fixedStorageOrdinal = DEFAULT_FIXED_STORAGE_ORDINAL;
 
   public boolean isEnableArchiverless() {
     return enableArchiverless;
@@ -37,11 +37,11 @@ public class EngineStorageOrdinals {
     this.enableArchiverless = enableArchiverless;
   }
 
-  public int getFixedStorageOrdinalKey() {
-    return fixedStorageOrdinalKey;
+  public int getFixedStorageOrdinal() {
+    return fixedStorageOrdinal;
   }
 
-  public void setFixedStorageOrdinalKey(final int fixedStorageOrdinalKey) {
-    this.fixedStorageOrdinalKey = fixedStorageOrdinalKey;
+  public void setFixedStorageOrdinal(final int fixedStorageOrdinal) {
+    this.fixedStorageOrdinal = fixedStorageOrdinal;
   }
 }

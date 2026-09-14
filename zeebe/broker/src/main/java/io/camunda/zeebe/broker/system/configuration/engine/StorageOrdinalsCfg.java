@@ -14,8 +14,8 @@ public class StorageOrdinalsCfg implements ConfigurationEntry {
 
   private boolean enableArchiverless =
       EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
-  private int fixedStorageOrdinalKey =
-      EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY;
+  private int fixedStorageOrdinal =
+      EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL;
 
   public boolean isEnableArchiverless() {
     return enableArchiverless;
@@ -25,12 +25,12 @@ public class StorageOrdinalsCfg implements ConfigurationEntry {
     this.enableArchiverless = enableArchiverless;
   }
 
-  public int getFixedStorageOrdinalKey() {
-    return fixedStorageOrdinalKey;
+  public int getFixedStorageOrdinal() {
+    return fixedStorageOrdinal;
   }
 
-  public void setFixedStorageOrdinalKey(final int fixedStorageOrdinalKey) {
-    this.fixedStorageOrdinalKey = fixedStorageOrdinalKey;
+  public void setFixedStorageOrdinal(final int fixedStorageOrdinal) {
+    this.fixedStorageOrdinal = fixedStorageOrdinal;
   }
 
   @Override
@@ -38,8 +38,8 @@ public class StorageOrdinalsCfg implements ConfigurationEntry {
     return "StorageOrdinalsCfg{"
         + "enableArchiverless="
         + enableArchiverless
-        + ", fixedStorageOrdinalKey="
-        + fixedStorageOrdinalKey
+        + ", fixedStorageOrdinal="
+        + fixedStorageOrdinal
         + '}';
   }
 }
