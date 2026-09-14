@@ -762,9 +762,15 @@ public class BrokerBasedPropertiesOverride {
     final CommandApiCfg commandApiCfg = override.getNetwork().getCommandApi();
 
     commandApiCfg.setHost(commandApi.getHost());
-    Optional.ofNullable(commandApi.getPort()).ifPresent(commandApiCfg::setPort);
+    final Integer port = commandApi.getPort();
+    if (port != null) {
+      commandApiCfg.setPort(port);
+    }
     commandApiCfg.setAdvertisedHost(commandApi.getAdvertisedHost());
-    Optional.ofNullable(commandApi.getAdvertisedPort()).ifPresent(commandApiCfg::setAdvertisedPort);
+    final Integer advertisedPort = commandApi.getAdvertisedPort();
+    if (advertisedPort != null) {
+      commandApiCfg.setAdvertisedPort(advertisedPort);
+    }
   }
 
   private static void populateFromRestFilters(
