@@ -71,7 +71,8 @@ public class ProcessInstanceItemProvider implements ItemProvider {
                     new Item(
                         pi.processInstanceKey(),
                         pi.processInstanceKey(),
-                        pi.rootProcessInstanceKey()))
+                        pi.rootProcessInstanceKey(),
+                        pi.storageOrdinalKey()))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

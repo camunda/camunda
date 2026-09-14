@@ -217,6 +217,7 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     value.setTenantId(processInstanceRecord.getTenantId());
     value.setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    value.setStorageOrdinalKey(processInstanceRecord.getStorageOrdinalKey());
     value.setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey());
     value.setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
     stateWriter.appendFollowUpEvent(
@@ -261,6 +262,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    command.getValue().setStorageOrdinalKey(processInstanceRecord.getStorageOrdinalKey());
   }
 
   private void enrichRejectionCommand(final TypedRecord<ProcessInstanceMigrationRecord> command) {
@@ -444,6 +446,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
                         .setRootProcessInstanceKey(
                             elementInstance.getValue().getRootProcessInstanceKey())
+                        .setStorageOrdinalKey(elementInstance.getValue().getStorageOrdinalKey())
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
@@ -713,6 +716,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                           .setName(variable.name())
                           .setValue(targetAhsp.getAdHocActivitiesMetadata())
                           .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                          .setStorageOrdinalKey(elementInstance.getValue().getStorageOrdinalKey())
                           .setProcessDefinitionKey(targetProcessDefinition.getKey())
                           .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                           .setTenantId(elementInstance.getValue().getTenantId())));

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import java.util.List;
 
 public class ProcessInstanceHistoryDeletionOperationHandler
     extends AbstractOperationStatusHandler<HistoryDeletionRecordValue> {
@@ -28,6 +30,14 @@ public class ProcessInstanceHistoryDeletionOperationHandler
         ValueType.HISTORY_DELETION,
         OperationType.DELETE_PROCESS_INSTANCE,
         batchOperationCache);
+  }
+
+  @Override
+  public List<IdAndIndex> extractIdAndIndexes(
+      final TargetIndexLocator indexLocator, final Record<HistoryDeletionRecordValue> record) {
+    final var indexName = getIndexName();
+    final var index = indexLocator.locateOrdinalIndex(indexName, record.getValue());
+    return generateIds(record).stream().map(id -> new IdAndIndex(id, index)).toList();
   }
 
   @Override

@@ -99,9 +99,10 @@ public interface MutableBatchOperationState extends BatchOperationState {
    *
    * @param chunkKey the key of the chunk being added
    * @param batchOperationKey the key of the batch operation to which the itemKeys should be added
+   * @param storageOrdinalKey the storage ordinal associated with all the itemKeys in this chunk
    * @param itemKeys the set of itemKeys to add to the batch operation
    */
-  void addChunk(long chunkKey, long batchOperationKey, Set<Long> itemKeys);
+  void addChunk(long chunkKey, long batchOperationKey, int storageOrdinalKey, Set<Long> itemKeys);
 
   /**
    * Removes the given itemKeys from the given batch operation. The itemKeys are removed from the

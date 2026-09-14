@@ -222,6 +222,7 @@ public final class BpmnStateBehavior {
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
         context.getRootProcessInstanceKey(),
+        context.getStorageOrdinalKey(),
         context.getBpmnProcessId(),
         context.getTenantId(),
         variableName,
@@ -244,6 +245,7 @@ public final class BpmnStateBehavior {
           context.getProcessDefinitionKey(),
           context.getProcessInstanceKey(),
           context.getRootProcessInstanceKey(),
+          context.getStorageOrdinalKey(),
           context.getBpmnProcessId(),
           context.getTenantId(),
           variablesAsDocument);
@@ -260,20 +262,30 @@ public final class BpmnStateBehavior {
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetStorageOrdinalKey,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesAsDocument(sourceScopeKey);
     copyVariablesToProcessInstance(
-        targetProcessInstanceKey, targetRootProcessInstanceKey, targetProcess, variables);
+        targetProcessInstanceKey,
+        targetRootProcessInstanceKey,
+        targetStorageOrdinalKey,
+        targetProcess,
+        variables);
   }
 
   public void copyLocalVariablesToProcessInstance(
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetStorageOrdinalKey,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesLocalAsDocument(sourceScopeKey);
     copyVariablesToProcessInstance(
-        targetProcessInstanceKey, targetRootProcessInstanceKey, targetProcess, variables);
+        targetProcessInstanceKey,
+        targetRootProcessInstanceKey,
+        targetStorageOrdinalKey,
+        targetProcess,
+        variables);
   }
 
   /**
@@ -291,6 +303,7 @@ public final class BpmnStateBehavior {
   private void copyVariablesToProcessInstance(
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetStorageOrdinalKey,
       final DeployedProcess targetProcess,
       final DirectBuffer variables) {
     try {
@@ -299,6 +312,7 @@ public final class BpmnStateBehavior {
           targetProcess.getKey(),
           targetProcessInstanceKey,
           targetRootProcessInstanceKey,
+          targetStorageOrdinalKey,
           targetProcess.getBpmnProcessId(),
           targetProcess.getTenantId(),
           variables);

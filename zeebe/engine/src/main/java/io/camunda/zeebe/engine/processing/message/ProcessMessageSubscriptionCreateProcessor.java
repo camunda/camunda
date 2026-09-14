@@ -144,6 +144,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
     final long piKey = eventRecord.getProcessInstanceKey();
     final long pdKey = eventRecord.getProcessDefinitionKey();
     final long subKey = eventRecord.getSubscriptionKey();
+    final int ordinalKey = eventRecord.getStorageOrdinalKey();
 
     stateWriter.appendFollowUpEvent(
         subscriptionKey,
@@ -162,7 +163,8 @@ public final class ProcessMessageSubscriptionCreateProcessor
                 pdKey,
                 BufferUtil.wrapString(messageName),
                 tenantId,
-                subKey));
+                subKey,
+                ordinalKey));
   }
 
   /**
@@ -207,6 +209,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
     final String elementId = record.getElementId();
     final long rootPiKey = record.getRootProcessInstanceKey();
     final var elementType = record.getElementType();
+    final int ordinalKey = eventRecord.getStorageOrdinalKey();
 
     // Reset the generation to -1: re-subscribing makes the message partition assign a fresh key.
     // Until that key is confirmed (by the open ack, or the CORRELATE sent instead on the
@@ -232,6 +235,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
                 BufferUtil.wrapString(businessId),
                 BufferUtil.wrapString(elementId),
                 rootPiKey,
+                ordinalKey,
                 elementType));
   }
 

@@ -8,7 +8,7 @@
 package io.camunda.exporter.handlers.batchoperation;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 public class BatchOperationInitializedHandler
-    implements ExportHandler<BatchOperationEntity, BatchOperationInitializationRecordValue> {
+    implements OrdinalIndexExportHandler<
+        BatchOperationEntity, BatchOperationInitializationRecordValue> {
 
   static final String CONDITIONAL_UPDATE_SCRIPT =
       """

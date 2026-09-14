@@ -67,7 +67,8 @@ public class DecisionInstanceItemProvider implements ItemProvider {
                     new Item(
                         di.decisionInstanceKey(),
                         di.processInstanceKey(),
-                        di.rootProcessInstanceKey()))
+                        di.rootProcessInstanceKey(),
+                        null))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

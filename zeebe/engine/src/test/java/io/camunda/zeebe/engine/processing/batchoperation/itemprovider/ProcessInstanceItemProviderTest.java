@@ -64,11 +64,11 @@ class ProcessInstanceItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    createProcessInstanceEntity(1L, null),
-                    createProcessInstanceEntity(2L, 2L),
-                    createProcessInstanceEntity(3L, 2L),
-                    createProcessInstanceEntity(4L, 4L),
-                    createProcessInstanceEntity(5L, 4L)))
+                    createProcessInstanceEntity(1L, null, 101),
+                    createProcessInstanceEntity(2L, 2L, 102),
+                    createProcessInstanceEntity(3L, 2L, 103),
+                    createProcessInstanceEntity(4L, 4L, 104),
+                    createProcessInstanceEntity(5L, 4L, 105)))
             .total(5)
             .endCursor("5")
             .build();
@@ -83,11 +83,11 @@ class ProcessInstanceItemProviderTest {
     assertThat(resultPage.items())
         .isEqualTo(
             List.of(
-                new Item(1L, 1L, null),
-                new Item(2L, 2L, 2L),
-                new Item(3L, 3L, 2L),
-                new Item(4L, 4L, 4L),
-                new Item(5L, 5L, 4L)));
+                new Item(1L, 1L, null, 101),
+                new Item(2L, 2L, 2L, 102),
+                new Item(3L, 3L, 2L, 103),
+                new Item(4L, 4L, 4L, 104),
+                new Item(5L, 5L, 4L, 105)));
   }
 
   @Test
@@ -121,9 +121,9 @@ class ProcessInstanceItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    createProcessInstanceEntity(1L, null),
-                    createProcessInstanceEntity(2L, 2L),
-                    createProcessInstanceEntity(3L, 3L)))
+                    createProcessInstanceEntity(1L, null, 201),
+                    createProcessInstanceEntity(2L, 2L, 202),
+                    createProcessInstanceEntity(3L, 3L, 203)))
             .total(3)
             .endCursor("3")
             .build();
@@ -136,14 +136,19 @@ class ProcessInstanceItemProviderTest {
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
     assertThat(resultPage.items())
-        .isEqualTo(List.of(new Item(1L, 1L, null), new Item(2L, 2L, 2L), new Item(3L, 3L, 3L)));
+        .isEqualTo(
+            List.of(
+                new Item(1L, 1L, null, 201), new Item(2L, 2L, 2L, 202), new Item(3L, 3L, 3L, 203)));
   }
 
   private ProcessInstanceEntity createProcessInstanceEntity(
-      final long processInstanceKey, final Long rootProcessInstanceKey) {
+      final long processInstanceKey,
+      final Long rootProcessInstanceKey,
+      final Integer storageOrdinalKey) {
     return Instancio.of(ProcessInstanceEntity.class)
         .set(field(ProcessInstanceEntity::processInstanceKey), processInstanceKey)
         .set(field(ProcessInstanceEntity::rootProcessInstanceKey), rootProcessInstanceKey)
+        .set(field(ProcessInstanceEntity::storageOrdinalKey), storageOrdinalKey)
         .create();
   }
 }

@@ -8,7 +8,7 @@
 package io.camunda.exporter.handlers.batchoperation.listview;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 public class ListViewFromChunkItemHandler
-    implements ExportHandler<ProcessInstanceForListViewEntity, BatchOperationChunkRecordValue> {
+    implements OrdinalIndexExportHandler<
+        ProcessInstanceForListViewEntity, BatchOperationChunkRecordValue> {
   private final String indexName;
 
   public ListViewFromChunkItemHandler(final String indexName) {

@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.OptionalInt;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -58,4 +59,6 @@ public interface HistoryDeletionRecordValue extends RecordValue, TenantOwned {
    * resource will be deleted from primary storage.
    */
   String getDecisionDefinitionId();
+
+  OptionalInt getResourceStorageOrdinalKey();
 }

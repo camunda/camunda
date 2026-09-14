@@ -85,6 +85,16 @@ public class ProcessInstanceForListViewEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String errorMessage;
 
+  /**
+   * Storage ordinal this instance's documents belong to. See {@link
+   * io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated} for the reserved values.
+   *
+   * <p>Attention! This field will be filled in only for data imported after v. 8.11.0.
+   */
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Integer storageOrdinalKey;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -330,6 +340,15 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public Integer getStorageOrdinalKey() {
+    return storageOrdinalKey;
+  }
+
+  public ProcessInstanceForListViewEntity setStorageOrdinalKey(final Integer storageOrdinalKey) {
+    this.storageOrdinalKey = storageOrdinalKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -356,7 +375,8 @@ public class ProcessInstanceForListViewEntity
         rootProcessInstanceKey,
         businessId,
         suspendedDate,
-        errorMessage);
+        errorMessage,
+        storageOrdinalKey);
   }
 
   @Override
@@ -391,6 +411,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(tags, that.tags)
         && Objects.equals(businessId, that.businessId)
         && Objects.equals(suspendedDate, that.suspendedDate)
-        && Objects.equals(errorMessage, that.errorMessage);
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(storageOrdinalKey, that.storageOrdinalKey);
   }
 }

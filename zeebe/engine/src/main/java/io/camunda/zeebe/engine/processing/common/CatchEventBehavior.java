@@ -666,6 +666,7 @@ public final class CatchEventBehavior {
     final String messageNameString = subscription.getRecord().getMessageName();
     final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
+    final int storageOrdinalKey = subscription.getRecord().getStorageOrdinalKey();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
     final long processDefinitionKey = subscription.getRecord().getProcessDefinitionKey();
     final String tenantId = subscription.getRecord().getTenantId();
@@ -683,6 +684,7 @@ public final class CatchEventBehavior {
     sendCloseMessageSubscriptionCommand(
         subscriptionPartitionId,
         processInstanceKey,
+        storageOrdinalKey,
         elementInstanceKey,
         processDefinitionKey,
         messageName,
@@ -703,6 +705,7 @@ public final class CatchEventBehavior {
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
       final long processInstanceKey,
+      final int storageOrdinalKey,
       final long elementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer messageName,
@@ -711,6 +714,7 @@ public final class CatchEventBehavior {
     return subscriptionCommandSender.closeMessageSubscription(
         subscriptionPartitionId,
         processInstanceKey,
+        storageOrdinalKey,
         elementInstanceKey,
         processDefinitionKey,
         messageName,

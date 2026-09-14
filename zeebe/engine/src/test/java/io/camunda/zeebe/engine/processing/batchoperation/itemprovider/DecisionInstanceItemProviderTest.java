@@ -83,11 +83,11 @@ class DecisionInstanceItemProviderTest {
     assertThat(resultPage.items())
         .isEqualTo(
             List.of(
-                new Item(1, 10L, null),
-                new Item(2, 20L, 20L),
-                new Item(3, 30L, 20L),
-                new Item(4, 40L, 40L),
-                new Item(5, 50L, 50L)));
+                new Item(1, 10L, null, null),
+                new Item(2, 20L, 20L, null),
+                new Item(3, 30L, 20L, null),
+                new Item(4, 40L, 40L, null),
+                new Item(5, 50L, 50L, null)));
   }
 
   @Test
@@ -136,7 +136,11 @@ class DecisionInstanceItemProviderTest {
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
     assertThat(resultPage.items())
-        .isEqualTo(List.of(new Item(1, 10L, null), new Item(2, 20L, null), new Item(3, 30L, null)));
+        .isEqualTo(
+            List.of(
+                new Item(1, 10L, null, null),
+                new Item(2, 20L, null, null),
+                new Item(3, 30L, null, null)));
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(

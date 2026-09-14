@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.history;
 
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.OptionalInt;
 
 public class HistoryDeletionRecord extends UnifiedRecordValue
     implements HistoryDeletionRecordValue {
@@ -25,6 +27,7 @@ public class HistoryDeletionRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_ID = new StringValue("processId");
   private static final StringValue TENANT_ID = new StringValue("tenantId");
   private static final StringValue DECISION_DEFINITION_ID = new StringValue("decisionDefinitionId");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinalKey");
 
   private final LongProperty resourceKeyProp = new LongProperty(RESOURCE_KEY);
   private final EnumProperty<HistoryDeletionType> resourceTypeProp =
@@ -34,14 +37,18 @@ public class HistoryDeletionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final StringProperty decisionDefinitionIdProp =
       new StringProperty(DECISION_DEFINITION_ID, "");
+  // storage ordinal does not make sense for all resource types
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY, -1);
 
   public HistoryDeletionRecord() {
-    super(5);
+    super(6);
     declareProperty(resourceKeyProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(processIdProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(decisionDefinitionIdProp);
+        .declareProperty(decisionDefinitionIdProp)
+        .declareProperty(storageOrdinalKeyProp);
   }
 
   @Override
@@ -81,6 +88,20 @@ public class HistoryDeletionRecord extends UnifiedRecordValue
 
   public HistoryDeletionRecord setDecisionDefinitionId(final String decisionDefinitionId) {
     decisionDefinitionIdProp.setValue(decisionDefinitionId);
+    return this;
+  }
+
+  @Override
+  public OptionalInt getResourceStorageOrdinalKey() {
+    final var value = storageOrdinalKeyProp.getValue();
+    if (value < 0) {
+      return OptionalInt.empty();
+    }
+    return OptionalInt.of(value);
+  }
+
+  public HistoryDeletionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 

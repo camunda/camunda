@@ -372,9 +372,11 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(10);
     assertThat(persistedBatchOperation.getNumExecutedItems()).isEqualTo(0);
 
-    final var nextKeys = state.getNextItemKeys(batchOperationKey, 5);
-    assertThat(nextKeys).hasSize(5);
-    assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
+    final var maybeNextKeys = state.getNextItemKeys(batchOperationKey, 5);
+    assertThat(maybeNextKeys).isPresent();
+    final var nextKeys = maybeNextKeys.get();
+    assertThat(nextKeys.itemKeys()).hasSize(5);
+    assertThat(nextKeys.itemKeys()).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
   }
 
   @Test
@@ -398,9 +400,11 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
 
-    final var nextKeys = state.getNextItemKeys(batchOperationKey, 10);
-    assertThat(nextKeys).hasSize(5);
-    assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
+    final var maybeNextKeys = state.getNextItemKeys(batchOperationKey, 10);
+    assertThat(maybeNextKeys).isPresent();
+    final var nextKeys = maybeNextKeys.get();
+    assertThat(nextKeys.itemKeys()).hasSize(5);
+    assertThat(nextKeys.itemKeys()).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
   }
 
   @Test
@@ -476,9 +480,11 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
 
-    final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 5);
-    assertThat(nextItemKeys).hasSize(5);
-    assertThat(nextItemKeys).containsSequence(List.of(6L, 7L, 8L, 9L, 10L));
+    final var maybeNextKeys = state.getNextItemKeys(batchOperationKey, 5);
+    assertThat(maybeNextKeys).isPresent();
+    final var nextKeys = maybeNextKeys.get();
+    assertThat(nextKeys.itemKeys()).hasSize(5);
+    assertThat(nextKeys.itemKeys()).containsSequence(List.of(6L, 7L, 8L, 9L, 10L));
     assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(MAX_DB_CHUNK_SIZE * 3);
   }
 
@@ -498,8 +504,10 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(1);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
 
-    final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 3);
-    assertThat(nextItemKeys)
+    final var maybeNextKeys = state.getNextItemKeys(batchOperationKey, 3);
+    assertThat(maybeNextKeys).isPresent();
+    final var nextKeys = maybeNextKeys.get();
+    assertThat(nextKeys.itemKeys())
         .containsSequence(
             List.of(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE + 1L, MAX_DB_CHUNK_SIZE + 2L));
   }

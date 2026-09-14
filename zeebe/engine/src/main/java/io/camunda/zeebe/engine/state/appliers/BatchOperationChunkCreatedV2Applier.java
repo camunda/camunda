@@ -25,11 +25,16 @@ public class BatchOperationChunkCreatedV2Applier
 
   @Override
   public void applyState(final long chunkKey, final BatchOperationChunkRecord value) {
-    batchOperationState.addChunk(
-        chunkKey,
-        value.getBatchOperationKey(),
+    final var itemsKeysByOrdinal =
         value.getItems().stream()
-            .map(BatchOperationItemValue::getItemKey)
-            .collect(Collectors.toSet()));
+            .collect(
+                Collectors.groupingBy(
+                    BatchOperationItemValue::getStorageOrdinalKey,
+                    Collectors.mapping(BatchOperationItemValue::getItemKey, Collectors.toSet())));
+    itemsKeysByOrdinal.forEach(
+        (storageOrdinal, itemKeys) -> {
+          batchOperationState.addChunk(
+              chunkKey, value.getBatchOperationKey(), storageOrdinal, itemKeys);
+        });
   }
 }

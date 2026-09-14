@@ -60,6 +60,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
   public static final String BUSINESS_ID = "businessId";
   public static final String SUSPENDED_DATE = "suspendedDate";
+  public static final String STORAGE_ORDINAL_KEY = "storageOrdinalKey";
 
   public ListViewTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

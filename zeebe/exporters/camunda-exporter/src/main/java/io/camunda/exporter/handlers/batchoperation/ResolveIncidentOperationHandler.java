@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -21,7 +23,8 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
  * tracks the resolution of incidents by updating the corresponding batch operation item entity.
  */
 public class ResolveIncidentOperationHandler
-    extends AbstractOperationStatusHandler<IncidentRecordValue> {
+    extends AbstractOperationStatusHandler<IncidentRecordValue>
+    implements OrdinalIndexExportHandler<OperationEntity, IncidentRecordValue> {
 
   public ResolveIncidentOperationHandler(
       final String indexName,

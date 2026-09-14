@@ -10,7 +10,7 @@ package io.camunda.exporter.handlers.batchoperation;
 import static io.camunda.zeebe.protocol.record.intent.BatchOperationIntent.*;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -37,7 +37,8 @@ import org.slf4j.LoggerFactory;
  * database.
  */
 public class BatchOperationLifecycleManagementHandler
-    implements ExportHandler<BatchOperationEntity, BatchOperationLifecycleManagementRecordValue> {
+    implements OrdinalIndexExportHandler<
+        BatchOperationEntity, BatchOperationLifecycleManagementRecordValue> {
   // Painless script that guards against state regression in multi-partition clusters.
   // - If the incoming state is terminal, it is always applied (terminal states take priority).
   // - If the incoming state is non-terminal (ACTIVE from RESUMED, or SUSPENDED), it is only

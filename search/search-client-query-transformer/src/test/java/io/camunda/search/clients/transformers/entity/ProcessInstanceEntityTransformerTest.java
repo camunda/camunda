@@ -69,6 +69,30 @@ class ProcessInstanceEntityTransformerTest {
   }
 
   @Test
+  void shouldMapStorageOrdinalKey() {
+    // given
+    when(entityValue.getStorageOrdinalKey()).thenReturn(1001);
+
+    // when
+    final var transformed = transformer.apply(entityValue);
+
+    // then
+    assertThat(transformed.storageOrdinalKey()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinalKey() {
+    // given
+    when(entityValue.getStorageOrdinalKey()).thenReturn(null);
+
+    // when
+    final var transformed = transformer.apply(entityValue);
+
+    // then
+    assertThat(transformed.storageOrdinalKey()).isNull();
+  }
+
+  @Test
   void shouldMapSuspendedState() {
     // given
     when(entityValue.getState())

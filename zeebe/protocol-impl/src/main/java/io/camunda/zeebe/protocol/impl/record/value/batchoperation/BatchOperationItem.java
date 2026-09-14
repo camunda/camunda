@@ -31,11 +31,15 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
   }
 
   public BatchOperationItem(
-      final long itemKey, final long processInstanceKey, final long rootProcessInstanceKey) {
+      final long itemKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinalKey) {
     this();
     setItemKey(itemKey);
     setProcessInstanceKey(processInstanceKey);
     setRootProcessInstanceKey(rootProcessInstanceKey);
+    setStorageOrdinalKey(storageOrdinalKey);
   }
 
   @Override

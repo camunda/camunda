@@ -129,7 +129,15 @@ public class BatchOperationChunkAppender {
 
   private List<BatchOperationChunkRecord> createChunks(
       final long batchOperationKey, final List<Item> items) {
-    return Lists.partition(items, chunkSize).stream()
+
+    final var itemsByOrdinal =
+        items.stream()
+            .collect(
+                Collectors.groupingBy(
+                    item -> Optional.ofNullable(item.storageOrdinalKey()).orElse(0)));
+
+    return itemsByOrdinal.values().stream()
+        .flatMap(ordinalItems -> Lists.partition(ordinalItems, chunkSize).stream())
         .map(chunkItems -> createChunkRecord(batchOperationKey, chunkItems))
         .toList();
   }
@@ -157,7 +165,8 @@ public class BatchOperationChunkAppender {
     return new BatchOperationItem()
         .setItemKey(item.itemKey())
         .setProcessInstanceKey(item.processInstanceKey())
-        .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L));
+        .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L))
+        .setStorageOrdinalKey(Optional.ofNullable(item.storageOrdinalKey()).orElse(0));
   }
 
   /**

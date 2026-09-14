@@ -143,6 +143,8 @@ public class EventTriggerBehavior {
    *
    * @param processDefinitionKey the event's corresponding process definition key
    * @param processInstanceKey the event's corresponding process instance key
+   * @param storageOrdinalKey the storage ordinal key of the event trigger
+   * @param tenantId the tenant ID of the event trigger
    * @param eventScopeKey the event's scope key, which used to index the trigger in {@link
    *     io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState}
    * @param catchEventId the ID of the element which should be triggered by the event
@@ -152,6 +154,7 @@ public class EventTriggerBehavior {
   public long triggeringProcessEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
+      final int storageOrdinalKey,
       final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
@@ -164,6 +167,7 @@ public class EventTriggerBehavior {
         .setVariablesBuffer(variables)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinalKey(storageOrdinalKey)
         .setTenantId(tenantId);
     stateWriter.appendFollowUpEvent(eventKey, ProcessEventIntent.TRIGGERING, processEventRecord);
     return eventKey;
@@ -175,6 +179,8 @@ public class EventTriggerBehavior {
    *
    * @param processInstanceKey the process instance key of the event trigger
    * @param processDefinitionKey the process instance key of the event trigger
+   * @param storageOrdinalKey the storage ordinal key of the event trigger
+   * @param tenantId the tenant ID of the event trigger
    * @param eventScopeKey the event's scope key, which is used as identifier for the event trigger
    * @param catchEventId the ID of the element which was triggered by the event
    */
@@ -182,6 +188,7 @@ public class EventTriggerBehavior {
       final long eventTriggerKey,
       final long processDefinitionKey,
       final long processInstanceKey,
+      final int storageOrdinalKey,
       final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId) {
@@ -191,6 +198,7 @@ public class EventTriggerBehavior {
         .setTargetElementIdBuffer(catchEventId)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinalKey(storageOrdinalKey)
         .setTenantId(tenantId);
     stateWriter.appendFollowUpEvent(
         eventTriggerKey, ProcessEventIntent.TRIGGERED, processEventRecord);
@@ -228,6 +236,7 @@ public class EventTriggerBehavior {
         processEventKey,
         elementRecord.getProcessDefinitionKey(),
         elementRecord.getProcessInstanceKey(),
+        elementRecord.getStorageOrdinalKey(),
         elementRecord.getTenantId(),
         eventScopeKey,
         triggeredEvent.getId());
@@ -261,6 +270,7 @@ public class EventTriggerBehavior {
             elementRecord.getProcessDefinitionKey(),
             elementRecord.getProcessInstanceKey(),
             elementRecord.getRootProcessInstanceKey(),
+            elementRecord.getStorageOrdinalKey(),
             elementRecord.getBpmnProcessIdBuffer(),
             elementRecord.getTenantId(),
             variables);

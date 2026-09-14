@@ -62,7 +62,8 @@ public class JobItemProvider implements ItemProvider {
         result.items().stream()
             .map(
                 job ->
-                    new Item(job.jobKey(), job.processInstanceKey(), job.rootProcessInstanceKey()))
+                    new Item(
+                        job.jobKey(), job.processInstanceKey(), job.rootProcessInstanceKey(), null))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

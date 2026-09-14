@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.batchoperation;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.Collection;
@@ -32,9 +33,14 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
   private final ArrayProperty<LongValue> itemKeysProp =
       new ArrayProperty<>("itemKeys", LongValue::new);
 
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
+
   public PersistedBatchOperationChunk() {
-    super(3);
-    declareProperty(keyProp).declareProperty(batchOperationKeyProp).declareProperty(itemKeysProp);
+    super(4);
+    declareProperty(keyProp)
+        .declareProperty(batchOperationKeyProp)
+        .declareProperty(itemKeysProp)
+        .declareProperty(storageOrdinalKeyProp);
   }
 
   public long getKey() {
@@ -52,6 +58,15 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
 
   public PersistedBatchOperationChunk setBatchOperationKey(final long batchOperationKey) {
     batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
+  }
+
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public PersistedBatchOperationChunk setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 

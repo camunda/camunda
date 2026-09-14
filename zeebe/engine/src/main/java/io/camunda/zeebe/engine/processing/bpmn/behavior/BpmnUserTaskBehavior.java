@@ -199,6 +199,7 @@ public final class BpmnUserTaskBehavior {
             .setCreationTimestamp(clock.millis())
             .setTags(getTagsFromProcessInstance(context))
             .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+            .setStorageOrdinalKey(context.getStorageOrdinalKey())
             .setBusinessId(getBusinessIdFromProcessInstance(context));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
