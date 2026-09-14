@@ -10,9 +10,17 @@
 
 camunda: # Type: io.camunda.configuration.Camunda  
   api: # Type: io.camunda.configuration.Api  
+    # Enables the gateway (gRPC and REST API) that is embedded in the broker process. Only relevant when
+    # running as a broker with an embedded gateway; standalone gateway processes are always enabled by
+    # virtue of being started.
+    enabled: true # Type: Boolean, Env: CAMUNDA_API_ENABLED
     grpc: # Type: io.camunda.configuration.Grpc  
       # Sets the address the gateway binds to
       address: null # Type: String, Env: CAMUNDA_API_GRPC_ADDRESS
+      # Sets the maximum number of threads the gateway will use to handle gRPC requests
+      grpc-max-threads: null # Type: Integer, Env: CAMUNDA_API_GRPC_GRPCMAXTHREADS
+      # Sets the minimum number of threads the gateway will use to handle gRPC requests
+      grpc-min-threads: null # Type: Integer, Env: CAMUNDA_API_GRPC_GRPCMINTHREADS
       # Sets the interceptors
       interceptors: null # Type: List<io.camunda.configuration.Interceptor>, Env: CAMUNDA_API_GRPC_INTERCEPTORS
       # Sets the number of threads the gateway will use to communicate with the broker cluster
@@ -306,9 +314,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         replication-timeout: "10s" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_REPLICATIONTIMEOUT
       
       # Sets the timeout for all requests sent by raft leaders and followers. When modifying the values for
-      # requestTimeout, it might also be useful to update snapshotTimeout.
-      # When not set, the partition factory derives the value from the configured electionTimeout at
-      # startup.
+      # requestTimeout, it might also be useful to update snapshotRequestTimeout.
+      # When not set, it is derived from the configured electionTimeout during configuration resolution.
       request-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REQUESTTIMEOUT
       # Defines the strategy to use to preallocate segment files when "preallocateSegmentFiles" is set to
       # true. Possible options are:  NOOP: does not preallocate files, same as setting
@@ -354,7 +361,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       user: # Type: io.camunda.configuration.AuditLogEntry  
         categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES
-
+      
       user-task-completion-variable-audit-enabled: false # Type: Boolean, Env: CAMUNDA_DATA_AUDITLOG_USERTASKCOMPLETIONVARIABLEAUDITENABLED
     
     export: # Type: io.camunda.configuration.Export  
@@ -574,6 +581,13 @@ camunda: # Type: io.camunda.configuration.Camunda
         # more stable performance by avoiding write spikes consuming all available IOPS, leading to more
         # predictable read rates.
         io-rate-bytes-per-second: 0 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_IORATEBYTESPERSECOND
+        # Configures the maximum fraction of total system memory that RocksDB is allowed to use, as a safety
+        # cap on top of the static memory sizes configured via {@link #memoryAllocationStrategy}. Only checked
+        # when that strategy is not 'FRACTION' (which sizes RocksDB as a fraction of total memory directly,
+        # via {@link #memoryFraction}, so this cap does not apply there). The value must be greater than 0 and
+        # at most 1, or -1 to disable the check (the default). For example, a value of 0.5 means RocksDB is
+        # never allowed to use more than 50% of total system memory.
+        max-memory-fraction: -1 # Type: Double, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MAXMEMORYFRACTION
         # Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
         # performance optimization: if you set a value greater than zero, it will keep track and cap the
         # number of open files in the TableCache. On accessing the files it needs to look them up in the
@@ -1434,6 +1448,11 @@ camunda: # Type: io.camunda.configuration.Camunda
         retry-max-delay: "30s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYMAXDELAY
         wake-delay: "50ms" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_WAKEDELAY
       
+      startup: # Type: io.camunda.configuration.EngineStartup  
+        # Configures whether the one-time migration that re-exports existing RPA resources runs on broker
+        # startup.
+        rpa-reexport-migration-enabled: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STARTUP_RPAREEXPORTMIGRATIONENABLED
+      
       storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals  
         # Controls whether the archiverless mode is enabled.
         enable-archiverless: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
@@ -1671,6 +1690,10 @@ camunda: # Type: io.camunda.configuration.Camunda
     # Controls the number of io threads to be used. These threads are used for workloads that write data
     # to disk. While writing, these threads are blocked which means that they yield the CPU.
     io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_IOTHREADCOUNT
+    legacy-query-api: # Type: io.camunda.configuration.LegacyQueryApi  
+      # Enables the broker's internal legacy query API.
+      enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_LEGACYQUERYAPI_ENABLED
+    
     restore: # Type: io.camunda.configuration.Restore  
       ignore-files-in-target: null # Type: List<String>, Env: CAMUNDA_SYSTEM_RESTORE_IGNOREFILESINTARGET
       validate-config: true # Type: Boolean, Env: CAMUNDA_SYSTEM_RESTORE_VALIDATECONFIG
