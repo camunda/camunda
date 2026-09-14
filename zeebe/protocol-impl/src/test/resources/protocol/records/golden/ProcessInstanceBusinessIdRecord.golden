@@ -26,7 +26,7 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
@@ -38,8 +38,8 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
-  private final IntegerProperty storageOrdinalKeyProperty =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProperty =
+      new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
@@ -50,7 +50,7 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
         .declareProperty(businessIdProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(storageOrdinalKeyProperty)
+        .declareProperty(storageOrdinalProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(bpmnProcessIdProperty);
   }
@@ -97,12 +97,12 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProperty.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
   }
 
-  public ProcessInstanceBusinessIdRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+  public ProcessInstanceBusinessIdRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }
 

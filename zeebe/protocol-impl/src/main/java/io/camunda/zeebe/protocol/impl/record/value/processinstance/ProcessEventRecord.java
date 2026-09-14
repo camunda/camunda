@@ -34,8 +34,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProperty =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-  private final IntegerProperty storageOrdinalKeyProperty =
-      new IntegerProperty("storageOrdinalKey", 0);
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
   public ProcessEventRecord() {
     super(7);
@@ -45,7 +44,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(tenantIdProperty)
-        .declareProperty(storageOrdinalKeyProperty);
+        .declareProperty(storageOrdinalProperty);
   }
 
   public ProcessEventRecord wrap(final ProcessEventRecord record) {
@@ -55,7 +54,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
     processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
     tenantIdProperty.setValue(record.getTenantId());
-    storageOrdinalKeyProperty.setValue(record.getStorageOrdinalKey());
+    storageOrdinalProperty.setValue(record.getStorageOrdinal());
 
     return this;
   }
@@ -131,12 +130,12 @@ public final class ProcessEventRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProperty.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
   }
 
-  public ProcessEventRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+  public ProcessEventRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }
 }

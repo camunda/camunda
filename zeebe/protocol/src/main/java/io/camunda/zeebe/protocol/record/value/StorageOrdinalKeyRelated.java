@@ -47,5 +47,5 @@ public interface StorageOrdinalKeyRelated {
    *     main index (either a legacy record or explicitly forced); {@code -1} means the record is
    *     not ordinal-controlled
    */
-  int getStorageOrdinalKey();
+  int getStorageOrdinal();
 }

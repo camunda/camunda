@@ -20,7 +20,7 @@ class TargetIndexLocatorTest {
   @Test
   void shouldLocateOrdinalIndexFromOrdinal() {
     final var ordinalRelated = mock(StorageOrdinalKeyRelated.class);
-    when(ordinalRelated.getStorageOrdinalKey()).thenReturn(5);
+    when(ordinalRelated.getStorageOrdinal()).thenReturn(5);
 
     final var targetIndex = targetIndexLocator.locateOrdinalIndex("test-index", ordinalRelated);
     assertThat(targetIndex.name()).isEqualTo("test-indexord00005");
@@ -29,7 +29,7 @@ class TargetIndexLocatorTest {
   @Test
   void shouldLocateOrdinalIndexFromDefaultOrdinal() {
     final var ordinalRelated = mock(StorageOrdinalKeyRelated.class);
-    when(ordinalRelated.getStorageOrdinalKey()).thenReturn(0);
+    when(ordinalRelated.getStorageOrdinal()).thenReturn(0);
 
     final var targetIndex = targetIndexLocator.locateOrdinalIndex("test-index", ordinalRelated);
     assertThat(targetIndex.name()).isEqualTo("test-index");
@@ -38,7 +38,7 @@ class TargetIndexLocatorTest {
   @Test
   void shouldLocateOrdinalIndexFromNegativeOrdinal() {
     final var ordinalRelated = mock(StorageOrdinalKeyRelated.class);
-    when(ordinalRelated.getStorageOrdinalKey()).thenReturn(-1);
+    when(ordinalRelated.getStorageOrdinal()).thenReturn(-1);
 
     final var targetIndex = targetIndexLocator.locateOrdinalIndex("test-index", ordinalRelated);
     assertThat(targetIndex.name()).isEqualTo("test-index");
