@@ -128,6 +128,8 @@ const TextField: FC<TextFieldProps> = ({
   return (
     <FormField
       label={label}
+      error={errorText}
+      helperText={helperText}
       footer={
         showCounter
           ? (id) => (
@@ -153,9 +155,6 @@ const TextField: FC<TextFieldProps> = ({
           autoFocus,
           name,
           autoComplete,
-          "aria-invalid": errorText ? (true as const) : undefined,
-          invalidText: errorText || undefined,
-          helperText,
           onChange: handleChange,
           onBlur: handleBlur,
           onClick,
