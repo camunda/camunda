@@ -47,21 +47,23 @@ import org.junit.Test;
  * button in Operate, and the {@code RESOLVE_INCIDENT} batch operation) while the secret is still
  * missing from the store.
  *
- * <p>Resolving such an incident only reactivates the job and pushes it to whatever job stream is
- * connected ({@code IncidentResolveProcessor#publishIncidentRelatedJob}). Secret resolution is
- * requested exclusively from the two activation paths, so with no consumer attached nothing
- * re-reads the store, no incident returns, and the instance reads as healthy while the secret is
- * still absent. See <a href="https://github.com/camunda/camunda/issues/62727">#62727</a>.
+ * <p>Resolving such an incident now re-enters the resolution lifecycle itself, so the store is
+ * re-read whether or not a worker is attached. Before the fix these tests came with, the resolve
+ * only reactivated the job and pushed it to whatever job stream was connected ({@code
+ * IncidentResolveProcessor#publishIncidentRelatedJob}); resolution was requested exclusively from
+ * the two activation paths, so with no consumer attached nothing re-read the store, no incident
+ * returned, and the instance read as healthy while the secret was still absent. See <a
+ * href="https://github.com/camunda/camunda/issues/62727">#62727</a>.
  *
  * <p>No test here registers a job stream, and none activates again after the resolve unless it says
  * so — that absence is the condition under test, not an omission. An activation would itself
  * re-check the references and park the job again, which is precisely why it must not be the only
  * thing that does. {@code
  * JobSecretPushInjectionTest#shouldRequestResolutionAgainWhenTheIncidentIsResolved} is the same
- * scenario with a stream registered, and passes: {@code publishWork} hands the job straight back to
- * the push path, which requests the resolution itself. That contrast is the bug — whether a retry
- * re-checks anything depends on a worker being attached, which is also why the issue's documented
- * workaround is to keep one connected.
+ * scenario with a stream registered, and passed even before the fix: {@code publishWork} handed the
+ * job straight back to the push path, which requested the resolution itself. That contrast was the
+ * bug — whether a retry re-checked anything depended on a worker being attached, which is also why
+ * the issue's documented workaround was to keep one connected.
  *
  * <p>Counts of incidents and resolution requests are read off {@link RecordingExporter} as recorded
  * now and awaited with Awaitility, rather than through a blocking {@code limit(n)} query. A count
@@ -178,10 +180,10 @@ public final class SecretIncidentRetryTest {
     // when
     engine.incident().ofInstance(processInstanceKey).resolve();
 
-    // then - the job is handed out with the secret and the instance finishes. The activation below
-    // is what re-reads the store today; once the resolve does it too the reactivation has already
-    // happened by then, so awaiting it keeps this green either way rather than pinning the test to
-    // which of the two triggered the read.
+    // then - the job is handed out with the secret and the instance finishes. The resolve now
+    // re-reads the store itself, so the reactivation has usually happened before the activation
+    // below; awaiting it rather than assuming which of the two triggered the read keeps this green
+    // either way.
     engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
     RecordingExporter.secretReferenceRecords(SecretReferenceIntent.BATCH_JOBS_REACTIVATED)
         .withSecretReference(SECRET_NAME)

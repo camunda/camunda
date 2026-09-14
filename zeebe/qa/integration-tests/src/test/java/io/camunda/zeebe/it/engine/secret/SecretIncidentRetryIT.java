@@ -46,10 +46,11 @@ import org.junit.jupiter.api.Test;
  * Covers what the "Retry" the operator triggers in Operate actually does to a {@code
  * SECRET_RESOLUTION_ERROR} incident, against a real gateway, client and file-based secret store.
  *
- * <p>Resolving such an incident hands the job back to the push path and nothing else. Secret
- * resolution is requested only from the two activation paths, so with no worker attached the retry
- * re-reads nothing: the incident record flips to resolved, the instance reads as healthy, and the
- * secret is still missing. See <a
+ * <p>Resolving such an incident now re-enters the resolution lifecycle, so the store is re-read
+ * with no worker attached. Before the fix these tests came with, the resolve handed the job back to
+ * the push path and did nothing else; resolution was requested only from the two activation paths,
+ * so with no worker attached the retry re-read nothing: the incident record flipped to resolved,
+ * the instance read as healthy, and the secret was still missing. See <a
  * href="https://github.com/camunda/camunda/issues/62727">#62727</a>.
  *
  * <p>{@code SecretResolutionJobActivationIT} already covers the retry that follows the operator
