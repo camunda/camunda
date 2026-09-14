@@ -73,6 +73,20 @@ public class ConditionalOnAnyHttpGatewayEnabledTest {
         .run(context -> assertThat(context).doesNotHaveBean(FooService.class));
   }
 
+  @Test
+  void enabledWhenCamundaApiExplicitlyTrueOverridesConflictingLegacyDisable() {
+    // camunda.api.enabled, if explicitly set, takes precedence over zeebe.broker.gateway.enable —
+    // the same precedence io.camunda.configuration.Api#isEnabled() applies — rather than requiring
+    // both to independently agree.
+    contextRunner()
+        .withPropertyValues(
+            "camunda.rest.enabled=true",
+            "camunda.mcp.enabled=true",
+            "camunda.api.enabled=true",
+            "zeebe.broker.gateway.enable=false")
+        .run(context -> assertThat(context).hasSingleBean(FooService.class));
+  }
+
   @TestConfiguration
   @ConditionalOnAnyHttpGatewayEnabled
   static class ConditionalOnAnyHttpGatewayEnabledTestConfiguration {
