@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.read.domain;
 
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
+import io.camunda.search.sort.SortOptionsBuilders;
 import io.camunda.search.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;
@@ -44,5 +45,11 @@ public record DbQuerySorting<T>(List<SortingEntry<T>> orderings) {
     }
   }
 
-  public record SortingEntry<T>(SearchColumn<T> column, SortOrder order) {}
+  public record SortingEntry<T>(SearchColumn<T> column, SortOrder order) {
+
+    /** Used by {@code Commons.orderBy} to render the seek direction of a {@code before} page. */
+    public SortOrder reversedOrder() {
+      return SortOptionsBuilders.reverseOrder(order);
+    }
+  }
 }
