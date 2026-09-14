@@ -58,29 +58,56 @@ class TaskPanelPage {
     const timeout = options.timeout ?? 10000;
     const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
 
-    // The parent tasklist layout route (routes/_shadcn/_auth/tasklist/_tasks/
-    // route.tsx) does poll this query every 5s (refetchInterval: 5000), so a
-    // task that isn't indexed yet should normally show up on its own within a
-    // few seconds. A page reload is a strictly faster, deterministic way to
-    // force an immediate fresh fetch rather than wait out however much of
-    // the next 5s tick remains, and it's also the only thing that helps if
-    // polling isn't keeping up (e.g. under CI load) -- no amount of waiting
-    // on the existing DOM without either will make a just-created task
-    // appear. Retry with a reload in between attempts, same pattern as
-    // assertCompletedHeadingVisible below, instead of relying on a single
-    // fetch plus Playwright's built-in element wait.
+    // The available-tasks list is virtualized and infinite-scrolls, sorted
+    // newest-first. Under the parallel nightly load a task created earlier gets
+    // pushed below the initially loaded page, so it is not in the DOM at all --
+    // and reloading just re-fetches the same newest-first first page, so it
+    // never reveals an older task (this is why openTask timed out even at 60s).
+    // The only way to reach an older task is to scroll the list so it pulls the
+    // next page via fetchNextPage. Between attempts, scroll the last rendered
+    // card into view to load older tasks; when scrolling can no longer grow the
+    // list, reload to pick up anything newly indexed (the just-created case the
+    // route's 5s poll would otherwise cover). Scale the retry budget to the
+    // caller's timeout so slow-indexing callers keep their wait.
+    const perAttemptTimeout = Math.min(timeout, 10000);
+    const maxRetries = Math.max(3, Math.ceil(timeout / perAttemptTimeout) + 3);
+
     await waitForAssertion({
       assertion: async () => {
-        await expect(task).toBeVisible({timeout});
+        await expect(task).toBeVisible({timeout: perAttemptTimeout});
       },
       onFailure: async () => {
-        console.log(
-          `Task "${name}" not visible yet, reloading and retrying...`,
-        );
-        await this.reloadPage();
+        const before = await this.taskCards.count();
+        if (before > 0) {
+          await this.taskCards
+            .last()
+            .scrollIntoViewIfNeeded()
+            .catch(() => {});
+          // Wait for the next (older) page to attach instead of a fixed pause;
+          // the wait simply times out (and is ignored) once the list can grow
+          // no further.
+          await this.taskCards
+            .nth(before)
+            .waitFor({state: 'attached', timeout: perAttemptTimeout})
+            .catch(() => {});
+        }
+        // If scrolling could not grow the list and the target still isn't
+        // present, force a fresh fetch -- covers the just-created/not-yet-
+        // indexed case a reload (or the route's 5s poll) resolves.
+        if (
+          (await this.taskCards.count()) <= before &&
+          (await task.count()) === 0
+        ) {
+          console.log(
+            `Task "${name}" not visible yet, reloading and retrying...`,
+          );
+          await this.reloadPage();
+        }
       },
+      maxRetries,
     });
 
+    await task.scrollIntoViewIfNeeded().catch(() => {});
     await task.click({timeout});
   }
 

@@ -432,9 +432,17 @@ class OperateProcessInstancePage {
     await this.waitForIconWithRetry(this.activeIcon, 'Active', 90000);
   }
   getEditVariableFieldSelector(variableName: string) {
+    // After the inline editor migrated to CodeMirror (#62782), the
+    // `edit-variable-value` group also contains a visually-hidden accessibility
+    // region (e.g. the "Selection deleted" live announcement emitted when the
+    // value is cleared) alongside the actual value, so reading the group's text
+    // returns noise like "fooSelection deleted3". Target the CodeMirror content
+    // textbox instead, which holds just the value -- clicking it also focuses
+    // the editor exactly as clicking the group did.
     return this.page
       .getByTestId(`variable-${variableName}`)
-      .getByTestId('edit-variable-value');
+      .getByTestId('edit-variable-value')
+      .getByRole('textbox');
   }
 
   getNewVariableNameFieldSelector = (variableName: string) => {
@@ -574,14 +582,18 @@ class OperateProcessInstancePage {
     await this.getNewVariableNameFieldSelector(variableIndex).type(name);
     await this.page.keyboard.press('Tab');
 
-    await this.fillVariableValueInput(value);
+    await this.fillVariableValueInput(
+      value,
+      this.getVariableTestId(variableIndex),
+    );
     await this.page.keyboard.press('Tab');
   }
 
   async editVariableValueModificationMode(variableName: string, value: string) {
+    const scope = this.getVariableTestId(variableName);
     await this.getEditVariableFieldSelector(variableName).click();
-    await this.clearVariableValueInput();
-    await this.fillVariableValueInput(value);
+    await this.clearVariableValueInput(scope);
+    await this.fillVariableValueInput(value, scope);
     await this.page.keyboard.press('Tab');
   }
 
@@ -593,13 +605,25 @@ class OperateProcessInstancePage {
     await this.variableValueInput.click();
   }
 
-  async fillVariableValueInput(value: string) {
-    await expect(this.editor).toBeVisible();
+  async fillVariableValueInput(value: string, scope?: Locator) {
+    // In modification mode every variable row renders its own inline
+    // CodeMirror value cell, so the page-wide `this.editor` (all
+    // `code-mirror-editor` testids) matches several elements and trips
+    // Playwright's strict mode. When a caller knows which variable row is being
+    // edited, scope the visibility guard to that row's editor; keyboard input
+    // still goes to the focused field either way.
+    const editor = scope
+      ? scope.getByTestId('code-mirror-editor')
+      : this.editor;
+    await expect(editor).toBeVisible();
     await this.page.keyboard.insertText(value);
   }
 
-  async clearVariableValueInput() {
-    await expect(this.editor).toBeVisible();
+  async clearVariableValueInput(scope?: Locator) {
+    const editor = scope
+      ? scope.getByTestId('code-mirror-editor')
+      : this.editor;
+    await expect(editor).toBeVisible();
     await this.page.keyboard.press('Control+A');
     await this.page.keyboard.press('Backspace');
   }
