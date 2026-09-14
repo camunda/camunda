@@ -657,37 +657,17 @@ camunda: # Type: io.camunda.configuration.Camunda
       autoconfigure-camunda-exporter: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_AUTOCONFIGURECAMUNDAEXPORTER
       elasticsearch: # Type: io.camunda.configuration.Elasticsearch  
         backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup  
-          # Defines the timeout period for determining whether an incomplete backup should be considered as
-          # failed or still in progress. This property helps distinguish between backups that are actively
-          # running versus those that may have stalled or failed silently.
-          # Note: This setting applies to backups of secondary storage.
-          incomplete-check-timeout: "5m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_INCOMPLETECHECKTIMEOUT
-          # Set the ES / OS snapshot repository name.
-          # Note: This setting applies to backups of secondary storage.
-          repository-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_REPOSITORYNAME
-          # A backup of history data consists of multiple Elasticsearch/Opensearch snapshots. snapshotTimeout
-          # controls the maximum time to wait for a snapshot operation to complete during backup creation. When
-          # set to 0, the system will wait indefinitely for snapshots to finish.
-          # Note: This setting applies to backups of secondary storage.
-          snapshot-timeout: 0 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_SNAPSHOTTIMEOUT
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_DATABASENAME
         
         batch-operation-cache: # Type: io.camunda.configuration.Cache  
-          # Maximum cache size
-          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONCACHE_MAXSIZE
+          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONCACHE_CACHENAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONCACHE_DATABASENAME
         
         batch-operations: # Type: io.camunda.configuration.BatchOperation  
-          # Export the batch operation items when the initial chunk records are processed. If set to  false, the
-          # batch operation items will be exported only when they have been processed and are completed or
-          # failed.
-          export-items-on-creation: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONS_EXPORTITEMSONCREATION
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONS_DATABASENAME
         
         bulk: # Type: io.camunda.configuration.Bulk  
-          # Delay before forced flush (in seconds)
-          delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_DELAY
-          # Bulk memory utilisation before flush (in MB)
-          memory-limit: "20MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_MEMORYLIMIT
-          # Bulk size before flush
-          size: 5000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_SIZE
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_DATABASENAME
         
         # Name of the cluster
         cluster-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CLUSTERNAME
@@ -698,12 +678,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The date format for ES and OS
         date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZZ" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DATEFORMAT
         decision-requirements-cache: # Type: io.camunda.configuration.Cache  
-          # Maximum cache size
-          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_MAXSIZE
+          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_CACHENAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_DATABASENAME
         
         form-cache: # Type: io.camunda.configuration.Cache  
-          # Maximum cache size
-          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_MAXSIZE
+          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_CACHENAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_DATABASENAME
         
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HEALTHCHECKENABLED
@@ -738,13 +718,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
         
         incident-notifier: # Type: io.camunda.configuration.IncidentNotifier  
-          # Defines the domain which the user always sees
-          auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
-          auth0-protocol: "https" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0PROTOCOL
-          m2m-audience: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MAUDIENCE
-          m2m-client-id: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MCLIENTID
-          m2m-client-secret: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MCLIENTSECRET
-          webhook: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_WEBHOOK
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_DATABASENAME
         
         # Prefix to apply to the indexes.
         index-prefix: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX
@@ -758,108 +732,20 @@ camunda: # Type: io.camunda.configuration.Camunda
         number-of-replicas: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFREPLICAS
         # Per-index replica overrides.
         number-of-replicas-per-index: null # Type: Map<String,Integer>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFREPLICASPERINDEX
-        # How many shards the search engine database uses for indices that do not pin a shard count of their
-        # own. In practice that is the process-instance-volume indices; the remaining indices default to a
-        # single shard whatever this is set to. Use number-of-shards-per-index to override an individual
-        # index.
+        # How many shards the search engine database uses for all indices.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDS
         # Per-index shard overrides.
-        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex
-          # Primary shards for the agent definition index (agent-definition).
-          agent-definition: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AGENTDEFINITION
-          # Primary shards for the agent history index (agent-history).
-          agent-history: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AGENTHISTORY
-          # Primary shards for the agent instance index (agent-instance).
-          agent-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AGENTINSTANCE
-          # Primary shards for the audit log index (audit-log).
-          audit-log: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AUDITLOG
-          # Primary shards for the audit log cleanup index (audit-log-cleanup).
-          audit-log-cleanup: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AUDITLOGCLEANUP
-          # Primary shards for the authorization index (authorization).
-          authorization: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AUTHORIZATION
-          # Primary shards for the batch operation index (batch-operation).
-          batch-operation: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_BATCHOPERATION
-          # Primary shards for the cluster variable index (cluster-variable).
-          cluster-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_CLUSTERVARIABLE
-          # Primary shards for the correlated message subscription index (correlated-message-subscription).
-          correlated-message-subscription: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_CORRELATEDMESSAGESUBSCRIPTION
-          # Primary shards for the decision definition index (decision).
-          decision: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DECISION
-          # Primary shards for the decision instance index (decision-instance).
-          decision-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DECISIONINSTANCE
-          # Primary shards for the decision requirements index (decision-requirements).
-          decision-requirements: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DECISIONREQUIREMENTS
-          # Primary shards for the deployed resource index (deployed-resource).
-          deployed-resource: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DEPLOYEDRESOURCE
-          # Primary shards for the draft task variable index (draft-task-variable).
-          draft-task-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DRAFTTASKVARIABLE
-          # Primary shards for the message subscription index (event).
-          event: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_EVENT
-          # Primary shards for the flow node instance index (flownode-instance).
-          flownode-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_FLOWNODEINSTANCE
-          # Primary shards for the form index (form).
-          form: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_FORM
-          # Primary shards for the global listener index (global-listener).
-          global-listener: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_GLOBALLISTENER
-          # Primary shards for the group index (group).
-          group: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_GROUP
-          # Primary shards for the history deletion index (history-deletion).
-          history-deletion: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_HISTORYDELETION
-          # Primary shards for the incident index (incident).
-          incident: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_INCIDENT
-          # Primary shards for the job index (job).
-          job: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_JOB
-          # Primary shards for the job metrics batch index (job-metrics-batch).
-          job-metrics-batch: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_JOBMETRICSBATCH
-          # Primary shards for the process instance list view index (list-view).
-          list-view: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_LISTVIEW
-          # Primary shards for the mapping rule index (mapping-rule).
-          mapping-rule: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_MAPPINGRULE
-          # Primary shards for the message index (message).
-          message: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_MESSAGE
-          # Primary shards for the schema metadata index (metadata).
-          metadata: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_METADATA
-          # Primary shards for the operation index (operation).
-          operation: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_OPERATION
-          # Primary shards for the post importer queue index (post-importer-queue).
-          post-importer-queue: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_POSTIMPORTERQUEUE
-          # Primary shards for the process definition index (process).
-          process: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_PROCESS
-          # Primary shards for the role index (role).
-          role: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_ROLE
-          # Primary shards for the sequence flow index (sequence-flow).
-          sequence-flow: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_SEQUENCEFLOW
-          # Primary shards for the user task index (task).
-          task: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_TASK
-          # Primary shards for the task variable snapshot index (task-variable).
-          task-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_TASKVARIABLE
-          # Primary shards for the tenant index (tenant).
-          tenant: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_TENANT
-          # Primary shards for the usage metric index (usage-metric).
-          usage-metric: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_USAGEMETRIC
-          # Primary shards for the usage metric task user index (usage-metric-tu).
-          usage-metric-tu: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_USAGEMETRICTU
-          # Primary shards for the user index (user).
-          user: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_USER
-          # Primary shards for the variable index (variable).
-          variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLE
-          # Primary shards for the wait state index (wait-state).
-          wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
-          # Primary shards for the persistent web session index (web-session).
-          web-session: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_WEBSESSION
+        number-of-shards-per-index: null # Type: Map<String,Integer>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX
         # Password for the database configured as secondary storage.
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
         perform-cleanup: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PERFORMCLEANUP
         post-export: # Type: io.camunda.configuration.PostExport  
-          batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_BATCHSIZE
-          delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_DELAYBETWEENRUNS
-          ignore-missing-data: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_IGNOREMISSINGDATA
-          max-delay-between-runs: "5s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_MAXDELAYBETWEENRUNS
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_DATABASENAME
         
         process-cache: # Type: io.camunda.configuration.Cache  
-          # Maximum cache size
-          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_MAXSIZE
+          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_CACHENAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_DATABASENAME
         
         proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration  
           enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_ENABLED
@@ -874,19 +760,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVALBYINDEXNAME
         retry: # Type: io.camunda.configuration.SchemaManagerRetry  
-          max-retries: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_MAXRETRIES
-          max-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_MAXRETRYDELAY
-          min-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_MINRETRYDELAY
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_DATABASENAME
         
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
-          # Path to certificate used by Elasticsearch or Opensearch
-          certificate-path: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_CERTIFICATEPATH
-          # Enable security
-          enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_ENABLED
-          # Certificate was self-signed
-          self-signed: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_SELFSIGNED
-          # Should the hostname be validated
-          verify-hostname: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_VERIFYHOSTNAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_DATABASENAME
         
         # The socket timeout for ES and OS connector
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SOCKETTIMEOUT
@@ -906,37 +783,17 @@ camunda: # Type: io.camunda.configuration.Camunda
       opensearch: # Type: io.camunda.configuration.Opensearch  
         aws-enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_AWSENABLED
         backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup  
-          # Defines the timeout period for determining whether an incomplete backup should be considered as
-          # failed or still in progress. This property helps distinguish between backups that are actively
-          # running versus those that may have stalled or failed silently.
-          # Note: This setting applies to backups of secondary storage.
-          incomplete-check-timeout: "5m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_INCOMPLETECHECKTIMEOUT
-          # Set the ES / OS snapshot repository name.
-          # Note: This setting applies to backups of secondary storage.
-          repository-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_REPOSITORYNAME
-          # A backup of history data consists of multiple Elasticsearch/Opensearch snapshots. snapshotTimeout
-          # controls the maximum time to wait for a snapshot operation to complete during backup creation. When
-          # set to 0, the system will wait indefinitely for snapshots to finish.
-          # Note: This setting applies to backups of secondary storage.
-          snapshot-timeout: 0 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_SNAPSHOTTIMEOUT
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_DATABASENAME
         
         batch-operation-cache: # Type: io.camunda.configuration.Cache  
-          # Maximum cache size
-          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONCACHE_MAXSIZE
+          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONCACHE_CACHENAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONCACHE_DATABASENAME
         
         batch-operations: # Type: io.camunda.configuration.BatchOperation  
-          # Export the batch operation items when the initial chunk records are processed. If set to  false, the
-          # batch operation items will be exported only when they have been processed and are completed or
-          # failed.
-          export-items-on-creation: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONS_EXPORTITEMSONCREATION
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONS_DATABASENAME
         
         bulk: # Type: io.camunda.configuration.Bulk  
-          # Delay before forced flush (in seconds)
-          delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_DELAY
-          # Bulk memory utilisation before flush (in MB)
-          memory-limit: "20MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_MEMORYLIMIT
-          # Bulk size before flush
-          size: 5000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_SIZE
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_DATABASENAME
         
         # Name of the cluster
         cluster-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_CLUSTERNAME
@@ -947,12 +804,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The date format for ES and OS
         date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZZ" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DATEFORMAT
         decision-requirements-cache: # Type: io.camunda.configuration.Cache  
-          # Maximum cache size
-          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_MAXSIZE
+          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_CACHENAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_DATABASENAME
         
         form-cache: # Type: io.camunda.configuration.Cache  
-          # Maximum cache size
-          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_MAXSIZE
+          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_CACHENAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_DATABASENAME
         
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HEALTHCHECKENABLED
@@ -987,13 +844,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
         
         incident-notifier: # Type: io.camunda.configuration.IncidentNotifier  
-          # Defines the domain which the user always sees
-          auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
-          auth0-protocol: "https" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0PROTOCOL
-          m2m-audience: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MAUDIENCE
-          m2m-client-id: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MCLIENTID
-          m2m-client-secret: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MCLIENTSECRET
-          webhook: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_WEBHOOK
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_DATABASENAME
         
         # Prefix to apply to the indexes.
         index-prefix: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
@@ -1007,108 +858,20 @@ camunda: # Type: io.camunda.configuration.Camunda
         number-of-replicas: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFREPLICAS
         # Per-index replica overrides.
         number-of-replicas-per-index: null # Type: Map<String,Integer>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFREPLICASPERINDEX
-        # How many shards the search engine database uses for indices that do not pin a shard count of their
-        # own. In practice that is the process-instance-volume indices; the remaining indices default to a
-        # single shard whatever this is set to. Use number-of-shards-per-index to override an individual
-        # index.
+        # How many shards the search engine database uses for all indices.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDS
         # Per-index shard overrides.
-        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex
-          # Primary shards for the agent definition index (agent-definition).
-          agent-definition: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AGENTDEFINITION
-          # Primary shards for the agent history index (agent-history).
-          agent-history: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AGENTHISTORY
-          # Primary shards for the agent instance index (agent-instance).
-          agent-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AGENTINSTANCE
-          # Primary shards for the audit log index (audit-log).
-          audit-log: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AUDITLOG
-          # Primary shards for the audit log cleanup index (audit-log-cleanup).
-          audit-log-cleanup: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AUDITLOGCLEANUP
-          # Primary shards for the authorization index (authorization).
-          authorization: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AUTHORIZATION
-          # Primary shards for the batch operation index (batch-operation).
-          batch-operation: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_BATCHOPERATION
-          # Primary shards for the cluster variable index (cluster-variable).
-          cluster-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_CLUSTERVARIABLE
-          # Primary shards for the correlated message subscription index (correlated-message-subscription).
-          correlated-message-subscription: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_CORRELATEDMESSAGESUBSCRIPTION
-          # Primary shards for the decision definition index (decision).
-          decision: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DECISION
-          # Primary shards for the decision instance index (decision-instance).
-          decision-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DECISIONINSTANCE
-          # Primary shards for the decision requirements index (decision-requirements).
-          decision-requirements: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DECISIONREQUIREMENTS
-          # Primary shards for the deployed resource index (deployed-resource).
-          deployed-resource: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DEPLOYEDRESOURCE
-          # Primary shards for the draft task variable index (draft-task-variable).
-          draft-task-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DRAFTTASKVARIABLE
-          # Primary shards for the message subscription index (event).
-          event: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_EVENT
-          # Primary shards for the flow node instance index (flownode-instance).
-          flownode-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_FLOWNODEINSTANCE
-          # Primary shards for the form index (form).
-          form: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_FORM
-          # Primary shards for the global listener index (global-listener).
-          global-listener: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_GLOBALLISTENER
-          # Primary shards for the group index (group).
-          group: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_GROUP
-          # Primary shards for the history deletion index (history-deletion).
-          history-deletion: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_HISTORYDELETION
-          # Primary shards for the incident index (incident).
-          incident: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_INCIDENT
-          # Primary shards for the job index (job).
-          job: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_JOB
-          # Primary shards for the job metrics batch index (job-metrics-batch).
-          job-metrics-batch: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_JOBMETRICSBATCH
-          # Primary shards for the process instance list view index (list-view).
-          list-view: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_LISTVIEW
-          # Primary shards for the mapping rule index (mapping-rule).
-          mapping-rule: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_MAPPINGRULE
-          # Primary shards for the message index (message).
-          message: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_MESSAGE
-          # Primary shards for the schema metadata index (metadata).
-          metadata: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_METADATA
-          # Primary shards for the operation index (operation).
-          operation: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_OPERATION
-          # Primary shards for the post importer queue index (post-importer-queue).
-          post-importer-queue: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_POSTIMPORTERQUEUE
-          # Primary shards for the process definition index (process).
-          process: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_PROCESS
-          # Primary shards for the role index (role).
-          role: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_ROLE
-          # Primary shards for the sequence flow index (sequence-flow).
-          sequence-flow: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_SEQUENCEFLOW
-          # Primary shards for the user task index (task).
-          task: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_TASK
-          # Primary shards for the task variable snapshot index (task-variable).
-          task-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_TASKVARIABLE
-          # Primary shards for the tenant index (tenant).
-          tenant: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_TENANT
-          # Primary shards for the usage metric index (usage-metric).
-          usage-metric: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_USAGEMETRIC
-          # Primary shards for the usage metric task user index (usage-metric-tu).
-          usage-metric-tu: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_USAGEMETRICTU
-          # Primary shards for the user index (user).
-          user: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_USER
-          # Primary shards for the variable index (variable).
-          variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLE
-          # Primary shards for the wait state index (wait-state).
-          wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
-          # Primary shards for the persistent web session index (web-session).
-          web-session: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_WEBSESSION
+        number-of-shards-per-index: null # Type: Map<String,Integer>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX
         # Password for the database configured as secondary storage.
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
         perform-cleanup: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PERFORMCLEANUP
         post-export: # Type: io.camunda.configuration.PostExport  
-          batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_BATCHSIZE
-          delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_DELAYBETWEENRUNS
-          ignore-missing-data: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_IGNOREMISSINGDATA
-          max-delay-between-runs: "5s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_MAXDELAYBETWEENRUNS
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_DATABASENAME
         
         process-cache: # Type: io.camunda.configuration.Cache  
-          # Maximum cache size
-          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_MAXSIZE
+          cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_CACHENAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_DATABASENAME
         
         proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration  
           enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_ENABLED
@@ -1123,19 +886,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVALBYINDEXNAME
         retry: # Type: io.camunda.configuration.SchemaManagerRetry  
-          max-retries: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_MAXRETRIES
-          max-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_MAXRETRYDELAY
-          min-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_MINRETRYDELAY
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_DATABASENAME
         
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
-          # Path to certificate used by Elasticsearch or Opensearch
-          certificate-path: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_CERTIFICATEPATH
-          # Enable security
-          enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_ENABLED
-          # Certificate was self-signed
-          self-signed: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_SELFSIGNED
-          # Should the hostname be validated
-          verify-hostname: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_VERIFYHOSTNAME
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_DATABASENAME
         
         # The socket timeout for ES and OS connector
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SOCKETTIMEOUT
@@ -1278,9 +1032,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The maximum size of the exporters execution queue before it is flushed to the database.
         queue-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUESIZE
         retry: # Type: io.camunda.configuration.SchemaManagerRetry  
-          max-retries: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_MAXRETRIES
-          max-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_MAXRETRYDELAY
-          min-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_MINRETRYDELAY
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_DATABASENAME
         
         # If true, enables JDBC batch statement rewriting on the RDBMS connection so that same-statement
         # batches collapse into a single multi-values round trip instead of one round trip per statement. Has
@@ -1713,9 +1465,9 @@ camunda: # Type: io.camunda.configuration.Camunda
       storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals  
         # Controls whether the archiverless mode is enabled.
         enable-archiverless: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
-        # Override default storage ordinal with fixed value, mainly used during initial testing. The default
-        # value of -1 means no override is applied.
-        fixed-storage-ordinal: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINAL
+        # Override default storage ordinal key with fixed value, mainly used during initial testing. The
+        # default value of -1 means no override is applied.
+        fixed-storage-ordinal-key: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINALKEY
       
       validators: # Type: io.camunda.configuration.EngineValidators  
         # Configures the maximum size, in bytes, of the validation error output produced when deploying an
