@@ -7,15 +7,17 @@
  */
 
 function getStage(host: string): 'dev' | 'int' | 'prod' | 'unknown' {
-	if (host.includes(import.meta.env.VITE_DEV_ENV_URL)) {
+	const hostname = host.toLowerCase().split(':')[0] ?? '';
+
+	if (hostname === 'dev.ultrawombat.com' || hostname.endsWith('.dev.ultrawombat.com')) {
 		return 'dev';
 	}
 
-	if (host.includes(import.meta.env.VITE_INT_ENV_URL)) {
+	if (hostname === 'ultrawombat.com' || hostname.endsWith('.ultrawombat.com')) {
 		return 'int';
 	}
 
-	if (host.includes(import.meta.env.VITE_PROD_ENV_URL)) {
+	if (hostname === 'camunda.io' || hostname.endsWith('.camunda.io')) {
 		return 'prod';
 	}
 

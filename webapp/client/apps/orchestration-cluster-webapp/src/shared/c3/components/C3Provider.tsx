@@ -9,7 +9,7 @@
 import {C3UserConfigurationProvider} from '@camunda/camunda-composite-components';
 import {C3ThemePersister} from '#/shared/theme/C3ThemePersister';
 import {getBootConfig} from '#/shared/config/getBootConfig';
-import {getCloudStage} from '#/shared/config/getCloudStage';
+import {getStage} from '#/shared/config/getStage';
 import {fetchSaasToken} from '#/shared/saas/fetchSaasToken';
 
 type Props = {
@@ -20,9 +20,9 @@ type Props = {
 
 const C3Provider: React.FC<Props> = ({currentApp, initialSaasToken, children}) => {
 	const {organizationId, clusterId} = getBootConfig();
-	const stage = getCloudStage();
+	const stage = getStage(window.location.hostname);
 
-	if (initialSaasToken === null || organizationId === null || clusterId === null || stage === undefined) {
+	if (initialSaasToken === null || organizationId === null || clusterId === null || stage === 'unknown') {
 		return <>{children}</>;
 	}
 
