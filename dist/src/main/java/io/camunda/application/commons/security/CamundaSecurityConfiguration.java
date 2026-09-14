@@ -42,7 +42,7 @@ public class CamundaSecurityConfiguration {
 
   @VisibleForTesting
   public static final String TENANTS_API_DISABLED_WARNING =
-      "Multi-tenancy checks are enabled (%s=true) while the tenants API is disabled (%s=false). Tenants cannot be created or modified through the API and must be provisioned via %s. Set %s to true to manage tenants over the API."
+      "Multi-tenancy checks are enabled (%s=true) while the tenants API is disabled (%s=false). The tenants API is not reachable, including reads, and tenant management is hidden in Identity, so tenants must be provisioned via %s. Set %s to true to manage tenants over the API."
           .formatted(
               MULTI_TENANCY_CHECKS_ENABLED_PROPERTY,
               MultiTenancyConfiguration.API_ENABLED_PROPERTY,
