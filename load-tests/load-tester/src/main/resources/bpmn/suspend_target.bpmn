@@ -12,12 +12,15 @@
     a large fan-out concurrently, across three parallel branches:
       - a multi-instance service task producing one activatable job per element (job type
         'suspend-target-noop' is left with no worker, so the jobs stay running);
-      - a multi-instance receive task opening one message subscription per element (correlated by
-        the backlog generator only while the instance is suspended, so the correlations buffer);
-      - a multi-instance sub-process, each holding a long timer catch (PT1H, never fires during
-        the run), so one timer stays scheduled per element.
-    The collections 'jobs', 'subs' and 'timers' are passed as variables at instance creation, so
-    the fan-out sizes are configured by the caller (SuspensionMeter), not baked into the model.
+      - a multi-instance receive task opening one message subscription per element (never
+        correlated, so they stay open and add to the SUSPEND record);
+      - a multi-instance sub-process, each holding a timer catch of duration '=timerDuration',
+        tuned to come due while the instance is suspended so each timer's trigger is buffered
+        (an internal command targeting a suspended instance) and drained on resume. The number of
+        buffered commands drained equals the timer count.
+    The collections 'jobs', 'subs' and 'timers' and the scalar 'timerDuration' are passed as
+    variables at instance creation, so the fan-out sizes and timer due time are configured by the
+    caller (SuspensionMeter), not baked into the model.
   -->
   <bpmn:message id="suspend_target_message" name="suspend-target-msg">
     <bpmn:extensionElements>
@@ -70,7 +73,7 @@
         <bpmn:incoming>flow_timer_wait</bpmn:incoming>
         <bpmn:outgoing>flow_timer_done</bpmn:outgoing>
         <bpmn:timerEventDefinition id="timer_def">
-          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=timerDuration</bpmn:timeDuration>
         </bpmn:timerEventDefinition>
       </bpmn:intermediateCatchEvent>
       <bpmn:endEvent id="timer_sub_end">

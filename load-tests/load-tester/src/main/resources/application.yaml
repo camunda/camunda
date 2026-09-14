@@ -120,21 +120,23 @@ load-tester:
     batch-interval: ${LOAD_TESTER_SUSPENDER_BATCH_INTERVAL:10s}
     batch-page-size: ${LOAD_TESTER_SUSPENDER_BATCH_PAGE_SIZE:1000}
     hold-duration: ${LOAD_TESTER_SUSPENDER_HOLD_DURATION:30s}
-    # Target mode: deploy a dedicated heavy process (large job + subscription fan-out), create a
-    # few instances, and suspend/resume only those while the starter's workload runs untouched
-    # (blast-radius / interference test). hold-duration is the hold; batch-interval is the idle
-    # gap between suspend/resume cycles.
+    # Target mode: deploy a dedicated heavy process (large job + subscription fan-out + many short
+    # timers), and each cycle create -> warm up -> suspend -> hold -> resume -> settle -> cancel a
+    # fresh instance, while the starter's workload runs untouched (blast-radius / interference
+    # test). timer-count is the buffered-command backlog drained on resume: each timer comes due
+    # once while suspended and its trigger buffers. Timers must come due within the hold window, so
+    # warmup < timer-duration < warmup + hold-duration, with warmup long enough for the fan-out to
+    # materialise. batch-interval is the idle gap between cycles (target absent -> cluster quiet).
     target-enabled: ${LOAD_TESTER_SUSPENDER_TARGET_ENABLED:false}
     target-bpmn-path: ${LOAD_TESTER_SUSPENDER_TARGET_BPMN_PATH:bpmn/suspend_target.bpmn}
     target-process-id: ${LOAD_TESTER_SUSPENDER_TARGET_PROCESS_ID:suspendTarget}
     target-instances: ${LOAD_TESTER_SUSPENDER_TARGET_INSTANCES:1}
     job-count: ${LOAD_TESTER_SUSPENDER_JOB_COUNT:500}
     subscription-count: ${LOAD_TESTER_SUSPENDER_SUBSCRIPTION_COUNT:500}
-    timer-count: ${LOAD_TESTER_SUSPENDER_TIMER_COUNT:200}
-    # While a target instance is suspended, publish one message per open subscription so the
-    # correlations buffer and are drained on resume (buffered backlog per instance =
-    # subscription-count).
-    generate-backlog: ${LOAD_TESTER_SUSPENDER_GENERATE_BACKLOG:true}
+    timer-count: ${LOAD_TESTER_SUSPENDER_TIMER_COUNT:2000}
+    timer-duration: ${LOAD_TESTER_SUSPENDER_TIMER_DURATION:30s}
+    warmup: ${LOAD_TESTER_SUSPENDER_WARMUP:20s}
+    settle: ${LOAD_TESTER_SUSPENDER_SETTLE:15s}
 
   # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
   optimize:

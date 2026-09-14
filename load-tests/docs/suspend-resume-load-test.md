@@ -50,36 +50,47 @@ Any dip that lines up with the target's suspend/resume events is the blast radiu
   **no worker services**, so the jobs stay activatable (never completed) and are all "running"
   at suspend time.
 - **~500 message subscriptions:** a parallel multi-instance receive task (500 elements) with
-  distinct correlation keys. They are correlated **only by the backlog generator while the
-  instance is suspended** (see below), otherwise they stay open.
-- **~200 timers:** a parallel multi-instance sub-process (200 elements), each holding a `PT1H`
-  timer catch that never fires during the run, so 200 timers stay scheduled (timers are suspended
-  and resumed too, so this exercises that path).
+  distinct correlation keys, **never correlated** — they stay open and add to the SUSPEND record.
+- **~2000 short timers:** a parallel multi-instance sub-process (`timer-count` elements), each a
+  timer catch of `timer-duration`, tuned to come due **while the instance is suspended**. This is
+  the buffered-command backlog (see below).
 - A parallel gateway activates all three multi-instance branches at once, so a single instance
-  holds ~500 jobs + ~500 subscriptions + ~200 timers simultaneously.
-- The instance is created once and **reused** across suspend/resume cycles: resume un-parks the
-  jobs (still unhandled → they stay) and re-opens the subscriptions.
+  holds ~500 jobs + ~500 subscriptions + ~2000 timers simultaneously.
 
-### Buffered-command backlog
+### Buffered-command backlog — how it actually works
 
-The fan-out above makes the *suspend operation* heavy, but on its own it generates **no buffered
-commands**: nothing sends commands to the suspended instance (jobs are parked, subscriptions are
-un-published, timers are frozen), so there is nothing to drain on resume. Buffered commands
-require an active sender hitting the suspended instance.
+This was corrected after checking the engine (and ADR
+`zeebe/docs/adr/0009-810-suspended-timer-buffering.md`). The important facts:
 
-The **backlog generator** (`generate-backlog`, default on in target mode) provides that: while an
-instance is suspended, it publishes one message per open subscription (using the instance's
-correlation-key prefix). Each correlation targets a suspended instance, so the engine **buffers**
-it; the whole batch is **drained on resume**. The buffered backlog per instance therefore equals
-`subscription-count` — raise `subscription-count` for a deeper drain (500 jobs + 1000 subs + 200
-timers = 1700, still under the ~2000 limit). This is what exercises the resume-drain and
-`commandBuffered`/`commandDrained` paths on the cluster.
+- **Only internal engine commands buffer** while an instance is suspended
+  (`SuspensionAware.bufferInternalOnly`). Client commands are rejected.
+- **Publishing messages does NOT create a backlog:** suspend *closes* the instance's message
+  subscriptions, so a published message has nothing to correlate against — no command, nothing
+  buffered. (An earlier message-based generator was removed for this reason.)
+- **Job completions do NOT buffer:** they are external commands and are rejected.
+- **A timer that comes due while suspended fires exactly once**, its trigger is buffered
+  (`TimerTriggerProcessor.onSuspended` → BUFFER), and it is then spent — a repeating/short timer
+  does **not** re-accumulate over the hold. So the backlog size is the **number of concurrently-due
+  timers = the timer fan-out width**, not the hold duration.
+
+Therefore the backlog is built from **timer fan-out**: each of the `timer-count` timers comes due
+during the hold and buffers one trigger, so **buffered backlog per instance = `timer-count`**
+(default 2000). Timers are *not* written into the SUSPEND record, so `timer-count` is **not**
+bounded by the 4 MB batch limit (only jobs+subscriptions are). Raise `timer-count` for a deeper
+drain. This is what exercises the resume-drain and `commandBuffered`/`commandDrained` paths.
+
+Because each timer only fires once, the target instance is **recreated every cycle** (create →
+`warmup` → suspend → `hold-duration` → resume → `settle` → cancel) so its timers are fresh, and
+the cluster is idle between cycles (`batch-interval`), keeping the A/B signal clean. Timers must
+come due inside the hold window, so **`warmup` < `timer-duration` < `warmup` + `hold-duration`**,
+with `warmup` long enough for the fan-out to materialise. Confirm the actual buffered count on the
+broker's `commandBuffered` metric and tune the timings on the first smoke run.
 
 ### Why these numbers / what to watch
 
-- **500 jobs + 500 subs + 200 timers = ~1200 combined** stays under the ~2000-combined 4 MB
-  batch-record limit (`SuspensionBatchLimitTest`), so suspends never get rejected — we get a clean
-  interference signal rather than probing the limit.
+- **500 jobs + 500 subs = 1000 combined in the SUSPEND record** stays under the ~2000-combined
+  4 MB batch-record limit (`SuspensionBatchLimitTest`), so suspends never get rejected. Timers are
+  **not** in the SUSPEND record, so `timer-count` (2000) is unbounded by that limit.
 - Suspending 500 jobs is **O(n²)** (a few hundred ms), and it lands on the **single partition**
   that owns the target instance. Victim instances spread across all 3 partitions, so the
   interference should appear as a **per-partition latency spike** on the target's partition,
@@ -91,13 +102,14 @@ timers = 1700, still under the ~2000 limit). This is what exercises the resume-d
 
 The current single-starter design runs one process definition. This test needs **two
 concurrent workloads**, so `SuspensionMeter` is extended with a **target mode** (implemented):
-it deploys the heavy target BPMN (`bpmn/suspend_target.bpmn`), creates `target-instances` heavy
-PIs at startup, then suspends/resumes them by key each cycle — all while the starter runs the
-untouched `typical` victim load. The first cycle starts after `batch-interval` (warm-up for the
-fan-out to materialise); `hold-duration` is the hold and `batch-interval` the idle gap. New
-config knobs (`load-tester.suspender.*`): `target-enabled`, `target-bpmn-path`,
-`target-process-id`, `target-instances` (default 1), `job-count` (500), `subscription-count`
-(500), `timer-count` (200), plus the existing `hold-duration`/`batch-interval`.
+it deploys the heavy target BPMN (`bpmn/suspend_target.bpmn`) and, each cycle, creates
+`target-instances` fresh heavy PIs, warms up, suspends them, holds (timers come due → backlog
+buffers), resumes (drains), settles, and cancels them — all while the starter runs the untouched
+`typical` victim load. Config knobs (`load-tester.suspender.*`): `target-enabled`,
+`target-bpmn-path`, `target-process-id`, `target-instances` (default 1), `job-count` (500),
+`subscription-count` (500), `timer-count` (2000 = buffered backlog), `timer-duration` (30s),
+`warmup` (20s), `hold-duration` (30s), `settle` (15s), and `batch-interval` (idle gap between
+cycles).
 
 ## Scope decisions
 

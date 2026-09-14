@@ -43,10 +43,11 @@ import org.slf4j.LoggerFactory;
  * {@code true}; leaving it disabled is the A/B baseline arm.
  *
  * <p>When {@link SuspenderProperties#isTargetEnabled()} is set, it instead runs the blast-radius /
- * interference test: it deploys a dedicated heavy process definition (large fan-out of jobs and
- * message subscriptions), creates a few instances of it, and suspends/resumes only those on a
- * cadence while the starter's normal workload runs untouched — to measure how much suspend/resume
- * of one heavy definition impacts unrelated running processes.
+ * interference test: each cycle it creates a dedicated heavy instance (large fan-out of jobs and
+ * message subscriptions, plus many short timers), suspends it, holds while the timers come due and
+ * their triggers buffer, resumes to drain that buffered backlog, then cancels it — all while the
+ * starter's normal workload runs untouched, to measure how much suspend/resume of one heavy
+ * definition impacts unrelated running processes.
  */
 public class SuspensionMeter implements AutoCloseable {
 
@@ -54,9 +55,6 @@ public class SuspensionMeter implements AutoCloseable {
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(SuspensionMeter.class), Duration.ofSeconds(5));
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
-  // Must match the message name in bpmn/suspend_target.bpmn.
-  private static final String TARGET_MESSAGE_NAME = "suspend-target-msg";
-  private static final Duration BACKLOG_MESSAGE_TTL = Duration.ofMinutes(5);
 
   private final MeterRegistry registry;
   private final ScheduledExecutorService executor;
@@ -68,15 +66,11 @@ public class SuspensionMeter implements AutoCloseable {
   // in-flight gauge can read the size safely.
   private final Deque<Long> candidates = new ArrayDeque<>();
   private final Map<Long, Instant> suspendedUntil = new ConcurrentHashMap<>();
-  // target mode: correlation-key prefix used when each target instance was created, so the backlog
-  // generator can address that instance's open subscriptions.
-  private final Map<Long, String> targetPrefixByKey = new ConcurrentHashMap<>();
 
   private Counter suspendRequests;
   private Counter resumeRequests;
   private Counter suspendErrors;
   private Counter resumeErrors;
-  private Counter backlogMessages;
 
   public SuspensionMeter(
       final MeterRegistry registry,
@@ -129,12 +123,6 @@ public class SuspensionMeter implements AutoCloseable {
     Gauge.builder("suspender_in_flight_suspended", suspendedUntil, Map::size)
         .description("Instances currently suspended by the suspension meter, awaiting resume")
         .register(registry);
-    backlogMessages =
-        Counter.builder("suspender_backlog_messages_total")
-            .description(
-                "Messages published to suspended target instances to build a buffered-command "
-                    + "backlog")
-            .register(registry);
   }
 
   // ---- SINGLE mode -----------------------------------------------------------------------------
@@ -213,30 +201,26 @@ public class SuspensionMeter implements AutoCloseable {
   private void startTargetMode() {
     LOG.info(
         "Starting suspension meter in target mode: processId={}, instances={}, jobs={}, "
-            + "subscriptions={}, timers={}, holdDuration={}, cycleGap={}",
+            + "subscriptions={}, timers={} (buffered backlog per instance), timerDuration={}, "
+            + "warmup={}, holdDuration={}, settle={}, cycleGap={}",
         cfg.getTargetProcessId(),
         cfg.getTargetInstances(),
         cfg.getJobCount(),
         cfg.getSubscriptionCount(),
         cfg.getTimerCount(),
+        cfg.getTimerDuration(),
+        cfg.getWarmup(),
         cfg.getHoldDuration(),
+        cfg.getSettle(),
         cfg.getBatchInterval());
 
     deployTarget();
-    createTargetInstances();
-    if (suspendedUntil.isEmpty() && candidates.isEmpty()) {
-      LOG.warn("No target instances were created; suspension meter has nothing to do");
-      return;
-    }
 
-    // One repeating cycle: suspend all target instances, hold, resume all. The first cycle starts
-    // after batchInterval, giving the instances time to reach full fan-out; batchInterval is also
-    // the idle gap between cycles.
+    // The target is recreated every cycle so its timers are fresh (each timer fires exactly once
+    // while suspended, then is spent). batchInterval is the idle gap between cycles, during which
+    // the target is gone and the cluster is quiet — keeping the A/B interference signal clean.
     executor.scheduleWithFixedDelay(
-        this::targetCycle,
-        cfg.getBatchInterval().toMillis(),
-        cfg.getBatchInterval().toMillis(),
-        TimeUnit.MILLISECONDS);
+        this::targetCycle, 0, cfg.getBatchInterval().toMillis(), TimeUnit.MILLISECONDS);
   }
 
   private void deployTarget() {
@@ -248,41 +232,18 @@ public class SuspensionMeter implements AutoCloseable {
     LOG.info("Deployed target process from {}", cfg.getTargetBpmnPath());
   }
 
-  private void createTargetInstances() {
-    for (int i = 0; i < cfg.getTargetInstances(); i++) {
-      final var variables =
-          buildTargetVariables(
-              cfg.getJobCount(), cfg.getSubscriptionCount(), cfg.getTimerCount(), "i" + i);
-      try {
-        final var event =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(cfg.getTargetProcessId())
-                .latestVersion()
-                .variables(variables)
-                .send()
-                .join();
-        // Reused across cycles; not yet suspended, so it starts as a candidate.
-        candidates.add(event.getProcessInstanceKey());
-        targetPrefixByKey.put(event.getProcessInstanceKey(), "i" + i);
-        LOG.info("Created target instance {}", event.getProcessInstanceKey());
-      } catch (final Exception e) {
-        THROTTLED_LOGGER.warn("Failed to create target instance", e);
-      }
-    }
-  }
-
   /**
    * Builds the fan-out variables for one target instance: a {@code jobs} list driving the
    * multi-instance service task, a {@code subs} list of distinct correlation keys driving the
-   * multi-instance receive task, and a {@code timers} list driving the multi-instance timer
-   * sub-process. The {@code keyPrefix} keeps subscription keys unique across instances so their
-   * subscriptions never collide.
+   * multi-instance receive task, a {@code timers} list driving the multi-instance timer
+   * sub-process, and the {@code timerDuration} each timer waits. The {@code keyPrefix} keeps
+   * subscription keys unique across instances so their subscriptions never collide.
    */
   static Map<String, Object> buildTargetVariables(
       final int jobCount,
       final int subscriptionCount,
       final int timerCount,
+      final String timerDuration,
       final String keyPrefix) {
     final List<Integer> jobs = new ArrayList<>(jobCount);
     for (int i = 0; i < jobCount; i++) {
@@ -296,73 +257,105 @@ public class SuspensionMeter implements AutoCloseable {
     for (int i = 0; i < timerCount; i++) {
       timers.add(i);
     }
-    return Map.of("jobs", jobs, "subs", subs, "timers", timers);
-  }
-
-  private void targetCycle() {
-    final Instant deadline = Instant.now().plus(cfg.getHoldDuration());
-    for (final long key : List.copyOf(candidates)) {
-      try {
-        client.newSuspendProcessInstanceCommand(key).send().join();
-        suspendRequests.increment();
-        candidates.remove(key);
-        suspendedUntil.put(key, deadline);
-      } catch (final Exception e) {
-        suspendErrors.increment();
-        THROTTLED_LOGGER.warn("Failed to suspend target instance {}", key, e);
-      }
-    }
-
-    if (cfg.isGenerateBacklog()) {
-      generateBacklog();
-    }
-
-    try {
-      Thread.sleep(cfg.getHoldDuration().toMillis());
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return;
-    }
-
-    for (final long key : List.copyOf(suspendedUntil.keySet())) {
-      try {
-        client.newResumeProcessInstanceCommand(key).send().join();
-        resumeRequests.increment();
-        suspendedUntil.remove(key);
-        candidates.add(key);
-      } catch (final Exception e) {
-        resumeErrors.increment();
-        THROTTLED_LOGGER.warn("Failed to resume target instance {}", key, e);
-      }
-    }
+    return Map.of("jobs", jobs, "subs", subs, "timers", timers, "timerDuration", timerDuration);
   }
 
   /**
-   * Publishes one message per open subscription of each currently-suspended target instance. Each
-   * correlation targets a suspended instance, so the engine buffers it; the whole batch is drained
-   * on resume. The buffered backlog per instance therefore equals {@code subscriptionCount}.
+   * One full cycle: create fresh target instances, warm up so their fan-out (and timers) are armed,
+   * suspend them, hold while each timer comes due and buffers its trigger, resume to drain the
+   * buffered backlog, let the drain settle, then cancel the instances so the next cycle starts from
+   * a clean slate. Runs on the executor thread, so blocking sleeps are fine.
    */
-  private void generateBacklog() {
-    for (final long key : List.copyOf(suspendedUntil.keySet())) {
-      final String prefix = targetPrefixByKey.get(key);
-      if (prefix == null) {
-        continue;
-      }
-      for (int j = 0; j < cfg.getSubscriptionCount(); j++) {
+  private void targetCycle() {
+    final List<Long> keys = createTargetInstances();
+    if (keys.isEmpty()) {
+      return;
+    }
+    try {
+      sleep(cfg.getWarmup());
+
+      for (final long key : keys) {
         try {
-          client
-              .newPublishMessageCommand()
-              .messageName(TARGET_MESSAGE_NAME)
-              .correlationKey(prefix + "-" + j)
-              .timeToLive(BACKLOG_MESSAGE_TTL)
-              .send()
-              .join();
-          backlogMessages.increment();
+          client.newSuspendProcessInstanceCommand(key).send().join();
+          suspendRequests.increment();
+          suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration()));
         } catch (final Exception e) {
-          THROTTLED_LOGGER.warn("Failed to publish backlog message for {}", prefix, e);
+          suspendErrors.increment();
+          THROTTLED_LOGGER.warn("Failed to suspend target instance {}", key, e);
         }
       }
+
+      sleep(cfg.getHoldDuration());
+
+      for (final long key : keys) {
+        try {
+          client.newResumeProcessInstanceCommand(key).send().join();
+          resumeRequests.increment();
+        } catch (final Exception e) {
+          resumeErrors.increment();
+          THROTTLED_LOGGER.warn("Failed to resume target instance {}", key, e);
+        } finally {
+          suspendedUntil.remove(key);
+        }
+      }
+
+      sleep(cfg.getSettle());
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } finally {
+      // Always clean up, even if interrupted, so instances do not accumulate across cycles.
+      cancelInstances(keys);
+      keys.forEach(suspendedUntil::remove);
     }
+  }
+
+  private List<Long> createTargetInstances() {
+    final List<Long> keys = new ArrayList<>();
+    final String timerDuration = isoDuration(cfg.getTimerDuration());
+    for (int i = 0; i < cfg.getTargetInstances(); i++) {
+      final var variables =
+          buildTargetVariables(
+              cfg.getJobCount(),
+              cfg.getSubscriptionCount(),
+              cfg.getTimerCount(),
+              timerDuration,
+              "i" + i);
+      try {
+        final var event =
+            client
+                .newCreateInstanceCommand()
+                .bpmnProcessId(cfg.getTargetProcessId())
+                .latestVersion()
+                .variables(variables)
+                .send()
+                .join();
+        keys.add(event.getProcessInstanceKey());
+        LOG.info("Created target instance {}", event.getProcessInstanceKey());
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.warn("Failed to create target instance", e);
+      }
+    }
+    return keys;
+  }
+
+  private void cancelInstances(final List<Long> keys) {
+    for (final long key : keys) {
+      try {
+        client.newCancelInstanceCommand(key).send().join();
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.warn("Failed to cancel target instance {}", key, e);
+      }
+    }
+  }
+
+  private static String isoDuration(final Duration duration) {
+    // BPMN timeDuration expects an ISO-8601 duration string (e.g. PT30S); Duration#toString emits
+    // exactly that.
+    return duration.toString();
+  }
+
+  private static void sleep(final Duration duration) throws InterruptedException {
+    Thread.sleep(duration.toMillis());
   }
 
   // ---- BATCH mode ------------------------------------------------------------------------------

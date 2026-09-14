@@ -49,12 +49,22 @@ public class SuspenderProperties {
   private int targetInstances = 1;
   private int jobCount = 500;
   private int subscriptionCount = 500;
-  private int timerCount = 200;
 
-  // While a target instance is suspended, publish one message per open subscription so the
-  // correlations buffer (a command targeting a suspended instance is buffered, then drained on
-  // resume). The backlog size per instance equals subscriptionCount.
-  private boolean generateBacklog = true;
+  // Buffered-command backlog: each target instance carries this many short timers. While the
+  // instance is suspended each timer comes due exactly once and its trigger is buffered (an
+  // internal command targeting a suspended instance), so the backlog drained on resume equals
+  // timerCount. Timers are not written into the SUSPEND record, so this is not bounded by the
+  // 4 MB batch limit (unlike jobs/subscriptions).
+  private int timerCount = 2000;
+
+  // Timers must come due within the hold window: after warmup (when the instance is suspended) and
+  // before resume. So require warmup < timerDuration < warmup + holdDuration, and warmup long
+  // enough for the fan-out to materialise. The target is recreated every cycle (create -> warmup
+  // -> suspend -> hold -> resume -> settle -> cancel), so it is idle between cycles and the A/B
+  // interference signal stays clean.
+  private Duration timerDuration = Duration.ofSeconds(30);
+  private Duration warmup = Duration.ofSeconds(20);
+  private Duration settle = Duration.ofSeconds(15);
 
   public boolean isEnabled() {
     return enabled;
@@ -188,11 +198,27 @@ public class SuspenderProperties {
     this.timerCount = timerCount;
   }
 
-  public boolean isGenerateBacklog() {
-    return generateBacklog;
+  public Duration getTimerDuration() {
+    return timerDuration;
   }
 
-  public void setGenerateBacklog(final boolean generateBacklog) {
-    this.generateBacklog = generateBacklog;
+  public void setTimerDuration(final Duration timerDuration) {
+    this.timerDuration = timerDuration;
+  }
+
+  public Duration getWarmup() {
+    return warmup;
+  }
+
+  public void setWarmup(final Duration warmup) {
+    this.warmup = warmup;
+  }
+
+  public Duration getSettle() {
+    return settle;
+  }
+
+  public void setSettle(final Duration settle) {
+    this.settle = settle;
   }
 }

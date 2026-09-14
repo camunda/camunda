@@ -99,8 +99,10 @@ class ConfigTest {
     assertThat(suspenderCfg.getTargetInstances()).isEqualTo(1);
     assertThat(suspenderCfg.getJobCount()).isEqualTo(500);
     assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(500);
-    assertThat(suspenderCfg.getTimerCount()).isEqualTo(200);
-    assertThat(suspenderCfg.isGenerateBacklog()).isTrue();
+    assertThat(suspenderCfg.getTimerCount()).isEqualTo(2000);
+    assertThat(suspenderCfg.getTimerDuration()).hasSeconds(30);
+    assertThat(suspenderCfg.getWarmup()).hasSeconds(20);
+    assertThat(suspenderCfg.getSettle()).hasSeconds(15);
   }
 
   @Nested
@@ -175,8 +177,10 @@ class ConfigTest {
       assertThat(suspenderCfg.getTargetInstances()).isEqualTo(3);
       assertThat(suspenderCfg.getJobCount()).isEqualTo(800);
       assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(800);
-      assertThat(suspenderCfg.getTimerCount()).isEqualTo(100);
-      assertThat(suspenderCfg.isGenerateBacklog()).isFalse();
+      assertThat(suspenderCfg.getTimerCount()).isEqualTo(3000);
+      assertThat(suspenderCfg.getTimerDuration()).hasSeconds(45);
+      assertThat(suspenderCfg.getWarmup()).hasSeconds(30);
+      assertThat(suspenderCfg.getSettle()).hasSeconds(20);
     }
   }
 }
