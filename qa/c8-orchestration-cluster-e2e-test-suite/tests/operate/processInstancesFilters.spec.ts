@@ -327,13 +327,14 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
       );
-      // The process-instance-key filter is written to the URL on a debounce
-      // (see the identical guard elsewhere in this suite). A reload triggered
-      // by the retry below re-fetches from whatever is currently in the URL,
-      // so if that reload lands before this debounce commits, it discards the
-      // just-filled keys and the retry can never see "2 results". Wait for the
-      // URL to carry both keys first.
-      await expect(page).toHaveURL(/[?&]processInstanceKey=/);
+      // The process-instance-key filter is written to the URL on a debounce.
+      // A reload triggered by the retry below re-fetches from whatever is
+      // currently in the URL, so if that reload lands before this debounce
+      // commits, it discards the just-filled keys and the retry can never
+      // see "2 results". Wait for the URL to carry both keys first.
+      // (Confirmed the query param is `ids`, not `processInstanceKey`, from
+      // the actual failing run's captured URL: "...&ids=<key1>%2C+<key2>".)
+      await expect(page).toHaveURL(/[?&]ids=/);
 
       await waitForAssertion({
         assertion: async () => {
