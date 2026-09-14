@@ -18,6 +18,12 @@ global:
       value: n2-standard-4
       effect: NoSchedule
 
+  # Default token-fetch-non-retryable-cooldown (5m) leaves clients unable to
+  # authenticate for minutes after a single 401 during identity/keycloak
+  # bootstrap; load-test clients need to recover fast during cluster startup.
+  extraConfig:
+    camunda.client.auth.token-fetch-non-retryable-cooldown: "PT30S"
+
   # Enable Stackdriver-formatted JSON logging on starter and worker pods so
   # Cloud Logging picks up severity, sourceLocation, and serviceContext the
   # same way it does for zeebe/operate/etc. Toggle is read by
