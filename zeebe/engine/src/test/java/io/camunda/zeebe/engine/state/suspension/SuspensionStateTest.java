@@ -222,12 +222,29 @@ public final class SuspensionStateTest {
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
 
     // when
-    final var oldest = suspensionState.getOldestBufferedCommand(processInstanceKey);
+    final var oldest = suspensionState.getOldestBufferedCommand(processInstanceKey, 0L);
 
     // then
     assertThat(oldest).isPresent();
     assertThat(oldest.get().key()).isEqualTo(10L);
     assertThat(oldest.get().command().getCommandKey()).isEqualTo(1L);
+  }
+
+  @Test
+  public void shouldSkipEntryMatchingAfterCommandKeyAndReturnTheNextOne() {
+    // given
+    final long processInstanceKey = 1L;
+    suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKey, 1L));
+    suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
+    suspensionState.bufferCommand(30L, bufferedCommandRecord(processInstanceKey, 3L));
+
+    // when - afterCommandKey (10L) is still buffered, unlike the drain hot path where it was
+    // already removed by the DRAINED applier before this call is made
+    final var oldest = suspensionState.getOldestBufferedCommand(processInstanceKey, 10L);
+
+    // then
+    assertThat(oldest).isPresent();
+    assertThat(oldest.get().key()).isEqualTo(20L);
   }
 
   @Test
@@ -239,7 +256,8 @@ public final class SuspensionStateTest {
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKeyB, 2L));
 
     // when - then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKeyB).orElseThrow().key())
+    assertThat(
+            suspensionState.getOldestBufferedCommand(processInstanceKeyB, 0L).orElseThrow().key())
         .isEqualTo(20L);
   }
 
@@ -249,7 +267,7 @@ public final class SuspensionStateTest {
     final long processInstanceKey = 1L;
 
     // when - then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey)).isEmpty();
+    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey, -1L)).isEmpty();
   }
 
   @Test
@@ -263,7 +281,7 @@ public final class SuspensionStateTest {
     suspensionState.removeBufferedCommand(processInstanceKey, 10L);
 
     // then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey).orElseThrow().key())
+    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey, 0L).orElseThrow().key())
         .isEqualTo(20L);
   }
 
