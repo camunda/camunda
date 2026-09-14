@@ -1,37 +1,18 @@
 ---
 name: Configure apt fast mirror failover
 description: |
-  Hardens `apt-get update` against mirrors that neither respond nor serve
-  valid indexes.
+  Drops an apt.conf.d snippet so apt abandons a hung mirror quickly instead
+  of riding out its ~120s default per-mirror timeout. GitHub's Ubuntu
+  runner image lists http://azure.archive.ubuntu.com as the priority-1
+  mirror, which intermittently hangs instead of erroring; apt then wastes
+  up to two minutes per attempt before failing over to the working
+  archive.ubuntu.com/security.ubuntu.com mirrors. See INC-6639 / #58992.
 
-  Two failure modes are covered:
-
-  1. A hung mirror. GitHub's Ubuntu runner image lists
-     http://azure.archive.ubuntu.com as the priority-1 mirror, which
-     intermittently hangs instead of erroring; apt then wastes up to two
-     minutes per attempt before failing over to the working
-     archive.ubuntu.com/security.ubuntu.com mirrors. Shorter timeouts let it
-     fail over quickly. See INC-6639 / #58992.
-
-  2. A third-party repository serving a corrupt index. The runner image
-     preconfigures repositories we do not install from (Google Chrome,
-     Microsoft). `apt-get update` refreshes every configured repository and
-     exits 100 if *any* index fails to validate, so a corrupt
-     dl.google.com index fails jobs that only ever install from the Ubuntu
-     archives. Retries do not help: a `Hash Sum mismatch` is deterministic,
-     so every attempt re-fetches the same broken index. See INC-7943.
-
-  Failure mode 2 is NOT handled here, because it cannot be handled safely
-  in a shared action -- see the note below. A job that hits it tolerates a
-  partial refresh in its own command instead:
-
-      apt-get update || true; apt-get install -y <packages>
-
-  `apt-get update` exits 100 when any single configured repository serves a
-  bad index, even when every package the job needs is available. Letting
-  that through makes the `apt-get install` the real gate: it still fails if
-  the packages are genuinely unreachable, so a broken third-party index no
-  longer fails a job that does not install from it.
+  Does not help when a repository serves a corrupt index (INC-7943) --
+  retries re-fetch the same bad data. Callers handle that with
+  `apt-get update || true`, letting the install be the gate. Do not disable
+  /etc/apt/sources.list.d here to achieve it: on 24.04 the Ubuntu archives
+  live in that directory too, so it can leave apt with no sources at all.
 
 inputs: {}
 
@@ -46,16 +27,3 @@ runs:
         Acquire::https::Timeout "10";
         Acquire::Retries "2";
         EOF
-
-    # Deliberately NOT done here: disabling /etc/apt/sources.list.d, whether by
-    # renaming its files or via `-o Dir::Etc::sourceparts=/dev/null`. On 24.04
-    # images the Ubuntu archives themselves live in that directory, as
-    # sources.list.d/ubuntu.sources -- only 22.04 keeps them in
-    # /etc/apt/sources.list. Disabling it can therefore leave apt with zero
-    # sources: `apt-get update` still exits 0 and the install that follows fails
-    # with `Unable to locate package` on every run, not just during an outage.
-    # Which layout a given runner uses is not something a shared action can
-    # assume -- this repo's apt-using jobs span `ubuntu-latest` and several
-    # self-hosted images. It would also take out docker.list, which this repo
-    # does install from. Callers tolerate a partial refresh instead (see above),
-    # which needs no job-global mutation and so no restore step.
