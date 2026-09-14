@@ -64,6 +64,28 @@ class TaskPanelPage {
     const timeout = options.timeout ?? 10000;
     const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
 
+    await this.waitForTaskCard(task, name, timeout);
+
+    await task.scrollIntoViewIfNeeded().catch(() => {});
+    await task.click({timeout});
+  }
+
+  /**
+   * Waits for a card matching `name` (a task name or the process name below
+   * it) to be rendered in the available-tasks list. Use this instead of
+   * asserting on the card directly: the list is virtualized, so a card outside
+   * the rendered window has to be scrolled to before it exists in the DOM.
+   */
+  async assertTaskCardVisible(name: string, options: {timeout?: number} = {}) {
+    const card = this.availableTasks.getByText(name, {exact: true}).nth(0);
+    await this.waitForTaskCard(card, name, options.timeout ?? 10000);
+  }
+
+  private async waitForTaskCard(
+    task: Locator,
+    name: string,
+    timeout: number,
+  ): Promise<void> {
     // The available-tasks list is virtualized: only the cards around the
     // current scroll offset exist in the DOM, and the next (older) page is
     // pulled in via fetchNextPage as the end of the loaded range is scrolled
@@ -92,9 +114,6 @@ class TaskPanelPage {
         await this.reloadPage();
       },
     });
-
-    await task.scrollIntoViewIfNeeded().catch(() => {});
-    await task.click({timeout});
   }
 
   /**
