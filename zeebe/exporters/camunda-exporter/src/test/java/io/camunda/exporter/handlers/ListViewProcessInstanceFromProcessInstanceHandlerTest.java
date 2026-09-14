@@ -52,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.mockito.ArgumentCaptor;
 
 public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
@@ -537,6 +538,73 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
     assertThat(processInstanceForListViewEntity.getState())
         .isEqualTo(ProcessInstanceState.CANCELED);
+  }
+
+  @Test
+  void shouldClearSuspendedDateWhenCancellingSuspendedInstanceAcrossSeparateBatches() {
+    // given - SUSPENDED is exported and flushed in its own batch, as it normally is: the
+    // exporter's accumulator (ExporterBatchWriter#cachedEntities) creates a fresh entity per
+    // batch, so this entity never resurfaces once flushed.
+    final long processInstanceKey = 111L;
+    final Record<ProcessInstanceRecordValue> suspendedRecord =
+        createRecordForKey(SUSPENDED, processInstanceKey);
+    final ProcessInstanceForListViewEntity suspendedBatchEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(suspendedRecord, suspendedBatchEntity);
+
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest suspendFlushRequest = mock(BatchRequest.class);
+    underTest.flush(index, suspendedBatchEntity, suspendFlushRequest);
+
+    final ArgumentCaptor<Map<String, Object>> suspendUpdateFields =
+        ArgumentCaptor.forClass(Map.class);
+    verify(suspendFlushRequest)
+        .upsert(
+            eq(index),
+            eq(String.valueOf(processInstanceKey)),
+            eq(suspendedBatchEntity),
+            suspendUpdateFields.capture());
+    assertThat(suspendUpdateFields.getValue()).containsKey(ListViewTemplate.SUSPENDED_DATE);
+    assertThat(suspendUpdateFields.getValue().get(ListViewTemplate.SUSPENDED_DATE)).isNotNull();
+
+    // when - ELEMENT_TERMINATED is exported in a later, separate batch, for the same process
+    // instance. Its accumulator entity starts fresh (suspendedDate == null) - it never saw the
+    // SUSPENDED record.
+    final Record<ProcessInstanceRecordValue> terminatedRecord =
+        createRecordForKey(ProcessInstanceIntent.ELEMENT_TERMINATED, processInstanceKey);
+    final ProcessInstanceForListViewEntity terminatedBatchEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(terminatedRecord, terminatedBatchEntity);
+
+    final BatchRequest terminateFlushRequest = mock(BatchRequest.class);
+    underTest.flush(index, terminatedBatchEntity, terminateFlushRequest);
+
+    // then - flush() unconditionally writes the (null) suspendedDate whenever state is set, so
+    // this upsert overwrites the previously stored suspension timestamp with null.
+    final ArgumentCaptor<Map<String, Object>> terminateUpdateFields =
+        ArgumentCaptor.forClass(Map.class);
+    verify(terminateFlushRequest)
+        .upsert(
+            eq(index),
+            eq(String.valueOf(processInstanceKey)),
+            eq(terminatedBatchEntity),
+            terminateUpdateFields.capture());
+    assertThat(terminateUpdateFields.getValue())
+        .containsEntry(ListViewTemplate.SUSPENDED_DATE, null);
+    assertThat(terminatedBatchEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
+  }
+
+  private Record<ProcessInstanceRecordValue> createRecordForKey(
+      final ProcessInstanceIntent intent, final long processInstanceKey) {
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
+    return factory.generateRecord(
+        ValueType.PROCESS_INSTANCE,
+        r -> r.withIntent(intent).withValue(processInstanceRecordValue));
   }
 
   @ParameterizedTest
