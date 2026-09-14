@@ -230,7 +230,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     return new HashSet<>(mockedChildProcessDefinitionKeys);
   }
 
-  /** Forgets the deployed stubs, so that the next test starts without mocks. */
+  /**
+   * Forgets the deployed stubs, for example once the data they ran in is deleted: the runtime hands
+   * their keys out again, so a later test can deploy a process of its own under the key of a stub.
+   */
   public void clearMockedChildProcessDefinitionKeys() {
     mockedChildProcessDefinitionKeys.clear();
   }

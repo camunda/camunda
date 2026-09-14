@@ -510,7 +510,7 @@ public class ExecutionListenerTest {
   }
 
   @Test
-  void shouldForgetMockedChildProcessesOfThePreviousTest() throws Exception {
+  void shouldForgetMockedChildProcessesWhenTheirDataIsDeleted() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener = coverageCollectingListener();
 
@@ -519,20 +519,50 @@ public class ExecutionListenerTest {
 
     mockChildProcess("child-process", 123L);
     setManagementClientDummy(listener);
+
+    when(cleanupStrategy.deletesRuntimeData()).thenReturn(true);
     listener.afterTestMethod(testContext);
 
     // when: a second test runs without mocking a child process
     listener.beforeTestMethod(testContext);
     listener.afterTestMethod(testContext);
 
-    // then: the mock of the first test is not reported for the second one
+    // then: the runtime hands the key of the deleted stub out again, so it identifies nothing
+    assertThat(reportedMockedProcessDefinitionKeys(2))
+        .containsExactly(Collections.singleton(123L), Collections.emptySet());
+  }
+
+  @Test
+  void shouldRememberMockedChildProcessesWhileTheirDataIsKept() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener = coverageCollectingListener();
+
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    mockChildProcess("child-process", 123L);
+    setManagementClientDummy(listener);
+
+    when(cleanupStrategy.deletesRuntimeData()).thenReturn(false);
+    listener.afterTestMethod(testContext);
+
+    // when: a second test runs without mocking a child process
+    listener.beforeTestMethod(testContext);
+    listener.afterTestMethod(testContext);
+
+    // then: the stub of the first test keeps running in the data of the second one
+    assertThat(reportedMockedProcessDefinitionKeys(2))
+        .containsExactly(Collections.singleton(123L), Collections.singleton(123L));
+  }
+
+  /** Reads the mocked process definition keys that the listener reported for each test run. */
+  private List<Collection<Long>> reportedMockedProcessDefinitionKeys(final int runs) {
     final ArgumentCaptor<Collection<Long>> mockedProcessDefinitionKeys =
         ArgumentCaptor.forClass(Collection.class);
-    verify(processCoverage, times(2))
+    verify(processCoverage, times(runs))
         .collectTestRunCoverage(any(), any(), any(), any(), mockedProcessDefinitionKeys.capture());
 
-    assertThat(mockedProcessDefinitionKeys.getAllValues())
-        .containsExactly(Collections.singleton(123L), Collections.emptySet());
+    return mockedProcessDefinitionKeys.getAllValues();
   }
 
   private CamundaProcessTestExecutionListener coverageCollectingListener() {
