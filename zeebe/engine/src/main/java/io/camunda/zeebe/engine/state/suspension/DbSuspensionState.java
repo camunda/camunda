@@ -106,17 +106,25 @@ public final class DbSuspensionState implements MutableSuspensionState {
   }
 
   @Override
-  public Optional<BufferedCommand> getOldestBufferedCommand(final long key) {
+  public Optional<BufferedCommand> getOldestBufferedCommand(
+      final long key, final long afterCommandKey) {
     processInstanceKey.wrapLong(key);
+    final long startAtBufferedKey = afterCommandKey < 0 ? 0 : afterCommandKey;
+    bufferedCommandKey.wrapLong(startAtBufferedKey);
+
     final var oldest = new BufferedCommand[1];
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
+        processInstanceKeyAndBufferedCommandKey,
         (compositeKey, stored) -> {
           // the key is ordered by bufferedCommandKey, so the first hit is the oldest. stored is
           // the column family's single reusable value instance - copy it, since the caller (the
           // resume/drain hot path) holds onto this well beyond this method returning, and any
           // later read from this column family would otherwise silently mutate it out from under
           // them
+          if (compositeKey.second().getValue() == startAtBufferedKey) {
+            return true; // skip the entry with the same key as afterCommandKey
+          }
           final var copy = new BufferedCommandRecord();
           copy.copyFrom(stored.getRecord());
           oldest[0] = new BufferedCommand(compositeKey.second().getValue(), copy);

@@ -53,7 +53,8 @@ public interface SuspensionState {
    * @return the oldest buffered command, or {@link Optional#empty()} if the process instance has
    *     none buffered
    */
-  Optional<BufferedCommand> getOldestBufferedCommand(long processInstanceKey);
+  Optional<BufferedCommand> getOldestBufferedCommand(
+      long processInstanceKey, final long afterCommandKey);
 
   /**
    * Counts the buffered commands for the given process instance without reading their values,
