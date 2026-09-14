@@ -45,10 +45,23 @@ public @interface ConditionalOnAnyHttpGatewayEnabled {
      * that can run in one of them has to account for that itself.
      */
     public static boolean isAnyHttpGatewayEnabled(final Environment env) {
-      return env.getProperty("zeebe.broker.gateway.enable", Boolean.class, true)
-          && env.getProperty("camunda.api.enabled", Boolean.class, true)
+      return isApiEnabled(env)
           && (env.getProperty("camunda.rest.enabled", Boolean.class, true)
               || env.getProperty("camunda.mcp.enabled", Boolean.class, false));
+    }
+
+    /**
+     * Resolves whether the embedded gateway API is enabled with the same precedence {@code
+     * io.camunda.configuration.Api#isEnabled()} applies: an explicitly-set {@code
+     * camunda.api.enabled} always wins, falling back to the legacy {@code
+     * zeebe.broker.gateway.enable} only when the new property isn't set at all — as opposed to a
+     * plain AND of both raw values, which would incorrectly require both to agree.
+     */
+    private static boolean isApiEnabled(final Environment env) {
+      if (env.containsProperty("camunda.api.enabled")) {
+        return env.getProperty("camunda.api.enabled", Boolean.class, true);
+      }
+      return env.getProperty("zeebe.broker.gateway.enable", Boolean.class, true);
     }
 
     @ConditionalOnRestGatewayEnabled

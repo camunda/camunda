@@ -27,9 +27,11 @@ public class Api {
   @NestedConfigurationProperty private Rest rest = new Rest();
 
   /**
-   * Enables the gateway (gRPC and REST API) that is embedded in the broker process. Only relevant
-   * when running as a broker with an embedded gateway; standalone gateway processes are always
-   * enabled by virtue of being started.
+   * Enables the gateway (gRPC, REST and MCP API). For a broker with an embedded gateway, disables
+   * the embedded gateway entirely. For a standalone gateway process, disables its REST and MCP
+   * endpoints (the gRPC API itself is controlled independently by how the process is started) —
+   * mirroring the scope the legacy {@code zeebe.broker.gateway.enable} property already had before
+   * this property existed.
    */
   private boolean enabled = true;
 
