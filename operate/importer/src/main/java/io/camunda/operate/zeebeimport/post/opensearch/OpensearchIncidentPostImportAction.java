@@ -583,7 +583,6 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   private void queryData(final List<IncidentEntity> incidents, final AdditionalData data)
       throws IOException {
     // find process instances (if they exist) that correspond to given incidents
-    record Result(String treePath) {}
     final var request =
         searchRequestBuilder(listViewTemplate)
             .query(
@@ -593,24 +592,27 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
                             .map(i -> String.valueOf(i.getProcessInstanceKey()))
                             .toList()),
                     term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)))
-            .source(sourceInclude(ListViewTemplate.TREE_PATH));
+            .source(sourceInclude(ListViewTemplate.TREE_PATH, JOIN_RELATION));
     richOpenSearchClient
         .doc()
         .scrollWith(
             request,
-            Result.class,
+            ListViewTreePathHit.class,
             hits -> {
               final var validHits =
                   hits.stream()
                       .filter(
                           hit -> {
-                            final boolean hasTreePath = hit.source().treePath != null;
+                            final boolean hasTreePath =
+                                hit.source() != null && hit.source().treePath() != null;
                             if (!hasTreePath) {
                               LOGGER.warn(
                                   "Process instance lookup matched list-view document {} in index {} "
-                                      + "with no treePath (expected a processInstance document); skipping it.",
+                                      + "with joinRelation {} and no treePath (expected a processInstance "
+                                      + "document); skipping it.",
                                   hit.id(),
-                                  hit.index());
+                                  hit.index(),
+                                  hit.source() == null ? null : hit.source().joinRelation());
                             }
                             return hasTreePath;
                           })
@@ -621,7 +623,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
                           .collect(
                               toMap(
                                   hit -> Long.valueOf(hit.id()),
-                                  hit -> hit.source().treePath,
+                                  hit -> hit.source().treePath(),
                                   (path1, path2) -> path1)));
               data.getProcessInstanceIndices()
                   .putAll(
@@ -736,4 +738,8 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
               return u;
             }));
   }
+
+  // joinRelation is typed as Object because list-view documents carry it either as an object
+  // ({name, parent}) or, in older data, as a bare string; it is only ever logged.
+  record ListViewTreePathHit(String treePath, Object joinRelation) {}
 }

@@ -28,19 +28,17 @@ import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperati
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebeimport.post.AdditionalData;
-import jakarta.json.stream.JsonGenerator;
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.opensearch.client.json.JsonpSerializable;
-import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -94,9 +92,48 @@ public class OpensearchIncidentPostImportActionTest {
     // then - the list-view index holds both processInstance and activity documents behind the
     // same _id space; without this constraint the lookup can match an unrelated activity document
     verify(documentOperations).scrollWith(searchCaptor.capture(), any(), any());
-    final String query = json(searchCaptor.getValue().build().query());
-    assertTrue(query.contains("joinRelation"));
-    assertTrue(query.contains("processInstance"));
+    final Query query = searchCaptor.getValue().build().query();
+    assertTrue(
+        "expected a must clause binding "
+            + ListViewTemplate.JOIN_RELATION
+            + " to "
+            + ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION
+            + ", but got: "
+            + query,
+        query.bool().must().stream()
+            .anyMatch(
+                clause ->
+                    clause.isTerm()
+                        && ListViewTemplate.JOIN_RELATION.equals(clause.term().field())
+                        && clause.term().value().isString()
+                        && ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION.equals(
+                            clause.term().value().stringValue())));
+  }
+
+  @Test
+  public void shouldNotFailWhenListViewLookupMatchesDocumentWithoutTreePath() throws Exception {
+    // given - simulates the list-view index unexpectedly returning a document with no treePath
+    // (e.g. an activity document slipping past the joinRelation filter above)
+    @SuppressWarnings("rawtypes")
+    final ArgumentCaptor<Consumer> hitsConsumerCaptor = ArgumentCaptor.forClass(Consumer.class);
+    final IncidentEntity incident = new IncidentEntity().setProcessInstanceKey(123L);
+    final AdditionalData data = new AdditionalData();
+    ReflectionTestUtils.invokeMethod(action, "queryData", List.of(incident), data);
+    verify(documentOperations).scrollWith(any(), any(), hitsConsumerCaptor.capture());
+    final Hit<OpensearchIncidentPostImportAction.ListViewTreePathHit> hitWithoutTreePath =
+        new Hit.Builder<OpensearchIncidentPostImportAction.ListViewTreePathHit>()
+            .id("123")
+            .index(LIST_VIEW_WRITE_INDEX)
+            .source(new OpensearchIncidentPostImportAction.ListViewTreePathHit(null, "activity"))
+            .build();
+
+    // when - must not throw NullPointerException (Collectors.toMap on a null value)
+    hitsConsumerCaptor.getValue().accept(List.of(hitWithoutTreePath));
+
+    // then - the document without a treePath is skipped rather than corrupting the batch, and it
+    // is skipped for both maps: they are built from the same filtered hits
+    assertTrue(data.getProcessInstanceTreePaths().isEmpty());
+    assertTrue(data.getProcessInstanceIndices().isEmpty());
   }
 
   @Test
@@ -150,14 +187,5 @@ public class OpensearchIncidentPostImportActionTest {
         .shards(s -> s.total(1).successful(1).failed(0))
         .hits(h -> h.total(t -> t.value(0).relation(TotalHitsRelation.Eq)).hits(List.of()))
         .build();
-  }
-
-  private String json(final JsonpSerializable serializable) {
-    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    final JsonbJsonpMapper mapper = new JsonbJsonpMapper();
-    try (JsonGenerator generator = mapper.jsonProvider().createGenerator(baos)) {
-      serializable.serialize(generator, mapper);
-    }
-    return baos.toString(StandardCharsets.UTF_8);
   }
 }

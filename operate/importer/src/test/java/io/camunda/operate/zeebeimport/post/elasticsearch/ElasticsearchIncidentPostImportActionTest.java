@@ -32,6 +32,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.junit.Before;
@@ -142,9 +144,20 @@ public class ElasticsearchIncidentPostImportActionTest {
 
     // then - the list-view index holds both processInstance and activity documents behind the
     // same _id space; without this constraint the lookup can match an unrelated activity document
-    final String query = searchCaptor.getValue().source().query().toString();
-    assertTrue(query.contains("\"joinRelation\""));
-    assertTrue(query.contains("\"processInstance\""));
+    final BoolQueryBuilder query = (BoolQueryBuilder) searchCaptor.getValue().source().query();
+    assertTrue(
+        "expected a must clause binding "
+            + ListViewTemplate.JOIN_RELATION
+            + " to "
+            + ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION
+            + ", but got: "
+            + query,
+        query.must().stream()
+            .anyMatch(
+                clause ->
+                    clause instanceof final TermQueryBuilder term
+                        && ListViewTemplate.JOIN_RELATION.equals(term.fieldName())
+                        && ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION.equals(term.value())));
   }
 
   @Test
@@ -171,8 +184,10 @@ public class ElasticsearchIncidentPostImportActionTest {
     // when - must not throw NullPointerException (Collectors.toMap on a null value)
     ReflectionTestUtils.invokeMethod(action, "queryData", List.of(incident), data);
 
-    // then - the document without a treePath is skipped rather than corrupting the batch
+    // then - the document without a treePath is skipped rather than corrupting the batch, and it
+    // is skipped for both maps: they are built from the same filtered hits
     assertTrue(data.getProcessInstanceTreePaths().isEmpty());
+    assertTrue(data.getProcessInstanceIndices().isEmpty());
   }
 
   private RefreshResponse refreshResponse(final int failedShards) {

@@ -621,7 +621,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                                         .map(i -> String.valueOf(i.getProcessInstanceKey()))
                                         .toArray(String[]::new)),
                             termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)))
-                    .fetchSource(ListViewTemplate.TREE_PATH, null));
+                    .fetchSource(new String[] {ListViewTemplate.TREE_PATH, JOIN_RELATION}, null));
     scrollWith(
         piRequest,
         esClient,
@@ -635,9 +635,11 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                         if (!hasTreePath) {
                           LOGGER.warn(
                               "Process instance lookup matched list-view document {} in index {} "
-                                  + "with no treePath (expected a processInstance document); skipping it.",
+                                  + "with joinRelation {} and no treePath (expected a processInstance "
+                                  + "document); skipping it.",
                               hit.getId(),
-                              hit.getIndex());
+                              hit.getIndex(),
+                              hit.getSourceAsMap().get(JOIN_RELATION));
                         }
                         return hasTreePath;
                       })
