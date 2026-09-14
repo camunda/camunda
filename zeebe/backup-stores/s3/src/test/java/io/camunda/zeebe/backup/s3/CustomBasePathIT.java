@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.util.S3TestBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.stream.Stream;
@@ -22,36 +23,16 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 @Testcontainers
 final class CustomBasePathIT {
-  private static final String ACCESS_KEY = "letmein";
-  private static final String SECRET_KEY = "letmein1234";
-  private static final int DEFAULT_PORT = 9000;
 
   @Nested
   final class NoBasePathConfigured {
-    @SuppressWarnings("resource")
-    @Container
-    private static final GenericContainer<?> S3 =
-        new GenericContainer<>(DockerImageName.parse("quay.io/minio/minio"))
-            .withCommand("server /data")
-            .withExposedPorts(DEFAULT_PORT)
-            .withEnv("MINIO_ACCESS_KEY", ACCESS_KEY)
-            .withEnv("MINIO_SECRET_KEY", SECRET_KEY)
-            .withEnv("MINIO_DOMAIN", "localhost")
-            .waitingFor(
-                new HttpWaitStrategy()
-                    .forPath("/minio/health/ready")
-                    .forPort(DEFAULT_PORT)
-                    .withStartupTimeout(Duration.ofMinutes(1)));
+    @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
 
     @ParameterizedTest
     @MethodSource("provideBackups")
@@ -60,9 +41,9 @@ final class CustomBasePathIT {
       final var config =
           new Builder()
               .withBucketName(RandomStringUtils.randomAlphabetic(10).toLowerCase())
-              .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
-              .withRegion(Region.US_EAST_1.id())
-              .withCredentials(ACCESS_KEY, SECRET_KEY)
+              .withEndpoint(S3.externalEndpoint())
+              .withRegion(S3.region())
+              .withCredentials(S3.accessKey(), S3.secretKey())
               .forcePathStyleAccess(true)
               .withBasePath(RandomStringUtils.randomAlphabetic(10))
               .build();
@@ -91,20 +72,7 @@ final class CustomBasePathIT {
 
   @Nested
   final class BasePathConfigured {
-    @SuppressWarnings("resource")
-    @Container
-    private static final GenericContainer<?> S3 =
-        new GenericContainer<>(DockerImageName.parse("quay.io/minio/minio"))
-            .withCommand("server /data")
-            .withExposedPorts(DEFAULT_PORT)
-            .withEnv("MINIO_ACCESS_KEY", ACCESS_KEY)
-            .withEnv("MINIO_SECRET_KEY", SECRET_KEY)
-            .withEnv("MINIO_DOMAIN", "localhost")
-            .waitingFor(
-                new HttpWaitStrategy()
-                    .forPath("/minio/health/ready")
-                    .forPort(DEFAULT_PORT)
-                    .withStartupTimeout(Duration.ofMinutes(1)));
+    @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
 
     @ParameterizedTest
     @MethodSource("provideBackups")
@@ -113,9 +81,9 @@ final class CustomBasePathIT {
       final var config =
           new Builder()
               .withBucketName(RandomStringUtils.randomAlphabetic(10).toLowerCase())
-              .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
-              .withRegion(Region.US_EAST_1.id())
-              .withCredentials(ACCESS_KEY, SECRET_KEY)
+              .withEndpoint(S3.externalEndpoint())
+              .withRegion(S3.region())
+              .withCredentials(S3.accessKey(), S3.secretKey())
               .forcePathStyleAccess(true)
               .build();
 
