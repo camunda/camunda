@@ -105,6 +105,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty private Bulk bulk = new Bulk(databaseName());
 
   @NestedConfigurationProperty
+  private SchemaManagerRetry retry = new SchemaManagerRetry(databaseName());
+
+  @NestedConfigurationProperty
   private DocumentBasedSecondaryStorageBackup backup =
       new DocumentBasedSecondaryStorageBackup(databaseName());
 
@@ -266,6 +269,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setBulk(final Bulk bulk) {
     this.bulk = bulk;
+  }
+
+  public SchemaManagerRetry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final SchemaManagerRetry retry) {
+    this.retry = retry;
   }
 
   public SecondaryStorageSecurity getSecurity() {
