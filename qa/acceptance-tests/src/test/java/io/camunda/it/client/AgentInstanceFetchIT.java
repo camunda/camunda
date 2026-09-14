@@ -166,7 +166,7 @@ public class AgentInstanceFetchIT {
         .elementInstanceKey(ei2)
         .status(AgentInstanceUpdateStatus.THINKING)
         .jobKey(activatedJob2.getKey())
-        .jobLease("test-job-lease")
+        .jobLease(activatedJob2.getLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
