@@ -327,6 +327,13 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
       );
+      // The process-instance-key filter is written to the URL on a debounce
+      // (see the identical guard elsewhere in this suite). A reload triggered
+      // by the retry below re-fetches from whatever is currently in the URL,
+      // so if that reload lands before this debounce commits, it discards the
+      // just-filled keys and the retry can never see "2 results". Wait for the
+      // URL to carry both keys first.
+      await expect(page).toHaveURL(/[?&]processInstanceKey=/);
 
       await waitForAssertion({
         assertion: async () => {
@@ -906,8 +913,13 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.selectVersion('1');
       await waitForAssertion({
         assertion: async () => {
+          // The combobox's textContent also picks up its visually-hidden
+          // "Open menu" assistive text (Carbon ComboBox), which the previous
+          // .innerText()-based check didn't see. Use useInnerText so this
+          // still only compares the visible "1" label.
           await expect(operateFiltersPanelPage.processVersionFilter).toHaveText(
             '1',
+            {useInnerText: true},
           );
         },
         onFailure: async () => {
@@ -927,6 +939,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(operateFiltersPanelPage.processVersionFilter).toHaveText(
             '200',
+            {useInnerText: true},
           );
         },
         onFailure: async () => {
@@ -946,6 +959,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(operateFiltersPanelPage.processVersionFilter).toHaveText(
             '87',
+            {useInnerText: true},
           );
         },
         onFailure: async () => {
