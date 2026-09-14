@@ -7,12 +7,28 @@
  */
 package io.camunda.db.rdbms.config;
 
+import java.util.Locale;
 import java.util.Properties;
 
 public class VendorDatabaseProperties {
 
   /** Required property to specify the databaseId. */
   public static final String DATABASE_ID = "databaseId";
+
+  /** The known {@code databaseId} values. */
+  public static final String POSTGRESQL = "postgresql";
+
+  public static final String ORACLE = "oracle";
+  public static final String MYSQL = "mysql";
+  public static final String MARIADB = "mariadb";
+  public static final String MSSQL = "mssql";
+  public static final String H2 = "h2";
+
+  /** Required property, either {@code catalog} or {@code live}. */
+  private static final String TABLE_ROW_COUNT_STRATEGY = "tableRowCount.strategy";
+
+  /** Required property, one of {@code lower}, {@code upper} or {@code none}. */
+  private static final String TABLE_ROW_COUNT_IDENTIFIER_CASE = "tableRowCount.identifierCase";
 
   /**
    * Required property to specify the size of the variable value preview in characters. This is used
@@ -55,6 +71,8 @@ public class VendorDatabaseProperties {
   private final int userCharColumnSize;
   private final int errorMessageSize;
   private final int treePathSize;
+  private final TableRowCountStrategy tableRowCountStrategy;
+  private final IdentifierCase tableRowCountIdentifierCase;
 
   public VendorDatabaseProperties(final Properties properties) {
     this.properties = properties;
@@ -98,6 +116,21 @@ public class VendorDatabaseProperties {
     }
     disableFkBeforeTruncate =
         Boolean.parseBoolean(properties.getProperty(DISABLE_FK_BEFORE_TRUNCATE));
+
+    if (!properties.containsKey(TABLE_ROW_COUNT_STRATEGY)) {
+      throw new IllegalArgumentException("Property '" + TABLE_ROW_COUNT_STRATEGY + "' is missing");
+    }
+    tableRowCountStrategy =
+        TableRowCountStrategy.valueOf(
+            properties.getProperty(TABLE_ROW_COUNT_STRATEGY).toUpperCase(Locale.ROOT));
+
+    if (!properties.containsKey(TABLE_ROW_COUNT_IDENTIFIER_CASE)) {
+      throw new IllegalArgumentException(
+          "Property '" + TABLE_ROW_COUNT_IDENTIFIER_CASE + "' is missing");
+    }
+    tableRowCountIdentifierCase =
+        IdentifierCase.valueOf(
+            properties.getProperty(TABLE_ROW_COUNT_IDENTIFIER_CASE).toUpperCase(Locale.ROOT));
   }
 
   public String databaseId() {
@@ -130,5 +163,38 @@ public class VendorDatabaseProperties {
 
   public int treePathSize() {
     return treePathSize;
+  }
+
+  /**
+   * Folds an unquoted identifier the way this vendor stores it in its catalog, so a lookup can
+   * compare against the stored value directly instead of wrapping the catalog column in {@code
+   * LOWER()}/{@code UPPER()}, which would defeat index usage on it.
+   */
+  public String foldTableIdentifier(final String identifier) {
+    return switch (tableRowCountIdentifierCase) {
+      case LOWER -> identifier.toLowerCase(Locale.ROOT);
+      case UPPER -> identifier.toUpperCase(Locale.ROOT);
+      case NONE -> identifier;
+    };
+  }
+
+  /**
+   * @return whether this vendor's row count comes from catalog statistics, which can be looked up
+   *     for every table in one batched statement, rather than from a live {@code COUNT(*)} per
+   *     table
+   */
+  public boolean usesCatalogRowCountStatistics() {
+    return tableRowCountStrategy == TableRowCountStrategy.CATALOG;
+  }
+
+  private enum TableRowCountStrategy {
+    CATALOG,
+    LIVE
+  }
+
+  private enum IdentifierCase {
+    LOWER,
+    UPPER,
+    NONE
   }
 }
