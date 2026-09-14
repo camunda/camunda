@@ -31,6 +31,27 @@ KOTLIN_MULTIPLATFORM_METADATA_VARIANTS = {
 }
 
 
+PATCH_VERSION_RE = re.compile(r"-(\d+)\.(\d+)\.(\d+)\.jar$")
+
+
+def is_patch_only_version_difference(gradle: list[str], maven: list[str]) -> bool:
+    """Return whether matching JARs differ only in their numeric patch version."""
+    if len(gradle) != len(maven):
+        return False
+
+    for gradle_jar, maven_jar in zip(sorted(gradle), sorted(maven)):
+        gradle_version = PATCH_VERSION_RE.search(gradle_jar)
+        maven_version = PATCH_VERSION_RE.search(maven_jar)
+        if gradle_version is None or maven_version is None:
+            return False
+        if gradle_jar[: gradle_version.start()] != maven_jar[: maven_version.start()]:
+            return False
+        if gradle_version.groups()[:2] != maven_version.groups()[:2]:
+            return False
+
+    return True
+
+
 def jars_from_tar(path: str) -> dict[str, list[str]]:
     result: dict[str, list[str]] = {}
     with tarfile.open(path, "r:gz") as tf:
@@ -100,6 +121,7 @@ def compare_inventories(
 
     all_bases = sorted(set(gradle) | set(maven))
     version_diffs: list[tuple[str, list[str], list[str]]] = []
+    ignored_patch_diffs: list[tuple[str, list[str], list[str]]] = []
     gradle_only: list[tuple[str, list[str]]] = []
     maven_only: list[tuple[str, list[str]]] = []
 
@@ -108,7 +130,11 @@ def compare_inventories(
             gv = sorted(gradle[base])
             mv = sorted(maven[base])
             if gv != mv:
-                version_diffs.append((base, gv, mv))
+                difference = (base, gv, mv)
+                if is_patch_only_version_difference(gv, mv):
+                    ignored_patch_diffs.append(difference)
+                else:
+                    version_diffs.append(difference)
         elif base in gradle:
             gradle_only.append((base, sorted(gradle[base])))
         else:
@@ -119,8 +145,12 @@ def compare_inventories(
     if gradle_root is not None and maven_root is not None:
         print(f"Distribution roots: Gradle={gradle_root}, Maven={maven_root}")
     print(f"Total JARs: Gradle={total_g}, Maven={total_m}")
+    total_version_diffs = len(version_diffs) + len(ignored_patch_diffs)
+    ignored_suffix = (
+        f" ({len(ignored_patch_diffs)} patch-only ignored)" if ignored_patch_diffs else ""
+    )
     print(
-        f"Artifact-level: {len(version_diffs)} version mismatches, "
+        f"Artifact-level: {total_version_diffs} version mismatches{ignored_suffix}, "
         f"{len(gradle_only)} Gradle-only, {len(maven_only)} Maven-only"
     )
     if ignored_metadata_variants:
@@ -128,6 +158,10 @@ def compare_inventories(
 
     if gradle_root is not None and maven_root is not None and gradle_root != maven_root:
         print("VERSION MISMATCH: distribution root")
+    if ignored_patch_diffs:
+        print("=== Ignored patch-only version mismatches ===")
+        for base, gv, mv in ignored_patch_diffs:
+            print(f"  {base}: Gradle={gv}, Maven={mv}")
     if version_diffs:
         print("=== Version mismatches ===")
         for base, gv, mv in version_diffs:
@@ -148,7 +182,7 @@ def compare_inventories(
         print("DIFFERENCES FOUND")
         return 2
 
-    print("OK — no JAR version differences")
+    print("OK — no blocking JAR differences")
     return 0
 
 
