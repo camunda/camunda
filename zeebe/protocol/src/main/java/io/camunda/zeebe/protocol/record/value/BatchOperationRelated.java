@@ -16,7 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 /** Marks a record as related to a batch operation. */
-public interface BatchOperationRelated extends StorageOrdinalKeyRelated {
+public interface BatchOperationRelated extends StorageOrdinalRelated {
 
   /**
    * @return the key of the batch operation aka operation reference key

@@ -7,13 +7,13 @@
  */
 package io.camunda.exporter.index;
 
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 
 public class TargetIndexLocator {
 
   public TargetIndex locateOrdinalIndex(
-      final String indexName, final StorageOrdinalKeyRelated ordinalKeyRelated) {
-    final var ordinal = ordinalKeyRelated.getStorageOrdinal();
+      final String indexName, final StorageOrdinalRelated ordinalRelated) {
+    final var ordinal = ordinalRelated.getStorageOrdinal();
     if (ordinal <= OrdinalIndex.DEFAULT_ORDINAL) {
       return TargetIndex.mainIndex(indexName);
     }
