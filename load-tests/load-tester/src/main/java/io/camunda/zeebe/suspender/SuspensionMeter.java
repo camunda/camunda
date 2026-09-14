@@ -200,11 +200,12 @@ public class SuspensionMeter implements AutoCloseable {
   private void startTargetMode() {
     LOG.info(
         "Starting suspension meter in target mode: processId={}, instances={}, jobs={}, "
-            + "subscriptions={}, holdDuration={}, cycleGap={}",
+            + "subscriptions={}, timers={}, holdDuration={}, cycleGap={}",
         cfg.getTargetProcessId(),
         cfg.getTargetInstances(),
         cfg.getJobCount(),
         cfg.getSubscriptionCount(),
+        cfg.getTimerCount(),
         cfg.getHoldDuration(),
         cfg.getBatchInterval());
 
@@ -237,7 +238,8 @@ public class SuspensionMeter implements AutoCloseable {
   private void createTargetInstances() {
     for (int i = 0; i < cfg.getTargetInstances(); i++) {
       final var variables =
-          buildTargetVariables(cfg.getJobCount(), cfg.getSubscriptionCount(), "i" + i);
+          buildTargetVariables(
+              cfg.getJobCount(), cfg.getSubscriptionCount(), cfg.getTimerCount(), "i" + i);
       try {
         final var event =
             client
@@ -258,12 +260,16 @@ public class SuspensionMeter implements AutoCloseable {
 
   /**
    * Builds the fan-out variables for one target instance: a {@code jobs} list driving the
-   * multi-instance service task and a {@code subs} list of distinct correlation keys driving the
-   * multi-instance message catch. The {@code keyPrefix} keeps subscription keys unique across
-   * instances so their subscriptions never collide.
+   * multi-instance service task, a {@code subs} list of distinct correlation keys driving the
+   * multi-instance receive task, and a {@code timers} list driving the multi-instance timer
+   * sub-process. The {@code keyPrefix} keeps subscription keys unique across instances so their
+   * subscriptions never collide.
    */
   static Map<String, Object> buildTargetVariables(
-      final int jobCount, final int subscriptionCount, final String keyPrefix) {
+      final int jobCount,
+      final int subscriptionCount,
+      final int timerCount,
+      final String keyPrefix) {
     final List<Integer> jobs = new ArrayList<>(jobCount);
     for (int i = 0; i < jobCount; i++) {
       jobs.add(i);
@@ -272,7 +278,11 @@ public class SuspensionMeter implements AutoCloseable {
     for (int i = 0; i < subscriptionCount; i++) {
       subs.add(keyPrefix + "-" + i);
     }
-    return Map.of("jobs", jobs, "subs", subs);
+    final List<Integer> timers = new ArrayList<>(timerCount);
+    for (int i = 0; i < timerCount; i++) {
+      timers.add(i);
+    }
+    return Map.of("jobs", jobs, "subs", subs, "timers", timers);
   }
 
   private void targetCycle() {

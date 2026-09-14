@@ -49,6 +49,7 @@ public class SuspenderProperties {
   private int targetInstances = 1;
   private int jobCount = 500;
   private int subscriptionCount = 500;
+  private int timerCount = 200;
 
   public boolean isEnabled() {
     return enabled;
@@ -172,5 +173,13 @@ public class SuspenderProperties {
 
   public void setSubscriptionCount(final int subscriptionCount) {
     this.subscriptionCount = subscriptionCount;
+  }
+
+  public int getTimerCount() {
+    return timerCount;
+  }
+
+  public void setTimerCount(final int timerCount) {
+    this.timerCount = timerCount;
   }
 }

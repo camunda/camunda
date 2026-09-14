@@ -99,6 +99,7 @@ class ConfigTest {
     assertThat(suspenderCfg.getTargetInstances()).isEqualTo(1);
     assertThat(suspenderCfg.getJobCount()).isEqualTo(500);
     assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(500);
+    assertThat(suspenderCfg.getTimerCount()).isEqualTo(200);
   }
 
   @Nested
@@ -173,6 +174,7 @@ class ConfigTest {
       assertThat(suspenderCfg.getTargetInstances()).isEqualTo(3);
       assertThat(suspenderCfg.getJobCount()).isEqualTo(800);
       assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(800);
+      assertThat(suspenderCfg.getTimerCount()).isEqualTo(100);
     }
   }
 }

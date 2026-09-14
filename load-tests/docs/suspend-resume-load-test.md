@@ -49,18 +49,21 @@ Any dip that lines up with the target's suspend/resume events is the blast radiu
 - **~500 active jobs:** a parallel multi-instance service task (500 elements) whose job type
   **no worker services**, so the jobs stay activatable (never completed) and are all "running"
   at suspend time.
-- **~500 message subscriptions:** a parallel multi-instance message catch (500 elements) with
+- **~500 message subscriptions:** a parallel multi-instance receive task (500 elements) with
   distinct correlation keys that are **never correlated**, so 500 subscriptions stay open.
-- A parallel gateway activates both multi-instance branches at once, so a single instance holds
-  ~500 jobs + ~500 subscriptions simultaneously.
+- **~200 timers:** a parallel multi-instance sub-process (200 elements), each holding a `PT1H`
+  timer catch that never fires during the run, so 200 timers stay scheduled (timers are suspended
+  and resumed too, so this exercises that path).
+- A parallel gateway activates all three multi-instance branches at once, so a single instance
+  holds ~500 jobs + ~500 subscriptions + ~200 timers simultaneously.
 - The instance is created once and **reused** across suspend/resume cycles: resume un-parks the
   jobs (still unhandled → they stay) and reopens the subscriptions.
 
 ### Why these numbers / what to watch
 
-- **500 + 500 = 1000 combined** is comfortably under the ~2000-combined 4 MB batch-record limit
-  (`SuspensionBatchLimitTest`), so suspends never get rejected — we get a clean interference
-  signal rather than probing the limit.
+- **500 jobs + 500 subs + 200 timers = ~1200 combined** stays under the ~2000-combined 4 MB
+  batch-record limit (`SuspensionBatchLimitTest`), so suspends never get rejected — we get a clean
+  interference signal rather than probing the limit.
 - Suspending 500 jobs is **O(n²)** (a few hundred ms), and it lands on the **single partition**
   that owns the target instance. Victim instances spread across all 3 partitions, so the
   interference should appear as a **per-partition latency spike** on the target's partition,
@@ -78,7 +81,7 @@ untouched `typical` victim load. The first cycle starts after `batch-interval` (
 fan-out to materialise); `hold-duration` is the hold and `batch-interval` the idle gap. New
 config knobs (`load-tester.suspender.*`): `target-enabled`, `target-bpmn-path`,
 `target-process-id`, `target-instances` (default 1), `job-count` (500), `subscription-count`
-(500), plus the existing `hold-duration`/`batch-interval`.
+(500), `timer-count` (200), plus the existing `hold-duration`/`batch-interval`.
 
 ## Scope decisions
 

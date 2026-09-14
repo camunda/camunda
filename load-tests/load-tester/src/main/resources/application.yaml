@@ -130,6 +130,7 @@ load-tester:
     target-instances: ${LOAD_TESTER_SUSPENDER_TARGET_INSTANCES:1}
     job-count: ${LOAD_TESTER_SUSPENDER_JOB_COUNT:500}
     subscription-count: ${LOAD_TESTER_SUSPENDER_SUBSCRIPTION_COUNT:500}
+    timer-count: ${LOAD_TESTER_SUSPENDER_TIMER_COUNT:200}
 
   # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
   optimize:

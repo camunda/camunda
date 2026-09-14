@@ -9,12 +9,15 @@
                   targetNamespace="http://camunda.org/loadtest">
   <!--
     Heavy target process for the suspend/resume blast-radius load test. A single instance holds
-    a large fan-out concurrently: a parallel multi-instance service task produces one activatable
-    job per element (job type 'suspend-target-noop' is intentionally left with no worker, so the
-    jobs stay running), and a parallel multi-instance receive task opens one message subscription
-    per element (never correlated, so they stay open). The two collections 'jobs' and 'subs' are
-    passed as variables at instance creation, so the fan-out size is configured by the caller
-    (SuspensionMeter), not baked into the model.
+    a large fan-out concurrently, across three parallel branches:
+      - a multi-instance service task producing one activatable job per element (job type
+        'suspend-target-noop' is left with no worker, so the jobs stay running);
+      - a multi-instance receive task opening one message subscription per element (never
+        correlated, so they stay open);
+      - a multi-instance sub-process, each holding a long timer catch (PT1H, never fires during
+        the run), so one timer stays scheduled per element.
+    The collections 'jobs', 'subs' and 'timers' are passed as variables at instance creation, so
+    the fan-out sizes are configured by the caller (SuspensionMeter), not baked into the model.
   -->
   <bpmn:message id="suspend_target_message" name="suspend-target-msg">
     <bpmn:extensionElements>
@@ -29,6 +32,7 @@
       <bpmn:incoming>flow_start_fork</bpmn:incoming>
       <bpmn:outgoing>flow_fork_jobs</bpmn:outgoing>
       <bpmn:outgoing>flow_fork_subs</bpmn:outgoing>
+      <bpmn:outgoing>flow_fork_timers</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:serviceTask id="jobs" name="jobs">
       <bpmn:extensionElements>
@@ -51,59 +55,102 @@
         </bpmn:extensionElements>
       </bpmn:multiInstanceLoopCharacteristics>
     </bpmn:receiveTask>
+    <bpmn:subProcess id="timers" name="timers">
+      <bpmn:incoming>flow_fork_timers</bpmn:incoming>
+      <bpmn:outgoing>flow_timers_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=timers" inputElement="timerItem" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="timer_sub_start">
+        <bpmn:outgoing>flow_timer_wait</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:intermediateCatchEvent id="timer_wait" name="1h">
+        <bpmn:incoming>flow_timer_wait</bpmn:incoming>
+        <bpmn:outgoing>flow_timer_done</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="timer_def">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:endEvent id="timer_sub_end">
+        <bpmn:incoming>flow_timer_done</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow_timer_wait" sourceRef="timer_sub_start" targetRef="timer_wait" />
+      <bpmn:sequenceFlow id="flow_timer_done" sourceRef="timer_wait" targetRef="timer_sub_end" />
+    </bpmn:subProcess>
     <bpmn:endEvent id="end_jobs">
       <bpmn:incoming>flow_jobs_end</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:endEvent id="end_subs">
       <bpmn:incoming>flow_subs_end</bpmn:incoming>
     </bpmn:endEvent>
+    <bpmn:endEvent id="end_timers">
+      <bpmn:incoming>flow_timers_end</bpmn:incoming>
+    </bpmn:endEvent>
     <bpmn:sequenceFlow id="flow_start_fork" sourceRef="start" targetRef="fork" />
     <bpmn:sequenceFlow id="flow_fork_jobs" sourceRef="fork" targetRef="jobs" />
     <bpmn:sequenceFlow id="flow_fork_subs" sourceRef="fork" targetRef="subs" />
+    <bpmn:sequenceFlow id="flow_fork_timers" sourceRef="fork" targetRef="timers" />
     <bpmn:sequenceFlow id="flow_jobs_end" sourceRef="jobs" targetRef="end_jobs" />
     <bpmn:sequenceFlow id="flow_subs_end" sourceRef="subs" targetRef="end_subs" />
+    <bpmn:sequenceFlow id="flow_timers_end" sourceRef="timers" targetRef="end_timers" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="diagram">
     <bpmndi:BPMNPlane id="plane" bpmnElement="suspendTarget">
       <bpmndi:BPMNShape id="start_di" bpmnElement="start">
-        <dc:Bounds x="160" y="182" width="36" height="36" />
+        <dc:Bounds x="160" y="242" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="fork_di" bpmnElement="fork">
-        <dc:Bounds x="250" y="175" width="50" height="50" />
+        <dc:Bounds x="250" y="235" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="jobs_di" bpmnElement="jobs">
-        <dc:Bounds x="370" y="90" width="100" height="80" />
+        <dc:Bounds x="380" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="subs_di" bpmnElement="subs">
-        <dc:Bounds x="370" y="240" width="100" height="80" />
+        <dc:Bounds x="380" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timers_di" bpmnElement="timers" isExpanded="false">
+        <dc:Bounds x="380" y="360" width="120" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_jobs_di" bpmnElement="end_jobs">
-        <dc:Bounds x="552" y="112" width="36" height="36" />
+        <dc:Bounds x="562" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_subs_di" bpmnElement="end_subs">
-        <dc:Bounds x="552" y="262" width="36" height="36" />
+        <dc:Bounds x="562" y="242" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_timers_di" bpmnElement="end_timers">
+        <dc:Bounds x="562" y="382" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flow_start_fork_di" bpmnElement="flow_start_fork">
-        <di:waypoint x="196" y="200" />
-        <di:waypoint x="250" y="200" />
+        <di:waypoint x="196" y="260" />
+        <di:waypoint x="250" y="260" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_fork_jobs_di" bpmnElement="flow_fork_jobs">
-        <di:waypoint x="275" y="175" />
-        <di:waypoint x="275" y="130" />
-        <di:waypoint x="370" y="130" />
+        <di:waypoint x="275" y="235" />
+        <di:waypoint x="275" y="120" />
+        <di:waypoint x="380" y="120" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_fork_subs_di" bpmnElement="flow_fork_subs">
-        <di:waypoint x="275" y="225" />
-        <di:waypoint x="275" y="280" />
-        <di:waypoint x="370" y="280" />
+        <di:waypoint x="300" y="260" />
+        <di:waypoint x="380" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_fork_timers_di" bpmnElement="flow_fork_timers">
+        <di:waypoint x="275" y="285" />
+        <di:waypoint x="275" y="400" />
+        <di:waypoint x="380" y="400" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_jobs_end_di" bpmnElement="flow_jobs_end">
-        <di:waypoint x="470" y="130" />
-        <di:waypoint x="552" y="130" />
+        <di:waypoint x="480" y="120" />
+        <di:waypoint x="562" y="120" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_subs_end_di" bpmnElement="flow_subs_end">
-        <di:waypoint x="470" y="280" />
-        <di:waypoint x="552" y="280" />
+        <di:waypoint x="480" y="260" />
+        <di:waypoint x="562" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_timers_end_di" bpmnElement="flow_timers_end">
+        <di:waypoint x="500" y="400" />
+        <di:waypoint x="562" y="400" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
