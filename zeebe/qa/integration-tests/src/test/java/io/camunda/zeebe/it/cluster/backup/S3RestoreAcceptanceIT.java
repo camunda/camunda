@@ -12,7 +12,7 @@ import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,9 +24,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class S3RestoreAcceptanceIT implements RestoreAcceptance {
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  @Container
-  private static final MinioContainer MINIO =
-      new MinioContainer().withDomain("minio.local", BUCKET_NAME);
+  @Container private static final S3MockTestContainer MINIO = new S3MockTestContainer();
 
   @BeforeAll
   static void setupBucket() {

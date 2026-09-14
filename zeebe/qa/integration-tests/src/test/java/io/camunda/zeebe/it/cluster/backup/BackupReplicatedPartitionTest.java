@@ -19,7 +19,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.it.cluster.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 class BackupReplicatedPartitionTest {
-  @Container private static final MinioContainer S3 = new MinioContainer();
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
   private static final String JOB_TYPE = "test";
   private String bucketName = null;
   private ZeebeResourcesHelper resourcesHelper;

@@ -16,7 +16,7 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.time.Duration;
 import java.util.Map;
@@ -45,8 +45,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class S3BackupAcceptanceIT implements BackupAcceptance {
   private final String bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  @Container
-  private final MinioContainer minio = new MinioContainer().withDomain("minio.local", bucketName);
+  @Container private final S3MockTestContainer minio = new S3MockTestContainer();
 
   @RegisterExtension
   @SuppressWarnings("unused")
