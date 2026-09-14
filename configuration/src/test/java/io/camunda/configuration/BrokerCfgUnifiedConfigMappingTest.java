@@ -357,7 +357,7 @@ class BrokerCfgUnifiedConfigMappingTest {
   /** Extracts the property name from a getter method. */
   private String extractPropertyNameFromGetterMethod(final Method getter) {
     final String name = getter.getName();
-    String withoutPrefix;
+    final String withoutPrefix;
 
     if (name.startsWith("get")) {
       withoutPrefix = name.substring(3);
@@ -458,24 +458,25 @@ class BrokerCfgUnifiedConfigMappingTest {
           .forEach(
               mc -> {
                 final String methodName = mc.getNameAsString();
-                if (methodName.startsWith("set") && mc.getArguments().size() == 1) {
-                  final var arg = mc.getArgument(0);
-                  if (arg.isNameExpr()) {
-                    final String argVarName = arg.asNameExpr().getNameAsString();
-                    // Check if this setter is called on override or a tracked variable
-                    if (mc.getScope().isPresent()) {
-                      final String scopePath =
-                          resolvePathFromExpression(mc.getScope().get(), variablePathMap);
-                      if (scopePath != null) {
-                        final String propertyName = extractPropertyNameFromSetter(methodName);
-                        final String fullPath =
-                            scopePath.isEmpty() ? propertyName : scopePath + "." + propertyName;
-                        // Map the argument variable to this path
-                        variablePathMap.put(argVarName, fullPath);
-                      }
-                    }
-                  }
+                if (!methodName.startsWith("set") || mc.getArguments().size() != 1) {
+                  return;
                 }
+                final var arg = mc.getArgument(0);
+                if (!arg.isNameExpr() || mc.getScope().isEmpty()) {
+                  return;
+                }
+                // Check if this setter is called on override or a tracked variable
+                final String scopePath =
+                    resolvePathFromExpression(mc.getScope().get(), variablePathMap);
+                if (scopePath == null) {
+                  return;
+                }
+                final String argVarName = arg.asNameExpr().getNameAsString();
+                final String propertyName = extractPropertyNameFromSetter(methodName);
+                final String fullPath =
+                    scopePath.isEmpty() ? propertyName : scopePath + "." + propertyName;
+                // Map the argument variable to this path
+                variablePathMap.put(argVarName, fullPath);
               });
 
       // Third pass: find all setter calls and resolve their full paths
@@ -571,7 +572,7 @@ class BrokerCfgUnifiedConfigMappingTest {
 
     // Handle map operations like getExporters().put() or getExporters().forEach()
     // These indicate the map property itself is being mapped from unified config
-    if (methodName.equals("put") || methodName.equals("forEach") || methodName.equals("putAll")) {
+    if ("put".equals(methodName) || "forEach".equals(methodName) || "putAll".equals(methodName)) {
       if (methodCall.getScope().isEmpty()) {
         return null;
       }
