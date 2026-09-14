@@ -261,8 +261,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * }</pre>
    *
    * <p>The directory is written now, so its secrets are in place before the broker starts, and
-   * deleted when this broker is closed. A test that has to reach it later gets it from {@link
-   * #getFileBasedSecretStoreDirectory()}.
+   * deleted when this broker is closed. Should this broker be started again after that, it is
+   * written a second time, so every start reads the store configured here. A test that has to reach
+   * the directory gets it from {@link #getFileBasedSecretStoreDirectory()}.
    *
    * @param secrets writes the store's secrets into the directory it is handed
    * @return itself for chaining
