@@ -401,7 +401,10 @@ public final class EngineProcessors {
         bpmnBehaviors.jobActivationBehavior(),
         cslCheck,
         tenantCheck,
-        incidentMetrics);
+        incidentMetrics,
+        keyGenerator,
+        secretResolutionScheduler,
+        secretStoreRegistry);
     addResourceDeletionProcessors(
         partitionId,
         typedRecordProcessors,
@@ -785,7 +788,10 @@ public final class EngineProcessors {
       final BpmnJobActivationBehavior jobActivationBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final KeyGenerator keyGenerator,
+      final SecretResolutionScheduler secretResolutionScheduler,
+      final SecretStoreRegistry secretStoreRegistry) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
@@ -795,7 +801,10 @@ public final class EngineProcessors {
         jobActivationBehavior,
         cslCheck,
         tenantCheck,
-        incidentMetrics);
+        incidentMetrics,
+        keyGenerator,
+        secretResolutionScheduler,
+        secretStoreRegistry);
   }
 
   private static void addMessageProcessors(
