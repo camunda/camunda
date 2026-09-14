@@ -13,9 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.time.Duration;
 import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -73,7 +73,7 @@ public class JobTagsIT {
   private void waitForJobs(final Long... processInstanceKeys) {
     Awaitility.await()
         .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
+        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () ->
                 client

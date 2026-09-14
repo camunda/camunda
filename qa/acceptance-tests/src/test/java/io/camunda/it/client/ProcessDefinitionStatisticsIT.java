@@ -830,6 +830,7 @@ public class ProcessDefinitionStatisticsIT {
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
 
     Awaitility.await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               // when
@@ -898,6 +899,7 @@ public class ProcessDefinitionStatisticsIT {
     waitForProcessInstances(camundaClient, f -> f.processDefinitionKey(processDefinitionKey), 2);
 
     Awaitility.await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               // when
