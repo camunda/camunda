@@ -698,11 +698,12 @@ jobs:
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           retry_on: any
-          timeout_minutes: 5
-          max_attempts: 5
+          timeout_minutes: 2
+          max_attempts: 3
           retry_wait_seconds: 10
+          # --clobber so a partial download from a timed-out attempt does not block the retry
           command: |
-            gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
+            gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz' --clobber
             tar -xzvf zeebe-changelog_*
             chmod +x zcl
       - name: Identify previous release version
