@@ -378,12 +378,16 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   /**
    * Resolved with {@link BackwardsCompatibilityMode#SUPPORTED} rather than the {@code
-   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use. Unlike matching mode, {@code SUPPORTED}
-   * never throws when an explicitly configured unified value differs from the legacy one - it
-   * silently prefers the unified value and logs a warning instead. (Matching mode's separate
-   * failure on an unset unified value - the reason {@code SUPPORTED} was originally chosen here -
-   * is fixed in {@link UnifiedConfigurationHelper}; this getter keeps {@code SUPPORTED} for the
-   * explicit-mismatch behaviour described above.)
+   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use, and deliberately kept that way.
+   *
+   * <p>{@code SUPPORTED} was originally chosen because matching mode failed startup whenever the
+   * unified value was unset, which is always the case here - the field has no default. {@link
+   * UnifiedConfigurationHelper} now falls back to the legacy value instead of failing, so that
+   * reason no longer applies. The connection-pool and timeout properties stay on {@code SUPPORTED}
+   * on a different one: when a deployment sets both a unified and a differing legacy value, these
+   * properties prefer the unified value and warn, where matching mode would refuse to start.
+   * Realigning them would turn that warning into a startup failure for clusters running today, so
+   * it is a decision of its own rather than a side effect of fixing the validation.
    *
    * @throws IllegalArgumentException if configured with a non-positive value
    */

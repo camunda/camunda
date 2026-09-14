@@ -553,7 +553,21 @@ public class UnifiedConfigurationHelper {
         // nothing for the legacy value to conflict with. Fall back to the legacy value instead of
         // failing startup, which is what a deployment that only configures the legacy property
         // expects.
-        LOGGER.warn(warningMessage);
+        //
+        // This keys off the resolved value rather than newConfigPresent(), which the sibling modes
+        // use, because the question here is whether a value exists to compare against, not whether
+        // the operator typed the key. Two consequences for whoever revisits this: a unified
+        // property explicitly set to an empty value now yields the legacy value instead of failing,
+        // and a unified property whose default differs from the legacy value still fails, because a
+        // default is a value. Widening that second case would change what a legacy-only deployment
+        // gets for every property that has a default, so it is left as a product decision.
+        LOGGER.warn(
+            "No value is set for '{}', so the value configured in the legacy properties {} is used"
+                + " instead. Those legacy properties are no longer supported and should be removed"
+                + " in favor of '{}'.",
+            newProperty,
+            String.join(", ", legacyProperties),
+            newProperty);
         return legacyValue;
       }
 

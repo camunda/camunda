@@ -844,6 +844,53 @@ public class SecondaryStorageElasticsearchTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        // template-priority has no default, so the unified value stays unset
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.index.templatePriority="
+            + EXPECTED_TEMPLATE_PRIORITY,
+      })
+  class WithOnlyLegacyTemplatePrioritySet {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineIndexProperties searchEngineIndexProperties;
+
+    WithOnlyLegacyTemplatePrioritySet(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineIndexProperties = searchEngineIndexProperties;
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTemplatePriorityForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTemplatePriorityForTheSearchEngineIndexProperties() {
+      // then
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         "camunda.data.secondary-storage.autoconfigure-camunda-exporter=false",
         "camunda.data.secondary-storage.elasticsearch.url=http://unwanted-url:4321",
       })
