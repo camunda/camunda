@@ -103,6 +103,7 @@ class ConfigTest {
     assertThat(suspenderCfg.getTimerDuration()).hasSeconds(30);
     assertThat(suspenderCfg.getWarmup()).hasSeconds(20);
     assertThat(suspenderCfg.getSettle()).hasSeconds(15);
+    assertThat(suspenderCfg.isGenerateResumeCorrelations()).isFalse();
   }
 
   @Nested
@@ -181,6 +182,7 @@ class ConfigTest {
       assertThat(suspenderCfg.getTimerDuration()).hasSeconds(45);
       assertThat(suspenderCfg.getWarmup()).hasSeconds(30);
       assertThat(suspenderCfg.getSettle()).hasSeconds(20);
+      assertThat(suspenderCfg.isGenerateResumeCorrelations()).isTrue();
     }
   }
 }

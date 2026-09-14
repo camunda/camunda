@@ -66,6 +66,12 @@ public class SuspenderProperties {
   private Duration warmup = Duration.ofSeconds(20);
   private Duration settle = Duration.ofSeconds(15);
 
+  // Optional second stressor: while the target is suspended, publish one message per subscription
+  // with a TTL that outlasts the hold. The subscriptions are closed while suspended, so the
+  // messages sit in the message buffer and correlate when resume reopens the subscriptions — a
+  // burst of correlation work at resume time, distinct from the timer buffered-command drain.
+  private boolean generateResumeCorrelations = false;
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -220,5 +226,13 @@ public class SuspenderProperties {
 
   public void setSettle(final Duration settle) {
     this.settle = settle;
+  }
+
+  public boolean isGenerateResumeCorrelations() {
+    return generateResumeCorrelations;
+  }
+
+  public void setGenerateResumeCorrelations(final boolean generateResumeCorrelations) {
+    this.generateResumeCorrelations = generateResumeCorrelations;
   }
 }

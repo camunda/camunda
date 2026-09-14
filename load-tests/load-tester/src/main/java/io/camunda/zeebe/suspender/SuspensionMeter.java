@@ -55,6 +55,8 @@ public class SuspensionMeter implements AutoCloseable {
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(SuspensionMeter.class), Duration.ofSeconds(5));
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
+  // Must match the message name in bpmn/suspend_target.bpmn.
+  private static final String TARGET_MESSAGE_NAME = "suspend-target-msg";
 
   private final MeterRegistry registry;
   private final ScheduledExecutorService executor;
@@ -71,6 +73,7 @@ public class SuspensionMeter implements AutoCloseable {
   private Counter resumeRequests;
   private Counter suspendErrors;
   private Counter resumeErrors;
+  private Counter resumeCorrelationMessages;
 
   public SuspensionMeter(
       final MeterRegistry registry,
@@ -123,6 +126,11 @@ public class SuspensionMeter implements AutoCloseable {
     Gauge.builder("suspender_in_flight_suspended", suspendedUntil, Map::size)
         .description("Instances currently suspended by the suspension meter, awaiting resume")
         .register(registry);
+    resumeCorrelationMessages =
+        Counter.builder("suspender_resume_correlation_messages_total")
+            .description(
+                "Messages published to suspended target instances that correlate on resume")
+            .register(registry);
   }
 
   // ---- SINGLE mode -----------------------------------------------------------------------------
@@ -266,11 +274,15 @@ public class SuspensionMeter implements AutoCloseable {
    * buffered backlog, let the drain settle, then cancel the instances so the next cycle starts from
    * a clean slate. Runs on the executor thread, so blocking sleeps are fine.
    */
+  /** A created target instance: its key and the correlation-key prefix of its subscriptions. */
+  private record TargetInstance(long key, String prefix) {}
+
   private void targetCycle() {
-    final List<Long> keys = createTargetInstances();
-    if (keys.isEmpty()) {
+    final List<TargetInstance> instances = createTargetInstances();
+    if (instances.isEmpty()) {
       return;
     }
+    final List<Long> keys = instances.stream().map(TargetInstance::key).toList();
     try {
       sleep(cfg.getWarmup());
 
@@ -283,6 +295,13 @@ public class SuspensionMeter implements AutoCloseable {
           suspendErrors.increment();
           THROTTLED_LOGGER.warn("Failed to suspend target instance {}", key, e);
         }
+      }
+
+      // Now that the instances are suspended (subscriptions closed), publish messages that will sit
+      // in the message buffer until resume reopens the subscriptions and correlates them — a
+      // resume-time correlation burst, distinct from the timer buffered-command drain.
+      if (cfg.isGenerateResumeCorrelations()) {
+        publishResumeCorrelations(instances);
       }
 
       sleep(cfg.getHoldDuration());
@@ -309,17 +328,18 @@ public class SuspensionMeter implements AutoCloseable {
     }
   }
 
-  private List<Long> createTargetInstances() {
-    final List<Long> keys = new ArrayList<>();
+  private List<TargetInstance> createTargetInstances() {
+    final List<TargetInstance> instances = new ArrayList<>();
     final String timerDuration = isoDuration(cfg.getTimerDuration());
     for (int i = 0; i < cfg.getTargetInstances(); i++) {
+      final String prefix = "i" + i;
       final var variables =
           buildTargetVariables(
               cfg.getJobCount(),
               cfg.getSubscriptionCount(),
               cfg.getTimerCount(),
               timerDuration,
-              "i" + i);
+              prefix);
       try {
         final var event =
             client
@@ -329,13 +349,41 @@ public class SuspensionMeter implements AutoCloseable {
                 .variables(variables)
                 .send()
                 .join();
-        keys.add(event.getProcessInstanceKey());
+        instances.add(new TargetInstance(event.getProcessInstanceKey(), prefix));
         LOG.info("Created target instance {}", event.getProcessInstanceKey());
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Failed to create target instance", e);
       }
     }
-    return keys;
+    return instances;
+  }
+
+  /**
+   * Publishes one message per subscription of each suspended instance. The instance's subscriptions
+   * are closed while it is suspended, so each message is stored in the message buffer with a TTL
+   * long enough to survive the hold; when resume reopens the subscriptions they correlate,
+   * producing a burst of correlation work at resume time.
+   */
+  private void publishResumeCorrelations(final List<TargetInstance> instances) {
+    // TTL must outlast the remaining hold plus the resume/settle window.
+    final Duration ttl = cfg.getHoldDuration().plus(cfg.getSettle()).plus(Duration.ofMinutes(1));
+    for (final TargetInstance instance : instances) {
+      for (int j = 0; j < cfg.getSubscriptionCount(); j++) {
+        try {
+          client
+              .newPublishMessageCommand()
+              .messageName(TARGET_MESSAGE_NAME)
+              .correlationKey(instance.prefix() + "-" + j)
+              .timeToLive(ttl)
+              .send()
+              .join();
+          resumeCorrelationMessages.increment();
+        } catch (final Exception e) {
+          THROTTLED_LOGGER.warn(
+              "Failed to publish resume-correlation message for {}", instance.prefix(), e);
+        }
+      }
+    }
   }
 
   private void cancelInstances(final List<Long> keys) {

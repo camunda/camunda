@@ -86,6 +86,17 @@ come due inside the hold window, so **`warmup` < `timer-duration` < `warmup` + `
 with `warmup` long enough for the fan-out to materialise. Confirm the actual buffered count on the
 broker's `commandBuffered` metric and tune the timings on the first smoke run.
 
+### Second, optional stressor: resume-time correlation burst
+
+`generate-resume-correlations` (default off) adds a *different* kind of resume pressure. After the
+instance is suspended (its subscriptions are closed), the meter publishes one message per
+subscription with a TTL that outlasts the hold. With no open subscription the messages sit in the
+message buffer; when resume **reopens** the subscriptions they correlate at once, producing a burst
+of correlation work **at resume time** — separate from the timer buffered-command drain (which
+uses the command buffer). Enable it to stress resume with both a buffered-command drain *and* a
+correlation flood; leave it off to isolate the drain. The `suspender_resume_correlation_messages_total`
+counter tracks what was published.
+
 ### Why these numbers / what to watch
 
 - **500 jobs + 500 subs = 1000 combined in the SUSPEND record** stays under the ~2000-combined

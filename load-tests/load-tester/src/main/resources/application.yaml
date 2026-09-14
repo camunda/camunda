@@ -137,6 +137,10 @@ load-tester:
     timer-duration: ${LOAD_TESTER_SUSPENDER_TIMER_DURATION:30s}
     warmup: ${LOAD_TESTER_SUSPENDER_WARMUP:20s}
     settle: ${LOAD_TESTER_SUSPENDER_SETTLE:15s}
+    # Optional second stressor: publish one message per subscription while suspended (TTL outlasts
+    # the hold); they correlate when resume reopens the subscriptions -> a resume-time correlation
+    # burst, on top of the timer buffered-command drain.
+    generate-resume-correlations: ${LOAD_TESTER_SUSPENDER_GENERATE_RESUME_CORRELATIONS:false}
 
   # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
   optimize:
