@@ -308,7 +308,21 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateFiltersPanelPage.finishedInstancesCheckbox,
       ).toBeEnabled();
+      // The reset above restores the instance-state checkboxes to their
+      // defaults (Running checked, Finished unchecked) asynchronously. Wait for
+      // that settled state before toggling Finished; otherwise the click races
+      // the reset re-render and the resulting checkbox state — and the result
+      // count — is non-deterministic.
+      await expect(
+        operateFiltersPanelPage.runningInstancesCheckbox,
+      ).toBeChecked();
+      await expect(
+        operateFiltersPanelPage.finishedInstancesCheckbox,
+      ).not.toBeChecked();
       await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+      await expect(
+        operateFiltersPanelPage.finishedInstancesCheckbox,
+      ).toBeChecked();
 
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
@@ -443,8 +457,25 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateFiltersPanelPage.processInstanceKeysFilter,
       ).toBeHidden();
+      // Wait for the reset to settle the checkboxes back to their defaults
+      // (Running checked, Finished unchecked) before toggling. Toggling while
+      // the reset re-render is still in flight races it and can leave every
+      // instance-state checkbox unchecked, so no instances match and the
+      // "2 results" assertion below never becomes true.
+      await expect(
+        operateFiltersPanelPage.runningInstancesCheckbox,
+      ).toBeChecked();
+      await expect(
+        operateFiltersPanelPage.finishedInstancesCheckbox,
+      ).not.toBeChecked();
       await operateFiltersPanelPage.clickRunningInstancesCheckbox();
       await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+      await expect(
+        operateFiltersPanelPage.runningInstancesCheckbox,
+      ).not.toBeChecked();
+      await expect(
+        operateFiltersPanelPage.finishedInstancesCheckbox,
+      ).toBeChecked();
 
       await waitForAssertion({
         assertion: async () => {
@@ -870,55 +901,61 @@ test.describe('Process Instances Filters', () => {
     operateFiltersPanelPage,
     page,
   }) => {
-      await test.step('Select process with many versions and select version 1', async ({}) => {
-        await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
-        await operateFiltersPanelPage.selectVersion('1');
-        await waitForAssertion({
-          assertion: async () => {
-            expect(
-              await operateFiltersPanelPage.processVersionFilter.innerText(),
-            ).toBe('1');
-          },
-          onFailure: async () => {
-            await page.reload();
-            await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
-            await operateFiltersPanelPage.selectVersion('1');
-          },
-        });
+    await test.step('Select process with many versions and select version 1', async ({}) => {
+      await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+      await operateFiltersPanelPage.selectVersion('1');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateFiltersPanelPage.processVersionFilter).toHaveText(
+            '1',
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.selectProcess(
+            'Version Scrolling Process',
+          );
+          await operateFiltersPanelPage.selectVersion('1');
+        },
       });
+    });
 
-      await test.step('Select process with many versions and select version 200', async ({}) => {
-        await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
-        await operateFiltersPanelPage.selectVersion('200');
-        await waitForAssertion({
-          assertion: async () => {
-            expect(
-              await operateFiltersPanelPage.processVersionFilter.innerText(),
-            ).toBe('200');
-          },
-          onFailure: async () => {
-            await page.reload();
-            await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
-            await operateFiltersPanelPage.selectVersion('200');
-          },
-        });
+    await test.step('Select process with many versions and select version 200', async ({}) => {
+      await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+      await operateFiltersPanelPage.selectVersion('200');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateFiltersPanelPage.processVersionFilter).toHaveText(
+            '200',
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.selectProcess(
+            'Version Scrolling Process',
+          );
+          await operateFiltersPanelPage.selectVersion('200');
+        },
       });
+    });
 
-      await test.step('Select process with many versions and select version 87', async ({}) => {
-        await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
-        await operateFiltersPanelPage.selectVersion('87');
-        await waitForAssertion({
-          assertion: async () => {
-            expect(
-              await operateFiltersPanelPage.processVersionFilter.innerText(),
-            ).toBe('87');
-          },
-          onFailure: async () => {
-            await page.reload();
-            await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
-            await operateFiltersPanelPage.selectVersion('87');
-          },
-        });
+    await test.step('Select process with many versions and select version 87', async ({}) => {
+      await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+      await operateFiltersPanelPage.selectVersion('87');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateFiltersPanelPage.processVersionFilter).toHaveText(
+            '87',
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.selectProcess(
+            'Version Scrolling Process',
+          );
+          await operateFiltersPanelPage.selectVersion('87');
+        },
       });
+    });
   });
 });
