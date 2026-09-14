@@ -15,6 +15,7 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -74,6 +75,12 @@ public class SuspensionMeter implements AutoCloseable {
   private Counter suspendErrors;
   private Counter resumeErrors;
   private Counter resumeCorrelationMessages;
+  // Client-observed latency of the suspend/resume commands. The suspend timer captures the heavy
+  // suspend cost directly (there is no broker suspend-duration metric); the resume timer captures
+  // the resume command round-trip (the full resume incl. drain is the broker's
+  // zeebe_process_instance_resume_duration).
+  private Timer suspendLatency;
+  private Timer resumeLatency;
 
   public SuspensionMeter(
       final MeterRegistry registry,
@@ -131,6 +138,16 @@ public class SuspensionMeter implements AutoCloseable {
             .description(
                 "Messages published to suspended target instances that correlate on resume")
             .register(registry);
+    suspendLatency =
+        Timer.builder("suspender_suspend_duration")
+            .description("Client-observed latency of the suspend command")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(registry);
+    resumeLatency =
+        Timer.builder("suspender_resume_duration")
+            .description("Client-observed latency of the resume command")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(registry);
   }
 
   // ---- SINGLE mode -----------------------------------------------------------------------------
@@ -158,7 +175,7 @@ public class SuspensionMeter implements AutoCloseable {
       if (key == null) {
         return;
       }
-      client.newSuspendProcessInstanceCommand(key).send().join();
+      suspendLatency.record(() -> client.newSuspendProcessInstanceCommand(key).send().join());
       suspendRequests.increment();
       suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration()));
     } catch (final Exception e) {
@@ -193,7 +210,7 @@ public class SuspensionMeter implements AutoCloseable {
       }
       final long key = entry.getKey();
       try {
-        client.newResumeProcessInstanceCommand(key).send().join();
+        resumeLatency.record(() -> client.newResumeProcessInstanceCommand(key).send().join());
         resumeRequests.increment();
         suspendedUntil.remove(key);
       } catch (final Exception e) {
@@ -288,7 +305,7 @@ public class SuspensionMeter implements AutoCloseable {
 
       for (final long key : keys) {
         try {
-          client.newSuspendProcessInstanceCommand(key).send().join();
+          suspendLatency.record(() -> client.newSuspendProcessInstanceCommand(key).send().join());
           suspendRequests.increment();
           suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration()));
         } catch (final Exception e) {
@@ -308,7 +325,7 @@ public class SuspensionMeter implements AutoCloseable {
 
       for (final long key : keys) {
         try {
-          client.newResumeProcessInstanceCommand(key).send().join();
+          resumeLatency.record(() -> client.newResumeProcessInstanceCommand(key).send().join());
           resumeRequests.increment();
         } catch (final Exception e) {
           resumeErrors.increment();

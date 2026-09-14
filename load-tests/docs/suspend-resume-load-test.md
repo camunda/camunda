@@ -188,78 +188,60 @@ starter creates), not configured separately.
 
 ### Metrics
 
-Load-tester side (client-observed): counters for suspend/resume requests issued and errors,
-and request-latency timers, exposed on `/metrics` like the starter/worker meters.
+**Load-tester side (client-observed, on `/metrics`):** `suspender_suspend_requests_total`,
+`suspender_resume_requests_total`, `suspender_errors_total{op}`, `suspender_in_flight_suspended`,
+`suspender_resume_correlation_messages_total`, and latency timers
+`suspender_suspend_duration_seconds` / `suspender_resume_duration_seconds` (p50/p95/p99). The
+suspend timer measures the heavy suspend cost directly (there is no broker suspend-duration metric);
+these also mark the exact suspend/resume timestamps for lining up against victim metrics.
 
-Broker side (already exists — graph these): `SuspensionMetrics` —
-`suspended`, `resumed`, `jobSuspended`, `jobResumed`, `commandBuffered`, `commandDrained`,
-`commandDropped`, and the per-PI **resume-duration** timer
-(`zeebe/engine/.../metrics/SuspensionMetrics.java`).
+**Broker side** (`zeebe/engine/.../metrics/SuspensionMetricsDoc.java`):
+- `zeebe_process_instance_suspension_events_total{action=...}` — suspended / resumed counts
+- `zeebe_job_suspension_events_total{action=...}` — jobs suspended / resumed
+- `zeebe_buffered_commands_events_total{action="buffered"|"drained"|"dropped"}` — the backlog
+- `zeebe_process_instance_resume_duration` — full resume incl. buffered-command drain
 
-## Pass/fail (A/B)
+## What to measure (single run, within-run baseline)
 
-Run the identical workload twice — arm A `suspender.enabled=false`, arm B `enabled=true` —
-and compare:
+The target is recreated each cycle with an idle `batch-interval` gap where it is gone, so the run
+is its own baseline: **victim metrics during the quiet gap = "normal", at the suspend/resume
+timestamps = the impact.** No separate baseline arm is needed — read it as a timeline and align the
+victim spikes to the `suspender_*` suspend/resume timestamps (distinguish them from the create
+fan-out and cancel edges, which also perturb).
 
-- **Throughput / latency**: arm B process-instance completion throughput and p99 latency
-  within noise of arm A (no regression).
-- **Drain correctness**: `commandDropped == 0`; `commandBuffered` ≈ `commandDrained` over
-  the run (nothing stuck).
-- **Resume latency**: per-PI resume-duration p99 within an agreed bound; does not grow
-  unbounded with hold time.
-- **Exporter / storage**: exporter lag and ES/RDBMS write rate in arm B not materially
-  worse than arm A; `DbSuspensionState` / RocksDB size returns to baseline after resume
-  (no leak).
-- **Backpressure**: gateway backpressure (RESOURCE_EXHAUSTED) rate in arm B not materially
-  worse than arm A.
+- **Suspend/resume cost**: `suspender_suspend_duration_seconds` p99 (the O(n²) suspend), and
+  `zeebe_process_instance_resume_duration` p99 (resume incl. drain).
+- **Victim throughput / latency**: PI created/completed rate and processing latency, **filtered to
+  the target's partition** — flat in the gap, spiking (or not) at the events.
+- **Drain correctness**: `zeebe_buffered_commands_events_total` — buffered climbs to ~`timer-count`
+  each hold, buffered ≈ drained, **dropped = 0**.
+- **Backpressure**: gateway `RESOURCE_EXHAUSTED` rate — any burst at the events.
+- **Exporter / storage**: exporter lag and ES/RDBMS write rate; `DbSuspensionState` / RocksDB size
+  returns to baseline after each cycle (no leak).
 
 ## How to run (SaaS, no chart release, off the PR branch)
 
-The meter rides the existing starter, so the whole test runs from the PR branch with no
-merge and no `camunda-load-tests-helm` release. `load-tester.suspender.*` is delivered
-through the chart's `global.extraConfig.load-tester.*` passthrough.
+The meter rides the existing starter, so the whole test runs from the PR branch with no merge and
+no `camunda-load-tests-helm` release. `load-tester.suspender.*` is delivered through the chart's
+`global.extraConfig.load-tester.*` passthrough. Victim = the `typical` scenario (50 PI/s,
+untouched); target mode adds the heavy suspend/resume. Use a generous `batch-interval` (~60 s) so
+the quiet baseline window each cycle is easy to read.
 
 ```bash
-# Arm A — baseline (suspender off; enabled=false is the default)
-gh workflow run camunda-load-test.yml \
-  --ref 59933-suspend-resume-load-testing \
-  -f name=susp-a-baseline \
-  -f ref=59933-suspend-resume-load-testing \
-  -f scenario=typical
-
-# Arm B — suspend/resume enabled (SINGLE driver)
-gh workflow run camunda-load-test.yml \
-  --ref 59933-suspend-resume-load-testing \
-  -f name=susp-b-single \
+gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
+  -f name=blast-suspend \
   -f ref=59933-suspend-resume-load-testing \
   -f scenario=typical \
-  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=SINGLE --set global.extraConfig.load-tester.suspender.hold-duration=30s"
+  -f ttl=1 \
+  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.target-enabled=true --set global.extraConfig.load-tester.suspender.generate-resume-correlations=true --set global.extraConfig.load-tester.suspender.batch-interval=60s"
 ```
 
-BATCH driver: `--set global.extraConfig.load-tester.suspender.mode=BATCH --set global.extraConfig.load-tester.suspender.batch-interval=10s`.
+Per cycle: ~20 s warmup (create + fan-out) → suspend → 30 s hold → resume (drain) → 15 s settle →
+cancel → 60 s quiet. Drop `generate-resume-correlations` to isolate the buffered-command drain.
 
-Run both arms for the same (multi-hour) duration on comparable cluster state, then compare on
-the Camunda Performance + Zeebe Grafana dashboards and the `SuspensionMetrics` panels; archive
-results.
-
-### Blast-radius / interference run (the chosen test)
-
-Victim = the `typical` scenario (50 PI/s, untouched). Arm B additionally enables **target mode**,
-which deploys the heavy target, seeds it, and suspends/resumes only it (30 s hold, 30 s gap):
-
-```bash
-# Arm A — baseline: typical load only, no target suspension
-gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
-  -f name=blast-a-baseline -f ref=59933-suspend-resume-load-testing -f scenario=typical
-
-# Arm B — same typical load + heavy target suspended/resumed
-gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
-  -f name=blast-b-target -f ref=59933-suspend-resume-load-testing -f scenario=typical \
-  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.target-enabled=true --set global.extraConfig.load-tester.suspender.hold-duration=30s --set global.extraConfig.load-tester.suspender.batch-interval=30s"
-```
-
-Compare the **victim** throughput/latency (starter metrics) between arms, focused on the
-**partition that owns the target instance** — that is where any interference shows.
+The run does **not stop on its own** — it loops until the namespace is deleted or the `ttl` (days)
+expires. Collect ~30–60 min of cycles, then tear down:
+`kubectl delete namespace c8-blast-suspend` (or `make clean namespace=c8-blast-suspend`).
 
 ## Deliverables / follow-ups
 
