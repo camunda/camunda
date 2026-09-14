@@ -514,14 +514,10 @@ jobs:
             set -euo pipefail
 
             if ! command -v google-chrome >/dev/null 2>&1; then
-              # A corrupt index in any one configured repository makes `apt-get update`
-              # exit 100 (INC-7943), even though the three packages below come from the
-              # Ubuntu archives. Tolerate that: `|| true` lets a partial refresh through,
-              # and the `apt-get install` that follows is the real gate -- it fails if the
-              # packages are genuinely unavailable. Do not narrow this with
-              # `-o Dir::Etc::sourceparts=/dev/null`: on 24.04 images the Ubuntu archives
-              # themselves live in sources.list.d/ubuntu.sources, so that flag can leave
-              # apt with no sources at all.
+              # `|| true`: a corrupt index in any configured repository makes `apt-get
+              # update` exit 100 (INC-7943), even though these packages come from the
+              # Ubuntu archives. The install below is the real gate -- it still fails if
+              # they are genuinely unavailable.
               sudo timeout 90 bash -c "apt-get update || true; apt-get install -y --no-install-recommends wget gnupg ca-certificates"
 
               sudo timeout 30 bash -o pipefail -c 'wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg'
