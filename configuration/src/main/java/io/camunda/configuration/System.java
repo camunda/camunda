@@ -44,7 +44,7 @@ public class System {
   @NestedConfigurationProperty private Actor actor = new Actor();
   @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
   @NestedConfigurationProperty private Restore restore = new Restore();
-  @NestedConfigurationProperty private QueryApi queryApi = new QueryApi();
+  @NestedConfigurationProperty private LegacyQueryApi legacyQueryApi = new LegacyQueryApi();
 
   public int getCpuThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -109,11 +109,11 @@ public class System {
     this.restore = restore;
   }
 
-  public QueryApi getQueryApi() {
-    return queryApi;
+  public LegacyQueryApi getLegacyQueryApi() {
+    return legacyQueryApi;
   }
 
-  public void setQueryApi(final QueryApi queryApi) {
-    this.queryApi = queryApi;
+  public void setLegacyQueryApi(final LegacyQueryApi legacyQueryApi) {
+    this.legacyQueryApi = legacyQueryApi;
   }
 }

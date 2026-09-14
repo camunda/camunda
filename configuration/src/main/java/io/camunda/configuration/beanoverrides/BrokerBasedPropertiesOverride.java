@@ -798,7 +798,7 @@ public class BrokerBasedPropertiesOverride {
     final var enableVersionCheck = system.getUpgrade().getEnableVersionCheck();
     override.getExperimental().setVersionCheckRestrictionEnabled(enableVersionCheck);
 
-    override.getExperimental().getQueryApi().setEnabled(system.getQueryApi().isEnabled());
+    override.getExperimental().getQueryApi().setEnabled(system.getLegacyQueryApi().isEnabled());
   }
 
   private static void populateFromData(
