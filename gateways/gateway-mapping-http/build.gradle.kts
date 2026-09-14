@@ -7,6 +7,7 @@ plugins { id("buildlogic.server-conventions") }
 dependencies {
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":camunda-gateway-model"))
+  implementation(project(":camunda-cluster"))
   implementation(project(":camunda-authentication")) { isTransitive = false }
   implementation(project(":camunda-service"))
   implementation(project(":camunda-security-validation"))

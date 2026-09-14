@@ -30,6 +30,7 @@ dependencies {
   testImplementation(libs.org.junit.platform.junit.platform.commons)
   testImplementation(libs.org.instancio.instancio.core)
   testImplementation(libs.com.h2database.h2)
+  testImplementation(project(":zeebe-test-util"))
 }
 
 description = "Camunda Secondary DB - RDBMS"
