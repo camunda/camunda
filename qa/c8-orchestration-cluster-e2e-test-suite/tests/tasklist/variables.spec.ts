@@ -178,14 +178,14 @@ test.describe('variables page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('usertask_with_many_variables')
-          .first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('usertask_with_many_variables');
+    // No separate wait for the card before opening it: the available-tasks
+    // list is virtualized, so a task that has been pushed below the rendered
+    // window is only reachable by scrolling the list -- which is exactly what
+    // openTask() does. Asserting visibility first just burned the whole test
+    // timeout on a card that was never going to render on its own.
+    await taskPanelPage.openTask('usertask_with_many_variables', {
+      timeout: 60000,
+    });
 
     await expect(
       taskDetailsPage.variablesTable
