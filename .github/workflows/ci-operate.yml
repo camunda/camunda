@@ -343,7 +343,7 @@ jobs:
     env:
       TEST_TYPE: Tool
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
     defaults:
       run:
@@ -401,7 +401,7 @@ jobs:
       TEST_TYPE: visual-regression
       TEST_OWNER: '@camunda/operate-frontend'
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
     defaults:
       run:
@@ -500,7 +500,7 @@ jobs:
     env:
       TEST_TYPE: screenshot-update
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
     defaults:
       run:

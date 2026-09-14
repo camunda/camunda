@@ -872,6 +872,7 @@
       customType: "regex",
       managerFilePatterns: [
         "/package\\.json/",
+        "/^\\.github\\/workflows\\/.*\\.ya?ml$/",
       ],
       matchStrings: [
         "mcr\\.microsoft\\.com\\/playwright:(?<currentValue>.*?)\\s",
