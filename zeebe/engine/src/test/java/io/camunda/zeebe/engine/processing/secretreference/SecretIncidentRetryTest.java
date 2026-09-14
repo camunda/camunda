@@ -80,21 +80,13 @@ public final class SecretIncidentRetryTest {
   /** Covers a background resolution cycle and the incident round that follows it. */
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(10);
 
-  /**
-   * Backs the store of {@link #engine}. Mutable so a test can create the secret between the
-   * incident and the retry, which is the one case where the retry is expected to succeed.
-   */
-  private final Map<String, String> storedSecrets = Collections.synchronizedMap(new HashMap<>());
-
-  /** Counts store reads, so a test can tell "re-read and still missing" from "never re-read". */
-  private final AtomicInteger storeReads = new AtomicInteger();
-
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecretStoreRegistry(
               // one-argument constructor: the registry puts a fresh, cold cache in front, so the
-              // first activation parks the job instead of resolving it from the cache
+              // first activation parks the job instead of resolving it from the cache. It only
+              // wraps the store, so the fields below are not read before they are initialized.
               new SecretStoreRegistry(
                   Map.of(SecretStoreRegistry.DEFAULT_STORE_ID, new MutableMapSecretStore())))
           // the default interval is 5s, which every assertion below would otherwise wait on
@@ -103,6 +95,15 @@ public final class SecretIncidentRetryTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  /**
+   * Backs the store of {@link #engine}. Mutable so a test can create the secret between the
+   * incident and the retry, which is the one case where the retry is expected to succeed.
+   */
+  private final Map<String, String> storedSecrets = Collections.synchronizedMap(new HashMap<>());
+
+  /** Counts store reads, so a test can tell "re-read and still missing" from "never re-read". */
+  private final AtomicInteger storeReads = new AtomicInteger();
 
   @Test
   public void shouldRaiseIncidentAgainWhenSecretIsStillMissingAfterResolve() {
