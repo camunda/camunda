@@ -1,6 +1,4 @@
 import com.github.gradle.node.npm.task.NpmTask
-import org.gradle.api.tasks.testing.Test
-import org.gradle.language.jvm.tasks.ProcessResources
 
 plugins {
   id("buildlogic.server-conventions")
@@ -35,14 +33,6 @@ val npmTest =
     )
     outputs.cacheIf { true }
   }
-
-tasks.named<ProcessResources>("processResources") {
-  dependsOn(tasks.named("npmBuild"))
-}
-
-tasks.named<Test>("test") {
-  dependsOn(npmTest)
-}
 
 dependencies {
   implementation(project(":camunda-client-java"))
