@@ -50,14 +50,30 @@ Any dip that lines up with the target's suspend/resume events is the blast radiu
   **no worker services**, so the jobs stay activatable (never completed) and are all "running"
   at suspend time.
 - **~500 message subscriptions:** a parallel multi-instance receive task (500 elements) with
-  distinct correlation keys that are **never correlated**, so 500 subscriptions stay open.
+  distinct correlation keys. They are correlated **only by the backlog generator while the
+  instance is suspended** (see below), otherwise they stay open.
 - **~200 timers:** a parallel multi-instance sub-process (200 elements), each holding a `PT1H`
   timer catch that never fires during the run, so 200 timers stay scheduled (timers are suspended
   and resumed too, so this exercises that path).
 - A parallel gateway activates all three multi-instance branches at once, so a single instance
   holds ~500 jobs + ~500 subscriptions + ~200 timers simultaneously.
 - The instance is created once and **reused** across suspend/resume cycles: resume un-parks the
-  jobs (still unhandled → they stay) and reopens the subscriptions.
+  jobs (still unhandled → they stay) and re-opens the subscriptions.
+
+### Buffered-command backlog
+
+The fan-out above makes the *suspend operation* heavy, but on its own it generates **no buffered
+commands**: nothing sends commands to the suspended instance (jobs are parked, subscriptions are
+un-published, timers are frozen), so there is nothing to drain on resume. Buffered commands
+require an active sender hitting the suspended instance.
+
+The **backlog generator** (`generate-backlog`, default on in target mode) provides that: while an
+instance is suspended, it publishes one message per open subscription (using the instance's
+correlation-key prefix). Each correlation targets a suspended instance, so the engine **buffers**
+it; the whole batch is **drained on resume**. The buffered backlog per instance therefore equals
+`subscription-count` — raise `subscription-count` for a deeper drain (500 jobs + 1000 subs + 200
+timers = 1700, still under the ~2000 limit). This is what exercises the resume-drain and
+`commandBuffered`/`commandDrained` paths on the cluster.
 
 ### Why these numbers / what to watch
 

@@ -131,6 +131,10 @@ load-tester:
     job-count: ${LOAD_TESTER_SUSPENDER_JOB_COUNT:500}
     subscription-count: ${LOAD_TESTER_SUSPENDER_SUBSCRIPTION_COUNT:500}
     timer-count: ${LOAD_TESTER_SUSPENDER_TIMER_COUNT:200}
+    # While a target instance is suspended, publish one message per open subscription so the
+    # correlations buffer and are drained on resume (buffered backlog per instance =
+    # subscription-count).
+    generate-backlog: ${LOAD_TESTER_SUSPENDER_GENERATE_BACKLOG:true}
 
   # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
   optimize:

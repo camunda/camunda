@@ -51,6 +51,11 @@ public class SuspenderProperties {
   private int subscriptionCount = 500;
   private int timerCount = 200;
 
+  // While a target instance is suspended, publish one message per open subscription so the
+  // correlations buffer (a command targeting a suspended instance is buffered, then drained on
+  // resume). The backlog size per instance equals subscriptionCount.
+  private boolean generateBacklog = true;
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -181,5 +186,13 @@ public class SuspenderProperties {
 
   public void setTimerCount(final int timerCount) {
     this.timerCount = timerCount;
+  }
+
+  public boolean isGenerateBacklog() {
+    return generateBacklog;
+  }
+
+  public void setGenerateBacklog(final boolean generateBacklog) {
+    this.generateBacklog = generateBacklog;
   }
 }

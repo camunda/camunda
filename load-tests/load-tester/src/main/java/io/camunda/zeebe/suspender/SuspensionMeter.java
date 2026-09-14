@@ -54,6 +54,9 @@ public class SuspensionMeter implements AutoCloseable {
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(SuspensionMeter.class), Duration.ofSeconds(5));
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
+  // Must match the message name in bpmn/suspend_target.bpmn.
+  private static final String TARGET_MESSAGE_NAME = "suspend-target-msg";
+  private static final Duration BACKLOG_MESSAGE_TTL = Duration.ofMinutes(5);
 
   private final MeterRegistry registry;
   private final ScheduledExecutorService executor;
@@ -65,11 +68,15 @@ public class SuspensionMeter implements AutoCloseable {
   // in-flight gauge can read the size safely.
   private final Deque<Long> candidates = new ArrayDeque<>();
   private final Map<Long, Instant> suspendedUntil = new ConcurrentHashMap<>();
+  // target mode: correlation-key prefix used when each target instance was created, so the backlog
+  // generator can address that instance's open subscriptions.
+  private final Map<Long, String> targetPrefixByKey = new ConcurrentHashMap<>();
 
   private Counter suspendRequests;
   private Counter resumeRequests;
   private Counter suspendErrors;
   private Counter resumeErrors;
+  private Counter backlogMessages;
 
   public SuspensionMeter(
       final MeterRegistry registry,
@@ -122,6 +129,12 @@ public class SuspensionMeter implements AutoCloseable {
     Gauge.builder("suspender_in_flight_suspended", suspendedUntil, Map::size)
         .description("Instances currently suspended by the suspension meter, awaiting resume")
         .register(registry);
+    backlogMessages =
+        Counter.builder("suspender_backlog_messages_total")
+            .description(
+                "Messages published to suspended target instances to build a buffered-command "
+                    + "backlog")
+            .register(registry);
   }
 
   // ---- SINGLE mode -----------------------------------------------------------------------------
@@ -251,6 +264,7 @@ public class SuspensionMeter implements AutoCloseable {
                 .join();
         // Reused across cycles; not yet suspended, so it starts as a candidate.
         candidates.add(event.getProcessInstanceKey());
+        targetPrefixByKey.put(event.getProcessInstanceKey(), "i" + i);
         LOG.info("Created target instance {}", event.getProcessInstanceKey());
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Failed to create target instance", e);
@@ -299,6 +313,10 @@ public class SuspensionMeter implements AutoCloseable {
       }
     }
 
+    if (cfg.isGenerateBacklog()) {
+      generateBacklog();
+    }
+
     try {
       Thread.sleep(cfg.getHoldDuration().toMillis());
     } catch (final InterruptedException e) {
@@ -315,6 +333,34 @@ public class SuspensionMeter implements AutoCloseable {
       } catch (final Exception e) {
         resumeErrors.increment();
         THROTTLED_LOGGER.warn("Failed to resume target instance {}", key, e);
+      }
+    }
+  }
+
+  /**
+   * Publishes one message per open subscription of each currently-suspended target instance. Each
+   * correlation targets a suspended instance, so the engine buffers it; the whole batch is drained
+   * on resume. The buffered backlog per instance therefore equals {@code subscriptionCount}.
+   */
+  private void generateBacklog() {
+    for (final long key : List.copyOf(suspendedUntil.keySet())) {
+      final String prefix = targetPrefixByKey.get(key);
+      if (prefix == null) {
+        continue;
+      }
+      for (int j = 0; j < cfg.getSubscriptionCount(); j++) {
+        try {
+          client
+              .newPublishMessageCommand()
+              .messageName(TARGET_MESSAGE_NAME)
+              .correlationKey(prefix + "-" + j)
+              .timeToLive(BACKLOG_MESSAGE_TTL)
+              .send()
+              .join();
+          backlogMessages.increment();
+        } catch (final Exception e) {
+          THROTTLED_LOGGER.warn("Failed to publish backlog message for {}", prefix, e);
+        }
       }
     }
   }

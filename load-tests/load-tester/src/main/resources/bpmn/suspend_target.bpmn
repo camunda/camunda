@@ -12,8 +12,8 @@
     a large fan-out concurrently, across three parallel branches:
       - a multi-instance service task producing one activatable job per element (job type
         'suspend-target-noop' is left with no worker, so the jobs stay running);
-      - a multi-instance receive task opening one message subscription per element (never
-        correlated, so they stay open);
+      - a multi-instance receive task opening one message subscription per element (correlated by
+        the backlog generator only while the instance is suspended, so the correlations buffer);
       - a multi-instance sub-process, each holding a long timer catch (PT1H, never fires during
         the run), so one timer stays scheduled per element.
     The collections 'jobs', 'subs' and 'timers' are passed as variables at instance creation, so
@@ -110,9 +110,26 @@
       <bpmndi:BPMNShape id="subs_di" bpmnElement="subs">
         <dc:Bounds x="380" y="220" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="timers_di" bpmnElement="timers" isExpanded="false">
-        <dc:Bounds x="380" y="360" width="120" height="80" />
+      <bpmndi:BPMNShape id="timers_di" bpmnElement="timers" isExpanded="true">
+        <dc:Bounds x="380" y="360" width="360" height="160" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timer_sub_start_di" bpmnElement="timer_sub_start">
+        <dc:Bounds x="420" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timer_wait_di" bpmnElement="timer_wait">
+        <dc:Bounds x="512" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timer_sub_end_di" bpmnElement="timer_sub_end">
+        <dc:Bounds x="612" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_timer_wait_di" bpmnElement="flow_timer_wait">
+        <di:waypoint x="456" y="440" />
+        <di:waypoint x="512" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_timer_done_di" bpmnElement="flow_timer_done">
+        <di:waypoint x="548" y="440" />
+        <di:waypoint x="612" y="440" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="end_jobs_di" bpmnElement="end_jobs">
         <dc:Bounds x="562" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -120,7 +137,7 @@
         <dc:Bounds x="562" y="242" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_timers_di" bpmnElement="end_timers">
-        <dc:Bounds x="562" y="382" width="36" height="36" />
+        <dc:Bounds x="802" y="422" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flow_start_fork_di" bpmnElement="flow_start_fork">
         <di:waypoint x="196" y="260" />
@@ -137,8 +154,8 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_fork_timers_di" bpmnElement="flow_fork_timers">
         <di:waypoint x="275" y="285" />
-        <di:waypoint x="275" y="400" />
-        <di:waypoint x="380" y="400" />
+        <di:waypoint x="275" y="440" />
+        <di:waypoint x="380" y="440" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_jobs_end_di" bpmnElement="flow_jobs_end">
         <di:waypoint x="480" y="120" />
@@ -149,8 +166,8 @@
         <di:waypoint x="562" y="260" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_timers_end_di" bpmnElement="flow_timers_end">
-        <di:waypoint x="500" y="400" />
-        <di:waypoint x="562" y="400" />
+        <di:waypoint x="740" y="440" />
+        <di:waypoint x="802" y="440" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
