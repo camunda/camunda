@@ -30,7 +30,6 @@ import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -314,13 +313,14 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
-  // Empty when the definition is not ACTIVE, so the caller rejects a repeated delete as
-  // already-being-deleted (INVALID_STATE).
+  // Empty when not active, so the caller rejects a repeated delete of a DRAINING definition as
+  // already-being-deleted (INVALID_STATE). A resting PENDING_DELETION counts as active and stays
+  // deletable, letting an operator clear a stuck row via the normal API.
   private Optional<Boolean> tryDeleteProcessDefinition(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
       final DeployedProcess process) {
-    if (process.getState() != PersistedProcessState.ACTIVE) {
+    if (!process.isActive()) {
       return Optional.empty();
     }
     return Optional.of(
@@ -378,8 +378,8 @@ public class ResourceDeletionDeleteProcessor
   }
 
   /**
-   * Latest {@code ACTIVE} version strictly below {@code version}. Skips draining and
-   * pending-deletion versions so they do not hold start-event subscriptions.
+   * Latest active version (see {@link DeployedProcess#isActive()}) strictly below {@code version}.
+   * Skips draining versions so they do not hold start-event subscriptions.
    *
    * <p>Loads known versions once and scans newest-first. {@code version >=} the deleted latest is
    * skipped because that version is already draining.
@@ -397,7 +397,7 @@ public class ResourceDeletionDeleteProcessor
       }
       final var process =
           processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
-      if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
+      if (process != null && process.isActive()) {
         return Optional.of(process);
       }
     }
