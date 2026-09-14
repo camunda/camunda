@@ -69,7 +69,7 @@
       <bpmn:startEvent id="timer_sub_start">
         <bpmn:outgoing>flow_timer_wait</bpmn:outgoing>
       </bpmn:startEvent>
-      <bpmn:intermediateCatchEvent id="timer_wait" name="1h">
+      <bpmn:intermediateCatchEvent id="timer_wait" name="wait =timerDuration">
         <bpmn:incoming>flow_timer_wait</bpmn:incoming>
         <bpmn:outgoing>flow_timer_done</bpmn:outgoing>
         <bpmn:timerEventDefinition id="timer_def">
