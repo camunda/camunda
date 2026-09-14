@@ -320,6 +320,13 @@ test.describe('Process Instances Filters', () => {
         operateFiltersPanelPage.finishedInstancesCheckbox,
       ).not.toBeChecked();
       await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+      // An instance-state toggle is auto-submitted into the URL, and the
+      // filters form re-initialises itself from that URL on the next render.
+      // Anything clicked or typed before that round trip completes is
+      // discarded by the re-initialisation, so wait for the toggle to reach
+      // the URL (Finished writes the `completed` and `canceled` params) before
+      // touching the next filter.
+      await expect(page).toHaveURL(/[?&]completed=true/);
       await expect(
         operateFiltersPanelPage.finishedInstancesCheckbox,
       ).toBeChecked();
@@ -477,7 +484,17 @@ test.describe('Process Instances Filters', () => {
         operateFiltersPanelPage.finishedInstancesCheckbox,
       ).not.toBeChecked();
       await operateFiltersPanelPage.clickRunningInstancesCheckbox();
+      // Let the Running toggle round-trip through the URL before clicking
+      // Finished. Each instance-state toggle is auto-submitted into the URL
+      // and the filters form re-initialises from that URL on the next render,
+      // so a Finished click landing inside that window is overwritten by the
+      // re-initialisation — which is how the run ended up with every
+      // instance-state checkbox unchecked and Operate asking to "select at
+      // least one Instance state". Unchecking Running drops `active` and
+      // `incidents` from the query string.
+      await expect(page).not.toHaveURL(/[?&](active|incidents)=true/);
       await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+      await expect(page).toHaveURL(/[?&]completed=true/);
       await expect(
         operateFiltersPanelPage.runningInstancesCheckbox,
       ).not.toBeChecked();
