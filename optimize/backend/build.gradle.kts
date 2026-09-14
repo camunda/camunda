@@ -26,10 +26,7 @@ tasks.named<ProcessResources>("processResources") {
   from(layout.settingsDirectory.dir("optimize/client/dist")) { into("META-INF/resources") }
 }
 
-sourceSets {
-  main { resources { srcDir("src/main/ssl") } }
-  test { resources { srcDir("src/it/resources") } }
-}
+sourceSets { main { resources { srcDir("src/main/ssl") } } }
 
 dependencies {
   compileOnly(project(":optimize-client"))
