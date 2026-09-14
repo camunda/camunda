@@ -27,6 +27,59 @@ This load test proves the **cluster-level** properties JMH structurally cannot:
    thousands of running instances must behave (throughput, backpressure, graceful
    batch-limit rejection) on a real cluster.
 
+## Chosen test: blast-radius / interference
+
+The concrete scenario we run measures **how much suspending/resuming one heavy process
+definition impacts unrelated running processes** on the same cluster. Two workloads run
+concurrently:
+
+- **Victim — `typical_process` @ ~50 PI/s (the `typical` scenario), never suspended.** Workers
+  complete its jobs normally. This is the workload we *measure*: its throughput and latency
+  must not dip while the target is suspended/resumed.
+- **Heavy target — a purpose-built process definition** with a large fan-out: **~500 active
+  jobs + ~500 open message subscriptions per instance**, held concurrently. A small number of
+  instances (default **1**) is created and then **suspended and resumed on a cadence** (default
+  **30 s suspend interval / 30 s hold**). Only this definition is toggled.
+
+**Signal:** compare the victim's throughput/latency with target suspension **on vs off** (A/B).
+Any dip that lines up with the target's suspend/resume events is the blast radius.
+
+### The heavy target process
+
+- **~500 active jobs:** a parallel multi-instance service task (500 elements) whose job type
+  **no worker services**, so the jobs stay activatable (never completed) and are all "running"
+  at suspend time.
+- **~500 message subscriptions:** a parallel multi-instance message catch (500 elements) with
+  distinct correlation keys that are **never correlated**, so 500 subscriptions stay open.
+- A parallel gateway activates both multi-instance branches at once, so a single instance holds
+  ~500 jobs + ~500 subscriptions simultaneously.
+- The instance is created once and **reused** across suspend/resume cycles: resume un-parks the
+  jobs (still unhandled → they stay) and reopens the subscriptions.
+
+### Why these numbers / what to watch
+
+- **500 + 500 = 1000 combined** is comfortably under the ~2000-combined 4 MB batch-record limit
+  (`SuspensionBatchLimitTest`), so suspends never get rejected — we get a clean interference
+  signal rather than probing the limit.
+- Suspending 500 jobs is **O(n²)** (a few hundred ms), and it lands on the **single partition**
+  that owns the target instance. Victim instances spread across all 3 partitions, so the
+  interference should appear as a **per-partition latency spike** on the target's partition,
+  not cluster-wide. Watch per-partition processing latency, not just the aggregate.
+- With 1 target instance only one partition is stressed (cleanest isolation). Raising the
+  target count spreads the hit across more partitions (placement is not guaranteed).
+
+### Design change required (to be built after this plan is approved)
+
+The current single-starter design runs one process definition. This test needs **two
+concurrent workloads**, so `SuspensionMeter` is extended with a **target mode** (implemented):
+it deploys the heavy target BPMN (`bpmn/suspend_target.bpmn`), creates `target-instances` heavy
+PIs at startup, then suspends/resumes them by key each cycle — all while the starter runs the
+untouched `typical` victim load. The first cycle starts after `batch-interval` (warm-up for the
+fan-out to materialise); `hold-duration` is the hold and `batch-interval` the idle gap. New
+config knobs (`load-tester.suspender.*`): `target-enabled`, `target-bpmn-path`,
+`target-process-id`, `target-instances` (default 1), `job-count` (500), `subscription-count`
+(500), plus the existing `hold-duration`/`batch-interval`.
+
 ## Scope decisions
 
 | Decision | Choice | Rationale |
@@ -147,12 +200,32 @@ Run both arms for the same (multi-hour) duration on comparable cluster state, th
 the Camunda Performance + Zeebe Grafana dashboards and the `SuspensionMetrics` panels; archive
 results.
 
+### Blast-radius / interference run (the chosen test)
+
+Victim = the `typical` scenario (50 PI/s, untouched). Arm B additionally enables **target mode**,
+which deploys the heavy target, seeds it, and suspends/resumes only it (30 s hold, 30 s gap):
+
+```bash
+# Arm A — baseline: typical load only, no target suspension
+gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
+  -f name=blast-a-baseline -f ref=59933-suspend-resume-load-testing -f scenario=typical
+
+# Arm B — same typical load + heavy target suspended/resumed
+gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
+  -f name=blast-b-target -f ref=59933-suspend-resume-load-testing -f scenario=typical \
+  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.target-enabled=true --set global.extraConfig.load-tester.suspender.hold-duration=30s --set global.extraConfig.load-tester.suspender.batch-interval=30s"
+```
+
+Compare the **victim** throughput/latency (starter metrics) between arms, focused on the
+**partition that owns the target instance** — that is where any interference shows.
+
 ## Deliverables / follow-ups
 
 - [x] `SuspensionMeter` + `SuspenderProperties` + starter wiring + `application.yaml` (this PR).
-- [ ] BPMN model with a message/timer catch event for the drain scenario, so buffered commands
-      actually accumulate on low-fan-out instances (the default `one_task`/`typical_process`
-      have little to buffer while suspended).
+- [x] Target mode + heavy target BPMN (`bpmn/suspend_target.bpmn`) for the blast-radius test.
+- [ ] Smoke-deploy `bpmn/suspend_target.bpmn` on a cluster (or locally) to confirm it deploys and
+      reaches the ~500 job + ~500 subscription fan-out — the model is hand-authored and has only
+      been build-checked, not deploy-validated against a live engine.
 - [ ] Optional: promote to a recurring daily-stress variant if suspend/resume becomes a
       relied-upon path.
 

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="suspend_target_definitions"
+                  targetNamespace="http://camunda.org/loadtest">
+  <!--
+    Heavy target process for the suspend/resume blast-radius load test. A single instance holds
+    a large fan-out concurrently: a parallel multi-instance service task produces one activatable
+    job per element (job type 'suspend-target-noop' is intentionally left with no worker, so the
+    jobs stay running), and a parallel multi-instance message catch opens one message subscription
+    per element (never correlated, so they stay open). The two collections 'jobs' and 'subs' are
+    passed as variables at instance creation, so the fan-out size is configured by the caller
+    (SuspensionMeter), not baked into the model.
+  -->
+  <bpmn:message id="suspend_target_message" name="suspend-target-msg">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=subItem" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="suspendTarget" name="Suspend target" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow_start_fork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="fork">
+      <bpmn:incoming>flow_start_fork</bpmn:incoming>
+      <bpmn:outgoing>flow_fork_jobs</bpmn:outgoing>
+      <bpmn:outgoing>flow_fork_subs</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="jobs" name="jobs">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="suspend-target-noop" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_fork_jobs</bpmn:incoming>
+      <bpmn:outgoing>flow_jobs_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=jobs" inputElement="jobItem" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:intermediateCatchEvent id="subs" name="subs">
+      <bpmn:incoming>flow_fork_subs</bpmn:incoming>
+      <bpmn:outgoing>flow_subs_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=subs" inputElement="subItem" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:messageEventDefinition id="subs_msg_def" messageRef="suspend_target_message" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="end_jobs">
+      <bpmn:incoming>flow_jobs_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="end_subs">
+      <bpmn:incoming>flow_subs_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_fork" sourceRef="start" targetRef="fork" />
+    <bpmn:sequenceFlow id="flow_fork_jobs" sourceRef="fork" targetRef="jobs" />
+    <bpmn:sequenceFlow id="flow_fork_subs" sourceRef="fork" targetRef="subs" />
+    <bpmn:sequenceFlow id="flow_jobs_end" sourceRef="jobs" targetRef="end_jobs" />
+    <bpmn:sequenceFlow id="flow_subs_end" sourceRef="subs" targetRef="end_subs" />
+  </bpmn:process>
+</bpmn:definitions>

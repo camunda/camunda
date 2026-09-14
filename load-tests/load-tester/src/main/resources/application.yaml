@@ -120,6 +120,16 @@ load-tester:
     batch-interval: ${LOAD_TESTER_SUSPENDER_BATCH_INTERVAL:10s}
     batch-page-size: ${LOAD_TESTER_SUSPENDER_BATCH_PAGE_SIZE:1000}
     hold-duration: ${LOAD_TESTER_SUSPENDER_HOLD_DURATION:30s}
+    # Target mode: deploy a dedicated heavy process (large job + subscription fan-out), create a
+    # few instances, and suspend/resume only those while the starter's workload runs untouched
+    # (blast-radius / interference test). hold-duration is the hold; batch-interval is the idle
+    # gap between suspend/resume cycles.
+    target-enabled: ${LOAD_TESTER_SUSPENDER_TARGET_ENABLED:false}
+    target-bpmn-path: ${LOAD_TESTER_SUSPENDER_TARGET_BPMN_PATH:bpmn/suspend_target.bpmn}
+    target-process-id: ${LOAD_TESTER_SUSPENDER_TARGET_PROCESS_ID:suspendTarget}
+    target-instances: ${LOAD_TESTER_SUSPENDER_TARGET_INSTANCES:1}
+    job-count: ${LOAD_TESTER_SUSPENDER_JOB_COUNT:500}
+    subscription-count: ${LOAD_TESTER_SUSPENDER_SUBSCRIPTION_COUNT:500}
 
   # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
   optimize:

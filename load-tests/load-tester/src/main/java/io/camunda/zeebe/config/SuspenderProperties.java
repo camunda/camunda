@@ -40,6 +40,16 @@ public class SuspenderProperties {
   /** How long an instance stays suspended before it is resumed. */
   private Duration holdDuration = Duration.ofSeconds(30);
 
+  // Target mode: instead of suspending the instances the starter creates, deploy a dedicated
+  // heavy process definition, create a few instances of it, and suspend/resume only those while
+  // the starter's normal workload runs untouched (blast-radius / interference test).
+  private boolean targetEnabled = false;
+  private String targetBpmnPath = "bpmn/suspend_target.bpmn";
+  private String targetProcessId = "suspendTarget";
+  private int targetInstances = 1;
+  private int jobCount = 500;
+  private int subscriptionCount = 500;
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -114,5 +124,53 @@ public class SuspenderProperties {
 
   public void setHoldDuration(final Duration holdDuration) {
     this.holdDuration = holdDuration;
+  }
+
+  public boolean isTargetEnabled() {
+    return targetEnabled;
+  }
+
+  public void setTargetEnabled(final boolean targetEnabled) {
+    this.targetEnabled = targetEnabled;
+  }
+
+  public String getTargetBpmnPath() {
+    return targetBpmnPath;
+  }
+
+  public void setTargetBpmnPath(final String targetBpmnPath) {
+    this.targetBpmnPath = targetBpmnPath;
+  }
+
+  public String getTargetProcessId() {
+    return targetProcessId;
+  }
+
+  public void setTargetProcessId(final String targetProcessId) {
+    this.targetProcessId = targetProcessId;
+  }
+
+  public int getTargetInstances() {
+    return targetInstances;
+  }
+
+  public void setTargetInstances(final int targetInstances) {
+    this.targetInstances = targetInstances;
+  }
+
+  public int getJobCount() {
+    return jobCount;
+  }
+
+  public void setJobCount(final int jobCount) {
+    this.jobCount = jobCount;
+  }
+
+  public int getSubscriptionCount() {
+    return subscriptionCount;
+  }
+
+  public void setSubscriptionCount(final int subscriptionCount) {
+    this.subscriptionCount = subscriptionCount;
   }
 }

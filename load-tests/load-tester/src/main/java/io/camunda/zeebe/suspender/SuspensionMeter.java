@@ -18,7 +18,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +41,12 @@ import org.slf4j.LoggerFactory;
  * issues one suspend/resume command per instance; {@code BATCH} issues process-instance batch
  * operations over a filter. It is only constructed when {@link SuspenderProperties#isEnabled()} is
  * {@code true}; leaving it disabled is the A/B baseline arm.
+ *
+ * <p>When {@link SuspenderProperties#isTargetEnabled()} is set, it instead runs the blast-radius /
+ * interference test: it deploys a dedicated heavy process definition (large fan-out of jobs and
+ * message subscriptions), creates a few instances of it, and suspends/resumes only those on a
+ * cadence while the starter's normal workload runs untouched — to measure how much suspend/resume
+ * of one heavy definition impacts unrelated running processes.
  */
 public class SuspensionMeter implements AutoCloseable {
 
@@ -77,6 +85,10 @@ public class SuspensionMeter implements AutoCloseable {
   /** Registers metrics and schedules the suspend/resume tasks for the configured mode. */
   public void start() {
     registerMetrics();
+    if (cfg.isTargetEnabled()) {
+      startTargetMode();
+      return;
+    }
     LOG.info(
         "Starting suspension meter: mode={}, processId={}, holdDuration={}",
         cfg.getMode(),
@@ -179,6 +191,120 @@ public class SuspensionMeter implements AutoCloseable {
         resumeErrors.increment();
         THROTTLED_LOGGER.warn("Failed to resume instance {}", key, e);
         // Keep the key so a later sweep retries it rather than leaking a suspended instance.
+      }
+    }
+  }
+
+  // ---- TARGET mode (blast-radius / interference test) ------------------------------------------
+
+  private void startTargetMode() {
+    LOG.info(
+        "Starting suspension meter in target mode: processId={}, instances={}, jobs={}, "
+            + "subscriptions={}, holdDuration={}, cycleGap={}",
+        cfg.getTargetProcessId(),
+        cfg.getTargetInstances(),
+        cfg.getJobCount(),
+        cfg.getSubscriptionCount(),
+        cfg.getHoldDuration(),
+        cfg.getBatchInterval());
+
+    deployTarget();
+    createTargetInstances();
+    if (suspendedUntil.isEmpty() && candidates.isEmpty()) {
+      LOG.warn("No target instances were created; suspension meter has nothing to do");
+      return;
+    }
+
+    // One repeating cycle: suspend all target instances, hold, resume all. The first cycle starts
+    // after batchInterval, giving the instances time to reach full fan-out; batchInterval is also
+    // the idle gap between cycles.
+    executor.scheduleWithFixedDelay(
+        this::targetCycle,
+        cfg.getBatchInterval().toMillis(),
+        cfg.getBatchInterval().toMillis(),
+        TimeUnit.MILLISECONDS);
+  }
+
+  private void deployTarget() {
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath(cfg.getTargetBpmnPath())
+        .send()
+        .join();
+    LOG.info("Deployed target process from {}", cfg.getTargetBpmnPath());
+  }
+
+  private void createTargetInstances() {
+    for (int i = 0; i < cfg.getTargetInstances(); i++) {
+      final var variables =
+          buildTargetVariables(cfg.getJobCount(), cfg.getSubscriptionCount(), "i" + i);
+      try {
+        final var event =
+            client
+                .newCreateInstanceCommand()
+                .bpmnProcessId(cfg.getTargetProcessId())
+                .latestVersion()
+                .variables(variables)
+                .send()
+                .join();
+        // Reused across cycles; not yet suspended, so it starts as a candidate.
+        candidates.add(event.getProcessInstanceKey());
+        LOG.info("Created target instance {}", event.getProcessInstanceKey());
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.warn("Failed to create target instance", e);
+      }
+    }
+  }
+
+  /**
+   * Builds the fan-out variables for one target instance: a {@code jobs} list driving the
+   * multi-instance service task and a {@code subs} list of distinct correlation keys driving the
+   * multi-instance message catch. The {@code keyPrefix} keeps subscription keys unique across
+   * instances so their subscriptions never collide.
+   */
+  static Map<String, Object> buildTargetVariables(
+      final int jobCount, final int subscriptionCount, final String keyPrefix) {
+    final List<Integer> jobs = new ArrayList<>(jobCount);
+    for (int i = 0; i < jobCount; i++) {
+      jobs.add(i);
+    }
+    final List<String> subs = new ArrayList<>(subscriptionCount);
+    for (int i = 0; i < subscriptionCount; i++) {
+      subs.add(keyPrefix + "-" + i);
+    }
+    return Map.of("jobs", jobs, "subs", subs);
+  }
+
+  private void targetCycle() {
+    final Instant deadline = Instant.now().plus(cfg.getHoldDuration());
+    for (final long key : List.copyOf(candidates)) {
+      try {
+        client.newSuspendProcessInstanceCommand(key).send().join();
+        suspendRequests.increment();
+        candidates.remove(key);
+        suspendedUntil.put(key, deadline);
+      } catch (final Exception e) {
+        suspendErrors.increment();
+        THROTTLED_LOGGER.warn("Failed to suspend target instance {}", key, e);
+      }
+    }
+
+    try {
+      Thread.sleep(cfg.getHoldDuration().toMillis());
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return;
+    }
+
+    for (final long key : List.copyOf(suspendedUntil.keySet())) {
+      try {
+        client.newResumeProcessInstanceCommand(key).send().join();
+        resumeRequests.increment();
+        suspendedUntil.remove(key);
+        candidates.add(key);
+      } catch (final Exception e) {
+        resumeErrors.increment();
+        THROTTLED_LOGGER.warn("Failed to resume target instance {}", key, e);
       }
     }
   }

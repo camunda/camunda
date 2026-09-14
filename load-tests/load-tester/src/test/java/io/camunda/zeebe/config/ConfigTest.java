@@ -93,6 +93,12 @@ class ConfigTest {
     assertThat(suspenderCfg.getBatchInterval()).hasSeconds(10);
     assertThat(suspenderCfg.getBatchPageSize()).isEqualTo(1000);
     assertThat(suspenderCfg.getHoldDuration()).hasSeconds(30);
+    assertThat(suspenderCfg.isTargetEnabled()).isFalse();
+    assertThat(suspenderCfg.getTargetBpmnPath()).isEqualTo("bpmn/suspend_target.bpmn");
+    assertThat(suspenderCfg.getTargetProcessId()).isEqualTo("suspendTarget");
+    assertThat(suspenderCfg.getTargetInstances()).isEqualTo(1);
+    assertThat(suspenderCfg.getJobCount()).isEqualTo(500);
+    assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(500);
   }
 
   @Nested
@@ -163,6 +169,10 @@ class ConfigTest {
       assertThat(suspenderCfg.getBatchInterval()).hasSeconds(5);
       assertThat(suspenderCfg.getBatchPageSize()).isEqualTo(2000);
       assertThat(suspenderCfg.getHoldDuration()).hasMinutes(1);
+      assertThat(suspenderCfg.isTargetEnabled()).isTrue();
+      assertThat(suspenderCfg.getTargetInstances()).isEqualTo(3);
+      assertThat(suspenderCfg.getJobCount()).isEqualTo(800);
+      assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(800);
     }
   }
 }
