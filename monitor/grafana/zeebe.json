@@ -2267,7 +2267,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "clamp_min(\n  max by (cluster, namespace, exporter, physicalTenant, partition) (\n    zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}\n    or\n    zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}\n  )\n  - max by (cluster, namespace, exporter, physicalTenant, partition) (\n    zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}\n  ),\n  0\n)",
+              "expr": "clamp_min(max by (namespace, exporter, physicalTenant, partition) (    zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}    or    zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}  )  - max by (namespace, exporter, physicalTenant, partition) (    zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}  ),  0)",
               "format": "time_series",
               "instant": false,
               "interval": "",
