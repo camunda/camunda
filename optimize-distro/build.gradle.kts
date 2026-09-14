@@ -61,6 +61,9 @@ val assembleDist =
     group = "build"
     description = "Assemble the Camunda Optimize distribution"
     dependsOn(":optimize-backend:jar", ":upgrade-optimize:jar", optimizeDistroResources)
+
+    // Yarn builds only run when producing a dist artifact, not during tests or compilation.
+    dependsOn(":optimize-client:yarnBuild")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     into(layout.buildDirectory.dir("camunda-optimize"))
 
