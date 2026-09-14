@@ -23,6 +23,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
+import io.camunda.exporter.utils.CamundaExporterSchemaUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.SchemaManager;
@@ -1711,13 +1712,16 @@ final class OpenSearchArchiverRepositoryIT {
                     .connect(connectConfig)
                     .retention(retention)
                     .schemaManager(schemaManagerConfig));
-    new SchemaManager(
+
+    try (final SchemaManager schemaManager =
+        new SchemaManager(
             searchEngineClient,
             resourceProvider.getIndexDescriptors(),
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
-            MAPPER)
-        .startupOnce();
+            MAPPER)) {
+      CamundaExporterSchemaUtils.startupSchemaWithRetries(schemaManager);
+    }
   }
 
   private void createBatchOperationIndex() throws IOException {
