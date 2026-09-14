@@ -22,6 +22,8 @@ import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -31,9 +33,19 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 final class DefaultRolesIT {
+
+  private static final String TOKEN_VALUE = "token-file-value";
+  private static final String KNOWN_REFERENCE = "camunda.secrets.token";
+
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+      new TestStandaloneBroker()
+          .withBasicAuth()
+          .withAuthorizationsEnabled()
+          .withFileBasedSecretStore(
+              directory -> {
+                Files.writeString(directory.resolve("token"), TOKEN_VALUE, StandardCharsets.UTF_8);
+              });
 
   private static final String DEFAULT_PASSWORD = "password";
   private static final String CONNECTORS_USERNAME = "connectors";
@@ -87,5 +99,19 @@ final class DefaultRolesIT {
 
     // then
     assertThat((Future<?>) result).succeedsWithin(Duration.ofSeconds(30));
+  }
+
+  @RegressionTest("https://github.com/camunda/connectors/issues/8222")
+  void shouldResolveSecrets(@Authenticated(CONNECTORS_USERNAME) final CamundaClient client) {
+    // when
+    final var response =
+        client.newResolveSecretsCommand().references(List.of(KNOWN_REFERENCE)).send().join();
+
+    // then the connectors role's default SECRET:REVEAL grant lets it resolve without any
+    // additional authorization being configured
+    assertThat(response.isFullyResolved()).isTrue();
+    assertThat(response.getResolved()).hasSize(1);
+    assertThat(response.getResolved().get(0).getReference()).isEqualTo(KNOWN_REFERENCE);
+    assertThat(response.getResolved().get(0).getValue()).isEqualTo(TOKEN_VALUE);
   }
 }
