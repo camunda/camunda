@@ -759,6 +759,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVAL
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVALBYINDEXNAME
+        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_DATABASENAME
+        
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_DATABASENAME
         
@@ -882,6 +885,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVAL
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVALBYINDEXNAME
+        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_DATABASENAME
+        
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_DATABASENAME
         
@@ -1025,6 +1031,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         queue-memory-limit: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUEMEMORYLIMIT
         # The maximum size of the exporters execution queue before it is flushed to the database.
         queue-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUESIZE
+        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_DATABASENAME
+        
         # If true, enables JDBC batch statement rewriting on the RDBMS connection so that same-statement
         # batches collapse into a single multi-values round trip instead of one round trip per statement. Has
         # no effect for database vendors other than MySQL/MariaDB.
