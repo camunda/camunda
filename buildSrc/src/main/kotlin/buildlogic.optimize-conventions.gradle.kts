@@ -1,5 +1,6 @@
 import io.camunda.gradle.pom.PomResolver
 import io.camunda.gradle.pom.resolvePomProperty
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 
@@ -8,6 +9,12 @@ import org.gradle.api.tasks.testing.Test
 val optimizePom = PomResolver(rootDir.resolve("optimize/pom.xml").readText()).properties()
 
 fun optVersion(key: String) = resolvePomProperty(key, optimizePom)
+
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val jodaTimeVersion = versionCatalog.findVersion("joda-time").get().requiredVersion
+val mybatisVersion = versionCatalog.findVersion("mybatis").get().requiredVersion
+val optimizeElasticsearchRestClientVersion =
+  versionCatalog.findVersion("optimize-elasticsearch-client").get().requiredVersion
 
 configurations.all {
   resolutionStrategy.force(
@@ -23,7 +30,10 @@ configurations.all {
     "org.apache.lucene:lucene-core:${optVersion("version.lucene")}",
     "org.eclipse.angus:jakarta.mail:${optVersion("version.jakarta-mail-angus")}",
     "org.elasticsearch:elasticsearch:${optVersion("version.elasticsearch")}",
+    "org.elasticsearch.client:elasticsearch-rest-client:$optimizeElasticsearchRestClientVersion",
     "org.glassfish.jersey.core:jersey-client:${optVersion("version.jersey")}",
+    "joda-time:joda-time:$jodaTimeVersion",
+    "org.mybatis:mybatis:$mybatisVersion",
     "org.glassfish.jersey.media:jersey-media-json-jackson:${optVersion("version.jersey")}",
     "org.mock-server:mockserver-client-java:${optVersion("mockserver.version")}",
     "org.mock-server:mockserver-core:${optVersion("mockserver.version")}",
