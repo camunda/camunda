@@ -37,8 +37,10 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,6 +68,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   // transitively; declaring that dependency to read one constant is not worth it, and getting the
   // value wrong here fails loudly at broker startup rather than silently.
   private static final String SECRET_STORE_ID = "default";
+  private static final String OWNER_ONLY = "rwx------";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneBroker.class);
 
   private boolean isGatewayEnabled = true;
@@ -309,7 +312,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
       return;
     }
     try {
-      Files.createDirectories(secretStoreDirectory);
+      createSecretStoreDirectory(secretStoreDirectory);
       secretsWriter.writeTo(secretStoreDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to recreate the file-based secret store", e);
@@ -320,6 +323,23 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     LOGGER.info(
         "Recreated the deleted secret store directory {} before restarting the broker",
         secretStoreDirectory);
+  }
+
+  /**
+   * Creates the secret store directory with the owner-only permissions {@code
+   * Files.createTempDirectory} gave it the first time. Creating it plainly would hand the rewritten
+   * store whatever the umask allows, so a restarted broker would keep its secrets more openly than
+   * a freshly built one. The permissions are set as the directory is created, so it is never
+   * readable by anyone else in between.
+   */
+  private static void createSecretStoreDirectory(final Path directory) throws IOException {
+    if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+      Files.createDirectories(
+          directory,
+          PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString(OWNER_ONLY)));
+    } else {
+      Files.createDirectories(directory);
+    }
   }
 
   /**
