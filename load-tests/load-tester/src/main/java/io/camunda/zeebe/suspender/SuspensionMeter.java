@@ -365,8 +365,8 @@ public class SuspensionMeter implements AutoCloseable {
    * producing a burst of correlation work at resume time.
    */
   private void publishResumeCorrelations(final List<TargetInstance> instances) {
-    // TTL must outlast the remaining hold plus the resume/settle window.
-    final Duration ttl = cfg.getHoldDuration().plus(cfg.getSettle()).plus(Duration.ofMinutes(1));
+    // TTL must outlast the remaining hold plus the resume/settle window, with margin to spare.
+    final Duration ttl = cfg.getHoldDuration().plus(cfg.getSettle()).plus(Duration.ofSeconds(90));
     for (final TargetInstance instance : instances) {
       for (int j = 0; j < cfg.getSubscriptionCount(); j++) {
         try {
