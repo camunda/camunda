@@ -20,8 +20,6 @@ import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {getBootConfig} from '#/shared/config/getBootConfig';
-import {getStage} from '#/shared/config/getStage';
-import {getNotificationsUrl} from '#/shared/config/getNotificationsUrl';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
@@ -29,7 +27,7 @@ import {AccountMenu} from './AccountMenu';
 import {useBreadcrumbs} from './useBreadcrumbs';
 import {HelpMenu} from './HelpMenu';
 import {LicenseBadges} from './LicenseBadges';
-import {SaasNotifications} from '#/shared/notifications/shadcn.components/SaasNotifications';
+import {SaasNotifications} from './SaasNotifications';
 import {useCallback, useMemo} from 'react';
 
 const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
@@ -45,23 +43,22 @@ const Header: React.FC<Props> = ({children}) => {
 	const {data: license} = useSuspenseQuery(queries.getLicense());
 	const {ariaLabel, homeRoute, items, product} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
-	const {organizationId} = getBootConfig();
-	const stage = getStage(window.location.hostname);
-	const notificationsUrl = stage === 'unknown' ? undefined : getNotificationsUrl(stage);
+	const {organizationId, clusterId} = getBootConfig();
+	const isSaas = organizationId !== null && clusterId !== null;
 	const isBelowLg = useMediaQuery('(width < 64rem)');
 	const breadcrumb = useBreadcrumbs({webappLinks: currentUser.c8Links});
 	const globalActions = useMemo(
 		() =>
-			organizationId === null || notificationsUrl === undefined
-				? undefined
-				: [
+			isSaas
+				? [
 						{
 							key: 'notifications',
 							label: t('headerNotificationsLabel'),
-							element: <SaasNotifications organizationId={organizationId} url={notificationsUrl} />,
+							element: <SaasNotifications />,
 						},
-					],
-		[notificationsUrl, organizationId, t],
+					]
+				: undefined,
+		[isSaas, t],
 	);
 
 	const handleLogout = useCallback(() => {

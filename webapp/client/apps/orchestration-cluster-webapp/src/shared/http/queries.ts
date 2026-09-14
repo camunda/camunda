@@ -35,8 +35,6 @@ import type {
 import {request} from './request';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
-import {getNotifications, type NotificationsConfig} from '#/shared/notifications/saas/api';
-import type {Notification} from '#/shared/notifications/saas/schemas';
 
 const DEFAULT_MAX_ITEM_PER_PAGE = 50;
 
@@ -69,8 +67,6 @@ const queryKeys = {
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
-	saasNotifications: ({organizationId, url}: NotificationsConfig) =>
-		['saasNotifications', url, organizationId] as const,
 };
 
 const queries = {
@@ -113,22 +109,6 @@ const queries = {
 			},
 			staleTime: Infinity,
 			gcTime: Infinity,
-		}),
-	getSaasNotifications: (config: NotificationsConfig) =>
-		queryOptions({
-			queryKey: queryKeys.saasNotifications(config),
-			queryFn: async (): Promise<Notification[]> => {
-				const notifications = await getNotifications(config);
-				return notifications
-					.filter(
-						(notification) =>
-							(notification.state === 'new' || notification.state === 'read') &&
-							(notification.type !== 'org' || notification.orgId === config.organizationId),
-					)
-					.sort((left, right) => right.timestamp - left.timestamp || left.uuid.localeCompare(right.uuid));
-			},
-			staleTime: Infinity,
-			retry: false,
 		}),
 	queryUserTasks: (body: QueryUserTasksRequestBody) => {
 		const MAX_TASKS_PER_REQUEST = body.page?.limit ?? DEFAULT_MAX_ITEM_PER_PAGE;

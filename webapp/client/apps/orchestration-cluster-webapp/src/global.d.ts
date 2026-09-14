@@ -25,6 +25,9 @@ export declare global {
 
 	interface ImportMetaEnv {
 		readonly VITE_VERSION: string;
+		readonly VITE_DEV_ENV_URL: string;
+		readonly VITE_INT_ENV_URL: string;
+		readonly VITE_PROD_ENV_URL: string;
 		readonly VITE_OSANO_DEV_ENV_URL: string;
 		readonly VITE_OSANO_INT_ENV_URL: string;
 		readonly VITE_OSANO_PROD_ENV_URL: string;

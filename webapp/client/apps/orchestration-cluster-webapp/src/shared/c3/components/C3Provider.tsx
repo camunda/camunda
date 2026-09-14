@@ -10,7 +10,9 @@ import {C3UserConfigurationProvider} from '@camunda/camunda-composite-components
 import {C3ThemePersister} from '#/shared/theme/C3ThemePersister';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getStage} from '#/shared/config/getStage';
-import {fetchSaasToken} from '#/shared/saas/fetchSaasToken';
+import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
+
+const STAGE = getStage(window.location.host);
 
 type Props = {
 	currentApp: 'tasklist' | 'operate' | 'admin' | undefined;
@@ -20,9 +22,8 @@ type Props = {
 
 const C3Provider: React.FC<Props> = ({currentApp, initialSaasToken, children}) => {
 	const {organizationId, clusterId} = getBootConfig();
-	const stage = getStage(window.location.hostname);
 
-	if (initialSaasToken === null || organizationId === null || clusterId === null || stage === 'unknown') {
+	if (initialSaasToken === null || organizationId === null || clusterId === null) {
 		return <>{children}</>;
 	}
 
@@ -33,7 +34,7 @@ const C3Provider: React.FC<Props> = ({currentApp, initialSaasToken, children}) =
 			getNewUserToken={fetchSaasToken}
 			currentClusterUuid={clusterId}
 			currentApp={currentApp}
-			stage={stage}
+			stage={STAGE === 'unknown' ? 'dev' : STAGE}
 			handleTheme
 		>
 			<C3ThemePersister />
