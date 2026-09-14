@@ -1,0 +1,139 @@
+# Entry point for the `present-when-shape` rule tests.
+# The rule targets every `x-present-when` marker in the document
+# (`given: $..x-present-when`) and validates its shape with the built-in
+# `schema` function: an object with a `request` string and a scalar `equals`
+# literal, and no additional properties. Schemas below inline both valid and
+# invalid markers so a single-file lint exercises the rule end to end. Only the
+# `present-when-shape` code is asserted on, so noise from other rules
+# (descriptions, unused components, etc.) is irrelevant.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — present-when
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  /things:
+    post:
+      operationId: activateThings
+      x-scope: physical-tenant
+      tags: [Test]
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidBooleanTrueResult'
+
+components:
+  schemas:
+    # ── Valid: boolean equals ─────────────────────────────────────
+    ValidBooleanTrueResult:
+      type: object
+      properties:
+        leaseToken:
+          description: Present only when withLease is true.
+          type: string
+          nullable: true
+          x-present-when:
+            request: withLease
+            equals: true
+
+    # ── Valid: string equals ──────────────────────────────────────
+    ValidStringEqualsResult:
+      type: object
+      properties:
+        detail:
+          description: Present only for the full view mode.
+          type: string
+          nullable: true
+          x-present-when:
+            request: mode
+            equals: full
+
+    # ── Valid: number equals ──────────────────────────────────────
+    ValidNumberEqualsResult:
+      type: object
+      properties:
+        trace:
+          description: Present only at verbosity level 2.
+          type: string
+          nullable: true
+          x-present-when:
+            request: verbosity
+            equals: 2
+
+    # ── Invalid: missing `equals` ─────────────────────────────────
+    InvalidMissingEqualsResult:
+      type: object
+      properties:
+        leaseToken:
+          description: Marker without an equals literal.
+          type: string
+          nullable: true
+          x-present-when:
+            request: withLease
+
+    # ── Invalid: missing `request` ────────────────────────────────
+    InvalidMissingRequestResult:
+      type: object
+      properties:
+        leaseToken:
+          description: Marker without a request field.
+          type: string
+          nullable: true
+          x-present-when:
+            equals: true
+
+    # ── Invalid: empty `request` string ───────────────────────────
+    InvalidEmptyRequestResult:
+      type: object
+      properties:
+        leaseToken:
+          description: Marker with an empty request field.
+          type: string
+          nullable: true
+          x-present-when:
+            request: ""
+            equals: true
+
+    # ── Invalid: unknown extra property ───────────────────────────
+    InvalidExtraPropertyResult:
+      type: object
+      properties:
+        leaseToken:
+          description: Marker with an unrecognised extra key.
+          type: string
+          nullable: true
+          x-present-when:
+            request: withLease
+            equals: true
+            bogus: true
+
+    # ── Invalid: non-scalar `equals` (array) ──────────────────────
+    InvalidArrayEqualsResult:
+      type: object
+      properties:
+        leaseToken:
+          description: Marker with an array equals value.
+          type: string
+          nullable: true
+          x-present-when:
+            request: withLease
+            equals:
+              - true
+
+    # ── Invalid: non-scalar `equals` (object) ─────────────────────
+    InvalidObjectEqualsResult:
+      type: object
+      properties:
+        leaseToken:
+          description: Marker with an object equals value.
+          type: string
+          nullable: true
+          x-present-when:
+            request: withLease
+            equals:
+              nested: true

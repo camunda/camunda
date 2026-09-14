@@ -2543,6 +2543,13 @@ jobs:
           --ruleset zeebe/gateway-protocol/.spectral.yaml
           --fail-severity error
         shell: bash
+      - name: Run Spectral custom-rule unit tests
+        # Exercises each custom Spectral function and shape rule against its
+        # fixtures (lints a fixture spec with the production ruleset and asserts
+        # on the emitted violations). The Spectral CLI installed above is
+        # required at runtime by spectral-tests/helpers.js.
+        run: node --test zeebe/gateway-protocol/spectral-tests/*.test.js
+        shell: bash
       - name: Observe build status
         if: always()
         continue-on-error: true
