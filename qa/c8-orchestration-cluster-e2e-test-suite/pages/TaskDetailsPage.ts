@@ -190,6 +190,12 @@ class TaskDetailsPage {
    * to idle with only a toast, and nothing ever retries it -- so the label will
    * never flip no matter how long the test waits. Clicking only while the
    * toggle is idle covers the second case without double-toggling the first.
+   *
+   * Five attempts rather than the default three: this waits on secondary
+   * storage reporting the new assignee, which is spiky under the parallel
+   * nightly load -- most tasks settle within seconds, but 'assign and unassign
+   * task' spent the whole 90s of three attempts unsettled in run 34817452692
+   * while its neighbours settled in under 15s.
    */
   private async toggleAssignment(from: Locator, to: Locator): Promise<void> {
     await waitForAssertion({
@@ -205,6 +211,7 @@ class TaskDetailsPage {
         );
         await this.page.reload();
       },
+      maxRetries: 5,
     });
   }
 
