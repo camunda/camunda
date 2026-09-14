@@ -24,6 +24,7 @@
 		"headerNotificationsDismissAll": "Tout supprimer",
 		"headerNotificationsError": "Les notifications n’ont pas pu être chargées.",
 		"headerNotificationsRetry": "Réessayer",
+		"headerNotificationsMutationError": "La notification n’a pas pu être mise à jour.",
 		"notificationLogOutTitle": "Déconnexion",
 		"notificationLogOutSubtitle": "Vous êtes en cours de déconnexion...",
 		"loginErrorUsernamePasswordMismatch": "Nom d'utilisateur et mot de passe ne correspondent pas",
