@@ -1,27 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
-                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                  id="suspend_target_definitions"
-                  targetNamespace="http://camunda.org/loadtest">
-  <!--
-    Heavy target process for the suspend/resume blast-radius load test. A single instance holds
-    a large fan-out concurrently, across three parallel branches:
-      - a multi-instance service task producing one activatable job per element (job type
-        'suspend-target-noop' is left with no worker, so the jobs stay running);
-      - a multi-instance receive task opening one message subscription per element (never
-        correlated, so they stay open and add to the SUSPEND record);
-      - a multi-instance sub-process, each holding a timer catch of duration '=timerDuration',
-        tuned to come due while the instance is suspended so each timer's trigger is buffered
-        (an internal command targeting a suspended instance) and drained on resume. The number of
-        buffered commands drained equals the timer count.
-    The collections 'jobs', 'subs' and 'timers' and the scalar 'timerDuration' are passed as
-    variables at instance creation, so the fan-out sizes and timer due time are configured by the
-    caller (SuspensionMeter), not baked into the model.
-  -->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="suspend_target_definitions" targetNamespace="http://camunda.org/loadtest" exporter="Camunda Modeler" exporterVersion="5.47.0">
   <bpmn:message id="suspend_target_message" name="suspend-target-msg">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=subItem" />
@@ -69,7 +47,7 @@
       <bpmn:startEvent id="timer_sub_start">
         <bpmn:outgoing>flow_timer_wait</bpmn:outgoing>
       </bpmn:startEvent>
-      <bpmn:intermediateCatchEvent id="timer_wait" name="wait =timerDuration">
+      <bpmn:intermediateCatchEvent id="timer_wait" name="duration">
         <bpmn:incoming>flow_timer_wait</bpmn:incoming>
         <bpmn:outgoing>flow_timer_done</bpmn:outgoing>
         <bpmn:timerEventDefinition id="timer_def">
@@ -121,6 +99,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="timer_wait_di" bpmnElement="timer_wait">
         <dc:Bounds x="512" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="511" y="458" width="40" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="timer_sub_end_di" bpmnElement="timer_sub_end">
         <dc:Bounds x="612" y="422" width="36" height="36" />
