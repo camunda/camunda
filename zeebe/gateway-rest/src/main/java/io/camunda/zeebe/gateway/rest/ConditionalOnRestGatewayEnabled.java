@@ -16,16 +16,17 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 
 /**
- * The REST API is disabled when either the {@code zeebe.broker.gateway.enable} or {@code
- * camunda.rest.enabled} property is set to {@code false}. By default, both are considered to be set
- * to {@code true} when missing, the REST API is thus enabled by default.
+ * The REST API is disabled when the {@code zeebe.broker.gateway.enable}, {@code
+ * camunda.api.enabled} or {@code camunda.rest.enabled} property is set to {@code false}. By
+ * default, all are considered to be set to {@code true} when missing, the REST API is thus enabled
+ * by default.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
 @ConditionalOnWebApplication
 @ConditionalOnProperty(
-    name = {"zeebe.broker.gateway.enable", "camunda.rest.enabled"},
+    name = {"zeebe.broker.gateway.enable", "camunda.api.enabled", "camunda.rest.enabled"},
     havingValue = "true",
     matchIfMissing = true)
 public @interface ConditionalOnRestGatewayEnabled {}
