@@ -37,9 +37,8 @@ import sys
 from pathlib import Path
 
 # This script lives at .claude/skills/gradle-build-parity/. Walk back to the
-# repository root instead of assuming the skill directory contains settings.gradle.kts.
+# repository root instead of assuming the skill directory contains build.gradle.kts.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SETTINGS = REPO_ROOT / "settings.gradle.kts"
 
 # Maven scope -> (Maven includeScope, Gradle configuration)
 SCOPES = {
@@ -50,22 +49,27 @@ SCOPES = {
 
 INTERNAL_GROUP = "io.camunda"
 
-# project(":name").projectDir = file("path")
-_PROJECT_DIR_RE = re.compile(r'project\("(:[^"]+)"\)\.projectDir\s*=\s*file\("([^"]+)"\)')
-# include(":name")
-_INCLUDE_RE = re.compile(r'include\("(:[^"]+)"\)')
-
 
 def gradle_project_dirs() -> dict[str, str]:
-    """Map gradle project name (without leading ':') to its module directory."""
-    text = SETTINGS.read_text()
+    """Ask Gradle for the active project-to-directory mapping."""
+    out = run(
+        [
+            "./gradlew",
+            "--no-daemon",
+            "--console=plain",
+            "--quiet",
+            "printGradleProjectInventory",
+        ]
+    )
     dirs: dict[str, str] = {}
-    # default dir == project name for plain includes
-    for name in _INCLUDE_RE.findall(text):
-        dirs[name.lstrip(":")] = name.lstrip(":")
-    # explicit projectDir overrides win
-    for name, path in _PROJECT_DIR_RE.findall(text):
-        dirs[name.lstrip(":")] = path
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        try:
+            name, path = line.split("\t", 1)
+        except ValueError as error:
+            raise RuntimeError(f"invalid Gradle project inventory line: {line!r}") from error
+        dirs[name] = path
     return dirs
 
 
