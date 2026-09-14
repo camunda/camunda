@@ -1,8 +1,8 @@
 ---
 name: Configure apt fast mirror failover
 description: |
-  Hardens `apt-get update` against third-party repositories that neither
-  respond nor serve valid indexes.
+  Hardens `apt-get update` against mirrors that neither respond nor serve
+  valid indexes.
 
   Two failure modes are covered:
 
@@ -21,18 +21,19 @@ description: |
      archives. Retries do not help: a `Hash Sum mismatch` is deterministic,
      so every attempt re-fetches the same broken index. See INC-7943.
 
-  By default the third-party lists in /etc/apt/sources.list.d are disabled,
-  leaving only the Ubuntu archives. Jobs that genuinely install from a
-  third-party repository must set `keep-third-party-repos: 'true'` and add
-  their own list *after* this action runs.
+  Failure mode 2 is NOT handled here, because it cannot be handled safely
+  in a shared action -- see the note below. A job that hits it tolerates a
+  partial refresh in its own command instead:
 
-inputs:
-  keep-third-party-repos:
-    description: |
-      Set to 'true' to leave /etc/apt/sources.list.d intact, for jobs that
-      install packages from a third-party repository (e.g. google-chrome-stable).
-    required: false
-    default: 'false'
+      apt-get update || true; apt-get install -y <packages>
+
+  `apt-get update` exits 100 when any single configured repository serves a
+  bad index, even when every package the job needs is available. Letting
+  that through makes the `apt-get install` the real gate: it still fails if
+  the packages are genuinely unreachable, so a broken third-party index no
+  longer fails a job that does not install from it.
+
+inputs: {}
 
 runs:
   using: composite
@@ -46,20 +47,15 @@ runs:
         Acquire::Retries "2";
         EOF
 
-    - name: Disable preconfigured third-party apt repositories
-      if: inputs.keep-third-party-repos != 'true'
-      shell: bash
-      run: |
-        set -euo pipefail
-
-        # The runner image ships lists we never install from. Renaming rather
-        # than deleting keeps the originals recoverable within the job, and
-        # makes the skipped repositories visible in the log.
-        shopt -s nullglob
-        disabled=0
-        for list in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
-          echo "Disabling third-party apt repository: ${list}"
-          sudo mv "${list}" "${list}.disabled-by-ci"
-          disabled=$((disabled + 1))
-        done
-        echo "Disabled ${disabled} third-party apt repository list(s); apt-get update now uses the Ubuntu archives only."
+    # Deliberately NOT done here: disabling /etc/apt/sources.list.d, whether by
+    # renaming its files or via `-o Dir::Etc::sourceparts=/dev/null`. On 24.04
+    # images the Ubuntu archives themselves live in that directory, as
+    # sources.list.d/ubuntu.sources -- only 22.04 keeps them in
+    # /etc/apt/sources.list. Disabling it can therefore leave apt with zero
+    # sources: `apt-get update` still exits 0 and the install that follows fails
+    # with `Unable to locate package` on every run, not just during an outage.
+    # Which layout a given runner uses is not something a shared action can
+    # assume -- this repo's apt-using jobs span `ubuntu-latest` and several
+    # self-hosted images. It would also take out docker.list, which this repo
+    # does install from. Callers tolerate a partial refresh instead (see above),
+    # which needs no job-global mutation and so no restore step.

@@ -493,10 +493,6 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
-      # Runs with the default `keep-third-party-repos: 'false'`: the preconfigured
-      # runner-image lists are disabled here, and the google-chrome.list this job
-      # needs is written further down, after this action -- so it survives and the
-      # second `apt-get update` below still sees it.
       - uses: ./.github/actions/apt-fast-mirror-failover
       # Every network-bound, sudo'd step below is wrapped in its own `sudo timeout ...`
       # so a hang self-terminates inside the sudo'd root process tree instead of
@@ -518,7 +514,15 @@ jobs:
             set -euo pipefail
 
             if ! command -v google-chrome >/dev/null 2>&1; then
-              sudo timeout 90 bash -c "apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates"
+              # A corrupt index in any one configured repository makes `apt-get update`
+              # exit 100 (INC-7943), even though the three packages below come from the
+              # Ubuntu archives. Tolerate that: `|| true` lets a partial refresh through,
+              # and the `apt-get install` that follows is the real gate -- it fails if the
+              # packages are genuinely unavailable. Do not narrow this with
+              # `-o Dir::Etc::sourceparts=/dev/null`: on 24.04 images the Ubuntu archives
+              # themselves live in sources.list.d/ubuntu.sources, so that flag can leave
+              # apt with no sources at all.
+              sudo timeout 90 bash -c "apt-get update || true; apt-get install -y --no-install-recommends wget gnupg ca-certificates"
 
               sudo timeout 30 bash -o pipefail -c 'wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg'
 
