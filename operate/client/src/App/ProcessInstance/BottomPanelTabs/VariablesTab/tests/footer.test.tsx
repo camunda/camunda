@@ -268,4 +268,336 @@ describe('Footer', () => {
       ).toBeDisabled(),
     );
   });
+
+  it('should disable add variable button if instance state is cancelled, even with an incident', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'TERMINATED',
+      hasIncident: true,
+    });
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {name: /add variable/i}),
+      ).toBeDisabled(),
+    );
+  });
+
+  it('should enable add variable button when the instance is active with an incident', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'ACTIVE',
+      hasIncident: true,
+    });
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
+    );
+  });
+
+  it('should enable add variable button for the root scope on a suspended instance', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
+    );
+  });
+
+  it('should enable add variable button for a non-user-task element scope on a suspended instance', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+    const mockSearchVariablesPayload = {
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    };
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+
+    mockFetchElementInstance('2').withSuccess({
+      elementInstanceKey: '2',
+      elementId: 'neverFails',
+      elementName: 'Never Fails',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      endDate: null,
+      processDefinitionId: 'someKey',
+      processInstanceKey: '1',
+      processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
+      hasIncident: false,
+      incidentKey: null,
+      tenantId: '<default>',
+    });
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=neverFails&elementInstanceKey=2`,
+      ]),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
+    );
+  });
+
+  it('should disable add variable button when selected element is a user task on a suspended instance', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+    const mockSearchVariablesPayload = {
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    };
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    mockFetchElementInstance('2').withSuccess({
+      elementInstanceKey: '2',
+      elementId: 'userTask',
+      elementName: 'User Task',
+      type: 'USER_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      endDate: null,
+      processDefinitionId: 'someKey',
+      processInstanceKey: '1',
+      processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
+      hasIncident: false,
+      incidentKey: null,
+      tenantId: '<default>',
+    });
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=userTask&elementInstanceKey=2`,
+      ]),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {name: /add variable/i}),
+      ).toBeDisabled(),
+    );
+  });
+
+  it('should keep add variable button disabled until the selected element type resolves, on a suspended instance', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+    const mockSearchVariablesPayload = {
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    };
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+
+    // The scope key resolves from the URL's elementInstanceKey immediately,
+    // but the element instance lookup below (and with it, the element's
+    // type) is deliberately delayed to reproduce the window in which the
+    // type is still unknown.
+    mockFetchElementInstance('2').withDelay({
+      elementInstanceKey: '2',
+      elementId: 'neverFails',
+      elementName: 'Never Fails',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      endDate: null,
+      processDefinitionId: 'someKey',
+      processInstanceKey: '1',
+      processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
+      hasIncident: false,
+      incidentKey: null,
+      tenantId: '<default>',
+    });
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=neverFails&elementInstanceKey=2`,
+      ]),
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: /add variable/i}),
+      ).toBeDisabled();
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
+    );
+  });
+
+  it('should disable add variable button for a user task scope on a suspended instance even with an incident', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+      hasIncident: true,
+    });
+    const mockSearchVariablesPayload = {
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    };
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    mockFetchElementInstance('2').withSuccess({
+      elementInstanceKey: '2',
+      elementId: 'userTask',
+      elementName: 'User Task',
+      type: 'USER_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      endDate: null,
+      processDefinitionId: 'someKey',
+      processInstanceKey: '1',
+      processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
+      hasIncident: true,
+      incidentKey: '4',
+      tenantId: '<default>',
+    });
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=userTask&elementInstanceKey=2`,
+      ]),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {name: /add variable/i}),
+      ).toBeDisabled(),
+    );
+  });
+
+  it('should enable add variable button for the root scope on a suspended instance with an incident', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+      hasIncident: true,
+    });
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
+    );
+  });
+
+  it('should enable add variable button for a non-user-task element scope on a suspended instance with an incident', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+      hasIncident: true,
+    });
+    const mockSearchVariablesPayload = {
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    };
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+
+    mockFetchElementInstance('2').withSuccess({
+      elementInstanceKey: '2',
+      elementId: 'neverFails',
+      elementName: 'Never Fails',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      endDate: null,
+      processDefinitionId: 'someKey',
+      processInstanceKey: '1',
+      processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
+      hasIncident: true,
+      incidentKey: '5',
+      tenantId: '<default>',
+    });
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=neverFails&elementInstanceKey=2`,
+      ]),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
+    );
+  });
 });
