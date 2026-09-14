@@ -46,6 +46,30 @@ class DistributionComparisonTest(unittest.TestCase):
 
             self.assertEqual(MODULE.compare(str(gradle), str(maven)), 0)
 
+    def test_should_ignore_patch_only_jar_version_mismatches(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            gradle = self.create_archive(
+                directory, "gradle.zip", "camunda-zeebe-1.0.0", ["example-1.0.1.jar"]
+            )
+            maven = self.create_archive(
+                directory, "maven.zip", "camunda-zeebe-1.0.0", ["example-1.0.0.jar"]
+            )
+
+            self.assertEqual(MODULE.compare(str(gradle), str(maven)), 0)
+
+    def test_should_report_minor_jar_version_mismatches(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            gradle = self.create_archive(
+                directory, "gradle.zip", "camunda-zeebe-1.0.0", ["example-1.1.0.jar"]
+            )
+            maven = self.create_archive(
+                directory, "maven.zip", "camunda-zeebe-1.0.0", ["example-1.0.0.jar"]
+            )
+
+            self.assertEqual(MODULE.compare(str(gradle), str(maven)), 2)
+
     def test_should_report_jar_and_root_mismatches(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             directory = Path(temporary_directory)
