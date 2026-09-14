@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useContext, useMemo, useState} from 'react';
 import {Button, NotificationBell, NotificationsPanel, type NavNotification} from '@camunda/design-system';
 import C3NotificationProvider, {
 	C3NotificationContext,
@@ -20,24 +20,6 @@ const SaasNotificationsContent: React.FC = () => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [unreadAtOpen, setUnreadAtOpen] = useState<Set<string>>(() => new Set());
 	const unreadNotifications = useMemo(() => notifications.filter(({state}) => state === 'new'), [notifications]);
-	const isOpenRef = useRef(isOpen);
-	const notificationsRef = useRef(notifications);
-	const markAllAsReadRef = useRef(markAllAsRead);
-
-	useEffect(() => {
-		isOpenRef.current = isOpen;
-		notificationsRef.current = notifications;
-		markAllAsReadRef.current = markAllAsRead;
-	});
-
-	useEffect(
-		() => () => {
-			if (isOpenRef.current) {
-				markAllAsReadRef.current(notificationsRef.current.filter(({state}) => state === 'new'));
-			}
-		},
-		[],
-	);
 
 	const dateFormatter = useMemo(
 		() =>
