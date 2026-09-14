@@ -694,10 +694,17 @@ jobs:
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
           persist-credentials: false
       - name: Install Zeebe changelog tool
-        run: |
-          gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
-          tar -xzvf zeebe-changelog_*
-          chmod +x zcl
+        # retry to tolerate transient GitHub API failures (e.g. TLS handshake timeouts)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          retry_on: any
+          timeout_minutes: 5
+          max_attempts: 5
+          retry_wait_seconds: 10
+          command: |
+            gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
+            tar -xzvf zeebe-changelog_*
+            chmod +x zcl
       - name: Identify previous release version
         id: prev_version
         if: ${{ !inputs.dryRun }}
