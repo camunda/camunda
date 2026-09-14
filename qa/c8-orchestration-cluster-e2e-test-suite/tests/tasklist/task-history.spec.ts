@@ -18,11 +18,8 @@ type ProcessInstance = {
 };
 
 test.describe('Task History Audit Log', () => {
-  let processInstance: ProcessInstance;
-
   test.beforeAll(async () => {
     await deploy(['./resources/usertask_to_be_completed.bpmn']);
-    processInstance = await createSingleInstance('usertask_to_be_completed', 1);
   });
 
   test.beforeEach(
@@ -31,6 +28,19 @@ test.describe('Task History Audit Log', () => {
       await loginPage.login('demo', 'demo');
       await expect(page).toHaveURL('/tasklist');
 
+      // A task per test, rather than one shared across the file. Every test
+      // here only reads the audit log, but each needs its own assignment entry
+      // in it, and with a shared task that meant unassigning again in
+      // afterEach purely to hand the next test an unassigned task. That
+      // cleanup step was the one that kept failing: the first test's unassign
+      // sat unsettled for the whole retry budget while its siblings' own
+      // assignments settled in seconds. Nothing here asserts on unassigning --
+      // task-details.spec.ts's 'assign and unassign task' covers that -- so
+      // isolating the tests removes the step instead of waiting longer on it.
+      const processInstance: ProcessInstance = await createSingleInstance(
+        'usertask_to_be_completed',
+        1,
+      );
       const taskKey = await findUserTask(
         request,
         processInstance.processInstanceKey,
@@ -44,10 +54,7 @@ test.describe('Task History Audit Log', () => {
     },
   );
 
-  test.afterEach(async ({page, taskDetailsPage}, testInfo) => {
-    await taskDetailsPage.clickUnassignButton();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
-
+  test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });

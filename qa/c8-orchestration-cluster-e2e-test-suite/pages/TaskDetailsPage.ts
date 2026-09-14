@@ -207,12 +207,31 @@ class TaskDetailsPage {
       },
       onFailure: async () => {
         console.log(
-          'Assignment toggle has not flipped yet, reloading and retrying...',
+          `Assignment toggle has not flipped yet, reloading and retrying...${await this.pageNotices()}`,
         );
         await this.page.reload();
       },
       maxRetries: 5,
     });
+  }
+
+  /**
+   * Whatever the page is currently saying in a toast, for the CI log. A
+   * rejected assignment command surfaces only as a toast, and by the time
+   * anyone opens the trace of a nightly failure the toast has expired -- so
+   * when the toggle gives up, its reason belongs in the log next to it.
+   */
+  private async pageNotices(): Promise<string> {
+    const texts = await this.page
+      .locator('[data-sonner-toast], [role="alert"], [role="status"]')
+      .allInnerTexts()
+      .catch(() => [] as string[]);
+    const notices = texts
+      .map((text) => text.replace(/\s+/g, ' ').trim())
+      .filter((text) => text.length > 0)
+      .slice(0, 5);
+
+    return notices.length === 0 ? '' : ` Page says: ${notices.join(' | ')}`;
   }
 
   async clickCompleteTaskButton() {
