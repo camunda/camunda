@@ -8,23 +8,68 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2026-08-04T11:55:54.253Z
- * Spec Commit: 7ad6907f6d9cf772438213329bf52fa21d343ed2
+ * Generated At: 2026-09-14T11:24:48.545Z
+ * Spec Commit: aceb228ded9088275d9853c2dc68763c2f07e0a2
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../utils/http';
+import {
+  jsonHeaders,
+  waitForConfigurationChange,
+  buildUrl,
+} from '../../../utils/http';
 
 test.describe('Restore Validation API Tests', () => {
+  test.describe.configure({mode: 'serial'});
   test('restore - Additional prop __extraField', async ({request}) => {
     const requestBody = {
       from: 'x',
       to: 'x',
       __extraField: 'unexpected',
     };
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -33,10 +78,50 @@ test.describe('Restore Validation API Tests', () => {
   });
   test('restore - Body wrong top-level type', async ({request}) => {
     const requestBody: string[] = [];
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -48,10 +133,50 @@ test.describe('Restore Validation API Tests', () => {
       from: 123,
       to: 'x',
     };
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -63,10 +188,50 @@ test.describe('Restore Validation API Tests', () => {
       from: true,
       to: 'x',
     };
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -78,10 +243,50 @@ test.describe('Restore Validation API Tests', () => {
       from: 'x',
       to: 123,
     };
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -93,10 +298,50 @@ test.describe('Restore Validation API Tests', () => {
       from: 'x',
       to: true,
     };
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -109,10 +354,50 @@ test.describe('Restore Validation API Tests', () => {
       from: 'not-a-datetime',
       to: 'x',
     };
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -125,10 +410,50 @@ test.describe('Restore Validation API Tests', () => {
       from: 'x',
       to: 'not-a-datetime',
     };
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -137,9 +462,102 @@ test.describe('Restore Validation API Tests', () => {
   });
   // Known failing (see known-failing-tests.json): restore request from/to format validation (added in 3621ed9d6d96) is incomplete
   test.skip('restore - Missing body', async ({request}) => {
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
     const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
     });
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('restore - Param query.dryRun wrong type', async ({request}) => {
+    let enterRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const enterRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'RECOVERING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (enterRecovery.status() === 200) {
+            ({changeId: enterRecoveryChangeId} = await enterRecovery.json());
+          }
+          return enterRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(enterRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, enterRecoveryChangeId!);
+    const res = await request.post(
+      buildUrl('/restore', undefined, {dryRun: 'notBoolean'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    let exitRecoveryChangeId: string | undefined;
+    await expect
+      .poll(
+        async () => {
+          const exitRecovery = await request.patch(
+            buildUrl('/mode', undefined, {mode: 'PROCESSING'}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          if (exitRecovery.status() === 200) {
+            ({changeId: exitRecoveryChangeId} = await exitRecovery.json());
+          }
+          return exitRecovery.status();
+        },
+        {timeout: 60_000},
+      )
+      .toBe(200);
+    expect(exitRecoveryChangeId).toBeDefined();
+    await waitForConfigurationChange(request, exitRecoveryChangeId!);
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}

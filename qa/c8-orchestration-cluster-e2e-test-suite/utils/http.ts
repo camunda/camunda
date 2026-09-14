@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, APIResponse} from '@playwright/test';
+import {expect, APIRequestContext, APIResponse} from '@playwright/test';
 import type {ApiPath} from './_generated/apiPaths';
 
 export type {ApiPath};
@@ -20,6 +20,10 @@ export const credentials: Credentials = {
   baseUrl: process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080',
   accessToken: encode(`demo:demo`),
 };
+
+export const clusterAdminAccessToken = encode(
+  `${process.env.CAMUNDA_CLUSTER_ADMIN_USERNAME ?? 'cluster-operator'}:${process.env.CAMUNDA_CLUSTER_ADMIN_PASSWORD ?? 'cluster-secret'}`,
+);
 
 export function encode(auth: string) {
   return Buffer.from(auth).toString('base64');
@@ -249,6 +253,39 @@ export function jsonHeaders(
   };
 }
 
+export function clusterAdminAuthHeaders(): Record<string, string> {
+  return authHeaders(clusterAdminAccessToken);
+}
+
+export function clusterAdminJsonHeaders(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    ...clusterAdminAuthHeaders(),
+  };
+}
+
+export async function waitForConfigurationChange(
+  request: APIRequestContext,
+  changeId: string,
+): Promise<void> {
+  // Mode changes return after planning; wait for the management API to confirm application.
+  const managementUrl =
+    process.env.CAMUNDA_MANAGEMENT_URL ?? 'http://localhost:9600';
+  await expect
+    .poll(
+      async () => {
+        const response = await request.get(
+          `${managementUrl}/actuator/cluster/changes/${changeId}`,
+        );
+        if (response.status() !== 200) return undefined;
+        const change = (await response.json()) as {status?: string};
+        return change.status;
+      },
+      {timeout: 60_000},
+    )
+    .toBe('COMPLETED');
+}
+
 export function textXMLHeaders(
   auth: string = credentials.accessToken,
 ): Record<string, string> {
@@ -277,21 +314,26 @@ export function buildUrl(
   params?: Record<string, string | number>,
   query?: Record<string, string | number | undefined>,
 ): string {
-  const version: string = 'v2';
   const base = credentials.baseUrl;
-  let url = `${base}/${version}${pathTemplate}`.replace(/\{(\w+)}/g, (_, k) => {
-    const v = params?.[k];
-    // A substituted placeholder would build a request to a nonsense path that the
-    // gateway answers with a plausible 404, so a test asserting 404 would pass
-    // without exercising anything. Failing here points at the call site instead.
-    if (v == null) {
-      throw new Error(
-        `buildUrl: missing path parameter "${k}" for path template "${pathTemplate}". ` +
-          `Received params: ${JSON.stringify(params ?? {})}`,
-      );
-    }
-    return String(v);
-  });
+  // Cluster administration endpoints are declared with their own /cluster/v2 prefix.
+  // Other REST API paths are relative to the shared /v2 prefix.
+  const apiPrefix = pathTemplate.startsWith('/cluster/v2/') ? '' : '/v2';
+  let url = `${base}${apiPrefix}${pathTemplate}`.replace(
+    /\{(\w+)}/g,
+    (_, k) => {
+      const v = params?.[k];
+      // A substituted placeholder would build a request to a nonsense path that the
+      // gateway answers with a plausible 404, so a test asserting 404 would pass
+      // without exercising anything. Failing here points at the call site instead.
+      if (v == null) {
+        throw new Error(
+          `buildUrl: missing path parameter "${k}" for path template "${pathTemplate}". ` +
+            `Received params: ${JSON.stringify(params ?? {})}`,
+        );
+      }
+      return String(v);
+    },
+  );
   if (query) {
     const q = Object.entries(query)
       .filter(([, v]) => v !== undefined)

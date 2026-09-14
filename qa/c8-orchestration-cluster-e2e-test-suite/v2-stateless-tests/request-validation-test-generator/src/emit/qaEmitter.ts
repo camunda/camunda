@@ -132,17 +132,45 @@ function buildFile(
   lines.push(meta.join('\n'));
   lines.push("import {test, expect} from '@playwright/test'");
   const needsJsonHeaders = scenarios.some(
-    (s) => s.headersAuth && s.bodyEncoding !== 'multipart',
+    (s) =>
+      s.headersAuth &&
+      s.bodyEncoding !== 'multipart' &&
+      !isClusterAdminPath(s.path),
   );
   const needsAuthHeaders = scenarios.some(
-    (s) => s.headersAuth && s.bodyEncoding === 'multipart',
+    (s) =>
+      s.headersAuth &&
+      s.bodyEncoding === 'multipart' &&
+      !isClusterAdminPath(s.path),
+  );
+  const needsClusterAdminJsonHeaders = scenarios.some(
+    (s) =>
+      s.headersAuth &&
+      s.bodyEncoding !== 'multipart' &&
+      isClusterAdminPath(s.path),
+  );
+  const needsClusterAdminAuthHeaders = scenarios.some(
+    (s) =>
+      s.headersAuth &&
+      s.bodyEncoding === 'multipart' &&
+      isClusterAdminPath(s.path),
   );
   const httpNamedImports = ['buildUrl'];
+  if (scenarios.some((s) => isRestorePath(s.path)))
+    httpNamedImports.unshift('waitForConfigurationChange');
   if (needsJsonHeaders) httpNamedImports.unshift('jsonHeaders');
   if (needsAuthHeaders) httpNamedImports.unshift('authHeaders');
+  if (needsClusterAdminJsonHeaders)
+    httpNamedImports.unshift('clusterAdminJsonHeaders');
+  if (needsClusterAdminAuthHeaders)
+    httpNamedImports.unshift('clusterAdminAuthHeaders');
   lines.push(`import {${httpNamedImports.join(', ')}} from '${httpImport}'`);
   lines.push('');
   lines.push(`test.describe('${describeTitle}', () => {`);
+  if (scenarios.some((s) => isRestorePath(s.path))) {
+    // Mode changes are asynchronous and overlapping changes are rejected by the API.
+    lines.push(`  test.describe.configure({mode: 'serial'});`);
+  }
   // Pre-compute base titles and detect duplicates for uniqueness
   const baseTitles: string[] = scenarios.map((s) => buildBaseTitle(s));
   const counts = new Map<string, number>();
@@ -181,6 +209,12 @@ function renderScenario(
   lines.push(`  ${testFn}(${JSON.stringify(title)}, async ({request}) => {`);
   const pathLit = JSON.stringify(s.path);
   const paramsLit = s.params ? JSON.stringify(s.params) : 'undefined';
+  const restoreModeUrl = isClusterAdminPath(s.path)
+    ? "buildUrl('/cluster/v2/mode', undefined, {mode: 'RECOVERING'})"
+    : "buildUrl('/mode', undefined, {mode: 'RECOVERING'})";
+  const resetModeUrl = isClusterAdminPath(s.path)
+    ? "buildUrl('/cluster/v2/mode', undefined, {mode: 'PROCESSING'})"
+    : "buildUrl('/mode', undefined, {mode: 'PROCESSING'})";
   // Query values have to reach buildUrl's 3rd argument. Its 2nd argument only substitutes the
   // path template's {placeholder} tokens, so anything passed there with no matching token is
   // dropped without a trace - and the request never carries the value under test.
@@ -206,9 +240,33 @@ function renderScenario(
   }
   const headersExpr = s.headersAuth
     ? s.bodyEncoding === 'multipart'
-      ? 'authHeaders()'
-      : 'jsonHeaders()'
+      ? isClusterAdminPath(s.path)
+        ? 'clusterAdminAuthHeaders()'
+        : 'authHeaders()'
+      : isClusterAdminPath(s.path)
+        ? 'clusterAdminJsonHeaders()'
+        : 'jsonHeaders()'
     : '{}';
+  if (isRestorePath(s.path)) {
+    lines.push(`    let enterRecoveryChangeId: string | undefined;`);
+    lines.push(`    await expect.poll(async () => {`);
+    lines.push(
+      `      const enterRecovery = await request.patch(${restoreModeUrl}, {`,
+    );
+    lines.push(`        headers: ${headersExpr},`);
+    lines.push(`      });`);
+    lines.push(`      if (enterRecovery.status() === 200) {`);
+    lines.push(
+      `        ({changeId: enterRecoveryChangeId} = await enterRecovery.json());`,
+    );
+    lines.push(`      }`);
+    lines.push(`      return enterRecovery.status();`);
+    lines.push(`    }, {timeout: 60_000}).toBe(200);`);
+    lines.push(`    expect(enterRecoveryChangeId).toBeDefined();`);
+    lines.push(
+      `    await waitForConfigurationChange(request, enterRecoveryChangeId!);`,
+    );
+  }
   const dataPart =
     s.bodyEncoding === 'multipart' && s.multipartForm
       ? ',\n      multipart: formData'
@@ -220,6 +278,26 @@ function renderScenario(
   lines.push(`        headers: ${headersExpr}${dataPart}`);
   lines.push('      }');
   lines.push('    );');
+  if (isRestorePath(s.path)) {
+    lines.push(`    let exitRecoveryChangeId: string | undefined;`);
+    lines.push(`    await expect.poll(async () => {`);
+    lines.push(
+      `      const exitRecovery = await request.patch(${resetModeUrl}, {`,
+    );
+    lines.push(`        headers: ${headersExpr},`);
+    lines.push(`      });`);
+    lines.push(`      if (exitRecovery.status() === 200) {`);
+    lines.push(
+      `        ({changeId: exitRecoveryChangeId} = await exitRecovery.json());`,
+    );
+    lines.push(`      }`);
+    lines.push(`      return exitRecovery.status();`);
+    lines.push(`    }, {timeout: 60_000}).toBe(200);`);
+    lines.push(`    expect(exitRecoveryChangeId).toBeDefined();`);
+    lines.push(
+      `    await waitForConfigurationChange(request, exitRecoveryChangeId!);`,
+    );
+  }
   lines.push(
     ' // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes. ',
   );
@@ -254,6 +332,14 @@ function deriveResource(p: string): string {
   if (segs[0] === 'v1' || segs[0] === 'v2')
     return (segs[1] || 'root').replace(/[^a-zA-Z0-9]/g, '');
   return (segs[0] || 'root').replace(/[^a-zA-Z0-9]/g, '');
+}
+
+function isClusterAdminPath(path: string): boolean {
+  return path.startsWith('/cluster/v2/');
+}
+
+function isRestorePath(path: string): boolean {
+  return path === '/restore' || path === '/cluster/v2/restore';
 }
 
 function buildBaseTitle(s: ValidationScenario): string {
