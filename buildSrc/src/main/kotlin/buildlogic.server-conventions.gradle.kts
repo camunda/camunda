@@ -10,18 +10,31 @@ plugins { id("buildlogic.java-conventions") }
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val esJavaVersion =
   versionCatalog.findVersion("co-elastic-clients-elasticsearch-java").get().requiredVersion
+val elasticsearchVersion = versionCatalog.findVersion("elasticsearch").get().requiredVersion
+val asmVersion = versionCatalog.findVersion("asm").get().requiredVersion
+val byteBuddyVersion = versionCatalog.findVersion("net-bytebuddy-byte-buddy").get().requiredVersion
 val httpcore5Version =
   versionCatalog.findVersion("org-apache-httpcomponents-core5-httpcore5").get().requiredVersion
 val httpclient5Version =
   versionCatalog.findVersion("org-apache-httpcomponents-client5-httpclient5").get().requiredVersion
+val httpclientVersion =
+  versionCatalog.findVersion("org-apache-httpcomponents-httpclient").get().requiredVersion
 val springBootVersion = versionCatalog.findVersion("spring-boot").get().requiredVersion
 val micrometerVersion = versionCatalog.findVersion("micrometer").get().requiredVersion
+val slf4jVersion = versionCatalog.findVersion("slf4j").get().requiredVersion
 val snakeyamlVersion = versionCatalog.findVersion("org-yaml-snakeyaml").get().requiredVersion
 val auth0Version = versionCatalog.findVersion("auth0").get().requiredVersion
+val errorProneVersion =
+  versionCatalog.findVersion("com-google-errorprone-error-prone-core").get().requiredVersion
+val jsonPathVersion =
+  versionCatalog.findVersion("com-jayway-jsonpath-json-path").get().requiredVersion
 val jwksRsaVersion = versionCatalog.findVersion("jwks-rsa").get().requiredVersion
 val okioJvmVersion = versionCatalog.findVersion("okio-jvm").get().requiredVersion
 val nimbusJoseJwtVersion =
   versionCatalog.findVersion("com-nimbusds-nimbus-jose-jwt").get().requiredVersion
+val jetbrainsAnnotationsVersion =
+  versionCatalog.findVersion("org-jetbrains-annotations").get().requiredVersion
+val keycloakClientVersion = versionCatalog.findVersion("keycloak-client").get().requiredVersion
 val checkerQualVersion =
   versionCatalog.findVersion("org-checkerframework-checker-qual").get().requiredVersion
 val commonsCodecVersion = versionCatalog.findVersion("commons-codec").get().requiredVersion
@@ -29,12 +42,14 @@ val commonsCollectionsVersion =
   versionCatalog.findVersion("org-apache-commons-commons-collections").get().requiredVersion
 val commonsLoggingVersion = versionCatalog.findVersion("commons-logging").get().requiredVersion
 val gsonVersion = versionCatalog.findVersion("gson").get().requiredVersion
+val guavaVersion = versionCatalog.findVersion("guava").get().requiredVersion
 val jakartaXmlBindVersion =
   versionCatalog.findVersion("jakarta-xml-bind-jakarta-xml-bind-api").get().requiredVersion
 val javassistVersion = versionCatalog.findVersion("javassist").get().requiredVersion
 val jnaVersion = versionCatalog.findVersion("jna").get().requiredVersion
 val jnaPlatformVersion = versionCatalog.findVersion("jna-platform").get().requiredVersion
 val kotlinStdlibVersion = versionCatalog.findVersion("kotlin-stdlib").get().requiredVersion
+val objenesisVersion = versionCatalog.findVersion("objenesis").get().requiredVersion
 val tomcatVersion = versionCatalog.findVersion("tomcat").get().requiredVersion
 val includePerformanceTests = providers.gradleProperty("includePerformanceTests").isPresent
 val includeStraceTests = providers.gradleProperty("includeStraceTests").isPresent
@@ -116,6 +131,15 @@ configurations.all {
   resolutionStrategy.force(
     "co.elastic.clients:elasticsearch-java:$esJavaVersion",
     "com.google.code.gson:gson:$gsonVersion",
+    "org.elasticsearch.client:elasticsearch-rest-client:$elasticsearchVersion",
+    "com.google.guava:guava:$guavaVersion",
+    "com.jayway.jsonpath:json-path:$jsonPathVersion",
+    "net.bytebuddy:byte-buddy:$byteBuddyVersion",
+    "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
+    "org.keycloak:keycloak-admin-client:$keycloakClientVersion",
+    "org.keycloak:keycloak-client-common-synced:$keycloakClientVersion",
+    "org.objenesis:objenesis:$objenesisVersion",
+    "org.ow2.asm:asm:$asmVersion",
     "commons-codec:commons-codec:$commonsCodecVersion",
     "commons-collections:commons-collections:$commonsCollectionsVersion",
     "commons-logging:commons-logging:$commonsLoggingVersion",
@@ -128,6 +152,7 @@ configurations.all {
     "net.java.dev.jna:jna:$jnaVersion",
     "net.java.dev.jna:jna-platform:$jnaPlatformVersion",
     "org.apache.httpcomponents.client5:httpclient5:$httpclient5Version",
+    "org.apache.httpcomponents:httpclient:$httpclientVersion",
     "org.apache.httpcomponents.core5:httpcore5:$httpcore5Version",
     "org.apache.httpcomponents.core5:httpcore5-h2:$httpcore5Version",
     "org.apache.tomcat.embed:tomcat-embed-el:$tomcatVersion",
@@ -135,6 +160,8 @@ configurations.all {
     "org.checkerframework:checker-qual:$checkerQualVersion",
     "org.javassist:javassist:$javassistVersion",
     "org.jetbrains.kotlin:kotlin-stdlib:$kotlinStdlibVersion",
+    "com.google.errorprone:error_prone_annotations:$errorProneVersion",
+    "org.slf4j:slf4j-api:$slf4jVersion",
   )
   resolutionStrategy.eachDependency {
     if (requested.group == "org.springframework.boot") {
