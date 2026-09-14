@@ -36,6 +36,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -246,5 +247,35 @@ public class CamundaProcessTestRemoteRuntimeTest {
         .cause()
         .hasMessageContaining(
             "Cluster has no available partitions. Please check the runtime logs for errors. [topology:");
+  }
+
+  /**
+   * The data of a remote runtime lives outside the test suite, so it outlives every runtime
+   * instance connecting to it, and so do the stubs deployed into it.
+   */
+  @Test
+  void shouldKeepTheProcessesThatAnEarlierTestClassMocked() {
+    // given: the runtimes of two test classes connecting to the same remote cluster
+    final CamundaProcessTestRuntime runtimeOfFirstTestClass = remoteRuntime();
+    final CamundaProcessTestRuntime runtimeOfSecondTestClass = remoteRuntime();
+
+    // when: a test of the first class mocks a child process
+    runtimeOfFirstTestClass.getMockedChildProcesses().record(123L);
+
+    // then: its stub keeps running in the data that the second class is measured against
+    assertThat(runtimeOfSecondTestClass.getMockedChildProcesses().processDefinitionKeys())
+        .containsExactly(123L);
+  }
+
+  /** Frees the record of the stubs, which the runtimes of a remote cluster keep for the suite. */
+  @AfterEach
+  void forgetMockedChildProcesses() {
+    remoteRuntime().getMockedChildProcesses().forgetAll();
+  }
+
+  private static CamundaProcessTestRuntime remoteRuntime() {
+    return CamundaProcessTestContainerRuntime.newBuilder()
+        .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+        .build();
   }
 }

@@ -41,6 +41,7 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -104,6 +105,7 @@ public class JunitExtensionTest {
     when(camundaRuntimeBuilder.build()).thenReturn(camundaContainerRuntime);
     when(camundaContainerRuntime.getCamundaGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainerRuntime.getCamundaRestApiAddress()).thenReturn(REST_API_ADDRESS);
+    when(camundaContainerRuntime.getMockedChildProcesses()).thenReturn(new MockedChildProcesses());
     when(camundaContainerRuntime.getCamundaClientBuilderFactory())
         .thenReturn(
             () ->

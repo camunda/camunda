@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import java.net.URI;
 import java.time.Duration;
 
@@ -42,4 +43,13 @@ public interface CamundaProcessTestRuntime extends AutoCloseable {
    * @return the cluster {@link Topology} once ready
    */
   Topology waitUntilClusterReady(final Duration timeout);
+
+  /**
+   * Returns the stubs that tests deployed into this runtime's data. A test class gets the record of
+   * every test class that ran against the same data before it, since the stubs of those tests keep
+   * running until the data is deleted.
+   *
+   * @return The stubs deployed into the data of this runtime
+   */
+  MockedChildProcesses getMockedChildProcesses();
 }

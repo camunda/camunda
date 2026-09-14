@@ -20,6 +20,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import java.net.URI;
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -30,6 +31,13 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CamundaProcessTestRemoteRuntime.class);
+
+  /**
+   * The data of a remote runtime lives outside the test suite, so it outlives every runtime
+   * instance connecting to it. The stubs deployed into it are therefore recorded for the suite
+   * rather than for one instance.
+   */
+  private static final MockedChildProcesses MOCKED_CHILD_PROCESSES = new MockedChildProcesses();
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -106,6 +114,11 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   @Override
   public Topology waitUntilClusterReady(final Duration timeout) {
     return CamundaRuntimeHealthChecker.waitUntilClusterReady(camundaClientBuilderFactory, timeout);
+  }
+
+  @Override
+  public MockedChildProcesses getMockedChildProcesses() {
+    return MOCKED_CHILD_PROCESSES;
   }
 
   private CamundaClientConfiguration getClientConfiguration(
