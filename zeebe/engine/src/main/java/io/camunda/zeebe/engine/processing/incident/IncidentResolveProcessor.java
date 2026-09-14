@@ -63,6 +63,8 @@ public final class IncidentResolveProcessor
       "Expected to resolve incident with key '%d', but job with key '%d' has no retries left. Please update the job retries and retry resolving the incident";
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
+  public static final String SECRET_REQUESTS_TOO_LARGE_MSG =
+      "Expected to resolve incident with key '%d', but the secret references of job with key '%d' do not fit in one record batch. Please retry resolving the incident";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
       "Expected incident to refer to element in state ELEMENT_ACTIVATING, ELEMENT_COMPLETING, or ELEMENT_TERMINATING, but element is in state %s";
   private static final String UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG =
@@ -169,13 +171,33 @@ public final class IncidentResolveProcessor
       return;
     }
 
+    // Built before anything is appended, for two reasons: the RESOLVED applier reactivates the job
+    // and invalidates the state read behind it, and a batch that cannot hold the requests has to
+    // reject the command rather than resolve the incident without them.
+    final List<SecretReferenceRecord> secretRequests =
+        secretResolutionRequestsFor(incident, jobKey);
+    if (!fitsInRecordBatch(incident, secretRequests)) {
+      // Resolving without the requests would leave exactly the behaviour this path exists to fix:
+      // the incident cleared and nothing left to re-read the store. Keeping the incident is the
+      // honest outcome — the operator can retry, and sees that nothing was fixed meanwhile.
+      final var errorMessage = String.format(SECRET_REQUESTS_TOO_LARGE_MSG, key, jobKey);
+      enrichRejectionCommand(command, incident);
+      rejectResolveCommand(command, errorMessage, RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeAcceptedResponseOnCommand(key, IncidentIntent.RESOLVED, incident, command);
     incidentMetrics.incidentResolved();
 
-    final boolean secretResolutionRequested = requestSecretResolutionAgain(incident, jobKey);
-    if (!secretResolutionRequested) {
+    if (secretRequests.isEmpty()) {
       publishIncidentRelatedJob(jobKey);
+    } else {
+      // a job parked on these must not also be published: it cannot run until they are answered
+      secretRequests.forEach(
+          request ->
+              stateWriter.appendFollowUpEvent(
+                  keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, request));
     }
 
     // if it fails, a new incident is raised
@@ -184,7 +206,7 @@ public final class IncidentResolveProcessor
     // waking the scheduler is not transactional, so it runs only once every step that could throw
     // has succeeded: a rollback would otherwise leave it woken for a resolution the log no longer
     // asks for
-    if (secretResolutionRequested) {
+    if (!secretRequests.isEmpty()) {
       secretResolutionScheduler.stayAwake();
     }
   }
@@ -210,31 +232,21 @@ public final class IncidentResolveProcessor
    * missing references gets a single incident, so requesting just that one would leave the others
    * with nothing to ask for them again.
    *
-   * <p>A job parked here must not also be published: it cannot run until the resolution answers.
-   * Only the requests are appended here — the caller wakes the scheduler, once every step that
-   * could throw has succeeded.
+   * <p>Reads state, so it must run before the {@code RESOLVED} event is appended: applying that
+   * event reactivates the job and invalidates the record read here. Returns the requests rather
+   * than appending them for the same reason.
    */
-  private boolean requestSecretResolutionAgain(final IncidentRecord incident, final long jobKey) {
+  private List<SecretReferenceRecord> secretResolutionRequestsFor(
+      final IncidentRecord incident, final long jobKey) {
     if (incident.getErrorType() != ErrorType.SECRET_RESOLUTION_ERROR
         || !isJobRelatedIncident(jobKey)) {
-      return false;
+      return List.of();
     }
     final JobRecord job = jobState.getJob(jobKey);
     if (job == null || !job.hasSecretReferences()) {
-      return false;
+      return List.of();
     }
-    final List<SecretReferenceRecord> requests =
-        distinctRequestsFor(secretLookup.check(job).nonCachedSecrets(), jobKey);
-    if (requests.isEmpty() || !fitsInRecordBatch(requests)) {
-      // all of them or none: the first request parks the job, and with no activation to come back
-      // for the rest, a partially requested job would wait on references nobody asks for again
-      return false;
-    }
-    requests.forEach(
-        request ->
-            stateWriter.appendFollowUpEvent(
-                keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, request));
-    return true;
+    return distinctRequestsFor(secretLookup.check(job).nonCachedSecrets(), jobKey);
   }
 
   /**
@@ -256,16 +268,23 @@ public final class IncidentResolveProcessor
   }
 
   /**
-   * Whether the batch still has room for every request. Measured against their combined length,
-   * since they are only ever written together; the calculation buffer covers the log entry framing
-   * each one gains on top of its value, the same way the activation paths size theirs.
+   * Whether the batch still has room for the resolved event and every request, which are only ever
+   * written together. The calculation buffer covers the log entry framing each one gains on top of
+   * its value, the same way the activation paths size theirs.
    */
-  private boolean fitsInRecordBatch(final List<SecretReferenceRecord> requests) {
+  private boolean fitsInRecordBatch(
+      final IncidentRecord incident, final List<SecretReferenceRecord> requests) {
+    if (requests.isEmpty()) {
+      return true;
+    }
     final int length =
-        requests.stream()
-            .mapToInt(
-                request -> request.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)
-            .sum();
+        incident.getLength()
+            + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER
+            + requests.stream()
+                .mapToInt(
+                    request ->
+                        request.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)
+                .sum();
     return stateWriter.canWriteEventOfLength(length);
   }
 

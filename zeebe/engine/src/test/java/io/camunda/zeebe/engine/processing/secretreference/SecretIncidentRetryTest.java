@@ -275,11 +275,19 @@ public final class SecretIncidentRetryTest {
     // when
     engine.incident().ofInstance(processInstanceKey).withKey(incidentKey).resolve();
 
-    // then
-    assertThat(
-            RecordingExporter.records()
-                .limit(record -> record.getIntent() == IncidentIntent.RESOLVED)
-                .asList())
+    // then - the instance runs to completion, which bounds the read below. Bounding on the RESOLVED
+    // record instead would close the window before the point of the assertion: any resolution this
+    // path wrongly requested is appended after it, and so would never be looked at.
+    final Record<JobBatchRecordValue> activated =
+        engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
+    assertThat(activated.getValue().getJobKeys()).containsExactly(jobKey);
+    engine.job().withKey(jobKey).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
+
+    assertThat(RecordingExporter.getRecords())
         .describedAs("a non-secret incident triggers no secret resolution")
         .noneMatch(record -> record.getValueType() == ValueType.SECRET_REFERENCE);
   }

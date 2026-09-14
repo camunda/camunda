@@ -119,6 +119,13 @@ final class SecretIncidentRetryIT {
     // when
     client.newResolveIncidentCommand(incident.getKey()).send().join();
 
+    // the client call returns once the command is committed, exporting follows. Without anchoring
+    // on the resolved record the count below can still be the original incident's, and read as one
+    // active incident before any replacement exists.
+    RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+        .withRecordKey(incident.getKey())
+        .getFirst();
+
     // then - what the operator sees is an instance with an unresolved incident on it. Asserted as
     // "raised minus resolved" rather than on the raised count alone, since the point is the state
     // the UI reads back, not that some record was written at some point.
