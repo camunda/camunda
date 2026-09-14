@@ -159,7 +159,7 @@ public class RaftLeadershipTransferPromoteTest {
   }
 
   @Test
-  public void shouldTransferWhenTheTargetAcknowledgesButItsTransitionStalls() throws Exception {
+  public void shouldKeepLeadershipWhileTheTargetsAcknowledgedTransitionStalls() throws Exception {
     // given
     raftRule.appendEntries(10);
     final var leader = raftRule.getLeader().orElseThrow();
@@ -172,13 +172,18 @@ public class RaftLeadershipTransferPromoteTest {
 
     try {
       // when
-      final var ack = driver.initiate(target);
+      // a generous attempt budget so the retry loop doesn't exhaust and force a step-down while
+      // this test is deliberately holding the target's election back
+      final var ack = driver.initiate(target, builder -> builder.withMaxTransferAttempts(50));
 
       // then
       assertThat(ack.accepted()).isTrue();
-      Awaitility.await("the leader steps down on the acknowledgement, not on the transition")
-          .atMost(Duration.ofSeconds(15))
-          .until(() -> leader.getRole() != RaftServer.Role.LEADER);
+      Awaitility.await(
+              "the leader keeps leadership on the acknowledgement, giving the target's stalled "
+                  + "transition a chance to complete instead of stepping down right away")
+          .during(Duration.ofMillis(500))
+          .atMost(Duration.ofSeconds(2))
+          .until(() -> leader.getRole() == RaftServer.Role.LEADER);
     } finally {
       stalled.countDown();
       heldVotes.complete(null);
@@ -191,6 +196,44 @@ public class RaftLeadershipTransferPromoteTest {
     Awaitility.await("the target becomes leader")
         .atMost(Duration.ofSeconds(15))
         .until(() -> target.getRole() == RaftServer.Role.LEADER);
+  }
+
+  @Test
+  public void shouldStepDownBeforeResumingWhenTheTargetsElectionNeverArrives() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    final var reopens = new LongAdder();
+    leader.getContext().setLeadershipTransferWriteBarrier(recordingBarrier(reopens));
+    final var stalled = new CountDownLatch(1);
+    final var heldVotes = new CompletableFuture<Void>();
+    stallTransitionTo(target, RaftServer.Role.CANDIDATE, stalled);
+    holdVotes(target, heldVotes);
+
+    try {
+      // when
+      final var ack = driver.initiate(target);
+
+      // then
+      assertThat(ack.accepted()).isTrue();
+      assertThat(driver.reportedResult())
+          .succeedsWithin(Duration.ofSeconds(15))
+          .extracting(LeadershipTransferResultRequest::result)
+          .isEqualTo(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+      assertThat(leader.getRole())
+          .as(
+              "the target accepted TimeoutNow but its election never arrived, so the leader "
+                  + "steps down anyway rather than resuming as leader")
+          .isNotEqualTo(RaftServer.Role.LEADER);
+      assertThat(reopens.sum())
+          .as("the step-down before giving up already lifted the freeze")
+          .isZero();
+    } finally {
+      stalled.countDown();
+      heldVotes.complete(null);
+    }
   }
 
   @Test
