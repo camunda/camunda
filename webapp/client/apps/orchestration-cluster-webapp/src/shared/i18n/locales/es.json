@@ -24,6 +24,7 @@
 		"headerNotificationsDismissAll": "Descartar todas",
 		"headerNotificationsError": "No se pudieron cargar las notificaciones.",
 		"headerNotificationsRetry": "Reintentar",
+		"headerNotificationsMutationError": "No se pudo actualizar la notificación.",
 		"notificationLogOutTitle": "Cerrar sesión",
 		"notificationLogOutSubtitle": "Se está cerrando la sesión...",
 		"loginErrorUsernamePasswordMismatch": "El nombre de usuario y la contraseña no coinciden",

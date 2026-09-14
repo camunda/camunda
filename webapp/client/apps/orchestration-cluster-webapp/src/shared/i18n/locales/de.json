@@ -24,6 +24,7 @@
 		"headerNotificationsDismissAll": "Alle verwerfen",
 		"headerNotificationsError": "Benachrichtigungen konnten nicht geladen werden.",
 		"headerNotificationsRetry": "Erneut versuchen",
+		"headerNotificationsMutationError": "Die Benachrichtigung konnte nicht aktualisiert werden.",
 		"notificationLogOutTitle": "Abmelden",
 		"notificationLogOutSubtitle": "Sie werden abgemeldet...",
 		"loginErrorUsernamePasswordMismatch": "Benutzername und Passwort stimmen nicht überein",

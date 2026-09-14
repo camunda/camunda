@@ -45,30 +45,23 @@ const Header: React.FC<Props> = ({children}) => {
 	const {data: license} = useSuspenseQuery(queries.getLicense());
 	const {ariaLabel, homeRoute, items, product} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
-	const {organizationId, clusterId} = getBootConfig();
+	const {organizationId} = getBootConfig();
 	const stage = getStage(window.location.hostname);
 	const notificationsUrl = stage === 'unknown' ? undefined : getNotificationsUrl(stage);
-	const notificationsConfig = useMemo(
-		() =>
-			organizationId !== null && clusterId !== null && notificationsUrl !== undefined
-				? {organizationId, url: notificationsUrl}
-				: undefined,
-		[clusterId, notificationsUrl, organizationId],
-	);
 	const isBelowLg = useMediaQuery('(width < 64rem)');
 	const breadcrumb = useBreadcrumbs({webappLinks: currentUser.c8Links});
 	const globalActions = useMemo(
 		() =>
-			notificationsConfig === undefined
+			organizationId === null || notificationsUrl === undefined
 				? undefined
 				: [
 						{
 							key: 'notifications',
 							label: t('headerNotificationsLabel'),
-							element: <SaasNotifications {...notificationsConfig} />,
+							element: <SaasNotifications organizationId={organizationId} url={notificationsUrl} />,
 						},
 					],
-		[notificationsConfig, t],
+		[notificationsUrl, organizationId, t],
 	);
 
 	const handleLogout = useCallback(() => {

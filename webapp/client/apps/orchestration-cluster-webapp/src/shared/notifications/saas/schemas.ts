@@ -9,38 +9,10 @@
 import {z} from 'zod';
 
 const optionalStringSchema = z.preprocess(
-	(value) => (typeof value === 'string' ? value : undefined),
+	(value) => (typeof value === 'string' && value.length > 0 ? value : undefined),
 	z.string().optional(),
 );
-const epochMillisecondsSchema = z.number().finite().int().min(0).max(8_640_000_000_000_000);
-const notificationStateSchema = z.enum(['new', 'read', 'dismissed', 'draft', 'scheduled']);
-const notificationSourceSchema = z.enum([
-	'console',
-	'accounts',
-	'modeler',
-	'operate',
-	'tasklist',
-	'optimize',
-	'marketing',
-]);
-const notificationTypeSchema = z.enum(['org', 'individual', 'global']);
-const notificationPermissionSchema = z.enum([
-	'org:billing:read',
-	'org:users:admin:create',
-	'org:billing:update',
-	'cluster:optimize:read',
-]);
-const entitySchema = z.object({id: z.string(), type: z.string()});
-
-function normalizeOptionalEntity(value: unknown) {
-	const result = entitySchema.safeParse(value);
-	return result.success ? result.data : undefined;
-}
-
-function normalizeOptionalPermissions(value: unknown) {
-	const result = z.array(notificationPermissionSchema).safeParse(value);
-	return result.success ? result.data : undefined;
-}
+const epochMillisecondsSchema = z.number().finite().int().nonnegative();
 
 function normalizeHref(value: unknown): string | undefined {
 	if (
@@ -57,14 +29,9 @@ function normalizeHref(value: unknown): string | undefined {
 	if (value.startsWith('/') && !value.startsWith('//')) {
 		return value;
 	}
-	if (!/^https?:\/\//i.test(value)) {
-		return undefined;
-	}
 	try {
 		const url = new URL(value);
-		return url.username === '' && url.password === '' && (url.protocol === 'http:' || url.protocol === 'https:')
-			? value
-			: undefined;
+		return url.protocol === 'https:' && url.username === '' && url.password === '' ? value : undefined;
 	} catch {
 		return undefined;
 	}
@@ -72,45 +39,36 @@ function normalizeHref(value: unknown): string | undefined {
 
 const notificationMetaSchema = z.object({
 	identifier: optionalStringSchema,
-	permissions: z.preprocess(normalizeOptionalPermissions, z.array(notificationPermissionSchema).optional()),
 	href: z.preprocess(normalizeHref, z.string().optional()),
 	label: optionalStringSchema,
-	entity: z.preprocess(normalizeOptionalEntity, entitySchema.optional()),
-	parentEntity: z.preprocess(normalizeOptionalEntity, entitySchema.optional()),
-	scheduleTs: z.preprocess(
-		(value) => (epochMillisecondsSchema.safeParse(value).success ? value : undefined),
-		epochMillisecondsSchema.optional(),
-	),
 });
 
-const optionalMetaSchema = z.preprocess(
-	(value) => (typeof value === 'object' && value !== null && !Array.isArray(value) ? value : undefined),
-	notificationMetaSchema.optional(),
-);
-
-const notificationSchema = z
-	.object({
-		uuid: z.string().min(1),
-		timestamp: epochMillisecondsSchema,
-		source: notificationSourceSchema,
-		type: notificationTypeSchema,
-		title: z.string(),
-		description: z.string(),
-		state: notificationStateSchema,
-		userId: optionalStringSchema,
-		orgId: optionalStringSchema,
-		meta: optionalMetaSchema,
-	})
-	.refine(({type, orgId}) => type !== 'org' || orgId !== undefined, {
-		message: 'Organization notifications require an organization ID',
-		path: ['orgId'],
-	});
-
-const notificationFeedSchema = z.array(z.unknown());
-const keepAliveSchema = z.object({keepAlive: z.literal(true)});
-const notificationSseDataSchema = z.union([keepAliveSchema, notificationSchema]);
+const notificationSchema = z.object({
+	uuid: z.string().min(1),
+	timestamp: epochMillisecondsSchema,
+	type: z.enum(['org', 'individual', 'global']),
+	title: z.string(),
+	description: z.string(),
+	state: z.enum(['new', 'read', 'dismissed', 'draft', 'scheduled']),
+	orgId: optionalStringSchema,
+	meta: z.preprocess((value) => value ?? undefined, notificationMetaSchema.optional()),
+});
 
 type Notification = z.infer<typeof notificationSchema>;
 
-export {keepAliveSchema, notificationFeedSchema, notificationSchema, notificationSseDataSchema};
+function parseNotificationFeed(value: unknown): Notification[] {
+	const feed = z.array(z.unknown()).parse(value);
+	const notifications = feed.flatMap((item) => {
+		const result = notificationSchema.safeParse(item);
+		return result.success ? [result.data] : [];
+	});
+
+	if (feed.length > 0 && notifications.length === 0) {
+		throw new Error('Notification response contains no valid items');
+	}
+
+	return notifications;
+}
+
+export {parseNotificationFeed};
 export type {Notification};

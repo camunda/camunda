@@ -24,6 +24,7 @@
 		"headerNotificationsDismissAll": "Dismiss all",
 		"headerNotificationsError": "Notifications could not be loaded.",
 		"headerNotificationsRetry": "Retry",
+		"headerNotificationsMutationError": "The notification could not be updated.",
 		"notificationLogOutTitle": "Log Out",
 		"notificationLogOutSubtitle": "You are being logged out...",
 		"loginErrorUsernamePasswordMismatch": "Username and password do not match",
