@@ -164,6 +164,14 @@
     <dependency>
       <groupId>com.adobe.testing</groupId>
       <artifactId>s3mock-testcontainers</artifactId>
+<<<<<<< HEAD
+=======
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-elasticsearch</artifactId>
+>>>>>>> f91b34b3 (test: use S3Mock in place of minio)
     </dependency>
 
     <dependency>
@@ -175,11 +183,14 @@
       <groupId>com.github.dasniko</groupId>
       <artifactId>testcontainers-keycloak</artifactId>
     </dependency>
+<<<<<<< HEAD
 
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
     </dependency>
+=======
+>>>>>>> f91b34b3 (test: use S3Mock in place of minio)
 
     <dependency>
       <groupId>org.opensearch</groupId>

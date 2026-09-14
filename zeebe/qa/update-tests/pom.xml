@@ -23,8 +23,13 @@
     </dependency>
 
     <dependency>
+<<<<<<< HEAD
       <groupId>com.github.docker-java</groupId>
       <artifactId>docker-java-api</artifactId>
+=======
+      <groupId>com.adobe.testing</groupId>
+      <artifactId>s3mock-testcontainers</artifactId>
+>>>>>>> f91b34b3 (test: use S3Mock in place of minio)
       <scope>test</scope>
     </dependency>
 
