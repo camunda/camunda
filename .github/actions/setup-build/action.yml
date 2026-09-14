@@ -155,7 +155,9 @@ runs:
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
-    uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+    # Retries setup-java through transient network/setup failures (INC-7417). The pin for
+    # setup-java itself lives in that action, not here.
+    uses: ./.github/actions/setup-java-with-retry
     with:
       distribution: ${{ inputs.java-distribution }}
       java-version: ${{ inputs.java-version }}

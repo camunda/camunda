@@ -1,0 +1,73 @@
+---
+# owner: @camunda/engineering-operations
+name: Set up Docker Buildx with retry
+
+description: >
+  Runs `docker/setup-buildx-action` with retries: booting the builder pulls
+  moby/buildkit from Docker Hub, which answers 5xx often enough to be the most
+  frequent way an image build fails on healthy code.
+
+inputs:
+  driver-opts:
+    description: Driver options passed to the builder.
+    required: false
+    default: ""
+  buildkitd-flags:
+    description: Flags passed to the buildkit daemon.
+    required: false
+    default: ""
+  endpoint:
+    description: Docker context or endpoint to build against.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  # GitHub Actions has no retry primitive for a `uses:` step, so each attempt is
+  # a literal copy of the step gated on the previous attempt's outcome. Editing
+  # one attempt means editing all of them -- keep the `with:` blocks identical.
+  #
+  # A skipped step reports `outcome: skipped`, never `failure`, so gating each
+  # attempt on its immediate predecessor is enough: attempt 3 can only run if
+  # attempt 2 ran and failed, which in turn required attempt 1 to fail.
+  #
+  # The last attempt deliberately omits `continue-on-error` so an exhausted
+  # retry fails the job. Nothing here classifies the failure, so a genuine
+  # configuration error also costs three attempts before reporting red.
+  steps:
+    - name: Set up Docker Buildx (attempt 1 of 3)
+      id: attempt-1
+      continue-on-error: true
+      uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      with:
+        driver-opts: ${{ inputs.driver-opts }}
+        buildkitd-flags: ${{ inputs.buildkitd-flags }}
+        endpoint: ${{ inputs.endpoint }}
+
+    - name: Wait before attempt 2
+      if: steps.attempt-1.outcome == 'failure'
+      shell: bash
+      run: sleep 10
+
+    - name: Set up Docker Buildx (attempt 2 of 3)
+      id: attempt-2
+      if: steps.attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      with:
+        driver-opts: ${{ inputs.driver-opts }}
+        buildkitd-flags: ${{ inputs.buildkitd-flags }}
+        endpoint: ${{ inputs.endpoint }}
+
+    - name: Wait before attempt 3
+      if: steps.attempt-2.outcome == 'failure'
+      shell: bash
+      run: sleep 10
+
+    - name: Set up Docker Buildx (attempt 3 of 3)
+      if: steps.attempt-2.outcome == 'failure'
+      uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      with:
+        driver-opts: ${{ inputs.driver-opts }}
+        buildkitd-flags: ${{ inputs.buildkitd-flags }}
+        endpoint: ${{ inputs.endpoint }}
