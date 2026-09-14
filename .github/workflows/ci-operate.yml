@@ -208,6 +208,22 @@ jobs:
           path: operate/client/.vitest-reports
           pattern: operate-fe-blob-report-*
           merge-multiple: true
+      # `pattern:` matches whatever shards happen to exist, so a shard whose
+      # upload failed would be merged over silently and this job would report a
+      # green, complete-looking report missing a quarter of the tests (INC-7913).
+      # EXPECTED_SHARDS must track the shardTotal of `fe-unit-tests`, which is
+      # not in scope here.
+      - name: Verify all shard reports were downloaded
+        env:
+          EXPECTED_SHARDS: "4"
+        run: |
+          actual=$(find .vitest-reports -type f | wc -l)
+          if [ "$actual" -ne "$EXPECTED_SHARDS" ]; then
+            echo "::error::Expected $EXPECTED_SHARDS shard blob reports, found $actual." \
+              "A shard's test results are missing, so the merged report would be incomplete."
+            find .vitest-reports -type f
+            exit 1
+          fi
       - name: Merge reports
         run: npx vitest --merge-reports
 
@@ -483,6 +499,22 @@ jobs:
           path: operate/client/all-blob-reports
           pattern: operate-visual-regression-blob-report-*
           merge-multiple: true
+      # `pattern:` matches whatever shards happen to exist, so a shard whose
+      # upload failed would be merged over silently and this job would report a
+      # green, complete-looking report missing a quarter of the tests (INC-7913).
+      # EXPECTED_SHARDS must track the shardTotal of
+      # `operate-fe-visual-regression-tests`, which is not in scope here.
+      - name: Verify all shard reports were downloaded
+        env:
+          EXPECTED_SHARDS: "4"
+        run: |
+          actual=$(find all-blob-reports -type f | wc -l)
+          if [ "$actual" -ne "$EXPECTED_SHARDS" ]; then
+            echo "::error::Expected $EXPECTED_SHARDS shard blob reports, found $actual." \
+              "A shard's test results are missing, so the merged report would be incomplete."
+            find all-blob-reports -type f
+            exit 1
+          fi
       - name: Merge into HTML Report
         run: npx playwright merge-reports --reporter html ./all-blob-reports
       - name: Upload HTML report
