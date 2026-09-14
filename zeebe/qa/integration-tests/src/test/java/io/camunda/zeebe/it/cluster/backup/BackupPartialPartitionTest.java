@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -82,16 +81,11 @@ class BackupPartialPartitionTest {
           .withPartitionsCount(2)
           .withReplicationFactor(1)
           .withBrokerConfig(
-              broker ->
-                  broker.withUnifiedConfig(
-                      config -> {
-                        configureBackupStore(config);
-                        config
-                            .getProcessing()
-                            .getEngine()
-                            .getDistribution()
-                            .setPauseCommandDistribution(true);
-                      }))
+              broker -> {
+                broker.withUnifiedConfig(this::configureBackupStore);
+                broker.withProperty(
+                    "zeebe.broker.experimental.engine.distribution.pauseCommandDistribution", true);
+              })
           .build();
 
   @BeforeEach
@@ -208,7 +202,6 @@ class BackupPartialPartitionTest {
     request.setBackupId(backupId);
     request.setPartitionId(partitionId);
     request.setCheckpointType(CheckpointType.MANUAL_BACKUP);
-    request.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     cluster.anyGateway().bean(BrokerClient.class).sendRequest(request).join();
   }
 
@@ -216,7 +209,6 @@ class BackupPartialPartitionTest {
     final var request = new BackupStatusRequest();
     request.setPartitionId(partitionId);
     request.setBackupId(backupId);
-    request.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     final var brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     Awaitility.await()
         .ignoreExceptions()
@@ -231,7 +223,7 @@ class BackupPartialPartitionTest {
   private CheckpointStateResponse getCheckpointState()
       throws InterruptedException, ExecutionException, TimeoutException {
     return backupRequestHandler
-        .getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID)
+        .getCheckpointState()
         .toCompletableFuture()
         .get(30, TimeUnit.SECONDS);
   }
