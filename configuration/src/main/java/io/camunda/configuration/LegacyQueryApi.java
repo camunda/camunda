@@ -19,7 +19,12 @@ public class LegacyQueryApi {
   private static final String PREFIX = "camunda.system.legacy-query-api";
 
   private static final Set<String> LEGACY_ENABLED_PROPERTIES =
-      Set.of("zeebe.broker.experimental.queryApi.enabled");
+      Set.of(
+          "zeebe.broker.experimental.queryApi.enabled",
+          // BrokerCfgTest and QueryApiCfg's own binding also accept this all-lowercase spelling;
+          // toDottedKebabCase's camelCase-boundary hyphenation doesn't produce it from the entry
+          // above, so it needs to be listed explicitly or this alias is silently ignored.
+          "zeebe.broker.experimental.queryapi.enabled");
 
   /** Enables the broker's internal legacy query API. */
   private boolean enabled = false;
