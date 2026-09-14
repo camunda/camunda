@@ -10,6 +10,7 @@ package overrides
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/camunda/camunda/c8run/internal/types"
@@ -72,7 +73,7 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 // default), no credentials are needed and nothing is set. Pre-existing values are
 // never overwritten so an explicit user override wins.
 func SetConnectorsAuthEnvVars(settings types.C8RunSettings) error {
-	if !ConnectorsAuthRequired(settings.ResolvedConfigPath) {
+	if !ConnectorsAuthRequired(settings.ConfigPaths) {
 		return nil
 	}
 
@@ -92,42 +93,70 @@ func SetConnectorsAuthEnvVars(settings types.C8RunSettings) error {
 }
 
 // ConnectorsAuthRequired reports whether the bundled Connectors runtime needs
-// credentials to reach the local Camunda API, based on the resolved application.yaml.
+// credentials to reach the local Camunda API, based on the effective configuration.
+//
+// configPaths is the ordered list of config sources, highest precedence first (the
+// user --config override before the bundled default), mirroring how Spring layers
+// them at startup. Each security key is resolved independently: the first source that
+// defines it wins, so a user override enabling authorizations is honoured even when
+// the bundled default leaves the API open.
 //
 // It returns true when authorizations are enabled or when API protection is on
-// (unprotected-api: false). A missing, unreadable, or unparseable config is treated
-// as "not required" to match the default C8Run behaviour where the API is open.
-func ConnectorsAuthRequired(configPath string) bool {
-	if configPath == "" {
-		return false
+// (unprotected-api: false). Absent, unreadable, or unparseable sources are ignored;
+// when a key is defined nowhere the API is treated as open, matching the default
+// C8Run behaviour.
+func ConnectorsAuthRequired(configPaths []string) bool {
+	authorizationsOn, authorizationsFound := false, false
+	// The API is open unless a source explicitly protects it.
+	apiUnprotected, apiFound := true, false
+
+	for _, path := range configPaths {
+		root, ok := readConfigMap(path)
+		if !ok {
+			continue
+		}
+		if !authorizationsFound {
+			if authorizations, ok := nestedMap(root, "camunda", "security", "authorizations"); ok {
+				if enabled, ok := authorizations["enabled"].(bool); ok {
+					authorizationsOn, authorizationsFound = enabled, true
+				}
+			}
+		}
+		if !apiFound {
+			if authentication, ok := nestedMap(root, "camunda", "security", "authentication"); ok {
+				if unprotected, ok := authentication["unprotected-api"].(bool); ok {
+					apiUnprotected, apiFound = unprotected, true
+				}
+			}
+		}
+		if authorizationsFound && apiFound {
+			break
+		}
 	}
-	content, err := os.ReadFile(configPath)
+
+	return authorizationsOn || !apiUnprotected
+}
+
+func readConfigMap(path string) (map[string]any, bool) {
+	if path == "" {
+		return nil, false
+	}
+	info, err := os.Stat(path)
 	if err != nil {
-		return false
+		return nil, false
+	}
+	if info.IsDir() {
+		return readConfigMap(filepath.Join(path, "application.yaml"))
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, false
 	}
 	var root map[string]any
 	if err := yaml.Unmarshal(content, &root); err != nil {
-		return false
+		return nil, false
 	}
-	return authorizationsEnabled(root) || apiProtected(root)
-}
-
-func authorizationsEnabled(root map[string]any) bool {
-	authorizations, ok := nestedMap(root, "camunda", "security", "authorizations")
-	if !ok {
-		return false
-	}
-	enabled, ok := authorizations["enabled"].(bool)
-	return ok && enabled
-}
-
-func apiProtected(root map[string]any) bool {
-	authentication, ok := nestedMap(root, "camunda", "security", "authentication")
-	if !ok {
-		return false
-	}
-	unprotected, ok := authentication["unprotected-api"].(bool)
-	return ok && !unprotected
+	return root, true
 }
 
 func nestedMap(root map[string]any, keys ...string) (map[string]any, bool) {
