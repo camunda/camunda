@@ -10,6 +10,7 @@ dependencies {
   implementation(project(":zeebe-cluster-config"))
   api(libs.co.elastic.clients.elasticsearch.java)
   implementation(project(":camunda-authentication"))
+  implementation(project(":camunda-gateway-model"))
   implementation(project(":camunda-search-client-reader"))
   implementation(project(":camunda-search-client-elasticsearch"))
   implementation(project(":camunda-search-client-connect"))
