@@ -46,6 +46,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CamundaProcessTestRemoteRuntimeTest {
 
+  private static final URI CLUSTER = URI.create("http://camunda.com:1000");
+  private static final URI ANOTHER_CLUSTER = URI.create("http://camunda.com:2000");
+
   @Mock private CamundaClientBuilder camundaClientBuilder;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -256,8 +259,8 @@ public class CamundaProcessTestRemoteRuntimeTest {
   @Test
   void shouldKeepTheProcessesThatAnEarlierTestClassMocked() {
     // given: the runtimes of two test classes connecting to the same remote cluster
-    final CamundaProcessTestRuntime runtimeOfFirstTestClass = remoteRuntime();
-    final CamundaProcessTestRuntime runtimeOfSecondTestClass = remoteRuntime();
+    final CamundaProcessTestRuntime runtimeOfFirstTestClass = remoteRuntime(CLUSTER);
+    final CamundaProcessTestRuntime runtimeOfSecondTestClass = remoteRuntime(CLUSTER);
 
     // when: a test of the first class mocks a child process
     runtimeOfFirstTestClass.getMockedChildProcesses().record(123L);
@@ -267,15 +270,35 @@ public class CamundaProcessTestRemoteRuntimeTest {
         .containsExactly(123L);
   }
 
-  /** Frees the record of the stubs, which the runtimes of a remote cluster keep for the suite. */
-  @AfterEach
-  void forgetMockedChildProcesses() {
-    remoteRuntime().getMockedChildProcesses().forgetAll();
+  /**
+   * A key only identifies a stub within the data of the cluster it was deployed into, so a process
+   * of another cluster can carry it while being no stub at all.
+   */
+  @Test
+  void shouldNotTakeTheStubOfOneClusterForAStubOfAnother() {
+    // given: the runtimes of two test classes connecting to different remote clusters
+    final CamundaProcessTestRuntime runtimeOfOneCluster = remoteRuntime(CLUSTER);
+    final CamundaProcessTestRuntime runtimeOfAnotherCluster = remoteRuntime(ANOTHER_CLUSTER);
+
+    // when: a test mocks a child process in one of them
+    runtimeOfOneCluster.getMockedChildProcesses().record(123L);
+
+    // then: the other cluster knows no stub under that key
+    assertThat(runtimeOfAnotherCluster.getMockedChildProcesses().processDefinitionKeys()).isEmpty();
   }
 
-  private static CamundaProcessTestRuntime remoteRuntime() {
+  /** Frees the records of the stubs, which the clusters keep for the whole suite. */
+  @AfterEach
+  void forgetMockedChildProcesses() {
+    remoteRuntime(CLUSTER).getMockedChildProcesses().forgetAll();
+    remoteRuntime(ANOTHER_CLUSTER).getMockedChildProcesses().forgetAll();
+  }
+
+  private static CamundaProcessTestRuntime remoteRuntime(final URI cluster) {
     return CamundaProcessTestContainerRuntime.newBuilder()
         .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+        .withCamundaClientBuilderFactory(
+            () -> CamundaClient.newClientBuilder().restAddress(cluster))
         .build();
   }
 }

@@ -23,6 +23,8 @@ import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +35,12 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
       LoggerFactory.getLogger(CamundaProcessTestRemoteRuntime.class);
 
   /**
-   * The data of a remote runtime lives outside the test suite, so it outlives every runtime
-   * instance connecting to it. The stubs deployed into it are therefore recorded for the suite
-   * rather than for one instance.
+   * The data of a remote cluster lives outside the test suite, so it outlives every runtime
+   * instance connecting to it. Each cluster keeps a record of its own, under the address the suite
+   * reaches it at, so that the stubs of one cluster say nothing about the data of another.
    */
-  private static final MockedChildProcesses MOCKED_CHILD_PROCESSES = new MockedChildProcesses();
+  private static final Map<URI, MockedChildProcesses> MOCKED_CHILD_PROCESSES_BY_CLUSTER =
+      new ConcurrentHashMap<>();
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -118,7 +121,8 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
 
   @Override
   public MockedChildProcesses getMockedChildProcesses() {
-    return MOCKED_CHILD_PROCESSES;
+    return MOCKED_CHILD_PROCESSES_BY_CLUSTER.computeIfAbsent(
+        camundaRestApiAddress, cluster -> new MockedChildProcesses());
   }
 
   private CamundaClientConfiguration getClientConfiguration(
