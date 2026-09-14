@@ -90,14 +90,33 @@ class BrokerCfgUnifiedConfigMappingTest {
       Set.of(
           // "backpressure" (top-level) and "flowControl.request" are two BrokerCfg paths backed by
           // the same LimitCfg type; LogStreamPartitionTransitionStep only falls back to
-          // "backpressure" when "flowControl.request" is unset. Limit#getEnabled/#getAlgorithm
-          // (configuration/src/main/java/io/camunda/configuration/Limit.java) already alias both
-          // legacy prefixes (zeebe.broker.flowControl.request.* and zeebe.broker.backpressure.*) to
-          // the same unified camunda.processing.flow-control.request.* property, so this is already
-          // fully covered at runtime; this test only tracks a single BrokerCfg path per mapping and
-          // cannot see the cross-prefix aliasing.
+          // "backpressure" when "flowControl.request" is unset. Every leaf below already has a
+          // matching LEGACY_*_PROPERTIES set in Limit.java
+          // (configuration/src/main/java/io/camunda/configuration/Limit.java) that lists the
+          // zeebe.broker.backpressure.* spelling as an alias of the corresponding
+          // zeebe.broker.flowControl.request.* one — both map to the same unified
+          // camunda.processing.flow-control.request.* property, so this is already fully covered at
+          // runtime; this test only tracks a single BrokerCfg path per mapping and cannot see the
+          // cross-prefix aliasing.
           "backpressure.enabled",
           "backpressure.algorithm",
+          "backpressure.aimd.backoffRatio",
+          "backpressure.aimd.initialLimit",
+          "backpressure.aimd.maxLimit",
+          "backpressure.aimd.minLimit",
+          "backpressure.aimd.requestTimeout",
+          "backpressure.fixed.limit",
+          "backpressure.gradient.initialLimit",
+          "backpressure.gradient.minLimit",
+          "backpressure.gradient.rttTolerance",
+          "backpressure.gradient2.initialLimit",
+          "backpressure.gradient2.longWindow",
+          "backpressure.gradient2.minLimit",
+          "backpressure.gradient2.rttTolerance",
+          "backpressure.legacyVegas.maxConcurrency",
+          "backpressure.vegas.alpha",
+          "backpressure.vegas.beta",
+          "backpressure.vegas.initialLimit",
           // Stamped from the broker's own build version by BrokerBasedConfiguration /
           // SystemContextLoader after the unified-config override bean is built; never read from a
           // configuration file, so there is no unified property to map it from.
@@ -287,20 +306,29 @@ class BrokerCfgUnifiedConfigMappingTest {
       // This handles cases where getter returns a different type than the setter accepts
       // (e.g., getCleanupSchedule() returns Schedule but setCleanupSchedule(String) takes String)
       final Method setter = findSetter(clazz, propertyName);
+      final Class<?> getterReturnType = getter.getReturnType();
+      final String propertyPath = prefix.isEmpty() ? propertyName : prefix + "." + propertyName;
+
       if (setter == null) {
+        // No setter: this field can't be replaced wholesale (often a `final` field, e.g.
+        // NetworkCfg#commandApi or LimitCfg#aimd), but its own nested properties may still be
+        // independently mutable in-place via their own setters. A leaf/map/collection getter with
+        // no setter genuinely can't be configured at all, so only recurse into non-leaf types.
+        if (!isLeafType(getterReturnType)
+            && !Map.class.isAssignableFrom(getterReturnType)
+            && !Collection.class.isAssignableFrom(getterReturnType)) {
+          extractPropertiesRecursively(getterReturnType, propertyPath, properties, visited);
+        }
         continue;
       }
 
       // Use the setter's parameter type as the actual property type for configuration
       final Class<?> setterParamType = setter.getParameterTypes()[0];
-      final Class<?> getterReturnType = getter.getReturnType();
 
       // Use setter param type to determine if this is a leaf or nested config
       // But use getter return type for recursion (since that's what we navigate through)
       final Class<?> typeForLeafCheck = setterParamType;
       final Class<?> typeForRecursion = getterReturnType;
-
-      final String propertyPath = prefix.isEmpty() ? propertyName : prefix + "." + propertyName;
 
       if (isLeafType(typeForLeafCheck)) {
         // This is a leaf property - add it
