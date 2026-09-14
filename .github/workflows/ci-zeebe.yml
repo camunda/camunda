@@ -26,7 +26,7 @@ defaults:
     shell: bash
 
 env:
-  TEST_OWNER: '@camunda/zeebe-distributed-platform'
+  TEST_OWNER: '@camunda/core-features'
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Zeebe
