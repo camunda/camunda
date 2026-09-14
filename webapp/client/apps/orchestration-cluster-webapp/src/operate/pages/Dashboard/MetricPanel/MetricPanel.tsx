@@ -38,14 +38,14 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 				<Label
 					data-testid="incident-instances-link"
 					to="/operate/processes"
-					search={{active: false, incidents: true, completed: false, canceled: false}}
+					search={{active: false, incidents: true, completed: false, canceled: false, suspended: false}}
 				>
 					{t('operate.dashboard.instancesWithIncident')}
 				</Label>
 				<Label
 					data-testid="active-instances-link"
 					to="/operate/processes"
-					search={{active: true, incidents: false, completed: false, canceled: false}}
+					search={{active: true, incidents: false, completed: false, canceled: false, suspended: false}}
 				>
 					{t('operate.dashboard.activeInstances')}
 				</Label>

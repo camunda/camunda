@@ -19,6 +19,8 @@ import {
 	type QueryProcessInstancesRequestBody,
 	type CancelProcessInstanceRequestBody,
 	type DeleteProcessInstanceRequestBody,
+	type SuspendProcessInstanceRequestBody,
+	type ResumeProcessInstanceRequestBody,
 	type QueryBatchOperationsRequestBody,
 	type QueryBatchOperationItemsRequestBody,
 	type QueryDecisionDefinitionsRequestBody,
@@ -28,6 +30,8 @@ import {
 	type CreateCancellationBatchOperationRequestBody,
 	type CreateIncidentResolutionBatchOperationRequestBody,
 	type CreateDeletionBatchOperationRequestBody,
+	type SuspendProcessInstancesBatchOperationRequestBody,
+	type ResumeProcessInstancesBatchOperationRequestBody,
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type CreateProcessInstanceRequestBody as ApiCreateProcessInstanceRequestBody,
@@ -249,6 +253,20 @@ const endpoints = {
 			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
 		}),
 
+	suspendProcessInstance: (processInstanceKey: string, body?: SuspendProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.suspendProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.suspendProcessInstance.method,
+			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
+	resumeProcessInstance: (processInstanceKey: string, body?: ResumeProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resumeProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resumeProcessInstance.method,
+			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
 	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstances.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
@@ -309,6 +327,22 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.createDeletionBatchOperation.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.createDeletionBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createSuspensionBatchOperation: (body: SuspendProcessInstancesBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.suspendProcessInstancesBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.suspendProcessInstancesBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createResumptionBatchOperation: (body: ResumeProcessInstancesBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resumeProcessInstancesBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resumeProcessInstancesBatchOperation.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

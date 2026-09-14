@@ -40,6 +40,7 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessa
 								active: false,
 								completed: false,
 								canceled: false,
+								suspended: false,
 							}}
 							tabIndex={tabIndex ?? 0}
 							title={labelText}

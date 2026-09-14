@@ -62,6 +62,7 @@ const IncidentsByError: React.FC = () => {
 							active: false,
 							completed: false,
 							canceled: false,
+							suspended: false,
 						}}
 						title={item.errorMessage}
 					>

@@ -19,7 +19,8 @@ type Props = {
 
 const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}) => {
 	const {processInstanceKey, state, hasIncident} = processInstance;
-	const {pendingOperations, resolveIncidents, cancel, remove} = useProcessInstanceOperations(processInstanceKey);
+	const {pendingOperations, resolveIncidents, cancel, remove, suspend, resume} =
+		useProcessInstanceOperations(processInstanceKey);
 
 	const isActive = state === 'ACTIVE';
 	const isSuspended = state === 'SUSPENDED';
@@ -42,8 +43,23 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 			});
 		}
 
-		// Legacy offers cancel on a suspended instance too. Suspend/resume themselves wait on
-		// #61094, which brings both the shared renderers and the filter that surfaces these rows.
+		if (isActive) {
+			configs.push({
+				type: 'SUSPEND_PROCESS_INSTANCE',
+				onExecute: () => void suspend(),
+				disabled: isBusyWith('SUSPEND_PROCESS_INSTANCE'),
+			});
+		}
+
+		if (isSuspended) {
+			configs.push({
+				type: 'RESUME_PROCESS_INSTANCE',
+				onExecute: () => void resume(),
+				disabled: isBusyWith('RESUME_PROCESS_INSTANCE'),
+			});
+		}
+
+		// Legacy offers cancel on a suspended instance too.
 		if (isActive || isSuspended) {
 			configs.push({
 				type: 'CANCEL_PROCESS_INSTANCE',
@@ -71,6 +87,8 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 		pendingOperations,
 		remove,
 		resolveIncidents,
+		resume,
+		suspend,
 	]);
 
 	return <Operations operations={operations} processInstanceKey={processInstanceKey} isLoading={isLoading} />;
