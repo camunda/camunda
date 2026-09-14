@@ -40,7 +40,7 @@ describe('<Header /> (V2)', () => {
 
 		const screen = await renderWithRouter(
 			() => (
-				<Header>
+				<Header initialSaasToken={null}>
 					<div>Page content</div>
 				</Header>
 			),
@@ -57,6 +57,21 @@ describe('<Header /> (V2)', () => {
 		await expect.element(screen.getByText('Page content')).toBeVisible();
 	});
 
+	it.for([
+		{path: '/tasklist' as const, app: 'Tasklist', href: '/tasklist'},
+		{path: '/operate' as const, app: 'Operate', href: '/operate'},
+		{path: '/admin' as const, app: 'Admin', href: '/admin'},
+	])('should use the $app context at $path', async ({path, app, href}, {worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(() => <Header initialSaasToken={null}>Page content</Header>, {path});
+
+		await expect.element(screen.getByRole('link', {name: app})).toHaveAttribute('href', href);
+	});
+
 	it('should hide nav links if application is unauthorized', async ({worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({
@@ -65,7 +80,9 @@ describe('<Header /> (V2)', () => {
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
-		const screen = await renderWithRouter(() => <Header>Page content</Header>, {path: '/tasklist'});
+		const screen = await renderWithRouter(() => <Header initialSaasToken={null}>Page content</Header>, {
+			path: '/tasklist',
+		});
 
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toBeInTheDocument();
@@ -81,7 +98,10 @@ describe('<Header /> (V2)', () => {
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
-		const screen = await renderWithRouter(() => <Header>Page content</Header>, {path, initialEntry});
+		const screen = await renderWithRouter(() => <Header initialSaasToken={null}>Page content</Header>, {
+			path,
+			initialEntry,
+		});
 
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).toHaveAttribute('aria-current', 'page');
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toHaveAttribute('aria-current');
@@ -93,7 +113,7 @@ describe('<Header /> (V2)', () => {
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
-		const screen = await renderWithRouter(() => <Header>Page content</Header>, {
+		const screen = await renderWithRouter(() => <Header initialSaasToken={null}>Page content</Header>, {
 			path: '/tasklist/processes',
 		});
 
