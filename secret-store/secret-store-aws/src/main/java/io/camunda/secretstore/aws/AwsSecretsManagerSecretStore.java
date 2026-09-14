@@ -187,6 +187,11 @@ public final class AwsSecretsManagerSecretStore implements SecretStore {
   }
 
   @Override
+  public int namesPerCall() {
+    return resolver.namesPerCall();
+  }
+
+  @Override
   public void close() {
     client.close();
   }

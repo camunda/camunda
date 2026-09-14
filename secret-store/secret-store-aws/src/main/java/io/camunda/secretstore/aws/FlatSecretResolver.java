@@ -252,6 +252,11 @@ final class FlatSecretResolver implements AwsSecretResolver {
     client.listSecrets(ListSecretsRequest.builder().maxResults(1).build());
   }
 
+  @Override
+  public int namesPerCall() {
+    return batchEnabled ? batchSize : 1;
+  }
+
   private String secretId(final String name) {
     return pathPrefix + name;
   }
