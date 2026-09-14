@@ -594,6 +594,27 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     assertThat(terminatedBatchEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
   }
 
+  @Test
+  void shouldClearSuspendedDateWhenTerminatedAndSuspendedLandInSameBatch() {
+    // given - SUSPENDED and ELEMENT_TERMINATED both land in the same export batch (e.g. a
+    // scripted suspend->cancel sequence within the exporter's bulk.delay window), so both
+    // records are applied to the same accumulator entity before it is flushed.
+    final long processInstanceKey = 111L;
+    final Record<ProcessInstanceRecordValue> suspendedRecord =
+        createRecordForKey(SUSPENDED, processInstanceKey);
+    final Record<ProcessInstanceRecordValue> terminatedRecord =
+        createRecordForKey(ProcessInstanceIntent.ELEMENT_TERMINATED, processInstanceKey);
+    final ProcessInstanceForListViewEntity piEntity = new ProcessInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(suspendedRecord, piEntity);
+    underTest.updateEntity(terminatedRecord, piEntity);
+
+    // then
+    assertThat(piEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
+    assertThat(piEntity.getSuspendedDate()).isNull();
+  }
+
   private Record<ProcessInstanceRecordValue> createRecordForKey(
       final ProcessInstanceIntent intent, final long processInstanceKey) {
     final ProcessInstanceRecordValue processInstanceRecordValue =
