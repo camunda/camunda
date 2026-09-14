@@ -164,12 +164,23 @@ export class OperateFiltersPanelPage {
     if (await this.isOptionalFilterDisplayed(filterName)) {
       return;
     }
-    await this.moreFiltersButton.click();
-    await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
-      .click();
+    // The More Filters menu can be dismissed by a concurrent re-render before
+    // the menu item is clicked (e.g. an in-flight instances refetch triggered
+    // by a filter change immediately beforehand), leaving the trigger toggled
+    // but the menu closed and the item never clickable. Retry opening the menu
+    // until the target item is present, then select it once -- mirroring the
+    // retry the other dropdown/menu openers in this page object already use.
+    // The item is clicked only once (not inside the retry) because a displayed
+    // optional filter is removed from the menu, so a second attempt would find
+    // nothing to click.
+    const menuItem = this.page.getByRole('menuitem', {name: filterName});
+    await expect(async () => {
+      if (!(await menuItem.isVisible())) {
+        await this.moreFiltersButton.click();
+      }
+      await expect(menuItem).toBeVisible({timeout: 5_000});
+    }).toPass({timeout: 30_000});
+    await menuItem.click();
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
