@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import org.junit.jupiter.api.Test;
 
 class TargetIndexLocatorTest {
@@ -19,7 +19,7 @@ class TargetIndexLocatorTest {
 
   @Test
   void shouldLocateOrdinalIndexFromOrdinal() {
-    final var ordinalRelated = mock(StorageOrdinalKeyRelated.class);
+    final var ordinalRelated = mock(StorageOrdinalRelated.class);
     when(ordinalRelated.getStorageOrdinal()).thenReturn(5);
 
     final var targetIndex = targetIndexLocator.locateOrdinalIndex("test-index", ordinalRelated);
@@ -28,7 +28,7 @@ class TargetIndexLocatorTest {
 
   @Test
   void shouldLocateOrdinalIndexFromDefaultOrdinal() {
-    final var ordinalRelated = mock(StorageOrdinalKeyRelated.class);
+    final var ordinalRelated = mock(StorageOrdinalRelated.class);
     when(ordinalRelated.getStorageOrdinal()).thenReturn(0);
 
     final var targetIndex = targetIndexLocator.locateOrdinalIndex("test-index", ordinalRelated);
@@ -37,7 +37,7 @@ class TargetIndexLocatorTest {
 
   @Test
   void shouldLocateOrdinalIndexFromNegativeOrdinal() {
-    final var ordinalRelated = mock(StorageOrdinalKeyRelated.class);
+    final var ordinalRelated = mock(StorageOrdinalRelated.class);
     when(ordinalRelated.getStorageOrdinal()).thenReturn(-1);
 
     final var targetIndex = targetIndexLocator.locateOrdinalIndex("test-index", ordinalRelated);

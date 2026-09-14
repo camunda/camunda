@@ -16,7 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 /**
- * Marks a record value that carries a storage ordinal key.
+ * Marks a record value that carries a storage ordinal.
  *
  * <p>A storage ordinal groups entities with a well-defined lifetime (e.g. process instances,
  * standalone decision instances - anything that is archived today) so that their data can be stored
@@ -25,7 +25,7 @@ package io.camunda.zeebe.protocol.record.value;
  * incidents, etc.) inherit the ordinal of their root instance. Once assigned, the ordinal of a root
  * process instance never changes.
  *
- * <p>Exporters use this key to route a record's document to the storage location (e.g. an
+ * <p>Exporters use this ordinal to route a record's document to the storage location (e.g. an
  * ordinal-suffixed index) of its ordinal. Once every entity in an ordinal has completed and the
  * retention period has elapsed, the ordinal's storage location can be deleted as a whole, removing
  * the need to archive (i.e. move) documents of completed instances.
@@ -40,7 +40,7 @@ package io.camunda.zeebe.protocol.record.value;
  *   <li>{@code 1001+} — regular ordinals assigned by the engine.
  * </ul>
  */
-public interface StorageOrdinalKeyRelated {
+public interface StorageOrdinalRelated {
 
   /**
    * @return the ordinal this record belongs to; {@code 0} means the record must be stored in the
