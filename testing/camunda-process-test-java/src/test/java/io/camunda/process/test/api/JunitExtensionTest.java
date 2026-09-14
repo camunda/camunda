@@ -557,6 +557,33 @@ public class JunitExtensionTest {
           .collectTestRunCoverage(any(), any(), any(), any(), eq(Collections.singleton(123L)));
     }
 
+    /**
+     * A runtime whose data outlives a test class, such as a shared or a remote one, keeps the stubs
+     * of the classes before it running in the data the next class is measured against.
+     */
+    @Test
+    void shouldReportTheProcessesThatAnEarlierTestClassMocked() throws Exception {
+      // given: an earlier test class mocked a child process in the data of the runtime
+      camundaContainerRuntime.getMockedChildProcesses().record(123L);
+
+      // and: a later test class, which gets a context of its own
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      enableCoverageCollection(extension);
+
+      // when
+      extension.afterEach(extensionContext);
+
+      // then: the run reports the stub, so that its instances do not count as coverage
+      verify(processCoverage)
+          .collectTestRunCoverage(any(), any(), any(), any(), eq(Collections.singleton(123L)));
+    }
+
     @Test
     void shouldForgetTheProcessesThatTheTestMockedWhenTheirDataIsDeleted() throws Exception {
       // given

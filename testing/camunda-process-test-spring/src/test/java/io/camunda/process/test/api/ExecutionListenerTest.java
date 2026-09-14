@@ -557,6 +557,40 @@ public class ExecutionListenerTest {
         .containsExactly(Collections.singleton(123L), Collections.singleton(123L));
   }
 
+  /**
+   * A runtime whose data outlives a test class, such as a shared or a remote one, keeps the stubs
+   * of the classes before it running in the data the next class is measured against.
+   */
+  @Test
+  void shouldReportMockedChildProcessesOfAnEarlierTestClass() throws Exception {
+    // given: a test class that mocked a child process and kept its data
+    final CamundaProcessTestExecutionListener listenerOfEarlierTestClass =
+        coverageCollectingListener();
+
+    listenerOfEarlierTestClass.beforeTestClass(testContext);
+    listenerOfEarlierTestClass.beforeTestMethod(testContext);
+
+    mockChildProcess("child-process", 123L);
+    setManagementClientDummy(listenerOfEarlierTestClass);
+
+    when(cleanupStrategy.deletesRuntimeData()).thenReturn(false);
+    listenerOfEarlierTestClass.afterTestMethod(testContext);
+
+    // when: a later test class runs a test of its own, with a listener and a context of its own
+    final CamundaProcessTestExecutionListener listenerOfLaterTestClass =
+        coverageCollectingListener();
+
+    listenerOfLaterTestClass.beforeTestClass(testContext);
+    listenerOfLaterTestClass.beforeTestMethod(testContext);
+
+    setManagementClientDummy(listenerOfLaterTestClass);
+    listenerOfLaterTestClass.afterTestMethod(testContext);
+
+    // then: the later class reports the stub too, so that its instances do not count as coverage
+    assertThat(reportedMockedProcessDefinitionKeys(2))
+        .containsExactly(Collections.singleton(123L), Collections.singleton(123L));
+  }
+
   /** Reads the mocked process definition keys that the listener reported for each test run. */
   private List<Collection<Long>> reportedMockedProcessDefinitionKeys(final int runs) {
     final ArgumentCaptor<Collection<Long>> mockedProcessDefinitionKeys =
