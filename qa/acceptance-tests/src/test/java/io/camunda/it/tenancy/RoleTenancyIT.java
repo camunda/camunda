@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.MembershipVisibility;
 import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
@@ -65,7 +66,7 @@ public class RoleTenancyIT {
     createRole(adminClient, ROLE_B);
     assignUserToRole(adminClient, ADMIN, ROLE_A);
     waitForRolesBeingExported(adminClient);
-    waitForRoleMembershipBeingExported(adminClient);
+    MembershipVisibility.awaitUsersVisibleInRole(adminClient, ROLE_A, ADMIN);
   }
 
   @Test
@@ -136,17 +137,6 @@ public class RoleTenancyIT {
                           .send()
                           .join()
                           .items())
-                  .hasSize(1);
-            });
-  }
-
-  private static void waitForRoleMembershipBeingExported(final CamundaClient camundaClient) {
-    Awaitility.await("should receive data from secondary storage")
-        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              assertThat(camundaClient.newUsersByRoleSearchRequest(ROLE_A).send().join().items())
                   .hasSize(1);
             });
   }
