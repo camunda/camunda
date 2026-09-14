@@ -386,7 +386,63 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+<<<<<<< HEAD
   public void shouldApplyAuthorizationCheck() {
+=======
+  public void shouldQueryByProcessInstanceVariableValueNotIn() {
+    // Covers the same VariableValueFilterTransformer -> SearchQueryBuilders.variableOperation()
+    // code path used by localVariables (identical wiring via getLocalVariablesQuery/
+    // getProcessInstanceVariablesQuery, differing only in the join relationship type).
+    // given
+    final VariableValueFilter.Builder variableValueFilterBuilder =
+        new VariableValueFilter.Builder();
+    variableValueFilterBuilder
+        .name("test")
+        .valueOperation(UntypedOperation.of(Operation.notIn("excluded-1", "excluded-2")))
+        .build();
+
+    final VariableValueFilter variableFilterValue = variableValueFilterBuilder.build();
+
+    final var filter =
+        FilterBuilders.userTask((f) -> f.processInstanceVariables(List.of(variableFilterValue)));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            outerBoolQuery -> {
+              final SearchHasParentQuery nestedHasParentQuery =
+                  (SearchHasParentQuery) outerBoolQuery.must().get(0).queryOption();
+              final SearchHasChildQuery childQuery =
+                  (SearchHasChildQuery) nestedHasParentQuery.query().queryOption();
+              assertThat(childQuery.type())
+                  .isEqualTo(TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
+
+              final SearchBoolQuery innerBoolQuery =
+                  (SearchBoolQuery) childQuery.query().queryOption();
+              assertThat(innerBoolQuery.must()).hasSize(2);
+              assertSearchTermQuery(innerBoolQuery.must().get(0).queryOption(), "name", "test");
+
+              final SearchBoolQuery valueBoolQuery =
+                  (SearchBoolQuery) innerBoolQuery.must().get(1).queryOption();
+              assertThat(valueBoolQuery.mustNot()).hasSize(1);
+              final SearchTermsQuery termsQuery =
+                  (SearchTermsQuery) valueBoolQuery.mustNot().getFirst().queryOption();
+              assertThat(termsQuery.field()).isEqualTo("value");
+              assertThat(termsQuery.values())
+                  .extracting(TypedValue::stringValue)
+                  .containsExactlyInAnyOrder("excluded-1", "excluded-2");
+            });
+  }
+
+  @Test
+  public void shouldApplySingleAuthorizationCheck() {
+>>>>>>> f541dfc2 (test: add coverage for NOT_IN wiring across the other affected search endpoints)
     // given
     final var authorization =
         Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
