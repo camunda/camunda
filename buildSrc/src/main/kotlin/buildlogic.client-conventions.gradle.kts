@@ -3,6 +3,8 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 plugins { id("buildlogic.java-conventions") }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val commonsLoggingVersion = versionCatalog.findVersion("commons-logging").get().requiredVersion
+val snakeyamlVersion = versionCatalog.findVersion("org-yaml-snakeyaml").get().requiredVersion
 
 dependencies {
   add(
@@ -26,5 +28,12 @@ dependencies {
   add(
     "testRuntimeOnly",
     versionCatalog.findLibrary("org-apache-logging-log4j-log4j-slf4j2-impl").get(),
+  )
+}
+
+configurations.all {
+  resolutionStrategy.force(
+    "commons-logging:commons-logging:$commonsLoggingVersion",
+    "org.yaml:snakeyaml:$snakeyamlVersion",
   )
 }
