@@ -126,9 +126,12 @@ fi
 
 # Extract the actual labels from the info - make sure to sort keys so we always have the same
 # ordering for maps to compare things properly
-# Exclude the minimus.images.version label, since it changes every time the image is patched, and
-# we can't really know in advance reliably what it will be.
-actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels | del(."io.minimus.images.version")')
+# Exclude labels that change every time the base image is patched, since we can't reliably know
+# in advance what they will be: minimus.images.version on Minimus-based images (Optimize), and
+# echo.image.upstream.digest on Echo-based ones, which tracks the upstream Temurin build.
+actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels
+  | del(."io.minimus.images.version")
+  | del(."ai.echo.image.upstream.digest")')
 
 if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" == "[]" ]]; then
   echo >&2 "No labels found in the given image ${imageName}; raw inspect output to follow"
