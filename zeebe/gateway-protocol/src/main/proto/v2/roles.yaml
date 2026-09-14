@@ -1058,6 +1058,7 @@ components:
                 <br>
                 <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
               type: array
+              nullable: true
               items:
                 $ref: '#/components/schemas/RoleFilterFields'
           x-properties-added-in-version:
