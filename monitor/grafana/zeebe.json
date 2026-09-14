@@ -2267,12 +2267,12 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max by (exporter, pod, physicalTenant, partition) (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) - max by (exporter, pod, physicalTenant, partition) (zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
+              "expr": "clamp_min(\n  max by (cluster, namespace, exporter, physicalTenant, partition) (\n    zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}\n    or\n    zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}\n  )\n  - max by (cluster, namespace, exporter, physicalTenant, partition) (\n    zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}\n  ),\n  0\n)",
               "format": "time_series",
               "instant": false,
               "interval": "",
               "intervalFactor": 1,
-"legendFormat": "{{physicalTenant}} {{exporter}} {{partition}} {{pod}}",
+"legendFormat": "{{namespace}} {{physicalTenant}} {{exporter}} {{partition}}",
               "range": true,
               "refId": "A"
             }
