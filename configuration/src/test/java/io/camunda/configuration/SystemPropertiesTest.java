@@ -43,7 +43,8 @@ public class SystemPropertiesTest {
         "camunda.system.actor.idle.max-spins=1000",
         "camunda.system.actor.idle.max-yields=500",
         "camunda.system.actor.idle.min-park-period=10ms",
-        "camunda.system.actor.idle.max-park-period=100ms"
+        "camunda.system.actor.idle.max-park-period=100ms",
+        "camunda.system.legacy-query-api.enabled=true"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -98,6 +99,11 @@ public class SystemPropertiesTest {
     void shouldSetActorIdleMaxParkPeriod() {
       assertThat(idleCfg.maxParkPeriod()).isEqualTo(Duration.ofMillis(100));
     }
+
+    @Test
+    void shouldSetLegacyQueryApiEnabled() {
+      assertThat(brokerCfg.getExperimental().getQueryApi().isEnabled()).isTrue();
+    }
   }
 
   @Nested
@@ -110,7 +116,8 @@ public class SystemPropertiesTest {
         "zeebe.actor.idle.maxSpins=2000",
         "zeebe.actor.idle.maxYields=1000",
         "zeebe.actor.idle.minParkPeriod=20ms",
-        "zeebe.actor.idle.maxParkPeriod=200ms"
+        "zeebe.actor.idle.maxParkPeriod=200ms",
+        "zeebe.broker.experimental.queryApi.enabled=true"
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -165,6 +172,11 @@ public class SystemPropertiesTest {
     void shouldSetActorIdleMaxParkPeriod() {
       assertThat(idleCfg.maxParkPeriod()).isEqualTo(Duration.ofMillis(200));
     }
+
+    @Test
+    void shouldSetLegacyQueryApiEnabled() {
+      assertThat(brokerCfg.getExperimental().getQueryApi().isEnabled()).isTrue();
+    }
   }
 
   @Nested
@@ -179,6 +191,7 @@ public class SystemPropertiesTest {
         "camunda.system.actor.idle.max-yields=500",
         "camunda.system.actor.idle.min-park-period=10ms",
         "camunda.system.actor.idle.max-park-period=100ms",
+        "camunda.system.legacy-query-api.enabled=true",
         // legacy properties (should be ignored when new ones are present)
         "zeebe.broker.threads.cpuThreadCount=10",
         "zeebe.broker.threads.ioThreadCount=20",
@@ -187,7 +200,8 @@ public class SystemPropertiesTest {
         "zeebe.actor.idle.maxSpins=5000",
         "zeebe.actor.idle.maxYields=2500",
         "zeebe.actor.idle.minParkPeriod=50ms",
-        "zeebe.actor.idle.maxParkPeriod=500ms"
+        "zeebe.actor.idle.maxParkPeriod=500ms",
+        "zeebe.broker.experimental.queryApi.enabled=false"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -241,6 +255,11 @@ public class SystemPropertiesTest {
     @Test
     void shouldSetActorIdleMaxParkPeriodFromNew() {
       assertThat(idleCfg.maxParkPeriod()).isEqualTo(Duration.ofMillis(100));
+    }
+
+    @Test
+    void shouldSetLegacyQueryApiEnabledFromNew() {
+      assertThat(brokerCfg.getExperimental().getQueryApi().isEnabled()).isTrue();
     }
   }
 }

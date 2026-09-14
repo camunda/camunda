@@ -87,9 +87,11 @@ public class RocksDb {
 
   /**
    * Configures the maximum fraction of total system memory that RocksDB is allowed to use, as a
-   * safety cap independent of the configured {@link #memoryAllocationStrategy}. The value must be
-   * between 0 and 1 (exclusive), or -1 to disable the check (the default). For example, a value of
-   * 0.5 means RocksDB is never allowed to use more than 50% of total system memory.
+   * safety cap on top of the static memory sizes configured via {@link #memoryAllocationStrategy}.
+   * Only checked when that strategy is not 'FRACTION' (which sizes RocksDB as a fraction of total
+   * memory directly, via {@link #memoryFraction}, so this cap does not apply there). The value must
+   * be greater than 0 and at most 1, or -1 to disable the check (the default). For example, a value
+   * of 0.5 means RocksDB is never allowed to use more than 50% of total system memory.
    */
   private double maxMemoryFraction = -1;
 

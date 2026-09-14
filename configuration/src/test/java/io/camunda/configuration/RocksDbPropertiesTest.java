@@ -46,7 +46,8 @@ public class RocksDbPropertiesTest {
         "camunda.data.primary-storage.rocks-db.column-family-options.max_write_buffer_number=12",
         "camunda.data.primary-storage.rocks-db.column-family-options.write_buffer_size=67108864",
         "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestLargestSeqFirst",
-        "camunda.data.primary-storage.rocks-db.memory-fraction=0.5"
+        "camunda.data.primary-storage.rocks-db.memory-fraction=0.5",
+        "camunda.data.primary-storage.rocks-db.max-memory-fraction=0.8"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -75,6 +76,11 @@ public class RocksDbPropertiesTest {
     @Test
     void shouldSetMemoryFraction() {
       assertThat(brokerCfg.getExperimental().getRocksdb().getMemoryFraction()).isEqualTo(0.5);
+    }
+
+    @Test
+    void shouldSetMaxMemoryFraction() {
+      assertThat(brokerCfg.getExperimental().getRocksdb().getMaxMemoryFraction()).isEqualTo(0.8);
     }
 
     @Test
@@ -142,7 +148,8 @@ public class RocksDbPropertiesTest {
         "zeebe.broker.experimental.rocksdb.columnFamilyOptions.write_buffer_size=16777216",
         "zeebe.broker.experimental.rocksdb.columnFamilyOptions.max_write_buffer_number=2",
         "zeebe.broker.experimental.rocksdb.columnFamilyOptions.write_buffer_size=33554432",
-        "zeebe.broker.experimental.rocksdb.columnFamilyOptions.compaction_pri=kMinOverlappingRatio"
+        "zeebe.broker.experimental.rocksdb.columnFamilyOptions.compaction_pri=kMinOverlappingRatio",
+        "zeebe.broker.experimental.rocksdb.maxMemoryFraction=0.9"
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -165,6 +172,11 @@ public class RocksDbPropertiesTest {
     @Test
     void shouldSetMaxOpenFiles() {
       assertThat(brokerCfg.getExperimental().getRocksdb().getMaxOpenFiles()).isEqualTo(500);
+    }
+
+    @Test
+    void shouldSetMaxMemoryFraction() {
+      assertThat(brokerCfg.getExperimental().getRocksdb().getMaxMemoryFraction()).isEqualTo(0.9);
     }
 
     @Test
@@ -227,6 +239,7 @@ public class RocksDbPropertiesTest {
         "camunda.data.primary-storage.rocks-db.sst-partitioning-enabled=false",
         "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestLargestSeqFirst",
         "camunda.data.primary-storage.rocks-db.memory-fraction=0.6",
+        "camunda.data.primary-storage.rocks-db.max-memory-fraction=0.7",
         // legacy properties (should be ignored when new ones are present)
         "zeebe.broker.experimental.rocksdb.enableStatistics=false",
         "zeebe.broker.experimental.rocksdb.accessMetrics=none",
@@ -238,7 +251,8 @@ public class RocksDbPropertiesTest {
         "zeebe.broker.experimental.rocksdb.disableWal=true",
         "zeebe.broker.experimental.rocksdb.enableSstPartitioning=true",
         "zeebe.broker.experimental.rocksdb.columnFamilyOptions.compaction_pri=kMinOverlappingRatio",
-        "zeebe.broker.experimental.rocksdb.memoryFraction=0.5"
+        "zeebe.broker.experimental.rocksdb.memoryFraction=0.5",
+        "zeebe.broker.experimental.rocksdb.maxMemoryFraction=0.2"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -288,6 +302,11 @@ public class RocksDbPropertiesTest {
     @Test
     void shouldSetMemoryFractionFromNew() {
       assertThat(brokerCfg.getExperimental().getRocksdb().getMemoryFraction()).isEqualTo(0.6);
+    }
+
+    @Test
+    void shouldSetMaxMemoryFractionFromNew() {
+      assertThat(brokerCfg.getExperimental().getRocksdb().getMaxMemoryFraction()).isEqualTo(0.7);
     }
 
     @Test
