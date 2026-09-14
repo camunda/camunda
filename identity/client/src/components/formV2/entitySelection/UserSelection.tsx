@@ -18,8 +18,8 @@ import { userQueries } from "src/utility/api/users/queries";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (user: User) => user.username;
-const itemToString = (user: User) => user.name || user.username;
-const itemSubTitle = (user: User) => user.email;
+const itemLabel = (user: User) =>
+  `${user.name || user.username} — ${user.email}`;
 const search = (search: string) =>
   userQueries.search(
     search === ""
@@ -43,7 +43,7 @@ export const UserMultiSelect: FC<EntitySearchMultiSelectProps<User>> = (
     <EntitySearchMultiSelect
       search={search}
       getId={getId}
-      itemSubTitle={itemSubTitle}
+      itemLabel={itemLabel}
       placeholder={t("searchByNameOrEmail")}
       errorTitle={t("usersCouldNotLoad")}
       {...props}
@@ -59,8 +59,7 @@ export const UserSingleSelect: FC<EntitySearchSingleSelectProps<User>> = (
     <EntitySearchSingleSelect
       search={search}
       getId={getId}
-      itemToString={itemToString}
-      itemSubTitle={itemSubTitle}
+      itemLabel={itemLabel}
       errorTitle={t("usersCouldNotLoad")}
       {...props}
     />

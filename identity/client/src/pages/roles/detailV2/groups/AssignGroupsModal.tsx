@@ -83,7 +83,6 @@ const AssignGroupsModal: FC<
         value={selectedGroups}
         onChange={setSelectedGroups}
         excluded={assignedGroups}
-        autoFocus
       />
     </FormModal>
   );

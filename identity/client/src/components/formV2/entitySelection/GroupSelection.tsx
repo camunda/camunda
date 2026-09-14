@@ -18,8 +18,7 @@ import { groupQueries } from "src/utility/api/groups/queries";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (group: Group) => group.groupId;
-const itemToString = (group: Group) => group.name || group.groupId;
-const itemSubTitle = (group: Group) => group.name;
+const itemLabel = (group: Group) => `${group.groupId} — ${group.name}`;
 const search = (search: string) =>
   groupQueries.search(
     search === ""
@@ -42,7 +41,7 @@ export const GroupMultiSelect: FC<EntitySearchMultiSelectProps<Group>> = (
     <EntitySearchMultiSelect
       search={search}
       getId={getId}
-      itemSubTitle={itemSubTitle}
+      itemLabel={itemLabel}
       placeholder={t("searchByGroupId")}
       errorTitle={t("groupsCouldNotLoad")}
       {...props}
@@ -58,8 +57,7 @@ export const GroupSingleSelect: FC<EntitySearchSingleSelectProps<Group>> = (
     <EntitySearchSingleSelect
       search={search}
       getId={getId}
-      itemToString={itemToString}
-      itemSubTitle={itemSubTitle}
+      itemLabel={itemLabel}
       errorTitle={t("groupsCouldNotLoad")}
       {...props}
     />
