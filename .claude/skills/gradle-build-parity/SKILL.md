@@ -16,35 +16,16 @@ active modules, not to redesign the build.
 Match Maven behavior for: dependency graphs, generated sources, resource processing, test-jar
 usage, published metadata, packaged artifacts.
 
-## CI Build-Tool Selection (why Maven stays the gate)
+## CI Gradle validation (why Maven stays the gate)
 
-`ci.yml` picks the build tool via a single `detect-changes` output:
+Unified CI does not select an application-test implementation with a `build-tool` output. Maven
+remains the application-test path for every event. The `gradle-changes` output independently
+triggers the experimental Gradle `testClasses` and distribution-parity jobs when Gradle, Maven,
+Java, or relevant CI inputs change.
 
-```yaml
-build-tool: ${{ (github.event_name == 'pull_request' && steps.filter.outputs.java-source-changes != 'true' && steps.filter.outputs.maven-build-changes != 'true' && (steps.filter.outputs.gradle-only-changes == 'true' || contains(github.event.pull_request.labels.*.name, 'gradle-build'))) && 'gradle' || 'maven' }}
-```
-
-`gradle` is chosen automatically for pure Gradle-only pull requests, or for other non-Java,
-non-Maven pull requests carrying the explicit `gradle-build` label. Every other trigger or change
-set falls to `maven`:
-
-- pure Gradle-only pull request → `gradle`
-- other non-Java PR with `gradle-build` label → `gradle`
-- Java or Maven-build PR, even with `gradle-build` label → `maven`
-- unlabeled pull request → `maven`
-- `push` (main, `stable/*`, `release-*`) → `maven`
-- `merge_group` (merge queue) → `maven`
-- schedules and manual runs → `maven`
-
-**Gradle mode replaces Maven only for labeled, non-Java PR checks, never at the landing gate.**
-main uses a required merge queue (ruleset `unified-ci-merges-main-branch`: `merge_queue` rule +
-required check `check-results`). A Gradle-labeled PR still gets Maven-validated in its `merge_group`
-run before it lands. If Maven fails there, the PR is kicked from the queue and never reaches main —
-so "something that doesn't build with Maven lands on main" **cannot happen** through the queue. `push`
-to main/stable is a second Maven gate.
-
-**Do not make `build-tool` a list/set** (run both on every PR). It doubles PR CI for zero
-integrity gain — the merge queue already re-validates with Maven.
+This keeps the experimental Gradle signal honest: it validates compilation and packaged artifact
+names, but it is not a Gradle application-test suite. Maven remains the landing-gate authority,
+including pull requests, merge groups, protected-branch pushes, schedules, and manual runs.
 
 ## Fix Workflow
 

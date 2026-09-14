@@ -299,21 +299,6 @@ outputs:
         steps.filter-common.outputs.gradle-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
-  build-tool:
-    description: Output which CI application-test path should be used for the current event
-    value: >-
-      ${{
-        (
-          github.event_name == 'pull_request' &&
-          steps.filter-common.outputs.java-code-change != 'true' &&
-          steps.filter-common.outputs.maven-change != 'true' &&
-          (
-            steps.filter-common.outputs.gradle-change == 'true' ||
-            contains(github.event.pull_request.labels.*.name, 'gradle-build')
-          )
-        ) && 'gradle' || 'maven'
-      }}
-
 runs:
   using: composite
   steps:

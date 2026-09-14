@@ -77,7 +77,6 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
-      build-tool: ${{ steps.filter.outputs.build-tool }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -225,10 +224,7 @@ jobs:
       always() &&
       needs.build-distball.result == 'success' &&
       github.event_name != 'schedule' &&
-      (
-        needs.detect-changes.outputs.gradle-changes == 'true' ||
-        needs.detect-changes.outputs.build-tool == 'gradle'
-      )
+      needs.detect-changes.outputs.gradle-changes == 'true'
     name: "Gradle / Test Classes"
     needs: [ detect-changes, build-distball ]
     runs-on: gcp-perf-core-16-default
@@ -290,10 +286,7 @@ jobs:
       needs.build-distball.result == 'success' &&
       needs.gradle-compile-check.result == 'success' &&
       github.event_name != 'schedule' &&
-      (
-        needs.detect-changes.outputs.gradle-changes == 'true' ||
-        needs.detect-changes.outputs.build-tool == 'gradle'
-      )
+      needs.detect-changes.outputs.gradle-changes == 'true'
     name: "Gradle / Distribution Parity"
     needs: [ detect-changes, build-distball, gradle-compile-check ]
     runs-on: ubuntu-latest
@@ -637,8 +630,7 @@ jobs:
       needs.detect-changes.outputs.java-code-changes == 'true' ||
       needs.detect-changes.outputs.frontend-changes == 'true' ||
       needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
-      needs.detect-changes.outputs.gradle-changes == 'true' ||
-      needs.detect-changes.outputs.build-tool == 'gradle'
+      needs.detect-changes.outputs.gradle-changes == 'true'
     needs: [ detect-changes ]
     permissions:
       contents: read
