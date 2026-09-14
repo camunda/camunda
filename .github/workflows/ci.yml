@@ -291,10 +291,7 @@ jobs:
       needs.build-distball.result == 'success' &&
       needs.gradle-compile-check.result == 'success' &&
       github.event_name != 'schedule' &&
-      (
-        needs.detect-changes.outputs.gradle-changes == 'true' ||
-        needs.detect-changes.outputs.build-tool == 'gradle'
-      )
+      needs.detect-changes.outputs.gradle-changes == 'true'
     name: "Gradle / Distribution Parity"
     needs: [ detect-changes, build-distball, gradle-compile-check ]
     runs-on: ubuntu-latest
@@ -680,8 +677,7 @@ jobs:
       needs.detect-changes.outputs.java-code-changes == 'true' ||
       needs.detect-changes.outputs.frontend-changes == 'true' ||
       needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
-      needs.detect-changes.outputs.gradle-changes == 'true' ||
-      needs.detect-changes.outputs.build-tool == 'gradle'
+      needs.detect-changes.outputs.gradle-changes == 'true'
     needs: [ detect-changes ]
     permissions:
       contents: read
