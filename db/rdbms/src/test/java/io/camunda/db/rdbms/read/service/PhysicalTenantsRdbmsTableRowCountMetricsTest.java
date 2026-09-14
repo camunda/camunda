@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsTableNames;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -20,6 +21,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -60,14 +62,27 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
 
   private RdbmsTableRowCountProvider provider(
       final TableMetricsMapper mapper, final Duration cacheDuration) {
-    return new RdbmsTableRowCountProvider(mapper, cacheDuration, executor);
+    return new RdbmsTableRowCountProvider(mapper, vendorProperties(), "", cacheDuration, executor);
+  }
+
+  private static VendorDatabaseProperties vendorProperties() {
+    final var props = new Properties();
+    props.put(VendorDatabaseProperties.DATABASE_ID, "h2");
+    props.put("variableValue.previewSize", "8191");
+    props.put("userCharColumn.size", "256");
+    props.put("errorMessage.size", "4000");
+    props.put("treePath.size", "8191");
+    props.put("disableFkBeforeTruncate", "false");
+    props.put("tableRowCount.strategy", "live");
+    props.put("tableRowCount.identifierCase", "none");
+    return new VendorDatabaseProperties(props);
   }
 
   @Test
   void shouldRegisterGaugesForAllTablesOfEachPhysicalTenant() {
-    // given
-    when(mapperA.countTableRows(anyString())).thenReturn(100L);
-    when(mapperB.countTableRows(anyString())).thenReturn(100L);
+    // given - h2 counts one table at a time
+    when(mapperA.countSingleTableRows(anyString())).thenReturn(100L);
+    when(mapperB.countSingleTableRows(anyString())).thenReturn(100L);
     metrics =
         new PhysicalTenantsRdbmsTableRowCountMetrics(
             Map.of(
@@ -96,8 +111,8 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
   @Test
   void shouldReportRowCountsPerPhysicalTenantIndependently() throws Exception {
     // given
-    when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
-    when(mapperB.countTableRows("PROCESS_INSTANCE")).thenReturn(7L);
+    when(mapperA.countSingleTableRows("PROCESS_INSTANCE")).thenReturn(42L);
+    when(mapperB.countSingleTableRows("PROCESS_INSTANCE")).thenReturn(7L);
     metrics =
         new PhysicalTenantsRdbmsTableRowCountMetrics(
             Map.of(

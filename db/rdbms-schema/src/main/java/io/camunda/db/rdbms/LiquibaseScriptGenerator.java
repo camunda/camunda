@@ -7,6 +7,13 @@
  */
 package io.camunda.db.rdbms;
 
+import static io.camunda.db.rdbms.config.VendorDatabaseProperties.H2;
+import static io.camunda.db.rdbms.config.VendorDatabaseProperties.MARIADB;
+import static io.camunda.db.rdbms.config.VendorDatabaseProperties.MSSQL;
+import static io.camunda.db.rdbms.config.VendorDatabaseProperties.MYSQL;
+import static io.camunda.db.rdbms.config.VendorDatabaseProperties.ORACLE;
+import static io.camunda.db.rdbms.config.VendorDatabaseProperties.POSTGRESQL;
+
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.db.rdbms.schema.RollingUpgradeCompatibilityValidator;
 import java.nio.file.Files;
@@ -32,13 +39,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 public class LiquibaseScriptGenerator {
-
-  public static final String H2 = "h2";
-  public static final String MARIADB = "mariadb";
-  public static final String MYSQL = "mysql";
-  public static final String MSSQL = "mssql";
-  public static final String POSTGRESQL = "postgresql";
-  public static final String ORACLE = "oracle";
 
   public static final String CHANGELOG_PATH = "db/changelog/rdbms-exporter/";
   public static final String CHANGESET_PATH = CHANGELOG_PATH + "changesets/";
