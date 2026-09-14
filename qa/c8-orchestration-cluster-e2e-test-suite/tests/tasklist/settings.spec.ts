@@ -46,7 +46,11 @@ test.describe('settings', () => {
     // also a Radix DropdownMenuItem (role="menuitem"), not a <button> like
     // the old Carbon menu item, and TasklistHeader.logoutButton can't be
     // reused here since it's hardcoded to the English "Log out" label.
-    await tasklistHeader.openSettingsButton.click();
+    // The account-menu trigger itself is likewise now localized -- after the
+    // switch to French its accessible name is "Paramètres", not "Settings", so
+    // tasklistHeader.openSettingsButton (hardcoded English "Settings") no
+    // longer matches. Reopen it by its French label.
+    await page.getByRole('button', {name: 'Paramètres'}).click();
     await expect(
       page.getByRole('menuitem', {name: 'Déconnexion'}),
     ).toBeVisible();

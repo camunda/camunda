@@ -162,34 +162,56 @@ class TaskDetailsPage {
   }
 
   async clickAssignToMeButton() {
-    if (!(await this.assignedToMeText.isVisible())) {
-      await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
-      await this.assignToMeButton.click({timeout: 60000});
-      // Give the post-assign UI update the same 60s budget as the button
-      // click itself -- under CI load the assignment confirmation can take
-      // as long to reflect as the click did to become actionable.
-      await expect(this.unassignButton).toBeVisible({timeout: 60000});
+    if (await this.assignedToMeText.isVisible()) {
+      return;
     }
+    // Fail here, rather than silently doing nothing, if the task is assigned
+    // to somebody else -- the toggle would read "Unassign" in that case.
+    await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    await this.toggleAssignment(this.assignToMeButton, this.unassignButton);
   }
 
   async clickUnassignButton() {
     await expect(this.unassignButton).toBeVisible({timeout: 30000});
-    await this.unassignButton.click();
-    // Unassigning is processed asynchronously and this view doesn't poll, so
-    // under load a single (even generous) wait can still lose the race with
-    // backend re-indexing. Retry with a reload in between attempts -- same
-    // pattern as TaskPanelPage.openTask -- instead of one long wait with no
-    // way to force a fresh fetch.
+    await this.toggleAssignment(this.unassignButton, this.assignToMeButton);
+  }
+
+  /**
+   * Clicks the assignment toggle (one button whose label is "Assign to me" or
+   * "Unassign" depending on the task's assignee) and waits for the label to
+   * flip, which only happens once the backend reports the new assignee.
+   *
+   * Re-issues the click between attempts rather than only waiting longer,
+   * because the two ways this can stall need different remedies and the page
+   * cannot tell them apart: while the command is being applied the button is
+   * disabled, and taskAssignmentMachine polls until it settles -- waiting is
+   * all that's needed. But a rejected command (e.g. issued while the task was
+   * still settling from the previous assignment change) drops the machine back
+   * to idle with only a toast, and nothing ever retries it -- so the label will
+   * never flip no matter how long the test waits. Clicking only while the
+   * toggle is idle covers the second case without double-toggling the first.
+   *
+   * Five attempts rather than the default three: this waits on secondary
+   * storage reporting the new assignee, which is spiky under the parallel
+   * nightly load -- most tasks settle within seconds, but 'assign and unassign
+   * task' spent the whole 90s of three attempts unsettled in run 34817452692
+   * while its neighbours settled in under 15s.
+   */
+  private async toggleAssignment(from: Locator, to: Locator): Promise<void> {
     await waitForAssertion({
       assertion: async () => {
-        await expect(this.assignToMeButton).toBeVisible({timeout: 30000});
+        if ((await from.isVisible()) && (await from.isEnabled())) {
+          await from.click({timeout: 30000});
+        }
+        await expect(to).toBeVisible({timeout: 30000});
       },
       onFailure: async () => {
         console.log(
-          'Assign-to-me button not visible yet after unassign, reloading and retrying...',
+          'Assignment toggle has not flipped yet, reloading and retrying...',
         );
         await this.page.reload();
       },
+      maxRetries: 5,
     });
   }
 
