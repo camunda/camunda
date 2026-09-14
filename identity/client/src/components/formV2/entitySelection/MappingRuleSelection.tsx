@@ -18,9 +18,8 @@ import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
 import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (mappingRule: MappingRule) => mappingRule.mappingRuleId;
-const itemToString = (mappingRule: MappingRule) =>
-  mappingRule.name || mappingRule.mappingRuleId;
-const itemSubTitle = (mappingRule: MappingRule) => mappingRule.name;
+const itemLabel = (mappingRule: MappingRule) =>
+  `${mappingRule.mappingRuleId} — ${mappingRule.name}`;
 const search = (search: string) =>
   mappingRuleQueries.search(
     search.trim()
@@ -43,7 +42,7 @@ export const MappingRuleMultiSelect: FC<
     <EntitySearchMultiSelect
       search={search}
       getId={getId}
-      itemSubTitle={itemSubTitle}
+      itemLabel={itemLabel}
       placeholder={t("searchByMappingRuleId")}
       errorTitle={t("mappingRulesCouldNotLoad")}
       {...props}
@@ -59,8 +58,7 @@ export const MappingRuleSingleSelect: FC<
     <EntitySearchSingleSelect
       search={search}
       getId={getId}
-      itemToString={itemToString}
-      itemSubTitle={itemSubTitle}
+      itemLabel={itemLabel}
       errorTitle={t("mappingRulesCouldNotLoad")}
       {...props}
     />
