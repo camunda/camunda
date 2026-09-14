@@ -181,9 +181,9 @@ public class KeySetBackwardPagingIT {
 
   /** Sort on a low-cardinality column, so the cursor leans on the unique key discriminator. */
   private static Scenario userTaskSearch(final RdbmsService rdbmsService) {
-    final var processDefinitionId = nextStringId();
+    final var processDefinitionKey = nextKey();
     UserTaskFixtures.createAndSaveRandomUserTasks(
-        rdbmsService, SEEDED_ENTRIES, b -> b.processDefinitionId(processDefinitionId));
+        rdbmsService, SEEDED_ENTRIES, b -> b.processDefinitionKey(processDefinitionKey));
 
     final var reader = rdbmsService.getUserTaskReader();
     return new Scenario(
@@ -192,7 +192,7 @@ public class KeySetBackwardPagingIT {
             reader.search(
                 UserTaskQuery.of(
                     b ->
-                        b.filter(f -> f.processDefinitionIds(processDefinitionId))
+                        b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
                             .sort(s -> s.priority().desc())
                             .page(page))));
   }
