@@ -233,7 +233,7 @@ public sealed interface ClusterConfigurationManagementRequest {
    * Force-evicts a failed zone's brokers from the member set and drops the zone from the persisted
    * {@code ZoneAwareConfig}, in one atomic change.
    */
-  record ForceZoneRemoveRequest(String zoneId, boolean dryRun)
+  record RemoveZoneRequest(String zoneId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   /**
