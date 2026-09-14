@@ -313,6 +313,9 @@ const queries = {
 				return response.text();
 			},
 			staleTime: 'static',
+			// Blanket retry:false, matching getCurrentUser/getVariable above: a 403/404 here is
+			// permanent (missing authorization / unknown process), and this app has a dedicated
+			// forbidden-state UI, so a fast failure matters more than retrying transient 5xx.
 			retry: false,
 		}),
 
