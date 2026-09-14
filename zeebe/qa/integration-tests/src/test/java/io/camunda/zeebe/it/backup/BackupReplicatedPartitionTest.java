@@ -12,12 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+<<<<<<< HEAD:zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/backup/BackupReplicatedPartitionTest.java
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
+=======
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
+import io.camunda.zeebe.it.cluster.clustering.ClusteringRuleExtension;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+>>>>>>> f91b34b3 (test: use S3Mock in place of minio):zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/backup/BackupReplicatedPartitionTest.java
 import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;

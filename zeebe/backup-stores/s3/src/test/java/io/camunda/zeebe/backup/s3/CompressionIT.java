@@ -14,7 +14,13 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
+<<<<<<< HEAD
 import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
+=======
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
+import io.camunda.zeebe.util.VersionUtil;
+>>>>>>> f91b34b3 (test: use S3Mock in place of minio)
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -10,7 +10,10 @@ package io.camunda.zeebe.backup.s3;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
+<<<<<<< HEAD
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
+=======
+>>>>>>> f91b34b3 (test: use S3Mock in place of minio)
 import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -20,7 +23,12 @@ import org.assertj.core.api.InstanceOfAssertFactory;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+<<<<<<< HEAD
 import org.junit.jupiter.params.provider.ArgumentsSource;
+=======
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+>>>>>>> f91b34b3 (test: use S3Mock in place of minio)
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
