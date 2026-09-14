@@ -45,6 +45,8 @@ public class OidcAuthOverRestStartupIT {
 
   private static final String UNREACHABLE_ISSUER_URI =
       "http://localhost:1000/realms/" + KEYCLOAK_REALM;
+  // the token never gets parsed: resolving the decoder against the unreachable provider fails first
+  private static final String UNVERIFIABLE_TOKEN = "not-a-real-token";
 
   @TestZeebe(autoStart = false, awaitCompleteTopology = false)
   private final TestStandaloneBroker broker =
@@ -77,7 +79,7 @@ public class OidcAuthOverRestStartupIT {
     try (final var httpClient = HttpClient.newHttpClient()) {
       final var request =
           HttpRequest.newBuilder(broker.restAddress().resolve("v2/topology"))
-              .header("Authorization", "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.not-a-sig")
+              .header("Authorization", "Bearer " + UNVERIFIABLE_TOKEN)
               .timeout(Duration.ofSeconds(30))
               .GET()
               .build();

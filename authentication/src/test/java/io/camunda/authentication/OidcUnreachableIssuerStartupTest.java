@@ -22,6 +22,8 @@ import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,7 +110,7 @@ public class OidcUnreachableIssuerStartupTest {
         mockMvcTester
             .get()
             .uri(DUMMY_V2_API_ENDPOINT)
-            .header("Authorization", "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.not-a-sig")
+            .header("Authorization", "Bearer " + unverifiableJwt())
             .accept(MediaType.APPLICATION_JSON)
             .exchange();
 
@@ -156,6 +158,16 @@ public class OidcUnreachableIssuerStartupTest {
         .extractingPath("authorization_servers")
         .asInstanceOf(InstanceOfAssertFactories.LIST)
         .containsExactly(issuerUri());
+  }
+
+  private static String unverifiableJwt() {
+    // base64url of {"alg":"RS256"} and {"sub":"test"} with a bogus signature: shaped like a JWT so
+    // the decoder gets as far as needing the provider, but not a credential anywhere
+    final var encoder = Base64.getUrlEncoder().withoutPadding();
+    return encoder.encodeToString("{\"alg\":\"RS256\"}".getBytes(StandardCharsets.UTF_8))
+        + "."
+        + encoder.encodeToString("{\"sub\":\"test\"}".getBytes(StandardCharsets.UTF_8))
+        + ".not-a-signature";
   }
 
   private static String issuerUri() {
