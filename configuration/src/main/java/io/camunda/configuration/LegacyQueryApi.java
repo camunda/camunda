@@ -11,16 +11,17 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.util.Set;
 
 /**
- * Defines configuration for the broker's internal query API, used for direct partition state reads.
- * The prefix for this class is camunda.system.query-api.
+ * Defines configuration for the broker's internal legacy query API, used for direct partition state
+ * reads. This is unrelated to the REST API for queries. The prefix for this class is
+ * camunda.system.legacy-query-api.
  */
-public class QueryApi {
-  private static final String PREFIX = "camunda.system.query-api";
+public class LegacyQueryApi {
+  private static final String PREFIX = "camunda.system.legacy-query-api";
 
   private static final Set<String> LEGACY_ENABLED_PROPERTIES =
       Set.of("zeebe.broker.experimental.queryApi.enabled");
 
-  /** Enables the broker's internal query API. */
+  /** Enables the broker's internal legacy query API. */
   private boolean enabled = false;
 
   public boolean isEnabled() {
