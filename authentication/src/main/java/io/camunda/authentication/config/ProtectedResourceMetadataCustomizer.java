@@ -18,7 +18,12 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 
 /**
  * Wires RFC 9728 protected-resource metadata into the OIDC resource-server DSL of both OIDC chains.
- * Lifted verbatim from {@code WebSecurityConfig#oauthProtectedResourceMetadataCustomizer}.
+ *
+ * <p>Issuer URIs are read from the repository when a metadata request is served, not while the
+ * chain is configured: reading them resolves the client registrations, which performs OIDC
+ * discovery. Doing that at configuration time made an unreachable identity provider abort the
+ * application context; now only the metadata request itself fails, and it succeeds again as soon as
+ * the provider answers.
  */
 public class ProtectedResourceMetadataCustomizer implements OidcResourceServerCustomizer {
 
@@ -31,16 +36,18 @@ public class ProtectedResourceMetadataCustomizer implements OidcResourceServerCu
 
   @Override
   public void customize(final OAuth2ResourceServerConfigurer<HttpSecurity> oauth2) {
-    final var issuerUris =
-        extractClientRegistrations(clientRegistrationRepository).stream()
-            .map(cr -> cr.getProviderDetails().getIssuerUri())
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
     oauth2.protectedResourceMetadata(
         prmConfigurer ->
             prmConfigurer.protectedResourceMetadataCustomizer(
-                prmBuilder -> issuerUris.forEach(prmBuilder::authorizationServer)));
+                prmBuilder -> issuerUris().forEach(prmBuilder::authorizationServer)));
+  }
+
+  private List<String> issuerUris() {
+    return extractClientRegistrations(clientRegistrationRepository).stream()
+        .map(cr -> cr.getProviderDetails().getIssuerUri())
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
   }
 
   private static List<ClientRegistration> extractClientRegistrations(

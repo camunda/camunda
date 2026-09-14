@@ -82,6 +82,9 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     // Reset the shared WireMock request journal between tests. Cross-test cache
     // collisions are not a concern because each test uses distinct token values.
     wireMock.resetRequests();
+    // Issuer discovery happens on first use rather than at startup, so the document has to be
+    // served per test — the extension drops stub mappings between tests.
+    stubDiscovery();
   }
 
   @DynamicPropertySource
@@ -91,7 +94,10 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     registry.add(
         "camunda.security.authentication.oidc.jwk-set-uri",
         () -> "http://localhost:" + wireMock.getPort() + "/issuer/jwks");
+  }
 
+  private static void stubDiscovery() {
+    final var issuerUri = "http://localhost:" + wireMock.getPort() + "/issuer";
     final var openidConfig =
         "{\"issuer\":\""
             + issuerUri
