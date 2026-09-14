@@ -29,12 +29,15 @@
     </dependency>
 
     <dependency>
+<<<<<<< HEAD
       <groupId>com.github.docker-java</groupId>
       <artifactId>docker-java-api</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
+=======
+>>>>>>> f91b34b3f (test: use S3Mock in place of minio)
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
