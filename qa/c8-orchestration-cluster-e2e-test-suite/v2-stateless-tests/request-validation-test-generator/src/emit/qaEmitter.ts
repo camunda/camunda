@@ -132,18 +132,100 @@ function buildFile(
   lines.push(meta.join('\n'));
   lines.push("import {test, expect} from '@playwright/test'");
   const needsJsonHeaders = scenarios.some(
-    (s) => s.headersAuth && s.bodyEncoding !== 'multipart',
+    (s) =>
+      s.headersAuth &&
+      s.bodyEncoding !== 'multipart' &&
+      !isClusterAdminPath(s.path),
   );
   const needsAuthHeaders = scenarios.some(
-    (s) => s.headersAuth && s.bodyEncoding === 'multipart',
+    (s) =>
+      s.headersAuth &&
+      s.bodyEncoding === 'multipart' &&
+      !isClusterAdminPath(s.path),
+  );
+  const needsClusterAdminJsonHeaders = scenarios.some(
+    (s) =>
+      s.headersAuth &&
+      s.bodyEncoding !== 'multipart' &&
+      isClusterAdminPath(s.path),
+  );
+  const needsClusterAdminAuthHeaders = scenarios.some(
+    (s) =>
+      s.headersAuth &&
+      s.bodyEncoding === 'multipart' &&
+      isClusterAdminPath(s.path),
   );
   const httpNamedImports = ['buildUrl'];
+  if (scenarios.some((s) => isRestorePath(s.path)))
+    httpNamedImports.unshift('waitForConfigurationChange');
   if (needsJsonHeaders) httpNamedImports.unshift('jsonHeaders');
   if (needsAuthHeaders) httpNamedImports.unshift('authHeaders');
+  if (needsClusterAdminJsonHeaders)
+    httpNamedImports.unshift('clusterAdminJsonHeaders');
+  if (needsClusterAdminAuthHeaders)
+    httpNamedImports.unshift('clusterAdminAuthHeaders');
   lines.push(`import {${httpNamedImports.join(', ')}} from '${httpImport}'`);
   lines.push('');
   lines.push(`test.describe('${describeTitle}', () => {`);
-  // Pre-compute base titles and detect duplicates for uniqueness
+  const restoreScenario = scenarios.find((s) => isRestorePath(s.path));
+  renderScenarios(
+    lines,
+    scenarios.filter((s) => !isRestorePath(s.path)),
+    describeTitle,
+    knownFailing,
+  );
+  if (restoreScenario) {
+    lines.push(`  test.describe('Restore scenarios', () => {`);
+    // Mode changes are asynchronous and overlapping changes are rejected by the API.
+    lines.push(`    test.describe.configure({mode: 'serial'});`);
+    const headersExpr = headersFor(restoreScenario);
+    const modePath = isClusterAdminPath(restoreScenario.path)
+      ? '/cluster/v2/mode'
+      : '/mode';
+    lines.push(`    test.beforeAll(async ({request}) => {`);
+    lines.push(
+      ...renderModeTransition(
+        '    ',
+        'enterRecovery',
+        modePath,
+        'RECOVERING',
+        headersExpr,
+      ),
+    );
+    lines.push(`    });`);
+    lines.push(`    test.afterAll(async ({request}) => {`);
+    lines.push(
+      ...renderModeTransition(
+        '    ',
+        'exitRecovery',
+        modePath,
+        'PROCESSING',
+        headersExpr,
+      ),
+    );
+    lines.push(`    });`);
+    renderScenarios(
+      lines,
+      scenarios.filter((s) => isRestorePath(s.path)),
+      describeTitle,
+      knownFailing,
+      '  ',
+    );
+    lines.push(`  });`);
+  }
+  lines.push('});');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function renderScenarios(
+  lines: string[],
+  scenarios: ValidationScenario[],
+  describeTitle: string,
+  knownFailing: Map<string, KnownFailingEntry> | undefined,
+  indent = '',
+): void {
+  // Pre-compute base titles and detect duplicates for uniqueness.
   const baseTitles: string[] = scenarios.map((s) => buildBaseTitle(s));
   const counts = new Map<string, number>();
   for (const t of baseTitles) counts.set(t, (counts.get(t) || 0) + 1);
@@ -159,26 +241,27 @@ function buildFile(
       finalTitle = `${base} (#${n})`;
     }
     const knownFailure = knownFailing?.get(`${describeTitle} ${finalTitle}`);
-    lines.push(renderScenario(s, finalTitle, knownFailure));
+    lines.push(renderScenario(s, finalTitle, knownFailure, indent));
   }
-  lines.push('});');
-  lines.push('');
-  return lines.join('\n');
 }
 
 function renderScenario(
   s: ValidationScenario,
   title: string,
   knownFailure?: KnownFailingEntry,
+  indent = '',
 ): string {
   const lines: string[] = [];
+  const testIndent = `${indent}  `;
   if (knownFailure) {
     lines.push(
-      `  // Known failing (see known-failing-tests.json): ${knownFailure.reason}`,
+      `${testIndent}// Known failing (see known-failing-tests.json): ${knownFailure.reason}`,
     );
   }
   const testFn = knownFailure ? 'test.skip' : 'test';
-  lines.push(`  ${testFn}(${JSON.stringify(title)}, async ({request}) => {`);
+  lines.push(
+    `${testIndent}${testFn}(${JSON.stringify(title)}, async ({request}) => {`,
+  );
   const pathLit = JSON.stringify(s.path);
   const paramsLit = s.params ? JSON.stringify(s.params) : 'undefined';
   // Query values have to reach buildUrl's 3rd argument. Its 2nd argument only substitutes the
@@ -189,45 +272,43 @@ function renderScenario(
     : `buildUrl(${pathLit}, ${paramsLit})`;
   if (s.bodyEncoding === 'multipart' && s.multipartForm) {
     const formLit = JSON.stringify(s.multipartForm, null, 2);
-    lines.push(`    const formData = new FormData();`);
+    lines.push(`${testIndent}  const formData = new FormData();`);
     lines.push(
-      `    const multipartFields: Record<string,string> = ${formLit};`,
+      `${testIndent}  const multipartFields: Record<string,string> = ${formLit};`,
     );
     lines.push(
-      `    for (const [k,v] of Object.entries(multipartFields)) formData.append(k, v);`,
+      `${testIndent}  for (const [k,v] of Object.entries(multipartFields)) formData.append(k, v);`,
     );
   } else if (s.requestBody) {
     const body = JSON.stringify(s.requestBody, null, 2);
     if (body === '[]') {
-      lines.push(`    const requestBody: string[] = ${body};`);
+      lines.push(`${testIndent}  const requestBody: string[] = ${body};`);
     } else {
-      lines.push(`    const requestBody = ${body};`);
+      lines.push(`${testIndent}  const requestBody = ${body};`);
     }
   }
-  const headersExpr = s.headersAuth
-    ? s.bodyEncoding === 'multipart'
-      ? 'authHeaders()'
-      : 'jsonHeaders()'
-    : '{}';
+  const headersExpr = headersFor(s);
   const dataPart =
     s.bodyEncoding === 'multipart' && s.multipartForm
       ? ',\n      multipart: formData'
       : s.requestBody
         ? ',\n      data: requestBody'
         : '';
-  lines.push('    const res = await request.' + methodFn(s.method) + '(');
-  lines.push(`      ${urlCall}, {`);
-  lines.push(`        headers: ${headersExpr}${dataPart}`);
-  lines.push('      }');
-  lines.push('    );');
+  lines.push(`${testIndent}  const res = await request.${methodFn(s.method)}(`);
+  lines.push(`${testIndent}    ${urlCall}, {`);
+  lines.push(`${testIndent}      headers: ${headersExpr}${dataPart}`);
+  lines.push(`${testIndent}    }`);
+  lines.push(`${testIndent}  );`);
   lines.push(
-    ' // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes. ',
+    `${testIndent} // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes. `,
   );
-  lines.push(` //   if (res.status() !== ${s.expectedStatus}) {`);
-  lines.push(' //     try { console.error(await res.text()); } catch {}');
-  lines.push(' //   }');
-  lines.push(`    expect(res.status()).toBe(${s.expectedStatus});`);
-  lines.push('  });');
+  lines.push(`${testIndent} //   if (res.status() !== ${s.expectedStatus}) {`);
+  lines.push(
+    `${testIndent} //     try { console.error(await res.text()); } catch {}`,
+  );
+  lines.push(`${testIndent} //   }`);
+  lines.push(`${testIndent}  expect(res.status()).toBe(${s.expectedStatus});`);
+  lines.push(`${testIndent}});`);
   return lines.join('\n');
 }
 
@@ -254,6 +335,50 @@ function deriveResource(p: string): string {
   if (segs[0] === 'v1' || segs[0] === 'v2')
     return (segs[1] || 'root').replace(/[^a-zA-Z0-9]/g, '');
   return (segs[0] || 'root').replace(/[^a-zA-Z0-9]/g, '');
+}
+
+function isClusterAdminPath(path: string): boolean {
+  return path.startsWith('/cluster/v2/');
+}
+
+function isRestorePath(path: string): boolean {
+  return path === '/restore' || path === '/cluster/v2/restore';
+}
+
+function headersFor(s: ValidationScenario): string {
+  if (!s.headersAuth) return '{}';
+  if (s.bodyEncoding === 'multipart') {
+    return isClusterAdminPath(s.path)
+      ? 'clusterAdminAuthHeaders()'
+      : 'authHeaders()';
+  }
+  return isClusterAdminPath(s.path)
+    ? 'clusterAdminJsonHeaders()'
+    : 'jsonHeaders()';
+}
+
+function renderModeTransition(
+  indent: string,
+  variableName: string,
+  modePath: string,
+  mode: string,
+  headersExpr: string,
+): string[] {
+  return [
+    `${indent}  let ${variableName}ChangeId: string | undefined;`,
+    `${indent}  await expect.poll(async () => {`,
+    `${indent}    const ${variableName} = await request.patch(`,
+    `${indent}      buildUrl('${modePath}', undefined, {mode: '${mode}'}),`,
+    `${indent}      {headers: ${headersExpr}},`,
+    `${indent}    );`,
+    `${indent}    if (${variableName}.status() === 200) {`,
+    `${indent}      ({changeId: ${variableName}ChangeId} = await ${variableName}.json());`,
+    `${indent}    }`,
+    `${indent}    return ${variableName}.status();`,
+    `${indent}  }, {timeout: 60_000}).toBe(200);`,
+    `${indent}  expect(${variableName}ChangeId).toBeDefined();`,
+    `${indent}  await waitForConfigurationChange(request, ${variableName}ChangeId!);`,
+  ];
 }
 
 function buildBaseTitle(s: ValidationScenario): string {
