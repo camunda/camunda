@@ -103,6 +103,10 @@ public class S3MockLegacyMd5IT implements S3BackupStoreTests {
             S3TestBackupProvider.simpleBackupWithId(
                 new BackupIdentifierImpl(1, 2, 3), VersionUtil.getVersion());
         interceptingStore.save(backup).join();
+<<<<<<< HEAD
+=======
+        interceptingStore.markDeleted(backup.id()).join();
+>>>>>>> f91b34b3 (test: use S3Mock in place of minio)
 
         // when
         interceptingStore.delete(backup.id()).join();
