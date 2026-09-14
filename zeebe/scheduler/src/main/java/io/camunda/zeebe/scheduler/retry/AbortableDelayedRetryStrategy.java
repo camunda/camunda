@@ -77,7 +77,7 @@ public final class AbortableDelayedRetryStrategy implements RetryStrategy {
       } else if (currentTerminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
       } else {
-        if (operationName != null) {
+        if (operationName != null && LOG.isTraceEnabled()) {
           LOG.trace(
               "Operation '{}' did not complete, scheduling retry {}", operationName, ++retryCount);
         }

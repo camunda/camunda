@@ -70,7 +70,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
         if (!retryLimitExceeded(++retryCount, maxRetries, null, LOG, currentFuture)) {
-          if (operationName != null) {
+          if (operationName != null && LOG.isTraceEnabled()) {
             LOG.trace(
                 "Operation '{}' did not complete, scheduling retry {}/{}",
                 operationName,
