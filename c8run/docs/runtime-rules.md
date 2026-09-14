@@ -57,7 +57,7 @@ C8Run starts Connectors from the connector bundle plus `custom_connectors/*`. Co
 
 ### Authenticated API access
 
-Connectors talks to the local Camunda API as a client. When the API requires authentication — `camunda.security.authorizations.enabled: true` or `camunda.security.authentication.unprotected-api: false` in `application.yaml` — C8Run passes the seeded user's basic-auth credentials to the Connectors process via `CAMUNDA_CLIENT_AUTH_USERNAME` / `CAMUNDA_CLIENT_AUTH_PASSWORD`. The credentials come from `--username` / `--password` (default `demo` / `demo`); if you change the seeded user in `application.yaml`, pass matching flags. Pre-existing values for those environment variables are never overwritten. When the API is unprotected (the default), no credentials are set.
+Connectors talks to the local Camunda API as a client. When the effective configuration requires authentication — `camunda.security.authorizations.enabled: true` or `camunda.security.authentication.unprotected-api: false` — C8Run passes the seeded user's basic-auth credentials to the Connectors process via `CAMUNDA_CLIENT_AUTH_USERNAME` / `CAMUNDA_CLIENT_AUTH_PASSWORD`. The effective value of each key is resolved across both the bundled default config and any `--config` override, with the override taking precedence, matching how Spring layers them at startup. The credentials come from `--username` / `--password` (default `demo` / `demo`); if you change the seeded user, pass matching flags. Pre-existing values for those environment variables are never overwritten. When the API is unprotected (the default), no credentials are set.
 
 ### Connectors failure is non-fatal
 
