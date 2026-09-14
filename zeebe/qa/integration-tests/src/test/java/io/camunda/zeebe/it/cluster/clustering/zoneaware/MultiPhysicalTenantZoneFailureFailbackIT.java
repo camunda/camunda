@@ -139,7 +139,7 @@ final class MultiPhysicalTenantZoneFailureFailbackIT {
     // partition group, not only the default one - the exact fix RemoveZoneTransformer's
     // javadoc describes and PhysicalTenantForcedRemovalTest proves in isolation - and dropped
     // from the distribution config, restoring a single-member majority (zone B) for each tenant.
-    final var forceRemoveResponse = actuator.removeZone(ZONE_A, false);
+    final var forceRemoveResponse = actuator.removeZone(ZONE_A, false, true);
     Awaitility.await("zone A force-removal is applied")
         .ignoreException(FeignException.class)
         .untilAsserted(

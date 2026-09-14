@@ -19,12 +19,18 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
@@ -75,7 +81,7 @@ final class RemoveZoneTransformerTest {
     final var expectedConfig = new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
 
     // when
-    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_B), currentTopology);
+    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_B, true), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -87,9 +93,43 @@ final class RemoveZoneTransformerTest {
             new UpdatePartitionDistributorConfigOperation(ZONE_A_0, expectedConfig));
   }
 
+  /**
+   * Without force the zone's replicas are handed to the surviving zone before its brokers leave,
+   * rather than being written off — which is the whole difference to the forced removal above.
+   */
+  @Test
+  void shouldMoveThePartitionsOffTheZoneBeforeItsBrokersLeave() {
+    // given: dual-zone cluster, both zones up
+    final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
+    final var expectedConfig = new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
+
+    // when
+    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_B, false), currentTopology);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new UpdatePartitionDistributorConfigOperation(ZONE_A_0, expectedConfig),
+            new PreScalingOperation(ZONE_A_0, Set.of(ZONE_A_0)),
+            new PartitionDemoteOperation(ZONE_B_0, 1),
+            new PartitionLeaveOperation(ZONE_B_0, 1, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 1),
+            new PartitionDemoteOperation(ZONE_B_0, 2),
+            new PartitionLeaveOperation(ZONE_B_0, 2, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_0, 2, 1),
+            new MemberLeaveOperation(ZONE_B_0),
+            new PostScalingOperation(ZONE_A_0, Set.of(ZONE_A_0)));
+  }
+
+  @Test
+  void shouldNotForceAGracefulRemoval() {
+    assertThat(new RemoveZoneTransformer(ZONE_B, false).isForced()).isFalse();
+  }
+
   @Test
   void shouldReturnForced() {
-    assertThat(new RemoveZoneTransformer(ZONE_B).isForced()).isTrue();
+    assertThat(new RemoveZoneTransformer(ZONE_B, true).isForced()).isTrue();
   }
 
   @Test
@@ -109,7 +149,8 @@ final class RemoveZoneTransformerTest {
                     globalConfiguration.setPartitionDistributorConfig(new RoundRobinConfig()));
 
     // when
-    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_A), roundRobinTopology);
+    final var result =
+        plannedOperations(new RemoveZoneTransformer(ZONE_A, true), roundRobinTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -119,12 +160,40 @@ final class RemoveZoneTransformerTest {
   }
 
   @Test
+  void shouldRejectGracefulRemovalOfTheZoneContainingTheElectedCoordinator() {
+    // given: zone-a holds the elected coordinator (lowest member id, ZONE_A_0)
+    final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
+
+    // when
+    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_A, false), currentTopology);
+
+    // then
+    EitherAssert.assertThat(result).isLeft();
+    assertThat(result.getLeft())
+        .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
+        .hasMessageContaining("elected coordinator")
+        .hasMessageContaining("force=true");
+  }
+
+  @Test
+  void shouldAllowForcedRemovalOfTheZoneContainingTheElectedCoordinator() {
+    // given: zone-a holds the elected coordinator (lowest member id, ZONE_A_0)
+    final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
+
+    // when
+    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_A, true), currentTopology);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+  }
+
+  @Test
   void shouldRejectUnknownZone() {
     // given
     final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
 
     // when
-    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_C), currentTopology);
+    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_C, true), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -146,7 +215,7 @@ final class RemoveZoneTransformerTest {
                     globalConfiguration.setPartitionDistributorConfig(ghostZoneConfig));
 
     // when
-    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_B), currentTopology);
+    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_B, true), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -162,7 +231,7 @@ final class RemoveZoneTransformerTest {
     final var currentTopology = buildTopology(singleZoneConfig, Set.of(ZONE_A_0));
 
     // when
-    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_A), currentTopology);
+    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_A, true), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -189,7 +258,7 @@ final class RemoveZoneTransformerTest {
           withMirroredTenant(buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS));
 
       // when — zone-b fails over
-      final var phases = new RemoveZoneTransformer(ZONE_B).phases(configuration);
+      final var phases = new RemoveZoneTransformer(ZONE_B, true).phases(configuration);
 
       // then
       EitherAssert.assertThat(phases).isRight();
@@ -215,7 +284,7 @@ final class RemoveZoneTransformerTest {
           withMirroredTenant(buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS));
 
       // when
-      final var phases = new RemoveZoneTransformer(ZONE_B).phases(configuration);
+      final var phases = new RemoveZoneTransformer(ZONE_B, true).phases(configuration);
 
       // then
       EitherAssert.assertThat(phases).isRight();
@@ -233,7 +302,7 @@ final class RemoveZoneTransformerTest {
           withMirroredTenant(buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS));
 
       // when
-      final var phases = new RemoveZoneTransformer(ZONE_C).phases(configuration);
+      final var phases = new RemoveZoneTransformer(ZONE_C, true).phases(configuration);
 
       // then
       EitherAssert.assertThat(phases)

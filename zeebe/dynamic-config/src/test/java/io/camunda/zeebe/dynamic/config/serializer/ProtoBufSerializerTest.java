@@ -171,7 +171,7 @@ final class ProtoBufSerializerTest {
   @Test
   void shouldEncodeAndDecodeRemoveZoneRequest() {
     // given
-    final var request = new RemoveZoneRequest("us-west-1", true);
+    final var request = new RemoveZoneRequest("us-west-1", true, true);
 
     // when
     final var encodedRequest = protoBufSerializer.encodeRemoveZoneRequest(request);

@@ -119,7 +119,7 @@ final class PhysicalTenantForcedRemovalTest {
             cluster(members, members)));
 
     // when — zone-b fails over
-    final var configuration = forceRemove(new RemoveZoneTransformer(ZONE_B));
+    final var configuration = forceRemove(new RemoveZoneTransformer(ZONE_B, true));
 
     // then — every tenant is left on the surviving zone, which is also the only one the persisted
     // layout still names

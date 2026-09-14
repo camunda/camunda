@@ -355,13 +355,17 @@ paths:
 
   /zones/{zoneId}:
     delete:
-      summary: Force-remove a zone
-      description: Force-evicts the given zone's brokers from the cluster and drops the zone from
-        the persisted partition distribution configuration, in one atomic change. Use this when a
-        zone is down and its brokers are unreachable.
+      summary: Remove a zone
+      description: Removes the given zone's brokers from the cluster and drops the zone from the
+        persisted partition distribution configuration, in one atomic change. By default the
+        zone's partitions are moved onto the surviving zones before its brokers leave, so the
+        zone's brokers must be running. With force, the brokers are evicted without moving
+        anything - use this when the zone is down and its brokers are unreachable, accepting the
+        loss of the replicas it held.
       parameters:
         - $ref: '#/components/parameters/ZoneId'
         - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/ForceParameter'
       responses:
         '202':
           description: Accepted
@@ -381,7 +385,7 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
       x-added-in-version: "8.10.0"
     post:
-      summary: Add back a previously force-removed zone
+      summary: Add back a previously removed zone
       description: Re-adds the operator-supplied brokers and re-includes the given zone in the
         persisted partition distribution configuration, with the supplied replica count and
         priority, in one atomic change.
