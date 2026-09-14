@@ -26,10 +26,6 @@ starter: build
 worker: build
 	java -jar target/camunda-load-tester-*-exec.jar --spring.profiles.active=worker
 
-.PHONY: suspender
-suspender: build
-	java -jar target/camunda-load-tester-*-exec.jar --spring.profiles.active=suspender
-
 .PHONY: docker-starter
 docker-starter:
 	$(MVNW) jib:build -Pstarter
@@ -37,7 +33,3 @@ docker-starter:
 .PHONY: docker-worker
 docker-worker:
 	$(MVNW) jib:build -Pworker
-
-.PHONY: docker-suspender
-docker-suspender:
-	$(MVNW) jib:build -Psuspender

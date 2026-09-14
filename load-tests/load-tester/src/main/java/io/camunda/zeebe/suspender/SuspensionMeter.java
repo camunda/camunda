@@ -10,14 +10,11 @@ package io.camunda.zeebe.suspender;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.SuspenderProperties;
-import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -25,41 +22,39 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
 /**
- * Load-test role that stresses the process-instance suspend/resume feature by periodically
- * suspending running instances, holding them for a configurable duration while other roles keep
- * sending traffic (so buffered commands accumulate), then resuming them.
+ * Stresses the process-instance suspend/resume feature by periodically suspending running
+ * instances, holding them for a configurable duration while the starter (and workers) keep sending
+ * traffic so buffered commands accumulate, then resuming them.
  *
- * <p>Two drivers are supported (see {@link SuspenderProperties.Mode}): {@code SINGLE} issues one
- * suspend/resume command per instance; {@code BATCH} issues process-instance batch operations over
- * a filter. Leaving {@link SuspenderProperties#isEnabled()} {@code false} is the A/B baseline arm.
+ * <p>Runs as a scheduled meter inside the starter (mirroring {@link
+ * io.camunda.zeebe.read.DataReadMeter}), so no separate deployment or image is needed: the whole
+ * load can be enabled and configured through {@code load-tester.suspender.*} on the existing
+ * starter pod. Two drivers are supported (see {@link SuspenderProperties.Mode}): {@code SINGLE}
+ * issues one suspend/resume command per instance; {@code BATCH} issues process-instance batch
+ * operations over a filter. It is only constructed when {@link SuspenderProperties#isEnabled()} is
+ * {@code true}; leaving it disabled is the A/B baseline arm.
  */
-@Component
-@Profile("suspender")
-public class Suspender implements CommandLineRunner {
+public class SuspensionMeter implements AutoCloseable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(Suspender.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SuspensionMeter.class);
   private static final Logger THROTTLED_LOGGER =
-      new ThrottledLogger(LoggerFactory.getLogger(Suspender.class), Duration.ofSeconds(5));
+      new ThrottledLogger(LoggerFactory.getLogger(SuspensionMeter.class), Duration.ofSeconds(5));
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
 
+  private final MeterRegistry registry;
+  private final ScheduledExecutorService executor;
   private final CamundaClient client;
   private final SuspenderProperties cfg;
-  private final MeterRegistry registry;
-  private final ConnectionMonitor connectionMonitor;
 
-  // single mode: candidate keys pending suspension, and suspended keys awaiting their resume
-  // deadline. Both touched only from the single-threaded suspend/resume executor tasks below, but
-  // kept concurrent so the resume gauge can read the size safely.
+  // Candidate keys pending suspension, and suspended keys awaiting their resume deadline. Touched
+  // only from the single-threaded suspend/resume executor tasks below, but kept concurrent so the
+  // in-flight gauge can read the size safely.
   private final Deque<Long> candidates = new ArrayDeque<>();
   private final Map<Long, Instant> suspendedUntil = new ConcurrentHashMap<>();
 
@@ -67,36 +62,26 @@ public class Suspender implements CommandLineRunner {
   private Counter resumeRequests;
   private Counter suspendErrors;
   private Counter resumeErrors;
-  private ScheduledExecutorService executor;
 
-  public Suspender(
-      final CamundaClient client,
-      final LoadTesterProperties properties,
+  public SuspensionMeter(
       final MeterRegistry registry,
-      final ConnectionMonitor connectionMonitor) {
-    this.client = client;
-    cfg = properties.getSuspender();
+      final ScheduledExecutorService executor,
+      final CamundaClient client,
+      final SuspenderProperties cfg) {
     this.registry = registry;
-    this.connectionMonitor = connectionMonitor;
+    this.executor = executor;
+    this.client = client;
+    this.cfg = cfg;
   }
 
-  @Override
-  public void run(final String... args) {
-    if (!cfg.isEnabled()) {
-      LOG.info("Suspender disabled (load-tester.suspender.enabled=false); idling as baseline arm");
-      return;
-    }
-
-    connectionMonitor.awaitAndPrintTopology();
+  /** Registers metrics and schedules the suspend/resume tasks for the configured mode. */
+  public void start() {
     registerMetrics();
-
     LOG.info(
-        "Starting suspender: mode={}, processId={}, holdDuration={}",
+        "Starting suspension meter: mode={}, processId={}, holdDuration={}",
         cfg.getMode(),
         cfg.getProcessId(),
         cfg.getHoldDuration());
-
-    executor = Executors.newScheduledThreadPool(2);
     switch (cfg.getMode()) {
       case SINGLE -> startSingleMode();
       case BATCH -> startBatchMode();
@@ -106,11 +91,11 @@ public class Suspender implements CommandLineRunner {
   private void registerMetrics() {
     suspendRequests =
         Counter.builder("suspender_suspend_requests_total")
-            .description("Number of suspend requests issued by the suspender")
+            .description("Number of suspend requests issued by the suspension meter")
             .register(registry);
     resumeRequests =
         Counter.builder("suspender_resume_requests_total")
-            .description("Number of resume requests issued by the suspender")
+            .description("Number of resume requests issued by the suspension meter")
             .register(registry);
     suspendErrors =
         Counter.builder("suspender_errors_total")
@@ -123,7 +108,7 @@ public class Suspender implements CommandLineRunner {
             .tag("op", "resume")
             .register(registry);
     Gauge.builder("suspender_in_flight_suspended", suspendedUntil, Map::size)
-        .description("Instances currently suspended by the suspender, awaiting resume")
+        .description("Instances currently suspended by the suspension meter, awaiting resume")
         .register(registry);
   }
 
@@ -248,10 +233,8 @@ public class Suspender implements CommandLineRunner {
     }
   }
 
-  @PreDestroy
-  public void shutdown() {
-    if (executor != null && !executor.isShutdown()) {
-      executor.shutdownNow();
-    }
+  @Override
+  public void close() {
+    executor.shutdownNow();
   }
 }

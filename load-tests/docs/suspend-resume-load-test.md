@@ -33,7 +33,7 @@ This load test proves the **cluster-level** properties JMH structurally cannot:
 |---|---|---|
 | Environment | GKE benchmark cluster (`camunda-benchmark-prod`) | Full Grafana/Prometheus/GCS tooling + `SuspensionMetrics` already wired; prod-representative topology (3-node OC, 3 partitions, RF 3). Literal SaaS DEV/INT is an optional later smoke run, not the measurement vehicle. |
 | Driver API | Both single-instance and batch-operation, as **two scenarios** | They stress different subsystems: single-instance = hot-path + drain interplay; batch = batch executor + backpressure. Both are real SaaS usage. |
-| Injection | New Spring `@Profile("suspender")` component | Suspend rate must be tunable independently of PI-creation rate, and it needs a two-phase timer (suspend → hold → resume). A dedicated deployment mirrors the existing starter/worker pattern and isolates rate/replica control. |
+| Injection | `SuspensionMeter` running **inside the starter** (like the read-benchmark meter), gated by `load-tester.suspender.enabled` | A separate `@Profile` deployment would need a new image, a new Helm template, and an external `camunda-load-tests-helm` chart release before it could run in SaaS. Folding it into the starter needs none of that: the starter image is already built from the PR branch, and `load-tester.suspender.*` config already flows to the starter via the chart's `global.extraConfig.load-tester.*` passthrough. Tradeoff: suspend/resume shares the starter pod and cannot be scaled independently — acceptable for a moderate A/B run, and it is client-side command issuance so it does not taint the broker-side signal. |
 | PI shape | Typical low-fan-out (existing BPMN) | Realistic steady state; measures regression + drain without hitting the O(n²)/4 MB edge. **The O(n²)/4 MB-cap edge is deliberately left to JMH** — a coverage split, not an oversight. |
 | Hold + drain | Long hold under active traffic | Suspend for tens of seconds–minutes while traffic keeps targeting the instance, so buffered commands accumulate, then resume and measure drain. This is the JMH blind spot. |
 | Magnitude | ~50 PI/s base (`typical`), 10–20 % of live PIs suspended on a rolling basis | Realistic customer-like ratio; enough drain volume to measure without saturating the cluster and masking the regression signal. Tune from the first run. |
@@ -49,12 +49,15 @@ suspended instance. The drain scenario must therefore use a BPMN model with mess
 catch events (a `typical_process` variant with a message intermediate catch), not a pure
 job chain, or there will be nothing to buffer.
 
-## The `suspender` component
+## The suspension meter
 
-A third role on the existing single-jar / Spring-profile design
-(`LoadTesterApplication` + `--spring.profiles.active=suspender`), alongside `starter` and
-`worker`. It reuses the v2 process-instance search machinery already used by the
-data-availability meter (`Starter.setupDataAvailabilityMeter`) and read benchmark.
+`SuspensionMeter` is a scheduled meter started inside the **starter** when
+`load-tester.suspender.enabled=true` (mirroring `DataReadMeter` — see
+`Starter.setupSuspensionMeter`). No new image, Helm template, or chart release is required;
+the starter deployment already exists and already receives `load-tester.*` config. It reuses
+the v2 process-instance search machinery already used by the data-availability meter
+(`Starter.setupDataAvailabilityMeter`) and read benchmark. It targets the same process the
+starter creates (`load-tester.starter.process-id`).
 
 **Client API used** (`io.camunda.client.CamundaClient`):
 
@@ -78,13 +81,15 @@ data-availability meter (`Starter.setupDataAvailabilityMeter`) and read benchmar
 | Property | Default | Meaning |
 |---|---|---|
 | `enabled` | `false` | Master switch (off = the A/B baseline arm). |
-| `mode` | `single` | `single` or `batch`. |
-| `process-id` | `benchmark` | Process definition to target. |
+| `mode` | `SINGLE` | `SINGLE` or `BATCH`. |
 | `rate` / `rate-duration` | `10` / `1s` | Suspend attempts per interval (single mode). |
 | `batch-interval` | `10s` | Interval between batch operations (batch mode). |
 | `batch-page-size` | `1000` | Max instances per batch operation. |
 | `hold-duration` | `30s` | How long an instance stays suspended before resume. |
 | `sample-size` | `100` | Candidates fetched per suspend cycle (single mode). |
+
+The target process id is taken from `load-tester.starter.process-id` (the instances the
+starter creates), not configured separately.
 
 ### Metrics
 
@@ -113,24 +118,45 @@ and compare:
 - **Backpressure**: gateway backpressure (RESOURCE_EXHAUSTED) rate in arm B not materially
   worse than arm A.
 
-## How to run
+## How to run (SaaS, no chart release, off the PR branch)
 
-1. Build + push images: `make docker` in `load-tests/load-tester` (adds the `suspender`
-   image once its Jib profile is wired).
-2. Deploy a load test via `newLoadTest.sh` / `make install` with a scenario values file that
-   enables the suspender deployment and sets the base rate to `typical` (~50 PI/s).
-3. Run arm A (`suspender.enabled=false`) and arm B (`enabled=true`) for the same duration
-   (multi-hour), on comparable cluster state.
-4. Compare on the Camunda Performance + Zeebe Grafana dashboards and the `SuspensionMetrics`
-   panels; archive results.
+The meter rides the existing starter, so the whole test runs from the PR branch with no
+merge and no `camunda-load-tests-helm` release. `load-tester.suspender.*` is delivered
+through the chart's `global.extraConfig.load-tester.*` passthrough.
+
+```bash
+# Arm A — baseline (suspender off; enabled=false is the default)
+gh workflow run camunda-load-test.yml \
+  --ref 59933-suspend-resume-load-testing \
+  -f name=susp-a-baseline \
+  -f ref=59933-suspend-resume-load-testing \
+  -f scenario=typical
+
+# Arm B — suspend/resume enabled (SINGLE driver)
+gh workflow run camunda-load-test.yml \
+  --ref 59933-suspend-resume-load-testing \
+  -f name=susp-b-single \
+  -f ref=59933-suspend-resume-load-testing \
+  -f scenario=typical \
+  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=SINGLE --set global.extraConfig.load-tester.suspender.hold-duration=30s"
+```
+
+BATCH driver: `--set global.extraConfig.load-tester.suspender.mode=BATCH --set global.extraConfig.load-tester.suspender.batch-interval=10s`.
+
+Run both arms for the same (multi-hour) duration on comparable cluster state, then compare on
+the Camunda Performance + Zeebe Grafana dashboards and the `SuspensionMetrics` panels; archive
+results.
 
 ## Deliverables / follow-ups
 
-- [ ] `suspender` component + `SuspenderProperties` + `application.yaml` wiring (this PR).
-- [ ] Jib `suspender` profile in `load-tester/pom.xml` + `docker-suspender` Makefile target.
-- [ ] BPMN model with a message/timer catch event for the drain scenario, + scenario values
-      file enabling the suspender.
-- [ ] Helm chart (`camunda-load-tests-helm`, external repo) support for a `suspender`
-      deployment — tracked separately, chart lives outside this monorepo.
+- [x] `SuspensionMeter` + `SuspenderProperties` + starter wiring + `application.yaml` (this PR).
+- [ ] BPMN model with a message/timer catch event for the drain scenario, so buffered commands
+      actually accumulate on low-fan-out instances (the default `one_task`/`typical_process`
+      have little to buffer while suspended).
 - [ ] Optional: promote to a recurring daily-stress variant if suspend/resume becomes a
       relied-upon path.
+
+The separate-deployment path (dedicated image + external `camunda-load-tests-helm` template +
+chart release) was intentionally dropped in favour of the in-starter meter so the test runs in
+SaaS with no cross-repo release. It could be revisited only if suspend/resume load must scale
+independently of PI creation.

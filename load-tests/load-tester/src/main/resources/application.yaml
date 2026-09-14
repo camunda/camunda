@@ -105,14 +105,15 @@ load-tester:
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}
 
-  # Suspender-specific properties consumed by Suspender.java (profile 'suspender').
-  # Periodically suspends running instances and resumes them after hold-duration, to stress
-  # the suspend/resume feature. Leave enabled=false for the A/B baseline arm.
+  # Suspender properties consumed by SuspensionMeter (runs inside the starter, profile 'starter').
+  # When enabled, the starter periodically suspends running instances and resumes them after
+  # hold-duration, to stress the suspend/resume feature. Leave enabled=false for the A/B baseline
+  # arm. The target process id is taken from load-tester.starter.process-id (the instances the
+  # starter creates), not set here.
   suspender:
     enabled: ${LOAD_TESTER_SUSPENDER_ENABLED:false}
     # SINGLE = per-instance commands, BATCH = process-instance batch operations
     mode: ${LOAD_TESTER_SUSPENDER_MODE:SINGLE}
-    process-id: ${LOAD_TESTER_SUSPENDER_PROCESS_ID:benchmark}
     rate: ${LOAD_TESTER_SUSPENDER_RATE:10}
     rate-duration: ${LOAD_TESTER_SUSPENDER_RATE_DURATION:1s}
     sample-size: ${LOAD_TESTER_SUSPENDER_SAMPLE_SIZE:100}

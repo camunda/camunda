@@ -28,6 +28,7 @@ import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
 import io.camunda.zeebe.optimize.OptimizeReportEvaluatorFactory;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
+import io.camunda.zeebe.suspender.SuspensionMeter;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -95,6 +96,7 @@ public class Starter implements CommandLineRunner {
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
+  private SuspensionMeter suspensionMeter;
   private OptimizeReportEvaluator optimizeReportEvaluator;
 
   public Starter(
@@ -150,6 +152,10 @@ public class Starter implements CommandLineRunner {
       setupDataReadMeter();
     }
 
+    if (properties.getSuspender().isEnabled()) {
+      setupSuspensionMeter();
+    }
+
     if (properties.getOptimize().isReportEvaluationEnabled()) {
       setupOptimizeReportEvaluator();
     }
@@ -158,6 +164,10 @@ public class Starter implements CommandLineRunner {
 
     if (properties.isPerformReadBenchmarks()) {
       dataReadMeter.start();
+    }
+
+    if (suspensionMeter != null) {
+      suspensionMeter.start();
     }
 
     if (optimizeReportEvaluator != null) {
@@ -199,6 +209,9 @@ public class Starter implements CommandLineRunner {
     if (dataReadMeter != null) {
       dataReadMeter.close();
     }
+    if (suspensionMeter != null) {
+      suspensionMeter.close();
+    }
     if (optimizeReportEvaluator != null) {
       optimizeReportEvaluator.close();
     }
@@ -228,6 +241,16 @@ public class Starter implements CommandLineRunner {
                           .toList());
             });
     processInstanceStartMeter.start();
+  }
+
+  private void setupSuspensionMeter() {
+    final var suspenderCfg = properties.getSuspender();
+    // The meter must target the instances this starter creates, so align its process id with the
+    // starter's regardless of the suspender default.
+    suspenderCfg.setProcessId(starterCfg.getProcessId());
+    LOG.info("Starting suspend/resume load for process '{}'", suspenderCfg.getProcessId());
+    suspensionMeter =
+        new SuspensionMeter(registry, Executors.newScheduledThreadPool(2), client, suspenderCfg);
   }
 
   private void setupOptimizeReportEvaluator() {
