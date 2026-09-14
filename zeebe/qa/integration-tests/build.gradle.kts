@@ -9,6 +9,7 @@ plugins {
 
 dependencies {
   testImplementation(project(":camunda-cluster"))
+  testImplementation(project(":camunda-gateway-model"))
   testImplementation(project(":camunda-authentication"))
   testImplementation(project(":zeebe-cluster-config"))
   testImplementation(project(":zeebe-broker"))
