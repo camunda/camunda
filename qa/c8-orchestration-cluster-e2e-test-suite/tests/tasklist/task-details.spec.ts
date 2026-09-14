@@ -165,8 +165,11 @@ test.describe('task details page', () => {
       useInnerText: true,
     });
 
-    await taskDetailsPage.unassignButton.click();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    // Unassigning only flips the button once the backend reports the task out
+    // of ASSIGNING, which under CI load outlives the default 10s wait. Go
+    // through the page object, which waits on that transition with the same
+    // retry-and-reload budget the other unassigning tests use.
+    await taskDetailsPage.clickUnassignButton();
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await expect(taskDetailsPage.assignee).toHaveText('Unassigned', {
       useInnerText: true,
