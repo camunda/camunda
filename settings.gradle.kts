@@ -232,6 +232,7 @@ dependencyResolutionManagement {
       version("jna-platform", pomVersion("version.jna-platform"))
       version("jwks-rsa", pomVersion("version.jwks-rsa"))
       version("jmh", pomVersion("version.jmh"))
+      version("joda-time", pomVersion("version.joda-time"))
       version("jmock", pomVersion("version.jmock"))
       version("jqwik", pomVersion("version.jqwik"))
       version("jspecify", pomVersion("version.jspecify"))
