@@ -35,7 +35,15 @@ env:
 jobs:
   smoke-tests:
     name: "Smoke - ${{ matrix.os }} with ${{ matrix.arch }}"
-    timeout-minutes: 20
+    # Exceeds the 30min Unified CI ceiling (docs/monorepo-docs/ci.md); needed so the two
+    # nick-fields/retry-wrapped steps below (build-zeebe, smoke test) each have room for a full
+    # second attempt instead of the job timeout preempting the retry logic before it can help.
+    # Budget: ~4min checkout/setup/docker-build/analyze/observe overhead (observed max ~2.6min
+    # on linux, which also runs build-platform-docker) + up to 2x18min build-zeebe attempts
+    # (see its timeout_minutes comment) + up to 2x5min smoke-test attempts (+15s retry_wait each)
+    # = ~50min. Typical runs stay under 14min (observed on windows, the slowest matrix leg); this
+    # ceiling only matters when a step is actually retrying.
+    timeout-minutes: 50
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runner }}
     env:
@@ -98,6 +106,15 @@ jobs:
       # shell: bash mirrors the shell: bash this step used before wrapping: nick-fields/retry
       # defaults to powershell on Windows runners (this job's matrix includes windows/macos), so
       # it must be set explicitly to keep running the mvnw invocation under bash everywhere.
+      # set -euo pipefail is required here: a plain `run:` step gets it for free from this
+      # workflow's `defaults.run.shell: bash` (see top of file), but nick-fields/retry's `command:`
+      # runs standalone and does not inherit that default. Without it, `mvnw ... | tee` always
+      # exits 0 (tee's own status), so the retry action would see "success" on a genuine mvnw
+      # failure and neither retry nor fail the step -- silently defeating this whole change.
+      # timeout_minutes: 5 is well above the ~40-110s this step has taken in recent runs across
+      # the matrix (container tests are excluded on non-Linux, so it only runs the smoke-test
+      # profile), while still fitting the job's timeout-minutes budget alongside build-zeebe's
+      # own retry (see the timeout-minutes comment on this job).
       - name: Run smoke test on ${{ matrix.arch }}
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
@@ -111,8 +128,9 @@ jobs:
           max_attempts: 2
           retry_on: any
           retry_wait_seconds: 15
-          timeout_minutes: 8
+          timeout_minutes: 5
           command: >
+            set -euo pipefail;
             ./mvnw -B --no-snapshot-updates
             -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
             -pl qa/integration-tests

@@ -27,6 +27,13 @@ runs:
     # failing the job outright on one transient blip.
     # retry_on: any, not error -- a timeout_minutes kill is a distinct event that retry_on: error
     # does NOT retry (see the identical note on the deploy-snapshots job in ci.yml).
+    # timeout_minutes is a PER-ATTEMPT cap, not a total. This step builds the whole distribution
+    # (not just this module), so it is slow: the build-distball job notes it can run ~15min on
+    # its self-hosted runner, and ci-zeebe.yml's own smoke-tests/windows job (a slower, GitHub-
+    # hosted runner) has observed up to ~11.7min (700s) across recent runs. 18min gives headroom
+    # above both so a healthy-but-slow build isn't killed before completing; every job calling
+    # this action must budget at least one full 18min attempt (ideally two) -- see the
+    # timeout-minutes comment on the smoke-tests job in ci-zeebe.yml for the worked example.
     - name: Package Zeebe
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
       with:
@@ -34,7 +41,7 @@ runs:
         max_attempts: 2
         retry_on: any
         retry_wait_seconds: 15
-        timeout_minutes: 5
+        timeout_minutes: 18
         command: ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
 
     - name: Determine Zeebe distball path
