@@ -305,10 +305,6 @@ public class CamundaProcessTestExtension
               + "Make sure that you registering the extension on a static field.");
     }
 
-    // a test starts without mocks, so that a process mocked by a previous test is not taken for
-    // mocked in this one
-    camundaProcessTestContext.clearMockedChildProcessDefinitionKeys();
-
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -463,11 +459,26 @@ public class CamundaProcessTestExtension
           () -> runtime.getCamundaClientBuilderFactory().get().build(),
           testCaseStartTime);
 
+      forgetMocksOfDeletedData(cleanupStrategy);
+
     } catch (final Throwable t) {
       LOG.warn(
           "Failed to delete the runtime data, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    }
+  }
+
+  /**
+   * Forgets the processes that the test mocked, once the stubs deployed for them are gone with the
+   * data. The runtime hands the keys of those deployments out again, so a later test can deploy a
+   * process of its own under the key of a stub.
+   *
+   * @param cleanupStrategy The cleanup that ran for this test
+   */
+  private void forgetMocksOfDeletedData(final CleanupStrategy cleanupStrategy) {
+    if (cleanupStrategy.deletesRuntimeData()) {
+      camundaProcessTestContext.clearMockedChildProcessDefinitionKeys();
     }
   }
 

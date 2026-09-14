@@ -167,8 +167,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
-    camundaProcessTestContext.clearMockedChildProcessDefinitionKeys();
-
     client = createClient(camundaProcessTestContext);
 
     // fill proxies
@@ -335,11 +333,26 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
           () -> runtime.getCamundaClientBuilderFactory().get().build(),
           testCaseStartTime);
 
+      forgetMocksOfDeletedData(cleanupStrategy);
+
     } catch (final Throwable t) {
       LOG.warn(
           "Failed to delete the runtime data, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    }
+  }
+
+  /**
+   * Forgets the processes that the test mocked, once the stubs deployed for them are gone with the
+   * data. The runtime hands the keys of those deployments out again, so a later test can deploy a
+   * process of its own under the key of a stub.
+   *
+   * @param cleanupStrategy The cleanup that ran for this test
+   */
+  private void forgetMocksOfDeletedData(final CleanupStrategy cleanupStrategy) {
+    if (cleanupStrategy.deletesRuntimeData()) {
+      camundaProcessTestContext.clearMockedChildProcessDefinitionKeys();
     }
   }
 

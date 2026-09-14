@@ -46,6 +46,7 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
@@ -139,6 +140,7 @@ public class ExecutionListenerTest {
 
     when(camundaContainerRuntime.getCamundaGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainerRuntime.getCamundaRestApiAddress()).thenReturn(REST_API_ADDRESS);
+    when(camundaContainerRuntime.getMockedChildProcesses()).thenReturn(new MockedChildProcesses());
     when(camundaContainerRuntime.getCamundaClientBuilderFactory())
         .thenReturn(
             () ->
@@ -510,7 +512,7 @@ public class ExecutionListenerTest {
   }
 
   @Test
-  void shouldForgetMockedChildProcessesOfThePreviousTest() throws Exception {
+  void shouldForgetMockedChildProcessesWhenTheirDataIsDeleted() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener = coverageCollectingListener();
 
@@ -519,20 +521,84 @@ public class ExecutionListenerTest {
 
     mockChildProcess("child-process", 123L);
     setManagementClientDummy(listener);
+
+    when(cleanupStrategy.deletesRuntimeData()).thenReturn(true);
     listener.afterTestMethod(testContext);
 
     // when: a second test runs without mocking a child process
     listener.beforeTestMethod(testContext);
     listener.afterTestMethod(testContext);
 
-    // then: the mock of the first test is not reported for the second one
+    // then: the runtime hands the key of the deleted stub out again, so it identifies nothing
+    assertThat(reportedMockedProcessDefinitionKeys(2))
+        .containsExactly(Collections.singleton(123L), Collections.emptySet());
+  }
+
+  @Test
+  void shouldRememberMockedChildProcessesWhileTheirDataIsKept() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener = coverageCollectingListener();
+
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    mockChildProcess("child-process", 123L);
+    setManagementClientDummy(listener);
+
+    when(cleanupStrategy.deletesRuntimeData()).thenReturn(false);
+    listener.afterTestMethod(testContext);
+
+    // when: a second test runs without mocking a child process
+    listener.beforeTestMethod(testContext);
+    listener.afterTestMethod(testContext);
+
+    // then: the stub of the first test keeps running in the data of the second one
+    assertThat(reportedMockedProcessDefinitionKeys(2))
+        .containsExactly(Collections.singleton(123L), Collections.singleton(123L));
+  }
+
+  /**
+   * A runtime whose data outlives a test class, such as a shared or a remote one, keeps the stubs
+   * of the classes before it running in the data the next class is measured against.
+   */
+  @Test
+  void shouldReportMockedChildProcessesOfAnEarlierTestClass() throws Exception {
+    // given: a test class that mocked a child process and kept its data
+    final CamundaProcessTestExecutionListener listenerOfEarlierTestClass =
+        coverageCollectingListener();
+
+    listenerOfEarlierTestClass.beforeTestClass(testContext);
+    listenerOfEarlierTestClass.beforeTestMethod(testContext);
+
+    mockChildProcess("child-process", 123L);
+    setManagementClientDummy(listenerOfEarlierTestClass);
+
+    when(cleanupStrategy.deletesRuntimeData()).thenReturn(false);
+    listenerOfEarlierTestClass.afterTestMethod(testContext);
+
+    // when: a later test class runs a test of its own, with a listener and a context of its own
+    final CamundaProcessTestExecutionListener listenerOfLaterTestClass =
+        coverageCollectingListener();
+
+    listenerOfLaterTestClass.beforeTestClass(testContext);
+    listenerOfLaterTestClass.beforeTestMethod(testContext);
+
+    setManagementClientDummy(listenerOfLaterTestClass);
+    listenerOfLaterTestClass.afterTestMethod(testContext);
+
+    // then: the later class reports the stub too, so that its instances do not count as coverage
+    assertThat(reportedMockedProcessDefinitionKeys(2))
+        .containsExactly(Collections.singleton(123L), Collections.singleton(123L));
+  }
+
+  /** Reads the mocked process definition keys that the listener reported for each test run. */
+  private List<Collection<Long>> reportedMockedProcessDefinitionKeys(final int runs) {
     final ArgumentCaptor<Collection<Long>> mockedProcessDefinitionKeys =
         ArgumentCaptor.forClass(Collection.class);
-    verify(processCoverage, times(2))
+    verify(processCoverage, times(runs))
         .collectTestRunCoverage(any(), any(), any(), any(), mockedProcessDefinitionKeys.capture());
 
-    assertThat(mockedProcessDefinitionKeys.getAllValues())
-        .containsExactly(Collections.singleton(123L), Collections.emptySet());
+    return mockedProcessDefinitionKeys.getAllValues();
   }
 
   private CamundaProcessTestExecutionListener coverageCollectingListener() {

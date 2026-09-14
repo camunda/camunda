@@ -58,6 +58,7 @@ import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.mock.MockChildProcessBuilderImpl;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -66,13 +67,11 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -128,7 +127,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
   private final Supplier<CamundaDataSource> dataSourceSupplier;
-  private final Set<Long> mockedChildProcessDefinitionKeys = ConcurrentHashMap.newKeySet();
+  private final MockedChildProcesses mockedChildProcesses;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -143,6 +142,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
     connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
+    mockedChildProcesses = camundaRuntime.getMockedChildProcesses();
     this.clientCreationCallback = clientCreationCallback;
     this.clockClient = clockClient;
     this.awaitBehaviorSupplier = awaitBehaviorSupplier;
@@ -216,7 +216,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public MockChildProcessBuilder mockChildProcess() {
     final CamundaClient client = createClient();
-    return new MockChildProcessBuilderImpl(client, mockedChildProcessDefinitionKeys::add);
+    return new MockChildProcessBuilderImpl(client, mockedChildProcesses::record);
   }
 
   /**
@@ -224,15 +224,21 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
    * Their instances are stubs of the mocked process rather than the process itself, for example
    * when collecting the coverage of a test.
    *
+   * <p>The stubs of an earlier test class are among them while the data they were deployed into
+   * still lives, as their instances keep turning up in it.
+   *
    * @return The keys of the deployed stubs, as they are now
    */
   public Set<Long> getMockedChildProcessDefinitionKeys() {
-    return new HashSet<>(mockedChildProcessDefinitionKeys);
+    return mockedChildProcesses.processDefinitionKeys();
   }
 
-  /** Forgets the deployed stubs, so that the next test starts without mocks. */
+  /**
+   * Forgets the deployed stubs, for example once the data they ran in is deleted: the runtime hands
+   * their keys out again, so a later test can deploy a process of its own under the key of a stub.
+   */
   public void clearMockedChildProcessDefinitionKeys() {
-    mockedChildProcessDefinitionKeys.clear();
+    mockedChildProcesses.forgetAll();
   }
 
   @Override

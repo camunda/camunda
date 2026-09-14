@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import java.net.URI;
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -86,6 +87,17 @@ public class CamundaProcessTestSharedRuntime implements CamundaProcessTestRuntim
   @Override
   public Topology waitUntilClusterReady(final Duration timeout) {
     return getSharedRuntime().waitUntilClusterReady(timeout);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Every test class using the shared runtime works on the same data, so they all share one
+   * record of the stubs deployed into it.
+   */
+  @Override
+  public MockedChildProcesses getMockedChildProcesses() {
+    return getSharedRuntime().getMockedChildProcesses();
   }
 
   private synchronized void startSharedRuntime() {

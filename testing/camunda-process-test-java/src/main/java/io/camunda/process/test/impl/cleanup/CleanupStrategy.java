@@ -34,4 +34,13 @@ public interface CleanupStrategy {
       CamundaManagementClient managementClient,
       Supplier<CamundaClient> clientSupplier,
       Instant testCaseStartTime);
+
+  /**
+   * Whether the cleanup deletes the data of the test case, so that the next test case does not see
+   * it. What a test case recorded about that data, such as the keys of the process definitions it
+   * deployed, describes nothing afterwards: the runtime hands those keys out again.
+   *
+   * @return {@code true} if the cleanup deletes the data of the test case
+   */
+  boolean deletesRuntimeData();
 }

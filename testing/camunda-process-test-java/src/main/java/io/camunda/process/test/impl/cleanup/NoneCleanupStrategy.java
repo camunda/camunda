@@ -34,4 +34,9 @@ public final class NoneCleanupStrategy implements CleanupStrategy {
 
     LOG.debug("Runtime data deletion mode is NONE. Skipping.");
   }
+
+  @Override
+  public boolean deletesRuntimeData() {
+    return false;
+  }
 }

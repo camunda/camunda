@@ -40,4 +40,9 @@ public final class ClusterPurgeCleanupStrategy implements CleanupStrategy {
     final Duration duration = Duration.between(startTime, Instant.now());
     LOG.debug("Cluster runtime data purged in {}", duration);
   }
+
+  @Override
+  public boolean deletesRuntimeData() {
+    return true;
+  }
 }

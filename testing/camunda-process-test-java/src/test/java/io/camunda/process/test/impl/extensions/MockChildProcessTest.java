@@ -31,6 +31,7 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -79,6 +80,8 @@ public class MockChildProcessTest {
   void configureMocks() {
     when(camundaProcessTestRuntime.getCamundaClientBuilderFactory())
         .thenReturn(camundaClientBuilderFactory);
+    when(camundaProcessTestRuntime.getMockedChildProcesses())
+        .thenReturn(new MockedChildProcesses());
     when(camundaClientBuilderFactory.get()).thenReturn(camundaClientBuilder);
     when(camundaClientBuilder.build()).thenReturn(camundaClient);
 

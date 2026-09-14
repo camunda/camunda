@@ -22,6 +22,7 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import io.camunda.process.test.impl.runtime.logging.CamundaLogEntry;
 import io.camunda.process.test.impl.runtime.logging.ConnectorsLogEntry;
 import io.camunda.process.test.impl.runtime.logging.LogEntry;
@@ -81,6 +82,7 @@ public class CamundaProcessTestContainerRuntime
   private final boolean connectorsEnabled;
 
   private final List<GenericContainer<?>> containers = new ArrayList<>();
+  private final MockedChildProcesses mockedChildProcesses = new MockedChildProcesses();
   private boolean isStarted = false;
 
   public CamundaProcessTestContainerRuntime(
@@ -254,6 +256,11 @@ public class CamundaProcessTestContainerRuntime
   public Topology waitUntilClusterReady(final Duration timeout) {
     return CamundaRuntimeHealthChecker.waitUntilClusterReady(
         getCamundaClientBuilderFactory(), timeout);
+  }
+
+  @Override
+  public MockedChildProcesses getMockedChildProcesses() {
+    return mockedChildProcesses;
   }
 
   public CamundaContainer getCamundaContainer() {

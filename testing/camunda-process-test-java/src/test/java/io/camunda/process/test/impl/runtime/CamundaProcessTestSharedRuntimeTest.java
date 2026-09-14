@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestSharedRuntime.SharedRuntimeStorage;
 import java.net.URI;
 import java.util.function.Supplier;
@@ -163,5 +164,28 @@ public class CamundaProcessTestSharedRuntimeTest {
     // then
     assertThat(sharedRuntime.getCamundaClientBuilderFactory())
         .isEqualTo(camundaClientBuilderFactory);
+  }
+
+  /**
+   * The data of a shared runtime outlives the test class that first used it, and so do the stubs
+   * deployed into it while the runtime keeps its data.
+   */
+  @Test
+  void shouldKeepTheProcessesThatAnEarlierTestClassMocked() {
+    // given: the runtimes of two test classes sharing one runtime
+    when(sharedRuntimeStorage.getRuntime()).thenReturn(containerRuntime);
+    when(containerRuntime.getMockedChildProcesses()).thenReturn(new MockedChildProcesses());
+
+    final CamundaProcessTestSharedRuntime runtimeOfFirstTestClass =
+        new CamundaProcessTestSharedRuntime(runtimeBuilder, sharedRuntimeStorage);
+    final CamundaProcessTestSharedRuntime runtimeOfSecondTestClass =
+        new CamundaProcessTestSharedRuntime(runtimeBuilder, sharedRuntimeStorage);
+
+    // when: a test of the first class mocks a child process
+    runtimeOfFirstTestClass.getMockedChildProcesses().record(123L);
+
+    // then: its stub keeps running in the data that the second class is measured against
+    assertThat(runtimeOfSecondTestClass.getMockedChildProcesses().processDefinitionKeys())
+        .containsExactly(123L);
   }
 }

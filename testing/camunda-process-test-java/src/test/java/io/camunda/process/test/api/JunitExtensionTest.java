@@ -41,6 +41,7 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.mock.MockedChildProcesses;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -104,6 +105,7 @@ public class JunitExtensionTest {
     when(camundaRuntimeBuilder.build()).thenReturn(camundaContainerRuntime);
     when(camundaContainerRuntime.getCamundaGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainerRuntime.getCamundaRestApiAddress()).thenReturn(REST_API_ADDRESS);
+    when(camundaContainerRuntime.getMockedChildProcesses()).thenReturn(new MockedChildProcesses());
     when(camundaContainerRuntime.getCamundaClientBuilderFactory())
         .thenReturn(
             () ->
@@ -156,22 +158,6 @@ public class JunitExtensionTest {
     assertThat(camundaProcessTestContext.getCamundaRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(camundaProcessTestContext.getConnectorsAddress())
         .isEqualTo(connectorsRestApiAddress);
-  }
-
-  @Test
-  void shouldForgetMockedChildProcessesOfThePreviousTest() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-    extension.beforeAll(extensionContext);
-
-    final CamundaProcessTestContextImpl context = spyOnTestContext(extension);
-
-    // when
-    extension.beforeEach(extensionContext);
-
-    // then: a process mocked by a previous test is not taken for mocked in this one
-    verify(context).clearMockedChildProcessDefinitionKeys();
   }
 
   @Test
@@ -569,6 +555,75 @@ public class JunitExtensionTest {
       // then: the run reports the stub, so that its instances do not count as coverage
       verify(processCoverage)
           .collectTestRunCoverage(any(), any(), any(), any(), eq(Collections.singleton(123L)));
+    }
+
+    /**
+     * A runtime whose data outlives a test class, such as a shared or a remote one, keeps the stubs
+     * of the classes before it running in the data the next class is measured against.
+     */
+    @Test
+    void shouldReportTheProcessesThatAnEarlierTestClassMocked() throws Exception {
+      // given: an earlier test class mocked a child process in the data of the runtime
+      camundaContainerRuntime.getMockedChildProcesses().record(123L);
+
+      // and: a later test class, which gets a context of its own
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      enableCoverageCollection(extension);
+
+      // when
+      extension.afterEach(extensionContext);
+
+      // then: the run reports the stub, so that its instances do not count as coverage
+      verify(processCoverage)
+          .collectTestRunCoverage(any(), any(), any(), any(), eq(Collections.singleton(123L)));
+    }
+
+    @Test
+    void shouldForgetTheProcessesThatTheTestMockedWhenTheirDataIsDeleted() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      final CamundaProcessTestContextImpl context = spyOnTestContext(extension);
+
+      when(cleanupStrategy.deletesRuntimeData()).thenReturn(true);
+
+      // when
+      extension.afterEach(extensionContext);
+
+      // then: the runtime hands the keys of the deleted stubs out again, so they identify nothing
+      verify(context).clearMockedChildProcessDefinitionKeys();
+    }
+
+    @Test
+    void shouldRememberTheProcessesThatTheTestMockedWhileTheirDataIsKept() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      final CamundaProcessTestContextImpl context = spyOnTestContext(extension);
+
+      when(cleanupStrategy.deletesRuntimeData()).thenReturn(false);
+
+      // when
+      extension.afterEach(extensionContext);
+
+      // then: the stubs keep running in the data of the tests to come
+      verify(context, never()).clearMockedChildProcessDefinitionKeys();
     }
 
     private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
