@@ -19,13 +19,29 @@ outputs:
 runs:
   using: composite
   steps:
+    # The internal Nexus artifact mirror (repository.nexus.camunda.cloud) has intermittently
+    # dropped connections mid-build with "Connection reset", surviving even Maven's own
+    # transport-level retry (aether.transport.http.retryHandler.count=5, set in
+    # setup-maven-cache/action.yaml) exhausting its 5 attempts without recovering (INC-8051).
+    # Retrying the whole build step gives it a second full attempt against Nexus rather than
+    # failing the job outright on one transient blip.
+    # retry_on: any, not error -- a timeout_minutes kill is a distinct event that retry_on: error
+    # does NOT retry (see the identical note on the deploy-snapshots job in ci.yml).
     - name: Package Zeebe
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        shell: bash
+        max_attempts: 2
+        retry_on: any
+        retry_wait_seconds: 15
+        timeout_minutes: 5
+        command: ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
+
+    - name: Determine Zeebe distball path
       shell: bash
       id: build-java
       run: |
         set -euo pipefail
-
-        ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
 
         BUILD_DIR=$(
           ./mvnw -q -N -f dist/pom.xml help:evaluate \
