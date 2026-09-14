@@ -265,7 +265,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.12.0</version>
+      <version>${version.opencsv}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -288,7 +288,7 @@
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
       <artifactId>dateparser</artifactId>
-      <version>1.0.11</version>
+      <version>${version.dateparser}</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -308,7 +308,7 @@
     <dependency>
       <groupId>com.tdunning</groupId>
       <artifactId>t-digest</artifactId>
-      <version>3.3</version>
+      <version>${version.t-digest}</version>
       <scope>test</scope>
     </dependency>
 
@@ -322,7 +322,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>2.1.13</version>
+      <version>${greenmail.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -396,7 +396,7 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
-      <version>2.0.2</version>
+      <version>${version.jakarta-mail}</version>
       <scope>test</scope>
     </dependency>
 
@@ -698,7 +698,7 @@
     <dependency>
       <groupId>org.eclipse.angus</groupId>
       <artifactId>jakarta.mail</artifactId>
-      <version>2.0.5</version>
+      <version>${version.jakarta-mail-angus}</version>
     </dependency>
 
     <dependency>
@@ -717,7 +717,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.1.0</version>
+      <version>${version.servlet-api-optimize}</version>
     </dependency>
 
     <dependency>
