@@ -209,7 +209,7 @@
     <!-- Pinned by tag and digest because camunda/keycloak re-pushes its tags on every rebuild.
          Updated by hand on this branch: the parent-pom Renovate custom manager that keeps this
          current on main has no counterpart in this branch's renovate.json. -->
-    <version.keycloak.container>quay-26.5.7@sha256:f21d8a2a0764ec0c92ebee30caff0752a0fd41d23e7f7f39ea986bd8f39190d3</version.keycloak.container>
+    <version.keycloak.container>quay-26.6.4@sha256:c889df2d8050e3f6437f5e891b8478ed8a298d603cc45d6280802bf9da6a7304</version.keycloak.container>
     <version.keycloak-client>26.0.12</version.keycloak-client>
     <version.jna>5.18.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
