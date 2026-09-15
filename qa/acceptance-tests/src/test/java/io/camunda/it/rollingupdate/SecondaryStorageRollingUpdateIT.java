@@ -269,7 +269,7 @@ final class SecondaryStorageRollingUpdateIT {
     final String tenantId = "ru-" + suffix;
 
     // --- identity objects ---
-    LOGGER.info("Creating user and await secondary storage");
+    LOGGER.info("Creating user");
     client
         .newCreateUserCommand()
         .username(username)
@@ -278,18 +278,26 @@ final class SecondaryStorageRollingUpdateIT {
         .password("Test1234!")
         .send()
         .join();
+
+    LOGGER.info("Creating role");
+    client.newCreateRoleCommand().roleId(roleId).name("RU Test Role").send().join();
+
+    LOGGER.info("Creating group ");
+    client.newCreateGroupCommand().groupId(groupId).name("RU Test Group").send().join();
+
+    LOGGER.info("Creating tenant");
+    client.newCreateTenantCommand().tenantId(tenantId).name("RU Test Tenant").send().join();
+
+    LOGGER.info("Waiting for user in secondary storage");
     waitForUser(client, username);
 
-    LOGGER.info("Creating role and await secondary storage");
-    client.newCreateRoleCommand().roleId(roleId).name("RU Test Role").send().join();
+    LOGGER.info("Waiting for role in secondary storage");
     waitForRole(client, roleId);
 
-    LOGGER.info("Creating group and await secondary storage");
-    client.newCreateGroupCommand().groupId(groupId).name("RU Test Group").send().join();
+    LOGGER.info("Waiting for group in secondary storage");
     waitForGroup(client, groupId);
 
-    LOGGER.info("Creating tenant and await secondary storage");
-    client.newCreateTenantCommand().tenantId(tenantId).name("RU Test Tenant").send().join();
+    LOGGER.info("Waiting for tenant in secondary storage");
     waitForTenant(client, tenantId);
 
     // --- process instance ---
