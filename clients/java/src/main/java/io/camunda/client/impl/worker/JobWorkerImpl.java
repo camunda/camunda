@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import org.slf4j.Logger;
 
 /**
@@ -50,7 +51,12 @@ import org.slf4j.Logger;
  * left to run: jobs the broker pushes to the worker take capacity too, and those it does not count.
  * If the executor refuses a job, the worker frees up that job's capacity immediately, so that a
  * refused job never takes up capacity for good. Each job's capacity is freed up exactly once,
- * whether the job ran or was refused.
+ * whether the job ran, was refused, or was dropped for having waited out its activation.
+ *
+ * <p>A job only reaches its handler while the activation it arrived with still holds. One that has
+ * been waiting for a free handler thread for longer than that is dropped instead: the broker may
+ * have taken it back and given it to another worker, so running it would do the same work twice and
+ * end in a rejected completion.
  *
  * <p>If a poll fails with an error response, a retry is scheduled with a delay using the {@code
  * retryDelaySupplier} to ask for a new {@code pollInterval}. By default, this retry delay supplier
@@ -69,6 +75,14 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
           + "The job stays with this worker until its timeout expires, and only then is it offered to another worker. "
           + "If this issue persists, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
+  private static final String EXPIRED_MSG =
+      "Expected to handle received job with key {}, but it waited {} for a free job handler thread, "
+          + "longer than the {} it was activated with. The job is dropped without running its "
+          + "handler, because the broker may already have offered it to another worker, and is "
+          + "offered again once the broker times it out. "
+          + "If this issue persists, make sure to either scale your workers, threads, increase the "
+          + "job timeout or reduce maxJobsActive, so that a job can start within the time it was "
+          + "activated for. ";
   private static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       JobWorkerBuilderImpl.DEFAULT_BACKOFF_SUPPLIER;
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
@@ -91,6 +105,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final BackoffSupplier backoffSupplier;
   private final BackoffSupplier streamNoJobsBackoffSupplier;
   private final JobWorkerMetrics metrics;
+  private final LongSupplier nanoClock;
+  private final Duration jobTimeout;
 
   // state synchronization
   private final AtomicBoolean acquiringJobs = new AtomicBoolean(true);
@@ -111,7 +127,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final BackoffSupplier backoffSupplier,
       final BackoffSupplier streamNoJobsBackoffSupplier,
       final JobWorkerMetrics metrics,
-      final JobExecutor jobExecutor) {
+      final JobExecutor jobExecutor,
+      final LongSupplier nanoClock,
+      final Duration jobTimeout) {
     this.maxJobsActive = maxJobsActive;
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
@@ -121,6 +139,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     scheduledExecutorService = executor;
     this.jobHandlerFactory = jobHandlerFactory;
     this.jobStreamer = jobStreamer;
+    this.nanoClock = nanoClock;
+    this.jobTimeout = jobTimeout;
     initialPollInterval = pollInterval.toMillis();
     this.backoffSupplier = backoffSupplier;
     this.streamNoJobsBackoffSupplier = streamNoJobsBackoffSupplier;
@@ -319,6 +339,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         job,
         executor::executeWithoutWaiting,
         () -> handleJobFinished(capacityHeld),
+        () -> releaseCapacity(capacityHeld),
         this::returnJobToBroker)) {
       if (releaseCapacity(capacityHeld)) {
         // Only a job whose slot was still held never ran, and only those say anything about
@@ -331,7 +352,14 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   private void handleStreamedJob(final ActivatedJob job) {
     handleActivatedJob(
-        job, executor::execute, this::handleStreamJobFinished, this::leaveStreamedJobToBroker);
+        job,
+        executor::execute,
+        this::handleStreamJobFinished,
+        // nothing to give back by hand: a pushed job takes no remainingJobs slot, and the executor
+        // permit it does take is released by BlockingExecutor when this command returns, early or
+        // not
+        () -> {},
+        this::leaveStreamedJobToBroker);
   }
 
   /**
@@ -342,11 +370,15 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    *     that carries the activation response, and with it every other request the client sends over
    *     the same connection. A job the broker pushed waits for capacity instead, since a blocked
    *     push is what tells the broker to offer the job to somebody else.
+   * @param onExpired what to give back for a job that waited out its activation before a handler
+   *     thread was free for it, which is everything the caller took for it other than what the
+   *     finalizer reports about a handler that ran. Runs in place of the finalizer, since the
+   *     handler never gets to run.
    * @param onRefused what to do with a job the executor would not take, which differs between a job
    *     the worker asked for and one the broker pushed to it. It is also what tells the user about
    *     the refusal, since the two paths leave the job in very different places.
-   * @return true if the executor took the job, in which case the given finalizer is guaranteed to
-   *     run once the handler is done. A false answer does not mean the handler never ran: an
+   * @return true if the executor took the job, in which case either the given finalizer or {@code
+   *     onExpired} is guaranteed to run. A false answer does not mean the handler never ran: an
    *     executor may run the job on the calling thread and report it as refused all the same, so
    *     anything the caller does with a refused job has to cope with the job having run.
    */
@@ -354,8 +386,12 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final ActivatedJob job,
       final Consumer<Runnable> dispatch,
       final Runnable finalizer,
+      final Runnable onExpired,
       final BiConsumer<ActivatedJob, RejectedExecutionException> onRefused) {
     metrics.jobActivated(1);
+    // Starts here rather than where the handler runs, so that the wait for a free handler thread
+    // counts against the activation the same way the handler's own runtime does.
+    final ActivationDeadline deadline = ActivationDeadline.startingNow(nanoClock, jobTimeout);
     // The executor may run the job on the calling thread and still report it as refused. Once the
     // handler has started, only it knows what became of the job, so the flag below keeps the
     // worker from stepping in afterwards.
@@ -364,7 +400,15 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final Runnable jobRunnable = jobHandlerFactory.create(job, finalizer);
       dispatch.accept(
           () -> {
+            // Set before the check as well, so that a job dropped here is never also handed back by
+            // the caller: what it held has been given back already.
             handlerStarted.set(true);
+            if (deadline.hasPassed()) {
+              metrics.jobExpired(1);
+              LOG.debug(EXPIRED_MSG, job.getKey(), deadline.elapsed(), jobTimeout);
+              onExpired.run();
+              return;
+            }
             jobRunnable.run();
           });
       return true;
