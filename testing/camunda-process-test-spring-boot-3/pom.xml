@@ -266,6 +266,18 @@
         </executions>
       </plugin>
 
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <testExcludes>
+            <!-- Exclude tests that use Jackson 3.x (tools.jackson.*), which is not available in
+                 Spring Boot 3.x -->
+            <exclude>io/camunda/process/test/api/Jackson3JsonMapperIT.java</exclude>
+          </testExcludes>
+        </configuration>
+      </plugin>
+
       <!-- Add test re-/sources from the base module -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
