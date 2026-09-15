@@ -12,6 +12,7 @@ import static io.camunda.webapps.schema.descriptors.template.BatchOperationTempl
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_TOTAL_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
 
 import io.camunda.exporter.tasks.util.OpensearchRepository;
@@ -33,6 +34,7 @@ import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.ScriptLanguage;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -73,6 +75,9 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
         new SearchRequest.Builder()
             .index(batchOperationIndex)
             .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
+            // oldest first, so a bounded read drains from the head instead of leaving it to the
+            // store which of the unfinished operations it returns
+            .sort(so -> so.field(f -> f.field(START_DATE).order(SortOrder.Asc)))
             .size(batchSize)
             .build();
 
