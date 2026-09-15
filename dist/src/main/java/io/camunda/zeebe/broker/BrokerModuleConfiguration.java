@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.BrokerMeterRegistry;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -90,7 +91,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
-      final MeterRegistry meterRegistry,
+      final BrokerMeterRegistry brokerMeterRegistry,
       final UnifiedConfiguration unifiedConfiguration,
       final PhysicalTenantResolver physicalTenantResolver,
       // The ServiceRegistry is not available if you want to start-up the Standalone Broker
@@ -111,7 +112,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
-    this.meterRegistry = meterRegistry;
+    this.meterRegistry = brokerMeterRegistry.registry();
     this.unifiedConfiguration = unifiedConfiguration;
     this.physicalTenantResolver = physicalTenantResolver;
     this.serviceRegistry = serviceRegistry;
