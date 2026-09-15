@@ -911,7 +911,7 @@
         "/^parent/pom\\.xml$/",
       ],
       matchStrings: [
-        "<!-- renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( versioning=(?<versioning>[^\\s]+))? -->\\s*<[^>]+>(?<currentValue>[^<]+)</",
+        "<!-- renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( versioning=(?<versioning>[^\\s]+))? -->\\s*<[^>]+>(?<currentValue>[^<@]+)(@(?<currentDigest>sha256:[0-9a-f]+))?</",
       ],
     },
     {
