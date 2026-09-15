@@ -30,6 +30,10 @@ const HeaderTitleContainer = styled.div`
 	gap: var(--cds-spacing-02);
 `;
 
+const ActionsContainer = styled(Stack)`
+	align-items: center;
+`;
+
 const TilesContainer = styled(Stack)`
 	align-self: flex-start;
 `;
@@ -61,4 +65,14 @@ const ItemLink = styled(Link)`
 	}
 `;
 
-export {PageContainer, Header, HeaderTitleContainer, TilesContainer, Tile, TileLabel, TableContainer, ItemLink};
+export {
+	PageContainer,
+	Header,
+	HeaderTitleContainer,
+	ActionsContainer,
+	TilesContainer,
+	Tile,
+	TileLabel,
+	TableContainer,
+	ItemLink,
+};
