@@ -33,7 +33,7 @@ final class RestoreArgumentsTest {
 
     @Test
     void shouldTargetTheDefaultTenantOnASingleTenantCluster() {
-      // given — no --tenant-id, which is every existing invocation
+      // given — no --tenantId, which is every existing invocation
       final var arguments = arguments();
 
       // when / then
@@ -42,7 +42,7 @@ final class RestoreArgumentsTest {
 
     @Test
     void shouldTargetTheDefaultTenantOnAMultiTenantCluster() {
-      // given — no --tenant-id on a cluster that has more than the default tenant
+      // given — no --tenantId on a cluster that has more than the default tenant
       final var arguments = arguments();
 
       // when / then — a partial restore of the default tenant alone. The others keep their data
@@ -81,7 +81,7 @@ final class RestoreArgumentsTest {
       // when / then
       assertThatThrownBy(() -> arguments.selectionPerPhysicalTenant(TWO_TENANTS))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("--all-tenants");
+          .hasMessageContaining("--allTenants");
     }
 
     @Test
@@ -240,7 +240,7 @@ final class RestoreArgumentsTest {
 
     @Test
     void shouldRequireAnEmptyDirectoryForTheDefaultTenant() {
-      // given — no --tenant-id, which is every pre-existing invocation
+      // given — no --tenantId, which is every pre-existing invocation
       final var arguments = arguments();
 
       // when / then — the long-standing refusal, unchanged

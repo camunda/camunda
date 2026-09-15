@@ -20,7 +20,7 @@ import org.springframework.core.env.StandardEnvironment;
  * The arguments as Spring actually binds them from a command line.
  *
  * <p>{@link RestoreArgumentsTest} drives the setters directly, which cannot see binding failures —
- * and the valueless {@code --all-tenants} is exactly such a failure: Spring gives an option with no
+ * and the valueless {@code --allTenants} is exactly such a failure: Spring gives an option with no
  * {@code =} the empty string, which no boolean conversion accepts.
  */
 final class RestoreArgumentsBindingTest {
@@ -28,7 +28,7 @@ final class RestoreArgumentsBindingTest {
   @Test
   void shouldBindTheValuelessAllTenantsFlag() {
     // given / when
-    final var arguments = bind("--all-tenants");
+    final var arguments = bind("--allTenants");
 
     // then
     assertThat(arguments.allTenantsRequested()).isTrue();
@@ -36,8 +36,8 @@ final class RestoreArgumentsBindingTest {
 
   @Test
   void shouldBindAnExplicitAllTenantsValue() {
-    assertThat(bind("--all-tenants=true").allTenantsRequested()).isTrue();
-    assertThat(bind("--all-tenants=false").allTenantsRequested()).isFalse();
+    assertThat(bind("--allTenants=true").allTenantsRequested()).isTrue();
+    assertThat(bind("--allTenants=false").allTenantsRequested()).isFalse();
   }
 
   @Test
@@ -47,8 +47,8 @@ final class RestoreArgumentsBindingTest {
 
   @Test
   void shouldBindTheTenantIdInEitherSpelling() {
-    assertThat(bind("--tenant-id=tenanta").getTenantId()).isEqualTo("tenanta");
     assertThat(bind("--tenantId=tenanta").getTenantId()).isEqualTo("tenanta");
+    assertThat(bind("--tenant-id=tenanta").getTenantId()).isEqualTo("tenanta");
   }
 
   @Test

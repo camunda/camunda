@@ -69,9 +69,9 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
       args.add("--to=" + to);
     }
     if (allTenants) {
-      args.add("--all-tenants");
+      args.add("--allTenants");
     } else if (physicalTenantId != null) {
-      args.add("--tenant-id=" + physicalTenantId);
+      args.add("--tenantId=" + physicalTenantId);
     }
     return args.toArray(String[]::new);
   }
