@@ -123,11 +123,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@93f5c8735a476ebc5127babd29477cf9610c6bf6 # fossa-1.0.18
+      uses: camunda/infra-global-github-actions/fossa/setup@dd0b262662ff9e944aaca1b710f87bc4524526b5 # fossa-1.0.20
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@93f5c8735a476ebc5127babd29477cf9610c6bf6 # fossa-1.0.18
+      uses: camunda/infra-global-github-actions/fossa/info@dd0b262662ff9e944aaca1b710f87bc4524526b5 # fossa-1.0.20
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -158,7 +158,7 @@ jobs:
       id: analyze1
       continue-on-error: true
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@93f5c8735a476ebc5127babd29477cf9610c6bf6 # fossa-1.0.18
+      uses: camunda/infra-global-github-actions/fossa/analyze@dd0b262662ff9e944aaca1b710f87bc4524526b5 # fossa-1.0.20
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -168,7 +168,7 @@ jobs:
     - name: Analyze project (attempt 2)
       if: steps.analyze1.outcome != 'success'
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@93f5c8735a476ebc5127babd29477cf9610c6bf6 # fossa-1.0.18
+      uses: camunda/infra-global-github-actions/fossa/analyze@dd0b262662ff9e944aaca1b710f87bc4524526b5 # fossa-1.0.20
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -180,7 +180,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@93f5c8735a476ebc5127babd29477cf9610c6bf6 # fossa-1.0.18
+      uses: camunda/infra-global-github-actions/fossa/pr-check@dd0b262662ff9e944aaca1b710f87bc4524526b5 # fossa-1.0.20
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}
