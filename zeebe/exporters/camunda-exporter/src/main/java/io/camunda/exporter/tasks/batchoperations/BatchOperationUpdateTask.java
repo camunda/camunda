@@ -10,13 +10,17 @@ package io.camunda.exporter.tasks.batchoperations;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NotFinishedBatchOperation;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
+import io.camunda.exporter.tasks.util.AdaptiveBatchSize;
+import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.util.FunctionUtil;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -35,7 +39,7 @@ public class BatchOperationUpdateTask implements BackgroundTask {
 
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
 
-  private final int batchSize;
+  private final AdaptiveBatchSize batchSize;
   private final Logger logger;
   private final Executor executor;
 
@@ -45,7 +49,7 @@ public class BatchOperationUpdateTask implements BackgroundTask {
       final Logger logger,
       final Executor executor) {
     this.batchOperationUpdateRepository = batchOperationUpdateRepository;
-    this.batchSize = batchSize;
+    this.batchSize = new AdaptiveBatchSize(batchSize);
     this.logger = logger;
     this.executor = executor;
   }
@@ -53,8 +57,44 @@ public class BatchOperationUpdateTask implements BackgroundTask {
   @Override
   public CompletionStage<Integer> execute() {
     return batchOperationUpdateRepository
-        .getNotFinishedBatchOperations(batchSize)
-        .thenComposeAsync(this::updateBatchOperations, executor);
+        .getNotFinishedBatchOperations(batchSize.current())
+        .thenComposeAsync(this::updateBatchOperations, executor)
+        .handleAsync(
+            (updatesCount, error) -> {
+              if (error != null) {
+                throw new CompletionException(adjustBatchSize(error));
+              }
+
+              batchSize.reset();
+              return updatesCount;
+            },
+            executor);
+  }
+
+  /** The read is the only lever on how large the write becomes, so it is all that is reduced. */
+  private Throwable adjustBatchSize(final Throwable error) {
+    final var cause = FuturesUtil.unwrapCompletionException(error);
+    if (!(cause instanceof BulkRequestTooLargeException)) {
+      return cause;
+    }
+
+    if (batchSize.reduce()) {
+      logger.warn(
+          """
+            The store refused the batch operation update write for being too large; retrying with \
+            at most {} batch operation(s) per cycle instead of {}.""",
+          batchSize.current(),
+          batchSize.configured(),
+          cause);
+    } else {
+      logger.warn(
+          """
+            The store refused the batch operation update write for being too large at a single \
+            batch operation; it accepts less than one update per request.""",
+          cause);
+    }
+
+    return cause;
   }
 
   @Override
