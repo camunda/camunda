@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.health.HealthIssue;
 import java.util.ArrayList;
 import java.util.List;
@@ -162,8 +163,13 @@ public final class PartitionTransitionImpl implements PartitionTransition {
             if (error != null) {
               LOG.error("Error during transition preparation: {}", error.getMessage(), error);
               LOG.info("Aborting transition to {} on term {} due to error.", role, term);
-              nextTransitionFuture.completeExceptionally(
-                  new FailedPartitionTransitionPreparation(error));
+              if (error instanceof RecoverableException
+                  || error instanceof RecoverablePartitionTransitionException) {
+                nextTransitionFuture.completeExceptionally(error);
+              } else {
+                nextTransitionFuture.completeExceptionally(
+                    new FailedPartitionTransitionPreparation(error));
+              }
             } else {
               nextTransition.start(nextTransitionFuture);
             }

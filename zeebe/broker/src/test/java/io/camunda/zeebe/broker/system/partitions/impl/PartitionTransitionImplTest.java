@@ -32,6 +32,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
@@ -454,6 +455,31 @@ class PartitionTransitionImplTest {
         .isInstanceOf(FailedPartitionTransitionPreparation.class)
         .rootCause()
         .isSameAs(testException);
+  }
+
+  @Test
+  void shouldPropagateRecoverablePreparationFailureWithoutWrappingItAsUnrecoverable() {
+    // given
+    final var recoverableFailure = new RecoverableException("temporary dependency failure");
+    when(mockStep1.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep2.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep2.prepareTransition(mockContext, DEFAULT_TERM + 1, DEFAULT_ROLE))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep1.prepareTransition(mockContext, DEFAULT_TERM + 1, DEFAULT_ROLE))
+        .thenThrow(recoverableFailure);
+
+    final var sut = new PartitionTransitionImpl(of(mockStep1, mockStep2));
+    sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
+    sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE).join();
+
+    // when / then
+    assertThatThrownBy(() -> sut.transitionTo(DEFAULT_TERM + 1, DEFAULT_ROLE).join())
+        .isInstanceOf(ExecutionException.class)
+        .cause()
+        .isSameAs(recoverableFailure);
   }
 
   @Test

@@ -37,6 +37,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -453,6 +454,35 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldNotMarkPartitionDeadIfTransitionPreparationFails() throws InterruptedException {
+    // given
+    when(transition.toLeader(anyLong()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(
+                new RecoverableException("database temporarily unavailable")));
+
+    when(raft.getRole()).thenReturn(Role.LEADER);
+    when(raft.term()).thenReturn(2L);
+    when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
+    when(ctx.getCurrentTerm()).thenReturn(1L);
+
+    // when
+    schedulerRule.submitActor(partition);
+    partition.onNewRole(Role.LEADER, 2);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(transition).toLeader(2);
+    verify(raft).stepDown();
+    verify(raft, never()).stop();
+    verify(transition, never()).toInactive(anyLong());
+
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    verify(healthMonitor).registerComponent(captor.capture());
+    assertThat(captor.getValue().getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+  }
+
+  @Test
   public void shouldNotTriggerTransitionOnPartitionTransitionException()
       throws InterruptedException {
     // given
@@ -541,7 +571,8 @@ public class ZeebePartitionTest {
   }
 
   @Test
-  public void shouldGoInactiveIfTransitionHasUnrecoverableFailure() throws InterruptedException {
+  public void shouldMarkPartitionDeadIfTransitionHasUnrecoverableFailure()
+      throws InterruptedException {
     // given
     when(transition.toLeader(anyLong()))
         .thenReturn(
@@ -558,6 +589,10 @@ public class ZeebePartitionTest {
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toLeader(0L);
     order.verify(raft).stop();
+
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    verify(healthMonitor).registerComponent(captor.capture());
+    assertThat(captor.getValue().getHealthReport().getStatus()).isEqualTo(HealthStatus.DEAD);
   }
 
   @Test

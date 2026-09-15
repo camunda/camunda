@@ -244,7 +244,7 @@ public final class ZeebePartition extends Actor
     LOG.warn("Uncaught exception in {}.", getName(), failure);
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
-    onInstallFailure(failure);
+    onInstallFailure(context.getRaftPartition().term(), failure);
   }
 
   private static <T> CompletableFuture<T> toCompletableFuture(final ActorFuture<T> actorFuture) {
@@ -345,13 +345,13 @@ public final class ZeebePartition extends Actor
                 listenerFutures,
                 t -> {
                   if (t != null) {
-                    onInstallFailure(t);
+                    onInstallFailure(newTerm, t);
                   } else {
                     onRecoveredInternal();
                   }
                 });
           } else {
-            onInstallFailure(error);
+            onInstallFailure(newTerm, error);
           }
         });
     return leaderTransitionFuture;
@@ -370,13 +370,13 @@ public final class ZeebePartition extends Actor
                 t -> {
                   // Compare with the current term in case a new role transition happened
                   if (t != null) {
-                    onInstallFailure(t);
+                    onInstallFailure(newTerm, t);
                   } else {
                     onRecoveredInternal();
                   }
                 });
           } else {
-            onInstallFailure(error);
+            onInstallFailure(newTerm, error);
           }
         });
     return followerTransitionFuture;
@@ -388,7 +388,7 @@ public final class ZeebePartition extends Actor
     transitionFuture.onComplete(
         (success, error) -> {
           if (error != null) {
-            onInstallFailure(error);
+            onInstallFailure(context.getCurrentTerm(), error);
           }
         });
     return transitionFuture;
@@ -433,7 +433,7 @@ public final class ZeebePartition extends Actor
     actor.run(() -> handleUnrecoverableFailure(null));
   }
 
-  private void onInstallFailure(final Throwable error) {
+  private void onInstallFailure(final long transitionTerm, final Throwable error) {
     if (error instanceof UnrecoverableException) {
       LOG.error(
           "Failed to install partition {} (role {}, term {}) with unrecoverable failure: ",
@@ -449,18 +449,18 @@ public final class ZeebePartition extends Actor
           error.getMessage());
     } else {
       LOG.error("Failed to install partition {}", context.getPartitionId(), error);
-      handleRecoverableFailure();
+      handleRecoverableFailure(transitionTerm);
     }
   }
 
-  private void handleRecoverableFailure() {
+  private void handleRecoverableFailure(final long transitionTerm) {
     zeebePartitionHealth.setServicesInstalled(false);
     context.notifyListenersOfBecomingInactive();
 
     // If RaftPartition has already transition to a new role in a new term, we can ignore this
     // failure. The transition for the higher term will be already enqueued and services will be
     // installed for the new role.
-    if (isCurrentLeaderTerm()) {
+    if (isCurrentLeaderTerm(transitionTerm)) {
       LOG.info(
           "Unexpected failure occurred in partition {} (role {}, term {}), stepping down",
           context.getPartitionId(),
@@ -477,10 +477,15 @@ public final class ZeebePartition extends Actor
     }
   }
 
-  /** Whether this node is still leader in the term it was leader in when the caller checked. */
+  /** Whether this node is still leader in the term that failed to install. */
+  private boolean isCurrentLeaderTerm(final long transitionTerm) {
+    return context.getRaftPartition().getRole() == Role.LEADER
+        && transitionTerm == context.getRaftPartition().term();
+  }
+
+  /** Whether this node is currently the Raft leader. */
   private boolean isCurrentLeaderTerm() {
-    return context.getCurrentRole() == Role.LEADER
-        && context.getCurrentTerm() == context.getRaftPartition().term();
+    return isCurrentLeaderTerm(context.getRaftPartition().term());
   }
 
   private void handleUnrecoverableFailure(final Throwable error) {
@@ -704,7 +709,7 @@ public final class ZeebePartition extends Actor
               .onComplete(
                   (success, error) -> {
                     if (error != null) {
-                      onInstallFailure(error);
+                      onInstallFailure(context.getCurrentTerm(), error);
                     }
                   });
         });
