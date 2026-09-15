@@ -293,6 +293,43 @@ public class SchemaManagerIT {
         .isTrue();
   }
 
+  @RegressionTestTemplate("https://github.com/camunda/camunda/issues/57256")
+  void shouldUpdateTemplateMappingsWhenNoBackingIndexExists(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.schemaManager().setCreateSchema(true);
+    final var searchEngineClient = getSearchEngineClient(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            Set.of(index, metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    startupWithRetry(schemaManager, config);
+
+    // when - the runtime index backing the template is dropped, e.g. by an operator, leaving only
+    // the template behind, and the descriptor's mapping is then upgraded
+    searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
+    searchClientAdapter.refresh();
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+
+    startupWithRetry(schemaManager, config);
+
+    // then - the template itself must reflect the new mapping, otherwise future indices created
+    // off it (e.g. after a rollover) would mismatch the freshly re-created runtime index
+    final var retrievedIndexTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
+
   @TestTemplate
   void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
