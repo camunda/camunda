@@ -6,22 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useEffect, useState } from "react";
-import { Label } from "@camunda/design-system";
+import { useId, useMemo } from "react";
+import { Combobox, Label, Text } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
+import { TranslatedErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import {
-  EntitySearchDropdown,
-  RemovableEntityBadge,
+  useEntitySearchQuery,
   type EntitySearchQuery,
-} from "src/components/formV2/EntitySearchDropdown";
+} from "src/components/formV2/useEntitySearchQuery";
 
 type AbstractEntitySearchSingleSelectProps<
   Entity extends Record<string, unknown>,
 > = {
   search: (search: string) => EntitySearchQuery<Entity>;
-  itemSubTitle?: (entity: Entity) => string;
+  itemLabel: (entity: Entity) => string;
   getId: (entity: Entity) => string;
-  itemToString: (entity: Entity) => string;
   label: string;
   placeholder: string;
   errorTitle: string;
@@ -29,25 +28,25 @@ type AbstractEntitySearchSingleSelectProps<
   onChange: (id: string) => void;
   value?: string;
   isEmpty?: boolean;
+  autoFocus?: boolean;
 };
 
 /**
  * Public props for a concrete per-entity single-select (e.g. UserSingleSelect):
- * everything technical (search, getId, itemToString, itemSubTitle, errorTitle)
- * is fixed by the concrete implementation and not overridable per call site.
+ * everything technical (search, getId, itemLabel, errorTitle) is fixed by
+ * the concrete implementation and not overridable per call site.
  */
 export type EntitySearchSingleSelectProps<
   Entity extends Record<string, unknown>,
 > = Omit<
   AbstractEntitySearchSingleSelectProps<Entity>,
-  "search" | "getId" | "itemToString" | "itemSubTitle" | "errorTitle"
+  "search" | "getId" | "itemLabel" | "errorTitle"
 >;
 
 const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   search,
-  itemSubTitle,
+  itemLabel,
   getId,
-  itemToString,
   label,
   placeholder,
   errorTitle,
@@ -55,52 +54,56 @@ const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   onChange,
   value,
   isEmpty = false,
+  autoFocus = false,
 }: AbstractEntitySearchSingleSelectProps<Entity>) => {
   const { t } = useTranslate();
-  const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
+  const id = useId();
+  const { items, isLoading, error, reload, onInputChange } =
+    useEntitySearchQuery(search);
 
-  useEffect(() => {
-    setSelectedEntity((current) =>
-      current && value && getId(current) === value ? current : null,
-    );
-  }, [value, getId]);
-
-  const handleSelect = (entity: Entity) => {
-    setSelectedEntity(entity);
-    onChange(getId(entity));
-  };
-
-  const handleClear = () => {
-    setSelectedEntity(null);
-    onChange("");
-  };
+  const options = useMemo(
+    () =>
+      items.map((entity) => ({
+        label: itemLabel(entity),
+        value: getId(entity),
+      })),
+    [items, itemLabel, getId],
+  );
 
   return (
-    <div>
-      <Label>{label}</Label>
-      {selectedEntity ? (
-        <div className="mt-2">
-          <RemovableEntityBadge
-            label={itemToString(selectedEntity)}
-            onRemove={handleClear}
-          />
-        </div>
-      ) : (
-        <EntitySearchDropdown
-          search={search}
-          itemTitle={getId}
-          itemSubTitle={itemSubTitle}
-          placeholder={placeholder}
-          onSelect={handleSelect}
-          errorTitle={errorTitle}
-          retryLabel={t("retry")}
-          invalid={isEmpty}
-        />
-      )}
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Combobox
+        id={id}
+        className="w-full"
+        options={options}
+        value={value}
+        onValueChange={(newValue) => onChange(newValue ?? "")}
+        onInputChange={onInputChange}
+        externalFiltering
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+        aria-invalid={isEmpty}
+      />
       {isEmpty && (
-        <p className="mt-1 text-xs text-danger-foreground-subtle">
+        <Text
+          as="span"
+          variant="helper"
+          className=" text-danger-foreground-subtle"
+        >
           {requiredText}
-        </p>
+        </Text>
+      )}
+      {!isLoading && error && (
+        <TranslatedErrorInlineNotification
+          title={errorTitle}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
+        />
       )}
     </div>
   );

@@ -88,7 +88,6 @@ const AssignRolesModal: FC<
         value={selectedRoles}
         onChange={setSelectedRoles}
         excluded={assignedRoles}
-        autoFocus
       />
     </FormModal>
   );
