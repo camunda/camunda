@@ -35,6 +35,16 @@ public class RaftPartitionConfig {
   private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
   // Keep in sync with the default in ExperimentalRaftCfg, which usually overrides this.
   private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
+  // 60s: well above the RPC-scale configurationChangeTimeout, since catching up to the admitting
+  // entry may include a snapshot install and a log replay. Still bounded, so a join whose entry a
+  // newer leader truncated eventually fails and is retried with a fresh request.
+  private static final Duration DEFAULT_JOIN_CATCH_UP_TIMEOUT = Duration.ofSeconds(60);
+  // 1000 entries: log entries are record batches of a few KiB to a few hundred KiB, so this bounds
+  // the data a promotion may still have to ship - and with it the commit-stall window once the
+  // member joins the commit quorum - to the low tens of MiB in the common case, while the in-flight
+  // lag of a healthy, caught-up member stays orders of magnitude below it even under sustained
+  // load.
+  private static final long DEFAULT_PROMOTION_LAG_THRESHOLD = 1000;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -49,10 +59,12 @@ public class RaftPartitionConfig {
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
+  private Duration joinCatchUpTimeout = DEFAULT_JOIN_CATCH_UP_TIMEOUT;
   private int snapshotChunkSize;
   private String engineName = DEFAULT_ENGINE_NAME;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
   private boolean sendOnLegacySubject = DEFAULT_SEND_ON_LEGACY_SUBJECT;
+  private long promotionLagThreshold = DEFAULT_PROMOTION_LAG_THRESHOLD;
 
   /**
    * Returns the Raft leader election timeout.
@@ -160,6 +172,22 @@ public class RaftPartitionConfig {
     this.configurationChangeTimeout = configurationChangeTimeout;
   }
 
+  /**
+   * The maximum time to wait, once a join request was accepted, for this node's own commit index to
+   * catch up to the index it was admitted at. Unlike {@link #getConfigurationChangeTimeout()},
+   * which bounds request round-trips, this bounds a replication-paced wait, so it defaults to a
+   * longer duration.
+   *
+   * @return the join catch-up timeout
+   */
+  public Duration getJoinCatchUpTimeout() {
+    return joinCatchUpTimeout;
+  }
+
+  public void setJoinCatchUpTimeout(final Duration joinCatchUpTimeout) {
+    this.joinCatchUpTimeout = joinCatchUpTimeout;
+  }
+
   public int getMinStepDownFailureCount() {
     return minStepDownFailureCount;
   }
@@ -241,6 +269,22 @@ public class RaftPartitionConfig {
     this.sendOnLegacySubject = sendOnLegacySubject;
   }
 
+  public long getPromotionLagThreshold() {
+    return promotionLagThreshold;
+  }
+
+  /**
+   * Sets the maximum replication lag, in log entries, up to which a member may be promoted to
+   * ACTIVE. The lag is the number of entries between the member's match index and the end of the
+   * leader's log, i.e. what the leader still has to replicate to the member, and bounds how long
+   * commits can stall once the promoted member joins the commit quorum.
+   *
+   * @param promotionLagThreshold the maximum replication lag in entries for promotions
+   */
+  public void setPromotionLagThreshold(final long promotionLagThreshold) {
+    this.promotionLagThreshold = promotionLagThreshold;
+  }
+
   @Override
   public String toString() {
     return "RaftPartitionConfig{"
@@ -262,6 +306,8 @@ public class RaftPartitionConfig {
         + snapshotChunkSize
         + ", configurationChangeTimeout="
         + configurationChangeTimeout
+        + ", joinCatchUpTimeout="
+        + joinCatchUpTimeout
         + ", minStepDownFailureCount="
         + minStepDownFailureCount
         + ", maxQuorumResponseTimeout="
@@ -274,6 +320,8 @@ public class RaftPartitionConfig {
         + receiveOnLegacySubject
         + ", sendOnLegacySubject="
         + sendOnLegacySubject
+        + ", promotionLagThreshold="
+        + promotionLagThreshold
         + '}';
   }
 }

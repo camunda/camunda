@@ -954,6 +954,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
+   * Returns the join catch-up timeout.
+   *
+   * @return The join catch-up timeout.
+   */
+  public Duration getJoinCatchUpTimeout() {
+    return partitionConfig.getJoinCatchUpTimeout();
+  }
+
+  /**
    * Returns the first commit index.
    *
    * @return The first commit index.
@@ -1313,6 +1322,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public int getPreferSnapshotReplicationThreshold() {
     return partitionConfig.getPreferSnapshotReplicationThreshold();
+  }
+
+  public long getPromotionLagThreshold() {
+    return partitionConfig.getPromotionLagThreshold();
   }
 
   public void setPreferSnapshotReplicationThreshold(final int snapshotReplicationThreshold) {
