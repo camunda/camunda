@@ -127,12 +127,12 @@ The Gradle compilation job is a member of the Unified CI result gate, but Maven 
 depend on it. A Gradle failure may fail `check-results` and prevent a merge-group landing, but it
 must not skip, cancel, or make Maven tests unavailable.
 
-### D7. Run the full Gradle CI test suite nightly
+### D7. Run the full Gradle CI test suite on a schedule
 
-A scheduled nightly workflow runs the full Gradle CI test suite. Its purpose is to exercise Gradle
-test execution continuously beyond the event-scoped checks used for pull-request compilation and
-packaging validation. The nightly workflow does not replace Maven's application-test path or change
-the CI landing-gate authority.
+A scheduled workflow runs the full Gradle CI test suite. Its purpose is to exercise Gradle test
+execution continuously beyond the event-scoped checks used for pull-request compilation and
+packaging validation. The scheduled workflow does not replace Maven's application-test path or
+change the CI landing-gate authority.
 
 ## Deferred work
 
@@ -141,8 +141,8 @@ The following work is intentionally excluded from this change:
 - **Changing the source of truth.** Maven remains authoritative until a future decision explicitly
   changes that arrangement.
 - **Mandatory Gradle unit test check on every event.** Running all unit tests for every relevant
-  change can increase CI cost; the nightly full test suite provides continuous test coverage while
-  the event-scoped checks remain focused on compilation and packaging validation.
+  change can increase CI cost; the scheduled full test suite provides continuous test coverage
+  while the event-scoped checks remain focused on compilation and packaging validation.
 - **Post-merge Gradle repair automation.** Automated repair requires a confirmed ownership and
   alerting model.
 
@@ -160,7 +160,7 @@ The following work is intentionally excluded from this change:
   not prevent Maven tests from running.
 - **Run the full experimental Gradle test path on push or merge-group events.** Rejected: those
   contexts need a smaller, stable compilation signal rather than the larger experimental suite.
-- **Add post-merge Gradle repair automation now.** Deferred until the PR, merge-group, and nightly
+- **Add post-merge Gradle repair automation now.** Deferred until the PR, merge-group, and scheduled
   signals and their ownership model are stable.
 
 ## Consequences
@@ -173,7 +173,7 @@ The following work is intentionally excluded from this change:
 - Relevant pull requests receive direct Gradle production-and-test compilation feedback.
 - Distribution parity catches differences in the versioned archive root and bundled JAR set.
 - Merge groups are blocked when relevant Gradle compilation, packaging, or parity checks fail.
-- A nightly full Gradle CI test run keeps Gradle test execution continuously exercised.
+- A scheduled full Gradle CI test run keeps Gradle test execution continuously exercised.
 - Protected pushes provide post-merge Gradle health feedback and warm the shared cache.
 - Maven application tests remain authoritative for Java and Maven changes and remain independently
   runnable when Gradle compilation fails.
