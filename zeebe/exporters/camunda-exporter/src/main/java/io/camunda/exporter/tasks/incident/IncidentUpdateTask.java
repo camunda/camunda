@@ -100,11 +100,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
   @Override
   public CompletionStage<Integer> execute() {
-    CompletableFuture<Integer> result;
+    final CompletableFuture<Integer> result;
     try {
       result = processNextBatch();
     } catch (final Exception e) {
-      result = CompletableFuture.failedFuture(e);
+      return CompletableFuture.failedFuture(adjustBatchSize(e));
     }
 
     return result.handleAsync(
