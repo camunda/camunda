@@ -59,7 +59,7 @@ public class ProcessGroupByFlowNodeInterpreterOS extends AbstractGroupByFlowNode
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return definitionService;
   }
 
@@ -83,7 +83,7 @@ public class ProcessGroupByFlowNodeInterpreterOS extends AbstractGroupByFlowNode
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {

@@ -56,15 +56,15 @@ public class ProcessGroupByFlowNodeEndDateInterpreterES
     return FLOW_NODE_INSTANCES + "." + FlowNodeInstanceDto.Fields.endDate;
   }
 
-  public DateAggregationServiceES getDateAggregationService() {
+  protected DateAggregationServiceES getDateAggregationService() {
     return this.dateAggregationService;
   }
 
-  public MinMaxStatsServiceES getMinMaxStatsService() {
+  protected MinMaxStatsServiceES getMinMaxStatsService() {
     return this.minMaxStatsService;
   }
 
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return this.definitionService;
   }
 

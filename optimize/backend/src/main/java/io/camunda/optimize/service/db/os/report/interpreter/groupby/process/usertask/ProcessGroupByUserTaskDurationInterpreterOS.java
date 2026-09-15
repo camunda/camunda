@@ -130,7 +130,7 @@ public class ProcessGroupByUserTaskDurationInterpreterOS
   }
 
   @Override
-  public ProcessGroupByUserTaskInterpreterHelper getHelper() {
+  protected ProcessGroupByUserTaskInterpreterHelper getHelper() {
     return helper;
   }
 

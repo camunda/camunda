@@ -24,7 +24,7 @@ public class AvgAggregationES extends AggregationStrategyES<Builder> {
   private static final String AVG_AGGREGATION = "avgAggregation";
 
   @Override
-  public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
+  protected Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
       final String customIdentifier, final Script script, final String... field) {
     final Aggregation.Builder builder = new Aggregation.Builder();
     return Pair.of(

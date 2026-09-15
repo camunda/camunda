@@ -58,7 +58,7 @@ public class UpdateDataStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
+  protected void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     if (paramMapProvider != null) {
       try {
         parameters = paramMapProvider.call();

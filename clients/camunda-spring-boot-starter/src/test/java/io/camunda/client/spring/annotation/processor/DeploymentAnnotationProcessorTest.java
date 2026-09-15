@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.processor;
+package io.camunda.client.spring.annotation.processor;
 
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
@@ -30,7 +30,6 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.bean.BeanInfo;
-import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.client.spring.properties.CamundaClientDeploymentProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.io.ByteArrayInputStream;

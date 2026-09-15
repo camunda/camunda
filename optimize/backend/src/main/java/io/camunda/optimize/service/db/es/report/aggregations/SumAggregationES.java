@@ -23,7 +23,7 @@ public class SumAggregationES extends AggregationStrategyES<Builder> {
   private static final String SUM_AGGREGATION = "sumAggregation";
 
   @Override
-  public Double getValueForAggregation(
+  protected Double getValueForAggregation(
       final String customIdentifier, final Map<String, Aggregate> aggs) {
     final SumAggregate aggregation =
         aggs.get(createAggregationName(customIdentifier, SUM_AGGREGATION)).sum();
@@ -31,7 +31,7 @@ public class SumAggregationES extends AggregationStrategyES<Builder> {
   }
 
   @Override
-  public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
+  protected Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
       final String customIdentifier, final Script script, final String... field) {
     final Aggregation.Builder builder = new Aggregation.Builder();
     return Pair.of(
