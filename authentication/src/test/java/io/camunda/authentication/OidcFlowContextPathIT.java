@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
+import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -74,7 +75,7 @@ class OidcFlowContextPathIT {
 
   @Container
   static KeycloakContainer keycloak =
-      KeycloakContainers.createDefaultKeycloak()
+      DefaultTestContainers.createDefaultKeycloak()
           .withRealmImportFile("/camunda-identity-test-realm.json");
 
   @Autowired MockMvcTester mockMvcTester;
