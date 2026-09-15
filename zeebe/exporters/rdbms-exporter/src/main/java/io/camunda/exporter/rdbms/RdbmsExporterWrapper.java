@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.db.rdbms.exception.DatabaseExceptionTranslator;
 import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
@@ -113,6 +114,15 @@ public class RdbmsExporterWrapper implements Exporter {
 
   @Override
   public void configure(final Context context) {
+    try {
+      configureInternal(context);
+    } catch (final RuntimeException error) {
+      throw DatabaseExceptionTranslator.translateConnectionFailureIfNeeded(
+          error, "Failed to configure the RDBMS exporter");
+    }
+  }
+
+  private void configureInternal(final Context context) {
     final int partitionId = context.getPartitionId();
     final var physicalTenantId = context.getPhysicalTenantId();
 

@@ -49,6 +49,8 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransf
 import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.exception.RecoverableException;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -94,6 +96,34 @@ class RdbmsExporterWrapperTest {
     assertThatThrownBy(() -> exporterWrapper.configure(context))
         .hasMessageContaining(
             "No RDBMS exporter configuration for physical tenant 'unknowntenant'");
+  }
+
+  @Test
+  public void shouldTranslateConnectionFailureDuringSetupToRecoverable() {
+    // given
+    final var configuration = new ExporterConfiguration();
+    final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
+    final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
+    when(context.getPartitionId()).thenReturn(1);
+    when(context.getPhysicalTenantId()).thenReturn("tenanta");
+    when(rdbmsService.createWriter(any(RdbmsWriterConfig.class)))
+        .thenThrow(
+            new RuntimeException(
+                "database unavailable", new SQLException("connection refused", "08001")));
+
+    final RdbmsExporterWrapper exporterWrapper =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("tenanta", configuration));
+
+    // when / then
+    assertThatThrownBy(() -> exporterWrapper.configure(context))
+        .isInstanceOf(RecoverableException.class)
+        .hasCauseInstanceOf(RuntimeException.class);
   }
 
   @Test

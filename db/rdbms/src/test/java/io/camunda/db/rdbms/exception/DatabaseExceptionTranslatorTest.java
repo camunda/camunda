@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
+import io.camunda.zeebe.util.exception.RecoverableException;
 import java.sql.SQLException;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,37 @@ class DatabaseExceptionTranslatorTest {
     // then
     assertThat(result).isInstanceOf(CamundaSearchException.class);
     assertThat(((CamundaSearchException) result).getReason()).isEqualTo(Reason.INVALID_ARGUMENT);
+  }
+
+  @Test
+  void shouldTranslateWrappedJdbcConnectionFailureToRecoverable() {
+    // given
+    final var sqlException = new SQLException("connection refused", "08001");
+    final var original = new RuntimeException("CannotGetJdbcConnectionException", sqlException);
+
+    // when
+    final var result =
+        DatabaseExceptionTranslator.translateConnectionFailureIfNeeded(
+            original, "Failed to connect to the database");
+
+    // then
+    assertThat(result).isInstanceOf(RecoverableException.class);
+    assertThat(result).hasMessage("Failed to connect to the database");
+    assertThat(result).hasCause(original);
+  }
+
+  @Test
+  void shouldReturnOriginalExceptionForNonConnectionErrors() {
+    // given
+    final var original = new IllegalStateException("invalid configuration");
+
+    // when
+    final var result =
+        DatabaseExceptionTranslator.translateConnectionFailureIfNeeded(
+            original, "Failed to connect to the database");
+
+    // then
+    assertThat(result).isSameAs(original);
   }
 
   @Test

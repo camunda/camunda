@@ -8,16 +8,20 @@
 package io.camunda.db.rdbms.exception;
 
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.zeebe.util.exception.RecoverableException;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.sql.SQLException;
+import java.sql.SQLRecoverableException;
+import java.sql.SQLTransientConnectionException;
 
 /**
- * Translates vendor-specific database exceptions into {@link CamundaSearchException} instances with
- * appropriate reasons to allow callers to return meaningful error responses.
+ * Translates known database exceptions into domain-specific exceptions with appropriate semantics.
  *
  * <p>Currently handles:
  *
  * <ul>
  *   <li>ORA-01795: maximum number of expressions in a list is 1000
+ *   <li>JDBC connection failures as recoverable exceptions
  * </ul>
  */
 public final class DatabaseExceptionTranslator {
@@ -48,6 +52,26 @@ public final class DatabaseExceptionTranslator {
   }
 
   /**
+   * Translates a database connection failure into a recoverable exception. Other exceptions,
+   * including explicitly classified failures, are returned unchanged.
+   *
+   * @param e the exception to inspect
+   * @param operation the operation that failed
+   * @return a recoverable exception for a connection failure, or {@code e} unchanged
+   */
+  public static RuntimeException translateConnectionFailureIfNeeded(
+      final RuntimeException e, final String operation) {
+    if (e instanceof RecoverableException || e instanceof UnrecoverableException) {
+      return e;
+    }
+
+    if (isConnectionFailure(e)) {
+      return new RecoverableException(operation, e);
+    }
+    return e;
+  }
+
+  /**
    * Walks the exception chain to check for an Oracle ORA-01795 SQL error.
    *
    * @param e the root exception
@@ -63,5 +87,26 @@ public final class DatabaseExceptionTranslator {
       cause = cause.getCause();
     }
     return false;
+  }
+
+  private static boolean isConnectionFailure(final Throwable e) {
+    Throwable cause = e;
+    while (cause != null) {
+      if (cause instanceof SQLTransientConnectionException
+          || cause instanceof SQLRecoverableException) {
+        return true;
+      }
+
+      if (cause instanceof final SQLException sqlException
+          && hasConnectionExceptionSqlState(sqlException.getSQLState())) {
+        return true;
+      }
+      cause = cause.getCause();
+    }
+    return false;
+  }
+
+  private static boolean hasConnectionExceptionSqlState(final String sqlState) {
+    return sqlState != null && sqlState.startsWith("08");
   }
 }
