@@ -29,8 +29,9 @@ public class PercentileAggregationES extends AggregationStrategyES<Builder> {
   }
 
   @Override
-  public Pair<String, Aggregation.Builder.ContainerBuilder> createAggregationBuilderForAggregation(
-      final String customIdentifier, final Script script, final String... field) {
+  protected Pair<String, Aggregation.Builder.ContainerBuilder>
+      createAggregationBuilderForAggregation(
+          final String customIdentifier, final Script script, final String... field) {
     final Aggregation.Builder builder = new Aggregation.Builder();
     return Pair.of(
         createAggregationName(
@@ -46,7 +47,7 @@ public class PercentileAggregationES extends AggregationStrategyES<Builder> {
   }
 
   @Override
-  public Double getValueForAggregation(
+  protected Double getValueForAggregation(
       final String customIdentifier, final Map<String, Aggregate> aggs) {
     final TDigestPercentilesAggregate percentiles =
         aggs.get(

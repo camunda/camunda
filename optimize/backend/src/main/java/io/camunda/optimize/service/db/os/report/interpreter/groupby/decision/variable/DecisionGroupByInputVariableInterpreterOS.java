@@ -111,11 +111,11 @@ public class DecisionGroupByInputVariableInterpreterOS
         getVariableName(context), getVariablePath(), getVariableType(context));
   }
 
-  public VariableAggregationServiceOS getVariableAggregationService() {
+  protected VariableAggregationServiceOS getVariableAggregationService() {
     return this.variableAggregationService;
   }
 
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return this.definitionService;
   }
 

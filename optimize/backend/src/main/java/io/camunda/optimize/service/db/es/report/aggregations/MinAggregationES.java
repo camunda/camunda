@@ -23,7 +23,7 @@ public class MinAggregationES extends AggregationStrategyES<Builder> {
   private static final String MIN_AGGREGATION = "minAggregation";
 
   @Override
-  public Double getValueForAggregation(
+  protected Double getValueForAggregation(
       final String customIdentifier, final Map<String, Aggregate> aggs) {
     final MinAggregate aggregate =
         aggs.get(createAggregationName(customIdentifier, MIN_AGGREGATION)).min();
@@ -31,7 +31,7 @@ public class MinAggregationES extends AggregationStrategyES<Builder> {
   }
 
   @Override
-  public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
+  protected Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
       final String customIdentifier, final Script script, final String... field) {
     final Aggregation.Builder builder = new Aggregation.Builder();
     return Pair.of(

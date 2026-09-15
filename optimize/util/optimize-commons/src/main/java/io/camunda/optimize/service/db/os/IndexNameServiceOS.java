@@ -18,7 +18,7 @@ public class IndexNameServiceOS extends OpenSearchOperation {
   }
 
   @Override
-  public <T extends ObjectBuilderBase> T applyIndexPrefix(final T request) {
+  protected <T extends ObjectBuilderBase> T applyIndexPrefix(final T request) {
     return super.applyIndexPrefix(request);
   }
 }

@@ -75,6 +75,20 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
   }
 
   @Override
+  protected String[] getIndexNames(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    if (context.getReportData().isManagementReport()) {
+      getMultiIndexAlias();
+    }
+    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
+  }
+
+  @Override
+  protected String[] getMultiIndexAlias() {
+    return new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
+  }
+
+  @Override
   protected BoolQuery.Builder setupUnfilteredBaseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
@@ -120,20 +134,6 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
               multiDefinitionFilterQuery.should(s -> s.bool(definitionQueryBuilder.build()));
             });
     return multiDefinitionFilterQuery;
-  }
-
-  @Override
-  protected String[] getIndexNames(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    if (context.getReportData().isManagementReport()) {
-      getMultiIndexAlias();
-    }
-    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
-  }
-
-  @Override
-  protected String[] getMultiIndexAlias() {
-    return new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
   }
 
   private BoolQuery.Builder createDefinitionQuery(final ReportDataDefinitionDto definitionDto) {

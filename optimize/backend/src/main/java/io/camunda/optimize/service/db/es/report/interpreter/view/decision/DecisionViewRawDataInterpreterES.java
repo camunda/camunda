@@ -241,7 +241,7 @@ public class DecisionViewRawDataInterpreterES extends AbstractDecisionViewRawDat
                         .order(getSortOrder(sortOrder))));
   }
 
-  public DecisionVariableReader getDecisionVariableReader() {
+  protected DecisionVariableReader getDecisionVariableReader() {
     return this.decisionVariableReader;
   }
 }

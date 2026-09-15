@@ -64,7 +64,7 @@ public class ProcessGroupByFlowNodeDurationInterpreterOS
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return definitionService;
   }
 
@@ -92,7 +92,7 @@ public class ProcessGroupByFlowNodeDurationInterpreterOS
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.processor;
+package io.camunda.client.spring.annotation.processor;
 
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,7 +32,6 @@ import io.camunda.client.jobhandling.ManagedJobWorker;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.metrics.MetricsRecorder;
-import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

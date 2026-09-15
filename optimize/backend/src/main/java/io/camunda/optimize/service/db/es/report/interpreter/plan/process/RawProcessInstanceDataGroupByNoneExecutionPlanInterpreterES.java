@@ -62,6 +62,7 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES
     return commandResult;
   }
 
+  @Override
   public ProcessGroupByInterpreterFacadeES getGroupByInterpreter() {
     return this.groupByInterpreter;
   }
@@ -70,15 +71,17 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES
     return this.viewInterpreter;
   }
 
-  public OptimizeElasticsearchClient getEsClient() {
+  @Override
+  protected OptimizeElasticsearchClient getEsClient() {
     return this.esClient;
   }
 
-  public ProcessDefinitionReader getProcessDefinitionReader() {
+  @Override
+  protected ProcessDefinitionReader getProcessDefinitionReader() {
     return this.processDefinitionReader;
   }
 
-  public ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
+  protected ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
     return this.queryFilterEnhancer;
   }
 }

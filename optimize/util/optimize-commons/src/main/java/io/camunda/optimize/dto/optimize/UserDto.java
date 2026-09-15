@@ -109,7 +109,7 @@ public class UserDto extends IdentityWithMetadataResponseDto {
 
   @Override
   @JsonIgnore
-  public List<Supplier<String>> getSearchableDtoFields() {
+  protected List<Supplier<String>> getSearchableDtoFields() {
     return List.of(
         this::getId, this::getEmail, this::getName, this::getFirstName, this::getLastName);
   }

@@ -225,7 +225,7 @@ public final class TestEngine {
 
     /** Closes all managed resources and deletes the temporary folder. */
     public void close() {
-      autoCloseableRule.after();
+      autoCloseableRule.close();
       temporaryFolder.delete();
     }
   }

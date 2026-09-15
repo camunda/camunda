@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.processor;
+package io.camunda.client.spring.annotation.processor;
 
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -30,7 +30,6 @@ import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandS
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor;
 import io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties;
 import io.camunda.client.spring.properties.ClusterVariableEntry;
 import java.io.ByteArrayInputStream;
