@@ -104,6 +104,12 @@ it — and the duplicate bookkeeping in [0013](0013-810-agent-history-commit-und
 only one entry per item. The active writer is judged by its job, not its element instance, because an
 element instance can stay active after its job can no longer write.
 
+**D9. An agent instance completes when its owning process instance ends.**
+The engine marks the instance complete when the process instance completes or is cancelled. That is
+the first point at which the engine knows the element hosting the agent cannot be entered again,
+which matters because D1 lets one instance span many element instances: an element instance ending
+says nothing about whether the run is over.
+
 ## Alternatives considered
 
 - **Expose the agent instance key on the element instance entity.** Rejected because agent data is
@@ -119,6 +125,9 @@ element instance can stay active after its job can no longer write.
 - **Give the engine the agent lifecycle now.** Rejected as scope, not as direction — see D3. It would
   have meant changing how agents execute and solving strong consistency on the history a connector
   reads back as its context, neither of which the visibility problem needs.
+- **Complete the agent instance when its element instance ends.** Rejected because re-entry would
+  then reuse a completed instance, or split one run across several instances, which is what D1 exists
+  to prevent.
 
 ## Consequences
 
@@ -133,8 +142,8 @@ element instance can stay active after its job can no longer write.
   the failure as an incident on the element instance instead.
 - Agent instances and their jobs are always on the same partition, so commit processing reads local
   state with no cross-partition routing.
-- Primary state for an agent instance is deleted when its process instance ends; the completion event
-  still exports, so secondary storage keeps the final snapshot.
+- Primary state for an agent instance is deleted once it completes; the completion event still
+  exports, so secondary storage keeps the final snapshot.
 
 ## Source
 
