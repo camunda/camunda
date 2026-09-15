@@ -23,12 +23,27 @@ import java.util.stream.Collectors;
  * default group. The per-partition reconciliation logic is shared with {@link
  * ExporterStateInitializer} via its package-visible static helpers.
  *
- * <p>Mirrors {@link ExporterStateInitializer}'s post-restore handling: if the migrated
- * configuration is {@link CurrentClusterConfiguration#isAfterRestore()}, only the coordinator
- * updates the exporter state, and it does so for every member of every group (not just the local
- * member) — the coordinator is the only member guaranteed to run this initializer again once the
- * post-restore {@code UpdateRoutingState} operation is applied, so it must reconcile on behalf of
- * everyone. Non-coordinators skip initialization entirely in that case.
+ * <p>Mirrors {@link ExporterStateInitializer}'s post-restore handling: if the configuration is
+ * {@link CurrentClusterConfiguration#isAfterRestore()}, only the coordinator updates the exporter
+ * state, and it does so for every member of every group (not just the local member).
+ * Non-coordinators skip initialization entirely in that case.
+ *
+ * <p>What this avoids is a broker shutdown. Only the coordinator has a configuration file after a
+ * restore ({@code RestoreManager} writes it on node 0 alone), so every other broker initializes
+ * from the coordinator's gossip, at whatever group version that carried. A local exporter-state
+ * write lands on {@link io.camunda.zeebe.dynamic.config.state.BrokerPartitionState}, which does not
+ * move the group version; when the coordinator then drains the post-restore {@code
+ * UpdateRoutingState}, {@link
+ * io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration#completeGraphChangeIfDrained()}
+ * bumps that version. The next merge takes the coordinator's copy of the group wholesale — members
+ * included — so the broker sees its own member state change underneath it and {@code
+ * DynamicClusterConfigurationService} shuts it down as an inconsistent configuration. Letting the
+ * coordinator write every member's state instead keeps the only writer on the side of the version
+ * bump, so there is nothing to discard.
+ *
+ * <p>A restart heals that shutdown — by then the broker has a file of its own and the restore plan
+ * has completed, so no version bump races the write — but it costs a broker crash during a
+ * disaster-recovery restore, reported as suspected data loss.
  */
 public class PartitionGroupExporterStateInitializer
     implements ClusterConfigurationModifier<CurrentClusterConfiguration> {
