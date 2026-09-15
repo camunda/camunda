@@ -905,13 +905,13 @@
       datasourceTemplate: "maven",
     },
     {
-      description: "Track ES/OS container versions in parent/pom.xml XML comment annotations.",
+      description: "Track container image versions annotated in parent/pom.xml XML comments.",
       customType: "regex",
       managerFilePatterns: [
         "/^parent/pom\\.xml$/",
       ],
       matchStrings: [
-        "<!-- renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+) -->\\s*<[^>]+>(?<currentValue>[^<]+)</",
+        "<!-- renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( versioning=(?<versioning>[^\\s]+))? -->\\s*<[^>]+>(?<currentValue>[^<@]+)(@(?<currentDigest>sha256:[0-9a-f]+))?</",
       ],
     },
     {
