@@ -5,8 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.configuration;
+package io.camunda.application.commons;
 
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
 
@@ -23,8 +25,9 @@ import org.springframework.test.context.support.AbstractTestExecutionListener;
  * at all. Without the bind, a Spring test class that reuses a cached context never constructs the
  * helper again, so it runs with no environment and silently resolves no legacy property at all.
  *
- * <p>The {@code dist} module carries a copy of this listener. Test classes are not published, so a
- * module with both Spring tests and plain-POJO configuration tests has to register its own.
+ * <p>This duplicates the listener of the {@code configuration} module. Test classes are not
+ * published, so a module with both Spring tests and plain-POJO configuration tests has to register
+ * its own.
  */
 public class UnifiedConfigurationHelperResetListener extends AbstractTestExecutionListener {
 
