@@ -14,10 +14,11 @@ lifecycle and ownership.
 
 ## Context
 
-One logical agent run is not one element instance. The AI agent ad-hoc sub-process pattern re-enters
-the same agent as the process loops back, and each re-entry is a new element instance. Agent
-execution data therefore needs an anchor of its own: something that outlives an element instance,
-that every history item and every metric can hang off, and that Operate can show as one run.
+Wherever a process loops back to an element, each pass through it creates a new element instance. An
+agent element must carry the agent's context and memory across those passes, so the agent continues
+the same conversation instead of starting a new one. Agent execution data therefore needs an anchor
+of its own: something that outlives an element instance, that every history item and every metric can
+hang off, and that Operate can show as one run.
 
 The agent runtime — the Camunda AI Agent Connector, or a user's own job worker — is the only party
 that knows what the agent is doing. Under [0010](0010-810-agent-execution-in-engine-records.md) that
