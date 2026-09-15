@@ -474,13 +474,13 @@ make template-load-test scenario=max  # renders load test manifests
 
 ### Accessing Services
 
-Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works. Keycloak itself runs in the shared `keycloak-operator` namespace, as a Service named after the load test namespace, not inside `<namespace>` (see [Keycloak in the load test setup chart README](charts/load-test-setup/README.md#keycloak)).
+Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works.
 
 1. Port-forward both Camunda and Keycloak:
 
 ```sh
 kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
-kubectl -n keycloak-operator port-forward svc/<namespace> 18080:18080 &
+kubectl -n <namespace> port-forward svc/keycloak 18080:18080 &
 wait
 ```
 
@@ -507,7 +507,7 @@ To use [c8ctl](https://github.com/camunda/c8ctl) against the cluster, port-forwa
 ```sh
 export NAMESPACE="..."
 kubectl -n $NAMESPACE port-forward svc/camunda-gateway 8080:8080 &
-kubectl -n keycloak-operator port-forward svc/$NAMESPACE 18080:18080 &
+kubectl -n $NAMESPACE port-forward svc/keycloak 18080:18080 &
 
 export CAMUNDA_BASE_URL=http://localhost:8080
 export CAMUNDA_OAUTH_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
@@ -533,12 +533,6 @@ make clean
 ```
 
 This uninstalls the Helm releases (Camunda Platform + load test + load-test-setup, the latter including the Prometheus Elasticsearch exporter subchart when enabled), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
-
-`make clean` also explicitly deletes the Keycloak resources `keycloak-operator` namespace since they
-don't live in the namespace being torn down.
-If you ever delete a load test namespace by hand (`kubectl delete namespace` directly, without `make
-clean`), you must also delete those separately, or they leak forever — see [Cleanup in the load test
-setup chart README](charts/load-test-setup/README.md#cleanup).
 
 The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 
