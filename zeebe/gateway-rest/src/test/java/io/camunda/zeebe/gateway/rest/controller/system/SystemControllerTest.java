@@ -508,7 +508,7 @@ public class SystemControllerTest extends RestControllerTest {
   void shouldReturnConfiguredWaitStatesEnabled(final boolean enabled) {
     // given
     final var config = new GatewayRestConfiguration();
-    config.setWaitStatesEnabled(enabled);
+    config.withWaitStatesEnabled(enabled);
     when(tenantRestConfigProvider.forPhysicalTenant(any())).thenReturn(config);
 
     // when/then
@@ -532,7 +532,7 @@ public class SystemControllerTest extends RestControllerTest {
     // given
     final var enabledConfig = new GatewayRestConfiguration();
     final var disabledConfig = new GatewayRestConfiguration();
-    disabledConfig.setWaitStatesEnabled(false);
+    disabledConfig.withWaitStatesEnabled(false);
     when(tenantRestConfigProvider.forPhysicalTenant("enabled")).thenReturn(enabledConfig);
     when(tenantRestConfigProvider.forPhysicalTenant("disabled")).thenReturn(disabledConfig);
 

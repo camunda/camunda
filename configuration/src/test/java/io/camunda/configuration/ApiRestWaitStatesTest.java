@@ -11,10 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beans.GatewayRestProperties;
+import io.camunda.configuration.beans.LegacyGatewayRestProperties;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
+import org.springframework.mock.env.MockEnvironment;
 
 class ApiRestWaitStatesTest {
 
@@ -31,8 +37,7 @@ class ApiRestWaitStatesTest {
     // when/then
     contextRunner.run(
         context ->
-            assertThat(context.getBean(GatewayRestProperties.class).isWaitStatesEnabled())
-                .isTrue());
+            assertThat(context.getBean(GatewayRestProperties.class).waitStatesEnabled()).isTrue());
   }
 
   @ParameterizedTest
@@ -45,7 +50,26 @@ class ApiRestWaitStatesTest {
     // when/then
     runner.run(
         context ->
-            assertThat(context.getBean(GatewayRestProperties.class).isWaitStatesEnabled())
+            assertThat(context.getBean(GatewayRestProperties.class).waitStatesEnabled())
                 .isEqualTo(enabled));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"camunda.rest.wait-states-enabled", "CAMUNDA_REST_WAITSTATESENABLED"})
+  void shouldNotExposeEffectiveWaitStatesAsALegacyRestProperty(final String property) {
+    // given
+    final var environment = new MockEnvironment();
+    environment
+        .getPropertySources()
+        .addFirst(
+            new SystemEnvironmentPropertySource("systemEnvironment", Map.of(property, "false")));
+
+    // when
+    final var bound =
+        Binder.get(environment)
+            .bind("camunda.rest", Bindable.of(LegacyGatewayRestProperties.class));
+
+    // then
+    assertThat(bound.isBound()).isFalse();
   }
 }

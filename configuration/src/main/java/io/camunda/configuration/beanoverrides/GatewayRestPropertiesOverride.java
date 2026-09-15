@@ -62,7 +62,7 @@ public class GatewayRestPropertiesOverride {
     }
 
     public void applyTo(final GatewayRestConfiguration override) {
-      override.setWaitStatesEnabled(camunda.getData().getWaitStates().isEnabled());
+      override.withWaitStatesEnabled(camunda.getData().getWaitStates().isEnabled());
       populateFromJobMetrics(override);
       populateFromValidators(override);
     }

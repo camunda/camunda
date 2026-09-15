@@ -34,12 +34,14 @@ public class GatewayRestConfiguration {
     return jobMetrics;
   }
 
-  public boolean isWaitStatesEnabled() {
+  /** Non-JavaBean accessors keep this resolved value out of legacy configuration binding. */
+  public boolean waitStatesEnabled() {
     return waitStatesEnabled;
   }
 
-  public void setWaitStatesEnabled(final boolean waitStatesEnabled) {
+  public GatewayRestConfiguration withWaitStatesEnabled(final boolean waitStatesEnabled) {
     this.waitStatesEnabled = waitStatesEnabled;
+    return this;
   }
 
   /**

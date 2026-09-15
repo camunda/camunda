@@ -140,9 +140,9 @@ class PhysicalTenantResolverTest {
             .mapValues(config -> new GatewayRestPropertiesOverride.Converter(config).convert());
 
     // then
-    assertThat(configs.get("default").isWaitStatesEnabled()).isEqualTo(rootEnabled);
-    assertThat(configs.get("tenanta").isWaitStatesEnabled()).isEqualTo(!rootEnabled);
-    assertThat(configs.get("tenantb").isWaitStatesEnabled()).isEqualTo(rootEnabled);
+    assertThat(configs.get("default").waitStatesEnabled()).isEqualTo(rootEnabled);
+    assertThat(configs.get("tenanta").waitStatesEnabled()).isEqualTo(!rootEnabled);
+    assertThat(configs.get("tenantb").waitStatesEnabled()).isEqualTo(rootEnabled);
   }
 
   @Test
@@ -162,7 +162,7 @@ class PhysicalTenantResolverTest {
     // then
     assertThat(configs)
         .hasSize(2)
-        .allSatisfy((id, config) -> assertThat(config.isWaitStatesEnabled()).isTrue());
+        .allSatisfy((id, config) -> assertThat(config.waitStatesEnabled()).isTrue());
   }
 
   @Test

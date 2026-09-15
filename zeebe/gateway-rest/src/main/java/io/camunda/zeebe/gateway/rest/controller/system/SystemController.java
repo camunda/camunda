@@ -98,7 +98,7 @@ public class SystemController {
         SystemConfigurationResponse.Builder.create()
             .jobMetrics(jobMetricsResponse)
             .components(buildComponentsConfiguration())
-            .deployment(buildDeploymentConfiguration(tenantRestConfig.isWaitStatesEnabled()))
+            .deployment(buildDeploymentConfiguration(tenantRestConfig.waitStatesEnabled()))
             .authentication(buildAuthenticationConfiguration())
             .cloud(buildCloudConfiguration())
             .build());
