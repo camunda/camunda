@@ -864,8 +864,8 @@ public final class ProcessStateTest {
   }
 
   @Test
-  public void shouldSkipDrainingAndPendingDeletionWhenLookingUpLatestActiveProcess() {
-    // given - v3 is draining, v2 is pending deletion, v1 is the only ACTIVE version
+  public void shouldSkipDrainingButTreatPendingDeletionAsActiveWhenLookingUpLatestActiveProcess() {
+    // given - v3 is draining, v2 is stuck in pending deletion, v1 is ACTIVE
     final var v1 = creatingProcessRecord(processingState, "processId", 1);
     final var v2 = creatingProcessRecord(processingState, "processId", 2);
     final var v3 = creatingProcessRecord(processingState, "processId", 3);
@@ -879,8 +879,26 @@ public final class ProcessStateTest {
     final var latestActive =
         processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
 
-    // then
-    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+    // then - draining v3 is skipped, but PENDING_DELETION v2 counts as active and resolves as
+    // latest
+    assertThat(latestActive.getKey()).isEqualTo(v2.getKey());
+  }
+
+  @Test
+  public void shouldResolvePendingDeletionLatestAsLatestActiveProcess() {
+    // given - the latest version is stuck in PENDING_DELETION
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.updateProcessState(v2, PersistedProcessState.PENDING_DELETION);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then - the stuck latest resolves rather than falling back to the superseded v1
+    assertThat(latestActive.getKey()).isEqualTo(v2.getKey());
   }
 
   @Test
