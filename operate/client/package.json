@@ -10,7 +10,7 @@
     "@camunda/camunda-composite-components": "0.25.2",
     "@camunda/design-system": "0.54.0",
     "@camunda/session-heartbeat": "0.0.1",
-    "@carbon/elements": "11.96.0",
+    "@carbon/elements": "11.97.0",
     "@carbon/react": "1.112.0",
     "@codemirror/autocomplete": "6.20.3",
     "@codemirror/lang-json": "6.0.2",
