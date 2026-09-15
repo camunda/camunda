@@ -708,7 +708,9 @@ public final class SearchQueryBuilders {
             }
             yield mustNot(objectTerms(field, operation.values()));
           }
-          default -> null;
+          // Handled by the numeric-range and string-specific blocks below; listed explicitly
+          // (not via a default) so a new Operator constant fails to compile here until handled.
+          case GREATER_THAN, GREATER_THAN_EQUALS, LOWER_THAN, LOWER_THAN_EQUALS, LIKE -> null;
         };
     if (res != null) {
       return res;
