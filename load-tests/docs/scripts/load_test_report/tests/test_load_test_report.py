@@ -1,4 +1,5 @@
 import io
+import json
 import sys
 from pathlib import Path
 from unittest import mock
@@ -77,6 +78,115 @@ def test_should_return_error_for_missing_namespace():
 
     assert exit_code == 2
     assert "the following arguments are required: namespace" in stderr.getvalue()
+
+
+def write_single_query_file(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text(
+        """queries:
+- key: throughput
+  description: Throughput.
+  header: Throughput
+  query: up
+""",
+        encoding="utf-8",
+    )
+    return queries_file
+
+
+def successful_client():
+    return FakePrometheusClient(
+        [
+            {
+                "status": "success",
+                "data": {
+                    "resultType": "vector",
+                    "result": [{"metric": {}, "value": [1435781451.781, "42.5"]}],
+                },
+            }
+        ]
+    )
+
+
+def test_should_run_report_to_stdout(tmp_path, capsys):
+    queries_file = write_single_query_file(tmp_path)
+    client = successful_client()
+
+    with (
+        mock.patch("load_test_report.cli.PrometheusClient", return_value=client),
+        mock.patch("load_test_report.cli.check_endpoint") as endpoint_check,
+    ):
+        exit_code = run(["c8-ck-test", "--queries", str(queries_file)])
+
+    assert exit_code == 0
+    assert json.loads(capsys.readouterr().out)["metrics"] == {"throughput": 42.5}
+    endpoint_check.assert_called_once()
+
+
+def test_should_run_report_to_output_file(tmp_path):
+    queries_file = write_single_query_file(tmp_path)
+    output_file = tmp_path / "report.json"
+
+    with (
+        mock.patch("load_test_report.cli.PrometheusClient", return_value=successful_client()),
+        mock.patch("load_test_report.cli.check_endpoint"),
+    ):
+        exit_code = run(
+            [
+                "c8-ck-test",
+                "--queries",
+                str(queries_file),
+                "--output",
+                str(output_file),
+            ]
+        )
+
+    assert exit_code == 0
+    assert json.loads(output_file.read_text(encoding="utf-8"))["metrics"] == {"throughput": 42.5}
+
+
+def test_should_report_output_file_error(tmp_path, capsys):
+    queries_file = write_single_query_file(tmp_path)
+    output_file = tmp_path / "missing" / "report.json"
+
+    with (
+        mock.patch("load_test_report.cli.PrometheusClient", return_value=successful_client()),
+        mock.patch("load_test_report.cli.check_endpoint"),
+    ):
+        exit_code = run(
+            [
+                "c8-ck-test",
+                "--queries",
+                str(queries_file),
+                "--output",
+                str(output_file),
+            ]
+        )
+
+    assert exit_code == 1
+    assert f"Could not write output file '{output_file}'" in capsys.readouterr().err
+
+
+def test_should_report_invalid_query_document(tmp_path, capsys):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("{}", encoding="utf-8")
+
+    with mock.patch("load_test_report.cli.check_endpoint"):
+        exit_code = run(["c8-ck-test", "--queries", str(queries_file)])
+
+    assert exit_code == 1
+    assert "Error: query document is invalid" in capsys.readouterr().err
+
+
+def test_should_report_unreachable_endpoint(capsys):
+    with mock.patch(
+        "load_test_report.cli.check_endpoint",
+        side_effect=ReportError("Could not reach Prometheus endpoint"),
+    ):
+        exit_code = run(["c8-ck-test"])
+
+    assert exit_code == 1
+    assert "Error: Could not reach Prometheus endpoint" in capsys.readouterr().err
 
 
 def test_should_extract_numeric_sample():
