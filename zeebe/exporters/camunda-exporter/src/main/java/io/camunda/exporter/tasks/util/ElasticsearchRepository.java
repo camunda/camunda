@@ -157,16 +157,9 @@ public class ElasticsearchRepository implements AutoCloseable {
   }
 
   /**
-   * Recognizes the ways in which Elasticsearch refuses a request for being too large, so that
-   * callers can react by writing less rather than by retrying the same request forever.
-   *
-   * <p>A breaker trip at the coordinating node fails the request itself and carries a structured
-   * error type. Exceeding {@code http.max_content_length} is refused at the HTTP layer instead,
-   * before there is any error body to parse, so it is only recognizable by its status code.
-   *
-   * <p>Only a refused request counts. A breaker that trips while the shards process an accepted
-   * request reports itself per item, but that is driven by the node's overall heap rather than by
-   * this request's size, so it is back pressure to retry rather than a reason to write less.
+   * Recognizes a request refused for its size, so callers can write less instead of retrying it
+   * unchanged. Only a refused request counts: a breaker tripping per item reflects the node's heap,
+   * not this request, so it is back pressure to retry.
    */
   public Throwable translateBulkFailure(final Throwable error) {
     final var cause = FuturesUtil.unwrapCompletionException(error);

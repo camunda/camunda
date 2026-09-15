@@ -15,6 +15,7 @@ import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
+import io.camunda.exporter.tasks.util.AdaptiveBatchSize;
 import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
@@ -45,7 +46,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final ExporterMetadata metadata;
   private final IncidentUpdateRepository repository;
   private final boolean ignoreMissingData;
-  private final int configuredBatchSize;
   private final ExecutorService executor;
   private final Logger logger;
   private final Duration waitForRefreshInterval;
@@ -53,14 +53,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final CamundaExporterMetrics metrics;
   private volatile boolean legacyPositionChecked = false;
 
-  /**
-   * How many pending updates the next cycle will read. Starts at the configured batch size and is
-   * halved whenever the store rejects the resulting write as too large, so that a batch whose tree
-   * paths fan out into an oversized request is retried as something the store will accept. Reset
-   * once a cycle gets through, since the fan-out depends on which incidents the batch happens to
-   * contain rather than on anything lasting. Only ever touched from {@link #executor}.
-   */
-  private int batchSize;
+  private final AdaptiveBatchSize batchSize;
 
   public IncidentUpdateTask(
       final ExporterMetadata metadata,
@@ -97,8 +90,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     this.metadata = metadata;
     this.repository = repository;
     this.ignoreMissingData = ignoreMissingData;
-    configuredBatchSize = batchSize;
-    this.batchSize = batchSize;
+    this.batchSize = new AdaptiveBatchSize(batchSize);
     this.executor = executor;
     this.metrics = metrics;
     this.logger = logger;
@@ -121,39 +113,32 @@ public final class IncidentUpdateTask implements BackgroundTask {
             throw new CompletionException(adjustBatchSize(error));
           }
 
-          batchSize = configuredBatchSize;
+          batchSize.reset();
           return documentsUpdated;
         },
         executor);
   }
 
-  /**
-   * Halves the number of pending updates the next cycle reads when the store refused the write for
-   * being too large. The read is what governs how many documents a cycle can fan out into, so this
-   * is the only lever the task has; every other failure is left alone, as it would not be helped by
-   * writing less.
-   */
+  /** The read is the only lever on fan-out, so it is all that is reduced. */
   private Throwable adjustBatchSize(final Throwable error) {
     final var cause = FuturesUtil.unwrapCompletionException(error);
     if (!(cause instanceof BulkRequestTooLargeException)) {
       return cause;
     }
 
-    if (batchSize > 1) {
-      batchSize = batchSize / 2;
+    if (batchSize.reduce()) {
       logger.warn(
           """
             The store refused the incident update write for being too large; retrying with at most \
             {} pending update(s) per cycle instead of {}.""",
-          batchSize,
-          configuredBatchSize,
+          batchSize.current(),
+          batchSize.configured(),
           cause);
     } else {
       logger.warn(
           """
-            The store refused the incident update write for being too large even for a single \
-            pending update; the batch cannot be made any smaller, so it will be retried as is. The \
-            documents one incident fans out into is more than this store accepts in one request.""",
+            The store refused the incident update write for being too large at a single pending \
+            update; one incident fans out into more documents than it accepts per request.""",
           cause);
     }
 
@@ -796,7 +781,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentsState state) {
     final IncidentUpdateRepository.PendingIncidentUpdateBatch pendingIncidentsBatch =
         repository
-            .getPendingIncidentsBatch(getOrInitLastIncidentUpdatePosition(), batchSize)
+            .getPendingIncidentsBatch(getOrInitLastIncidentUpdatePosition(), batchSize.current())
             .toCompletableFuture()
             .join();
 

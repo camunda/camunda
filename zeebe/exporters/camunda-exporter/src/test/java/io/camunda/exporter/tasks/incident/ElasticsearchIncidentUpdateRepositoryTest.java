@@ -142,7 +142,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
   @Test
   void shouldRecognizeARequestLevelCircuitBreakerTripAsTooLarge() {
-    // given - the breaker rejects the whole request, which is how Elasticsearch refuses work that
+    // given - the breaker rejects the whole request
     // would otherwise exhaust its heap
     final var repository = createRepository();
     Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
@@ -168,15 +168,14 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         .havingCause()
         .isInstanceOf(BulkRequestTooLargeException.class)
         .withMessageContaining("Data too large")
-        // the original rejection is kept, so the operator still sees what the cluster said
+        // the original rejection is kept
         .havingCause()
         .isInstanceOf(ElasticsearchException.class);
   }
 
   @Test
   void shouldRecognizeAContentTooLargeRejectionAsTooLarge() {
-    // given - a request over http.max_content_length is refused at the HTTP layer, so there is no
-    // error body to read a type from, only the status code
+    // given - refused at the HTTP layer, so only the status code is available
     final var repository = createRepository();
     final var response = Mockito.mock(TransportHttpClient.Response.class);
     Mockito.when(response.statusCode()).thenReturn(413);
@@ -209,8 +208,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     // when
     final var result = repository.bulkUpdate(bulkUpdateOf(1));
 
-    // then - the request was accepted, so its size is not what tripped the breaker; the node's
-    // overall heap is, which is back pressure to retry rather than a reason to write less
+    // then - the request was accepted, so its size is not what tripped the breaker
     assertThat(result)
         .failsWithin(Duration.ofSeconds(5))
         .withThrowableThat()
@@ -221,7 +219,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
   @Test
   void shouldNotTreatQueueRejectionsAsTooLarge() {
-    // given - a full bulk queue is back pressure, not a size problem; writing less would not help
+    // given - a full bulk queue is back pressure, not a size problem
     final var repository = createRepository();
     Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
         .thenReturn(
