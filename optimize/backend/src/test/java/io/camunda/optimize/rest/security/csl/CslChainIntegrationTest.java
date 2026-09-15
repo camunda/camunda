@@ -38,6 +38,7 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import io.camunda.security.spring.filter.OAuth2RefreshTokenFilter;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.Cookie;
 import java.net.InetSocketAddress;
@@ -262,6 +263,32 @@ class CslChainIntegrationTest {
                       response.getContentAsString())
                   .isEqualTo(401);
               assertThat(downstream.getRequest()).isNull();
+            });
+  }
+
+  @Test
+  void shouldEnforcePermissionAfterTheAccessTokenRefreshForCcsm() {
+    // The permission check must not run before CSL's OAuth2RefreshTokenFilter: a session whose
+    // access token merely expired has to be refreshed first, otherwise every expiry ends in a 401
+    // where the legacy CCSMAuthenticationCookieFilter renewed the token and carried on. Asserted
+    // on the filter positions because ordering is what makes the difference, and the refresh
+    // itself needs a real IdP token endpoint to observe end to end.
+    ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceGrantingSessionAccessToken)
+        .run(
+            ctx -> {
+              // given
+              final SecurityFilterChain webappChain =
+                  (SecurityFilterChain) ctx.getBean("oidcWebappSecurityFilterChain");
+
+              // when
+              final var filterTypes =
+                  webappChain.getFilters().stream().map(filter -> filter.getClass().getName());
+
+              // then
+              assertThat(filterTypes)
+                  .containsSubsequence(
+                      OAuth2RefreshTokenFilter.class.getName(),
+                      OptimizeCcsmSessionPermissionEnforcementFilter.class.getName());
             });
   }
 

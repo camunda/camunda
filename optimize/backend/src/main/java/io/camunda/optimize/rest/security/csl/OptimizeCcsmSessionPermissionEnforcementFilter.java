@@ -51,14 +51,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * such extension point to a downstream filter — this is the pragmatic fallback the task called for:
  * independently extract and re-verify the same token the converter would have used.
  *
- * <p>Catches {@link NotAuthorizedException} (permission denied), {@link IdentityException} (covers
- * {@code TokenVerificationException} for an invalid/expired token — unlike {@link
- * CCSMTokenService#verifyToken(String)}, {@link CCSMTokenService#verifyAccessToken(String)} does
- * not wrap that case into {@link NotAuthorizedException} — plus Identity being unreachable), and
- * finally any other {@link RuntimeException}, mirroring {@link
- * OptimizeIdentityPermissionValidator#validate}: a security boundary must fail closed on the
- * unexpected rather than let it propagate as an uncaught 500, which would be worse than the 401
- * this filter exists to produce.
+ * <p>Only {@link NotAuthorizedException}, Identity's verdict that this user may not use Optimize,
+ * invalidates the session. {@link IdentityException} (an invalid or expired token, or Identity
+ * being unreachable) and any other {@link RuntimeException} deny the request but leave the session
+ * alone, so an Identity outage does not log every user out. Denying rather than rethrowing mirrors
+ * {@link OptimizeIdentityPermissionValidator#validate}: a security boundary must fail closed on the
+ * unexpected rather than let it propagate as an uncaught 500.
+ *
+ * <p>Runs after CSL's {@code OAuth2RefreshTokenFilter}, so a session whose access token merely
+ * expired is refreshed before it is verified here (see {@link OptimizeCcsmSecurityConfiguration}
+ * for the anchoring that guarantees this).
  */
 public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerRequestFilter {
 
@@ -81,17 +83,25 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
     if (sessionAccessToken.isPresent()) {
       try {
         ccsmTokenService.verifyAccessToken(sessionAccessToken.get());
-      } catch (final NotAuthorizedException | IdentityException e) {
+      } catch (final NotAuthorizedException e) {
         LOG.debug("Session's access token no longer authorized; invalidating session.", e);
         invalidateSession(request);
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        return;
+      } catch (final IdentityException e) {
+        // Not a decision Identity made about this user: the token is unusable (invalid, expired
+        // past what CSL's refresh could recover) or Identity is unreachable. Denying the request
+        // is required, but destroying the session would log every user out on an Identity outage
+        // and force a fresh login instead of letting the next request succeed.
+        LOG.debug("Session's access token could not be verified; denying the request.", e);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         return;
       } catch (final RuntimeException e) {
         // Same fail-closed reasoning as OptimizeIdentityPermissionValidator#validate: an
         // unexpected error verifying the session's token must not propagate as an uncaught 500,
-        // it must deny the request the same as a confirmed rejection.
-        LOG.warn("Unexpected error verifying session's access token; invalidating session.", e);
-        invalidateSession(request);
+        // it must deny the request. Like the IdentityException case it says nothing about the
+        // user's permission, so the session survives.
+        LOG.warn("Unexpected error verifying session's access token; denying the request.", e);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         return;
       }

@@ -31,7 +31,7 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
@@ -96,17 +96,24 @@ public class OptimizeCcsmSecurityConfiguration {
    * {@code ScopedApiSecurityChainBuilder} and {@code UnprotectedApiSecurityConfiguration} all apply
    * while building their chain, regardless of its "headers" name. Repurposing it here is a
    * deliberate, documented deviation rather than a semantic fit: it is the only extension point CSL
-   * exposes that receives the real {@link HttpSecurity} builder early enough to add a filter after
-   * the point where the session's {@code SecurityContext} has been resolved. Applying it to the
-   * unprotected chain too is harmless: that chain never populates an {@code
-   * OAuth2AuthenticationToken}, so the filter is a no-op there.
+   * exposes that receives the real {@link HttpSecurity} builder. Applying it to the unprotected
+   * chain too is harmless: that chain never populates an {@code OAuth2AuthenticationToken}, so the
+   * filter is a no-op there.
+   *
+   * <p>Anchored after {@link AuthorizationFilter}, which every CSL chain installs, and deliberately
+   * not right after {@code SecurityContextHolderFilter}: CSL's {@code OAuth2RefreshTokenFilter}
+   * shares this anchor on the webapp chain and is added before this customizer runs, so insertion
+   * order (the tie-break among filters sharing an anchor) puts the refresh ahead of the check. An
+   * expired access token is then renewed first and verified afterwards, the way the legacy {@code
+   * CCSMAuthenticationCookieFilter} renewed before deciding. Anchoring earlier would deny and
+   * destroy the session on every access-token expiry instead.
    */
   @Bean
   public SecurityHeadersCustomizer ccsmSessionPermissionEnforcementFilterInstaller(
       final CCSMTokenService ccsmTokenService) {
     final OptimizeCcsmSessionPermissionEnforcementFilter filter =
         new OptimizeCcsmSessionPermissionEnforcementFilter(ccsmTokenService);
-    return httpSecurity -> httpSecurity.addFilterAfter(filter, SecurityContextHolderFilter.class);
+    return httpSecurity -> httpSecurity.addFilterAfter(filter, AuthorizationFilter.class);
   }
 
   /**

@@ -108,16 +108,19 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   }
 
   @Test
-  void shouldInvalidateSessionAndRejectWhenTokenCannotBeVerified() throws Exception {
+  void shouldRejectButKeepSessionWhenTokenCannotBeVerified() throws Exception {
     // given
     // CCSMTokenService#verifyAccessToken throws TokenVerificationException (an IdentityException,
-    // not a NotAuthorizedException) directly for an invalid/expired token; the filter must fail
-    // closed here too rather than let it propagate as an uncaught 500.
+    // not a NotAuthorizedException) directly for an invalid/expired token, and equally when
+    // Identity is unreachable. That says nothing about the user's permission, so the request is
+    // denied but the session survives: an Identity outage must not log everybody out.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
     doThrow(new TokenVerificationException("token invalid"))
         .when(ccsmTokenService)
         .verifyAccessToken("token");
+    setAuthenticatedSecurityContext();
     final MockHttpServletRequest request = new MockHttpServletRequest();
+    request.getSession(true);
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
 
@@ -127,18 +130,22 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     // then
     assertThat(response.getStatus()).isEqualTo(401);
     assertThat(chain.getRequest()).as("unverifiable token must not reach downstream").isNull();
+    assertThat(request.getSession(false)).as("session must survive").isNotNull();
   }
 
   @Test
-  void shouldInvalidateSessionAndRejectOnUnexpectedError() throws Exception {
+  void shouldRejectButKeepSessionOnUnexpectedError() throws Exception {
     // given
     // A security boundary must fail closed on the unexpected rather than propagate it, mirroring
-    // OptimizeIdentityPermissionValidator's final RuntimeException catch-all.
+    // OptimizeIdentityPermissionValidator's final RuntimeException catch-all. Same as the
+    // IdentityException case, the session is not the thing at fault here.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
     doThrow(new IllegalStateException("unexpected"))
         .when(ccsmTokenService)
         .verifyAccessToken("token");
+    setAuthenticatedSecurityContext();
     final MockHttpServletRequest request = new MockHttpServletRequest();
+    request.getSession(true);
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
 
@@ -148,6 +155,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     // then
     assertThat(response.getStatus()).isEqualTo(401);
     assertThat(chain.getRequest()).as("unexpected error must not reach downstream").isNull();
+    assertThat(request.getSession(false)).as("session must survive").isNotNull();
   }
 
   private static void setAuthenticatedSecurityContext() {
