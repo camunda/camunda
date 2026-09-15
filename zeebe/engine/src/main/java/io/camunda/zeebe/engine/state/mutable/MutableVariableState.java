@@ -57,7 +57,13 @@ public interface MutableVariableState extends VariableState {
       int valueOffset,
       int valueLength);
 
-  void createScope(long childKey, long parentKey);
+  /**
+   * Creates the variable scope of an element instance.
+   *
+   * @param hasVariables whether variables were already written for this scope before it was
+   *     created; when false the scope is recorded as empty so that reads can skip it
+   */
+  void createScope(long childKey, long parentKey, boolean hasVariables);
 
   void removeScope(long scopeKey);
 

@@ -250,9 +250,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     elementInstanceColumnFamily.insert(elementInstanceKey, instance);
     parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
-    variableState.createScope(elementInstanceKey.getValue(), parentKey.inner().getValue());
-
     final var recordValue = instance.getValue();
+    variableState.createScope(
+        elementInstanceKey.getValue(), parentKey.inner().getValue(), recordValue.hasVariables());
+
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
       processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(

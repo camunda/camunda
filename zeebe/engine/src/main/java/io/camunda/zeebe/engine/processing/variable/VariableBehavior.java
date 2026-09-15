@@ -90,8 +90,11 @@ public final class VariableBehavior {
    * @param processDefinitionKey the process key to be associated with each variable
    * @param processInstanceKey the process instance key to be associated with each variable
    * @param document the document to merge
+   * @return whether the scope holds local variables after the merge, i.e. whether the document was
+   *     not empty. Note this is not the same as "something changed": re-merging an unchanged value
+   *     emits no event but the variable is still there.
    */
-  public void mergeLocalDocument(
+  public boolean mergeLocalDocument(
       final long scopeKey,
       final long processDefinitionKey,
       final long processInstanceKey,
@@ -103,7 +106,7 @@ public final class VariableBehavior {
     validateBuffer(scopeKey, document);
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
-      return;
+      return false;
     }
     variableRecord
         .setScopeKey(scopeKey)
@@ -121,6 +124,7 @@ public final class VariableBehavior {
     }
 
     conditionalBehavior.evaluateConditionals(processInstanceKey, variableEvents);
+    return true;
   }
 
   /**

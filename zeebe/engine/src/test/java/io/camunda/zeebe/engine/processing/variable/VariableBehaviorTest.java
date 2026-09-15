@@ -91,8 +91,8 @@ final class VariableBehaviorTest {
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     setVariable(childFooKey, childScopeKey, processDefinitionKey, "foo", "qux");
 
     // when
@@ -172,9 +172,9 @@ final class VariableBehaviorTest {
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar");
-    state.createScope(rootScopeKey, VariableState.NO_PARENT);
-    state.createScope(parentScopeKey, rootScopeKey);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(rootScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(parentScopeKey, rootScopeKey, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     setVariable(parentFooKey, parentScopeKey, processDefinitionKey, "foo", "qux");
     setVariable(5, rootScopeKey, processDefinitionKey, "foo", "biz");
 
@@ -216,9 +216,9 @@ final class VariableBehaviorTest {
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
-    state.createScope(rootScopeKey, VariableState.NO_PARENT);
-    state.createScope(parentScopeKey, rootScopeKey);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(rootScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(parentScopeKey, rootScopeKey, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
 
     // when
     behavior.mergeDocument(
@@ -268,9 +268,9 @@ final class VariableBehaviorTest {
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
-    state.createScope(rootScopeKey, VariableState.NO_PARENT);
-    state.createScope(parentScopeKey, rootScopeKey);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(rootScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(parentScopeKey, rootScopeKey, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     setVariable(4, rootScopeKey, processDefinitionKey, "foo", "bar");
 
     // when
@@ -311,8 +311,8 @@ final class VariableBehaviorTest {
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar");
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     setVariable(childFooKey, childScopeKey, processDefinitionKey, "foo", "qux");
     setVariable(4, parentScopeKey, processDefinitionKey, "foo", "biz");
 
@@ -354,8 +354,8 @@ final class VariableBehaviorTest {
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of();
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     setVariable(3, parentScopeKey, processDefinitionKey, "foo", "qux");
     setVariable(4, childScopeKey, processDefinitionKey, "foo", "bar");
 
@@ -385,8 +385,8 @@ final class VariableBehaviorTest {
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
 
     // when
     behavior.setLocalVariable(
@@ -431,8 +431,8 @@ final class VariableBehaviorTest {
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     setVariable(parentFooKey, parentScopeKey, processDefinitionKey, "foo", "qux");
 
     // when
@@ -479,8 +479,8 @@ final class VariableBehaviorTest {
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     setVariable(parentFooKey, parentScopeKey, processDefinitionKey, "foo", "bar");
 
     // when
@@ -515,8 +515,8 @@ final class VariableBehaviorTest {
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
 
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
 
     // when
     behavior.setLocalVariable(
@@ -564,8 +564,8 @@ final class VariableBehaviorTest {
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
 
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
 
     setVariable(parentFooKey, parentScopeKey, processDefinitionKey, "foo", "qux");
 
@@ -615,8 +615,8 @@ final class VariableBehaviorTest {
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
 
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
 
     setVariable(childFooKey, childScopeKey, processDefinitionKey, "foo", "qux");
 
@@ -672,9 +672,9 @@ final class VariableBehaviorTest {
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
 
-    state.createScope(rootScopeKey, VariableState.NO_PARENT);
-    state.createScope(parentScopeKey, rootScopeKey);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(rootScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(parentScopeKey, rootScopeKey, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
 
     setVariable(123456L, parentScopeKey, processDefinitionKey, "foo", "qux");
 
@@ -728,9 +728,9 @@ final class VariableBehaviorTest {
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar");
-    state.createScope(rootScopeKey, VariableState.NO_PARENT);
-    state.createScope(parentScopeKey, rootScopeKey);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(rootScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(parentScopeKey, rootScopeKey, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     final var variableSource =
         isApiSource ? VariableSourceRecord.api() : VariableSourceRecord.none();
     final var behavior = this.behavior.withVariableSource(variableSource);
@@ -772,8 +772,8 @@ final class VariableBehaviorTest {
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar");
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
+    state.createScope(parentScopeKey, VariableState.NO_PARENT, false);
+    state.createScope(childScopeKey, parentScopeKey, false);
     final var variableSource =
         isApiSource ? VariableSourceRecord.api() : VariableSourceRecord.none();
     final var behavior = this.behavior.withVariableSource(variableSource);

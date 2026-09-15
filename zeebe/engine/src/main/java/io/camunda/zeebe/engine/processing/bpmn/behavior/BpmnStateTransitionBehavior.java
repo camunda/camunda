@@ -693,7 +693,10 @@ public final class BpmnStateTransitionBehavior {
   }
 
   public long createChildProcessInstance(
-      final DeployedProcess process, final BpmnElementContext context, final String businessId) {
+      final DeployedProcess process,
+      final BpmnElementContext context,
+      final String businessId,
+      final boolean propagatesVariables) {
 
     final var processInstanceKey = keyGenerator.nextKey();
 
@@ -709,7 +712,11 @@ public final class BpmnStateTransitionBehavior {
         .setBpmnElementType(process.getProcess().getElementType())
         .setTenantId(context.getTenantId())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
-        .setBusinessId(businessId);
+        .setBusinessId(businessId)
+        // when the call activity propagates variables it copies them into this scope right after
+        // this command is written, i.e. before the scope is created; flag it so that the scope is
+        // not created as empty
+        .setHasVariables(propagatesVariables);
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
