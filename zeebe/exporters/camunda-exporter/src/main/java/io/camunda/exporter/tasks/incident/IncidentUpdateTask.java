@@ -111,7 +111,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
             throw new CompletionException(adjustBatchSize(error));
           }
 
-          batchSize.reset();
           return documentsUpdated;
         },
         executor);
@@ -216,6 +215,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
                   batch.highestPosition());
 
               metadata.setLastIncidentUpdatePosition(batch.highestPosition());
+              batchSize.reset();
 
               metrics.recordIncidentUpdatesProcessed(incidentCount);
               metrics.recordIncidentUpdatesDocumentsUpdated(documentsUpdated);

@@ -888,6 +888,26 @@ final class IncidentUpdateTaskTest {
     }
 
     @Test
+    void shouldNotRestoreTheReadWhenABatchIsSkippedForMissingData() {
+      // given - one refused cycle, so the read is reduced
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+      failCycle(task);
+
+      // when - the next cycle finds data missing, so it skips the batch without writing or
+      // advancing the position
+      succeedNonIncidentWrite();
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      task.execute().toCompletableFuture().join();
+      task.execute().toCompletableFuture().join();
+
+      // then - the read stays reduced: restoring it here would rebuild the same oversized write
+      // against the same unadvanced position
+      assertThat(readSizes()).containsExactly(100, 50, 50);
+    }
+
+    @Test
     void shouldResetTheReadAfterACycleGetsThrough() {
       // given - one refused cycle, so the read is reduced
       final var task = createTask(CONFIGURED_BATCH_SIZE);
