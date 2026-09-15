@@ -67,6 +67,29 @@ const ModelInfoLabel = styled.strong`
   color: var(--cds-text-primary);
 `;
 
+const PromptEvidence = styled.dl`
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--cds-spacing-03);
+  row-gap: var(--cds-spacing-02);
+  margin: 0 0 var(--cds-spacing-04);
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
+`;
+
+const PromptEvidenceLabel = styled.dt`
+  font-weight: var(--cds-heading-compact-01-font-weight);
+  color: var(--cds-text-primary);
+`;
+
+const PromptEvidenceValue = styled.dd`
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--cds-text-secondary);
+`;
+
 export {
   AgentDetailsContainer,
   AgentHeader,
@@ -76,4 +99,7 @@ export {
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,
+  PromptEvidence,
+  PromptEvidenceLabel,
+  PromptEvidenceValue,
 };

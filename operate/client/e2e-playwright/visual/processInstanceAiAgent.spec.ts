@@ -23,6 +23,8 @@ const AI_AGENT_ELEMENT_INSTANCE_KEY =
     .elementInstanceKey;
 const PROCESS_INSTANCE_KEY =
   agentProcessWithOneActiveInstance.detail.processInstanceKey;
+const AGENT_INSTANCE_KEY_2 =
+  agentProcessWithTwoActiveInstances.agentInstances!.items[1]!.agentInstanceKey;
 
 function agentMockResponses(mock: InstanceMock) {
   return mockResponses({
@@ -39,8 +41,7 @@ function agentMockResponses(mock: InstanceMock) {
 }
 
 test.describe('AI agent details', () => {
-  // Taller viewport is needed to fit all agent details into the page.
-  test.use({viewport: {width: 1280, height: 1400}});
+  test.use({viewport: {width: 1440, height: 900}});
 
   test.beforeEach(async ({context}) => {
     await context.route('**/client-config.js', (route) =>
@@ -100,23 +101,64 @@ test.describe('AI agent details', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       key: PROCESS_INSTANCE_KEY,
-      bottomPanel: 'details',
-      selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
+    await processInstancePage.diagram.clickElement('Review claim');
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/operate/processes/${PROCESS_INSTANCE_KEY}/details\\?elementId=${AI_AGENT_ELEMENT_ID}`,
+      ),
+    );
     await expect(
       processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
-
-    await processInstancePage.aiAgentDetails.usageSectionTrigger.click();
-    await processInstancePage.aiAgentDetails.systemPromptSection.click();
-    await processInstancePage.aiAgentDetails.availableToolsSection.click();
-    await processInstancePage.aiAgentDetails.modelSection.click();
-
     await expect(
       processInstancePage.aiAgentDetails.statusSection.getByLabel(
         'Assistant message',
       ),
     ).toBeVisible();
+
+    await processInstancePage.aiAgentDetails.statusSectionTrigger.click();
+    await processInstancePage.aiAgentDetails.systemPromptSectionTrigger.click();
+
+    await expect(
+      page.getByRole('link', {name: 'Details', exact: true}),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', {name: 'Variables', exact: true}),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.diagram.getElement('Manual review'),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptEvidence,
+    ).toContainText(
+      'Type:LinkedPrompt ID:claims-review-instructions.mdBinding:LatestVersion:1',
+    );
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Route ambiguous damage descriptions to manual review, even when timestamped photos are complete.',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Return only a JSON object with decision, rationale, and instructionVersion.',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Set instructionVersion to GOVERNED-V1.',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Set decision to manual-review for that route.',
+      ),
+    ).toBeVisible();
+    expect(
+      await processInstancePage.aiAgentDetails.systemPromptSection.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
 
     await expect(page).toHaveScreenshot();
   });
@@ -317,6 +359,19 @@ test.describe('AI agent details', () => {
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
     await processInstancePage.aiAgentDetails.agentSelector.click();
+
+    await page
+      .getByRole('option', {name: `${AGENT_INSTANCE_KEY_2} - Initializing`})
+      .click();
+    await processInstancePage.aiAgentDetails.systemPromptSectionTrigger.click();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptEvidence,
+    ).toContainText('Version:2');
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Permit automatic approval for ambiguous damage descriptions when timestamped photos are complete.',
+      ),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

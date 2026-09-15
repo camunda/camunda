@@ -9,6 +9,7 @@
 import {useId, useMemo, useState} from 'react';
 import type {
   AgentInstance,
+  AgentInstanceDefinition,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {Accordion, AccordionItem, Tag} from '@carbon/react';
@@ -32,6 +33,9 @@ import {
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,
+  PromptEvidence,
+  PromptEvidenceLabel,
+  PromptEvidenceValue,
 } from './styled';
 import {AgentSelector, type SelectableAgentInstance} from './AgentSelector';
 import {ModelCallsMetric} from './AgentMetrics/ModelCallsMetric';
@@ -77,6 +81,18 @@ type AgentDetailsProps = {
   hasMoreTotalItems: boolean;
   isError: boolean;
 };
+
+type FixtureOnlyPromptEvidence = {
+  type: string;
+  promptId: string;
+  binding: string;
+  version: string;
+};
+
+type AgentInstanceDefinitionWithFixtureOnlyPromptEvidence =
+  AgentInstanceDefinition & {
+    prototypeSystemPromptEvidence?: FixtureOnlyPromptEvidence;
+  };
 
 const AgentDetails: React.FC<AgentDetailsProps> = ({
   selectedElementInstanceKey,
@@ -128,6 +144,9 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
   const {metrics, limits, definition} = agentInstance;
   const totalTokens = getTotalTokens(metrics);
+  const promptEvidence = (
+    definition as AgentInstanceDefinitionWithFixtureOnlyPromptEvidence
+  ).prototypeSystemPromptEvidence;
 
   const remainingAgentsCount =
     agentInstances.length < totalAgentsCount
@@ -238,6 +257,24 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             </SectionTitle>
           }
         >
+          {promptEvidence !== undefined && (
+            <PromptEvidence aria-label="System prompt evidence">
+              <PromptEvidenceLabel>Type:</PromptEvidenceLabel>
+              <PromptEvidenceValue>{promptEvidence.type}</PromptEvidenceValue>
+              <PromptEvidenceLabel>Prompt ID:</PromptEvidenceLabel>
+              <PromptEvidenceValue>
+                {promptEvidence.promptId}
+              </PromptEvidenceValue>
+              <PromptEvidenceLabel>Binding:</PromptEvidenceLabel>
+              <PromptEvidenceValue>
+                {promptEvidence.binding}
+              </PromptEvidenceValue>
+              <PromptEvidenceLabel>Version:</PromptEvidenceLabel>
+              <PromptEvidenceValue>
+                {promptEvidence.version}
+              </PromptEvidenceValue>
+            </PromptEvidence>
+          )}
           <ConversationMessage
             actor="SYSTEM"
             content={definition.systemPrompt}
