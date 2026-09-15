@@ -47,9 +47,10 @@ instance instead. What counts as one run follows the runtime's own continuity.
 
 **D2. The agent runtime writes the agent instance through a public command API.**
 Creating an instance, moving it through its statuses, reporting metrics, and appending history are all
-client commands. The engine does not derive any of it. Under 0010 the runtime already had to get this
-data into secondary storage somehow; routing it through the engine's API was the chosen way, and it
-keeps the engine out of the business of running agents.
+client commands. The engine does not derive any of it. Under
+[0010](0010-810-agent-execution-in-engine-records.md) the runtime already had to get this data into
+secondary storage somehow; routing it through the engine's API was the chosen way, and it keeps the
+engine out of the business of running agents.
 
 **D3. Client-driven lifecycle today does not foreclose an engine-owned lifecycle later.**
 This is a deliberately narrow solution aimed at visibility, not a fork in the road. Nothing here

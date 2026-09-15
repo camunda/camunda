@@ -97,7 +97,7 @@ processor.
 
 - **Identify activations by an activation counter echoed on job completion.** Puts an engine-generated
   identifier in the worker's hands and makes the worker, not the engine, the authority on which
-  activation it is. See 0005 for the full comparison; the lease won.
+  activation it is. See [0005](0005-810-job-lease.md) for the full comparison; the lease won.
 - **Let the lease expire when the job times out.** Every timed-out job would then sit unfenced until
   re-activation, and a benign late completion could no longer commit its work.
 - **Have the writer query committed history before resending.** The query API reads secondary storage,
