@@ -49,6 +49,13 @@ inputs:
     description: A modifier to use for maven cache key
     required: false
     default: "shared"
+  maven-cache-download-timeout-mins:
+    description: |
+      Upper bound, in minutes, on how long the Maven cache restore may spend downloading a
+      single cache segment before aborting. Raise it only for a job with a legitimately large
+      cache; see the setup-maven-cache action for why the bound exists.
+    required: false
+    default: "3"
   maven-mirrors:
     description: |
       JSON list of extra Maven mirrors.
@@ -165,6 +172,7 @@ runs:
     uses: ./.github/actions/setup-maven-cache
     with:
       maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
+      cache-download-timeout-mins: ${{ inputs.maven-cache-download-timeout-mins }}
   # Camunda Nexus and extra mirrors/servers must be merged on ids (extra values have precedence).
   - name: Get Maven mirrors and servers to use
     id: maven
