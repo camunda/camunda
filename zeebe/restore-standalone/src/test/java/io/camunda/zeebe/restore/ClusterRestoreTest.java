@@ -30,6 +30,8 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -129,7 +131,8 @@ final class ClusterRestoreTest {
       Files.createFile(dir.resolve(".DS_Store"));
       Files.createFile(dir.resolve("Thumbs.db"));
 
-      // then - the directory check passes and the restore proceeds far enough to look for backups
+      // then - the directory check passes and the restore proceeds far enough to look for backups,
+      // which is where it fails: the fake backup store holds none
       assertThatThrownBy(
               () ->
                   clusterRestore.restore(
@@ -137,7 +140,9 @@ final class ClusterRestoreTest {
                       REQUIRE_EMPTY,
                       false,
                       List.of("lost+found", ".DS_Store", "Thumbs.db")))
-          .isNotInstanceOf(DirectoryNotEmptyException.class);
+          .isInstanceOf(ExecutionException.class)
+          .cause()
+          .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
