@@ -19,15 +19,15 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
       new LongProperty("processInstanceKey", -1);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty("rootProcessInstanceKey", -1);
-  private final IntegerProperty storageOrdinalKeyProperty =
-      new IntegerProperty("storageOrdinalKey", 0);
+  private final IntegerProperty storageOrdinalProperty =
+      new IntegerProperty("storageOrdinal", 0);
 
   public BatchOperationItem() {
     super(4);
     declareProperty(itemKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(storageOrdinalKeyProperty);
+        .declareProperty(storageOrdinalProperty);
   }
 
   public BatchOperationItem(
@@ -69,12 +69,12 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProperty.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
   }
 
-  public BatchOperationItem setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+  public BatchOperationItem setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }
 
@@ -82,7 +82,7 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
     setItemKey(value.getItemKey());
     setProcessInstanceKey(value.getProcessInstanceKey());
     setRootProcessInstanceKey(value.getRootProcessInstanceKey());
-    setStorageOrdinalKey(value.getStorageOrdinalKey());
+    setStorageOrdinal(value.getStorageOrdinal());
     return this;
   }
 }

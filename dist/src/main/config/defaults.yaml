@@ -1523,9 +1523,9 @@ camunda: # Type: io.camunda.configuration.Camunda
       storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals  
         # Controls whether the archiverless mode is enabled.
         enable-archiverless: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
-        # Override default storage ordinal key with fixed value, mainly used during initial testing. The
-        # default value of -1 means no override is applied.
-        fixed-storage-ordinal-key: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINALKEY
+        # Override default storage ordinal with fixed value, mainly used during initial testing. The default
+        # value of -1 means no override is applied.
+        fixed-storage-ordinal: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINAL
       
       validators: # Type: io.camunda.configuration.EngineValidators  
         # Configures the maximum size, in bytes, of the validation error output produced when deploying an

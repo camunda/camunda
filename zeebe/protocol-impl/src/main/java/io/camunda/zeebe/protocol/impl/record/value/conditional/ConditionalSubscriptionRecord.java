@@ -43,7 +43,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
 
   // default to -1 for root level start events
@@ -66,8 +66,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
@@ -85,7 +84,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(variableEventsProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(elementTypeProp);
   }
 
@@ -102,7 +101,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     setVariableEvents(record.getVariableEvents());
     tenantIdProp.setValue(record.getTenantId());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
     elementTypeProp.setValue(record.getElementType());
   }
 
@@ -276,12 +275,12 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public ConditionalSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public ConditionalSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

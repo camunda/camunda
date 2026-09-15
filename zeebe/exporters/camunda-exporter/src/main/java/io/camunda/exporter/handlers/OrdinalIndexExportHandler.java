@@ -11,11 +11,11 @@ import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.List;
 
 public interface OrdinalIndexExportHandler<
-        T extends ExporterEntity<T>, R extends RecordValue & StorageOrdinalKeyRelated>
+        T extends ExporterEntity<T>, R extends RecordValue & StorageOrdinalRelated>
     extends ExportHandler<T, R> {
 
   @Override

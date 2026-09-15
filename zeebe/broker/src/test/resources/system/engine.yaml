@@ -50,4 +50,4 @@ zeebe:
           rpaReexportMigrationEnabled: false
         storageOrdinals:
           enableArchiverless: true
-          fixedStorageOrdinalKey: 1001
+          fixedStorageOrdinal: 1001
