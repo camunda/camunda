@@ -147,14 +147,8 @@ The following work is intentionally excluded from this change:
   two sources of truth for modules, dependencies, generated sources, and packaging.
 - **Run both complete build paths on every pull request.** Rejected: this doubles CI cost without
   improving the landing guarantee; the merge queue already revalidates the result with Maven.
-- **Run the Gradle compilation check only for Java changes.** Rejected: Gradle-only and Maven-only
-  build changes can independently break Gradle compilation and must also be covered.
-- **Make Maven test jobs depend on the Gradle compilation job.** Rejected: a Gradle failure must
-  not prevent Maven tests from running.
 - **Run the full experimental Gradle test path on push or merge-group events.** Rejected: those
   contexts need a smaller, stable compilation signal rather than the larger experimental suite.
-- **Add post-merge Gradle repair automation now.** Deferred until the PR, merge-group, and scheduled
-  signals and their ownership model are stable.
 
 ## Consequences
 
