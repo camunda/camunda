@@ -55,19 +55,3 @@ sourceSets.named("test") {
   java.srcDir("src/it/java")
   resources.srcDir("src/it/resources")
 }
-
-// Generate PreviousVersion.java from template (replaces Maven templating-maven-plugin)
-val generatePreviousVersionJava =
-  tasks.register<Sync>("generatePreviousVersionJava") {
-    from("src/main/java-templates")
-    into(layout.buildDirectory.dir("generated/sources/java-templates/java/main"))
-    inputs.property("projectPreviousVersion", "8.8.0")
-    val tokenMap = mapOf("project.previousVersion" to "8.8.0")
-    filter<org.apache.tools.ant.filters.ReplaceTokens>(
-      "beginToken" to "\${",
-      "endToken" to "}",
-      "tokens" to tokenMap,
-    )
-  }
-
-sourceSets { main { java { srcDir(generatePreviousVersionJava) } } }
