@@ -14,6 +14,8 @@ on:
       - configuration/**
       - webapps-common/**
       - webapps-schema/**
+      - .github/actions/**
+      - .github/optimize/scripts/**
       - .github/workflows/optimize-e2e-smoke.yml
   pull_request:
     paths:
@@ -21,6 +23,8 @@ on:
       - configuration/**
       - webapps-common/**
       - webapps-schema/**
+      - .github/actions/**
+      - .github/optimize/scripts/**
       - .github/workflows/optimize-e2e-smoke.yml
   workflow_dispatch: {}
 
