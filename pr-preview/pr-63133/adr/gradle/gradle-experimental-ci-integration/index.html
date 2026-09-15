@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/gradle/gradle-experimental-ci-integration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Carlo Sana"><meta data-rh="true" property="og:description" content="DRI: Carlo Sana"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-63133/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/gradle/gradle-experimental-ci-integration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/gradle/gradle-experimental-ci-integration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/gradle/gradle-experimental-ci-integration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-63133/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-63133/assets/js/runtime~main.5a8296dc.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-63133/assets/js/main.f1c6a83b.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-63133/assets/js/runtime~main.f51e7d0e.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-63133/assets/js/main.844d31af.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -47,13 +47,16 @@ Maven remains authoritative.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d2-gradle-must-not-define-independent-library-versions">D2. Gradle must not define independent library versions<a href="#d2-gradle-must-not-define-independent-library-versions" class="hash-link" aria-label="Direct link to D2. Gradle must not define independent library versions" title="Direct link to D2. Gradle must not define independent library versions" translate="no">​</a></h3>
 <p>Gradle must never contain a free-standing version for a library, tool, BOM, buildscript dependency,
 convention-plugin dependency, or version-catalog entry. Versions must come from Maven or be omitted
-when an already-represented BOM manages them.</p>
+when an already-represented BOM manages them. The Gradle wrapper distribution version is the
+exception: it is a separate bootstrap setting, not a Maven library version.</p>
 <p>The Gradle version catalog is generated from Maven properties through <code>settings.gradle.kts</code> and
 <code>pomVersion(...)</code>. When Maven currently declares a version inline in a module POM, the version is
 first promoted to a Maven property; the Gradle catalog then resolves that property instead of
 hardcoding a second copy. Maven remains the single version source, and the catalog is only a Gradle
 view of it.</p>
-<p>The only exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
+<p>The Gradle wrapper distribution version is maintained in <code>gradle/wrapper/gradle-wrapper.properties</code>
+together with the corresponding wrapper files, and is updated deliberately as a unit. The only
+other exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
 Maven-sourced version. This exception does not apply to libraries used by that plugin or to ordinary
 buildscript dependencies; those must still use Maven-sourced catalog versions.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d3-maven-and-gradle-changes-are-kept-in-sync">D3. Maven and Gradle changes are kept in sync<a href="#d3-maven-and-gradle-changes-are-kept-in-sync" class="hash-link" aria-label="Direct link to D3. Maven and Gradle changes are kept in sync" title="Direct link to D3. Maven and Gradle changes are kept in sync" translate="no">​</a></h3>
@@ -76,7 +79,7 @@ signal. The <code>gradle-changes</code> filter triggers <strong>Gradle productio
 the <strong>resulting distribution against Maven</strong> when Java, Maven, Gradle, or relevant CI inputs change.</p>
 <p>For this ADR, Gradle build inputs are:</p>
 <ul>
-<li class=""><code>*.gradle.kts</code> files;</li>
+<li class=""><code>**/*.gradle.kts</code> files;</li>
 <li class=""><code>gradle.properties</code>;</li>
 <li class=""><code>gradlew</code> and <code>gradlew.bat</code>;</li>
 <li class="">files below <code>gradle/</code>; and</li>
@@ -87,14 +90,17 @@ added modules, and changes to Java, Maven, Gradle, or relevant CI inputs. They c
 possible mismatch between Maven and Gradle. Maven remains the behavioral reference and the complete
 application-test path.</p>
 <p>The distribution check compares the versioned roots and bundled JAR inventories; byte-level
-differences are expected. It distinguishes between non-blocking and blocking differences:</p>
+differences are expected. It distinguishes between non-blocking and blocking differences. The
+comparator may have narrow exceptions for known, intentional differences. Those exceptions are
+maintained and documented with the comparator rather than enumerated in this ADR, because the list
+will evolve.</p>
 <ul>
 <li class=""><strong>Non-blocking:</strong> Numeric patch-only dependency version differences are reported for visibility
 but do not fail the build. Gradle generally selects the highest available version, while Maven
 selects the nearest dependency and uses declaration order to break ties. This temporary tolerance
 applies only while Gradle is used for local development and evaluation, not external publication.</li>
 <li class=""><strong>Blocking:</strong> Missing or extra JARs, distribution-root differences, and major or minor version
-differences fail the check.</li>
+differences fail the check unless covered by a documented comparator exception.</li>
 </ul>
 <p>Patch-version tolerance <strong>must be reconsidered</strong> before Gradle publishes external artifacts or becomes
 a supported or authoritative build path.</p>
@@ -109,21 +115,26 @@ Gradle test execution is selected separately as described in D5 and D6.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d5-make-the-complete-ci-path-selectable-by-build-tool">D5. Make the complete CI path selectable by build tool<a href="#d5-make-the-complete-ci-path-selectable-by-build-tool" class="hash-link" aria-label="Direct link to D5. Make the complete CI path selectable by build tool" title="Direct link to D5. Make the complete CI path selectable by build tool" translate="no">​</a></h3>
 <p>Unified CI exposes a <code>build-tool</code> input that accepts <code>maven</code> or <code>gradle</code>. Selecting Maven runs the
 complete Maven application-test path. Selecting Gradle runs the complete Gradle unit and integration
-test path. This selection is separate from the focused Gradle checks in D4, which remain enabled for
-relevant changes.</p>
-<p>The Gradle selection is used when a change needs complete Gradle validation but does not modify Java
-sources, Maven configuration, or shared CI. In particular, a change limited to Gradle build inputs
-or Gradle-specific CI files can run the complete CI path with <code>build-tool: gradle</code> without also
-running the Maven path.
-This allows an engineer repairing a scheduled Gradle failure to validate the repair without paying
-for unrelated Maven tests. Shared CI changes must still run the Maven path when they can affect it.</p>
+test path and the minimal Maven <code>build-distball</code> producer needed for distribution parity; it does
+not run Maven application tests. This selection is separate from the focused Gradle checks in D4,
+which remain enabled for relevant changes.</p>
+<p>Maven is the default build path. Automatic Gradle selection is allowed only when the change
+detector classifies all changed files as Gradle-only, including Gradle-specific CI files. A human
+may explicitly select Gradle for a deliberate validation of Gradle build or CI changes that cannot
+be classified automatically. Java and Maven build changes remain Maven-bound. This allows an
+engineer repairing a scheduled Gradle failure to validate the repair without paying for unrelated
+Maven application tests, while mixed changes continue to use Maven.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d6-run-the-complete-gradle-ci-path-on-a-schedule">D6. Run the complete Gradle CI path on a schedule<a href="#d6-run-the-complete-gradle-ci-path-on-a-schedule" class="hash-link" aria-label="Direct link to D6. Run the complete Gradle CI path on a schedule" title="Direct link to D6. Run the complete Gradle CI path on a schedule" translate="no">​</a></h3>
-<p>A scheduled workflow invokes Unified CI with <code>build-tool: gradle</code> and runs the complete Gradle unit
-and integration test path against the default branch, beyond the focused compilation and packaging
-checks. This reuses the same selectable build path that engineers use to validate fixes to Gradle
-build or CI files. The exact cadence is an operational setting and can be adjusted without changing
-this decision. A failure creates a CI incident for the owning team to triage and track until the
-Gradle path is healthy again. The owning team must be assigned before this ADR is accepted.</p>
+<p>Unified CI exposes a reusable entry point for the <code>build-tool</code> selection, with Maven as its default.
+Pull requests use the change detector and the human override described in D5; merge groups and
+protected-branch pushes default to Maven; and manually dispatched runs default to Maven unless a
+human explicitly selects Gradle. A scheduled wrapper invokes this reusable entry point with
+<code>build-tool: gradle</code> and runs the complete Gradle unit and integration test path against the default
+branch, beyond the focused compilation and packaging checks. This reuses the same selectable build
+path that engineers use to validate fixes to Gradle build or CI files. The exact cadence is an
+operational setting and can be adjusted without changing this decision. A failure creates a CI
+incident for the owning team to triage and track until the Gradle path is healthy again. The owning
+team must be assigned before this ADR is accepted.</p>
 <p>The scheduled workflow does not replace Maven&#x27;s application-test path.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deferred-work">Deferred work<a href="#deferred-work" class="hash-link" aria-label="Direct link to Deferred work" title="Direct link to Deferred work" translate="no">​</a></h2>
 <p>The following work is intentionally excluded from this change:</p>
