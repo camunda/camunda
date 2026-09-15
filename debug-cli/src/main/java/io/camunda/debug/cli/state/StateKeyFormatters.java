@@ -24,17 +24,17 @@ final class StateKeyFormatters {
     return StateKeyFormatter.databaseValues(keyFormat);
   }
 
-  private static StateKeyFormatter formatterFor(final ZbColumnFamilies columnFamily) {
+  static String defaultFormatFor(final ZbColumnFamilies columnFamily) {
     return switch (columnFamily) {
-      case DEFAULT, KEY, EXPORTER -> StateKeyFormatter.databaseValues("s");
+      case DEFAULT, KEY, EXPORTER -> "s";
       case ELEMENT_INSTANCE_PARENT_CHILD,
           TIMERS,
           JOB_DEADLINES,
           EVENT_TRIGGER,
           JOB_BACKOFF,
           PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY ->
-          StateKeyFormatter.databaseValues("ll");
-      case NUMBER_OF_TAKEN_SEQUENCE_FLOWS -> StateKeyFormatter.databaseValues("lss");
+          "ll";
+      case NUMBER_OF_TAKEN_SEQUENCE_FLOWS -> "lss";
       case ELEMENT_INSTANCE_KEY,
           ELEMENT_INSTANCE_CHILD_PARENT,
           DEPLOYMENT_RAW,
@@ -52,47 +52,42 @@ final class StateKeyFormatters {
           USER_TASKS,
           USER_TASK_STATES,
           AUTHORIZATIONS ->
-          StateKeyFormatter.databaseValues("l");
-      case VARIABLES, MESSAGE_CORRELATED, MESSAGE_SUBSCRIPTION_BY_KEY ->
-          StateKeyFormatter.databaseValues("ls");
-      case MESSAGE_DEADLINES -> StateKeyFormatter.databaseValues("ll");
-      case TIMER_DUE_DATES -> StateKeyFormatter.databaseValues("lll");
-      case PENDING_DEPLOYMENT, PENDING_DISTRIBUTION -> StateKeyFormatter.databaseValues("li");
-      case MESSAGE_IDS -> StateKeyFormatter.databaseValues("ssss");
+          "l";
+      case VARIABLES, MESSAGE_CORRELATED, MESSAGE_SUBSCRIPTION_BY_KEY -> "ls";
+      case MESSAGE_DEADLINES -> "ll";
+      case TIMER_DUE_DATES -> "lll";
+      case PENDING_DEPLOYMENT, PENDING_DISTRIBUTION -> "li";
+      case MESSAGE_IDS -> "ssss";
       case MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY,
           PROCESS_VERSION,
           PROCESS_CACHE_DIGEST_BY_ID,
           FORM_VERSION,
           MAPPING_RULES ->
-          StateKeyFormatter.databaseValues("ss");
-      case PROCESS_CACHE, FORMS, DMN_DECISIONS -> StateKeyFormatter.databaseValues("sl");
-      case DMN_DECISION_REQUIREMENTS -> StateKeyFormatter.databaseValues("sl");
-      case DMN_LATEST_DECISION_BY_ID, DMN_LATEST_DECISION_REQUIREMENTS_BY_ID ->
-          StateKeyFormatter.databaseValues("ss");
-      case DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY ->
-          StateKeyFormatter.databaseValues("slsl");
+          "ss";
+      case PROCESS_CACHE, FORMS, DMN_DECISIONS -> "sl";
+      case DMN_DECISION_REQUIREMENTS -> "sl";
+      case DMN_LATEST_DECISION_BY_ID, DMN_LATEST_DECISION_REQUIREMENTS_BY_ID -> "ss";
+      case DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY -> "slsl";
       case DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
           DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION ->
-          StateKeyFormatter.databaseValues("ssi");
-      case PROCESS_CACHE_BY_ID_AND_VERSION, FORM_BY_ID_AND_VERSION ->
-          StateKeyFormatter.databaseValues("ssl");
-      case MESSAGES -> StateKeyFormatter.databaseValues("sssl");
+          "ssi";
+      case PROCESS_CACHE_BY_ID_AND_VERSION, FORM_BY_ID_AND_VERSION -> "ssl";
+      case MESSAGES -> "sssl";
       case MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
           SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
           JOB_ACTIVATABLE ->
-          StateKeyFormatter.databaseValues("ssl");
+          "ssl";
       case MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME, SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME ->
-          StateKeyFormatter.databaseValues("lss");
-      case MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY ->
-          StateKeyFormatter.databaseValues("sssl");
-      case PROCESS_SUBSCRIPTION_BY_KEY -> StateKeyFormatter.databaseValues("lss");
-      case USAGE_METRICS -> StateKeyFormatter.databaseValues("b");
-      case MIGRATIONS_STATE, MESSAGE_STATS -> StateKeyFormatter.databaseValues("s");
-      case COMPENSATION_SUBSCRIPTION -> StateKeyFormatter.databaseValues("sll");
-      case ENTITIES_BY_RELATION, RELATIONS_BY_ENTITY -> StateKeyFormatter.databaseValues("bsbs");
-      case ROLES, CLAIM_BY_ID -> StateKeyFormatter.databaseValues("s");
-      case PERMISSIONS -> StateKeyFormatter.databaseValues("sss");
-      case AUTHORIZATION_KEYS_BY_OWNER -> StateKeyFormatter.databaseValues("ss");
+          "lss";
+      case MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY -> "sssl";
+      case PROCESS_SUBSCRIPTION_BY_KEY -> "lss";
+      case USAGE_METRICS -> "b";
+      case MIGRATIONS_STATE, MESSAGE_STATS -> "s";
+      case COMPENSATION_SUBSCRIPTION -> "sll";
+      case ENTITIES_BY_RELATION, RELATIONS_BY_ENTITY -> "bsbs";
+      case ROLES, CLAIM_BY_ID -> "s";
+      case PERMISSIONS -> "sss";
+      case AUTHORIZATION_KEYS_BY_OWNER -> "ss";
       case DEPRECATED_PROCESS_VERSION,
           DEPRECATED_PROCESS_CACHE,
           DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
@@ -190,7 +185,14 @@ final class StateKeyFormatters {
           JOBS_BY_PROCESS_INSTANCE,
           AGENT_HISTORY_COMMITTED_IDS,
           AGENT_HISTORY_METRICS_ACCUMULATED_IDS ->
-          StateKeyFormatter.hexadecimal();
+          null;
     };
+  }
+
+  private static StateKeyFormatter formatterFor(final ZbColumnFamilies columnFamily) {
+    final var format = defaultFormatFor(columnFamily);
+    return format == null
+        ? StateKeyFormatter.hexadecimal()
+        : StateKeyFormatter.databaseValues(format);
   }
 }

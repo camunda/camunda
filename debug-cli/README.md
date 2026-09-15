@@ -104,6 +104,7 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
 
 - **Description:** Overwrite the next key (and optionally the max key) in the key-generator column
   family.
+
 - **Key options:** `-r/--root`, `--runtime`, `-s/--snapshot`, `--partition-id`, `-k/--key`,
   `--max-key`.
 

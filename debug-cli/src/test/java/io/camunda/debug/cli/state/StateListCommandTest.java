@@ -10,6 +10,12 @@ package io.camunda.debug.cli.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.debug.cli.Main;
+import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.impl.DbByte;
+import io.camunda.zeebe.db.impl.DbBytes;
+import io.camunda.zeebe.db.impl.DbInt;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -19,7 +25,9 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.EnumMap;
+import java.util.HexFormat;
 import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
@@ -75,10 +83,9 @@ class StateListCommandTest {
   }
 
   @Test
-  void shouldListAnEntryFromEveryColumnFamily() {
+  void shouldListAnEntryFromEveryColumnFamilyUsingItsDefaultKeyFormat() {
     // given
     final var partitionRoot = tempDir.resolve("all-column-families");
-    final var key = ByteBuffer.allocate(Long.BYTES).putLong(42).array();
     final var value = MsgPackConverter.convertToMsgPack("{\"message\":\"value\"}");
     try (final var db =
         SnapshotTestUtil.newDbFactory()
@@ -94,6 +101,7 @@ class StateListCommandTest {
             final var transaction = (ZeebeTransaction) context.getCurrentTransaction();
             for (final var columnFamily : ZbColumnFamilies.values()) {
               final var rawColumnFamily = columnFamilies.get(columnFamily);
+              final var key = keyFor(StateKeyFormatters.defaultFormatFor(columnFamily));
               rawColumnFamily.put(transaction, key, key.length, value, value.length);
             }
           });
@@ -116,18 +124,97 @@ class StateListCommandTest {
                 snapshot.getId().toString(),
                 "--column-family",
                 columnFamily.name(),
-                "--key-format",
-                "hex",
                 "--limit",
                 "1");
 
+        final var format = StateKeyFormatters.defaultFormatFor(columnFamily);
         assertThat(exitCode).isZero();
         assertThat(output.toString())
             .contains("\"columnFamily\":\"" + columnFamily.name() + "\"")
-            .contains("\"keyHex\":\"000000000000002a\"")
             .contains("\"value\":{\"message\":\"value\"}")
             .contains("\"truncated\":false");
+        if (format == null) {
+          assertThat(output.toString()).contains("\"keyHex\":\"01020304\"");
+        } else {
+          assertThat(output.toString())
+              .contains("\"key\":\"" + formattedKey(format) + "\"")
+              .contains("\"keyHex\":\"" + HexFormat.of().formatHex(keyFor(format)) + "\"");
+        }
       }
     }
+  }
+
+  private static byte[] keyFor(final String format) {
+    if (format == null) {
+      return new byte[] {1, 2, 3, 4};
+    }
+
+    final var values =
+        format.chars().mapToObj(StateListCommandTest::valueFor).toArray(DbValue[]::new);
+    final var key = new UnsafeBuffer(new byte[valuesLength(values)]);
+    var offset = 0;
+    for (final var value : values) {
+      offset += value.write(key, offset);
+    }
+    return key.byteArray();
+  }
+
+  private static int valuesLength(final DbValue[] values) {
+    var length = 0;
+    for (final var value : values) {
+      length += value.getLength();
+    }
+    return length;
+  }
+
+  private static DbValue valueFor(final int format) {
+    return switch (format) {
+      case 's' -> string("state");
+      case 'l' -> number(new DbLong(), 42L);
+      case 'i' -> number(new DbInt(), 7);
+      case 'b' -> number(new DbByte(), (byte) 3);
+      case 'B' -> bytes(new byte[] {1, 2, 3});
+      default -> throw new IllegalArgumentException("Unexpected key format: " + (char) format);
+    };
+  }
+
+  private static String formattedKey(final String format) {
+    return format
+        .chars()
+        .mapToObj(
+            value ->
+                switch (value) {
+                  case 's' -> "state";
+                  case 'l' -> "42";
+                  case 'i' -> "7";
+                  case 'b' -> "3";
+                  case 'B' -> "01 02 03";
+                  default ->
+                      throw new IllegalArgumentException("Unexpected key format: " + (char) value);
+                })
+        .reduce((left, right) -> left + ":" + right)
+        .orElseThrow();
+  }
+
+  private static DbString string(final String value) {
+    final var result = new DbString();
+    result.wrapString(value);
+    return result;
+  }
+
+  private static <T extends DbValue> T number(final T value, final long number) {
+    switch (value) {
+      case DbLong longValue -> longValue.wrapLong(number);
+      case DbInt intValue -> intValue.wrapInt((int) number);
+      case DbByte byteValue -> byteValue.wrapByte((byte) number);
+      default -> throw new IllegalArgumentException("Unexpected numeric value");
+    }
+    return value;
+  }
+
+  private static DbBytes bytes(final byte[] value) {
+    final var result = new DbBytes();
+    result.wrapBytes(value);
+    return result;
   }
 }
