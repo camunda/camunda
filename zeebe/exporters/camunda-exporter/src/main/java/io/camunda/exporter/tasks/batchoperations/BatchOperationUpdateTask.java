@@ -65,7 +65,6 @@ public class BatchOperationUpdateTask implements BackgroundTask {
                 throw new CompletionException(adjustBatchSize(error));
               }
 
-              batchSize.reset();
               return updatesCount;
             },
             executor);
@@ -117,9 +116,11 @@ public class BatchOperationUpdateTask implements BackgroundTask {
         .thenComposeAsync(batchOperationUpdateRepository::bulkUpdate, executor)
         .thenApplyAsync(
             FunctionUtil.peek(
-                (updatesCount) ->
-                    logger.trace(
-                        "BatchOperationUpdateTask - Updated {} batch operations", updatesCount)));
+                (updatesCount) -> {
+                  batchSize.reset();
+                  logger.trace(
+                      "BatchOperationUpdateTask - Updated {} batch operations", updatesCount);
+                }));
   }
 
   private List<DocumentUpdate> collectDocumentUpdates(
