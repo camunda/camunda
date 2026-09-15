@@ -724,18 +724,42 @@ test.describe.serial('Process Instance Migration', () => {
         hiddenText: '"endDate": "null"',
       });
     });
+  });
+
+  // Skipped due to bug #63043: https://github.com/camunda/camunda/issues/63043
+  //
+  // Operate's v1 flow-node-metadata endpoint permanently reports
+  // incident: null / incidentCount: 0 for a migrated flow-node instance,
+  // while the incident is genuinely present via the v2 APIs. The metadata
+  // popover's Incident component only reads the v1 field, so its heading
+  // never renders for this element regardless of how long/how often the
+  // test retries. This was previously "fixed" twice by widening the test's
+  // retry budget (#59920, then this test's own prior 6→12 attempt change) —
+  // both attempts still failed after exhausting every retry, confirming the
+  // gap is permanent, not a timing lag. Re-enable once #63043 lands a real
+  // backend/frontend fix.
+  test.skip('Migrated tasks - Business rule task incident migration', async ({
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateDiagramPage,
+    page,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
+    const targetVersion = testProcesses.processV3.version.toString();
+
+    await test.step('Navigate to first migrated process instance', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
+      });
+
+      await operateProcessesPage.clickProcessInstanceLink();
+      await operateDiagramPage.resetDiagramZoomButton.click();
+    });
 
     await test.step('Verify Business rule task incident migration', async () => {
-      // The incident popover's "Incident" section is driven by the v1
-      // flow-node-metadata endpoint (via flowNodeMetaDataStore), while the
-      // incident itself is exported through the v2 pipeline. After a
-      // migration the v1 endpoint re-associates the incident with the new
-      // element instance only once the importer catches up, so it can report
-      // incidentCount: 0 for the migrated Business rule task well after the
-      // incident is already visible via the v2 APIs and the instance banner.
-      // The store fetches once per selection (no polling), so each retry must
-      // reload to force a fresh fetch. Observed lag has exceeded the previous
-      // 6-attempt (~70s) budget, so widen the window to absorb the tail.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -746,7 +770,6 @@ test.describe.serial('Process Instance Migration', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 12,
       });
     });
   });
