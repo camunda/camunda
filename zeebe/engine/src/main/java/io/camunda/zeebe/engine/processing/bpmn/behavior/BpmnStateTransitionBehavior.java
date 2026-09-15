@@ -441,6 +441,7 @@ public final class BpmnStateTransitionBehavior {
     final var record =
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setStorageOrdinalKey(context.getStorageOrdinalKey())
             .setProcessDefinitionKey(context.getProcessDefinitionKey())
             .setBatchElementInstanceKey(context.getElementInstanceKey())
             .setIndex(amount);
@@ -481,6 +482,7 @@ public final class BpmnStateTransitionBehavior {
       final var batchRecord =
           new ProcessInstanceBatchRecord()
               .setProcessInstanceKey(context.getProcessInstanceKey())
+              .setStorageOrdinalKey(context.getStorageOrdinalKey())
               .setProcessDefinitionKey(context.getProcessDefinitionKey())
               .setBatchElementInstanceKey(context.getElementInstanceKey());
       final var key = keyGenerator.nextKey();
@@ -551,6 +553,7 @@ public final class BpmnStateTransitionBehavior {
 
     runtimeInstructionRecord.reset();
     runtimeInstructionRecord.setProcessInstanceKey(context.getProcessInstanceKey());
+    runtimeInstructionRecord.setStorageOrdinalKey(context.getStorageOrdinalKey());
     runtimeInstructionRecord.setProcessDefinitionKey(context.getProcessDefinitionKey());
     runtimeInstructionRecord.setTenantId(context.getTenantId());
     runtimeInstructionRecord.setElementId(runtimeInstruction.getAfterElementId());
@@ -709,6 +712,7 @@ public final class BpmnStateTransitionBehavior {
         .setBpmnElementType(process.getProcess().getElementType())
         .setTenantId(context.getTenantId())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinalKey(context.getStorageOrdinalKey())
         .setBusinessId(businessId);
 
     commandWriter.appendFollowUpCommand(
