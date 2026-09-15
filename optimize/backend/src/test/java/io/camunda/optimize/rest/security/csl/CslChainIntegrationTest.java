@@ -417,6 +417,38 @@ class CslChainIntegrationTest {
             });
   }
 
+  @Test
+  void shouldApplySharedChainSetupOnPublicApiPathForCcsm() {
+    // given
+    // The carve-out chain is built through CSL's ScopedApiSecurityChainBuilder, so the operator's
+    // CORS source, HTTPS-redirect customizers, CSRF configuration and secure headers keep applying
+    // to it. A hand-rolled chain silently dropped all of them for these two paths only. CSL's
+    // property-driven Content-Security-Policy is the marker asserted here, because Spring Security
+    // sets no CSP header on its own, unlike the frame and content-type headers.
+    final String token = signToken(Instant.now().plusSeconds(60), PUBLIC_API_AUDIENCE);
+
+    // when
+    ccsmRunner(
+            CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken,
+            CslChainIntegrationTest::ccsmConfigurationWithPublicApiAudience)
+        .run(
+            ctx -> {
+              final Filter proxy = resolveSecurityFilter(ctx);
+              final MockHttpServletRequest request =
+                  new MockHttpServletRequest("GET", "/api/public/some-resource");
+              request.addHeader("Authorization", "Bearer " + token);
+              final MockHttpServletResponse response = new MockHttpServletResponse();
+              final MockFilterChain downstream = new MockFilterChain();
+
+              proxy.doFilter(request, response, downstream);
+
+              // then
+              assertThat(response.getHeader("Content-Security-Policy"))
+                  .as("CSL's shared chain setup must apply to the public API carve-out")
+                  .isNotBlank();
+            });
+  }
+
   private static ConfigurationService ccsmConfigurationWithPublicApiAudience() {
     final ConfigurationService configurationService =
         ConfigurationServiceBuilder.createDefaultConfiguration();

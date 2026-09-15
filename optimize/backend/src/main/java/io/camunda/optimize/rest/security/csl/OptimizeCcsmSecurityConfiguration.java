@@ -15,6 +15,7 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.AudienceValidator;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
+import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilder;
 import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import io.camunda.security.spring.security.SecurityHeadersCustomizer;
 import java.util.ArrayList;
@@ -26,8 +27,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -35,7 +34,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
  * CCSM security wiring for the CSL adoption, active under the self-managed profile whenever CSL is
@@ -74,6 +72,9 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
     havingValue = "true",
     matchIfMissing = true)
 public class OptimizeCcsmSecurityConfiguration {
+
+  private static final List<String> PUBLIC_API_CARVE_OUT_PATHS =
+      List.of("/api/public/**", "/api/ingestion/variable");
 
   /**
    * Token validation for bearer/API tokens. Overrides CSL's {@code @ConditionalOnMissingBean}
@@ -145,6 +146,19 @@ public class OptimizeCcsmSecurityConfiguration {
    * accepts a token matching any entry, so the shared set alone would let an Identity-audience
    * token through here, and this chain has no Identity gate to catch it. When {@code api.audience}
    * is not configured there is nothing to pin to and the merged set stays the only audience check.
+   *
+   * <p>The chain itself is assembled by CSL's {@link ScopedApiSecurityChainBuilder}, the same
+   * builder its own API chain uses, so the operator's CORS source, HTTPS-redirect customizers, CSRF
+   * configuration, secure headers and API authentication entry point keep applying to these two
+   * paths. Hand-rolling the chain here silently dropped all of them for {@code /api/public/**} and
+   * {@code /api/ingestion/variable}. No {@code SessionRepositoryFilter} is passed: this surface is
+   * client-credentials only, so it stays session-less. Two consequences of going through the
+   * builder: it also applies {@link SecurityHeadersCustomizer}, so {@link
+   * OptimizeCcsmSessionPermissionEnforcementFilter} lands on this chain as well, where it is a
+   * no-op because the context holds a bearer {@code JwtAuthenticationToken} and never an {@code
+   * OAuth2AuthenticationToken}; and CSL's CSRF protection stays inert, because its request matcher
+   * only demands a token once {@code request.getSession(false)} is non-null and this chain resolves
+   * no session.
    */
   @Bean
   @Order(CamundaSecurityFilterChainConstants.ORDER_UNPROTECTED)
@@ -154,7 +168,8 @@ public class OptimizeCcsmSecurityConfiguration {
       final OidcProviderConfigurationPort oidcProviderConfigurationPort,
       final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
       final CamundaSecurityLibraryProperties cslProperties,
-      final ConfigurationService configurationService)
+      final ConfigurationService configurationService,
+      final ScopedApiSecurityChainBuilder scopedApiSecurityChainBuilder)
       throws Exception {
     final TokenValidatorFactory validatorFactoryWithoutIdentityGate =
         OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
@@ -167,16 +182,8 @@ public class OptimizeCcsmSecurityConfiguration {
             oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
             validatorFactoryWithoutIdentityGate);
 
-    http.securityMatchers(
-            matchers ->
-                matchers.requestMatchers(
-                    PathPatternRequestMatcher.withDefaults().matcher("/api/public/**"),
-                    PathPatternRequestMatcher.withDefaults().matcher("/api/ingestion/variable")))
-        .csrf(AbstractHttpConfigurer::disable)
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
-        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(decoder)));
-    return http.build();
+    return scopedApiSecurityChainBuilder.buildOidcApiChain(
+        http, PUBLIC_API_CARVE_OUT_PATHS, List.of(), decoder);
   }
 
   private static List<OAuth2TokenValidator<Jwt>> publicApiAudienceValidator(
