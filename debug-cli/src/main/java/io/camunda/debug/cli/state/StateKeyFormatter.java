@@ -22,7 +22,9 @@ interface StateKeyFormatter {
   String format(byte[] key);
 
   static StateKeyFormatter hexadecimal() {
-    return key -> HexFormat.ofDelimiter(" ").formatHex(key);
+    return key ->
+        HexFormat.ofDelimiter(" ")
+            .formatHex(key, key.length >= Long.BYTES ? Long.BYTES : 0, key.length);
   }
 
   static StateKeyFormatter databaseValues(final String format) {
@@ -65,8 +67,11 @@ interface StateKeyFormatter {
             default -> formatted.append(value);
           }
         }
+        if (offset != key.length) {
+          return hexadecimal().format(key);
+        }
         return formatted.toString();
-      } catch (final IndexOutOfBoundsException e) {
+      } catch (final RuntimeException e) {
         return hexadecimal().format(key);
       }
     };

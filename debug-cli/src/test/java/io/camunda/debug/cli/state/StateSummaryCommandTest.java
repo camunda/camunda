@@ -10,6 +10,9 @@ package io.camunda.debug.cli.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.debug.cli.Main;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -27,6 +30,17 @@ class StateSummaryCommandTest {
     final var partitionRoot = tempDir.resolve("partition");
     try (final var db =
         SnapshotTestUtil.newDbFactory().createDb(tempDir.resolve("initial").toFile())) {
+      final var context = db.createContext();
+      final var columnFamily = new RawTransactionalColumnFamily(db, ZbColumnFamilies.INCIDENTS);
+      final var key = new byte[Long.BYTES];
+      context.runInTransaction(
+          () ->
+              columnFamily.put(
+                  (ZeebeTransaction) context.getCurrentTransaction(),
+                  key,
+                  key.length,
+                  new byte[0],
+                  0));
       final var snapshot = new SnapshotUtil().takeSnapshot(db, partitionRoot, "1-1-1-1-1", 1L);
       final var output = new StringWriter();
       final var commandLine =
@@ -49,7 +63,8 @@ class StateSummaryCommandTest {
       assertThat(output.toString())
           .contains("\"snapshot\":\"" + snapshot.getId() + "\"")
           .contains("\"name\":\"DEFAULT\"")
-          .contains("\"entries\":0");
+          .contains("\"name\":\"INCIDENTS\"")
+          .contains("\"entries\":1");
     }
   }
 }

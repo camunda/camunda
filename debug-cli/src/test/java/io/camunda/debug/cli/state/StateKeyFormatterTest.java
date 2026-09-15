@@ -140,6 +140,44 @@ class StateKeyFormatterTest {
   }
 
   @Test
+  void shouldFormatTheRawKeyWithoutTheColumnFamilyPrefix() {
+    // given
+    final var key =
+        ByteBuffer.allocate(Long.BYTES + 2).putLong(1).put((byte) 0x01).put((byte) 0x02).array();
+
+    // when
+    final var formatted = StateKeyFormatter.hexadecimal().format(key);
+
+    // then
+    assertThat(formatted).isEqualTo("01 02");
+  }
+
+  @Test
+  void shouldFallBackToHexadecimalWhenAKeyContainsTrailingBytes() {
+    // given
+    final var key =
+        ByteBuffer.allocate(Long.BYTES * 2 + 1).putLong(1).putLong(42).put((byte) 1).array();
+
+    // when
+    final var formatted = StateKeyFormatter.databaseValues("l").format(key);
+
+    // then
+    assertThat(formatted).isEqualTo("00 00 00 00 00 00 00 2a 01");
+  }
+
+  @Test
+  void shouldFallBackToHexadecimalWhenAStringLengthIsMalformed() {
+    // given
+    final var key = ByteBuffer.allocate(Long.BYTES + Integer.BYTES).putLong(1).putInt(-1).array();
+
+    // when
+    final var formatted = StateKeyFormatter.databaseValues("s").format(key);
+
+    // then
+    assertThat(formatted).isEqualTo("ff ff ff ff");
+  }
+
+  @Test
   void shouldRejectUnknownFormatComponents() {
     // when / then
     assertThatThrownBy(() -> StateKeyFormatter.databaseValues("x"))
