@@ -33,8 +33,8 @@ const parseSystemPromptEvidence = (value: string) => {
 
   return {
     ...evidence,
-    type: type === 'linked' ? 'Linked' : type,
-    binding: binding === 'latest' ? 'Latest' : binding,
+    type: 'Linked',
+    binding: 'Latest',
   };
 };
 
