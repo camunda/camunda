@@ -775,7 +775,11 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 8,
+        // Widened from 8 to 10 for extra headroom: the same overlay-first
+        // pattern was ported to stable/8.8 (#59919/#63043), which has shown
+        // worse import lag on this step historically, and 8.7 and 8.8 share
+        // the same underlying popover/metadata code path.
+        maxRetries: 10,
       });
     });
   });
