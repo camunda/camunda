@@ -8,17 +8,19 @@
 package io.camunda.authentication;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
-import org.testcontainers.utility.DockerImageName;
+import java.util.Properties;
 
 /**
  * Duplicates {@code io.camunda.zeebe.test.testcontainers.DefaultTestContainers}, which this module
  * would have to depend on {@code zeebe-test-util} to reach.
  */
 final class KeycloakContainers {
-  // renovate: datasource=docker depName=quay.io/keycloak/keycloak
-  private static final DockerImageName KEYCLOAK_IMAGE =
-      DockerImageName.parse("quay.io/keycloak/keycloak").withTag("26.7.3");
+  private static final String VERSIONS_FILE = "/authentication-testcontainers.properties";
+
+  private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:" + keycloakVersion();
 
   private KeycloakContainers() {}
 
@@ -35,5 +37,30 @@ final class KeycloakContainers {
     container.getLogConsumers().clear();
 
     return container;
+  }
+
+  /**
+   * Returns the pinned Keycloak image tag, which Maven resource filtering writes into {@value
+   * #VERSIONS_FILE} from the {@code version.keycloak.container} property in {@code parent/pom.xml}.
+   */
+  private static String keycloakVersion() {
+    final Properties properties = new Properties();
+    try (final InputStream in = KeycloakContainers.class.getResourceAsStream(VERSIONS_FILE)) {
+      if (in == null) {
+        throw new IllegalStateException(VERSIONS_FILE + " is not on the classpath");
+      }
+      properties.load(in);
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to read " + VERSIONS_FILE, e);
+    }
+
+    final String version = properties.getProperty("keycloak.version");
+    if (version == null || version.startsWith("${")) {
+      // unresolved placeholder: the sources were used without Maven having filtered them
+      throw new IllegalStateException(
+          "keycloak.version in " + VERSIONS_FILE + " is unresolved; run a Maven build first");
+    }
+
+    return version;
   }
 }

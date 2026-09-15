@@ -23,29 +23,19 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Objects;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 public class PrivateKeyJwtIT {
 
-  // Keep in sync with version.keycloak.container in parent/pom.xml
-  private static final DockerImageName KEYCLOAK_IMAGE =
-      DockerImageName.parse("quay.io/keycloak/keycloak").withTag("26.7.3");
-
   @Container
   static KeycloakContainer keycloak =
-      new KeycloakContainer(KEYCLOAK_IMAGE)
-          .withRealmImportFile("privatekeyjwt/camunda-identity-test-realm.json")
-          // Keycloak can take quite a while to start in CI
-          .withStartupTimeout(Duration.ofMinutes(5))
-          // speed up startup time at the expense of slower runtime, acceptable in CI
-          .withEnv("JAVA_TOOL_OPTIONS", "-Xlog:disable -XX:TieredStopAtLevel=1");
+      KeycloakContainers.createDefaultKeycloak()
+          .withRealmImportFile("privatekeyjwt/camunda-identity-test-realm.json");
 
   private static final String KEYSTORE_PATH =
       Objects.requireNonNull(

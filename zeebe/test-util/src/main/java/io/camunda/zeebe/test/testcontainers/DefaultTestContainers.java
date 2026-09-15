@@ -8,13 +8,15 @@
 package io.camunda.zeebe.test.testcontainers;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
-import org.testcontainers.utility.DockerImageName;
+import java.util.Properties;
 
 public final class DefaultTestContainers {
-  // Keep in sync with version.keycloak.container in parent/pom.xml
-  private static final DockerImageName KEYCLOAK_IMAGE =
-      DockerImageName.parse("quay.io/keycloak/keycloak").withTag("26.7.3");
+  private static final String VERSIONS_FILE = "/zeebe-test-util-testcontainers.properties";
+
+  private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:" + keycloakVersion();
 
   private DefaultTestContainers() {}
 
@@ -31,5 +33,30 @@ public final class DefaultTestContainers {
     container.getLogConsumers().clear();
 
     return container;
+  }
+
+  /**
+   * Returns the pinned Keycloak image tag, which Maven resource filtering writes into {@value
+   * #VERSIONS_FILE} from the {@code version.keycloak.container} property in {@code parent/pom.xml}.
+   */
+  private static String keycloakVersion() {
+    final Properties properties = new Properties();
+    try (final InputStream in = DefaultTestContainers.class.getResourceAsStream(VERSIONS_FILE)) {
+      if (in == null) {
+        throw new IllegalStateException(VERSIONS_FILE + " is not on the classpath");
+      }
+      properties.load(in);
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to read " + VERSIONS_FILE, e);
+    }
+
+    final String version = properties.getProperty("keycloak.version");
+    if (version == null || version.startsWith("${")) {
+      // unresolved placeholder: the sources were used without Maven having filtered them
+      throw new IllegalStateException(
+          "keycloak.version in " + VERSIONS_FILE + " is unresolved; run a Maven build first");
+    }
+
+    return version;
   }
 }
