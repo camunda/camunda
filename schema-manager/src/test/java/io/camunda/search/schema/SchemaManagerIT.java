@@ -311,7 +311,7 @@ public class SchemaManagerIT {
             config,
             objectMapper);
 
-    startupWithRetry(schemaManager, config);
+    schemaManager.startup();
 
     // when - the runtime index backing the template is dropped, e.g. by an operator, leaving only
     // the template behind, and the descriptor's mapping is then upgraded
@@ -319,7 +319,7 @@ public class SchemaManagerIT {
     searchClientAdapter.refresh();
     indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
-    startupWithRetry(schemaManager, config);
+    schemaManager.startup();
 
     // then - the template itself must reflect the new mapping, otherwise future indices created
     // off it (e.g. after a rollover) would mismatch the freshly re-created runtime index
