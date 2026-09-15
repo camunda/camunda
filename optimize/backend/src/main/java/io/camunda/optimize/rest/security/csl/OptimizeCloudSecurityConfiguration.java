@@ -74,10 +74,8 @@ public class OptimizeCloudSecurityConfiguration {
             new OptimizeCloudOrganizationValidator(
                 organizationId, OptimizeCloudOrganizationValidator.ALLOWED_ORG_ROLES),
             new OptimizeCloudClusterValidator(clusterId));
-    return new TokenValidatorFactory(
-        oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
-        cslProperties.getAuthentication().getOidc().getClockSkew(),
-        extraValidators);
+    return OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
+        oidcProviderConfigurationPort, cslProperties, extraValidators);
   }
 
   /**

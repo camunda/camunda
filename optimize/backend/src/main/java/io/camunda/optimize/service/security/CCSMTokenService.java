@@ -381,6 +381,17 @@ public class CCSMTokenService {
         .map(ServletRequestAttributes::getRequest);
   }
 
+  /**
+   * The CSL session's stored access token for the given request, empty when none resolves, either
+   * because the request is not session-authenticated or because the session holds no authorized
+   * client. Takes the request explicitly for callers that run outside the request-scoped {@link
+   * RequestContextHolder} plumbing {@link #getCurrentUserAuthToken()} relies on, such as a servlet
+   * filter.
+   */
+  public Optional<String> getSessionAccessToken(final HttpServletRequest request) {
+    return cslSessionAccessToken(request);
+  }
+
   private Optional<String> cslSessionAccessToken(final HttpServletRequest request) {
     final OAuth2AuthorizedClientRepository repository =
         authorizedClientRepositoryProvider == null
