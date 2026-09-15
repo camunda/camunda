@@ -71,7 +71,7 @@ public class ResourceEventsClaimsTest {
   }
 
   @Test
-  public void shouldIncludeClaimsInProcessDeletedEvents() {
+  public void shouldIncludeClaimsInProcessDrainingEvents() {
     // given
     engine
         .deployment()
@@ -93,8 +93,10 @@ public class ResourceEventsClaimsTest {
         .delete(DEFAULT_USER.getUsername());
 
     // then
+    // The audit log keys a process deletion off DRAINING, not DELETED, so the deleter's claims must
+    // be present on the DRAINING event.
     final var record =
-        RecordingExporter.processRecords(ProcessIntent.DELETED)
+        RecordingExporter.processRecords(ProcessIntent.DRAINING)
             .withProcessDefinitionKey(processDefinitionKey)
             .findFirst();
     assertAuthorizationClaims(record);
