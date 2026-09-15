@@ -86,7 +86,11 @@ class MultipleOidcProviderFlowIT {
 
   @Container
   static KeycloakContainer keycloak =
+<<<<<<< HEAD:authentication/src/test/java/io/camunda/authentication/MultipleOidcProviderFlowIT.java
       DefaultTestContainers.createDefaultKeycloak()
+=======
+      TestKeycloakContainers.createDefaultKeycloak()
+>>>>>>> 0bfe4235f (test: pin the Keycloak testcontainer image and harden its startup):authentication/src/test/java/io/camunda/authentication/MultipleOidcProviderFlowTest.java
           .withRealmImportFiles(
               "/camunda-foo-realm.json",
               "/camunda-bar-realm.json",
