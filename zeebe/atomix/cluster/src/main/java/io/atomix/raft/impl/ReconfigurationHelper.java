@@ -105,7 +105,8 @@ public final class ReconfigurationHelper {
             assistingMembers.offer(otherMember);
             assistingMembers.offer(otherMember);
           }
-          threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
+          final var deadline = Instant.now().plus(raftContext.getConfigurationChangeTimeout());
+          threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result, deadline));
         });
     return result;
   }
@@ -158,11 +159,13 @@ public final class ReconfigurationHelper {
    * @param joining the new member joining
    * @param assistingMembers a queue of members that we will send a join request to.
    * @param result a future to complete when joining succeeds or fails
+   * @param deadline until when a member that responded with NO_LEADER is retried
    */
   private void joinWithRetry(
       final RaftMember joining,
       final Queue<MemberId> assistingMembers,
-      final CompletableFuture<Void> result) {
+      final CompletableFuture<Void> result,
+      final Instant deadline) {
 
     final var receiver = assistingMembers.poll();
     if (receiver == null) {
@@ -183,7 +186,8 @@ public final class ReconfigurationHelper {
                     || cause instanceof TimeoutException
                     || cause instanceof ConnectException) {
                   LOGGER.debug("Join request was not acknowledged, retrying", cause);
-                  threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
+                  threadContext.execute(
+                      () -> joinWithRetry(joining, assistingMembers, result, deadline));
                 } else {
                   LOGGER.error("Join request failed with an unexpected error, not retrying", error);
                   result.completeExceptionally(error);
@@ -192,17 +196,31 @@ public final class ReconfigurationHelper {
                 LOGGER.debug("Join request accepted");
                 result.complete(null);
               } else if (response.error().type() == RaftError.Type.NO_LEADER) {
-                LOGGER.debug(
-                    "Join request failed, retrying after {}",
-                    raftContext.getElectionTimeout(),
-                    response.error().createException());
-                // Wait for a new leader to be elected and retry then
-                threadContext.schedule(
-                    raftContext.getElectionTimeout(),
-                    () -> joinWithRetry(joining, assistingMembers, result));
+                if (Instant.now().isBefore(deadline)) {
+                  LOGGER.debug(
+                      "Join request failed, retrying after {}",
+                      raftContext.getElectionTimeout(),
+                      response.error().createException());
+                  // The member is reachable but doesn't know a leader yet. Re-offer it so that,
+                  // after falling over to the remaining members, it is retried once a new leader
+                  // could be elected. The election may depend on this join attempt: while the
+                  // join is in flight, this server is a passive member that answers polls and
+                  // votes.
+                  assistingMembers.offer(receiver);
+                  threadContext.schedule(
+                      raftContext.getElectionTimeout(),
+                      () -> joinWithRetry(joining, assistingMembers, result, deadline));
+                } else {
+                  LOGGER.error(
+                      "Join request failed, not retrying because no leader was elected within {}",
+                      raftContext.getConfigurationChangeTimeout(),
+                      response.error().createException());
+                  result.completeExceptionally(response.error().createException());
+                }
               } else if (response.error().type() == RaftError.Type.UNAVAILABLE) {
                 LOGGER.debug("Join request failed, retrying", response.error().createException());
-                threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
+                threadContext.execute(
+                    () -> joinWithRetry(joining, assistingMembers, result, deadline));
               } else {
                 final var errorAsException = response.error().createException();
                 LOGGER.error("Join request rejected, not retrying", errorAsException);
