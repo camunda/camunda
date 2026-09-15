@@ -8,8 +8,7 @@
 while it is evaluated. Maven remains the source of truth for module behavior,
 dependency versions, and published or packaged output.
 
-**Audience**: Monorepo DevOps, and engineers changing `pom.xml`, Gradle build files, or CI
-workflows.
+**Audience**: All engineers working in the monorepo project (CI or Java/Maven)
 
 ## Context
 
@@ -18,13 +17,11 @@ development and to evaluate whether Gradle is a viable long-term build tool. It 
 independent build definition at first. Both builds must work against the same source tree. A change
 to Java sources, a POM, or Gradle build logic must not leave the other build unusable.
 
-
-
 Maven remains authoritative during the evaluation. When the build systems differ, the Gradle build
 must be brought into line with Maven rather than redefining the behavior in Gradle. Parity includes
 the module graph, dependency scopes and versions, generated sources, resource processing, test-jar
 usage, published metadata, and packaged artifacts. However, we initially allow *transitive dependencies*
-to have different patch versions between maven and gradle (more details in D4).
+to have different patch versions between Maven and Gradle (more details in D4).
 
 Gradle is not used to publish artifacts to external repositories: for a first iteration not all
 checks/jobs need to be migrated (for example RevAPI) and the build might not match exactly (see D4).
@@ -32,10 +29,10 @@ checks/jobs need to be migrated (for example RevAPI) and the build might not mat
 Gradle regressions should be visible in pull requests, and the Gradle checks should protect the
 merge queue without replacing Maven's complete application-test path.
 Running both complete CI for every pull request would add too much time and cost during the evaluation,
-so the initial Gradle checks uses focused compilation and packaging checks and does not run all the tests.
+so the initial Gradle checks use focused compilation and packaging checks and do not run all the tests.
 In the future, we can potentially include (some) unit tests, potentially leveraging Gradle's caching
 (which works for tests as well). However, Integration Tests are the most expensive part of the build
-and they will likely not be cached anyway (as they all depends on `dist/`).
+and they are unlikely to benefit much from caching (as they all depend on `dist` or `zeebe-broker`).
 
 ## Decision
 
@@ -69,12 +66,9 @@ first promoted to a Maven property; the Gradle catalog then resolves that proper
 hardcoding a second copy. Maven remains the single version source, and the catalog is only a Gradle
 view of it.
 
-The Gradle wrapper distribution version is maintained in `gradle/wrapper/gradle-wrapper.properties`
-together with the corresponding wrapper files, and is updated deliberately as a unit. The only
-other exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
-Maven-sourced version. Eventually, those plugin versions needs to be updated with renovate as the
-other dependencies
-
+The only other exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
+Maven-sourced version. Eventually, those plugin versions need to be updated with Renovate as the
+other dependencies.
 
 ### D3. Maven and Gradle changes are kept in sync
 
@@ -109,7 +103,7 @@ For this ADR, Gradle build inputs are:
 - files below `buildSrc/`.
 
 The implementation must reuse the existing `java-code-change`, `maven-change`, `ci-relevant` filters and define
-a new `gradle-change` filter, when deciding whether build behavior may
+a new `gradle-changes` filter, when deciding whether build behavior may
 have changed. Unknown or shared CI inputs must not be classified as Gradle-only by default.
 
 The focused checks target the most frequent sources of drift, such as dependency changes, newly
@@ -123,8 +117,8 @@ comparator may have narrow exceptions for known, intentional differences. Those 
 maintained and documented with the comparator rather than enumerated in this ADR, because the list
 will evolve.
 
-- **Non-blocking:** Numeric patch-only dependency version differences are reported for visibility
-  but do not fail the build. Gradle generally selects the highest available version, while Maven
+- **Non-blocking:** Numeric patch-only dependency version differences for **transitive dependencies**
+  are reported for visibility but do not fail the build. Gradle generally selects the highest available version, while Maven
   selects the nearest dependency and uses declaration order to break ties. This temporary tolerance
   applies only while Gradle is used for local development and evaluation, not external publication.
 - **Blocking:** Missing or extra JARs, distribution-root differences, and major or minor version
@@ -167,11 +161,11 @@ human explicitly selects Gradle. A scheduled wrapper invokes this reusable entry
 `build-tool: gradle` and runs the complete Gradle unit and integration test path against the default
 branch, beyond the focused compilation and packaging checks. This reuses the same selectable build
 path that engineers use to validate fixes to Gradle build or CI files. The exact cadence is an
-operational setting and can be adjusted without changing this decision. D6 remains deferred until
-an owning team is named for triage and incident follow-up. Once ownership is assigned, a failure
-creates a CI incident for that team to track until the Gradle path is healthy again.
-
+operational setting and can be adjusted without changing this decision.
 The scheduled workflow does not replace Maven's application-test path.
+
+A failure creates a CI incident that will be assigned to the following team/list of people:
+- TBD
 
 ## Deferred work
 
