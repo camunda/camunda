@@ -152,7 +152,6 @@ def test_should_build_report_without_network_side_effects():
         rate_interval="30s",
         sample_step="15s",
         endpoint="http://prometheus.example",
-        bearer_token="",
         basic_auth_user="",
         basic_auth_password="",
         time_anchor="",
@@ -235,7 +234,6 @@ def test_should_warn_when_query_fails():
         rate_interval="30s",
         sample_step="15s",
         endpoint="http://prometheus.example",
-        bearer_token="",
         basic_auth_user="",
         basic_auth_password="",
         time_anchor="",
@@ -268,26 +266,14 @@ def test_should_warn_when_query_fails():
 
 
 def test_should_build_basic_auth_header():
-    headers = auth_headers("", "user", "pass")
+    headers = auth_headers("user", "pass")
 
     assert headers["Authorization"] == "Basic dXNlcjpwYXNz"
 
 
-def test_should_build_bearer_auth_header():
-    headers = auth_headers("abc123", "", "")
-
-    assert headers["Authorization"].startswith("Bearer ")
-    assert len(headers["Authorization"]) > len("Bearer ")
-
-
-def test_should_reject_combined_auth_modes():
-    with pytest.raises(ReportError, match="--token cannot be combined"):
-        auth_headers("abc123", "user", "pass")
-
-
 def test_should_reject_incomplete_basic_auth():
     with pytest.raises(ReportError, match="--user and --password"):
-        auth_headers("", "user", "")
+        auth_headers("user", "")
 
 
 def test_should_query_prometheus_with_urlencoded_query_and_headers():
@@ -300,7 +286,6 @@ def test_should_query_prometheus_with_urlencoded_query_and_headers():
     with mock.patch.object(prometheus, "urlopen", side_effect=fake_urlopen):
         client = PrometheusClient(
             "https://prometheus.example/",
-            "",
             "user",
             "pass",
             "2026-09-07T18:00:00Z",
@@ -515,16 +500,17 @@ def test_should_parse_auth_flags(tmp_path):
     options = parse_args(
         [
             "c8-ck-test",
-            "--token",
-            "abc123",
+            "--user",
+            "user",
+            "--password",
+            "pass",
             "--queries",
             str(queries_file),
         ]
     )
 
-    assert options.bearer_token == "abc123"
-    assert options.basic_auth_user == ""
-    assert options.basic_auth_password == ""
+    assert options.basic_auth_user == "user"
+    assert options.basic_auth_password == "pass"
     assert options.queries_file == queries_file
 
 
@@ -589,7 +575,6 @@ def test_should_build_query_substitutions():
         rate_interval="30s",
         sample_step="15s",
         endpoint="http://prometheus.example",
-        bearer_token="",
         basic_auth_user="",
         basic_auth_password="",
         time_anchor="",

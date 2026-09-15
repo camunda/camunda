@@ -30,7 +30,6 @@ class Options:
     rate_interval: str
     sample_step: str
     endpoint: str
-    bearer_token: str
     basic_auth_user: str
     basic_auth_password: str
     time_anchor: str
@@ -151,7 +150,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--start", default=None, type=type_timestamp, help="Start of the reporting window.")
     parser.add_argument("--end", default=None, type=type_timestamp, help="End of the reporting window.")
     parser.add_argument("--endpoint", default="http://localhost:9090", help="Prometheus base URL.")
-    parser.add_argument("--token", default="", help="Bearer token value for Prometheus.")
     parser.add_argument("--user", default="", help="Basic auth user for Prometheus.")
     parser.add_argument("--password", default="", help="Basic auth password for Prometheus.")
     parser.add_argument("--format", default="json", choices=("json", "csv", "tsv"), help="Output format.")
@@ -193,7 +191,6 @@ def parse_args(argv: Sequence[str]) -> Options:
         rate_interval=args.rate_interval,
         sample_step=args.sample_step,
         endpoint=args.endpoint,
-        bearer_token=args.token,
         basic_auth_user=args.user,
         basic_auth_password=args.password,
         time_anchor=time_anchor,
@@ -221,7 +218,6 @@ def run(argv: Sequence[str]) -> int:
         options = parse_args(argv)
         client = PrometheusClient(
             options.endpoint,
-            options.bearer_token,
             options.basic_auth_user,
             options.basic_auth_password,
             options.time_anchor,

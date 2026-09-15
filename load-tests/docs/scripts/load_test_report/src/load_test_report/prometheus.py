@@ -17,13 +17,12 @@ class PrometheusClient:
     def __init__(
         self,
         endpoint: str,
-        bearer_token: str,
         basic_auth_user: str,
         basic_auth_password: str,
         time_anchor: str,
     ):
         self.endpoint = endpoint.rstrip("/")
-        self.headers = auth_headers(bearer_token, basic_auth_user, basic_auth_password)
+        self.headers = auth_headers(basic_auth_user, basic_auth_password)
         self.time_anchor = time_anchor
 
     def runtime_info(self) -> Mapping[str, Any]:
@@ -49,14 +48,10 @@ class PrometheusClient:
         return parsed
 
 
-def auth_headers(bearer_token: str, basic_auth_user: str, basic_auth_password: str) -> dict[str, str]:
-    if bearer_token and (basic_auth_user or basic_auth_password):
-        raise ReportError("--token cannot be combined with --user/--password.")
+def auth_headers(basic_auth_user: str, basic_auth_password: str) -> dict[str, str]:
     if bool(basic_auth_user) != bool(basic_auth_password):
         raise ReportError("--user and --password must be provided together.")
     headers: dict[str, str] = {}
-    if bearer_token:
-        headers["Authorization"] = f"Bearer {bearer_token}"
     if basic_auth_user:
         credentials = f"{basic_auth_user}:{basic_auth_password}".encode()
         headers["Authorization"] = f"Basic {base64.b64encode(credentials).decode('ascii')}"
