@@ -11,11 +11,13 @@ import static io.camunda.webapps.schema.descriptors.template.BatchOperationTempl
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_COMPLETED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
@@ -68,6 +70,9 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
         new SearchRequest.Builder()
             .index(batchOperationIndex)
             .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
+            // oldest first, so a bounded read drains from the head instead of leaving it to the
+            // store which of the unfinished operations it returns
+            .sort(so -> so.field(f -> f.field(START_DATE).order(SortOrder.Asc)))
             .size(batchSize)
             .build();
 

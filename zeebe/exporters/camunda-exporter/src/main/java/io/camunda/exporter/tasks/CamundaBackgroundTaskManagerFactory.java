@@ -411,7 +411,10 @@ public final class CamundaBackgroundTaskManagerFactory {
     final var postExport = config.getPostExport();
     return new ReschedulingTask(
         new BatchOperationUpdateTask(
-            batchOperationUpdateRepository, postExport.getBatchSize(), logger, executor),
+            batchOperationUpdateRepository,
+            BatchOperationUpdateTask.MAX_BATCH_OPERATIONS_PER_CYCLE,
+            logger,
+            executor),
         1,
         postExport.getDelayBetweenRuns(),
         postExport.getMaxDelayBetweenRuns(),
