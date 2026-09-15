@@ -157,12 +157,12 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
       - name: Upload blob report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: operate-fe-blob-report-${{ matrix.shardIndex }}
           path: operate/client/.vitest-reports/*
-          include-hidden-files: true
-          retention-days: 1
+          include-hidden-files: "true"
+          retention-days: "1"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -208,6 +208,22 @@ jobs:
           path: operate/client/.vitest-reports
           pattern: operate-fe-blob-report-*
           merge-multiple: true
+      # `pattern:` matches whatever shards happen to exist, so a shard whose
+      # upload failed would be merged over silently and this job would report a
+      # green, complete-looking report missing a quarter of the tests (INC-7913).
+      # EXPECTED_SHARDS must track the shardTotal of `fe-unit-tests`, which is
+      # not in scope here.
+      - name: Verify all shard reports were downloaded
+        env:
+          EXPECTED_SHARDS: "4"
+        run: |
+          actual=$(find .vitest-reports -type f | wc -l)
+          if [ "$actual" -ne "$EXPECTED_SHARDS" ]; then
+            echo "::error::Expected $EXPECTED_SHARDS shard blob reports, found $actual." \
+              "A shard's test results are missing, so the merged report would be incomplete."
+            find .vitest-reports -type f
+            exit 1
+          fi
       - name: Merge reports
         run: npx vitest --merge-reports
 
@@ -370,12 +386,13 @@ jobs:
         run: npm run build
       - name: Run A11y tests
         run: npm run test:a11y
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Upload a11y report
         if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: operate-a11y-report
           path: operate/client/playwright-report/
-          retention-days: 30
+          retention-days: "30"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -430,11 +447,11 @@ jobs:
         run: npm run test:visual -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - name: Upload blob report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: operate-visual-regression-blob-report-${{ matrix.shardIndex }}
           path: operate/client/blob-report
-          retention-days: 1
+          retention-days: "1"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -482,6 +499,22 @@ jobs:
           path: operate/client/all-blob-reports
           pattern: operate-visual-regression-blob-report-*
           merge-multiple: true
+      # `pattern:` matches whatever shards happen to exist, so a shard whose
+      # upload failed would be merged over silently and this job would report a
+      # green, complete-looking report missing a quarter of the tests (INC-7913).
+      # EXPECTED_SHARDS must track the shardTotal of
+      # `operate-fe-visual-regression-tests`, which is not in scope here.
+      - name: Verify all shard reports were downloaded
+        env:
+          EXPECTED_SHARDS: "4"
+        run: |
+          actual=$(find all-blob-reports -type f | wc -l)
+          if [ "$actual" -ne "$EXPECTED_SHARDS" ]; then
+            echo "::error::Expected $EXPECTED_SHARDS shard blob reports, found $actual." \
+              "A shard's test results are missing, so the merged report would be incomplete."
+            find all-blob-reports -type f
+            exit 1
+          fi
       - name: Merge into HTML Report
         run: npx playwright merge-reports --reporter html ./all-blob-reports
       - name: Upload HTML report
@@ -526,12 +559,13 @@ jobs:
       - name: Run Playwright
         working-directory: ${{ env.CLIENT_DIR }}
         run: npm run generate-screenshots
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Upload screenshots
         if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: Playwright report
           path: ./operate/client/e2e-playwright/docs-screenshots
-          retention-days: 3
+          retention-days: "3"
       - name: Observe build status
         if: always()
         continue-on-error: true
