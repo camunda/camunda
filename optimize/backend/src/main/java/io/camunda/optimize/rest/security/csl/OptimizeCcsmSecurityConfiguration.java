@@ -105,8 +105,9 @@ public class OptimizeCcsmSecurityConfiguration {
    * shares this anchor on the webapp chain and is added before this customizer runs, so insertion
    * order (the tie-break among filters sharing an anchor) puts the refresh ahead of the check. An
    * expired access token is then renewed first and verified afterwards, the way the legacy {@code
-   * CCSMAuthenticationCookieFilter} renewed before deciding. Anchoring earlier would deny and
-   * destroy the session on every access-token expiry instead.
+   * CCSMAuthenticationCookieFilter} renewed before deciding. That ordering only holds on the webapp
+   * chain, CSL's API chain has no refresh filter at all, which is why the filter skips an expired
+   * token instead of denying it (see its javadoc).
    */
   @Bean
   public SecurityHeadersCustomizer ccsmSessionPermissionEnforcementFilterInstaller(

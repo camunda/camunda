@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import io.camunda.identity.sdk.exception.IdentityException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -16,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Date;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,9 +69,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * shape: the webapp chain redirects a browser navigation to the login, the API chain returns 401. A
  * bare 401 written here would leave a browser on an empty page.
  *
- * <p>Runs after CSL's {@code OAuth2RefreshTokenFilter}, so a session whose access token merely
- * expired is refreshed before it is verified here (see {@link OptimizeCcsmSecurityConfiguration}
- * for the anchoring that guarantees this).
+ * <p>An already expired access token is not verified at all, the request passes through. Only CSL's
+ * webapp chain installs {@code OAuth2RefreshTokenFilter}, its API chain restores the session but
+ * never refreshes the token. Verifying an expired token there would deny every {@code /api/**} call
+ * once the access token's lifetime (minutes) is over, until a page load happens to hit the webapp
+ * chain and refresh it. That is worse than not checking: without this filter such a session keeps
+ * working, because CSL falls back to the id_token's claims. The permission check is therefore only
+ * as fresh as the access token, and a revoked permission surfaces on the next refresh.
  */
 public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerRequestFilter {
 
@@ -86,7 +94,8 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
       final HttpServletResponse response,
       final FilterChain filterChain)
       throws ServletException, IOException {
-    final Optional<String> sessionAccessToken = ccsmTokenService.getSessionAccessToken(request);
+    final Optional<String> sessionAccessToken =
+        ccsmTokenService.getSessionAccessToken(request).filter(token -> !isExpired(token));
     if (sessionAccessToken.isPresent()) {
       try {
         ccsmTokenService.verifyAccessToken(sessionAccessToken.get());
@@ -114,6 +123,31 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
       }
     }
     filterChain.doFilter(request, response);
+  }
+
+  /**
+   * Whether the token is past its {@code exp} claim. A token that cannot be decoded is reported as
+   * not expired, so the verification below still runs and Identity decides on it.
+   */
+  private static boolean isExpired(final String accessToken) {
+    final Date expiresAt;
+    try {
+      expiresAt = JWT.decode(accessToken).getExpiresAt();
+    } catch (final JWTDecodeException e) {
+      LOG.debug("Session's access token is not a JWT, verifying it without an expiry check.", e);
+      return false;
+    }
+    if (expiresAt == null) {
+      return false;
+    }
+    final boolean expired = expiresAt.toInstant().isBefore(Instant.now());
+    if (expired) {
+      LOG.debug(
+          "Session's access token expired at {}, skipping the permission check until it is "
+              + "refreshed.",
+          expiresAt);
+    }
+    return expired;
   }
 
   private void invalidateSession(final HttpServletRequest request) {

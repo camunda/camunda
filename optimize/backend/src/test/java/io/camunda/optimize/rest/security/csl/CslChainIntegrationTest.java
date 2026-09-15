@@ -16,6 +16,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
@@ -276,8 +277,8 @@ class CslChainIntegrationTest {
   @Test
   void shouldEnforcePermissionAfterTheAccessTokenRefreshForCcsm() {
     // The permission check must not run before CSL's OAuth2RefreshTokenFilter: a session whose
-    // access token merely expired has to be refreshed first, otherwise every expiry ends in a 401
-    // where the legacy CCSMAuthenticationCookieFilter renewed the token and carried on. Asserted
+    // access token merely expired has to be refreshed first, so the webapp chain re-checks the
+    // permission on a fresh token the way the legacy CCSMAuthenticationCookieFilter did. Asserted
     // on the filter positions because ordering is what makes the difference, and the refresh
     // itself needs a real IdP token endpoint to observe end to end.
     ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceGrantingSessionAccessToken)
@@ -380,6 +381,45 @@ class CslChainIntegrationTest {
                   .isEqualTo(401);
               assertThat(downstream.getRequest()).isNull();
             });
+  }
+
+  @Test
+  void shouldAllowSessionOnApiPathWhenAccessTokenIsExpiredForCcsm() {
+    // Only CSL's webapp chain installs OAuth2RefreshTokenFilter, its API chain restores the
+    // session but never refreshes the token. Verifying an expired token on the API chain would
+    // reject every /api/** call for the rest of the session, while without this filter such a
+    // session keeps working through CSL's id_token fallback. So an expired token is skipped and the
+    // next webapp request refreshes it.
+    ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceWithExpiredSessionAccessToken)
+        .run(
+            ctx -> {
+              final Filter proxy = resolveSecurityFilter(ctx);
+              final MockHttpServletRequest request =
+                  new MockHttpServletRequest("GET", "/api/report/some-id");
+              request.setCookies(authenticatedSessionCookie());
+              final MockHttpServletResponse response = new MockHttpServletResponse();
+              final MockFilterChain downstream = new MockFilterChain();
+
+              proxy.doFilter(request, response, downstream);
+
+              assertThat(response.getStatus())
+                  .as(
+                      "session with an expired access token on API path, body: %s",
+                      response.getContentAsString())
+                  .isEqualTo(200);
+              assertThat(downstream.getRequest()).isNotNull();
+            });
+  }
+
+  private static CCSMTokenService mockCcsmTokenServiceWithExpiredSessionAccessToken() {
+    final CCSMTokenService service = mock(CCSMTokenService.class);
+    final String expiredToken = signToken(Instant.now().minusSeconds(60));
+    when(service.getSessionAccessToken(any())).thenReturn(Optional.of(expiredToken));
+    // Would deny the request if it was ever verified, which is exactly what must not happen here.
+    doThrow(new NotAuthorizedException("no longer authorized"))
+        .when(service)
+        .verifyAccessToken(expiredToken);
+    return service;
   }
 
   private static CCSMTokenService mockCcsmTokenServiceDenyingSessionAccessToken() {
@@ -914,17 +954,25 @@ class CslChainIntegrationTest {
         "SESSION", Base64.getEncoder().encodeToString("unknown-session-id".getBytes(UTF_8)));
   }
 
-  private static String signBearerToken() throws Exception {
+  private static String signBearerToken() {
+    return signToken(Instant.now().plusSeconds(60));
+  }
+
+  private static String signToken(final Instant expiresAt) {
     final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
     final var claims =
         new JWTClaimsSet.Builder()
             .subject("alice")
             .issuer(server.issuerUri())
             .issueTime(Date.from(Instant.now()))
-            .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+            .expirationTime(Date.from(expiresAt))
             .build();
     final var jwt = new SignedJWT(header, claims);
-    jwt.sign(server.signer());
+    try {
+      jwt.sign(server.signer());
+    } catch (final JOSEException e) {
+      throw new IllegalStateException("Failed to sign the test token", e);
+    }
     return jwt.serialize();
   }
 

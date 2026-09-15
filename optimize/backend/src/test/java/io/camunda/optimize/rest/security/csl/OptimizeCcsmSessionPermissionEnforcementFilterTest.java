@@ -11,11 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
+import java.time.Instant;
 import java.util.Optional;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.AfterEach;
@@ -85,6 +90,46 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     assertThat(chain.getRequest())
         .as("still-authorized token: request must reach downstream")
         .isNotNull();
+  }
+
+  @Test
+  void shouldPassThroughWithoutVerifyingWhenSessionAccessTokenIsExpired() throws Exception {
+    // given
+    // CSL only refreshes the access token on its webapp chain, so on the API chain an expired token
+    // would stay expired for the rest of the session. Denying it there would be worse than not
+    // checking at all, because CSL's id_token fallback keeps such a session working today.
+    final String expiredToken = jwtExpiringAt(Instant.now().minusSeconds(60));
+    when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of(expiredToken));
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final MockFilterChain chain = new MockFilterChain();
+
+    // when
+    filter().doFilterInternal(request, response, chain);
+
+    // then
+    assertThat(chain.getRequest()).as("expired token: request must reach downstream").isNotNull();
+    verify(ccsmTokenService, never()).verifyAccessToken(any());
+  }
+
+  @Test
+  void shouldVerifyWhenSessionAccessTokenIsNotExpiredYet() throws Exception {
+    // given
+    final String validToken = jwtExpiringAt(Instant.now().plusSeconds(60));
+    when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of(validToken));
+    doThrow(new NotAuthorizedException("no longer authorized"))
+        .when(ccsmTokenService)
+        .verifyAccessToken(validToken);
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final MockFilterChain chain = new MockFilterChain();
+
+    // when
+    final ThrowingCallable doFilter = () -> filter().doFilterInternal(request, response, chain);
+
+    // then
+    assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
+    assertThat(chain.getRequest()).as("rejected token must not reach downstream").isNull();
   }
 
   @Test
@@ -162,6 +207,12 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
     assertThat(chain.getRequest()).as("unexpected error must not reach downstream").isNull();
     assertThat(request.getSession(false)).as("session must survive").isNotNull();
+  }
+
+  private static String jwtExpiringAt(final Instant expiresAt) {
+    // Signature and issuer do not matter here: the filter only reads the exp claim itself, the
+    // token's actual validation is CCSMTokenService's job.
+    return JWT.create().withExpiresAt(expiresAt).sign(Algorithm.none());
   }
 
   private static void setAuthenticatedSecurityContext() {
