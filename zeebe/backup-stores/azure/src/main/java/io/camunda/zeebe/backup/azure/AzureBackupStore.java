@@ -31,6 +31,7 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,8 +62,18 @@ public final class AzureBackupStore implements BackupStore {
   public static final String SEGMENTS_FILESET_NAME = "segments";
   public static final String METADATA_OBJECT_NAME = "metadata.json";
   static final int MAX_CONCURRENT_FILE_OPERATIONS = 128;
+
+  /**
+   * Retention hands the leader a batch of up to a thousand deletions at once, only waiting for the
+   * commands to be processed, not for the backups to be gone, so every deletion starts right away.
+   * Each one makes several requests, so without a bound a large batch opens far more connections
+   * than the client can sustain. Bounded to the same width GCS uses for the same reason.
+   */
+  static final int DELETE_PARALLELISM = 16;
+
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
+  private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
@@ -218,11 +230,11 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    return CompletableFuture.runAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
-            return;
+            return null;
           } else if (manifest.statusCode() != StatusCode.DELETED) {
             throw new UnexpectedManifestState(
                 "Cannot delete Backup with id '%s', must be marked as deleted."
@@ -234,8 +246,10 @@ public final class AzureBackupStore implements BackupStore {
           allUrls.addAll(segmentUrls);
           fileSetManager.deleteBlobs(allUrls);
           manifestManager.deleteManifest(manifest);
+          return null;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
@@ -278,13 +292,14 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
-    return CompletableFuture.supplyAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
           manifestManager.markAsDeleted(manifest);
           return BackupStatusCode.DELETED;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
