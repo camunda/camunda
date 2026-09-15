@@ -23,6 +23,7 @@ final class PhysicalTenantStandaloneSchemaManagerIT {
   private static final String TENANT_ID = "tenanta";
   private static final String DEFAULT_INDEX_PREFIX = "default-tenant";
   private static final String TENANT_INDEX_PREFIX = "tenant-a-prefix";
+  private static final String TENANT_EXPORTER_INDEX_PREFIX = "tenant-a-elasticsearch-exporter";
 
   private static final String DEFAULT_EXPORTER_PREFIX = "zeebe-record";
 
@@ -52,7 +53,8 @@ final class PhysicalTenantStandaloneSchemaManagerIT {
     assertThat(strategy.indicesExist(DEFAULT_INDEX_PREFIX + "-*")).isTrue();
     assertThat(strategy.indicesExist(TENANT_INDEX_PREFIX + "-*")).isTrue();
 
-    assertThat(strategy.countTemplates(TENANT_INDEX_PREFIX + "_process_*")).isGreaterThan(0);
+    assertThat(strategy.countTemplates(TENANT_EXPORTER_INDEX_PREFIX + "_process_*"))
+        .isGreaterThan(0);
     assertThat(strategy.countTemplates(DEFAULT_EXPORTER_PREFIX + "_process_*")).isGreaterThan(0);
   }
 
@@ -128,6 +130,7 @@ final class PhysicalTenantStandaloneSchemaManagerIT {
   }
 
   private void configureTenant(final String tenantUrl) {
-    strategy.configurePhysicalTenant(schemaManager, TENANT_ID, tenantUrl, TENANT_INDEX_PREFIX);
+    strategy.configurePhysicalTenant(
+        schemaManager, TENANT_ID, tenantUrl, TENANT_INDEX_PREFIX, TENANT_EXPORTER_INDEX_PREFIX);
   }
 }
