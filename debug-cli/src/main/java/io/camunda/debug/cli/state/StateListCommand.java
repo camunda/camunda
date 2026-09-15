@@ -8,6 +8,7 @@
 package io.camunda.debug.cli.state;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -27,6 +28,8 @@ import picocli.CommandLine.Spec;
 
 @Command(name = "list", description = "List raw entries from a state column family")
 public final class StateListCommand implements Callable<Integer> {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Option(
       names = {"-r", "--root"},
@@ -98,12 +101,13 @@ public final class StateListCommand implements Callable<Integer> {
                   truncated[0] = true;
                   return false;
                 }
+                final var decodedValue = decodeValue(value, valueOffset, valueLength);
                 entries.add(
                     new StateEntry(
                         keyFormatter.format(key),
                         hex(key, 8, keyLength - 8),
-                        MsgPackConverter.convertToJson(
-                            Arrays.copyOfRange(value, valueOffset, valueOffset + valueLength))));
+                        decodedValue.json(),
+                        decodedValue.hex()));
                 return true;
               });
           return null;
@@ -115,7 +119,7 @@ public final class StateListCommand implements Callable<Integer> {
     output.put("entries", entries);
     output.put("truncated", truncated[0]);
     final PrintWriter out = spec.commandLine().getOut();
-    new ObjectMapper().writeValue(out, output);
+    OBJECT_MAPPER.writeValue(out, output);
     out.println();
     out.flush();
     return 0;
@@ -129,5 +133,16 @@ public final class StateListCommand implements Callable<Integer> {
     return result.toString();
   }
 
-  record StateEntry(String key, String keyHex, String value) {}
+  private static Value decodeValue(final byte[] value, final int offset, final int length) {
+    final var valueBytes = Arrays.copyOfRange(value, offset, offset + length);
+    try {
+      return new Value(OBJECT_MAPPER.readTree(MsgPackConverter.convertToJson(valueBytes)), null);
+    } catch (final RuntimeException | java.io.IOException e) {
+      return new Value(null, hex(valueBytes, 0, valueBytes.length));
+    }
+  }
+
+  record StateEntry(String key, String keyHex, JsonNode value, String valueHex) {}
+
+  record Value(JsonNode json, String hex) {}
 }

@@ -41,7 +41,6 @@ final class StateKeyFormatters {
           JOBS,
           JOB_STATES,
           MESSAGE_KEY,
-          MESSAGE_DEADLINES,
           INCIDENTS,
           INCIDENT_PROCESS_INSTANCES,
           INCIDENT_JOBS,
@@ -54,11 +53,12 @@ final class StateKeyFormatters {
           USER_TASK_STATES,
           AUTHORIZATIONS ->
           StateKeyFormatter.databaseValues("l");
-      case VARIABLES, MESSAGE_CORRELATED, MESSAGE_SUBSCRIPTION_BY_KEY, MESSAGE_STATS ->
+      case VARIABLES, MESSAGE_CORRELATED, MESSAGE_SUBSCRIPTION_BY_KEY ->
           StateKeyFormatter.databaseValues("ls");
+      case MESSAGE_DEADLINES -> StateKeyFormatter.databaseValues("ll");
       case TIMER_DUE_DATES -> StateKeyFormatter.databaseValues("lll");
       case PENDING_DEPLOYMENT, PENDING_DISTRIBUTION -> StateKeyFormatter.databaseValues("li");
-      case MESSAGE_IDS -> StateKeyFormatter.databaseValues("sss");
+      case MESSAGE_IDS -> StateKeyFormatter.databaseValues("ssss");
       case MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY,
           PROCESS_VERSION,
           PROCESS_CACHE_DIGEST_BY_ID,
@@ -90,7 +90,7 @@ final class StateKeyFormatters {
           StateKeyFormatter.databaseValues("sssl");
       case PROCESS_SUBSCRIPTION_BY_KEY -> StateKeyFormatter.databaseValues("lss");
       case USAGE_METRICS -> StateKeyFormatter.databaseValues("b");
-      case MIGRATIONS_STATE -> StateKeyFormatter.databaseValues("s");
+      case MIGRATIONS_STATE, MESSAGE_STATS -> StateKeyFormatter.databaseValues("s");
       case COMPENSATION_SUBSCRIPTION -> StateKeyFormatter.databaseValues("sll");
       case ENTITIES_BY_RELATION, RELATIONS_BY_ENTITY ->
           StateKeyFormatter.databaseValues("bsbs");

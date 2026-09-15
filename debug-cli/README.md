@@ -67,9 +67,10 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
 #### `state`
 
 - **Description:**
-  Offline manipulation of a stopped broker's RocksDB snapshot. Each subcommand opens the source
-  snapshot, applies the edit, and persists a new checksum-valid snapshot that preserves the
-  index/term/processed/exported positions. The broker must be stopped while these commands run.
+  Offline inspection and manipulation of a stopped broker's RocksDB snapshot. Read-only commands
+  open a copied runtime, while editing commands persist a new checksum-valid snapshot that
+  preserves the index/term/processed/exported positions. The broker must be stopped while these
+  commands run.
 
   ##### `state summary`
 
@@ -83,8 +84,9 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
 
   Print bounded JSON entries for one column family. Keys use the zdb-compatible
   column-family format when known, with `keyHex` retaining the raw key bytes.
-  Values are decoded from Camunda's MsgPack representation. The source snapshot
-  is copied into a temporary runtime before it is read, and output is limited to
+  Values are decoded from Camunda's MsgPack representation when applicable;
+  non-MsgPack values are exposed through `valueHex`. The source snapshot is
+  copied into a temporary runtime before it is read, and output is limited to
   1,000 entries by default.
 
   ```
