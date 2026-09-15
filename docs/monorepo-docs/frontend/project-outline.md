@@ -51,7 +51,7 @@ Published to npm as raw TypeScript and TSX source. Connects the SaaS notificatio
 Camunda composite components to the Camunda design system notification bell and panel. Consumers
 provide localization and the surrounding C3 user configuration.
 
-See the [package README](../../../webapp/client/packages/oc-saas-notifications/README.md) for usage
+See the [package README](https://github.com/camunda/camunda/blob/main/webapp/client/packages/oc-saas-notifications/README.md) for usage
 and the source-distribution requirements.
 
 ### `@camunda/session-heartbeat`
