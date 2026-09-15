@@ -13,6 +13,7 @@ webapp/client/
     ├── camunda-api-zod-schemas/
     ├── c8-mocks/
     ├── lint-config/
+    ├── oc-saas-notifications/
     └── session-heartbeat/
 ```
 
@@ -43,6 +44,15 @@ the Camunda frontends — also consumed outside this workspace by
 `operate/client` and `identity/client`. Consumers
 compose only the eslint variants they need (`base`, `typescript`,
 `react`, `testing`, `license`, `tanstack-query`).
+
+### `@camunda/oc-saas-notifications`
+
+Published to npm as raw TypeScript and TSX source. Connects the SaaS notification runtime from
+Camunda composite components to the Camunda design system notification bell and panel. Consumers
+provide localization and the surrounding C3 user configuration.
+
+See the [package README](../../../webapp/client/packages/oc-saas-notifications/README.md) for usage
+and the source-distribution requirements.
 
 ### `@camunda/session-heartbeat`
 

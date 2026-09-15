@@ -82,9 +82,9 @@ export default defineConfig([
 		},
 	},
 
-	// the session-heartbeat package ships a React hook, so it needs the React Hooks rules too
+	// these packages ship React hooks, so they need the React Hooks rules too
 	{
-		files: ['packages/session-heartbeat/lib/**/*.{ts,tsx}'],
+		files: ['packages/{oc-saas-notifications,session-heartbeat}/lib/**/*.{ts,tsx}'],
 		plugins: {'react-hooks': reactHooksPlugin},
 		rules: {...reactHooksPlugin.configs.recommended.rules},
 	},
