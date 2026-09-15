@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
  * io.camunda.exporter.tasks.incident.IncidentUpdateTask}
  */
 @MultiDbTest
-class IncidentPropagationTest {
+class IncidentPropagationIT {
 
   private static final String CALL_ACTIVITY_2_ID = "callActivity2";
   private static final String CALLED_PROCESS_ID = "calledProcess";
