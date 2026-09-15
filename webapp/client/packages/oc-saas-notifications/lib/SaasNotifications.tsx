@@ -11,10 +11,20 @@ import {Button, NotificationBell, NotificationsPanel, type NavNotification} from
 import C3NotificationProvider, {
 	C3NotificationContext,
 } from '@camunda/camunda-composite-components/lib/esm/src/components/c3-navigation/c3-notification-provider/c3-notification-provider.js';
-import {useTranslation} from 'react-i18next';
 
-const SaasNotificationsContent: React.FC = () => {
-	const {t, i18n} = useTranslation();
+type SaasNotificationsLabels = {
+	title: string;
+	loading: string;
+	empty: string;
+	dismissAll: string;
+};
+
+type SaasNotificationsProps = {
+	labels: SaasNotificationsLabels;
+	locale?: Intl.LocalesArgument;
+};
+
+const SaasNotificationsContent: React.FC<SaasNotificationsProps> = ({labels, locale}) => {
 	const {enabled, isFetching, notifications, markAllAsRead, dismiss, dismissAll, analytics} =
 		useContext(C3NotificationContext);
 	const [isOpen, setIsOpen] = useState(false);
@@ -23,11 +33,11 @@ const SaasNotificationsContent: React.FC = () => {
 
 	const dateFormatter = useMemo(
 		() =>
-			new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+			new Intl.DateTimeFormat(locale, {
 				dateStyle: 'medium',
 				timeStyle: 'short',
 			}),
-		[i18n.resolvedLanguage],
+		[locale],
 	);
 	const navNotifications = useMemo<NavNotification[]>(
 		() =>
@@ -76,13 +86,13 @@ const SaasNotificationsContent: React.FC = () => {
 	return (
 		<>
 			<NotificationBell
-				label={t('headerNotificationsLabel')}
+				label={labels.title}
 				unreadCount={isFetching ? 0 : unreadNotifications.length}
 				isActive={isOpen}
 				onClick={() => handleOpenChange(!isOpen)}
 			/>
 			<NotificationsPanel
-				title={t('headerNotificationsLabel')}
+				title={labels.title}
 				notifications={navNotifications}
 				open={isOpen}
 				onOpenChange={handleOpenChange}
@@ -92,11 +102,11 @@ const SaasNotificationsContent: React.FC = () => {
 						dismiss(notification);
 					}
 				}}
-				emptyMessage={isFetching ? t('headerNotificationsLoading') : t('headerNotificationsEmptyDescription')}
+				emptyMessage={isFetching ? labels.loading : labels.empty}
 				headerAction={
 					notifications.length > 0 ? (
 						<Button type="button" variant="ghost" size="sm" onClick={() => dismissAll(notifications)}>
-							{t('headerNotificationsDismissAll')}
+							{labels.dismissAll}
 						</Button>
 					) : undefined
 				}
@@ -105,10 +115,11 @@ const SaasNotificationsContent: React.FC = () => {
 	);
 };
 
-const SaasNotifications: React.FC = () => (
+const SaasNotifications: React.FC<SaasNotificationsProps> = (props) => (
 	<C3NotificationProvider>
-		<SaasNotificationsContent />
+		<SaasNotificationsContent {...props} />
 	</C3NotificationProvider>
 );
 
 export {SaasNotifications};
+export type {SaasNotificationsLabels, SaasNotificationsProps};

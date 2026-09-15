@@ -15,6 +15,7 @@ import {
 	TooltipProvider,
 	useMediaQuery,
 } from '@camunda/design-system';
+import {SaasNotifications} from '@camunda/oc-saas-notifications';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {Link, useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -28,7 +29,6 @@ import {AccountMenu} from './AccountMenu';
 import {Breadcrumbs} from './Breadcrumbs';
 import {HelpMenu} from './HelpMenu';
 import {LicenseBadges} from './LicenseBadges';
-import {SaasNotifications} from './SaasNotifications';
 import {useCallback, useMemo} from 'react';
 
 const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
@@ -48,7 +48,7 @@ type Props = {
 };
 
 const Header: React.FC<Props> = ({children, initialSaasToken}) => {
-	const {t} = useTranslation();
+	const {t, i18n} = useTranslation();
 	const matchRoute = useMatchRoute();
 	const currentApp = APP_ROUTES.find(({to}) => matchRoute({to, fuzzy: true}) !== false)?.app;
 	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
@@ -67,11 +67,21 @@ const Header: React.FC<Props> = ({children, initialSaasToken}) => {
 						{
 							key: 'notifications',
 							label: t('headerNotificationsLabel'),
-							element: <SaasNotifications />,
+							element: (
+								<SaasNotifications
+									locale={i18n.resolvedLanguage}
+									labels={{
+										title: t('headerNotificationsLabel'),
+										loading: t('headerNotificationsLoading'),
+										empty: t('headerNotificationsEmptyDescription'),
+										dismissAll: t('headerNotificationsDismissAll'),
+									}}
+								/>
+							),
 						},
 					]
 				: undefined,
-		[initialSaasToken, isSaas, t],
+		[i18n.resolvedLanguage, initialSaasToken, isSaas, t],
 	);
 
 	const handleLogout = useCallback(() => {
