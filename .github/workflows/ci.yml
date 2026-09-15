@@ -2640,6 +2640,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 22
     permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      # renovate: datasource=npm depName=renovate
+      RENOVATE_VERSION: '44.90.3'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2649,8 +2652,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      # Retry to absorb transient npm-registry resolution failures when npx resolves
-      # renovate@latest and its transitive deps on a fresh run (see INC-6869, INC-7810).
+      # Retry to absorb transient npm-registry slowness when npx resolves renovate
+      # and its transitive deps on a fresh run (see INC-6869, INC-7810).
       - name: Validate Renovate config
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
@@ -2662,7 +2665,7 @@ jobs:
           # under a minute. Widened from 2min (10min job timeout) because a
           # registry-wide slowdown (INC-7810) left no margin at that budget.
           timeout_minutes: 6
-          command: npx --yes --package "renovate@latest" -- renovate-config-validator --no-global .github/renovate.json* .github/renovate/*
+          command: npx --yes --package "renovate@${{ env.RENOVATE_VERSION }}" -- renovate-config-validator --no-global .github/renovate.json* .github/renovate/*
       - name: Observe build status
         if: always()
         continue-on-error: true
