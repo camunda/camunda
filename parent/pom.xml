@@ -223,10 +223,6 @@
     <version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.38.2</version.nimbus-sdk>
     <version.keycloak>26.7.3</version.keycloak>
-    <!-- No Maven consumer: this is the single source of truth for the Keycloak testcontainer image
-         tag, which Renovate keeps current and the `KEYCLOAK_IMAGE` constants in
-         DefaultTestContainers and TestKeycloakContainers are kept in sync with by hand. Same
-         arrangement as version.elasticsearch.container and TestSearchContainers. -->
     <!-- renovate: datasource=docker depName=quay.io/keycloak/keycloak -->
     <version.keycloak.container>26.7.3</version.keycloak.container>
     <version.keycloak-client>26.0.12</version.keycloak-client>

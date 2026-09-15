@@ -932,7 +932,7 @@
       datasourceTemplate: "maven",
     },
     {
-      description: "Track ES/OS container versions in parent/pom.xml XML comment annotations.",
+      description: "Track container image versions annotated in parent/pom.xml XML comments.",
       customType: "regex",
       managerFilePatterns: [
         "/^parent/pom\\.xml$/",
