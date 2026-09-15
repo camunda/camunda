@@ -223,6 +223,22 @@
 
   </dependencies>
   <build>
+    <resources>
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>zeebe-test-util-testcontainers.properties</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>zeebe-test-util-testcontainers.properties</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

@@ -1,11 +1,19 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package io.camunda.authentication;
+package io.camunda.client;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import java.io.IOException;
@@ -15,10 +23,11 @@ import java.util.Properties;
 
 /**
  * Duplicates {@code io.camunda.zeebe.test.testcontainers.DefaultTestContainers}, which this module
- * would have to depend on {@code zeebe-test-util} to reach.
+ * cannot depend on: {@code zeebe-test-util} depends on {@code camunda-client-java}.
  */
 final class KeycloakContainers {
-  private static final String VERSIONS_FILE = "/authentication-testcontainers.properties";
+
+  private static final String VERSIONS_FILE = "/client-java-testcontainers.properties";
 
   private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:" + keycloakVersion();
 
@@ -26,17 +35,11 @@ final class KeycloakContainers {
 
   /** Returns a Keycloak container with defaults for CI. */
   static KeycloakContainer createDefaultKeycloak() {
-    final var container =
-        new KeycloakContainer(KEYCLOAK_IMAGE)
-            // Keycloak can take quite a while to start in CI
-            .withStartupTimeout(Duration.ofMinutes(5))
-            // speed up startup time at the expense of slower runtime, acceptable in CI
-            .withEnv("JAVA_TOOL_OPTIONS", "-Xlog:disable -XX:TieredStopAtLevel=1");
-
-    // remove the default log consumer
-    container.getLogConsumers().clear();
-
-    return container;
+    return new KeycloakContainer(KEYCLOAK_IMAGE)
+        // Keycloak can take quite a while to start in CI
+        .withStartupTimeout(Duration.ofMinutes(5))
+        // speed up startup time at the expense of slower runtime, acceptable in CI
+        .withEnv("JAVA_TOOL_OPTIONS", "-Xlog:disable -XX:TieredStopAtLevel=1");
   }
 
   /**
