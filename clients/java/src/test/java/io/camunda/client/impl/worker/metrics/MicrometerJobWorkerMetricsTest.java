@@ -75,6 +75,17 @@ final class MicrometerJobWorkerMetricsTest {
         .has(hasCount(4));
   }
 
+  @Test
+  void shouldCountExpiredJobs() {
+    // when
+    metrics.jobExpired(6);
+
+    // then
+    Assertions.assertThat(meterRegistry).has(hasCounter(Names.JOB_EXPIRED, tags));
+    Assertions.assertThat(meterRegistry.counter(Names.JOB_EXPIRED.asString(), tags))
+        .has(hasCount(6));
+  }
+
   private Condition<MeterRegistry> hasCounter(final Names name, final Iterable<Tag> tags) {
     return VerboseCondition.verboseCondition(
         registry -> registry.find(name.asString()).tags(tags).counter() != null,
