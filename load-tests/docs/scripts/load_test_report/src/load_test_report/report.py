@@ -63,7 +63,9 @@ def extract_metric_value(
         return ", ".join(values)
 
     raw_value = ""
-    if result and isinstance(result[0], Mapping):
+    if data.get("resultType") in ("scalar", "string") and isinstance(result, list) and len(result) > 1:
+        raw_value = str(result[1])
+    elif result and isinstance(result[0], Mapping):
         sample = result[0].get("value", [])
         if isinstance(sample, list) and len(sample) > 1:
             raw_value = str(sample[1])

@@ -20,7 +20,10 @@ from .report import render_report
 HERE = Path(__file__).resolve().parent
 DEFAULT_QUERIES_FILE = HERE / "report-queries.yaml"
 NAMESPACE_PATTERN = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
-DURATION_PATTERN = re.compile(r"^(?:[1-9][0-9]*(ms|s|m|h|d|w|y))+$")
+DURATION_PATTERN = re.compile(
+    r"^(?=[0-9])(?:[1-9][0-9]*y)?(?:[1-9][0-9]*w)?(?:[1-9][0-9]*d)?"
+    r"(?:[1-9][0-9]*h)?(?:[1-9][0-9]*ms)?(?:[1-9][0-9]*m)?(?:[1-9][0-9]*s)?$"
+)
 
 
 @dataclass(frozen=True)

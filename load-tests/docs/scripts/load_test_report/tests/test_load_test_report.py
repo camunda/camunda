@@ -99,6 +99,18 @@ def test_should_extract_numeric_sample():
     assert extract_metric_value(response, "", "throughput") == 42.5
 
 
+def test_should_extract_scalar_sample():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "scalar",
+            "result": [1435781451.781, "42.5"],
+        },
+    }
+
+    assert extract_metric_value(response, "", "throughput") == 42.5
+
+
 def test_should_extract_sorted_unique_label_values():
     response = {
         "status": "success",
@@ -608,6 +620,14 @@ def test_should_accept_composite_prometheus_durations():
     options = parse_args(["c8-ck-test", "--rate-interval", "1h30m"])
 
     assert options.rate_interval == "1h30m"
+
+
+def test_should_reject_out_of_order_prometheus_durations():
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--rate-interval", "1m1h"])
+
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--rate-interval", "1h1h"])
 
 
 def test_should_reject_unrepresentable_timestamp():
