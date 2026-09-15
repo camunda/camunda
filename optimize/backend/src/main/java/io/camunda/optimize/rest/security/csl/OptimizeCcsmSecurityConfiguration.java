@@ -100,9 +100,17 @@ public class OptimizeCcsmSecurityConfiguration {
    * {@code ScopedApiSecurityChainBuilder} and {@code UnprotectedApiSecurityConfiguration} all apply
    * while building their chain, regardless of its "headers" name. Repurposing it here is a
    * deliberate, documented deviation rather than a semantic fit: it is the only extension point CSL
-   * exposes that receives the real {@link HttpSecurity} builder. Applying it to the unprotected
-   * chain too is harmless: that chain never populates an {@code OAuth2AuthenticationToken}, so the
-   * filter is a no-op there.
+   * exposes that receives the real {@link HttpSecurity} builder.
+   *
+   * <p>The filter therefore also lands on CSL's unprotected-paths chain ({@code
+   * BaseSecurityConfiguration#unprotectedPathsSecurityFilterChain}), where it is a no-op, and it is
+   * a no-op for a concrete reason and not by assumption: that chain installs no {@code
+   * SessionRepositoryFilter}, and CSL registers the default one with {@code
+   * registration.setEnabled(false)} so it is not a global servlet filter either. Nothing resolves
+   * the {@code SESSION} cookie on that chain, so no {@code SecurityContext} is restored, so {@code
+   * CCSMTokenService#getSessionAccessToken} finds no {@code OAuth2AuthenticationToken} and no token
+   * to verify. A request to {@code /api/readyz} or {@code /api/external/**} cannot be denied here
+   * because it also carries a session cookie.
    *
    * <p>Anchored after {@link AuthorizationFilter}, which every CSL chain installs, and deliberately
    * not right after {@code SecurityContextHolderFilter}: CSL's {@code OAuth2RefreshTokenFilter}
