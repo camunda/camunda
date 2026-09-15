@@ -254,6 +254,53 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, keptVariable, varName, operation);
   }
 
+  // A numeric notIn is stored as LONG_VALUE/DOUBLE_VALUE predicates, which are SQL NULL for
+  // any sibling of a different type. NOT IN against a NULL column evaluates to UNKNOWN rather
+  // than TRUE, so without an explicit NULL allowance those siblings are silently dropped even
+  // though they trivially aren't "in" a list of numbers at all.
+
+  @TestTemplate
+  public void shouldExcludeVariableWithNameAndNotInWholeNumberKeepsNonNumericSibling(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two variables sharing a name, one holding an excluded whole number and one holding
+    // an unrelated string value
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel excludedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("42000"));
+    createAndSaveVariable(rdbmsService, excludedVariable);
+    final VariableDbModel keptVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("some-string-value"));
+    createAndSaveVariable(rdbmsService, keptVariable);
+
+    // and a notIn filter excluding the whole number
+    final Operation<String> operation = Operation.notIn("42000");
+
+    // when only the non-numeric variable is returned
+    searchAndAssertVariableValueFilter(rdbmsService, keptVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldExcludeVariableWithNameAndNotInDecimalNumberKeepsNonNumericSibling(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two variables sharing a name, one holding an excluded decimal number and one holding
+    // an unrelated string value
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel excludedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("42000.5"));
+    createAndSaveVariable(rdbmsService, excludedVariable);
+    final VariableDbModel keptVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("some-string-value"));
+    createAndSaveVariable(rdbmsService, keptVariable);
+
+    // and a notIn filter excluding the decimal number
+    final Operation<String> operation = Operation.notIn("42000.5");
+
+    // when only the non-numeric variable is returned
+    searchAndAssertVariableValueFilter(rdbmsService, keptVariable, varName, operation);
+  }
+
   @TestTemplate
   public void shouldFindVariableWithNameAndEqNullValue(
       final CamundaRdbmsTestApplication testApplication) {
