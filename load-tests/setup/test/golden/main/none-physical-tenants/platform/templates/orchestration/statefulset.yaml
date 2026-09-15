@@ -99,6 +99,8 @@ spec:
               value: INFO
             - name: ZEEBE_LOG_LEVEL
               value: DEBUG
+            - name: CAMUNDA_SECURITY_CLUSTERADMIN_OIDC_CLIENTS_0
+              value: orchestration
             - name: SPRING_CONFIG_ADDITIONALLOCATION
               value: /usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml
             

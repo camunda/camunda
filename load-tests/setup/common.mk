@@ -33,6 +33,10 @@
 # - prefer_rest
 #   Whether the load testers prefer REST over gRPC (matches the load-tester
 #   application default). Set to `false` on versions that should keep gRPC (8.7).
+#
+# - cluster_rebalance_supported
+#   Set to `false` for versions without the `/cluster/v2/rebalance` endpoint (before 8.10),
+#   so the `leader-balancer` CronJob falls back to the deprecated actuator endpoint.
 
 rdbms_storages ?= postgresql mysql mariadb mssql oracle
 optimize_self_sufficient_storages ?= elasticsearch opensearch
@@ -40,6 +44,7 @@ scenario_max_override_key ?= orchestration.extraConfiguration[1].content=
 install_storage_target ?= install-storage
 physical_tenants_supported ?= true
 prefer_rest ?= true
+cluster_rebalance_supported ?= true
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -108,6 +113,13 @@ _load_test_setup_flags =
 # override when a version opts out of the REST default (e.g. 8.7, which keeps gRPC).
 ifneq ($(prefer_rest),true)
 _load_test_setup_flags += --set global.preferRest.enabled=$(prefer_rest)
+endif
+
+# charts/load-test-setup/values.yaml defaults leaderBalancer.endpoint to the new "v2" endpoint.
+# Only emit an explicit override for versions without it, so the leader-balancer CronJob falls
+# back to the deprecated actuator endpoint.
+ifneq ($(cluster_rebalance_supported),true)
+_load_test_setup_flags += --set leaderBalancer.endpoint=actuator
 endif
 
 # The Docker image tag for the load test metrics exporter

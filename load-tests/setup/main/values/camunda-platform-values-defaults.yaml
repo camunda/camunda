@@ -276,6 +276,11 @@ orchestration:
       value: INFO
     - name: ZEEBE_LOG_LEVEL
       value: DEBUG
+    # Grant the orchestration client (also used by the load-tester and the leader-balancer
+    # CronJob) cluster-admin access, so it can call the coordinated `/cluster/v2/rebalance`
+    # endpoint.
+    - name: CAMUNDA_SECURITY_CLUSTERADMIN_OIDC_CLIENTS_0
+      value: orchestration
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION

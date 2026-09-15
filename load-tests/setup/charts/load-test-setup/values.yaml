@@ -29,8 +29,21 @@ topologyZone: ""
 
 # -- Internal URL of the Camunda management endpoint. Used by the
 # `leader-balancer` CronJob to trigger periodic partition rebalancing via
-# `POST {{ camundaManagementUrl }}/actuator/rebalance`.
+# `POST {{ camundaManagementUrl }}/actuator/rebalance` when `leaderBalancer.endpoint`
+# is `actuator`.
 camundaManagementUrl: http://camunda:9600
+
+# -- Configuration for the `leader-balancer` CronJob, which periodically triggers
+# Zeebe partition leadership rebalancing.
+leaderBalancer:
+  # -- Which endpoint the CronJob calls to trigger a rebalance:
+  # - `v2`: the coordinated `POST {{ zeebeRestAddress }}/cluster/v2/rebalance` endpoint
+  #   (Camunda 8.10+). Authenticated with the `loadTest.client.oidc` client's cluster-admin
+  #   grant, so `orchestration.security.clusterAdmin.oidc.clients` in the platform values
+  #   must include that client id.
+  # - `actuator`: the deprecated, unauthenticated `POST {{ camundaManagementUrl }}/actuator/rebalance`.
+  #   Required for Camunda versions before 8.10, which don't ship `/cluster/v2/rebalance`.
+  endpoint: v2
 
 # -- The configuration for the load test metrics exporter
 metricsExporter:
