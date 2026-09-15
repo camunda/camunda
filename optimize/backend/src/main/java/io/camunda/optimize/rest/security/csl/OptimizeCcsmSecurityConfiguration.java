@@ -48,10 +48,11 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  *
  * <p>The login id_token itself is exempt: unlike {@link OptimizeCloudSecurityConfiguration}
  * (CCSaaS) this configuration does not override {@code idTokenDecoderFactory}, which leaves Spring
- * Security's stock decoder in place. {@link OptimizeIdentityPermissionValidator} requires the
- * token's {@code aud} to match {@code camunda.identity.audience} (the API resource audience), and
- * the id_token is audienced to the OIDC client-id instead, so routing it through the validator
- * would reject every interactive login.
+ * Security's stock decoder in place. {@link OptimizeIdentityPermissionValidator} requires a {@code
+ * write:*} permission claim the id_token does not carry, and rejects its {@code aud} on top of that
+ * whenever {@code camunda.identity.audience} is configured, because the id_token is audienced to
+ * the OIDC client-id instead. Routing it through the validator would therefore reject every
+ * interactive login.
  */
 @Configuration
 @Conditional(CCSMCondition.class)

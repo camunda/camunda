@@ -23,11 +23,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * CCSMTokenService#verifyAccessToken(String)}, because CSL's own JWT validation only checks issuer,
  * signature and expiry and has no concept of Identity's per-application permission grant.
  *
- * <p>The delegation is a full identity-sdk re-verification and includes a hard match of the token's
- * {@code aud} claim against {@code camunda.identity.audience}, unlike {@link
- * OptimizeCloudOrganizationValidator}/{@code OptimizeCloudClusterValidator} which are lenient on an
- * audience mismatch. Only use it on paths that carry a genuine access token, never on the login
- * id_token, which is audienced to the OIDC client-id instead and would always be rejected.
+ * <p>The delegation is a full identity-sdk re-verification. It always requires the {@code write:*}
+ * permission claim, and additionally matches the token's {@code aud} claim against {@code
+ * camunda.identity.audience} when that is configured, which the sdk skips while it is blank. On a
+ * configured audience the match is hard, unlike {@link OptimizeCloudOrganizationValidator}/{@code
+ * OptimizeCloudClusterValidator} which are lenient on a mismatch. Only use it on paths that carry a
+ * genuine access token, never on the login id_token, which carries no permission claim and would
+ * always be rejected.
  */
 public final class OptimizeIdentityPermissionValidator implements OAuth2TokenValidator<Jwt> {
 

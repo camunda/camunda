@@ -81,9 +81,9 @@ class OptimizeCcsmSecurityConfigurationTest {
   @Test
   void shouldNotRegisterIdTokenDecoderFactoryBean() {
     // given
-    // The login id_token is audienced to the OIDC client-id, not camunda.identity.audience, so
-    // routing it through OptimizeIdentityPermissionValidator would reject every real login (see
-    // class javadoc). Unlike the reflection-based check this replaces (which only proved the
+    // The login id_token carries no write:* permission claim, so routing it through
+    // OptimizeIdentityPermissionValidator would reject every real login (see class javadoc). Unlike
+    // the reflection-based check this replaces (which only proved the
     // method wasn't declared), this proves the actual runtime outcome: no bean of the id_token
     // decoder factory type is contributed by this configuration, so Spring's stock decoder stays
     // in charge of the id_token, exactly as it would for CCSaaS if
