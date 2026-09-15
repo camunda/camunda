@@ -5,6 +5,7 @@ import json
 from collections.abc import Mapping
 from typing import Any
 from typing import Literal
+from typing import Self
 from urllib.error import HTTPError
 from urllib.error import URLError
 from urllib.parse import urlencode
@@ -15,6 +16,7 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import ValidationError
+from pydantic import model_validator
 
 from .errors import ReportError
 
@@ -28,7 +30,15 @@ class PrometheusResponseData(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     result: list[PrometheusInstantVector] | tuple[float, str]
-    result_type: Literal["matrix", "vector", "scalar", "string"] = Field(alias="resultType")
+    result_type: Literal["vector", "scalar", "string"] = Field(alias="resultType")
+
+    @model_validator(mode="after")
+    def validate_result_shape(self) -> Self:
+        if self.result_type == "vector" and not isinstance(self.result, list):
+            raise ValueError("vector result must contain instant-vector samples")
+        if self.result_type in ("scalar", "string") and not isinstance(self.result, tuple):
+            raise ValueError(f"{self.result_type} result must contain a timestamp and value")
+        return self
 
 
 class PrometheusResponse(BaseModel):

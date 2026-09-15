@@ -112,6 +112,56 @@ def test_should_extract_scalar_sample():
     assert extract_metric_value(response, "", "throughput") == 42.5
 
 
+def test_should_reject_multiple_numeric_samples():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "vector",
+            "result": [
+                {"metric": {"instance": "first"}, "value": [1435781451.781, "42.5"]},
+                {"metric": {"instance": "second"}, "value": [1435781451.781, "24.5"]},
+            ],
+        },
+    }
+    warnings = []
+
+    with pytest.raises(MissingMetric, match=r"multiple numeric samples \(2\)"):
+        extract_metric_value(response, "", "throughput", warnings.append)
+
+    assert warnings == ["throughput: multiple numeric samples (2)"]
+
+
+def test_should_reject_matrix_response():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "matrix",
+            "result": [
+                {
+                    "metric": {"instance": "prometheus"},
+                    "values": [[1435781451.781, "42.5"]],
+                }
+            ],
+        },
+    }
+
+    with pytest.raises(ValidationError, match="resultType"):
+        PrometheusResponse.model_validate(response)
+
+
+def test_should_reject_result_shape_mismatched_with_type():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "scalar",
+            "result": [{"metric": {}, "value": [1435781451.781, "42.5"]}],
+        },
+    }
+
+    with pytest.raises(ValidationError, match="scalar result must contain a timestamp and value"):
+        PrometheusResponse.model_validate(response)
+
+
 def test_should_extract_sorted_unique_label_values():
     response = {
         "status": "success",

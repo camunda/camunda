@@ -69,7 +69,11 @@ def extract_metric_value(
     raw_value = ""
     if data.result_type in ("scalar", "string") and isinstance(result, tuple):
         raw_value = str(result[1])
-    elif isinstance(result, list) and result:
+    elif isinstance(result, list):
+        if not result:
+            missing_metric(key, "no numeric sample", warning_sink)
+        if len(result) > 1:
+            missing_metric(key, f"multiple numeric samples ({len(result)})", warning_sink)
         raw_value = result[0].value[1]
 
     if not NUMBER_PATTERN.fullmatch(raw_value):
