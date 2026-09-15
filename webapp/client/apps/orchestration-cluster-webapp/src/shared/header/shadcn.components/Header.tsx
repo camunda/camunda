@@ -17,7 +17,7 @@ import {
 } from '@camunda/design-system';
 import {SaasNotifications} from '@camunda/oc-saas-notifications';
 import {useSuspenseQuery} from '@tanstack/react-query';
-import {Link, useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
+import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {C3Provider, type CurrentApp} from '#/shared/c3/components/C3Provider';
@@ -34,23 +34,14 @@ import {useCallback, useMemo} from 'react';
 const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
 const SIDEBAR_EXPANDED_WIDTH = '12.25rem';
 
-type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
-
-const APP_ROUTES = [
-	{app: 'tasklist', to: '/tasklist'},
-	{app: 'operate', to: '/operate'},
-	{app: 'admin', to: '/admin'},
-] as const satisfies ReadonlyArray<{app: CurrentApp; to: FileRouteTypes['to']}>;
-
 type Props = {
 	children: React.ReactNode;
+	currentApp: CurrentApp | undefined;
 	initialSaasToken: string | null;
 };
 
-const Header: React.FC<Props> = ({children, initialSaasToken}) => {
+const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 	const {t, i18n} = useTranslation();
-	const matchRoute = useMatchRoute();
-	const currentApp = APP_ROUTES.find(({to}) => matchRoute({to, fuzzy: true}) !== false)?.app;
 	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 	const {data: license} = useSuspenseQuery(queries.getLicense());
 	const {ariaLabel, homeRoute, items} = useSidebarNavigation(currentUser);
@@ -74,7 +65,6 @@ const Header: React.FC<Props> = ({children, initialSaasToken}) => {
 										title: t('headerNotificationsLabel'),
 										loading: t('headerNotificationsLoading'),
 										empty: t('headerNotificationsEmptyDescription'),
-										dismissAll: t('headerNotificationsDismissAll'),
 									}}
 								/>
 							),

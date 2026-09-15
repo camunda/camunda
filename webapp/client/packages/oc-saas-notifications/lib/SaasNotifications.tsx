@@ -7,7 +7,7 @@
  */
 
 import {useCallback, useContext, useMemo, useState} from 'react';
-import {Button, NotificationBell, NotificationsPanel, type NavNotification} from '@camunda/design-system';
+import {NotificationBell, NotificationsPanel, type NavNotification} from '@camunda/design-system';
 import C3NotificationProvider, {
 	C3NotificationContext,
 } from '@camunda/camunda-composite-components/lib/esm/src/components/c3-navigation/c3-notification-provider/c3-notification-provider.js';
@@ -16,7 +16,6 @@ type SaasNotificationsLabels = {
 	title: string;
 	loading: string;
 	empty: string;
-	dismissAll: string;
 };
 
 type SaasNotificationsProps = {
@@ -30,6 +29,14 @@ const SaasNotificationsContent: React.FC<SaasNotificationsProps> = ({labels, loc
 	const [isOpen, setIsOpen] = useState(false);
 	const [unreadAtOpen, setUnreadAtOpen] = useState<Set<string>>(() => new Set());
 	const unreadNotifications = useMemo(() => notifications.filter(({state}) => state === 'new'), [notifications]);
+	const handleNotificationClick = useCallback(
+		(identifier: string | undefined) => {
+			if (identifier !== undefined) {
+				analytics('notification-clicked-cta', identifier);
+			}
+		},
+		[analytics],
+	);
 
 	const dateFormatter = useMemo(
 		() =>
@@ -41,7 +48,7 @@ const SaasNotificationsContent: React.FC<SaasNotificationsProps> = ({labels, loc
 	);
 	const navNotifications = useMemo<NavNotification[]>(
 		() =>
-			[...notifications]
+			notifications
 				.sort((left, right) => right.timestamp - left.timestamp)
 				.map((notification) => ({
 					key: notification.uuid,
@@ -53,11 +60,9 @@ const SaasNotificationsContent: React.FC<SaasNotificationsProps> = ({labels, loc
 					onClick:
 						notification.meta?.identifier === undefined
 							? undefined
-							: () => {
-									analytics('notification-clicked-cta', notification.meta?.identifier);
-								},
+							: () => handleNotificationClick(notification.meta?.identifier),
 				})),
-		[analytics, dateFormatter, notifications, unreadAtOpen],
+		[dateFormatter, handleNotificationClick, notifications, unreadAtOpen],
 	);
 
 	const handleOpenChange = useCallback(
@@ -82,6 +87,17 @@ const SaasNotificationsContent: React.FC<SaasNotificationsProps> = ({labels, loc
 		},
 		[analytics, enabled, markAllAsRead, unreadNotifications],
 	);
+	const handleBellClick = useCallback(() => handleOpenChange(!isOpen), [handleOpenChange, isOpen]);
+	const handleDismiss = useCallback(
+		(key: string) => {
+			const notification = notifications.find(({uuid}) => uuid === key);
+			if (notification !== undefined) {
+				dismiss(notification);
+			}
+		},
+		[dismiss, notifications],
+	);
+	const handleDismissAll = useCallback(() => dismissAll(notifications), [dismissAll, notifications]);
 
 	return (
 		<>
@@ -89,27 +105,16 @@ const SaasNotificationsContent: React.FC<SaasNotificationsProps> = ({labels, loc
 				label={labels.title}
 				unreadCount={isFetching ? 0 : unreadNotifications.length}
 				isActive={isOpen}
-				onClick={() => handleOpenChange(!isOpen)}
+				onClick={handleBellClick}
 			/>
 			<NotificationsPanel
 				title={labels.title}
 				notifications={navNotifications}
 				open={isOpen}
 				onOpenChange={handleOpenChange}
-				onDismiss={(key) => {
-					const notification = notifications.find(({uuid}) => uuid === key);
-					if (notification !== undefined) {
-						dismiss(notification);
-					}
-				}}
+				onDismiss={handleDismiss}
 				emptyMessage={isFetching ? labels.loading : labels.empty}
-				headerAction={
-					notifications.length > 0 ? (
-						<Button type="button" variant="ghost" size="sm" onClick={() => dismissAll(notifications)}>
-							{labels.dismissAll}
-						</Button>
-					) : undefined
-				}
+				onDismissAll={handleDismissAll}
 			/>
 		</>
 	);

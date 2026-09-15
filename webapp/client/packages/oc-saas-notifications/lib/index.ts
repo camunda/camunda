@@ -6,8 +6,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {SaasNotifications} from './SaasNotifications';
-import type {SaasNotificationsLabels, SaasNotificationsProps} from './SaasNotifications';
-
-export {SaasNotifications};
-export type {SaasNotificationsLabels, SaasNotificationsProps};
+export {SaasNotifications} from './SaasNotifications';
+export type {SaasNotificationsLabels, SaasNotificationsProps} from './SaasNotifications';
