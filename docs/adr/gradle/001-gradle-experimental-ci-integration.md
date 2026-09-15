@@ -13,8 +13,8 @@ workflows.
 
 ## Context
 
-The monorepo builds with Maven. A parallel Gradle build exists so that Gradle can eventually serve
-as an alternative build path, but it is not an independent build definition. Both builds must work
+The monorepo builds with Maven. A parallel Gradle build will be added so that Gradle can eventually serve
+as an alternative build path, but it will not be an independent build definition at first. Both builds must work
 against the same source tree at the same time. A change to Java sources, a POM, or Gradle build
 logic must not leave the other build unusable.
 
@@ -24,9 +24,10 @@ module graph, dependency scopes and versions, generated sources, resource proces
 usage, published metadata, and packaged artifacts.
 
 We also want Gradle regressions to be visible in pull requests and to protect the merge queue
-without replacing Maven's authoritative application tests. The Gradle compilation check is
-additive: it compiles production and test sources with `./gradlew testClasses` and checks
-distribution packaging and dependency parity.
+without replacing Maven's authoritative application tests. To avoid running the Maven CI and
+the Gradle CI for every PR (because of costs) we will choose some checks that we can run in Gradle
+so that we catch as many issues as possible with quick checks.
+
 
 ## Decision
 
@@ -78,9 +79,10 @@ or replace application tests; it is an additive compilation and distribution-par
 `gradle-changes` filter independently triggers the Gradle `testClasses` and distribution-parity
 jobs when Gradle, Maven, Java, or relevant CI inputs change.
 
-This keeps Maven and Gradle independently observable without claiming that Gradle executes the
-application-test suite. The merge queue and protected-branch pushes continue to validate the
-application with Maven before or after landing.
+These checks cannot catch every possible mismatch between Maven and Gradle, but they are intended
+to catch the most frequent sources of drift, such as dependency changes, newly added modules, and
+changes to Java, Maven, Gradle, or relevant CI inputs. Maven remains the application-test and
+landing-gate authority.
 
 For this ADR, Gradle build inputs are:
 
