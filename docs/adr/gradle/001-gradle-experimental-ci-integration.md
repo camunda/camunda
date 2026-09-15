@@ -96,10 +96,15 @@ For this ADR, Gradle build inputs are:
 
 For changes that can affect build behavior, Unified CI runs Gradle production and test compilation
 and validates the resulting distribution against Maven. The distribution check compares the
-versioned roots and bundled JAR inventories; byte-level differences are expected. Numeric
-patch-only dependency version differences are reported for visibility but do not fail the build,
-since they can result from equivalent Maven and Gradle conflict resolution. Missing or extra JARs,
-distribution root differences, and major or minor version differences remain blocking.
+versioned roots and bundled JAR inventories; byte-level differences are expected. It distinguishes
+between non-blocking and blocking differences:
+
+- **Non-blocking:** Numeric patch-only dependency version differences are reported for visibility
+  but do not fail the build. This tolerance accounts for the different transitive-dependency
+  conflict-resolution algorithms: Gradle selects the highest available version, while Maven uses
+  the first version encountered in dependency resolution order.
+- **Blocking:** Missing or extra JARs, distribution-root differences, and major or minor version
+  differences fail the check.
 
 These checks are included in Unified CI's `check-results` gate. They block relevant pull requests
 and merge groups when Gradle compilation, packaging, or distribution parity fails. Protected-branch
