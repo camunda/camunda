@@ -9,9 +9,7 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.CancelledBootstrapException;
 import io.atomix.raft.cluster.RaftMember;
@@ -25,10 +23,7 @@ import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.utils.concurrent.SingleThreadContext;
-import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -40,7 +35,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -117,38 +111,6 @@ final class ReconfigurationTest {
     return result;
   }
 
-  private ClusterMembershipService createMembershipService(
-      final MemberId localId, final MemberId... remoteIds) {
-    final var localMember = Member.member(localId, Address.local());
-    final var remoteMembers =
-        Arrays.stream(remoteIds).map(id -> Member.member(id, Address.local()));
-    final var members = new HashMap<MemberId, Member>();
-    members.put(localId, localMember);
-    remoteMembers.forEach(member -> members.put(member.id(), member));
-    return new ClusterMembershipService() {
-      @Override
-      public Member getLocalMember() {
-        return localMember;
-      }
-
-      @Override
-      public Set<Member> getMembers() {
-        return Set.copyOf(members.values());
-      }
-
-      @Override
-      public Member getMember(final MemberId memberId) {
-        return members.get(memberId);
-      }
-
-      @Override
-      public void addListener(final ClusterMembershipEventListener listener) {}
-
-      @Override
-      public void removeListener(final ClusterMembershipEventListener listener) {}
-    };
-  }
-
   private RaftServer createServer(
       final Path dir, final ClusterMembershipService membershipService) {
     final var memberId = membershipService.getLocalMember().id();
@@ -174,53 +136,6 @@ final class ReconfigurationTest {
     return server;
   }
 
-  /**
-   * Tracks the result of an append operation. Provides two futures, {@link #write()} and {@link
-   * #commit()} that are completed when the entry is written and committed respectively.
-   */
-  private static final class AppendResult implements AppendListener {
-    private final CompletableFuture<Long> write = new CompletableFuture<>();
-    private final CompletableFuture<Long> commit = new CompletableFuture<>();
-
-    /**
-     * @return a future that is completed with the entry index when it is committed. If the write or
-     *     commit fails, the future is completed exceptionally.
-     */
-    CompletableFuture<Long> commit() {
-      return commit;
-    }
-
-    /**
-     * @return a future that is completed with the entry index when it is written. If the write
-     *     fails, the future is completed exceptionally.
-     */
-    CompletableFuture<Long> write() {
-      return write;
-    }
-
-    @Override
-    public void onWrite(final IndexedRaftLogEntry indexed) {
-      write.complete(indexed.index());
-    }
-
-    @Override
-    public void onWriteError(final Throwable error) {
-      write.completeExceptionally(error);
-      // If write fails, the entry cannot be committed either.
-      commit.completeExceptionally(error);
-    }
-
-    @Override
-    public void onCommit(final long index, final long highestPosition) {
-      commit.complete(index);
-    }
-
-    @Override
-    public void onCommitError(final long index, final Throwable error) {
-      commit.completeExceptionally(error);
-    }
-  }
-
   @Nested
   final class Joining {
     @Test
@@ -230,9 +145,9 @@ final class ReconfigurationTest {
       final var id2 = MemberId.from("2");
       final var id3 = MemberId.from("3");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id2, id1));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id2, id1));
 
       // when - m3 joined once
       CompletableFuture.allOf(m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3)).join();
@@ -249,8 +164,8 @@ final class ReconfigurationTest {
       final var id1 = MemberId.from("1");
       final var id2 = MemberId.from("2");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
 
       // when - m2 joined once
       CompletableFuture.allOf(m1.bootstrap(id1)).join();
@@ -260,8 +175,58 @@ final class ReconfigurationTest {
       Awaitility.await("1 is not leader").untilAsserted(() -> assertThat(m1.isLeader()).isFalse());
 
       // then - m2 can join again after restarting
-      final var restartedM2 = createServer(tmp, createMembershipService(id2, id1));
+      final var restartedM2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
       restartedM2.join(id1).join();
+    }
+
+    /**
+     * Reproduces <a href="https://github.com/camunda/camunda/issues/56808">#56808</a>: joining a
+     * single-member cluster deadlocks permanently when the configuration appended by the leader
+     * cannot be replicated to the joiner before the join attempt fails.
+     *
+     * <p>The leader appends the joint configuration and operates under it immediately
+     * (configurations take effect on append), but can never commit it without the joiner's ack.
+     * When the joiner gives up and shuts down, as {@code PartitionManagerImpl} does after a failed
+     * join, the leader steps down and winning an election in the joint configuration requires the
+     * joiner's vote. When PASSIVE members rejected polls and votes, this deadlocked permanently:
+     * the retried joiner refused the vote needed to elect the leader that its own join needed. With
+     * membership-blind voting, the retried joiner grants the vote while its join attempt keeps
+     * retrying, the re-elected leader resumes the in-flight reconfiguration, and the join succeeds.
+     */
+    @Test
+    void joinShouldSucceedWhenRetriedAfterFailedFirstAttempt(@TempDir final Path tmp) {
+      // given - a single-member cluster, as after the bootstrap of a scaled-up partition
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      m1.bootstrap(id1).join();
+      awaitLeader(m1);
+
+      // when - m2 tries to join while replication from m1 to m2 transiently fails. The join
+      // request still reaches the leader m1, which appends the joint configuration, but m2 never
+      // receives it and the join attempt fails, either by timing out or, if m1 steps down first,
+      // with "Leader stepping down". Like RaftPartitionServer, we pass all members of the
+      // partition, including the joining member itself.
+      protocolFactory.blockMessagesTo(id2);
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      assertThat(m2.join(id1, id2)).failsWithin(Duration.ofSeconds(30));
+
+      // m2 gives up, like PartitionManagerImpl removes the partition after a failed join
+      m2.shutdown().join();
+
+      // m1 operates under the appended joint configuration but cannot commit it and steps down
+      awaitNoLeader(m1);
+
+      // then - once connectivity is restored, retrying the join (as the cluster topology
+      // coordinator does indefinitely) succeeds: the joiner keeps retrying the join on NO_LEADER
+      // and, while the join is in flight, grants the vote that re-elects m1
+      protocolFactory.heal(id2);
+      final var retriedM2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      assertThat(retriedM2.join(id1, id2))
+          .as("m2 can join when retrying after a failed first attempt")
+          .succeedsWithin(Duration.ofSeconds(30));
+      awaitLeader(m1, retriedM2);
     }
 
     @Test
@@ -271,9 +236,9 @@ final class ReconfigurationTest {
       final var id2 = MemberId.from("2");
       final var id3 = MemberId.from("3");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id2, id1));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id2, id1));
 
       // when - m3 joined once and then joins again after dataloss
       CompletableFuture.allOf(m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3)).join();
@@ -283,7 +248,7 @@ final class ReconfigurationTest {
 
       FileUtil.deleteFolder(tmp.resolve(id3.toString()));
       Files.createDirectory(tmp.resolve(id3.toString()));
-      final var recreatedM3 = createServer(tmp, createMembershipService(id3, id2, id1));
+      final var recreatedM3 = createServer(tmp, StaticClusterMembershipService.of(id3, id2, id1));
       recreatedM3.join(id1, id2).join();
 
       // then - leader can append on m3
@@ -305,9 +270,9 @@ final class ReconfigurationTest {
       final var id2 = MemberId.from("2");
       final var id3 = MemberId.from("3");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
@@ -315,7 +280,7 @@ final class ReconfigurationTest {
 
       // when - a new member joins
       final var id4 = MemberId.from("4");
-      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      final var m4 = createServer(tmp, StaticClusterMembershipService.of(id4, id1, id2, id3));
       m4.join(id1, id2, id3).join();
 
       // then - all members show a configuration with 4 active members
@@ -344,10 +309,10 @@ final class ReconfigurationTest {
       final var id3 = MemberId.from("3");
       final var id4 = MemberId.from("4");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
-      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
+      final var m4 = createServer(tmp, StaticClusterMembershipService.of(id4, id1, id2, id3));
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
@@ -377,11 +342,11 @@ final class ReconfigurationTest {
       final var id4 = MemberId.from("4");
       final var id5 = MemberId.from("5");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
-      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
-      final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
+      final var m4 = createServer(tmp, StaticClusterMembershipService.of(id4, id1, id2, id3));
+      final var m5 = createServer(tmp, StaticClusterMembershipService.of(id5, id1, id2, id3));
       final var allServers = List.of(m1, m2, m3, m4, m5);
 
       CompletableFuture.allOf(
@@ -414,11 +379,11 @@ final class ReconfigurationTest {
       final var id4 = MemberId.from("4");
       final var id5 = MemberId.from("5");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
-      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
-      final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
+      final var m4 = createServer(tmp, StaticClusterMembershipService.of(id4, id1, id2, id3));
+      final var m5 = createServer(tmp, StaticClusterMembershipService.of(id5, id1, id2, id3));
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
@@ -446,9 +411,9 @@ final class ReconfigurationTest {
       final var id2 = MemberId.from("2");
       final var id3 = MemberId.from("3");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
@@ -480,9 +445,9 @@ final class ReconfigurationTest {
       final var id2 = MemberId.from("2");
       final var id3 = MemberId.from("3");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
@@ -510,8 +475,8 @@ final class ReconfigurationTest {
       final var id1 = MemberId.from("1");
       final var id2 = MemberId.from("2");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
 
       CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
 
@@ -529,8 +494,8 @@ final class ReconfigurationTest {
       final var id1 = MemberId.from("1");
       final var id2 = MemberId.from("2");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
 
       CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
 
@@ -539,7 +504,7 @@ final class ReconfigurationTest {
       appendEntry(awaitLeader(m1)).commit().join();
 
       m2.shutdown().join();
-      final var m2Restarted = createServer(tmp, createMembershipService(id2, id1));
+      final var m2Restarted = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
       final var startFuture = m2Restarted.bootstrap(id1, id2);
 
       // then - m2 can request leave again
@@ -557,8 +522,8 @@ final class ReconfigurationTest {
       final var id1 = MemberId.from("1");
       final var id2 = MemberId.from("2");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
 
       CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
 
@@ -575,7 +540,7 @@ final class ReconfigurationTest {
     void lastMemberCanLeaveCluster(@TempDir final Path tmp) {
       // given - a cluster with a single member
       final var id1 = MemberId.from("1");
-      final var m1 = createServer(tmp, createMembershipService(id1));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1));
       m1.bootstrap(id1).join();
 
       // commit an entry to ensure that the leader is ready to accept new configuration
@@ -595,9 +560,9 @@ final class ReconfigurationTest {
       final var id2 = MemberId.from("2");
       final var id3 = MemberId.from("3");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
@@ -625,11 +590,11 @@ final class ReconfigurationTest {
       final var id4 = MemberId.from("4");
       final var id5 = MemberId.from("5");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
-      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
-      final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
+      final var m4 = createServer(tmp, StaticClusterMembershipService.of(id4, id1, id2, id3));
+      final var m5 = createServer(tmp, StaticClusterMembershipService.of(id5, id1, id2, id3));
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3, id4, id5),
@@ -670,8 +635,8 @@ final class ReconfigurationTest {
       final var id1 = MemberId.from("1");
       final var id2 = MemberId.from("2");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
 
       CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
 
@@ -719,9 +684,9 @@ final class ReconfigurationTest {
       final var id3 = MemberId.from("3");
       final var id4 = MemberId.from("4");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
@@ -774,7 +739,7 @@ final class ReconfigurationTest {
       final var id1 = MemberId.from("1");
       final var id2 = MemberId.from("2");
 
-      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
       m1.bootstrap(id1).join();
 
       // commit an entry to ensure that the leader is ready to accept new configuration
@@ -847,10 +812,10 @@ final class ReconfigurationTest {
 
     @BeforeEach
     void startServers() {
-      m1 = createServer(tmp, createMembershipService(id1, id2, id3, id4));
-      m2 = createServer(tmp, createMembershipService(id2, id1, id3, id4));
-      m3 = createServer(tmp, createMembershipService(id3, id1, id2, id4));
-      m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3, id4));
+      m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3, id4));
+      m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2, id4));
+      m4 = createServer(tmp, StaticClusterMembershipService.of(id4, id1, id2, id3));
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3, id4),
               m2.bootstrap(id1, id2, id3, id4),
@@ -944,7 +909,8 @@ final class ReconfigurationTest {
       // when
 
       // restart m2
-      final var m2Restarted = createServer(tmp, createMembershipService(id2, id1, id3, id4));
+      final var m2Restarted =
+          createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3, id4));
       m2Restarted.bootstrap(id1, id2, id3, id4).join();
 
       // then
@@ -977,7 +943,8 @@ final class ReconfigurationTest {
       // when
       awaitNoLeader(m1);
       // no leader when m2 restarts. So its state is outdated
-      final var m2Restarted = createServer(tmp, createMembershipService(id2, id1, id3, id4));
+      final var m2Restarted =
+          createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3, id4));
       m2Restarted.bootstrap(id1, id2, id3, id4);
       m2Restarted.forceConfigure(newMembers()).join();
 
