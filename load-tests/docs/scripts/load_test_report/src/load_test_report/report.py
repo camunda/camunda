@@ -11,8 +11,11 @@ from datetime import UTC
 from datetime import datetime
 from typing import Any
 
+from pydantic import ValidationError
+
 from .errors import MissingMetric
 from .errors import ReportError
+from .prometheus import PrometheusResponse
 from .queries import QueriesDocument
 
 NUMBER_PATTERN = re.compile(r"^-?([0-9]+([.][0-9]+)?|[.][0-9]+)([eE][-+]?[0-9]+)?$")
@@ -30,45 +33,44 @@ def missing_metric(key: str, reason: str, warning_sink: WarningSink) -> None:
 
 
 def extract_metric_value(
-    response: Mapping[str, Any],
+    response: PrometheusResponse | Mapping[str, Any],
     value_label: str,
     key: str,
     warning_sink: WarningSink = warn,
 ) -> MetricValue:
-    if response.get("status") != "success":
-        error_type = response.get("errorType")
-        error_message = response.get("error")
+    try:
+        parsed_response = (
+            response if isinstance(response, PrometheusResponse) else PrometheusResponse.model_validate(response)
+        )
+    except ValidationError as error:
+        missing_metric(key, f"invalid Prometheus response: {error}", warning_sink)
+
+    if parsed_response.status != "success":
+        error_type = parsed_response.error_type
+        error_message = parsed_response.error
         reason = "Prometheus returned non-success status"
         if error_type or error_message:
             reason += f": {error_type or 'error'}: {error_message or 'unknown error'}"
         missing_metric(key, reason, warning_sink)
 
-    data = response.get("data", {})
-    result = data.get("result", []) if isinstance(data, Mapping) else []
-    if not isinstance(result, list):
-        result = []
+    if parsed_response.data is None:
+        missing_metric(key, "no result data", warning_sink)
+    data = parsed_response.data
+    result = data.result
 
     if value_label:
-        values = sorted(
-            {
-                str(series.get("metric", {}).get(value_label))
-                for series in result
-                if isinstance(series, Mapping)
-                and isinstance(series.get("metric"), Mapping)
-                and series["metric"].get(value_label) is not None
-            }
-        )
+        if not isinstance(result, list):
+            missing_metric(key, "no label sample", warning_sink)
+        values = sorted({str(series.metric[value_label]) for series in result if value_label in series.metric})
         if not values:
             missing_metric(key, "no label sample", warning_sink)
         return ", ".join(values)
 
     raw_value = ""
-    if data.get("resultType") in ("scalar", "string") and isinstance(result, list) and len(result) > 1:
+    if data.result_type in ("scalar", "string") and isinstance(result, tuple):
         raw_value = str(result[1])
-    elif result and isinstance(result[0], Mapping):
-        sample = result[0].get("value", [])
-        if isinstance(sample, list) and len(sample) > 1:
-            raw_value = str(sample[1])
+    elif isinstance(result, list) and result:
+        raw_value = result[0].value[1]
 
     if not NUMBER_PATTERN.fullmatch(raw_value):
         missing_metric(key, "no numeric sample", warning_sink)

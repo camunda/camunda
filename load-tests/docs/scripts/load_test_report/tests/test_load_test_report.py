@@ -16,6 +16,7 @@ from load_test_report.cli import run
 from load_test_report.errors import MissingMetric
 from load_test_report.errors import ReportError
 from load_test_report.prometheus import PrometheusClient
+from load_test_report.prometheus import PrometheusResponse
 from load_test_report.prometheus import auth_headers
 from load_test_report.queries import QueriesDocument
 from load_test_report.queries import Query
@@ -128,7 +129,7 @@ def test_should_extract_sorted_unique_label_values():
 
 
 def test_should_warn_when_numeric_sample_is_missing():
-    response = {"status": "success", "data": {"result": []}}
+    response = {"status": "success", "data": {"resultType": "vector", "result": []}}
     warnings = []
 
     with pytest.raises(MissingMetric, match="no numeric sample"):
@@ -138,7 +139,7 @@ def test_should_warn_when_numeric_sample_is_missing():
 
 
 def test_should_warn_when_label_sample_is_missing():
-    response = {"status": "success", "data": {"result": []}}
+    response = {"status": "success", "data": {"resultType": "vector", "result": []}}
     warnings = []
 
     with pytest.raises(MissingMetric, match="no label sample"):
@@ -152,7 +153,7 @@ def test_should_warn_when_prometheus_status_is_not_success():
         "status": "error",
         "errorType": "bad_data",
         "error": "invalid PromQL",
-        "data": {"result": []},
+        "data": {"resultType": "vector", "result": []},
     }
     warnings = []
 
@@ -212,10 +213,25 @@ def test_should_build_report_without_network_side_effects():
     )
     client = FakePrometheusClient(
         [
-            {"status": "success", "data": {"result": [{"metric": {"namespace": "c8-ck-test"}}]}},
-            {"status": "success", "data": {"result": [{"value": [123, "10"]}]}},
-            {"status": "success", "data": {"result": [{"metric": {"image": "camunda:SNAPSHOT"}}]}},
-            {"status": "success", "data": {"result": []}},
+            {
+                "status": "success",
+                "data": {
+                    "resultType": "vector",
+                    "result": [{"metric": {"namespace": "c8-ck-test"}, "value": [123, "1"]}],
+                },
+            },
+            {
+                "status": "success",
+                "data": {"resultType": "vector", "result": [{"metric": {}, "value": [123, "10"]}]},
+            },
+            {
+                "status": "success",
+                "data": {
+                    "resultType": "vector",
+                    "result": [{"metric": {"image": "camunda:SNAPSHOT"}, "value": [123, "1"]}],
+                },
+            },
+            {"status": "success", "data": {"resultType": "vector", "result": []}},
         ]
     )
     warnings = []
@@ -298,7 +314,7 @@ def test_should_query_prometheus_with_urlencoded_query_and_headers():
 
     def fake_urlopen(request, timeout):
         seen_requests.append((request, timeout))
-        return FakeHttpResponse('{"status":"success","data":{"result":[]}}')
+        return FakeHttpResponse('{"status":"success","data":{"resultType":"vector","result":[]}}')
 
     with mock.patch.object(prometheus, "urlopen", side_effect=fake_urlopen):
         client = PrometheusClient(
@@ -310,7 +326,8 @@ def test_should_query_prometheus_with_urlencoded_query_and_headers():
 
         response = client.query('rate(total{namespace="c8-ck-test"}[5m])')
 
-    assert response["status"] == "success"
+    assert isinstance(response, PrometheusResponse)
+    assert response.status == "success"
     request, timeout = seen_requests[0]
     assert timeout == 30
     assert "query=rate%28total%7Bnamespace%3D%22c8-ck-test%22%7D%5B5m%5D%29" in request.full_url

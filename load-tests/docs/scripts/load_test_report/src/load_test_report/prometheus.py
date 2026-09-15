@@ -4,13 +4,38 @@ import base64
 import json
 from collections.abc import Mapping
 from typing import Any
+from typing import Literal
 from urllib.error import HTTPError
 from urllib.error import URLError
 from urllib.parse import urlencode
 from urllib.request import Request
 from urllib.request import urlopen
 
+from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import ValidationError
+
 from .errors import ReportError
+
+
+class PrometheusInstantVector(BaseModel):
+    metric: dict[str, Any]
+    value: tuple[float, str]
+
+
+class PrometheusResponseData(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    result: list[PrometheusInstantVector] | tuple[float, str]
+    result_type: Literal["matrix", "vector", "scalar", "string"] = Field(alias="resultType")
+
+
+class PrometheusResponse(BaseModel):
+    status: str
+    data: PrometheusResponseData | None = None
+    error_type: str | None = Field(default=None, alias="errorType")
+    error: str | None = None
 
 
 class PrometheusClient:
@@ -28,11 +53,15 @@ class PrometheusClient:
     def runtime_info(self) -> Mapping[str, Any]:
         return self._get_json(f"{self.endpoint}/api/v1/status/runtimeinfo", timeout=15)
 
-    def query(self, query: str) -> Mapping[str, Any]:
+    def query(self, query: str) -> PrometheusResponse:
         params = {"query": query}
         if self.time_anchor:
             params["time"] = self.time_anchor
-        return self._get_json(f"{self.endpoint}/api/v1/query?{urlencode(params)}")
+        response = self._get_json(f"{self.endpoint}/api/v1/query?{urlencode(params)}")
+        try:
+            return PrometheusResponse.model_validate(response)
+        except ValidationError as error:
+            raise ReportError(f"Prometheus returned an invalid response: {error}") from error
 
     def _get_json(self, url: str, timeout: int = 30) -> Mapping[str, Any]:
         try:
