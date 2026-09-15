@@ -106,6 +106,8 @@ type Props = {
   className?: string;
 };
 
+const TEMPLATE_ICON_SOURCE_PATTERN = /^(https?:\/\/|data:image\/)/i;
+
 const DefaultElementInstanceIcon: React.FC<Props> = ({
   diagramBusinessObject,
   className,
@@ -391,7 +393,7 @@ const ElementInstanceIcon: React.FC<Props> = (props) => {
     !isRootProcess &&
     canRenderTemplateIcon &&
     typeof icon === 'string' &&
-    /^(https?:\/\/|data:image\/)/i.test(icon) &&
+    TEMPLATE_ICON_SOURCE_PATTERN.test(icon) &&
     icon !== failedIcon
   ) {
     return (
