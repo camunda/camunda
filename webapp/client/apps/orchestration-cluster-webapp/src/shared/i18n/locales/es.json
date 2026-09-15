@@ -784,6 +784,20 @@
 					"viewDecisionInstance": "Ver instancia de decisión {{key}}",
 					"failureReason": "Motivo del fallo: {{message}}",
 					"emptyMessage": "No se encontraron elementos"
+				},
+				"actions": {
+					"suspend": "Suspender",
+					"resume": "Reanudar",
+					"cancel": "Cancelar",
+					"overflowMenuLabel": "Más acciones",
+					"suspendFailed": "La operación no se puede suspender",
+					"resumeFailed": "La operación no se puede reanudar",
+					"cancelFailed": "La operación no se puede cancelar",
+					"notFoundSubtitle": "Operación por lotes no encontrada. Puede que ya se haya completado o fallado.",
+					"forbiddenTitle": "No tiene permiso para realizar esta operación",
+					"forbiddenSubtitle": "Póngase en contacto con el administrador si necesita acceso.",
+					"convergenceUnknownTitle": "No se pudo confirmar el estado de la operación por lotes",
+					"convergenceUnknownSubtitle": "La acción se envió. Actualice la página para ver su estado actual."
 				}
 			},
 			"shared": {
