@@ -250,15 +250,35 @@ get_jobs_after_checkresults_without_ifalways(jobInput) = jobs_after_checkresults
         }
         count(job_needs_checkresults) == 1
 
-        # check that the job declares an `if: ...` condition and it contains `always()`
+        # check that the job declares an `if: ...` condition that guards on check-results
         #
         # this is important because GHA by default skips execution of jobs that itself
         # depend on jobs (transitively) that were skipped - which happens a lot in Unified CI
         # and we want to avoid accidentally skipping deploy jobs or similar
         #
+        # `always()` keeps GHA from skipping the job once the gate fails, and it has to
+        # be conjoined with a comparison against `needs.check-results.result` so the job
+        # states which gate outcome it runs on. Pinning that comparison to `== 'success'`
+        # would forbid a job that legitimately runs *because* the gate failed, such as
+        # the runner-shutdown retry, so the compared value itself is left open.
+        #
+        # The comparison operator is part of the match on purpose. `A && B` in a GHA
+        # expression evaluates to `B`, so `always() && needs.check-results.result` is a
+        # non-empty string and therefore always truthy: the job would run unconditionally
+        # while looking like it checks the gate. Requiring `==` or `!=` rejects that, as
+        # it rejects an `if` that merely mentions both parts joined by `||`.
         job_if := object.get(job, "if", "")  # get with empty default value
-        not contains(job_if, "always() && needs.check-results.result == 'success'")
+        not if_compares_checkresults(job_if)
     }
+}
+
+# multiple functions with the same name act as logical OR
+if_compares_checkresults(job_if) {
+    contains(job_if, "always() && needs.check-results.result ==")
+}
+
+if_compares_checkresults(job_if) {
+    contains(job_if, "always() && needs.check-results.result !=")
 }
 
 get_jobs_with_flaky_outputs(jobInput) = jobs_with_flaky_outputs {

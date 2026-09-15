@@ -184,3 +184,56 @@ jobs:
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Auto-retry when integration-tests failed because its self-hosted runner was
+  # terminated mid-job (spot preemption, autoscaler scale-down, node eviction)
+  # rather than by a real test failure. Those runs end with "The runner has
+  # received a shutdown signal" partway through Maven Test Build, which says
+  # nothing about the code under test.
+  #
+  # The action reads the run logs first and only retriggers when a shutdown
+  # message is present, and it re-runs failed jobs only, so genuine failures stay
+  # red and anything already green is left alone. Capped at two retries via
+  # run_attempt.
+  #
+  # send-slack-notification above still fires on the original failure, so a
+  # shutdown that the retry goes on to fix can leave one alert behind.
+  rerun-failed-jobs:
+    name: "Rerun jobs killed by runner shutdown"
+    needs: integration-tests
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        sparse-checkout: .github
+    - name: Print metadata
+      uses: ./.github/actions/print-metadata
+      with:
+        test_owner: '@camunda/core-features'
+    - name: Rerun failed jobs on runner shutdown
+      uses: camunda/infra-global-github-actions/rerun-failed-run@475528365f4010480dccff71ccac554cc3352e7c # rerun-failed-run-1.1.2
+      with:
+        error-messages: |
+          The runner has received a shutdown signal
+          lost communication with the server
+        run-id: ${{ github.run_id }}
+        repository: ${{ github.repository }}
+        vault-addr: ${{ secrets.VAULT_ADDR }}
+        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        job_name: "rerun-failed-jobs"
+        build_status: ${{ job.status }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
