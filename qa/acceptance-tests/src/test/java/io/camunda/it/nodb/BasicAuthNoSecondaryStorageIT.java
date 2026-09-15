@@ -24,7 +24,7 @@ import org.springframework.beans.factory.BeanCreationException;
  * database.type=none and Basic Authentication is configured.
  */
 @ZeebeIntegration
-public class BasicAuthNoSecondaryStorageTest {
+public class BasicAuthNoSecondaryStorageIT {
 
   @Test
   void shouldFailToStartWithBasicAuthAndNoSecondaryStorage() {
