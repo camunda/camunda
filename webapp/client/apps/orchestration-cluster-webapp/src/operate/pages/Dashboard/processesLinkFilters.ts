@@ -8,7 +8,7 @@
 
 function runningOrAllInstancesFilter(total: number) {
 	const isEmpty = total === 0;
-	return {active: true, incidents: true, completed: isEmpty, canceled: isEmpty};
+	return {active: true, incidents: true, completed: isEmpty, canceled: isEmpty, suspended: false};
 }
 
 export {runningOrAllInstancesFilter};
