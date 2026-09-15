@@ -25,9 +25,9 @@ import org.springframework.test.context.support.AbstractTestExecutionListener;
  * at all. Without the bind, a Spring test class that reuses a cached context never constructs the
  * helper again, so it runs with no environment and silently resolves no legacy property at all.
  *
- * <p>This duplicates the listener of the {@code configuration} module, which registers it on its
- * own test classpath only. Test classes are not published, so a module with both Spring tests and
- * plain-POJO configuration tests has to register its own.
+ * <p>This duplicates the listener of the {@code configuration} module. Test classes are not
+ * published, so a module with both Spring tests and plain-POJO configuration tests has to register
+ * its own.
  */
 public class UnifiedConfigurationHelperResetListener extends AbstractTestExecutionListener {
 
