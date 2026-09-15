@@ -48,13 +48,16 @@ public interface SuspensionState {
 
   /**
    * Reads the head of the process instance's FIFO buffer without scanning the rest of it, so that
-   * draining one command per {@code DRAIN} cycle stays cheap no matter how much is buffered.
+   * draining one command per {@code DRAIN} cycle stays cheap no matter how much is buffered. Also
+   * reports whether a further command remains buffered after it, in the same column-family pass -
+   * the drain cycle needs both to decide whether to schedule another {@code DRAIN} or resume, and
+   * would otherwise have to ask twice.
    *
-   * @return the oldest buffered command, or {@link Optional#empty()} if the process instance has
-   *     none buffered
+   * @return a {@link DrainLookup} whose {@code command} is the oldest buffered command after {@code
+   *     afterCommandKey} (or {@link Optional#empty()} if none remain), and whose {@code hasMore}
+   *     reports whether another one follows it
    */
-  Optional<BufferedCommand> getOldestBufferedCommand(
-      long processInstanceKey, final long afterCommandKey);
+  DrainLookup findNextBufferedCommand(long processInstanceKey, long afterCommandKey);
 
   /**
    * Counts the buffered commands for the given process instance without reading their values,
@@ -70,4 +73,10 @@ public interface SuspensionState {
 
   /** A buffered command together with the key it is stored under. */
   record BufferedCommand(long key, BufferedCommandRecord command) {}
+
+  /**
+   * Result of {@link #findNextBufferedCommand}: the oldest remaining buffered command (if any), and
+   * whether another one follows it.
+   */
+  record DrainLookup(Optional<BufferedCommand> command, boolean hasMore) {}
 }
