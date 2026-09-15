@@ -38,6 +38,7 @@ dependencies {
   testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
   testImplementation(libs.org.testcontainers.testcontainers)
   testImplementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
+  testImplementation(libs.tools.jackson.core.jackson.databind)
 }
 
 description = "Camunda Process Test Spring"
