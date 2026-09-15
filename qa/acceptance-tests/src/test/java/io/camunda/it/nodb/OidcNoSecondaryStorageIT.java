@@ -46,7 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @ZeebeIntegration
-public class OidcNoSecondaryStorageTest {
+public class OidcNoSecondaryStorageIT {
 
   private static final String DEFAULT_USER_ID = UUID.randomUUID().toString();
   private static final String SERVICE_CLIENT_ID = UUID.randomUUID().toString();
