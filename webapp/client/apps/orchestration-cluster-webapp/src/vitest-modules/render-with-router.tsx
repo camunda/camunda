@@ -26,9 +26,11 @@ async function renderWithRouter(
 	{
 		path,
 		initialEntry = path,
+		basepath = '',
 	}: {
 		path: ValidRoutes;
 		initialEntry?: string;
+		basepath?: string;
 	},
 ) {
 	const queryClient = new QueryClient({
@@ -50,6 +52,7 @@ async function renderWithRouter(
 	const router = createRouter({
 		routeTree: rootRoute.addChildren([testRoute]),
 		history: createMemoryHistory({initialEntries: [initialEntry]}),
+		basepath,
 		defaultPendingMinMs: 0,
 		defaultNotFoundComponent: () => null,
 		context: {
