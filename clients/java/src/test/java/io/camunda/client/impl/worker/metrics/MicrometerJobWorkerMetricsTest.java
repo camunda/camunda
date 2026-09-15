@@ -70,6 +70,17 @@ final class MicrometerJobWorkerMetricsTest {
   }
 
   @Test
+  void shouldCountExpiredJobs() {
+    // when
+    metrics.jobExpired(6);
+
+    // then
+    Assertions.assertThat(meterRegistry).has(hasCounter(Names.JOB_EXPIRED, tags));
+    Assertions.assertThat(meterRegistry.counter(Names.JOB_EXPIRED.asString(), tags))
+        .has(hasCount(6));
+  }
+
+  @Test
   void shouldCountStreamInactivityRecreations() {
     // when
     metrics.streamInactivityRecreated();
