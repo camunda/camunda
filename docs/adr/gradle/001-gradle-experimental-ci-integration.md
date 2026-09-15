@@ -92,36 +92,21 @@ For this ADR, Gradle build inputs are:
 - files below `gradle/`; and
 - files below `buildSrc/`.
 
-### D5. Add a relevant Gradle compilation and distribution check to Unified CI
+### D5. Add relevant Gradle compilation and distribution checks to Unified CI
 
-The `Gradle / Test Classes` job runs when the change set contains Java or resource sources, Maven
-build inputs, Gradle build inputs, or CI inputs that can change build behavior. It runs
-`testClasses` and `:camunda-zeebe:distZip` together so the distribution reuses the compilation
-outputs:
+For changes that can affect build behavior, Unified CI runs Gradle production and test compilation
+and validates the resulting distribution against Maven. The distribution check compares the
+versioned roots and bundled JAR inventories; byte-level differences are expected, and numeric
+patch-only version differences are reported without blocking. Missing or extra JARs, distribution
+root differences, and major or minor version differences remain blocking.
 
-```text
-./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses :camunda-zeebe:distZip
-```
-
-The job uploads the Gradle ZIP as an artifact. A separate `Gradle / Distribution Parity` job waits
-for this job and `build-distball`, downloads the Gradle and Maven ZIPs, and compares their versioned
-roots and bundled JAR names and versions. Other file paths and byte contents are not compared; the
-JAR bytes generally differ, for example because of manifest metadata. Numeric patch-only
-version differences in bundled JARs are reported but do not block the check, since they can arise
-from equivalent Maven and Gradle conflict-resolution behavior. Distribution-root differences,
-major/minor version differences, and missing or extra JARs remain blocking.
-
-Both jobs are included in Unified CI's `check-results` gate. They block relevant pull requests and
-merge groups when Gradle compilation, packaging, or distribution parity fails. Protected-branch
+These checks are included in Unified CI's `check-results` gate. They block relevant pull requests
+and merge groups when Gradle compilation, packaging, or distribution parity fails. Protected-branch
 pushes run the same checks for post-merge health and to warm the shared Gradle cache; a push failure
 cannot prevent the commit that triggered it from having already landed.
 
-Note that the comparison of the tarball does not guarantee that each module contain the same exact
-dependencies, altough it's likely to happen (mostly because the modules compile).
-
-The `gradle testClasses` verifies only compilation of test classes, not the execution of the unit tests:
-there might be some situations where a change in java/maven requires a change in gradle that it's not catched
-by CI.
+The Gradle compilation check verifies test-class compilation, not unit-test execution. Full Gradle
+test execution is handled by the scheduled validation described in D7.
 
 ### D6. Keep the Gradle and Maven jobs independently gated
 
