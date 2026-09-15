@@ -92,10 +92,14 @@ it('should read a process instance and preserve forbidden errors', async ({worke
 	);
 });
 
-it('should classify forbidden process instance reads as unauthorized', async ({worker}) => {
+it.for([
+	{status: 403, expected: 'Unauthorized'},
+	{status: 404, expected: 'Not found'},
+	{status: 500, expected: 'Generic error'},
+])('should classify $status process instance reads as $expected', async ({status, expected}, {worker}) => {
 	worker.use(
 		mockGetProcessInstanceEndpoint({
-			successResponse: HttpResponse.json(createProblemDetails({status: 403}), {status: 403}),
+			successResponse: HttpResponse.json(createProblemDetails({status}), {status}),
 		}),
 	);
 	const screen = await render(
@@ -103,7 +107,7 @@ it('should classify forbidden process instance reads as unauthorized', async ({w
 			<ProcessInstanceStatus />
 		</QueryClientProvider>,
 	);
-	await expect.element(screen.getByText('Unauthorized')).toBeVisible();
+	await expect.element(screen.getByText(expected)).toBeVisible();
 });
 
 it('should refresh suspended process instance metadata after it is resumed externally', async ({worker}) => {

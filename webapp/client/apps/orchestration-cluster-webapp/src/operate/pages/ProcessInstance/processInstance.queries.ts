@@ -49,7 +49,7 @@ function processInstanceIncidentsCountQuery(processInstanceKey: string) {
 			const result: QueryProcessInstanceIncidentsResponseBody = await response.json();
 			return result.page.totalItems;
 		},
-		staleTime: 500,
+		staleTime: POLLING_INTERVAL_MS,
 		refetchInterval: POLLING_INTERVAL_MS,
 	});
 }
@@ -65,7 +65,6 @@ function processInstanceWaitStateStatisticsQuery(processInstanceKey: string) {
 			const result: GetProcessInstanceWaitStateStatisticsResponseBody = await response.json();
 			return result.items;
 		},
-		staleTime: 500,
 		refetchInterval: POLLING_INTERVAL_MS,
 	});
 }
