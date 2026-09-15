@@ -36,34 +36,22 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 /**
- * CCSM security wiring for the CSL adoption, active under the self-managed profile whenever CSL is
- * active — the default since 8.10 (camunda/camunda#58483), or opted out of with {@code
- * optimize.security.csl.enabled=false} through 8.10. Restores the Identity {@code write:*}
- * (OPTIMIZE_PERMISSION) gate the legacy {@code CCSMSecurityConfigurerAdapter} / {@code
- * CCSMAuthenticationCookieFilter} enforced, using CSL's host extension points.
+ * CCSM security wiring under CSL, active on the self-managed profile unless {@code
+ * optimize.security.csl.enabled=false}. Enforces the Identity {@code write:*} (OPTIMIZE_PERMISSION)
+ * gate through CSL's host extension points, which CSL's default {@link TokenValidatorFactory} does
+ * not cover: it only checks issuer, signature and expiry, so any principal the IdP authenticates
+ * would reach Optimize.
  *
- * <p>Without this configuration, CSL's default {@link TokenValidatorFactory} only checks
- * issuer/signature/expiry: any principal the configured IdP authenticates would reach Optimize,
- * regardless of whether Identity ever granted it the Optimize permission.
+ * <p>The gate applies to bearer tokens through {@link #tokenValidatorFactory} and to session logins
+ * through {@link OptimizeCcsmSessionPermissionEnforcementFilter}, because CSL swallows a validation
+ * failure on the session path and falls back to the id_token's claims.
  *
- * <p>Unlike {@link OptimizeCloudSecurityConfiguration} (CCSaaS), this configuration does <b>not</b>
- * override {@code idTokenDecoderFactory}: {@link OptimizeIdentityPermissionValidator} performs a
- * full identity-sdk re-verification requiring the token's {@code aud} claim to match {@code
- * camunda.identity.audience} (the API resource audience, e.g. {@code optimize-api}), which is a
- * different value from the OIDC client-id the login id_token is audienced to (e.g. {@code
- * optimize}) — CSL's own audience validators and CCSaaS's org/cluster validators are lenient on
- * claim absence, but an audience mismatch here is not absence, it is a hard rejection. Routing the
- * id_token through this validator would reject every legitimate interactive login. The legacy CCSM
- * stack never validated an id_token either: {@code CCSMAuthenticationCookieFilter} only ever
- * checked the actual OAuth2 access token.
- *
- * <p>CSL defines no id_token decoder of its own (Spring Security's stock {@code
- * OidcIdTokenDecoderFactory} handles the login id_token unmodified), so simply not overriding
- * {@code idTokenDecoderFactory} here is sufficient to exempt it. {@link #tokenValidatorFactory}
- * gates the bearer/API resource-server {@code JwtDecoder}, which consumes the bean automatically.
- * Interactive session users are not covered by it: CSL swallows the validation failure on that path
- * and falls back to the id_token's claims, which is why {@link
- * OptimizeCcsmSessionPermissionEnforcementFilter} enforces the permission for them instead.
+ * <p>The login id_token itself is exempt: unlike {@link OptimizeCloudSecurityConfiguration}
+ * (CCSaaS) this configuration does not override {@code idTokenDecoderFactory}, which leaves Spring
+ * Security's stock decoder in place. {@link OptimizeIdentityPermissionValidator} requires the
+ * token's {@code aud} to match {@code camunda.identity.audience} (the API resource audience), and
+ * the id_token is audienced to the OIDC client-id instead, so routing it through the validator
+ * would reject every interactive login.
  */
 @Configuration
 @Conditional(CCSMCondition.class)
@@ -77,9 +65,8 @@ public class OptimizeCcsmSecurityConfiguration {
       List.of("/api/public/**", "/api/ingestion/variable");
 
   /**
-   * Token validation for bearer/API tokens. Overrides CSL's {@code @ConditionalOnMissingBean}
-   * default to append the Identity permission gate. The gate is always added: dropping it would
-   * silently reopen the CCSM authorization gap CSL introduced.
+   * Token validation for bearer/API tokens: CSL's checks plus the Identity permission gate.
+   * Overrides CSL's {@code @ConditionalOnMissingBean} default.
    */
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
@@ -93,33 +80,21 @@ public class OptimizeCcsmSecurityConfiguration {
   }
 
   /**
-   * Installs {@link OptimizeCcsmSessionPermissionEnforcementFilter} into CSL's
-   * session-authenticated chains (webapp + API). CSL provides no dedicated "add an arbitrary filter
-   * to every chain" SPI; {@link SecurityHeadersCustomizer} is the closest fit it does offer — a
-   * plain {@code customize(HttpSecurity)} hook that {@code ScopedWebappSecurityChainBuilder},
-   * {@code ScopedApiSecurityChainBuilder} and {@code UnprotectedApiSecurityConfiguration} all apply
-   * while building their chain, regardless of its "headers" name. Repurposing it here is a
-   * deliberate, documented deviation rather than a semantic fit: it is the only extension point CSL
-   * exposes that receives the real {@link HttpSecurity} builder.
+   * Installs {@link OptimizeCcsmSessionPermissionEnforcementFilter} into CSL's chains. {@link
+   * SecurityHeadersCustomizer} is repurposed as the carrier because it is the only extension point
+   * CSL exposes that receives the real {@link HttpSecurity} builder, and every chain builder
+   * applies it regardless of its "headers" name.
    *
    * <p>The filter therefore also lands on CSL's unprotected-paths chain ({@code
-   * BaseSecurityConfiguration#unprotectedPathsSecurityFilterChain}), where it is a no-op, and it is
-   * a no-op for a concrete reason and not by assumption: that chain installs no {@code
-   * SessionRepositoryFilter}, and CSL registers the default one with {@code
-   * registration.setEnabled(false)} so it is not a global servlet filter either. Nothing resolves
-   * the {@code SESSION} cookie on that chain, so no {@code SecurityContext} is restored, so {@code
-   * CCSMTokenService#getSessionAccessToken} finds no {@code OAuth2AuthenticationToken} and no token
-   * to verify. A request to {@code /api/readyz} or {@code /api/external/**} cannot be denied here
-   * because it also carries a session cookie.
+   * BaseSecurityConfiguration#unprotectedPathsSecurityFilterChain}), where it is a no-op: that
+   * chain installs no {@code SessionRepositoryFilter} and CSL registers the default one with {@code
+   * registration.setEnabled(false)}, so nothing resolves the {@code SESSION} cookie there and no
+   * {@code SecurityContext} is restored.
    *
-   * <p>Anchored after {@link AuthorizationFilter}, which every CSL chain installs, and deliberately
-   * not right after {@code SecurityContextHolderFilter}: CSL's {@code OAuth2RefreshTokenFilter}
-   * shares this anchor on the webapp chain and is added before this customizer runs, so insertion
-   * order (the tie-break among filters sharing an anchor) puts the refresh ahead of the check. An
-   * expired access token is then renewed first and verified afterwards, the way the legacy {@code
-   * CCSMAuthenticationCookieFilter} renewed before deciding. That ordering only holds on the webapp
-   * chain, CSL's API chain has no refresh filter at all, which is why the filter skips an expired
-   * token instead of denying it (see its javadoc).
+   * <p>Anchored after {@link AuthorizationFilter}, which CSL's {@code OAuth2RefreshTokenFilter}
+   * shares on the webapp chain and claims first, so an expired access token is refreshed before it
+   * is verified. CSL's API chain installs no refresh filter, which is why the filter skips an
+   * expired token instead of denying it (see its javadoc).
    */
   @Bean
   public SecurityHeadersCustomizer ccsmSessionPermissionEnforcementFilterInstaller(
@@ -130,43 +105,29 @@ public class OptimizeCcsmSecurityConfiguration {
   }
 
   /**
-   * Carve-out chain for {@code /api/public/**} and {@code /api/ingestion/variable}: the
-   * client-credentials/M2M surface that legacy CCSM ({@code
-   * CCSMSecurityConfigurerAdapter#publicApiJwtDecoder}) only ever audience-checked, never gated
-   * through Identity. {@link OptimizeSecurityPathAdapter#apiPaths()} places both paths in the same
-   * shared chain as every interactive-user endpoint, so without this carve-out {@link
-   * OptimizeIdentityPermissionValidator} would hard-reject any client-credentials token lacking a
-   * {@code write:*} Identity grant — a regression from the legacy behaviour these two paths always
-   * had. Ordered ahead of CSL's own {@code oidcApiSecurityFilterChain} ({@code
+   * Chain for {@code /api/public/**} and {@code /api/ingestion/variable}, the client-credentials
+   * surface that is audience-checked but not gated through Identity. {@link
+   * OptimizeSecurityPathAdapter#apiPaths()} places both paths in the shared API chain, where {@link
+   * OptimizeIdentityPermissionValidator} would reject any token without a {@code write:*} Identity
+   * grant. Ordered ahead of CSL's {@code oidcApiSecurityFilterChain} ({@code
    * CamundaSecurityFilterChainConstants#ORDER_API}) so it claims both paths first; sharing {@code
-   * ORDER_UNPROTECTED} with CSL's genuinely-public chain is safe because the two chains' path
-   * patterns never overlap.
+   * ORDER_UNPROTECTED} with CSL's public chain is safe because their path patterns never overlap.
    *
-   * <p>Builds its {@link JwtDecoder} the same way CSL's own default {@code jwtDecoder} bean does
-   * ({@code OidcAccessTokenDecoderFactory#selectAccessTokenDecoder}) but with a freshly built
-   * {@link TokenValidatorFactory} that carries none of the extra validators — i.e. the same
-   * issuer/signature/expiry/audience checks CSL would otherwise apply, just without the Identity
-   * gate {@link #tokenValidatorFactory} adds for every other path.
+   * <p>Its {@link JwtDecoder} applies CSL's own issuer, signature, expiry and audience checks
+   * without the Identity gate, plus {@code api.audience}. CSL validates against one merged audience
+   * set that {@code OptimizeSecurityConfigCompatibilityPostProcessor} bridges both the Identity and
+   * the public API audience into, and accepts a token matching any entry of it, so without pinning
+   * {@code api.audience} an Identity-audience token would pass here and no Identity gate would
+   * catch it. An unset {@code api.audience} leaves the merged set as the only audience check.
    *
-   * <p>Instead it requires {@code api.audience}, the way the legacy decoder did. CSL validates
-   * against one merged audience set ({@code OptimizeSecurityConfigCompatibilityPostProcessor}
-   * bridges the Identity and public-API audiences into it) and its {@code AudienceValidator}
-   * accepts a token matching any entry, so the shared set alone would let an Identity-audience
-   * token through here, and this chain has no Identity gate to catch it. When {@code api.audience}
-   * is not configured there is nothing to pin to and the merged set stays the only audience check.
-   *
-   * <p>The chain itself is assembled by CSL's {@link ScopedApiSecurityChainBuilder}, the same
-   * builder its own API chain uses, so the operator's CORS source, HTTPS-redirect customizers, CSRF
-   * configuration, secure headers and API authentication entry point keep applying to these two
-   * paths. Hand-rolling the chain here silently dropped all of them for {@code /api/public/**} and
-   * {@code /api/ingestion/variable}. No {@code SessionRepositoryFilter} is passed: this surface is
-   * client-credentials only, so it stays session-less. Two consequences of going through the
-   * builder: it also applies {@link SecurityHeadersCustomizer}, so {@link
-   * OptimizeCcsmSessionPermissionEnforcementFilter} lands on this chain as well, where it is a
-   * no-op because the context holds a bearer {@code JwtAuthenticationToken} and never an {@code
-   * OAuth2AuthenticationToken}; and CSL's CSRF protection stays inert, because its request matcher
-   * only demands a token once {@code request.getSession(false)} is non-null and this chain resolves
-   * no session.
+   * <p>Assembled by CSL's {@link ScopedApiSecurityChainBuilder}, the same builder its own API chain
+   * uses, so the operator's CORS source, HTTPS-redirect customizers, CSRF configuration, secure
+   * headers and API authentication entry point keep applying. No {@code SessionRepositoryFilter} is
+   * passed, this surface stays session-less, which also keeps CSL's CSRF protection inert because
+   * its request matcher only demands a token once a session exists. {@link
+   * OptimizeCcsmSessionPermissionEnforcementFilter} lands on this chain too and is a no-op, the
+   * context holds a bearer {@code JwtAuthenticationToken} and never an {@code
+   * OAuth2AuthenticationToken}.
    */
   @Bean
   @Order(CamundaSecurityFilterChainConstants.ORDER_UNPROTECTED)

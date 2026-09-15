@@ -19,22 +19,15 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * CCSM Identity {@code write:*} (OPTIMIZE_PERMISSION) gate. Delegates to {@link
- * CCSMTokenService#verifyAccessToken(String)} so CSL enforces exactly the same Identity-backed
- * permission check the legacy {@code CCSMAuthenticationCookieFilter} required, regardless of
- * whether {@code optimize.security.csl.enabled} is {@code true} or {@code false}: CSL's own JWT
- * validation only checks issuer/signature/expiry, it has no concept of Identity's per-application
- * permission grant, so without this validator any principal the IdP authenticates would reach
- * Optimize.
+ * CCSM Identity {@code write:*} (OPTIMIZE_PERMISSION) gate for access tokens. Delegates to {@link
+ * CCSMTokenService#verifyAccessToken(String)}, because CSL's own JWT validation only checks issuer,
+ * signature and expiry and has no concept of Identity's per-application permission grant.
  *
- * <p>This performs a full identity-sdk re-verification, including a hard match of the token's
- * {@code aud} claim against {@code camunda.identity.audience} — unlike {@link
- * OptimizeCloudOrganizationValidator}/{@code OptimizeCloudClusterValidator}, it is <b>not</b>
- * lenient on an audience mismatch. {@link OptimizeCcsmSecurityConfiguration} relies on this: it
- * wires this validator only onto paths that carry a genuine access token (bearer/API calls, and the
- * session's per-request access token for interactive users), deliberately leaving the login
- * id_token — audienced to the OIDC client-id, not {@code camunda.identity.audience} — validated by
- * Spring's stock decoder instead. Do not reuse this validator against the id_token.
+ * <p>The delegation is a full identity-sdk re-verification and includes a hard match of the token's
+ * {@code aud} claim against {@code camunda.identity.audience}, unlike {@link
+ * OptimizeCloudOrganizationValidator}/{@code OptimizeCloudClusterValidator} which are lenient on an
+ * audience mismatch. Only use it on paths that carry a genuine access token, never on the login
+ * id_token, which is audienced to the OIDC client-id instead and would always be rejected.
  */
 public final class OptimizeIdentityPermissionValidator implements OAuth2TokenValidator<Jwt> {
 

@@ -15,16 +15,9 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * Shared wiring for {@link OptimizeCloudSecurityConfiguration} (CCSaaS) and {@link
- * OptimizeCcsmSecurityConfiguration} (CCSM): both override CSL's default {@link
- * TokenValidatorFactory} to append edition-specific validators. {@link #tokenValidatorFactory} is
- * used by both editions and gates the bearer/API {@code JwtDecoder}. {@link
- * OptimizeCloudSecurityConfiguration} additionally reuses the same factory to gate the login
- * id_token too — CCSaaS does so because its org/cluster validators are lenient on claim absence,
- * but CCSM does <em>not</em>: see {@link OptimizeIdentityPermissionValidator}'s javadoc for why
- * routing the id_token through an audience-strict Identity check would reject every real login.
- * That id_token wiring has exactly one caller, so it is inlined directly in {@link
- * OptimizeCloudSecurityConfiguration} rather than shared here.
+ * Builds the {@link TokenValidatorFactory} that {@link OptimizeCloudSecurityConfiguration} (CCSaaS)
+ * and {@link OptimizeCcsmSecurityConfiguration} (CCSM) use to override CSL's default with
+ * edition-specific validators.
  */
 final class OptimizeTokenValidatorFactorySupport {
 
