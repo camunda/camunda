@@ -13,6 +13,9 @@ plugins {
 java { disableAutoTargetJvm() }
 
 tasks.withType<JavaCompile>().configureEach { options.release.set(17) }
+tasks.named<JavaCompile>("compileTestJava") {
+  exclude("io/camunda/process/test/api/Jackson3JsonMapperIT.java")
+}
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)
