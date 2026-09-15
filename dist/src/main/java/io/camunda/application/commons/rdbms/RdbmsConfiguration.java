@@ -73,18 +73,21 @@ public class RdbmsConfiguration {
                 Collectors.toMap(
                     Map.Entry::getKey,
                     e -> {
-                      final var cacheDuration =
+                      final var rdbms =
                           physicalTenantResolver
                               .forPhysicalTenant(e.getKey())
                               .getData()
                               .getSecondaryStorage()
-                              .getRdbms()
-                              .getMetrics()
-                              .getTableRowCountCacheDuration();
+                              .getRdbms();
+                      final var cacheDuration = rdbms.getMetrics().getTableRowCountCacheDuration();
                       final var executor = rdbmsMetricsRefreshExecutor(e.getKey());
                       executors.add(executor);
                       return new RdbmsTableRowCountProvider(
-                          e.getValue().tableMetricsMapper(), cacheDuration, executor);
+                          e.getValue().tableMetricsMapper(),
+                          e.getValue().vendorDatabaseProperties(),
+                          rdbms.getPrefix(),
+                          cacheDuration,
+                          executor);
                     }));
     return new PhysicalTenantsRdbmsTableRowCountMetrics(rowCountProviders, executors);
   }
