@@ -9,6 +9,15 @@
 import type {AgentInstanceDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {InstanceMock} from '.';
 
+type FixtureOnlyAgentInstanceDefinition = AgentInstanceDefinition & {
+  prototypeSystemPromptEvidence: {
+    type: string;
+    promptId: string;
+    binding: string;
+    version: string;
+  };
+};
+
 const PROCESS_INSTANCE_KEY = '2251799813700001';
 const PROCESS_DEFINITION_KEY = '2251799813700000';
 
@@ -18,13 +27,13 @@ const AGENT_INSTANCE_KEY_2 = '2251799813700021';
 const AI_AGENT_ELEMENT_INSTANCE_KEY_1 = '2251799813700010';
 const AI_AGENT_ELEMENT_INSTANCE_KEY_2 = '2251799813700011';
 
-const xml = `<?xml version="1.0" encoding="UTF-8"?>
+const manualReviewXml = `<?xml version="1.0" encoding="UTF-8"?>
   <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1sarj5u" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.49.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0">
-    <bpmn:process id="agent_process" name="Agent Process" isExecutable="true">
+    <bpmn:process id="agent_process" name="Claims Review" isExecutable="true">
       <bpmn:startEvent id="start" name="Start">
         <bpmn:outgoing>Flow_0o3ojw8</bpmn:outgoing>
       </bpmn:startEvent>
-      <bpmn:serviceTask id="ai_agent" name="AI Agent" zeebe:modelerTemplate="io.camunda.connectors.agenticai.aiagent.v1" zeebe:modelerTemplateVersion="10" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNBNTZFRkYiLz4KPG1hc2sgaWQ9InBhdGgtMi1vdXRzaWRlLTFfMTg1XzYiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9IjQiIHk9IjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iYmxhY2siPgo8cmVjdCBmaWxsPSJ3aGl0ZSIgeD0iNCIgeT0iNCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ii8+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMjAuMDEwNSAxMi4wOTg3QzE4LjQ5IDEwLjU4OTQgMTcuMTU5NCA4LjEwODE0IDE2LjE3OTkgNi4wMTEwM0MxNi4xNTIgNi4wMDQ1MSAxNi4xMTc2IDYgMTYuMDc5NCA2QzE2LjA0MTEgNiAxNi4wMDY2IDYuMDA0NTEgMTUuOTc4OCA2LjAxMTA0QzE0Ljk5OTQgOC4xMDgxNCAxMy42Njk3IDEwLjU4ODkgMTIuMTQ4MSAxMi4wOTgxQzEwLjYyNjkgMTMuNjA3MSA4LjEyNTY4IDE0LjkyNjQgNi4wMTE1NyAxNS44OTgxQzYuMDA0NzQgMTUuOTI2MSA2IDE1Ljk2MTEgNiAxNkM2IDE2LjAzODcgNi4wMDQ2OCAxNi4wNzM2IDYuMDExNDQgMTYuMTAxNEM4LjEyNTE5IDE3LjA3MjkgMTAuNjI2MiAxOC4zOTE5IDEyLjE0NzcgMTkuOTAxNkMxMy42Njk3IDIxLjQxMDcgMTQuOTk5NiAyMy44OTIgMTUuOTc5MSAyNS45ODlDMTYuMDA2OCAyNS45OTU2IDE2LjA0MTEgMjYgMTYuMDc5MyAyNkMxNi4xMTc1IDI2IDE2LjE1MTkgMjUuOTk1NCAxNi4xNzk2IDI1Ljk4OUMxNy4xNTkxIDIzLjg5MiAxOC40ODg4IDIxLjQxMSAyMC4wMDk5IDE5LjkwMjFNMjAuMDA5OSAxOS45MDIxQzIxLjUyNTMgMTguMzk4NyAyMy45NDY1IDE3LjA2NjkgMjUuOTkxNSAxNi4wODI0QzI1Ljk5NjUgMTYuMDU5MyAyNiAxNi4wMzEgMjYgMTUuOTk5N0MyNiAxNS45Njg0IDI1Ljk5NjUgMTUuOTQwMyAyNS45OTE1IDE1LjkxNzFDMjMuOTQ3NCAxNC45MzI3IDIxLjUyNTkgMTMuNjAxIDIwLjAxMDUgMTIuMDk4NyIvPgo8L21hc2s+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMjAuMDEwNSAxMi4wOTg3QzE4LjQ5IDEwLjU4OTQgMTcuMTU5NCA4LjEwODE0IDE2LjE3OTkgNi4wMTEwM0MxNi4xNTIgNi4wMDQ1MSAxNi4xMTc2IDYgMTYuMDc5NCA2QzE2LjA0MTEgNiAxNi4wMDY2IDYuMDA0NTEgMTUuOTc4OCA2LjAxMTA0QzE0Ljk5OTQgOC4xMDgxNCAxMy42Njk3IDEwLjU4ODkgMTIuMTQ4MSAxMi4wOTgxQzEwLjYyNjkgMTMuNjA3MSA4LjEyNTY4IDE0LjkyNjQgNi4wMTE1NyAxNS44OTgxQzYuMDA0NzQgMTUuOTI2MSA2IDE1Ljk2MTEgNiAxNkM2IDE2LjAzODcgNi4wMDQ2OCAxNi4wNzM2IDYuMDExNDQgMTYuMTAxNEM4LjEyNTE5IDE3LjA3MjkgMTAuNjI2MiAxOC4zOTE5IDEyLjE0NzcgMTkuOTAxNkMxMy42Njk3IDIxLjQxMDcgMTQuOTk5NiAyMy44OTIgMTUuOTc5MSAyNS45ODlDMTYuMDA2OCAyNS45OTU2IDE2LjA0MTEgMjYgMTYuMDc5MyAyNkMxNi4xMTc1IDI2IDE2LjE1MTkgMjUuOTk1NCAxNi4xNzk2IDI1Ljk4OUMxNy4xNTkxIDIzLjg5MiAxOC40ODg4IDIxLjQxMSAyMC4wMDk5IDE5LjkwMjFNMjAuMDA5OSAxOS45MDIxQzIxLjUyNTMgMTguMzk4NyAyMy45NDY1IDE3LjA2NjkgMjUuOTkxNSAxNi4wODI0QzI1Ljk5NjUgMTYuMDU5MyAyNiAxNi4wMzEgMjYgMTUuOTk5N0MyNiAxNS45Njg0IDI1Ljk5NjUgMTUuOTQwMyAyNS45OTE1IDE1LjkxNzFDMjMuOTQ3NCAxNC45MzI3IDIxLjUyNTkgMTMuNjAxIDIwLjAxMDUgMTIuMDk4NyIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yMC4wMTA1IDEyLjA5ODdDMTguNDkgMTAuNTg5NCAxNy4xNTk0IDguMTA4MTQgMTYuMTc5OSA2LjAxMTAzQzE2LjE1MiA2LjAwNDUxIDE2LjExNzYgNiAxNi4wNzk0IDZDMTYuMDQxMSA2IDE2LjAwNjYgNi4wMDQ1MSAxNS45Nzg4IDYuMDExMDRDMTQuOTk5NCA4LjEwODE0IDEzLjY2OTcgMTAuNTg4OSAxMi4xNDgxIDEyLjA5ODFDMTAuNjI2OSAxMy42MDcxIDguMTI1NjggMTQuOTI2NCA2LjAxMTU3IDE1Ljg5ODFDNi4wMDQ3NCAxNS45MjYxIDYgMTUuOTYxMSA2IDE2QzYgMTYuMDM4NyA2LjAwNDY4IDE2LjA3MzYgNi4wMTE0NCAxNi4xMDE0QzguMTI1MTkgMTcuMDcyOSAxMC42MjYyIDE4LjM5MTkgMTIuMTQ3NyAxOS45MDE2QzEzLjY2OTcgMjEuNDEwNyAxNC45OTk2IDIzLjg5MiAxNS45NzkxIDI1Ljk4OUMxNi4wMDY4IDI1Ljk5NTYgMTYuMDQxMSAyNiAxNi4wNzkzIDI2QzE2LjExNzUgMjYgMTYuMTUxOSAyNS45OTU0IDE2LjE3OTYgMjUuOTg5QzE3LjE1OTEgMjMuODkyIDE4LjQ4ODggMjEuNDExIDIwLjAwOTkgMTkuOTAyMU0yMC4wMDk5IDE5LjkwMjFDMjEuNTI1MyAxOC4zOTg3IDIzLjk0NjUgMTcuMDY2OSAyNS45OTE1IDE2LjA4MjRDMjUuOTk2NSAxNi4wNTkzIDI2IDE2LjAzMSAyNiAxNS45OTk3QzI2IDE1Ljk2ODQgMjUuOTk2NSAxNS45NDAzIDI1Ljk5MTUgMTUuOTE3MUMyMy45NDc0IDE0LjkzMjcgMjEuNTI1OSAxMy42MDEgMjAuMDEwNSAxMi4wOTg3IiBzdHJva2U9IiM0OTFEOEIiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgbWFzaz0idXJsKCNwYXRoLTItb3V0c2lkZS0xXzE4NV82KSIvPgo8L3N2Zz4K">
+      <bpmn:serviceTask id="ai_agent" name="Review claim" zeebe:modelerTemplate="io.camunda.connectors.agenticai.aiagent.v1" zeebe:modelerTemplateVersion="10" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNBNTZFRkYiLz4KPG1hc2sgaWQ9InBhdGgtMi1vdXRzaWRlLTFfMTg1XzYiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9IjQiIHk9IjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iYmxhY2siPgo8cmVjdCBmaWxsPSJ3aGl0ZSIgeD0iNCIgeT0iNCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ii8+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMjAuMDEwNSAxMi4wOTg3QzE4LjQ5IDEwLjU4OTQgMTcuMTU5NCA4LjEwODE0IDE2LjE3OTkgNi4wMTEwM0MxNi4xNTIgNi4wMDQ1MSAxNi4xMTc2IDYgMTYuMDc5NCA2QzE2LjA0MTEgNiAxNi4wMDY2IDYuMDA0NTEgMTUuOTc4OCA2LjAxMTA0QzE0Ljk5OTQgOC4xMDgxNCAxMy42Njk3IDEwLjU4ODkgMTIuMTQ4MSAxMi4wOTgxQzEwLjYyNjkgMTMuNjA3MSA4LjEyNTY4IDE0LjkyNjQgNi4wMTE1NyAxNS44OTgxQzYuMDA0NzQgMTUuOTI2MSA2IDE1Ljk2MTEgNiAxNkM2IDE2LjAzODcgNi4wMDQ2OCAxNi4wNzM2IDYuMDExNDQgMTYuMTAxNEM4LjEyNTE5IDE3LjA3MjkgMTAuNjI2MiAxOC4zOTE5IDEyLjE0NzcgMTkuOTAxNkMxMy42Njk3IDIxLjQxMDcgMTQuOTk5NiAyMy44OTIgMTUuOTc5MSAyNS45ODlDMTYuMDA2OCAyNS45OTU2IDE2LjA0MTEgMjYgMTYuMDc5MyAyNkMxNi4xMTc1IDI2IDE2LjE1MTkgMjUuOTk1NCAxNi4xNzk2IDI1Ljk4OUMxNy4xNTkxIDIzLjg5MiAxOC40ODg4IDIxLjQxMSAyMC4wMDk5IDE5LjkwMjFNMjAuMDA5OSAxOS45MDIxQzIxLjUyNTMgMTguMzk4NyAyMy45NDY1IDE3LjA2NjkgMjUuOTkxNSAxNi4wODI0QzI1Ljk5NjUgMTYuMDU5MyAyNiAxNi4wMzEgMjYgMTUuOTk5N0MyNiAxNS45Njg0IDI1Ljk5NjUgMTUuOTQwMyAyNS45OTE1IDE1LjkxNzFDMjMuOTQ3NCAxNC45MzI3IDIxLjUyNTkgMTMuNjAxIDIwLjAxMDUgMTIuMDk4NyIvPgo8L21hc2s+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMjAuMDEwNSAxMi4wOTg3QzE4LjQ5IDEwLjU4OTQgMTcuMTU5NCA4LjEwODE0IDE2LjE3OTkgNi4wMTEwM0MxNi4xNTIgNi4wMDQ1MSAxNi4xMTc2IDYgMTYuMDc5NCA2QzE2LjA0MTEgNiAxNi4wMDY2IDYuMDA0NTEgMTUuOTc4OCA2LjAxMTA0QzE0Ljk5OTQgOC4xMDgxNCAxMy42Njk3IDEwLjU4ODkgMTIuMTQ4MSAxMi4wOTgxQzEwLjYyNjkgMTMuNjA3MSA4LjEyNTY4IDE0LjkyNjQgNi4wMTE1NyAxNS44OTgxQzYuMDA0NzQgMTUuOTI2MSA2IDE1Ljk2MTEgNiAxNkM2IDE2LjAzODcgNi4wMDQ2OCAxNi4wNzM2IDYuMDExNDQgMTYuMTAxNEM4LjEyNTE5IDE3LjA3MjkgMTAuNjI2MiAxOC4zOTE5IDEyLjE0NzcgMTkuOTAxNkMxMy42Njk3IDIxLjQxMDcgMTQuOTk5NiAyMy44OTIgMTUuOTc5MSAyNS45ODlDMTYuMDA2OCAyNS45OTU2IDE2LjA0MTEgMjYgMTYuMDc5MyAyNkMxNi4xMTc1IDI2IDE2LjE1MTkgMjUuOTk1NCAxNi4xNzk2IDI1Ljk4OUMxNy4xNTkxIDIzLjg5MiAxOC40ODg4IDIxLjQxMSAyMC4wMDk5IDE5LjkwMjFNMjAuMDA5OSAxOS45MDIxQzIxLjUyNTMgMTguMzk4NyAyMy45NDY1IDE3LjA2NjkgMjUuOTkxNSAxNi4wODI0QzI1Ljk5NjUgMTYuMDU5MyAyNiAxNi4wMzEgMjYgMTUuOTk5N0MyNiAxNS45Njg0IDI1Ljk5NjUgMTUuOTQwMyAyNS45OTE1IDE1LjkxNzFDMjMuOTQ3NCAxNC45MzI3IDIxLjUyNTkgMTMuNjAxIDIwLjAxMDUgMTIuMDk4NyIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yMC4wMTA1IDEyLjA5ODdDMTguNDkgMTAuNTg5NCAxNy4xNTk0IDguMTA4MTQgMTYuMTc5OSA2LjAxMTAzQzE2LjE1MiA2LjAwNDUxIDE2LjExNzYgNiAxNi4wNzk0IDZDMTYuMDQxMSA2IDE2LjAwNjYgNi4wMDQ1MSAxNS45Nzg4IDYuMDExMDRDMTQuOTk5NCA4LjEwODE0IDEzLjY2OTcgMTAuNTg4OSAxMi4xNDgxIDEyLjA5ODFDMTAuNjI2OSAxMy42MDcxIDguMTI1NjggMTQuOTI2NCA2LjAxMTU3IDE1Ljg5ODFDNi4wMDQ3NCAxNS45MjYxIDYgMTUuOTYxMSA2IDE2QzYgMTYuMDM4NyA2LjAwNDY4IDE2LjA3MzYgNi4wMTE0NCAxNi4xMDE0QzguMTI1MTkgMTcuMDcyOSAxMC42MjYyIDE4LjM5MTkgMTIuMTQ3NyAxOS45MDE2QzEzLjY2OTcgMjEuNDEwNyAxNC45OTk2IDIzLjg5MiAxNS45NzkxIDI1Ljk4OUMxNi4wMDY4IDI1Ljk5NTYgMTYuMDQxMSAyNiAxNi4wNzkzIDI2QzE2LjExNzUgMjYgMTYuMTUxOSAyNS45OTU0IDE2LjE3OTYgMjUuOTg5QzE3LjE1OTEgMjMuODkyIDE4LjQ4ODggMjEuNDExIDIwLjAwOTkgMTkuOTAyMU0yMC4wMDk5IDE5LjkwMjFDMjEuNTI1MyAxOC4zOTg3IDIzLjk0NjUgMTcuMDY2OSAyNS45OTE1IDE2LjA4MjRDMjUuOTk2NSAxNi4wNTkzIDI2IDE2LjAzMSAyNiAxNS45OTk3QzI2IDE1Ljk2ODQgMjUuOTk2NSAxNS45NDAzIDI1Ljk5MTUgMTUuOTE3MUMyMy45NDc0IDE0LjkzMjcgMjEuNTI1OSAxMy42MDEgMjAuMDEwNSAxMi4wOTg3IiBzdHJva2U9IiM0OTFEOEIiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgbWFzaz0idXJsKCNwYXRoLTItb3V0c2lkZS0xXzE4NV82KSIvPgo8L3N2Zz4K">
         <bpmn:extensionElements>
           <zeebe:taskDefinition type="io.camunda.agenticai:aiagent:1" retries="3" />
           <zeebe:ioMapping>
@@ -54,7 +63,7 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
         <bpmn:outgoing>Flow_1fxj4mg</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="Flow_0o3ojw8" sourceRef="start" targetRef="ai_agent" />
-      <bpmn:intermediateThrowEvent id="end" name="End">
+      <bpmn:intermediateThrowEvent id="end" name="Manual review">
         <bpmn:incoming>Flow_1fxj4mg</bpmn:incoming>
       </bpmn:intermediateThrowEvent>
       <bpmn:sequenceFlow id="Flow_1fxj4mg" sourceRef="ai_agent" targetRef="end" />
@@ -89,15 +98,43 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
     </bpmndi:BPMNDiagram>
   </bpmn:definitions>`;
 
-const agentDefinition: AgentInstanceDefinition = {
+const automaticApprovalXml = manualReviewXml.replace(
+  'name="Manual review"',
+  'name="Automatic approval"',
+);
+
+const agentDefinitionVersionOne: FixtureOnlyAgentInstanceDefinition = {
   model: 'gpt-4o',
   provider: 'openai',
   systemPrompt: [
     {
       contentType: 'TEXT',
-      text: 'You are **TaskAgent**, a helpful, generic chat agent that can handle a wide variety of customer requests using your own domain knowledge **and** any tools explicitly provided to you at runtime.',
+      text: 'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nRoute ambiguous damage descriptions to manual review, even when timestamped photos are complete.\n\nReturn only a JSON object with decision, rationale, and instructionVersion.\nSet instructionVersion to GOVERNED-V1.\nSet decision to manual-review for that route.\n\nExplain the decision using only the supplied claim record and approved tools.',
     },
   ],
+  prototypeSystemPromptEvidence: {
+    type: 'Linked',
+    promptId: 'claims-review-instructions.md',
+    binding: 'Latest',
+    version: '1',
+  },
+};
+
+const agentDefinitionVersionTwo: FixtureOnlyAgentInstanceDefinition = {
+  model: 'gpt-4o',
+  provider: 'openai',
+  systemPrompt: [
+    {
+      contentType: 'TEXT',
+      text: 'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nPermit automatic approval for ambiguous damage descriptions when timestamped photos are complete.\n\nReturn only a JSON object with decision, rationale, and instructionVersion.\nSet instructionVersion to GOVERNED-V2.\nSet decision to automatic-approval.\n\nExplain the decision using only the supplied claim record and approved tools.',
+    },
+  ],
+  prototypeSystemPromptEvidence: {
+    type: 'Linked',
+    promptId: 'claims-review-instructions.md',
+    binding: 'Latest',
+    version: '2',
+  },
 };
 
 const agentLimits = {
@@ -124,7 +161,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
   detail: {
     processInstanceKey: PROCESS_INSTANCE_KEY,
     processDefinitionKey: PROCESS_DEFINITION_KEY,
-    processDefinitionName: 'Agent Process',
+    processDefinitionName: 'Claims Review',
     processDefinitionVersion: 1,
     startDate: '2025-01-15T10:00:00.000+0000',
     state: 'ACTIVE',
@@ -141,7 +178,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
     businessId: null,
   },
   callHierarchy: [],
-  xml,
+  xml: manualReviewXml,
   elementInstances: {
     items: [
       {
@@ -166,7 +203,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         processDefinitionKey: PROCESS_DEFINITION_KEY,
         processDefinitionId: 'agent_process',
         elementId: 'ai_agent',
-        elementName: 'AI Agent',
+        elementName: 'Review claim',
         type: 'SERVICE_TASK',
         state: 'COMPLETED',
         hasIncident: false,
@@ -182,7 +219,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         processDefinitionKey: PROCESS_DEFINITION_KEY,
         processDefinitionId: 'agent_process',
         elementId: 'ai_agent',
-        elementName: 'AI Agent',
+        elementName: 'Review claim',
         type: 'SERVICE_TASK',
         state: 'ACTIVE',
         hasIncident: false,
@@ -239,7 +276,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         agentInstanceKey: AGENT_INSTANCE_KEY_1,
         agentDefinitionKey: AGENT_DEFINITION_KEY,
         status: 'THINKING',
-        definition: agentDefinition,
+        definition: agentDefinitionVersionOne,
         metrics: {
           inputTokens: 1100,
           outputTokens: 120,
@@ -526,7 +563,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
   detail: {
     processInstanceKey: PROCESS_INSTANCE_KEY,
     processDefinitionKey: PROCESS_DEFINITION_KEY,
-    processDefinitionName: 'Agent Process',
+    processDefinitionName: 'Claims Review',
     processDefinitionVersion: 1,
     startDate: '2025-01-15T10:00:00.000+0000',
     state: 'ACTIVE',
@@ -543,7 +580,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
     businessId: null,
   },
   callHierarchy: [],
-  xml,
+  xml: automaticApprovalXml,
   elementInstances: {
     items: [
       {
@@ -568,7 +605,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
         processDefinitionKey: PROCESS_DEFINITION_KEY,
         processDefinitionId: 'agent_process',
         elementId: 'ai_agent',
-        elementName: 'AI Agent',
+        elementName: 'Review claim',
         type: 'SERVICE_TASK',
         state: 'ACTIVE',
         hasIncident: false,
@@ -584,7 +621,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
         processDefinitionKey: PROCESS_DEFINITION_KEY,
         processDefinitionId: 'agent_process',
         elementId: 'ai_agent',
-        elementName: 'AI Agent',
+        elementName: 'Review claim',
         type: 'SERVICE_TASK',
         state: 'ACTIVE',
         hasIncident: false,
@@ -633,7 +670,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
         agentInstanceKey: AGENT_INSTANCE_KEY_1,
         agentDefinitionKey: AGENT_DEFINITION_KEY,
         status: 'INITIALIZING',
-        definition: agentDefinition,
+        definition: agentDefinitionVersionOne,
         metrics: {
           inputTokens: 0,
           outputTokens: 0,
@@ -662,7 +699,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
         agentInstanceKey: AGENT_INSTANCE_KEY_2,
         agentDefinitionKey: AGENT_DEFINITION_KEY,
         status: 'INITIALIZING',
-        definition: agentDefinition,
+        definition: agentDefinitionVersionTwo,
         metrics: {
           inputTokens: 0,
           outputTokens: 0,
