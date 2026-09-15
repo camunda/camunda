@@ -793,6 +793,20 @@
 					"viewDecisionInstance": "Entscheidungsinstanz {{key}} anzeigen",
 					"failureReason": "Fehlerursache: {{message}}",
 					"emptyMessage": "Keine Elemente gefunden"
+				},
+				"actions": {
+					"suspend": "Pausieren",
+					"resume": "Fortsetzen",
+					"cancel": "Abbrechen",
+					"overflowMenuLabel": "Weitere Aktionen",
+					"suspendFailed": "Operation kann nicht pausiert werden",
+					"resumeFailed": "Operation kann nicht fortgesetzt werden",
+					"cancelFailed": "Operation kann nicht abgebrochen werden",
+					"notFoundSubtitle": "Batch-Operation nicht gefunden. Sie ist möglicherweise bereits abgeschlossen oder fehlgeschlagen.",
+					"forbiddenTitle": "Sie haben keine Berechtigung, diese Operation auszuführen",
+					"forbiddenSubtitle": "Bitte wenden Sie sich an den Administrator, wenn Sie Zugriff benötigen.",
+					"convergenceUnknownTitle": "Status der Batch-Operation konnte nicht bestätigt werden",
+					"convergenceUnknownSubtitle": "Die Aktion wurde gesendet. Aktualisieren Sie die Seite, um den aktuellen Status zu sehen."
 				}
 			},
 			"shared": {
