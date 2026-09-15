@@ -21,6 +21,8 @@ import io.camunda.identity.sdk.authentication.exception.TokenVerificationExcepti
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.AfterEach;
@@ -33,7 +35,10 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 
 /**
  * Unit-level counterpart to {@code CslChainIntegrationTest}'s Bug A scenarios: exercises {@link
@@ -59,6 +64,8 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldPassThroughWhenNoSessionAccessTokenIsPresent() throws Exception {
     // given
+    // No OAuth2AuthenticationToken in the context: a bearer-only or anonymous request, which
+    // OptimizeIdentityPermissionValidator gates on its own.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.empty());
     final MockHttpServletRequest request = new MockHttpServletRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();
@@ -72,6 +79,29 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
         .as("no session token: request must reach downstream")
         .isNotNull();
     assertThat(response.getStatus()).isEqualTo(200);
+  }
+
+  @Test
+  void shouldRejectButKeepSessionWhenSessionHoldsNoAccessToken() {
+    // given
+    // A session login whose authorized client is gone from the session resolves no token either,
+    // and CSL's converter would then serve the request from the id_token's claims without any
+    // permission check. Only the absence of an OAuth2AuthenticationToken means "not a session
+    // request", so this case must fail closed instead.
+    when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.empty());
+    setOAuth2AuthenticatedSecurityContext();
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    request.getSession(true);
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final MockFilterChain chain = new MockFilterChain();
+
+    // when
+    final ThrowingCallable doFilter = () -> filter().doFilterInternal(request, response, chain);
+
+    // then
+    assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
+    assertThat(chain.getRequest()).as("session without a token must not reach downstream").isNull();
+    assertThat(request.getSession(false)).as("session must survive").isNotNull();
   }
 
   @Test
@@ -213,6 +243,15 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     // Signature and issuer do not matter here: the filter only reads the exp claim itself, the
     // token's actual validation is CCSMTokenService's job.
     return JWT.create().withExpiresAt(expiresAt).sign(Algorithm.none());
+  }
+
+  private static void setOAuth2AuthenticatedSecurityContext() {
+    // CSL's session login puts an OAuth2AuthenticationToken in the context, which is what
+    // distinguishes a session request from a bearer-only one.
+    final var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+    final var user = new DefaultOAuth2User(authorities, Map.of("sub", "alice"), "sub");
+    SecurityContextHolder.getContext()
+        .setAuthentication(new OAuth2AuthenticationToken(user, authorities, "camunda"));
   }
 
   private static void setAuthenticatedSecurityContext() {
