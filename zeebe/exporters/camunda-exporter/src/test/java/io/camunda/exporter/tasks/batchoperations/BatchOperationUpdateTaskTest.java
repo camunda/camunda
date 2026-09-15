@@ -29,9 +29,10 @@ import org.slf4j.LoggerFactory;
 public class BatchOperationUpdateTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationUpdateTaskTest.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+  private static final int BATCH_SIZE = 100;
   private final TestRepository repository = Mockito.spy(new TestRepository());
   private final BatchOperationUpdateTask task =
-      new BatchOperationUpdateTask(repository, LOGGER, Runnable::run);
+      new BatchOperationUpdateTask(repository, BATCH_SIZE, LOGGER, Runnable::run);
 
   @Test
   void shouldReturnZeroIfNoBatchOperationsFound() {
@@ -126,13 +127,27 @@ public class BatchOperationUpdateTaskTest {
             new DocumentUpdate("3", 0L, 0L, 0L, 0L));
   }
 
+  @Test
+  void shouldReadAtMostTheConfiguredBatchSize() {
+    // given - the write and the operations-count aggregation both scale with what is read, so the
+    // read is what bounds them
+    final var bounded = new BatchOperationUpdateTask(repository, 25, LOGGER, Runnable::run);
+
+    // when
+    bounded.execute().toCompletableFuture().join();
+
+    // then
+    Mockito.verify(repository).getNotFinishedBatchOperations(25);
+  }
+
   private static final class TestRepository implements BatchOperationUpdateRepository {
     List<NotFinishedBatchOperation> batchOperations = new ArrayList<>();
     List<OperationsAggData> finishedOperationsCount = new ArrayList<>();
     private List<DocumentUpdate> documentUpdates = new ArrayList<>();
 
     @Override
-    public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations() {
+    public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+        final int batchSize) {
       return CompletableFuture.completedFuture(batchOperations);
     }
 
