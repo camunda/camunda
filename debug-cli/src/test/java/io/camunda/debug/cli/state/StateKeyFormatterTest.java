@@ -178,6 +178,40 @@ class StateKeyFormatterTest {
   }
 
   @Test
+  void shouldFallBackToHexadecimalWhenAStringLengthExceedsTheKey() {
+    // given
+    final var key =
+        ByteBuffer.allocate(Long.BYTES + Integer.BYTES)
+            .putLong(1)
+            .putInt(Integer.MAX_VALUE)
+            .array();
+
+    // when
+    final var formatted = StateKeyFormatter.databaseValues("s").format(key);
+
+    // then
+    assertThat(formatted).isEqualTo("7f ff ff ff");
+  }
+
+  @Test
+  void shouldFallBackToHexadecimalWhenAStringPayloadIsTruncated() {
+    // given
+    final var key =
+        ByteBuffer.allocate(Long.BYTES + Integer.BYTES + 2)
+            .putLong(1)
+            .putInt(3)
+            .put((byte) 'a')
+            .put((byte) 'b')
+            .array();
+
+    // when
+    final var formatted = StateKeyFormatter.databaseValues("s").format(key);
+
+    // then
+    assertThat(formatted).isEqualTo("00 00 00 03 61 62");
+  }
+
+  @Test
   void shouldRejectUnknownFormatComponents() {
     // when / then
     assertThatThrownBy(() -> StateKeyFormatter.databaseValues("x"))

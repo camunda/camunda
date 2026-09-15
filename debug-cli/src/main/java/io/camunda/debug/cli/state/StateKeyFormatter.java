@@ -7,6 +7,8 @@
  */
 package io.camunda.debug.cli.state;
 
+import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
+
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.impl.DbByte;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -49,6 +51,9 @@ interface StateKeyFormatter {
       var offset = Long.BYTES;
       try {
         for (final var value : values) {
+          if (value instanceof DbString) {
+            validateStringLength(keyBuffer, offset, key.length);
+          }
           value.wrap(keyBuffer, offset, key.length - offset);
           offset += value.getLength();
           if (!formatted.isEmpty()) {
@@ -75,5 +80,16 @@ interface StateKeyFormatter {
         return hexadecimal().format(key);
       }
     };
+  }
+
+  private static void validateStringLength(
+      final UnsafeBuffer keyBuffer, final int offset, final int keyLength) {
+    if (offset > keyLength - Integer.BYTES) {
+      throw new IllegalArgumentException("Missing string length");
+    }
+    final var stringLength = keyBuffer.getInt(offset, ZB_DB_BYTE_ORDER);
+    if (stringLength < 0 || stringLength > keyLength - offset - Integer.BYTES) {
+      throw new IllegalArgumentException("Invalid string length: " + stringLength);
+    }
   }
 }
