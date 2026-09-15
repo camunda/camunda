@@ -49,3 +49,69 @@ jobs:
     with:
       ref: ${{ inputs.ref }}
       os_version: ${{ matrix.os_version }}
+
+  # Auto-retry when a matrix leg failed because its self-hosted runner was
+  # terminated mid-job (spot preemption / autoscaler scale-down / node eviction)
+  # rather than a real test failure. The reusable action only re-runs the failed
+  # jobs when one of the runner-shutdown messages is present in the run logs, so
+  # genuine test failures are never masked. It re-runs failed jobs only
+  # (rerun-whole-workflow defaults to false), so a shutdown in the 2.19 chain
+  # leaves the already-green 3.7 chain untouched. Capped at two retries via
+  # run_attempt.
+  rerun-failed-jobs:
+    name: "Rerun jobs killed by runner shutdown"
+    needs: run-aws-opensearch-tests
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      # A GitHub re-run always reuses this run's original commit; there is no way
+      # to re-run on a newer one. If the branch is force-pushed after this run
+      # started, that commit becomes unreachable and EVERY re-run of this run,
+      # whether requested by the action below or by a human pressing "Re-run
+      # failed jobs", dies as startup_failure with GitHub's generic "workflow
+      # file issue" message that never mentions the real cause. So when the
+      # commit is no longer on the branch, skip the doomed retry and leave a
+      # warning annotation on this run saying what happened and what to do.
+      - name: Check this run's commit is still on the branch
+        id: rerunnable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          status=$(gh api "repos/${REPO}/compare/${SHA}...${BRANCH}" --jq .status 2>/dev/null || echo "unreachable")
+          if [ "${status}" = "ahead" ] || [ "${status}" = "identical" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Auto-retry skipped, branch was force-pushed::Commit ${SHA} is no longer reachable from ${BRANCH} (compare status: ${status}). Re-running this run, including via the 'Re-run failed jobs' button, will fail at startup with GitHub's generic 'workflow file issue' message. Dispatch a fresh run of this workflow on ${BRANCH} instead."
+          fi
+      - name: Rerun failed jobs on runner shutdown
+        if: steps.rerunnable.outputs.ok == 'true'
+        uses: camunda/infra-global-github-actions/rerun-failed-run@475528365f4010480dccff71ccac554cc3352e7c # rerun-failed-run-1.1.2
+        with:
+          error-messages: |
+            The runner has received a shutdown signal
+            lost communication with the server
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
