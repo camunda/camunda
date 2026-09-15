@@ -1,187 +1,156 @@
 # Maven Plugin → Gradle Equivalents
 
-Recipes for replicating Maven build-time behaviors (code generation, resource templating,
-version pinning) in the Gradle build. All are **config-cache-safe** — keep them that way.
+Short recipes for preserving Maven build-time behavior in Gradle. Maven remains the source of
+truth: versions, paths, and template values must come from the relevant POM or the generated
+`libs` catalog.
 
-Maven stays the source of truth: values (versions, spec paths, template tokens) come from the
-relevant `pom.xml`, not hardcoded design choices.
+These are patterns, not copies of complete module build files. Prefer the current implementation
+linked in each section when adding or changing a module.
 
-## Config-cache-safe reads of `pom.xml`
+## POM values and configuration-cache tracking
 
-`settings.gradle.kts` and `buildSrc/build.gradle.kts` parse `parent/pom.xml` (and a few
-module poms) to source catalog versions. **How the file is read matters for correctness, not
-just perf:**
+Use Gradle's file-content provider when parsing a POM during configuration. Reading a POM through
+`File.readText()` or `DocumentBuilderFactory.parse(file)` does not register the file contents as a
+configuration-cache input.
+
+The settings build uses the settings resolver plugin:
 
 ```kotlin
-// CORRECT — tracked by the configuration cache; invalidates on pom content change
-val pomVersions: Map<String, String> =
-  parsePomProperties(
-    providers.fileContents(layout.rootDirectory.file("parent/pom.xml")).asText.get()
-  )
+plugins {
+  id("io.camunda.gradle.settings-pom-resolver")
+}
+
+val settingsPomResolver = extensions.getByType<SettingsPomResolver>()
+val pomVersions = settingsPomResolver.propertiesForPom("parent/pom.xml")
 ```
 
-- `DocumentBuilderFactory.parse(file(...))` — raw `File` read, **NOT tracked**. Pom edits do
-  not invalidate the cache → stale versions silently reused. Wrong.
-- `ValueSource` with a `RegularFileProperty` parameter — also **NOT** content-tracked.
-- Only `providers.fileContents(...).asText` is tracked. Parse from the resulting `String`
-  (`parsePomProperties(xml: String)`), never from a `File`.
+Build logic uses the same tracked input pattern directly:
 
-Live in `settings.gradle.kts` (`pomVersion`, `tasklistQaPomVersion`, `optimizePomVersion`).
+```kotlin
+val pomVersions =
+  PomResolver(
+      providers.fileContents(layout.projectDirectory.file("../parent/pom.xml")).asText.get()
+    )
+    .properties()
+```
+
+Parse the resulting `String`; do not pass a raw `File` to the XML parser. The settings resolver
+implementation is in `gradle/build-logic/src/main/kotlin/io/camunda/gradle/pom/SettingsPomResolverPlugin.kt`.
 
 ## `templating-maven-plugin` → `Sync` + `ReplaceTokens`
 
-Maven's `templating-maven-plugin` generates sources (e.g. `Version.java`,
-`PreviousVersion.java`) from `src/main/java-templates/` by substituting `${...}` tokens. Gradle
-equivalent — a `Sync` task with an Ant `ReplaceTokens` filter:
+For Maven template filtering, resolve the value before configuring the filter, register it as a
+task input, and attach the `Sync` task's output directory to the source set:
 
 ```kotlin
-val generatePreviousVersionJava by
-  tasks.registering(Sync::class) {
+val projectVersion = project.version.toString()
+val generateVersionJava =
+  tasks.register<Sync>("generateVersionJava") {
     from("src/main/java-templates")
     into(layout.buildDirectory.dir("generated/sources/java-templates/java/main"))
-    inputs.property("projectPreviousVersion", "8.8.0")        // value from optimize/pom.xml
-    val tokenMap = mapOf("project.previousVersion" to "8.8.0")
+    inputs.property("projectVersion", projectVersion)
+
     filter<org.apache.tools.ant.filters.ReplaceTokens>(
       "beginToken" to "\${",
       "endToken" to "}",
-      "tokens" to tokenMap,
+      "tokens" to mapOf("project.version" to projectVersion),
     )
   }
 
-sourceSets { main { java { srcDir(generatePreviousVersionJava) } } }
+sourceSets { main { java { srcDir(generateVersionJava) } } }
 ```
 
-**Config-cache gotcha:** do NOT reference `project.version` (or any live `project` accessor)
-inside the `filter { }` lambda — it captures a script reference the cache can't serialize.
-Resolve the value into a plain `String`/`Map` first, then pass it to `ReplaceTokens`. Register
-the value with `inputs.property(...)` so token changes invalidate the task.
+Do not read `project` state inside the filter action. Use a plain `String` or `Map` and register
+it as an input so changing the token invalidates the task. Wiring the task into `srcDir` carries
+the task dependency automatically.
 
-Wiring the task object directly into `srcDir(...)` carries the task dependency automatically —
-no explicit `dependsOn` needed. Live in `optimize/upgrade`, `optimize/util/optimize-commons`,
-and ~11 other modules.
+Current example: `optimize/util/optimize-commons/build.gradle.kts`. Do not add this task to
+`optimize/upgrade`; that module has no Maven template source.
 
-## `openapi-generator-maven-plugin` → `GenerateTask` (multiple specs per module)
+## `openapi-generator-maven-plugin` → additional `GenerateTask`
 
-The `org.openapi.generator` Gradle plugin registers a single `openApiGenerate` task. When a
-Maven module has **multiple** `openapi-generator-maven-plugin` executions (different spec files
-or type mappings), register each extra one manually as a `GenerateTask`:
+The Gradle OpenAPI plugin provides one `openApiGenerate` task. For each additional Maven plugin
+execution, register a separate `GenerateTask` and wire its generated source directory into the
+main source set:
 
 ```kotlin
-val openApiGenerateSimple by
-  tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
+val openApiGenerateSimple =
+  tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>(
+    "openApiGenerateSimple"
+  ) {
     generatorName.set("spring")
     inputSpec.set("$openapiDir/rest-api.yaml")
     outputDir.set("${project.layout.buildDirectory.get()}/generated/openapi-simple")
     modelPackage.set("io.camunda.gateway.protocol.model.simple")
 
-    // declare inputs explicitly so up-to-date checks work
-    inputs.files(fileTree(openapiDir) { include("**/*.yaml", "**/*.yml") })
-      .withPropertyName("openapiSpecs")
-      .withPathSensitivity(PathSensitivity.RELATIVE)
-
-    // models only, no apis / supporting files
-    globalProperties.set(mapOf("models" to "", "apis" to "false", "supportingFiles" to "false"))
-
-    // map schema types Gradle would otherwise generate as separate classes onto plain types.
-    // e.g. `type: string` key schemas → String. Use typeMappings (NOT importMappings).
-    typeMappings.set(mapOf(
-      "ElementInstanceKey" to "String",
-      "ProcessInstanceKeyFilterProperty" to "String",
-      // ... full list mirrors the Maven <typeMappings> for that execution
-    ))
-
+    globalProperties.set(
+      mapOf("models" to "", "apis" to "false", "supportingFiles" to "false")
+    )
+    typeMappings.set(
+      mapOf(
+        "ElementInstanceKey" to "String",
+        "ProcessInstanceKeyFilterProperty" to "String",
+      )
+    )
     skipValidateSpec.set(true)
     templateDir.set("${project.projectDir}/src/main/resources/templates/java-spring/simple")
-    configOptions.set(mapOf(
-      "serializationLibrary" to "jackson",
-      "library" to "spring-boot",
-      "jdk8" to "true",
-      "openApiNullable" to "false",
-      "additionalModelTypeAnnotations" to "...;@org.jspecify.annotations.NullMarked",
-    ))
   }
 
-sourceSets { main { java { srcDir(layout.buildDirectory.dir("generated/openapi-simple/src/main/java")) } } }
+sourceSets {
+  main { java { srcDir(layout.buildDirectory.dir("generated/openapi-simple/src/main/java")) } }
+}
 tasks.named("compileJava") { dependsOn(openApiGenerateSimple) }
 ```
 
-Notes:
-- **`typeMappings`, not `importMappings`**, is the mechanism used to collapse key/filter
-  schemas onto `String`/`Integer`/enum types — mirror the Maven `<typeMappings>` exactly.
-- `globalProperties` MUST include `"models" to ""` — without the `models` key, **zero** model
-  files are generated (empty string = "all models").
-- Match `configOptions` and `templateDir` to the Maven execution's `<configOptions>` and
-  `<templateDirectory>`; template differences cause subtly different generated code.
-- Live: `gateways/gateway-model` (two generations), `dist` (backups/cluster/exporter),
-  `clients/java`.
+The real execution must mirror the Maven execution's `typeMappings`, `configOptions`, template
+directory, and input files. Use `typeMappings`, not `importMappings`, when collapsing schemas onto
+existing types. Keep the empty `models` entry in `globalProperties`; without it, no model files
+are generated.
 
-## Per-module Spring / Spring Boot version pinning
+Current example: `gateways/gateway-model/build.gradle.kts`.
 
-Most modules resolve Spring Boot from the catalog platform (current major). A module that must
-build against an **older** Spring Boot line (e.g. the SB3 starter / testing modules) pins via
-`resolutionStrategy.eachDependency` — centralized in `buildlogic.spring-boot-3-conventions`. The
-pinned values are resolved from the module POM through the tracked `PomResolver`; they must not be
-literal library versions in Gradle:
+## Spring Boot version pinning
 
-```kotlin
-val projectPomVersions =
-  PomResolver(providers.fileContents(layout.projectDirectory.file("pom.xml")).asText.get())
-    .properties()
-val springBoot3Version = resolvePomProperty("version.spring-boot", projectPomVersions)
-val spring6Version = resolvePomProperty("version.spring", projectPomVersions)
-
-configurations.all {
-  exclude(group = "org.springframework.boot", module = "spring-boot-health")  // no SB3 equivalent
-  resolutionStrategy.eachDependency {
-    when (requested.group) {
-      "org.springframework.boot" -> {
-        useVersion(springBoot3Version)
-        because("Spring Boot 3.x compatibility module")
-      }
-      "org.springframework" -> {
-        useVersion(spring6Version)
-        because("Spring 6.x required for Spring Boot 3.x")
-      }
-    }
-  }
-}
-```
-
-Apply alongside the module's existing convention:
+The `buildlogic.spring-boot-3-conventions` plugin owns the Maven POM lookup, the exclusion for
+newer-only modules, and `resolutionStrategy.eachDependency`. Apply the convention; do not copy its
+implementation into individual modules:
 
 ```kotlin
 plugins {
-  id("buildlogic.server-conventions")        // or client-conventions
+  id("buildlogic.client-conventions") // or server-conventions
   id("buildlogic.spring-boot-3-conventions")
 }
 ```
 
-**Do NOT** add a second hardcoded `enforcedPlatform` for the older Spring Boot line — it collides
-with the platform the server/client convention already adds (two `strictly` constraints → FAILED
-resolution). `eachDependency` overrides versions without a second platform.
+The convention resolves `version.spring-boot` and `version.spring` from the module POM through a
+tracked `PomResolver`. Do not add a second Spring Boot platform: competing strict constraints can
+make dependency resolution fail. Current consumers are:
 
-`exclude` the modules that exist only in the newer Spring Boot line (e.g. `spring-boot-health`
-in SB4) — the older starter pulls them transitively and they won't resolve.
+- `clients/camunda-spring-boot-3-starter/build.gradle.kts`
+- `testing/camunda-process-test-spring-boot-3/build.gradle.kts`
 
-## SBE codegen — keep the SBE tool off the runtime classpath
+## SBE code generation
 
-`buildlogic.sbe-conventions` generates Java from SBE schemas by running `SbeTool`. The SBE tool
-drags a newer Agrona than the module runtime wants; forcing it onto the runtime classpath broke
-`zeebe-scheduler` tests. Isolate it in a dedicated resolvable configuration used **only** by the
-generator task:
+`buildlogic.sbe-conventions` owns the dedicated `sbeTool` configuration, the `generateSbe` task,
+generated source wiring, and generated resource packaging. Modules should only provide their
+schemas and task arguments:
 
 ```kotlin
-val sbeTool by configurations.creating {
-  isCanBeConsumed = false
-  isCanBeResolved = true
-}
-dependencies { sbeTool("uk.co.real-logic:sbe-tool:$sbeToolVersion") }  // version from catalog
+plugins { id("buildlogic.sbe-conventions") }
 
-tasks.register<JavaExec>("generateSbe") {
-  mainClass.set("uk.co.real_logic.sbe.SbeTool")
-  classpath = configurations.getByName("sbeTool")   // NOT runtimeClasspath
-  // ... jvmArgs --add-opens java.base/jdk.internal.misc, systemProperties, inputs/outputs
+sbe {
+  inputFiles.from(
+    layout.projectDirectory.file("src/main/resources/protocol.xml"),
+    layout.projectDirectory.file("src/main/resources/common-types.xml"),
+  )
+}
+
+tasks.named<JavaExec>("generateSbe") {
+  args("src/main/resources/protocol.xml")
 }
 ```
 
-Same shape applies to any codegen tool whose deps must not leak into the module's runtime.
+Do not recreate `sbeTool` or `generateSbe`, and do not put the SBE tool on a runtime or compile
+classpath. Its newer Agrona dependency must remain isolated from the module runtime.
+
+Implementation: `buildSrc/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts`.
