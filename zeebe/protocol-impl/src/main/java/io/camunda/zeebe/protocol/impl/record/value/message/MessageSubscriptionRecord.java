@@ -44,7 +44,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
   private static final StringValue SUBSCRIPTION_KEY_KEY = new StringValue("subscriptionKey");
 
@@ -65,8 +65,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
   private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
@@ -86,7 +85,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(businessIdProp)
         .declareProperty(elementIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(elementTypeProp)
         .declareProperty(subscriptionKeyProp);
   }
@@ -105,7 +104,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setBusinessId(record.getBusinessIdBuffer());
     setElementId(record.getElementIdBuffer());
     setRootProcessInstanceKey(record.getRootProcessInstanceKey());
-    setStorageOrdinalKey(record.getStorageOrdinalKey());
+    setStorageOrdinal(record.getStorageOrdinal());
     setElementType(record.getElementType());
     setSubscriptionKey(record.getSubscriptionKey());
   }
@@ -291,12 +290,12 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public MessageSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public MessageSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 
