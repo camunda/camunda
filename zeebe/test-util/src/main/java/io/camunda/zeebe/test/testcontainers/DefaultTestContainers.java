@@ -16,7 +16,7 @@ import java.util.Properties;
 public final class DefaultTestContainers {
   private static final String VERSIONS_FILE = "/zeebe-test-util-testcontainers.properties";
 
-  private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:" + keycloakVersion();
+  private static final String KEYCLOAK_IMAGE = keycloakImage();
 
   private DefaultTestContainers() {}
 
@@ -36,10 +36,10 @@ public final class DefaultTestContainers {
   }
 
   /**
-   * Returns the pinned Keycloak image tag, which Maven resource filtering writes into {@value
+   * Returns the pinned Keycloak image, which Maven resource filtering writes into {@value
    * #VERSIONS_FILE} from the {@code version.keycloak.container} property in {@code parent/pom.xml}.
    */
-  private static String keycloakVersion() {
+  private static String keycloakImage() {
     final Properties properties = new Properties();
     try (final InputStream in = DefaultTestContainers.class.getResourceAsStream(VERSIONS_FILE)) {
       if (in == null) {
@@ -50,13 +50,13 @@ public final class DefaultTestContainers {
       throw new IllegalStateException("Failed to read " + VERSIONS_FILE, e);
     }
 
-    final String version = properties.getProperty("keycloak.version");
-    if (version == null || version.startsWith("${")) {
+    final String image = properties.getProperty("keycloak.image");
+    if (image == null || image.contains("${")) {
       // unresolved placeholder: the sources were used without Maven having filtered them
       throw new IllegalStateException(
-          "keycloak.version in " + VERSIONS_FILE + " is unresolved; run a Maven build first");
+          "keycloak.image in " + VERSIONS_FILE + " is unresolved; run a Maven build first");
     }
 
-    return version;
+    return image;
   }
 }
