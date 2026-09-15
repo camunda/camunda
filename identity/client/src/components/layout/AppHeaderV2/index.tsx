@@ -7,11 +7,6 @@
  */
 
 import {
-  preview_C3ToolsArea as C3ToolsArea,
-  preview_useCamundaTools as useCamundaTools,
-  type UseCamundaToolsOptions,
-} from "@camunda/camunda-composite-components";
-import {
   AppHeader,
   AppSidebar,
   CamundaLogo,
@@ -20,6 +15,7 @@ import {
   type GlobalActionButton,
   type UserMenuItem,
 } from "@camunda/design-system";
+import { SaasNotifications } from "@camunda/oc-saas-notifications";
 import { useCallback, useMemo, type MouseEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -84,7 +80,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
   const { data: camundaUser } = useQuery(authenticationQueries.me());
   const { enqueueNotification } = useNotifications();
   const { t } = useTranslate("authentication");
-  const { t: tNav } = useTranslate("navigation");
+  const { t: tNav, i18n } = useTranslate("navigation");
   const { pathname, search } = useLocation();
   const isMobile = useIsMobile();
 
@@ -120,45 +116,34 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     [],
   );
 
-  const toolsOptions = useMemo<UseCamundaToolsOptions>(
-    () => ({
-      notifications: isSaaS
-        ? {
-            title: tNav("notifications"),
-            ariaLabel: tNav("notifications"),
-            labels: {
-              dismissAll: tNav("notificationsDismissAll"),
-              emptyTitle: tNav("notificationsEmptyTitle"),
-              emptyDescription: tNav("notificationsEmptyDescription"),
-            },
-          }
-        : undefined,
-    }),
-    [tNav],
-  );
-  const { tools, ToolsProvider } = useCamundaTools(toolsOptions);
   const globalActions = useMemo<GlobalActionButton[]>(() => {
-    return isSaaS
-      ? [
+    let actions = !isSaaS
+      ? []
+      : [
           {
             key: "notifications",
             label: tNav("notifications"),
-            element: <C3ToolsArea tools={tools} />,
-          },
-          {
-            key: "info",
-            label: tNav("info"),
-            element: <InfoMenu />,
-          },
-        ]
-      : [
-          {
-            key: "info",
-            label: tNav("info"),
-            element: <InfoMenu />,
+            element: (
+              <SaasNotifications
+                locale={i18n.resolvedLanguage}
+                labels={{
+                  title: tNav("notifications"),
+                  empty: tNav("notificationsEmpty"),
+                  loading: tNav("notificationsLoading"),
+                }}
+              />
+            ),
           },
         ];
-  }, [tNav, tools]);
+
+    actions.push({
+      key: "info",
+      label: tNav("info"),
+      element: <InfoMenu />,
+    });
+
+    return actions;
+  }, [tNav, i18n.resolvedLanguage]);
 
   const breadcrumb = useBreadcrumbs();
   const sidebarChildren = useSidebarChildren(hideNavLinks);
@@ -174,7 +159,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
   );
 
   return (
-    <ToolsProvider>
+    <>
       <AppHeader
         onClick={handleSkipToContentClick}
         skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
@@ -217,7 +202,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
           linkComponent={ForwardRefLink}
         />
       )}
-    </ToolsProvider>
+    </>
   );
 };
 
