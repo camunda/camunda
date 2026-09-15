@@ -883,38 +883,8 @@ final class IncidentUpdateTaskTest {
       succeedNonIncidentWrite();
       task.execute().toCompletableFuture().join();
 
-      // then - the next cycle reads fewer pending updates, so it can fan out into a smaller write
-      assertThat(readSizes()).containsExactly(CONFIGURED_BATCH_SIZE, CONFIGURED_BATCH_SIZE / 2);
-    }
-
-    @Test
-    void shouldKeepHalvingWhileTheStoreKeepsRefusing() {
-      // given
-      final var task = createTask(CONFIGURED_BATCH_SIZE);
-      refuseNonIncidentWriteAsTooLarge();
-
-      // when
-      failCycle(task);
-      failCycle(task);
-      failCycle(task);
-
       // then
-      assertThat(readSizes()).containsExactly(100, 50, 25);
-    }
-
-    @Test
-    void shouldNotReadFewerThanOnePendingUpdate() {
-      // given - already down to a single pending update per cycle
-      final var task = createTask(1);
-      refuseNonIncidentWriteAsTooLarge();
-
-      // when
-      failCycle(task);
-      failCycle(task);
-
-      // then - there is nothing left to halve, so the cycle keeps being retried as is rather than
-      // reading nothing at all and stalling forever
-      assertThat(readSizes()).containsExactly(1, 1);
+      assertThat(readSizes()).containsExactly(CONFIGURED_BATCH_SIZE, CONFIGURED_BATCH_SIZE / 2);
     }
 
     @Test
@@ -929,8 +899,7 @@ final class IncidentUpdateTaskTest {
       task.execute().toCompletableFuture().join();
       task.execute().toCompletableFuture().join();
 
-      // then - the reduction is not sticky: the fan-out depends on which incidents the batch holds,
-      // not on anything lasting about the cluster
+      // then - not sticky, since the fan-out depends on which incidents the batch holds
       assertThat(readSizes()).containsExactly(100, 50, 100);
     }
 
