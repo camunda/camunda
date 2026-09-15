@@ -48,6 +48,8 @@ public class SecondaryStorage {
   /** Stores the RDBMS configuration, when type is set to 'rdbms'. */
   @NestedConfigurationProperty private Rdbms rdbms = new Rdbms();
 
+  private volatile SecondaryStorageType resolvedType;
+
   public boolean getAutoconfigureCamundaExporter() {
     return autoconfigureCamundaExporter;
   }
@@ -65,16 +67,24 @@ public class SecondaryStorage {
   }
 
   public SecondaryStorageType getType() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".type",
-        type,
-        SecondaryStorageType.class,
-        SUPPORTED_ONLY_IF_VALUES_MATCH,
-        LEGACY_TYPE_PROPERTIES);
+    if (resolvedType == null) {
+      synchronized (this) {
+        if (resolvedType == null) {
+          resolvedType = UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+              PREFIX + ".type",
+              type,
+              SecondaryStorageType.class,
+              SUPPORTED_ONLY_IF_VALUES_MATCH,
+              LEGACY_TYPE_PROPERTIES);
+        }
+      }
+    }
+    return resolvedType;
   }
 
   public void setType(final SecondaryStorageType type) {
     this.type = type;
+    this.resolvedType = null;
   }
 
   public Elasticsearch getElasticsearch() {
