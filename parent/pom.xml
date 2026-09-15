@@ -207,7 +207,7 @@
     <version.nimbus-sdk>11.33</version.nimbus-sdk>
     <version.keycloak>26.5.7</version.keycloak>
     <!-- renovate: datasource=docker depName=docker.io/camunda/keycloak versioning=regex:^quay-(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$ -->
-    <version.keycloak.container>quay-26.5.7</version.keycloak.container>
+    <version.keycloak.container>quay-26.5.7@sha256:f21d8a2a0764ec0c92ebee30caff0752a0fd41d23e7f7f39ea986bd8f39190d3</version.keycloak.container>
     <version.keycloak-client>26.0.12</version.keycloak-client>
     <version.jna>5.18.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
