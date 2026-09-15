@@ -143,7 +143,8 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
                 return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
               }
               return CompletableFuture.completedFuture(r.items().size());
-            });
+            })
+        .exceptionallyCompose(error -> CompletableFuture.failedFuture(translateBulkFailure(error)));
   }
 
   private static NotFinishedBatchOperation toNotFinishedBatchOperation(
