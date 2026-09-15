@@ -74,7 +74,8 @@ class OidcFlowContextPathTest {
 
   @Container
   static KeycloakContainer keycloak =
-      new KeycloakContainer().withRealmImportFile("/camunda-identity-test-realm.json");
+      TestKeycloakContainers.createDefaultKeycloak()
+          .withRealmImportFile("/camunda-identity-test-realm.json");
 
   @Autowired MockMvcTester mockMvcTester;
 

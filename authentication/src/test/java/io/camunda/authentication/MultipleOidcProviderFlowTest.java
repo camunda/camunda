@@ -85,7 +85,7 @@ class MultipleOidcProviderFlowTest {
 
   @Container
   static KeycloakContainer keycloak =
-      new KeycloakContainer()
+      TestKeycloakContainers.createDefaultKeycloak()
           .withRealmImportFiles(
               "/camunda-foo-realm.json",
               "/camunda-bar-realm.json",
