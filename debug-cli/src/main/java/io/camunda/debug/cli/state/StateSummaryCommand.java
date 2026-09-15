@@ -10,7 +10,6 @@ package io.camunda.debug.cli.state;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -55,10 +54,12 @@ public final class StateSummaryCommand implements Callable<Integer> {
           for (final var columnFamily : ZbColumnFamilies.values()) {
             final var rawColumnFamily = new RawTransactionalColumnFamily(db, columnFamily);
             final long[] count = {0};
-            rawColumnFamily.forEachKey(context, (key, offset, length) -> {
-              count[0]++;
-              return true;
-            });
+            rawColumnFamily.forEachKey(
+                context,
+                (key, offset, length) -> {
+                  count[0]++;
+                  return true;
+                });
 
             final var entry = new LinkedHashMap<String, Object>();
             entry.put("name", columnFamily.name());

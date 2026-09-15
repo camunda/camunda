@@ -7,19 +7,18 @@
  */
 package io.camunda.debug.cli.state;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Locale;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
@@ -77,8 +76,7 @@ public final class StateListCommand implements Callable<Integer> {
 
     final ZbColumnFamilies columnFamily;
     try {
-      columnFamily =
-          ZbColumnFamilies.valueOf(columnFamilyName.trim().toUpperCase(Locale.ROOT));
+      columnFamily = ZbColumnFamilies.valueOf(columnFamilyName.trim().toUpperCase(Locale.ROOT));
     } catch (final IllegalArgumentException e) {
       spec.commandLine().getErr().println("Unknown column family: " + columnFamilyName);
       return 1;

@@ -84,7 +84,8 @@ class StateKeyFormatterTest {
 
   @ParameterizedTest
   @MethodSource("databaseValueFormats")
-  void shouldFormatDatabaseValueTypes(final String format, final byte[] value, final String expected) {
+  void shouldFormatDatabaseValueTypes(
+      final String format, final byte[] value, final String expected) {
     // given
     final var key = ByteBuffer.allocate(Long.BYTES + value.length).putLong(1).put(value).array();
 
@@ -97,7 +98,8 @@ class StateKeyFormatterTest {
 
   static Stream<Arguments> databaseValueFormats() {
     return Stream.of(
-        Arguments.of("s", ByteBuffer.allocate(4 + 3).putInt(3).put("abc".getBytes()).array(), "abc"),
+        Arguments.of(
+            "s", ByteBuffer.allocate(4 + 3).putInt(3).put("abc".getBytes()).array(), "abc"),
         Arguments.of("l", ByteBuffer.allocate(Long.BYTES).putLong(42).array(), "42"),
         Arguments.of("i", ByteBuffer.allocate(Integer.BYTES).putInt(42).array(), "42"),
         Arguments.of("b", new byte[] {7}, "7"),
@@ -144,5 +146,4 @@ class StateKeyFormatterTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown key format component");
   }
-
 }

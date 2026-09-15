@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file except in compliance
- * with the Camunda License 1.0.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.debug.cli.state;
 
@@ -65,11 +65,9 @@ final class StateKeyFormatters {
           FORM_VERSION,
           MAPPING_RULES ->
           StateKeyFormatter.databaseValues("ss");
-      case PROCESS_CACHE, FORMS, DMN_DECISIONS ->
-          StateKeyFormatter.databaseValues("sl");
+      case PROCESS_CACHE, FORMS, DMN_DECISIONS -> StateKeyFormatter.databaseValues("sl");
       case DMN_DECISION_REQUIREMENTS -> StateKeyFormatter.databaseValues("sl");
-      case DMN_LATEST_DECISION_BY_ID,
-          DMN_LATEST_DECISION_REQUIREMENTS_BY_ID ->
+      case DMN_LATEST_DECISION_BY_ID, DMN_LATEST_DECISION_REQUIREMENTS_BY_ID ->
           StateKeyFormatter.databaseValues("ss");
       case DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY ->
           StateKeyFormatter.databaseValues("slsl");
@@ -83,8 +81,7 @@ final class StateKeyFormatters {
           SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
           JOB_ACTIVATABLE ->
           StateKeyFormatter.databaseValues("ssl");
-      case MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
-          SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME ->
+      case MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME, SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME ->
           StateKeyFormatter.databaseValues("lss");
       case MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY ->
           StateKeyFormatter.databaseValues("sssl");
@@ -92,8 +89,7 @@ final class StateKeyFormatters {
       case USAGE_METRICS -> StateKeyFormatter.databaseValues("b");
       case MIGRATIONS_STATE, MESSAGE_STATS -> StateKeyFormatter.databaseValues("s");
       case COMPENSATION_SUBSCRIPTION -> StateKeyFormatter.databaseValues("sll");
-      case ENTITIES_BY_RELATION, RELATIONS_BY_ENTITY ->
-          StateKeyFormatter.databaseValues("bsbs");
+      case ENTITIES_BY_RELATION, RELATIONS_BY_ENTITY -> StateKeyFormatter.databaseValues("bsbs");
       case ROLES, CLAIM_BY_ID -> StateKeyFormatter.databaseValues("s");
       case PERMISSIONS -> StateKeyFormatter.databaseValues("sss");
       case AUTHORIZATION_KEYS_BY_OWNER -> StateKeyFormatter.databaseValues("ss");

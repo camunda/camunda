@@ -47,11 +47,7 @@ class SnapshotReaderTest {
   void shouldRejectMissingSnapshot() {
     assertThatThrownBy(
             () ->
-                SnapshotReader.read(
-                    tempDir.resolve("partition"),
-                    "missing",
-                    null,
-                    ignored -> null))
+                SnapshotReader.read(tempDir.resolve("partition"), "missing", null, ignored -> null))
         .isInstanceOf(IOException.class)
         .hasMessageContaining("Snapshot directory does not exist");
   }

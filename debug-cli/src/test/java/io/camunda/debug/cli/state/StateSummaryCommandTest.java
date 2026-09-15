@@ -27,8 +27,7 @@ class StateSummaryCommandTest {
     final var partitionRoot = tempDir.resolve("partition");
     try (final var db =
         SnapshotTestUtil.newDbFactory().createDb(tempDir.resolve("initial").toFile())) {
-      final var snapshot =
-          new SnapshotUtil().takeSnapshot(db, partitionRoot, "1-1-1-1-1", 1L);
+      final var snapshot = new SnapshotUtil().takeSnapshot(db, partitionRoot, "1-1-1-1-1", 1L);
       final var output = new StringWriter();
       final var commandLine =
           new CommandLine(new Main())

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file except in compliance
- * with the Camunda License 1.0.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.debug.cli.state;
 
@@ -20,9 +20,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.Map;
-import picocli.CommandLine;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import picocli.CommandLine;
 
 class StateListCommandTest {
 
@@ -81,7 +81,8 @@ class StateListCommandTest {
     final var key = ByteBuffer.allocate(Long.BYTES).putLong(42).array();
     final var value = MsgPackConverter.convertToMsgPack("{\"message\":\"value\"}");
     try (final var db =
-        SnapshotTestUtil.newDbFactory().createDb(tempDir.resolve("all-column-families-db").toFile())) {
+        SnapshotTestUtil.newDbFactory()
+            .createDb(tempDir.resolve("all-column-families-db").toFile())) {
       final var context = db.createContext();
       final Map<ZbColumnFamilies, RawTransactionalColumnFamily> columnFamilies =
           new EnumMap<>(ZbColumnFamilies.class);
