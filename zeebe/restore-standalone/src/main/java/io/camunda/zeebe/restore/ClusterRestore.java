@@ -409,10 +409,4 @@ public final class ClusterRestore {
     /** Delete the selected physical tenants' own directories, leaving every other tenant's. */
     REPLACE_SELECTED
   }
-
-  /** What to run for one physical tenant, once its {@link RestoreManager} has been built. */
-  private interface TenantRestore {
-    void accept(String physicalTenantId, RestoreManager manager)
-        throws IOException, ExecutionException, InterruptedException;
-  }
 }
