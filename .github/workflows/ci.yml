@@ -1331,6 +1331,14 @@ jobs:
             docker-file: camunda.Dockerfile
             owner: '@camunda/camundaex'
             module: "Testing"
+          - group: authentication
+            name: "Authentication"
+            maven-modules: "authentication"
+            maven-build-threads: 1
+            maven-test-fork-count: 1
+            runs-on: gcp-perf-core-8-default
+            owner: '@camunda/identity'
+            module: "Identity"
     env:
       TEST_OWNER: ${{ matrix.owner }}
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
