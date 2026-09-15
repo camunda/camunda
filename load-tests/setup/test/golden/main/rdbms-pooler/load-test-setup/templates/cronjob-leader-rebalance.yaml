@@ -21,9 +21,48 @@ spec:
           - name: leader-balancer
             image: curlimages/curl:7.87.0
             command: ["/bin/sh", "-c"]
+            env:
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientId
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientSecret
+            - name: AUTH_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authServer
+            - name: AUTHORIZATION_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authorizationAudience
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeRestAddress
             args:
               - |-
-                curl -L -v -X POST "http://camunda:9600/actuator/rebalance"
+                set -eu
+                response=$(curl -sS -f -X POST "$AUTH_SERVER" \
+                  -H "Content-Type: application/x-www-form-urlencoded" \
+                  --data-urlencode "grant_type=client_credentials" \
+                  --data-urlencode "client_id=$CLIENT_ID" \
+                  --data-urlencode "client_secret=$CLIENT_SECRET" \
+                  --data-urlencode "audience=$AUTHORIZATION_AUDIENCE")
+                token=$(echo "$response" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+                if [ -z "$token" ]; then
+                  echo "Failed to obtain an access token for the cluster-admin API" >&2
+                  exit 1
+                fi
+                curl -L -v -f -X POST "$ZEEBE_REST_ADDRESS/cluster/v2/rebalance" \
+                  -H "Authorization: Bearer $token"
 
           restartPolicy: OnFailure
   schedule: '*/10 * * * *'
