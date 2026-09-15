@@ -15,6 +15,16 @@ on:
         type: string
         required: true
 
+# Serializes the whole check -> cleanup -> IT chain per os_version across workflow
+# runs. Each run owns the AWS OpenSearch cluster for its version end to end, so a
+# second run's index cleanup can never delete indices out from under tests that are
+# still running here. Within a run, the integration-test lanes below bound how many
+# jobs hit the cluster at once.
+concurrency:
+  group: aws-opensearch-chain-${{ inputs.os_version }}
+  cancel-in-progress: false
+  queue: max
+
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
@@ -31,13 +41,6 @@ jobs:
       contents: read
     timeout-minutes: 10
     runs-on: aws-core-8-default
-    # Shares the per-os_version AWS OpenSearch cluster with cleanup-opensearch-indices
-    # and integration-tests below, so concurrent runs against the same cluster queue
-    # up instead of colliding.
-    concurrency:
-      group: aws-opensearch-${{ inputs.os_version }}
-      cancel-in-progress: false
-      queue: max
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -79,11 +82,6 @@ jobs:
       contents: read
     timeout-minutes: 30
     runs-on: aws-core-8-default
-    # See the concurrency comment on check-opensearch-version above.
-    concurrency:
-      group: aws-opensearch-${{ inputs.os_version }}
-      cancel-in-progress: false
-      queue: max
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -130,12 +128,13 @@ jobs:
     env:
       TEST_OWNER: ${{ matrix.owner }}
     # All groups below share the one AWS OpenSearch cluster for this os_version, and
-    # running all 5 at once overloads it (cluster event queue timeouts,
-    # search_phase_execution_exception, and jobs hanging until the job timeout). Queue
-    # matrix legs one at a time via the same per-version concurrency group used by
-    # check-opensearch-version and cleanup-opensearch-indices above.
+    # running all 5 at once overloaded it (cluster event queue timeouts,
+    # search_phase_execution_exception, and jobs hanging until the job timeout). A
+    # concurrency group admits one job at a time, so the legs are spread over lanes
+    # via matrix.lane: one job per lane runs at a time, the rest queue behind it, and
+    # the lane count is how many jobs hit the cluster at once.
     concurrency:
-      group: aws-opensearch-${{ inputs.os_version }}
+      group: aws-opensearch-${{ inputs.os_version }}-lane-${{ matrix.lane }}
       cancel-in-progress: false
       queue: max
     strategy:
@@ -156,6 +155,7 @@ jobs:
             maven-test-profiles: multi-db-test-client
             runs-on: aws-core-8-default
             owner: '@camunda/engineering-operations'
+            lane: 1
           - group: camunda-qa-acceptance-tests-non-client
             name: "Camunda QA Module Non-Client Tests"
             maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
@@ -164,6 +164,7 @@ jobs:
             maven-test-profiles: multi-db-test-non-client
             runs-on: aws-core-8-default
             owner: '@camunda/engineering-operations'
+            lane: 3
           - group: search-client-opensearch
             name: "Search Client OpenSearch ITs"
             maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
@@ -172,6 +173,7 @@ jobs:
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: '@camunda/core-features'
+            lane: 2
           - group: camunda-exporter
             name: "Camunda Exporter ITs"
             maven-modules: "'io.camunda:camunda-exporter'"
@@ -180,6 +182,7 @@ jobs:
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: '@camunda/data-layer'
+            lane: 2
           - group: zeebe-opensearch-exporter
             name: "Zeebe OpenSearch Exporter ITs"
             maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
@@ -188,6 +191,7 @@ jobs:
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: '@camunda/data-layer'
+            lane: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
