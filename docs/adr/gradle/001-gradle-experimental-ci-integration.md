@@ -18,19 +18,24 @@ development and to evaluate whether Gradle is a viable long-term build tool. It 
 independent build definition at first. Both builds must work against the same source tree. A change
 to Java sources, a POM, or Gradle build logic must not leave the other build unusable.
 
+
+
 Maven remains authoritative during the evaluation. When the build systems differ, the Gradle build
 must be brought into line with Maven rather than redefining the behavior in Gradle. Parity includes
 the module graph, dependency scopes and versions, generated sources, resource processing, test-jar
-usage, published metadata, and packaged artifacts.
+usage, published metadata, and packaged artifacts. However, we initially allow *transitive dependencies*
+to have different patch versions between maven and gradle (more details in D4).
 
-The evaluation will determine whether maintaining both builds is light enough to continue or
-whether Gradle should replace Maven. That choice requires a separate ADR. Until then, Gradle is not
-used to publish artifacts to external repositories.
+Gradle is not used to publish artifacts to external repositories: for a first iteration not all
+checks/jobs need to be migrated (for example RevAPI) and the build might not match exactly (see D4).
 
 Gradle regressions should be visible in pull requests, and the Gradle checks should protect the
-merge queue without replacing Maven's complete application-test path. Running both complete build paths for every pull
-request would add too much time and cost during the evaluation, so the initial Gradle path uses
-focused compilation and packaging checks.
+merge queue without replacing Maven's complete application-test path.
+Running both complete CI for every pull request would add too much time and cost during the evaluation,
+so the initial Gradle checks uses focused compilation and packaging checks and does not run all the tests.
+In the future, we can potentially include (some) unit tests, potentially leveraging Gradle's caching
+(which works for tests as well). However, Integration Tests are the most expensive part of the build
+and they will likely not be cached anyway (as they all depends on `dist/`).
 
 ## Decision
 
@@ -44,6 +49,12 @@ introducing Gradle-specific alternatives.
 This is a coexistence decision, not a decision that Maven must remain the long-term build tool. A
 future change may establish another source of truth, but it must be recorded explicitly; until then,
 Maven remains authoritative.
+
+During the evaluation, parity claims are limited to behavior exercised by the focused checks and the
+complete paths defined in D5 and D6. Maven-only quality and release integrations that the experimental
+Gradle path does not yet reproduce, such as SpotBugs, RevAPI, JaCoCo, license and flattening checks,
+and source or Javadoc artifacts, remain Maven-owned and deferred. This ADR does not authorize Gradle
+publication.
 
 ### D2. Gradle must not define independent library versions
 
@@ -61,8 +72,9 @@ view of it.
 The Gradle wrapper distribution version is maintained in `gradle/wrapper/gradle-wrapper.properties`
 together with the corresponding wrapper files, and is updated deliberately as a unit. The only
 other exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
-Maven-sourced version. This exception does not apply to libraries used by that plugin or to ordinary
-buildscript dependencies; those must still use Maven-sourced catalog versions.
+Maven-sourced version. Eventually, those plugin versions needs to be updated with renovate as the
+other dependencies
+
 
 ### D3. Maven and Gradle changes are kept in sync
 
@@ -83,9 +95,10 @@ Published metadata and distribution contents must remain aligned with Maven.
 ### D4. Keep focused Gradle checks enabled in Unified CI
 
 For every pull request, merge group, and protected-branch push that can affect build behavior,
-Unified CI runs focused Gradle checks. They are part of the required CI path rather than an opt-in
-signal. The `gradle-changes` filter triggers **Gradle production and test compilation** and validates
-the **resulting distribution against Maven** when Java, Maven, Gradle, or relevant CI inputs change.
+Unified CI runs focused Gradle checks. They are part of the intended CI path rather than an opt-in
+signal. The `gradle-changes` filter triggers **Gradle production and test compilation**
+and validates the **resulting distribution against Maven** when Java, Maven, Gradle, or relevant CI
+inputs change.
 
 For this ADR, Gradle build inputs are:
 
@@ -94,6 +107,10 @@ For this ADR, Gradle build inputs are:
 - `gradlew` and `gradlew.bat`;
 - files below `gradle/`; and
 - files below `buildSrc/`.
+
+The implementation must reuse the existing `java-code-change`, `maven-change`, `ci-relevant` filters and define
+a new `gradle-change` filter, when deciding whether build behavior may
+have changed. Unknown or shared CI inputs must not be classified as Gradle-only by default.
 
 The focused checks target the most frequent sources of drift, such as dependency changes, newly
 added modules, and changes to Java, Maven, Gradle, or relevant CI inputs. They cannot catch every
@@ -116,30 +133,30 @@ will evolve.
 Patch-version tolerance **must be reconsidered** before Gradle publishes external artifacts or becomes
 a supported or authoritative build path.
 
-The Gradle checks are included in Unified CI's `check-results` gate. They block relevant pull
-requests and merge groups when Gradle compilation, packaging, or distribution parity fails, but
-Maven test jobs must not depend on them. A Gradle failure must not skip, cancel, or make Maven tests
-unavailable. Protected-branch pushes run the same checks for post-merge health and to warm the
-shared Gradle cache; a push failure cannot prevent the commit that triggered it from having already
-landed.
+The Gradle checks are included in Unified CI's `check-results` gate. They block
+relevant pull requests and merge groups when Gradle compilation, packaging, or distribution parity
+fails. Maven test jobs must not depend on them. A Gradle failure must not skip, cancel, or make Maven
+tests unavailable. Protected-branch pushes run the same checks for post-merge health and to warm the shared
+Gradle cache; a push failure cannot prevent the commit that triggered it from having already landed.
 
-The focused Gradle compilation check verifies test-class compilation, not unit-test execution. Full
-Gradle test execution is selected separately as described in D5 and D6.
+Full Gradle test execution is selected separately as described in D5 and D6.
 
 ### D5. Make the complete CI path selectable by build tool
 
 Unified CI exposes a `build-tool` input that accepts `maven` or `gradle`. Selecting Maven runs the
 complete Maven application-test path. Selecting Gradle runs the complete Gradle unit and integration
 test path and the minimal Maven `build-distball` producer needed for distribution parity; it does
-not run Maven application tests. This selection is separate from the focused Gradle checks in D4,
-which remain enabled for relevant changes.
+not run Maven application tests. A complete Gradle path subsumes the focused Gradle checks for that
+same run, so compilation and packaging are not run twice. Focused checks remain enabled for runs
+that do not select the complete Gradle path.
 
-Maven is the default build path. Automatic Gradle selection is allowed only when the change
-detector classifies all changed files as Gradle-only, including Gradle-specific CI files. A human
-may explicitly select Gradle for a deliberate validation of Gradle build or CI changes that cannot
-be classified automatically. Java and Maven build changes remain Maven-bound. This allows an
-engineer repairing a scheduled Gradle failure to validate the repair without paying for unrelated
-Maven application tests, while mixed changes continue to use Maven.
+Maven is the default build path. Automatic Gradle selection is allowed only when every changed file
+matches only the explicit Gradle build-input allowlist above or a dedicated allowlist for Gradle-only CI
+wiring. A shared or unknown CI file is not Gradle-only and defaults to Maven. A human may explicitly
+select Gradle for a deliberate validation of a known Gradle-only CI change before its allowlist is
+updated. Java and Maven build changes remain Maven-bound. This allows an engineer repairing a
+scheduled Gradle failure to validate the repair without paying for unrelated Maven application tests,
+while mixed changes continue to use Maven.
 
 ### D6. Run the complete Gradle CI path on a schedule
 
@@ -150,9 +167,9 @@ human explicitly selects Gradle. A scheduled wrapper invokes this reusable entry
 `build-tool: gradle` and runs the complete Gradle unit and integration test path against the default
 branch, beyond the focused compilation and packaging checks. This reuses the same selectable build
 path that engineers use to validate fixes to Gradle build or CI files. The exact cadence is an
-operational setting and can be adjusted without changing this decision. A failure creates a CI
-incident for the owning team to triage and track until the Gradle path is healthy again. The owning
-team must be assigned before this ADR is accepted.
+operational setting and can be adjusted without changing this decision. D6 remains deferred until
+an owning team is named for triage and incident follow-up. Once ownership is assigned, a failure
+creates a CI incident for that team to track until the Gradle path is healthy again.
 
 The scheduled workflow does not replace Maven's application-test path.
 
