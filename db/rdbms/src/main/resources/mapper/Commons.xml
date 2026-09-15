@@ -184,17 +184,17 @@
         </if>
         <if test="operation.type.toString == 'LONG'">
           (
-          (LONG_VALUE IS NULL OR LONG_VALUE NOT IN
-          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
-            #{value}
-          </foreach>
-          )
-          AND
-          (DOUBLE_VALUE IS NULL OR DOUBLE_VALUE NOT IN
-          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
-            #{value}
-          </foreach>
-          )
+            (LONG_VALUE IS NULL OR LONG_VALUE NOT IN
+            <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+              #{value}
+            </foreach>
+            )
+            AND
+            (DOUBLE_VALUE IS NULL OR DOUBLE_VALUE NOT IN
+            <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+              #{value}
+            </foreach>
+            )
           )
         </if>
         <if test="operation.type.toString == 'DOUBLE'">
