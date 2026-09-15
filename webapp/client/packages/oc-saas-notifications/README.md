@@ -5,9 +5,10 @@ Camunda composite-components notification runtime to the Camunda design system n
 
 ## Distribution
 
-This package publishes its TypeScript and TSX source without bundling or transpilation. Consumers
-must transpile TypeScript dependencies from `node_modules` and provide compatible versions of the
-peer dependencies.
+This package publishes its TypeScript and TSX source without bundling or transpilation. Vite
+transpiles the source automatically without additional configuration. Consumers using another
+toolchain must support TypeScript dependencies from `node_modules` and provide compatible versions
+of the peer dependencies.
 
 The host must also load `@camunda/design-system/styles.css` and render the component inside a
 configured `C3UserConfigurationProvider`.
@@ -23,7 +24,6 @@ import {SaasNotifications} from '@camunda/oc-saas-notifications';
 		title: 'Notifications',
 		loading: 'Loading notifications...',
 		empty: 'You have no notifications.',
-		dismissAll: 'Dismiss all',
 	}}
 />;
 ```

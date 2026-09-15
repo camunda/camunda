@@ -40,7 +40,7 @@ describe('<Header /> (V2)', () => {
 
 		const screen = await renderWithRouter(
 			() => (
-				<Header initialSaasToken={null}>
+				<Header currentApp="tasklist" initialSaasToken={null}>
 					<div>Page content</div>
 				</Header>
 			),
@@ -58,16 +58,23 @@ describe('<Header /> (V2)', () => {
 	});
 
 	it.for([
-		{path: '/tasklist' as const, app: 'Tasklist', href: '/tasklist'},
-		{path: '/operate' as const, app: 'Operate', href: '/operate'},
-		{path: '/admin' as const, app: 'Admin', href: '/admin'},
-	])('should use the $app context at $path', async ({path, app, href}, {worker}) => {
+		{path: '/tasklist' as const, currentApp: 'tasklist' as const, app: 'Tasklist', href: '/tasklist'},
+		{path: '/operate' as const, currentApp: 'operate' as const, app: 'Operate', href: '/operate'},
+		{path: '/admin' as const, currentApp: 'admin' as const, app: 'Admin', href: '/admin'},
+	])('should use the $app context at $path', async ({path, currentApp, app, href}, {worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
-		const screen = await renderWithRouter(() => <Header initialSaasToken={null}>Page content</Header>, {path});
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp={currentApp} initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{path},
+		);
 
 		await expect.element(screen.getByRole('link', {name: app})).toHaveAttribute('href', href);
 	});
@@ -80,9 +87,16 @@ describe('<Header /> (V2)', () => {
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
-		const screen = await renderWithRouter(() => <Header initialSaasToken={null}>Page content</Header>, {
-			path: '/tasklist',
-		});
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="tasklist" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{
+				path: '/tasklist',
+			},
+		);
 
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toBeInTheDocument();
@@ -98,10 +112,17 @@ describe('<Header /> (V2)', () => {
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
-		const screen = await renderWithRouter(() => <Header initialSaasToken={null}>Page content</Header>, {
-			path,
-			initialEntry,
-		});
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="tasklist" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{
+				path,
+				initialEntry,
+			},
+		);
 
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).toHaveAttribute('aria-current', 'page');
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toHaveAttribute('aria-current');
@@ -113,9 +134,16 @@ describe('<Header /> (V2)', () => {
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
-		const screen = await renderWithRouter(() => <Header initialSaasToken={null}>Page content</Header>, {
-			path: '/tasklist/processes',
-		});
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="tasklist" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{
+				path: '/tasklist/processes',
+			},
+		);
 
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).toHaveAttribute('aria-current', 'page');
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).not.toHaveAttribute('aria-current');

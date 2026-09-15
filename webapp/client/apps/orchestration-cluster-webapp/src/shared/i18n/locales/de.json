@@ -21,7 +21,6 @@
 		"headerNotificationsLabel": "Benachrichtigungen",
 		"headerNotificationsLoading": "Benachrichtigungen werden geladen...",
 		"headerNotificationsEmptyDescription": "Sie haben keine Benachrichtigungen.",
-		"headerNotificationsDismissAll": "Alle verwerfen",
 		"notificationLogOutTitle": "Abmelden",
 		"notificationLogOutSubtitle": "Sie werden abgemeldet...",
 		"loginErrorUsernamePasswordMismatch": "Benutzername und Passwort stimmen nicht überein",
