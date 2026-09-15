@@ -136,13 +136,18 @@ def test_should_warn_when_label_sample_is_missing():
 
 
 def test_should_warn_when_prometheus_status_is_not_success():
-    response = {"status": "error", "data": {"result": []}}
+    response = {
+        "status": "error",
+        "errorType": "bad_data",
+        "error": "invalid PromQL",
+        "data": {"result": []},
+    }
     warnings = []
 
-    with pytest.raises(MissingMetric, match="Prometheus returned non-success status"):
+    with pytest.raises(MissingMetric, match="Prometheus returned non-success status: bad_data: invalid PromQL"):
         extract_metric_value(response, "", "throughput", warnings.append)
 
-    assert warnings == ["throughput: Prometheus returned non-success status"]
+    assert warnings == ["throughput: Prometheus returned non-success status: bad_data: invalid PromQL"]
 
 
 def test_should_build_report_without_network_side_effects():
@@ -319,6 +324,14 @@ def test_should_report_http_errors_from_prometheus():
             client.query("up")
 
 
+def test_should_report_invalid_prometheus_json():
+    with mock.patch.object(prometheus, "urlopen", return_value=FakeHttpResponse("not json")):
+        client = PrometheusClient("https://prometheus.example", "", "", "")
+
+        with pytest.raises(ReportError, match="Prometheus returned invalid JSON"):
+            client.query("up")
+
+
 def test_should_report_invalid_prometheus_endpoint():
     client = PrometheusClient("not a URL", "", "", "")
 
@@ -349,6 +362,14 @@ def test_should_reject_malformed_yaml_query_file(tmp_path):
     queries_file.write_text("queries: [", encoding="utf-8")
 
     with pytest.raises(ReportError, match="contains invalid YAML"):
+        QueriesDocument.from_file(queries_file, {})
+
+
+def test_should_reject_invalid_utf8_query_file(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_bytes(b"\xff")
+
+    with pytest.raises(ReportError, match="Could not read query file"):
         QueriesDocument.from_file(queries_file, {})
 
 
@@ -567,6 +588,11 @@ def test_should_derive_duration_from_start_and_end(tmp_path):
     assert options.time_anchor == "2026-08-14T10:30:00Z"
     assert options.start_label == "2026-08-14T10:00:00Z"
     assert options.end_label == "2026-08-14T10:30:00Z"
+
+
+def test_should_reject_unrepresentable_timestamp():
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--at", "999999999999999999999"])
 
 
 def test_should_use_packaged_default_queries():

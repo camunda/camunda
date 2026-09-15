@@ -40,7 +40,7 @@ class QueriesDocument(BaseModel):
         try:
             raw_document = substitute_query_text(queries_file.read_text(encoding="utf-8"), substitutions)
             parsed = yaml.safe_load(raw_document)
-        except OSError as error:
+        except (OSError, UnicodeError) as error:
             raise ReportError(f"Could not read query file '{queries_file}': {error}") from error
         except yaml.YAMLError as error:
             raise ReportError(f"Query file '{queries_file}' contains invalid YAML: {error}") from error

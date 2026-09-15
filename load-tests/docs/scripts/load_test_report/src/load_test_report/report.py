@@ -36,7 +36,12 @@ def extract_metric_value(
     warning_sink: WarningSink = warn,
 ) -> MetricValue:
     if response.get("status") != "success":
-        missing_metric(key, "Prometheus returned non-success status", warning_sink)
+        error_type = response.get("errorType")
+        error_message = response.get("error")
+        reason = "Prometheus returned non-success status"
+        if error_type or error_message:
+            reason += f": {error_type or 'error'}: {error_message or 'unknown error'}"
+        missing_metric(key, reason, warning_sink)
 
     data = response.get("data", {})
     result = data.get("result", []) if isinstance(data, Mapping) else []

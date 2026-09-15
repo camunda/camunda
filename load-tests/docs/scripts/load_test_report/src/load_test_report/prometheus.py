@@ -39,12 +39,12 @@ class PrometheusClient:
             request = Request(url, headers=self.headers)
             with urlopen(request, timeout=timeout) as response:
                 parsed = json.loads(response.read().decode("utf-8"))
+        except json.JSONDecodeError as error:
+            raise ReportError(f"Prometheus returned invalid JSON: {error}") from error
         except HTTPError as error:
             raise ReportError(f"Prometheus request failed with HTTP {error.code} {error.reason}") from error
         except (URLError, TimeoutError, OSError, ValueError) as error:
             raise ReportError(f"Prometheus request failed: {error}") from error
-        except json.JSONDecodeError as error:
-            raise ReportError(f"Prometheus returned invalid JSON: {error}") from error
         if not isinstance(parsed, Mapping):
             raise ReportError("Prometheus returned a non-object JSON response.")
         return parsed

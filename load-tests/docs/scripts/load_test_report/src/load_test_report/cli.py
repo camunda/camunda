@@ -70,7 +70,12 @@ def type_duration(value: str) -> str:
 
 def parse_epoch(value: str) -> int:
     if value.isdigit():
-        return int(value)
+        epoch = int(value)
+        try:
+            datetime.fromtimestamp(epoch, UTC)
+        except (OSError, OverflowError, ValueError) as error:
+            raise ValueError(f"could not represent timestamp '{value}'") from error
+        return epoch
     try:
         normalized = value.replace("Z", "+00:00")
         parsed = datetime.fromisoformat(normalized)
