@@ -8,10 +8,8 @@
 package io.camunda.exporter.tasks.util;
 
 /**
- * Raised when the secondary storage rejected a bulk request because of its size, rather than
- * because of anything about the documents in it. Tasks can catch this to build a smaller request on
- * the next attempt; every other failure keeps its usual exception type, since writing less would
- * not help.
+ * Raised when the store rejected a bulk request for its size rather than its contents, so a task
+ * can build a smaller one instead of retrying the same request.
  */
 public final class BulkRequestTooLargeException extends RuntimeException {
 
