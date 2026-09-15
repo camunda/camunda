@@ -10,6 +10,18 @@ inputs:
     description: Additional CLI arguments which will be passed to the maven install command as is, e.g. "-am -pl util/"
     default: ""
     required: false
+  retry-max-attempts:
+    description: >
+      Attempts for the mvnw install retry; keep the default of 1 (no retry). Opt into a
+      second attempt only from a job whose timeout-minutes affords it -- see ci-zeebe.yml smoke-tests.
+    default: "1"
+    required: false
+  retry-timeout-minutes:
+    description: >
+      Per-attempt timeout for the retry path only (retry-max-attempts > 1); ignored on the default
+      path. An opting-in caller must size it to fit its own timeout-minutes.
+    default: "15"
+    required: false
 
 outputs:
   distball:
@@ -19,13 +31,32 @@ outputs:
 runs:
   using: composite
   steps:
+    # Default path: plain step, no per-step timeout, identical to the previous behaviour. Non-opted
+    # callers (retry-max-attempts stays 1) keep their exact build budget.
     - name: Package Zeebe
+      if: ${{ inputs.retry-max-attempts == '1' }}
+      shell: bash
+      run: ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
+
+    # Opt-in retry path: gives a second full attempt against Nexus, which has intermittently reset
+    # connections mid-build past Maven's own transport retry. retry_on: any so a
+    # timeout_minutes kill also retries (see the deploy-snapshots job in ci.yml).
+    - name: Package Zeebe (with retry)
+      if: ${{ inputs.retry-max-attempts != '1' }}
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        shell: bash
+        max_attempts: ${{ inputs.retry-max-attempts }}
+        retry_on: any
+        retry_wait_seconds: 15
+        timeout_minutes: ${{ inputs.retry-timeout-minutes }}
+        command: ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
+
+    - name: Determine Zeebe distball path
       shell: bash
       id: build-java
       run: |
         set -euo pipefail
-
-        ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
 
         BUILD_DIR=$(
           ./mvnw -q -N -f dist/pom.xml help:evaluate \
