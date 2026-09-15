@@ -64,17 +64,27 @@ record PartitionLeaveApplier(
       // configuration change can make progress, we do not treat this as an error.
       return Either.right(m -> m);
     } else {
-      final var partitionReplicaCount =
-          currentClusterConfiguration.members().values().stream()
-              .filter(m -> m.hasPartition(partitionId))
+      // The number of active replicas that would remain once this member leaves - counting only
+      // members that durably participate in the quorum right now (see
+      // PartitionState.State#isActiveReplica): a learner catching up, or another member already
+      // on its way out, provides no redundancy and must not be counted toward the floor. Excluding
+      // the local member by identity, rather than subtracting one from a count that includes it,
+      // keeps this correct even when the leaving member is itself not an active replica (e.g. a
+      // stuck learner being removed directly) - removing a non-voting member never changes how
+      // many voting replicas remain, so that is always safe regardless of the minimum.
+      final var remainingActiveReplicas =
+          currentClusterConfiguration.members().entrySet().stream()
+              .filter(entry -> !entry.getKey().equals(localMemberId))
+              .filter(entry -> entry.getValue().hasPartition(partitionId))
+              .filter(entry -> entry.getValue().getPartition(partitionId).state().isActiveReplica())
               .count();
-      if (partitionReplicaCount <= minimumAllowedReplicas) {
+      if (remainingActiveReplicas < minimumAllowedReplicas) {
         return Either.left(
             new IllegalStateException(
                 String.format(
-                    "Expected to leave partition, but the partition %s has %d replicas "
-                        + "but minimum allowed replicas is %d",
-                    partitionId, partitionReplicaCount, minimumAllowedReplicas)));
+                    "Expected to leave partition, but the partition %s would have %d active "
+                        + "replicas left but minimum allowed replicas is %d",
+                    partitionId, remainingActiveReplicas, minimumAllowedReplicas)));
       }
       return Either.right(
           memberState -> memberState.updatePartition(partitionId, PartitionState::toLeaving));
