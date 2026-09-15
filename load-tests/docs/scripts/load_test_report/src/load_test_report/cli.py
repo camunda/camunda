@@ -86,7 +86,16 @@ def parse_epoch(value: str) -> int:
         raise ValueError(f"could not parse timestamp '{value}'") from error
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)
+    if parsed.microsecond:
+        raise ValueError(f"fractional timestamp '{value}' is not supported")
     return int(parsed.timestamp())
+
+
+def format_epoch(value: int) -> str:
+    try:
+        return datetime.fromtimestamp(value, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    except (OSError, OverflowError, ValueError) as error:
+        raise ReportError("reporting window is outside the supported timestamp range") from error
 
 
 def type_timestamp(value: str) -> str:
@@ -185,13 +194,13 @@ def parse_args(argv: Sequence[str]) -> Options:
             raise ReportError("--end must be after --start.")
 
         duration_seconds = end_epoch - start_epoch
-        start_label = datetime.fromtimestamp(start_epoch, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-        end_label = datetime.fromtimestamp(end_epoch, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        start_label = format_epoch(start_epoch)
+        end_label = format_epoch(end_epoch)
         time_anchor = end_label
     elif time_anchor:
         anchor_epoch = parse_epoch(time_anchor)
-        start_label = datetime.fromtimestamp(anchor_epoch - duration_seconds, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-        end_label = datetime.fromtimestamp(anchor_epoch, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        start_label = format_epoch(anchor_epoch - duration_seconds)
+        end_label = format_epoch(anchor_epoch)
         time_anchor = end_label
 
     return Options(

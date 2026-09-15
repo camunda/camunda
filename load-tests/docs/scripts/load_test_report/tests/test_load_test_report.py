@@ -662,6 +662,24 @@ def test_should_reject_unrepresentable_timestamp():
         parse_args(["c8-ck-test", "--at", "999999999999999999999"])
 
 
+def test_should_reject_unrepresentable_reporting_window():
+    with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
+        parse_args(
+            [
+                "c8-ck-test",
+                "--at",
+                "0",
+                "--duration-seconds",
+                "999999999999999999999",
+            ]
+        )
+
+
+def test_should_reject_fractional_timestamp():
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--at", "2026-08-14T10:00:00.5Z"])
+
+
 def test_should_use_packaged_default_queries():
     options = parse_args(["c8-ck-test"])
 
