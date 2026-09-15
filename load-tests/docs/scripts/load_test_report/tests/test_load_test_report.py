@@ -820,6 +820,9 @@ def test_should_reject_out_of_order_prometheus_durations():
     with pytest.raises(SystemExit):
         parse_args(["c8-ck-test", "--rate-interval", "1ms1m"])
 
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--rate-interval", "1ms1ms"])
+
 
 def test_should_reject_unrepresentable_timestamp():
     with pytest.raises(SystemExit):

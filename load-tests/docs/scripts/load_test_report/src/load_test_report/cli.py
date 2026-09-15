@@ -20,10 +20,8 @@ from .report import render_report
 HERE = Path(__file__).resolve().parent
 DEFAULT_QUERIES_FILE = HERE / "report-queries.yaml"
 NAMESPACE_PATTERN = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
-DURATION_PATTERN = re.compile(
-    r"^(?:[1-9][0-9]*y)?(?:[1-9][0-9]*w)?(?:[1-9][0-9]*d)?"
-    r"(?:[1-9][0-9]*h)?(?:[1-9][0-9]*m)?(?:[1-9][0-9]*s)?(?:[1-9][0-9]*ms)?$"
-)
+DURATION_COMPONENT_PATTERN = re.compile(r"[1-9][0-9]*(ms|[ywdhms])")
+DURATION_UNIT_ORDER = ("y", "w", "d", "h", "m", "s", "ms")
 
 
 @dataclass(frozen=True)
@@ -66,7 +64,17 @@ def type_positive_int(value: str) -> int:
 
 
 def type_duration(value: str) -> str:
-    if not value or not DURATION_PATTERN.fullmatch(value):
+    position = 0
+    previous_unit = -1
+    for component in DURATION_COMPONENT_PATTERN.finditer(value):
+        unit = component.group(1)
+        unit_order = DURATION_UNIT_ORDER.index(unit)
+        if component.start() != position or unit_order <= previous_unit:
+            break
+        position = component.end()
+        previous_unit = unit_order
+
+    if not value or position != len(value):
         raise argparse.ArgumentTypeError(f"'{value}' must be a Prometheus duration like 30s, 5m, or 1h.")
     return value
 
