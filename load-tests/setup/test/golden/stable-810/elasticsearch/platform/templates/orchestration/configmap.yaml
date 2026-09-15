@@ -279,5 +279,9 @@ data:
     zeebe.broker.flowControl.write.enabled: "true"
     zeebe.broker.flowControl.write.limit: 10000
     zeebe.broker.flowControl.write.throttling.enabled: "true"
+    # Grant the dedicated leader-balancer client cluster-admin access, so it can call the
+    # coordinated `/cluster/v2/rebalance` endpoint. Set here, not via `orchestration.env`,
+    # which the Optimize overlays also define and would silently replace.
+    camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
   application-override.yml: |
     # no overrides

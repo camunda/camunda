@@ -5,7 +5,7 @@ metadata:
   labels:
     app: leader-balancer
 spec:
-  concurrencyPolicy: Allow
+  concurrencyPolicy: Forbid
   jobTemplate:
     metadata:
       name: leader-balancer
@@ -19,11 +19,44 @@ spec:
           - name: leader-balancer
             image: curlimages/curl:7.87.0
             command: ["/bin/sh", "-c"]
+            {{- if eq .Values.leaderBalancer.endpoint "actuator" }}
             args:
               - |-
-                curl -L -v -X POST "{{ .Values.camundaManagementUrl }}/actuator/rebalance"
+                curl -L -v --connect-timeout 10 --max-time 60 -X POST "{{ .Values.camundaManagementUrl }}/actuator/rebalance"
+            {{- else }}
+            env:
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: clientId
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: clientSecret
+            - name: AUTH_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: authServer
+            - name: AUTHORIZATION_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: authorizationAudience
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: zeebeRestAddress
+            args:
+              - |-
+                {{- regexReplaceAll "(?m)^[ \t]+$" (.Files.Get "scripts/rebalance-v2.sh" | trimSuffix "\n" | nindent 16) "" }}
+            {{- end }}
 
           restartPolicy: OnFailure
+      activeDeadlineSeconds: 180
   schedule: '*/10 * * * *'
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 3

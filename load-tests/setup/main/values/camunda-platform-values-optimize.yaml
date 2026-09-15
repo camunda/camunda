@@ -9,8 +9,19 @@ global:
           existingSecretKey: identity-optimize-client-token
 
 identity:
-  # Dedicated M2M Keycloak client for the load-tester's Optimize meter, with `write:*` on optimize-api.
+  # Replaces (not merges into) the defaults' `identity.clients` list, so leader-balancer
+  # must be repeated here alongside the Optimize-specific client below.
   clients:
+    - id: leader-balancer
+      name: Leader Balancer
+      type: m2m
+      secret:
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-leader-balancer-client-secret
+      permissions:
+        - resourceServerId: orchestration-api
+          definition: read:*
+    # Dedicated M2M Keycloak client for the load-tester's Optimize meter, with `write:*` on optimize-api.
     - id: optimize-loadtest
       name: Optimize Load Tester
       type: m2m

@@ -268,5 +268,9 @@ data:
     camunda.processing.flow-control.write.enabled: "true"
     camunda.processing.flow-control.write.limit: 10000
     camunda.processing.flow-control.write.throttle.enabled: "true"
+    # Grant the dedicated leader-balancer client cluster-admin access, so it can call the
+    # coordinated `/cluster/v2/rebalance` endpoint. Set here, not via `orchestration.env`,
+    # which the Optimize overlays also define and would silently replace.
+    camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
   application-override.yml: |
     # no overrides
