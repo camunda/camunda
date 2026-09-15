@@ -206,6 +206,10 @@
     <version.nimbus-jose-jwt>10.7</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.33</version.nimbus-sdk>
     <version.keycloak>26.5.7</version.keycloak>
+    <!-- Pinned by tag and digest because camunda/keycloak re-pushes its tags on every rebuild.
+         Updated by hand on this branch: the parent-pom Renovate custom manager that keeps this
+         current on main has no counterpart in this branch's renovate.json. -->
+    <version.keycloak.container>quay-26.6.4@sha256:c889df2d8050e3f6437f5e891b8478ed8a298d603cc45d6280802bf9da6a7304</version.keycloak.container>
     <version.keycloak-client>26.0.12</version.keycloak-client>
     <version.jna>5.18.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>

@@ -30,15 +30,16 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class PrivateKeyJwtTest {
+public class PrivateKeyJwtIT {
 
   @Container
   static KeycloakContainer keycloak =
-      new KeycloakContainer().withRealmImportFile("privatekeyjwt/camunda-identity-test-realm.json");
+      KeycloakContainers.createDefaultKeycloak()
+          .withRealmImportFile("privatekeyjwt/camunda-identity-test-realm.json");
 
   private static final String KEYSTORE_PATH =
       Objects.requireNonNull(
-              PrivateKeyJwtTest.class.getClassLoader().getResource("privatekeyjwt/keystore.p12"))
+              PrivateKeyJwtIT.class.getClassLoader().getResource("privatekeyjwt/keystore.p12"))
           .getPath();
 
   @Test

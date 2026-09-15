@@ -258,6 +258,12 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
@@ -290,6 +296,22 @@
         <directory>src/main/resources</directory>
       </resource>
     </resources>
+    <testResources>
+      <testResource>
+        <filtering>false</filtering>
+        <directory>src/test/resources</directory>
+        <excludes>
+          <exclude>client-java-testcontainers.properties</exclude>
+        </excludes>
+      </testResource>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/test/resources</directory>
+        <includes>
+          <include>client-java-testcontainers.properties</include>
+        </includes>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>
