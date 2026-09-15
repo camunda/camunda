@@ -76,10 +76,22 @@ jobs:
       - name: Build backend
         run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
 
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
+          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }} | tee "${BUILD_OUTPUT_FILE_PATH}"
+
+      # Surface which tests were still running when the job was cancelled (e.g. hit timeout-minutes),
+      # since a cancelled `verify` run otherwise leaves no indication of what hung. See INC-7963.
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
@@ -90,7 +102,7 @@ jobs:
 
       - name: Upload failed test results
         uses: ./.github/actions/collect-test-artifacts
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: tasklist-test-results-${{ matrix.database }}
           path: |
@@ -101,11 +113,12 @@ jobs:
       # Upload JaCoCo report
       - name: Upload JaCoCo report
         uses: actions/upload-artifact@v4
-        if: ${{ (success() || failure()) }}
+        if: always()
         with:
           name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.database }}
           path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
           retention-days: 2
+          if-no-files-found: ignore
 
       # Send metrics about CI health
       - name: Observe build status
