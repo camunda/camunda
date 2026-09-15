@@ -67,6 +67,10 @@ export async function login(t, userHandle = 'user1') {
     t.ctx.users.push(user);
   }
 
+  // Auto-answer the unsaved-changes beforeunload dialog (SaveGuard) so a navigation away from a
+  // dirty editor doesn't block headless Chrome and freeze the run.
+  await t.setNativeDialogHandler(() => true);
+
   await t.maximizeWindow();
 
   // Start every login from a clean cookie jar so a lingering Keycloak SSO session from a previous
