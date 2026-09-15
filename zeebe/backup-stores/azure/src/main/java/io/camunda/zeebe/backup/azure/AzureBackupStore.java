@@ -88,7 +88,7 @@ public final class AzureBackupStore implements BackupStore {
             createContainer,
             executor,
             MAX_CONCURRENT_FILE_OPERATIONS);
-    manifestManager = new ManifestManager(blobContainerClient, createContainer);
+    manifestManager = new ManifestManager(blobContainerClient, createContainer, executor);
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
