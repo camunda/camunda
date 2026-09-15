@@ -145,7 +145,7 @@ npx playwright show-report html-report
 |---------------------------------|-------------------------------------------------------------------------------|
 | `html-report/`                  | Latest Playwright HTML report (open `index.html`)                             |
 | `test-results/`                 | Per-test traces (`trace.zip`), screenshots, videos — only retained on failure |
-| `test-results/junit-report.xml` | JUnit XML (consumed by TestRail)                                              |
+| `test-results/junit-report.xml` | JUnit XML report                                                              |
 | `json-report/results.json`      | JSON results (parsed by the flakiness agent and CI)                           |
 
 Inspect a failing test's trace with `npx playwright show-trace test-results/<test-dir>/trace.zip`,
@@ -242,7 +242,7 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 | `c8-orchestration-cluster-e2e-tests-nightly.yml`   | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
 | `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
-Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and TestRail.
+Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results`.
 
 ## Branching and Backports
 
@@ -272,7 +272,6 @@ Each supported version lives on its own branch in `camunda/camunda`:
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
 - **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
-- Link the [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description if any test or page file is modified.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
   (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
@@ -1150,10 +1149,8 @@ Realistically that is limited to: the runner host itself died (out of memory or 
 ### Constraints
 
 - **Never recommend re-running the workflow as the outcome** — if flakiness is the cause, the resilience goes into the file, not into a human instruction.
-- **`continue-on-error: true` is absolutely forbidden — with no exceptions and no rationalisations.** This includes post-test reporting steps (TestRail, artifact upload, Slack notification). The reasoning "it is only reporting, not a gate" is exactly the rationalisation that must be rejected: if a post-test step fails, that failure is a defect in our code or configuration that deserves a real fix. `continue-on-error` silences the failure rather than fixing it, which means the same bug runs again tomorrow and the day after.
-  - **TestRail `add_case` failure** → the step fails because something in *our* code caused trcli to error (e.g. a test case title whose derived `custom_automation_id` exceeds 250 characters). Find the offending test title in the spec files and shorten it. That is the fix.
-  - **TestRail auth / network failure** → add a retry around the trcli call, or fix the credential configuration. Do not silence.
-  - **Any other post-test step** → find what our code does wrong and fix it. If you genuinely cannot find any code fix after thorough investigation, write `not-determined` — but `continue-on-error` is never a valid alternative.
+- **`continue-on-error: true` is absolutely forbidden — with no exceptions and no rationalisations.** This includes post-test reporting steps (artifact upload, Slack notification). The reasoning "it is only reporting, not a gate" is exactly the rationalisation that must be rejected: if a post-test step fails, that failure is a defect in our code or configuration that deserves a real fix. `continue-on-error` silences the failure rather than fixing it, which means the same bug runs again tomorrow and the day after.
+  - **Any post-test step failure** → find what our code does wrong and fix it. If you genuinely cannot find any code fix after thorough investigation, write `not-determined` — but `continue-on-error` is never a valid alternative.
 - **No skipping** — same absolute no-skip / no-fixme rule as the Nightly Fix Agent.
 - **`.github/workflows/` is always in scope** — the repo "Ask first" constraint applies to application libraries (`webapps-common/`, `webapp/client/`, `security/`), not to CI workflow files.
 - **Minimal diff** — fix only what is broken; no refactoring, no dependency bumps, no unrelated edits.

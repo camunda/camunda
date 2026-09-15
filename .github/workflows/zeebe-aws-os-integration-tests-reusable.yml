@@ -222,6 +222,7 @@ jobs:
           -D test.integration.opensearch.aws.url="${{ env.OPENSEARCH_URL }}"
           -D test.integration.camunda.database.type=AWS_OS
           -D test.integration.opensearch.aws.timeout.seconds=180
+          -D test.integration.camunda.app.startup.timeout.seconds=600
           -P parallel-tests,extract-flaky-tests,${{ matrix.maven-test-profiles }}
           -pl ${{ matrix.maven-modules }}
           verify

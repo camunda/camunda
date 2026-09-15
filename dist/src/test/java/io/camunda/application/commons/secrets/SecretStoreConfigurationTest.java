@@ -18,6 +18,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.CaffeineSecretCache;
+import io.camunda.secretstore.ConcurrentSecretStore;
 import io.camunda.secretstore.LocallyCachedSecretStore;
 import io.camunda.secretstore.SecretCacheMetricsDoc;
 import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheKeyNames;
@@ -698,6 +699,41 @@ class SecretStoreConfigurationTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenanta")
         .hasMessageContaining("camunda.secrets.cache.ttl");
+  }
+
+  @Test
+  void shouldFailToBuildRegistriesWhenMaxConcurrencyIsBelowOne() {
+    // given a max-concurrency of 0 and no stores configured at all
+    final var resolver = resolverFor(Map.of("camunda.secrets.max-concurrency", "0"));
+
+    // when / then the registries fail to build, naming the offending property
+    assertThatThrownBy(() -> registries(resolver))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("camunda.secrets.max-concurrency");
+  }
+
+  @Test
+  void shouldNotWrapFileStoreForConcurrency(@TempDir final Path secretsDir) {
+    // given a file store, configured at the default (concurrency-enabled) max-concurrency: a local
+    // disk read pays no round trip, so wrapping it would only add a thread hop with nothing to
+    // overlap
+    try (var construction = mockConstruction(ConcurrentSecretStore.class)) {
+      final var resolver =
+          resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
+
+      // when
+      final var store =
+          registries(resolver)
+              .byPhysicalTenant()
+              .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .getStores()
+              .get(SecretStoreRegistry.DEFAULT_STORE_ID);
+
+      // then no concurrency wrapper was ever built, and the store is still identifiable as the
+      // file store it wraps for caching
+      assertThat(construction.constructed()).isEmpty();
+      assertThat(store.is(FileBasedSecretStore.class)).isTrue();
+    }
   }
 
   @Test

@@ -28,13 +28,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class CamundaExporterAuthenticationIT {
 
+  private static final String ELASTIC_USER = "elastic";
   private static final String ELASTIC_PASSWORD = "PASSWORD";
 
+  /**
+   * The default wait strategy only waits for the node to log {@code started}, which Elasticsearch
+   * does before the {@code .security} index is allocated. Until that index is available the
+   * reserved realm cannot read the {@code elastic} user's password hash and rejects valid
+   * credentials with a {@code 401}, so wait for an authenticated request to succeed instead.
+   */
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefaultElasticsearchContainer()
           .withPassword(ELASTIC_PASSWORD)
-          .withEnv("xpack.security.enabled", "true");
+          .withEnv("xpack.security.enabled", "true")
+          .waitingFor(
+              TestSearchContainers.waitForClusterHealth()
+                  .withBasicCredentials(ELASTIC_USER, ELASTIC_PASSWORD));
 
   private final ExporterConfiguration config = new ExporterConfiguration();
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -42,7 +52,7 @@ public class CamundaExporterAuthenticationIT {
 
   @BeforeEach
   void beforeEach() throws IOException {
-    config.getConnect().setUsername("elastic");
+    config.getConnect().setUsername(ELASTIC_USER);
     config.getConnect().setPassword(ELASTIC_PASSWORD);
     config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
     createSchemas(config);

@@ -61,7 +61,7 @@ None.
 - `dockerhub` and `dockerhub-readonly` are mutually exclusive — enabling both fails
   the action.
 - The Vault path for the DockerHub account is inferred from the calling workflow's
-  file name (`operate-*`, `optimize-*`, `tasklist-*`, `zeebe-*`), defaulting to
+  file name (`operate-*`, `optimize-*`, `zeebe-*`), defaulting to
   `camunda`.
 
 ## Example
@@ -85,4 +85,3 @@ jobs:
 To also share the run-scoped distball / m2 tarball via the GCS build-cache, call
 [`gcs-build-cache-auth`](../gcs-build-cache-auth) directly alongside this action —
 see its README.
-

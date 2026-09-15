@@ -139,6 +139,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
+  // When comparing partition CPU profiles, use a named reusable task so this path is aggregated
+  // under stable frames instead of being split across synthetic lambda frames.
+  private final ReadNextRecordTask readNextRecordTask = new ReadNextRecordTask();
   private final LogStreamReader logStreamReader;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
@@ -221,7 +224,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
             processingMetrics,
             context.getCommandResponseWriter(),
             maxPendingSideEffects,
-            () -> actor.submit(this::tryToReadNextRecord));
+            readNextRecordTask);
     context.getLogStream().registerCommittedPositionListener(sideEffectRunner);
     final EventFilter commandFilter =
         event -> {
@@ -237,10 +240,14 @@ public final class ProcessingStateMachine implements CloseableSilently {
     return currentStateDescription.toString();
   }
 
+  Runnable getReadNextRecordTask() {
+    return readNextRecordTask;
+  }
+
   private void skipRecord() {
     notifySkippedListener(requireNonNull(currentRecord));
     markProcessingCompleted();
-    actor.submit(this::tryToReadNextRecord);
+    actor.submit(readNextRecordTask);
     processingMetrics.eventSkipped();
   }
 
@@ -754,7 +761,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
                 metadata.getIntent(), requireNonNull(currentRecord).getKey());
             registerSideEffects();
             markProcessingCompleted();
-            actor.submit(this::tryToReadNextRecord);
+            actor.submit(readNextRecordTask);
           }
         });
   }
@@ -825,7 +832,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
     }
 
     sideEffectRunner.onCommittedPosition(lastProcessingPositions.getLastWrittenPosition());
-    actor.submit(this::tryToReadNextRecord);
+    actor.submit(readNextRecordTask);
   }
 
   @Override
@@ -906,5 +913,12 @@ public final class ProcessingStateMachine implements CloseableSilently {
     USER_COMMAND_REJECT_SIMPLE_REJECT_FAILED,
     // All attempted error handling failed.
     ENDLESS_ERROR_LOOP
+  }
+
+  private final class ReadNextRecordTask implements Runnable {
+    @Override
+    public void run() {
+      tryToReadNextRecord();
+    }
   }
 }

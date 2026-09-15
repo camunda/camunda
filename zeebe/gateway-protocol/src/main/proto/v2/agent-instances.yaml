@@ -527,9 +527,10 @@ components:
           nullable: true
           description: A human-readable description of the tool.
         elementId:
-          type: string
-          nullable: true
           description: The BPMN element ID of the tool element within the ad-hoc sub-process.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
 
     AgentInstanceMetrics:
       description: Aggregated metrics for an agent instance across all model calls.
@@ -643,14 +644,18 @@ components:
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         history:
           description: |
             A batch of history items to append to the agent instance's conversation
             history, in request order. Each created item is echoed back in the
             response's createdHistory, positionally correlated. Must include a
             CONFIGURATION item establishing model, provider, and systemPrompt (and,
-            if needed, limits).
+            if needed, limits). Every item's role must be CONFIGURATION or USER, and
+            no item may carry non-zero usage-token metrics (inputTokens, outputTokens,
+            reasoningTokenCount, cacheCreationTokenCount, cacheReadTokenCount);
+            durationMs is exempt and may be non-zero.
           type: array
           minItems: 1
           items:
@@ -714,7 +719,8 @@ components:
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         history:
           description: |
             A batch of history items to append to the agent instance's conversation
@@ -1022,7 +1028,8 @@ components:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
         jobLease:
           description: The lease token of the activation that produced this item.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         loopIteration:
           description: The loop iteration this item belongs to.
           allOf:
@@ -1204,8 +1211,9 @@ components:
           type: string
         elementId:
           description: The BPMN element ID handling this tool.
-          type: string
           nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
         arguments:
           description: |
             The tool call arguments as provided by the LLM. May be null or populated on

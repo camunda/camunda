@@ -14,7 +14,7 @@ class JSONEditor {
 
   constructor(page: Page) {
     this.page = page;
-    this.codeEditor = this.page.getByRole('code').first();
+    this.codeEditor = this.page.locator('.monaco-editor, .cm-editor').first();
   }
 
   getEditor(label: string) {
@@ -24,7 +24,7 @@ class JSONEditor {
   async waitForEditorToLoad() {
     await this.codeEditor.waitFor({state: 'visible'});
     await this.page
-      .locator('.monaco-editor .cursor')
+      .locator('.monaco-editor .cursor, .cm-content')
       .first()
       .waitFor({state: 'visible'});
   }
@@ -45,7 +45,7 @@ class JSONEditor {
   async hideCaret() {
     await this.page.addStyleTag({
       content:
-        '* { caret-color: transparent !important; } .monaco-editor .cursor { animation: none !important; opacity: 0 !important; }',
+        '* { caret-color: transparent !important; } .monaco-editor .cursor, .cm-cursor { animation: none !important; opacity: 0 !important; }',
     });
   }
 }

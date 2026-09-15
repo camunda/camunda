@@ -69,9 +69,10 @@ const NewVariable: React.FC = () => {
           validate={mergeValidators(validateValueComplete, validateValueValid)}
           parse={(value) => value}
         >
-          {({input}) => (
+          {({input, meta}) => (
             <InlineJsonEditor
               {...input}
+              isModified={meta.modified}
               label="Value"
               id="value"
               fieldError={valueError}

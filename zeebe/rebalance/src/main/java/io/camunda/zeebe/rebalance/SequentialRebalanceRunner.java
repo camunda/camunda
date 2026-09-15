@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
  *     |                             COMPLETED(ALREADY_LEADER)  (already led by the desired leader)
  *     |                             COMPLETED(PHYSICAL_TENANT_DISABLED)  (its physical tenant
  *     |                                                                   stopped running)
+ *     |                             COMPLETED(PHYSICAL_TENANT_RECOVERING)  (its physical tenant
+ *     |                                                                     entered recovery)
  *     |
  *     | no current leader: wait for one to appear
  *     v
@@ -64,6 +66,8 @@ import org.slf4j.LoggerFactory;
  *     |                             COMPLETED(NO_LEADER)  (none appeared within leaderWaitTimeout)
  *     |                             COMPLETED(PHYSICAL_TENANT_DISABLED)  (as above, observed
  *     |                                                                   while waiting)
+ *     |                             COMPLETED(PHYSICAL_TENANT_RECOVERING)  (as above, observed
+ *     |                                                                     while waiting)
  *     |
  *     | one partition in flight at a time, in order
  *     v
@@ -181,6 +185,9 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     if (resolveIfPhysicalTenantDisabled(rebalance, index, completion)) {
       return;
     }
+    if (resolveIfPhysicalTenantRecovering(rebalance, index, completion)) {
+      return;
+    }
     final var leader = rebalance.partition(index).currentLeader();
     if (leader == null) {
       waitForLeader(rebalance, index, Duration.ZERO, completion);
@@ -202,6 +209,22 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         partition);
     resolveWithOutcome(
         rebalance, index, PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED, completion);
+    return true;
+  }
+
+  private boolean resolveIfPhysicalTenantRecovering(
+      final RebalanceRun rebalance, final int index, final ActorFuture<Void> completion) {
+    final var partition = rebalance.partition(index);
+    if (!rebalance.isPhysicalTenantRecovering(partition.physicalTenantId())) {
+      return false;
+    }
+    LOG.info(
+        "Rebalance {} is leaving partition {} alone: its physical tenant entered recovery since "
+            + "the rebalance was planned",
+        rebalance.id(),
+        partition);
+    resolveWithOutcome(
+        rebalance, index, PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING, completion);
     return true;
   }
 
@@ -241,6 +264,9 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             return;
           }
           if (resolveIfPhysicalTenantDisabled(rebalance, index, completion)) {
+            return;
+          }
+          if (resolveIfPhysicalTenantRecovering(rebalance, index, completion)) {
             return;
           }
           final var partition = rebalance.partition(index);

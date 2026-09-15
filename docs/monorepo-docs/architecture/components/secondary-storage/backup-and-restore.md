@@ -435,9 +435,7 @@ the secondary storage state (the exporter will simply re-process any gap after r
 | Secondary storage guide          | [working-with-secondary-storage.md](./working-with-secondary-storage.md)                    |
 | RDBMS module documentation       | [rdbms_architecture_docs.md](./rdbms/rdbms_architecture_docs.md)                            |
 | Operate backup/restore QA tests  | `operate/qa/backup-restore-tests/`                                                          |
-| Tasklist backup/restore QA tests | `tasklist/qa/backup-restore-tests/`                                                         |
 | Operate component backup doc     | `operate/webapp/docs/backup.md`                                                             |
-| Tasklist component backup doc    | `tasklist/webapp/docs/backup.md`                                                            |
 | Webapps backup module            | `webapps-backup/`                                                                           |
 | Backup priority configuration    | `dist/src/main/java/io/camunda/application/commons/backup/BackupPriorityConfiguration.java` |
 | Backup priorities test           | `dist/src/test/java/io/camunda/application/commons/backup/BackupPrioritiesTest.java`        |
@@ -445,4 +443,3 @@ the secondary storage state (the exporter will simply re-process any gap after r
 | Optimize backup service          | `optimize/backend/src/main/java/io/camunda/optimize/service/BackupService.java`             |
 | Optimize snapshot util           | `optimize/backend/src/main/java/io/camunda/optimize/service/util/SnapshotUtil.java`         |
 | ES Snapshot API docs             | https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshot-restore.html       |
-

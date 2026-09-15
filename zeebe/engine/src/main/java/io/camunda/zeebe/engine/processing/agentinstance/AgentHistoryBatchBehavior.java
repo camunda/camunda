@@ -56,17 +56,23 @@ public final class AgentHistoryBatchBehavior {
   static final String ERROR_MSG_LOOP_ITERATION_MISSING =
       "Expected to add history item with historyItemId '%s' to agent instance, but loopIteration "
           + "is missing (got %d). Each history item must declare a positive loopIteration.";
+  static final String ERROR_MSG_JOB_KEY_REQUIRED =
+      "Expected to update agent instance, but no jobKey was provided. A command must always be "
+          + "attributed to the active job that produced it.";
+  static final String ERROR_MSG_JOB_LEASE_REQUIRED =
+      "Expected to update agent instance related to job with key '%d', but no jobLease was "
+          + "provided. A command must always carry the lease its job was activated with.";
   static final String ERROR_MSG_JOB_NOT_ACTIVE =
       "Expected to update agent instance related to job with key '%d', but job was not active.";
   static final String ERROR_MSG_JOB_LEASE_MISMATCH =
       "Expected to update agent instance related to job with key '%d', but job did not hold the "
           + "supplied lease. The job may have been re-activated.";
+  static final String ERROR_MSG_JOB_NOT_LEASED =
+      "Expected to update agent instance related to job with key '%d', but job has no lease "
+          + "token. The job must be activated with a lease before it can be referenced.";
   static final String ERROR_MSG_JOB_ELEMENT_MISMATCH =
       "Expected to update agent instance related to job with key '%d', but job belongs to element "
           + "instance '%d' instead of the requested element instance '%d'.";
-  static final String ERROR_MSG_JOB_REQUIRED_FOR_HISTORY =
-      "Expected a job to be provided for the embedded history batch, but no jobKey was set."
-          + " A history batch must be attributed to the active job that produced it.";
   static final String ERROR_MSG_DUPLICATE_HISTORY_ITEM_ID_IN_REQUEST =
       "Expected to create or update agent instance history, but historyItemId '%s' is used by more "
           + "than one history item. Each history item must have a unique historyItemId.";
@@ -106,34 +112,32 @@ public final class AgentHistoryBatchBehavior {
   }
 
   /**
-   * Validates the job context a command carries. {@code jobKey} may be omitted only when no history
-   * batch is present; once a batch is attached to the command, {@code jobKey} becomes required — a
-   * batch must always be attributed to the active job that produced it. When a job is supplied
-   * (with or without a batch), it must refer to a currently-active job, and the job must belong to
-   * {@code elementInstanceKey}.
+   * Validates the job context a command carries. {@code jobKey} and {@code jobLease} are always
+   * required — a command must always be attributed to the active job that produced it and carry the
+   * lease it was activated with, and is rejected outright if either is unset. The referenced job
+   * must be currently active, must hold a lease, and must belong to {@code elementInstanceKey}.
    *
    * <p>{@code jobLease} is a fencing token, not an authorization check (see ADR 0005-810): whether
-   * a mismatch is fatal depends on {@code leaseMismatchHandling}, see {@link
-   * LeaseMismatchHandling}.
+   * a mismatch against the job's current lease is fatal depends on {@code leaseMismatchHandling},
+   * see {@link LeaseMismatchHandling}.
    *
-   * @return the active {@link JobRecord} if a job was supplied and is valid, {@code null} wrapped
-   *     in {@link Either#right} if no job was supplied and none was required, otherwise the {@link
-   *     Rejection} to surface
+   * @return the active {@link JobRecord} if {@code jobKey} refers to a valid job, otherwise the
+   *     {@link Rejection} to surface
    */
   public Either<Rejection, JobRecord> validateJobContext(
       final long jobKey,
       final String jobLease,
       final long elementInstanceKey,
-      final List<? extends AgentHistoryRecordValue> history,
       final LeaseMismatchHandling leaseMismatchHandling) {
 
     if (jobKey == -1L) {
-      if (history != null && !history.isEmpty()) {
-        return Either.left(
-            new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_REQUIRED_FOR_HISTORY));
-      } else {
-        return Either.right(null);
-      }
+      return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_KEY_REQUIRED));
+    }
+
+    if (jobLease == null || jobLease.isBlank()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_LEASE_REQUIRED.formatted(jobKey)));
     }
 
     final var jobState = processingState.getJobState();
@@ -143,8 +147,12 @@ public final class AgentHistoryBatchBehavior {
     }
 
     final var job = jobState.getJob(jobKey);
+    if (!job.hasLeaseToken()) {
+      return Either.left(
+          new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_NOT_LEASED.formatted(jobKey)));
+    }
+
     if (leaseMismatchHandling == LeaseMismatchHandling.REJECT
-        && job.hasLeaseToken()
         && !Objects.equals(jobLease, job.getLeaseToken())) {
       return Either.left(
           new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_LEASE_MISMATCH.formatted(jobKey)));

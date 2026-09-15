@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.db.rdbms.RdbmsTableNames.SCHEMA_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -62,7 +63,9 @@ public class PurgerCompletenessIT {
   private List<String> getAllCamundaTableNames() {
     return jdbcTemplate
         .queryForList(
-            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_NAME NOT IN ('DATABASECHANGELOG', 'DATABASECHANGELOGLOCK')")
+            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_NAME NOT IN ('DATABASECHANGELOG', 'DATABASECHANGELOGLOCK', '"
+                + SCHEMA_VERSION
+                + "')")
         .stream()
         .map(row -> row.get("TABLE_NAME").toString())
         .toList();

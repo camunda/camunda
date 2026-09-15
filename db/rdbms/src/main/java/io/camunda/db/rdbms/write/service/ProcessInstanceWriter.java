@@ -79,7 +79,8 @@ public class ProcessInstanceWriter implements RdbmsWriter {
               WriteStatementType.UPDATE,
               key,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
-              dto));
+              dto,
+              Integer.MAX_VALUE));
     }
   }
 

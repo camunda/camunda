@@ -14,6 +14,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -87,6 +88,21 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+  }
+
+  @Override
+  public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+    final var query = createPendingIncidentsBatchQuery(fromPosition);
+
+    final CountRequest countRequest =
+        new CountRequest.Builder()
+            .index(pendingUpdateAlias)
+            .query(query)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.count(countRequest).thenApplyAsync(r -> Math.toIntExact(r.count()), executor);
   }
 
   @Override

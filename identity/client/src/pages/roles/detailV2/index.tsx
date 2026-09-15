@@ -9,7 +9,7 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { roleQueries } from "src/utility/api/roles/queries";

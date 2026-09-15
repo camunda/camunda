@@ -231,6 +231,15 @@ public final class JobSuspensionHandoutTest {
         .isTrue();
     final Record<JobBatchRecordValue> reactivated = ENGINE.jobs().withType(jobType).activate();
     assertThat(reactivated.getValue().getJobKeys()).isEmpty();
+    assertThat(
+            ENGINE
+                .getMeterRegistry()
+                .get("zeebe.job.suspension.events.total")
+                .tag("action", "suspended")
+                .counter()
+                .count())
+        .describedAs("job suspended count for the timeout-while-suspended path")
+        .isGreaterThanOrEqualTo(1);
   }
 
   @Test

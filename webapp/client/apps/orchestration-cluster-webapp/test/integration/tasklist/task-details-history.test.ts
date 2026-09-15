@@ -95,7 +95,7 @@ test.describe('Task details history', () => {
 		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history/);
 		await expect(taskDetailPage.detailsInfo).toBeVisible();
 		await expect(taskDetailPage.aside).toBeVisible();
-		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-current', 'page');
+		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-selected', 'true');
 		await expect(taskDetailPage.historyTabContent.getByText('Create task')).toBeVisible();
 		await expect(taskDetailPage.historyTabContent.getByText('Assign task')).toBeVisible();
 		await expect(taskDetailPage.historyTabContent.getByText('Complete task')).toBeVisible();
@@ -111,7 +111,7 @@ test.describe('Task details history', () => {
 
 		await taskDetailPage.historyDetailsLink.first().click();
 
-		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-current', 'page');
+		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-selected', 'true');
 		await expect(taskDetailPage.historyDetailsModal.getByRole('heading', {name: 'Create task'})).toBeVisible();
 		await expect(taskDetailPage.historyDetailsModal.getByText('demo')).toBeVisible();
 
@@ -164,7 +164,7 @@ test.describe('Task details history', () => {
 		await taskDetailPage.gotoHistoryDetails(USER_TASK_KEY, 'direct-link-log', '?sort=timestamp%2Basc');
 
 		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history\/direct-link-log\?sort=timestamp%2Basc/);
-		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-current', 'page');
+		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-selected', 'true');
 		await expect(taskDetailPage.historyDetailsModal.getByRole('heading', {name: 'Assign task'})).toBeVisible();
 		await expect(taskDetailPage.historyDetailsModal.getByText('Assignee')).toBeVisible();
 		await expect(taskDetailPage.historyDetailsModal.getByText('demo')).toBeVisible();

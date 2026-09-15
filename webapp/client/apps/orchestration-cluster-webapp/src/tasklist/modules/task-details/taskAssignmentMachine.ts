@@ -10,33 +10,12 @@ import {setup, assign, fromPromise} from 'xstate';
 import {t} from 'i18next';
 import type {QueryClient} from '@tanstack/react-query';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import {toast} from '@camunda/design-system';
 import {queries} from '#/shared/http/queries';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
-import {toast} from '@camunda/design-system';
-
-type NotifyOptions = {
-	kind: 'error' | 'info' | 'success';
-	title: string;
-	description?: string;
-};
-
-function notify({kind, title, description}: NotifyOptions, isShadcn: boolean) {
-	if (isShadcn) {
-		toast[kind](title, {description});
-		return;
-	}
-
-	notificationsStore.displayNotification({
-		kind,
-		title,
-		subtitle: description,
-		isDismissable: true,
-	});
-}
 
 type AssignmentFailure = {reason: 'timeout'} | {reason: 'failed'; subtitle?: string};
 
@@ -46,7 +25,6 @@ type MachineInput = {
 	currentUser: string;
 	initialTaskState: UserTask['state'];
 	initialAssignee: string | null;
-	isShadcn?: boolean;
 };
 
 type MachineContext = {
@@ -55,7 +33,6 @@ type MachineContext = {
 	currentUser: string;
 	initialTaskState: UserTask['state'] | null;
 	initialAssignee: string | null;
-	isShadcn: boolean;
 	pollRetryCount: number;
 };
 
@@ -178,15 +155,10 @@ const taskAssignmentMachine = setup({
 				});
 			}
 		},
-		notifyAssignmentDelayed: ({context}) => {
-			notify(
-				{
-					kind: 'info',
-					title: t('tasklist.taskDetailsAssignmentDelayInfoTitle'),
-					description: t('tasklist.taskDetailsAssignmentDelayInfoSubtitle'),
-				},
-				context.isShadcn,
-			);
+		notifyAssignmentDelayed: () => {
+			toast.info(t('tasklist.taskDetailsAssignmentDelayInfoTitle'), {
+				description: t('tasklist.taskDetailsAssignmentDelayInfoSubtitle'),
+			});
 		},
 		setOptimisticUnassigning: ({context}) => {
 			const {queryClient, userTaskKey} = context;
@@ -199,15 +171,10 @@ const taskAssignmentMachine = setup({
 				});
 			}
 		},
-		notifyUnassignmentDelayed: ({context}) => {
-			notify(
-				{
-					kind: 'info',
-					title: t('tasklist.taskDetailsUnassignmentDelayInfoTitle'),
-					description: t('tasklist.taskDetailsUnassignmentDelayInfoSubtitle'),
-				},
-				context.isShadcn,
-			);
+		notifyUnassignmentDelayed: () => {
+			toast.info(t('tasklist.taskDetailsUnassignmentDelayInfoTitle'), {
+				description: t('tasklist.taskDetailsUnassignmentDelayInfoSubtitle'),
+			});
 		},
 		commitTask: ({context}, params: {task: UserTask | undefined}) => {
 			const {queryClient, userTaskKey} = context;
@@ -218,25 +185,15 @@ const taskAssignmentMachine = setup({
 
 			queryClient.invalidateQueries({queryKey: ['userTasks']});
 		},
-		notifyAssignFailure: ({context}, params: {error: AssignmentFailure | undefined}) => {
-			notify(
-				{
-					kind: 'error',
-					title: t('tasklist.taskDetailsTaskAssignmentError'),
-					description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
-				},
-				context.isShadcn,
-			);
+		notifyAssignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
+			toast.error(t('tasklist.taskDetailsTaskAssignmentError'), {
+				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
+			});
 		},
-		notifyUnassignFailure: ({context}, params: {error: AssignmentFailure | undefined}) => {
-			notify(
-				{
-					kind: 'error',
-					title: t('tasklist.taskDetailsTaskUnassignmentError'),
-					description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
-				},
-				context.isShadcn,
-			);
+		notifyUnassignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
+			toast.error(t('tasklist.taskDetailsTaskUnassignmentError'), {
+				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
+			});
 		},
 		resetRetryCount: assign({pollRetryCount: 0}),
 		incrementRetryCount: assign({pollRetryCount: ({context}) => context.pollRetryCount + 1}),
@@ -254,7 +211,7 @@ const taskAssignmentMachine = setup({
 	},
 }).createMachine({
 	id: 'taskAssignment',
-	context: ({input}) => ({...input, isShadcn: input.isShadcn ?? false, pollRetryCount: 0}),
+	context: ({input}) => ({...input, pollRetryCount: 0}),
 	initial: 'Idle',
 	states: {
 		Idle: {

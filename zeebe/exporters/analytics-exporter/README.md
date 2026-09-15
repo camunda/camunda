@@ -61,10 +61,13 @@ camunda:
       analytics:
         class-name: io.camunda.exporter.analytics.AnalyticsExporter
         args:
-          endpoint: https://analytics.cloud.camunda.io
+          endpoint: https://telemetry.camunda.io
           push-interval: PT5M
           max-queue-size: 2048
           max-batch-size: 512
+          http-connect-timeout: PT3S
+          http-request-timeout: PT3S
+          http-max-retry-attempts: 3
           sampling-rate: 1.0
           categories:
             - contractual
@@ -81,10 +84,13 @@ zeebe:
         className: io.camunda.exporter.analytics.AnalyticsExporter
         jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
         args:
-          endpoint: https://analytics.cloud.camunda.io
+          endpoint: https://telemetry.camunda.io
           pushInterval: PT5M
           maxQueueSize: 2048
           maxBatchSize: 512
+          httpConnectTimeout: PT3S
+          httpRequestTimeout: PT3S
+          httpMaxRetryAttempts: 3
           samplingRate: 1.0
           categories:
             - contractual
@@ -99,10 +105,13 @@ The same settings can be provided via environment variables.
 
 ```sh
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
-CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.io
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://telemetry.camunda.io
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_HTTPCONNECTTIMEOUT=PT3S
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_HTTPREQUESTTIMEOUT=PT3S
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_HTTPMAXRETRYATTEMPTS=3
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ```
@@ -111,10 +120,13 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 
 ```sh
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.io
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://telemetry.camunda.io
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPCONNECTTIMEOUT=PT3S
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPREQUESTTIMEOUT=PT3S
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_HTTPMAXRETRYATTEMPTS=3
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ```
@@ -125,7 +137,7 @@ On broker startup, look for the following log line — it confirms the exporter 
 the expected endpoint, cluster ID, and partition ID:
 
 ```
-Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clusterId=<cluster-id>, partitionId=<partition-id>
+Analytics exporter configured: endpoint=https://telemetry.camunda.io, clusterId=<cluster-id>, partitionId=<partition-id>
 ```
 
 ## Configuration reference
@@ -133,15 +145,18 @@ Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clus
 All options live under `args`. Defaults are tuned for typical Self-Managed deployments and
 rarely need to be changed.
 
-|        Option        |   Type   |                                                                                                  Description                                                                                                  |               Default                |
-|----------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                                 | `https://analytics.cloud.camunda.io` |
-| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                               | `PT5M`                               |
-| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                                  | `PT10M`                              |
-| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                              | `2048`                               |
-| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                                      | `512`                                |
-| `sampling-rate`      | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                               | `1.0`                                |
-| `categories`         | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted or empty, all categories are enabled. | `[contractual, optional]`            |
+|          Option           |   Type   |                                                                                                  Description                                                                                                  |            Default             |
+|---------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|
+| `endpoint`                | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                                 | `https://telemetry.camunda.io` |
+| `push-interval`           | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                               | `PT5M`                         |
+| `heartbeat-interval`      | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                                  | `PT10M`                        |
+| `max-queue-size`          | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                              | `2048`                         |
+| `max-batch-size`          | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                                      | `512`                          |
+| `http-connect-timeout`    | duration | Timeout for the OTLP HTTP client's TCP/TLS connect phase (logs and metrics).                                                                                                                                  | `PT3S`                         |
+| `http-request-timeout`    | duration | Per-attempt timeout for a whole OTLP export request (logs and metrics), from connect through response. Bounds how long the OTel SDK's batch worker thread can be blocked on a slow or unreachable endpoint.   | `PT3S`                         |
+| `http-max-retry-attempts` | int      | Maximum attempts per OTLP export request (the first attempt plus retries), with the OTel SDK's default backoff (1s initial, 5s max, 1.5x multiplier) between them.                                            | `3`                            |
+| `sampling-rate`           | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                               | `1.0`                          |
+| `categories`              | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted or empty, all categories are enabled. | `[contractual, optional]`      |
 
 ## What data is exported
 
@@ -364,8 +379,10 @@ and analytics records may be dropped silently. Specifically, events can be lost 
   without retry.
 - **The broker crashes or restarts.** The in-memory queue is not persisted, so any records
   buffered at the time of the crash are lost.
-- **The OTLP endpoint returns an error.** The exporter does not retry persistently and
-  does not buffer to disk; the affected events are dropped.
+- **The OTLP endpoint returns an error or is unreachable.** The exporter retries each
+  export up to `http-max-retry-attempts` times, bounded by `http-request-timeout` per attempt — it
+  does not retry persistently beyond that, and does not buffer to disk, so events are
+  dropped once the attempts are exhausted.
 
 Because each event carries `camunda.cluster.id`, `camunda.partition.id`, and
 `camunda.log.position`, downstream consumers can deduplicate events using the combination

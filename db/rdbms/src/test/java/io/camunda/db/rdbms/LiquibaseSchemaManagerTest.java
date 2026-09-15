@@ -243,6 +243,11 @@ class LiquibaseSchemaManagerTest {
     }
 
     @Override
+    protected void seedSchemaVersion() {
+      // no-op — the seeded version is what the mocked version store stands in for
+    }
+
+    @Override
     protected void releaseStaleLockIfPresent() {
       // no-op — tested separately
     }
@@ -299,6 +304,11 @@ class LiquibaseSchemaManagerTest {
     @Override
     protected SpringLiquibase buildRunner() {
       return null;
+    }
+
+    @Override
+    protected void seedSchemaVersion() {
+      // no-op — so that attempts count the schema migration's retries and nothing else
     }
 
     @Override

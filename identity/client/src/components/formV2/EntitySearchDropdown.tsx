@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@camunda/design-system";
-import { XIcon } from "lucide-react";
+import { XIcon } from "@camunda/design-system/icons";
 import DropdownSearch from "src/components/formV2/DropdownSearch";
 import { TranslatedErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import useTranslate from "src/utility/localization";

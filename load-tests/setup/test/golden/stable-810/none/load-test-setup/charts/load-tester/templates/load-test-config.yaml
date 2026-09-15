@@ -10,6 +10,8 @@ metadata:
     app.kubernetes.io/instance: load-test-setup
 
     app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 data:
   load-test-config.yaml: |
     # Extra configuration for the load test applications

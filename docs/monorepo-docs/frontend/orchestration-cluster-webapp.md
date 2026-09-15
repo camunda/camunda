@@ -1,8 +1,8 @@
 # Orchestration cluster webapp
 
-`@camunda/orchestration-cluster-webapp` is the unified React webapp that
-will replace the Operate, Tasklist, and Admin frontends shipped today
-from `operate/client`, `tasklist/client`, and `identity/client`.
+`@camunda/orchestration-cluster-webapp` is the unified React webapp for Operate, Tasklist, and
+Admin. Tasklist lives here under `src/tasklist/`; the app is replacing the remaining legacy
+frontends shipped from `operate/client` and `identity/client`.
 
 ## Tech stack
 

@@ -53,6 +53,7 @@ public interface Intent {
     map.put(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionIntent.class);
     map.put(ValueType.AGENT_DEFINITION, AgentDefinitionIntent.class);
     map.put(ValueType.AGENT_HISTORY, AgentHistoryIntent.class);
+    map.put(ValueType.AGENT_HISTORY_BATCH, AgentHistoryBatchIntent.class);
     map.put(ValueType.AGENT_INSTANCE, AgentInstanceIntent.class);
     map.put(ValueType.ASYNC_REQUEST, AsyncRequestIntent.class);
     map.put(ValueType.AUTHORIZATION, AuthorizationIntent.class);

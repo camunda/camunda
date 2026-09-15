@@ -6,6 +6,13 @@ metadata:
   name: starter
   labels:
     app: starter
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -16,6 +23,13 @@ spec:
       labels:
         app: starter
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
         
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
@@ -37,18 +51,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
-                -Dapp.starter.rate=1
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.starter.processId="bankDisputeHandling"
-                -Dapp.starter.bpmnXmlPath="bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn"
-                -Dapp.starter.extraBpmnModels.0="bpmn/realistic/refundingProcess.bpmn"
-                -Dapp.starter.extraBpmnModels.1="bpmn/realistic/determineFraudRatingConfidence.dmn"
-                -Dapp.starter.businessKey="customerId"
-                -Dapp.starter.payloadPath="bpmn/realistic/realisticPayload.json"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"

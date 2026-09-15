@@ -18,4 +18,15 @@ import org.jspecify.annotations.NullMarked;
  * target shadows a same-named variable from a higher scope only for the keys it defines.
  */
 @NullMarked
-public record InputMapping(Expression source, List<String> targetPath) {}
+public record InputMapping(Expression source, List<String> targetPath) {
+
+  @Override
+  public String toString() {
+    return "InputMapping{"
+        + "source='"
+        + source.getExpression()
+        + "', targetPath="
+        + targetPath
+        + '}';
+  }
+}

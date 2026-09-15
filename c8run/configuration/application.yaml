@@ -1,4 +1,7 @@
 camunda:
+  secrets:
+    cache:
+      ttl: ${C8RUN_SECRETS_CACHE_TTL:20m}
   data:
     secondary-storage:
       type: rdbms

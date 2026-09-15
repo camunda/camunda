@@ -99,7 +99,7 @@ Map path prefixes to component labels:
 |--------------------------|----------------------------------|
 | `zeebe/` — see below     | `component/zeebe-engine` or `component/zeebe-platform` (fallback: `component/zeebe`) |
 | `operate/`               | `component/operate`              |
-| `tasklist/`              | `component/tasklist`             |
+| `webapp/client/apps/orchestration-cluster-webapp/src/tasklist/` | `component/tasklist` |
 | `identity/`              | `component/identity`             |
 | `optimize/`              | `component/optimize`             |
 | `clients/`               | `component/clients`              |

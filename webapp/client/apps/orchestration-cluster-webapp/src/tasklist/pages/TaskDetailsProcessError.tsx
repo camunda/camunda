@@ -6,11 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button, InlineNotification} from '@carbon/react';
+import {Alert, Button} from '@camunda/design-system';
 import type {ErrorComponentProps} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {ForbiddenError} from '#/shared/errors';
-import styles from './TaskDetailsProcessError.module.scss';
 
 type Props = {
 	variant: 'forbidden' | 'generic';
@@ -22,18 +21,18 @@ const TaskDetailsProcessError: React.FC<Props> = ({variant, onRetry}) => {
 	const isForbidden = variant === 'forbidden';
 
 	return (
-		<div className={styles.container} data-testid="process-tab-content">
-			<InlineNotification
-				kind="error"
-				hideCloseButton
+		<div className="flex min-h-0 w-full flex-1 flex-col items-start gap-4 p-4" data-testid="process-tab-content">
+			<Alert
+				className="w-full"
+				variant="destructive"
 				role="alert"
 				title={t(
 					isForbidden ? 'tasklist.taskDetailsProcessForbiddenTitle' : 'tasklist.taskDetailsProcessLoadErrorTitle',
 				)}
-				subtitle={t(isForbidden ? 'tasklist.taskActionForbidden' : 'tasklist.taskDetailsProcessLoadErrorDesc')}
+				description={t(isForbidden ? 'tasklist.taskActionForbidden' : 'tasklist.taskDetailsProcessLoadErrorDesc')}
 			/>
 			{!isForbidden && onRetry !== undefined ? (
-				<Button kind="secondary" onClick={onRetry}>
+				<Button variant="secondary" onClick={onRetry}>
 					{t('tasklist.taskDetailsProcessRetryButtonLabel')}
 				</Button>
 			) : null}

@@ -8,7 +8,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Button, cn, Heading, Text } from "@camunda/design-system";
+import { Button, cn, Heading, Link, Text } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { disableSession, isLoggedIn, login } from "src/utility/auth";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
@@ -17,9 +17,6 @@ import { useLicense } from "src/utility/license.ts";
 import TextField from "src/components/formV2/TextField";
 import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import Page from "src/components/layoutV2/Page";
-
-const textLinkClassName =
-  "text-info-action-default underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -150,23 +147,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultRedirectUrl }) => {
             <Translate i18nKey="licenseInfo">
               Non-Production License. If you would like information on
               production usage, please refer to our{" "}
-              <a
+              <Link
                 href="https://legal.camunda.com/#self-managed-non-production-terms"
                 target="_blank"
                 rel="noreferrer noopener"
-                className={textLinkClassName}
+                inline
               >
                 terms & conditions page
-              </a>{" "}
+              </Link>{" "}
               or{" "}
-              <a
+              <Link
                 href="https://camunda.com/contact/"
                 target="_blank"
                 rel="noreferrer noopener"
-                className={textLinkClassName}
+                inline
               >
                 contact sales
-              </a>
+              </Link>
               .
             </Translate>
           </Text>

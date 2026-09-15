@@ -11,7 +11,6 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.util.function.Function;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -34,6 +34,7 @@ public class AdminApiRequestHandler
   private final RaftPartition raftPartition;
   private final ClusterConfigurationService clusterConfigurationService;
   private final BrokerMemberId memberId;
+  private final String physicalTenantId;
 
   public AdminApiRequestHandler(
       final PartitionId partitionId,
@@ -49,6 +50,7 @@ public class AdminApiRequestHandler
     this.raftPartition = raftPartition;
     this.clusterConfigurationService = clusterConfigurationService;
     this.memberId = memberId;
+    physicalTenantId = partitionId.group();
   }
 
   @Override
@@ -78,6 +80,8 @@ public class AdminApiRequestHandler
       case GET_FLOW_CONTROL -> getFlowControl(responseWriter, errorWriter);
       case SET_FLOW_CONTROL -> setFlowControl(requestReader, responseWriter, errorWriter);
       case GET_MIGRATION_STATUS -> getMigrationStatus(responseWriter, partitionId, errorWriter);
+      case GET_EXPORTING_MIGRATION_STATUS ->
+          getExportingMigrationStatus(responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
   }
@@ -152,30 +156,63 @@ public class AdminApiRequestHandler
       final ApiResponseWriter responseWriter,
       final int partitionId,
       final ErrorResponseWriter errorWriter) {
+    return getStatusFromPartition(
+        responseWriter,
+        partitionId,
+        errorWriter,
+        "migration status",
+        PartitionAdminAccess::getMigrationStatus,
+        MigrationStatusPayload::encode);
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getExportingMigrationStatus(
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    return getStatusFromPartition(
+        responseWriter,
+        partitionId,
+        errorWriter,
+        "exporting migration status",
+        PartitionAdminAccess::getExportingMigrationStatus,
+        MigrationStatusPayload::encode);
+  }
+
+  /**
+   * Shared shape for "read one status value off a single partition and encode it as the response's
+   * payload", used by every admin request that reports a per-partition status ({@code
+   * getMigrationStatus}, {@code getExportingMigrationStatus}) rather than performing a mutation.
+   */
+  private <T> ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getStatusFromPartition(
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter,
+      final String description,
+      final Function<PartitionAdminAccess, ActorFuture<T>> fetchStatus,
+      final Function<T, byte[]> encode) {
     final var partitionAdminAccess = adminAccess.forPartition(partitionId);
     if (partitionAdminAccess.isEmpty()) {
       return CompletableActorFuture.completed(
           Either.left(
               errorWriter.internalError(
-                  "Partition %s failed to report its migration status. Could not find the partition.",
-                  partitionId)));
+                  "Partition %s failed to report its %s. Could not find the partition.",
+                  partitionId, description)));
     }
 
     final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
-    partitionAdminAccess
-        .orElseThrow()
-        .getMigrationStatus()
+    fetchStatus
+        .apply(partitionAdminAccess.orElseThrow())
         .onComplete(
             (status, t) -> {
               if (t == null) {
-                responseWriter.setPayload(MigrationStatusPayload.encode(status));
+                responseWriter.setPayload(encode.apply(status));
                 result.complete(Either.right(responseWriter));
               } else {
-                LOG.error("Failed to get the migration status on partition {}", partitionId, t);
+                LOG.error("Failed to get the {} on partition {}", description, partitionId, t);
                 result.complete(
                     Either.left(
                         errorWriter.internalError(
-                            "Failed to get the migration status on partition %s", partitionId)));
+                            "Failed to get the %s on partition %s", description, partitionId)));
               }
             });
 
@@ -239,9 +276,7 @@ public class AdminApiRequestHandler
                     }
 
                     final var primaryMember =
-                        config
-                            .partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
-                            .getPrimaryForPartition(partitionId);
+                        config.partitionGroup(physicalTenantId).getPrimaryForPartition(partitionId);
                     if (primaryMember.isEmpty()) {
                       LOG.debug(
                           "No primary member found for partition {}, skipping step-down",

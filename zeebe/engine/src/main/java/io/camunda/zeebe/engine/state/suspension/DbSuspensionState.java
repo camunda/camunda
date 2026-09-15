@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedComma
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 
 public final class DbSuspensionState implements MutableSuspensionState {
@@ -108,6 +109,18 @@ public final class DbSuspensionState implements MutableSuspensionState {
           }
           visitor.visit(bufferedKey, stored.getRecord());
         });
+  }
+
+  @Override
+  public int countBufferedCommands(final long key) {
+    processInstanceKey.wrapLong(key);
+    final var count = new AtomicInteger();
+    bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
+        processInstanceKey,
+        (compositeKey, nil) -> {
+          count.incrementAndGet();
+        });
+    return count.get();
   }
 
   @Override

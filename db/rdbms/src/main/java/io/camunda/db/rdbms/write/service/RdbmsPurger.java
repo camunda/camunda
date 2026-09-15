@@ -28,6 +28,10 @@ public class RdbmsPurger {
     }
 
     for (final String tableName : RdbmsTableNames.TABLE_NAMES) {
+      // Purge exported data, but retain metadata describing the schema that remains in place.
+      if (RdbmsTableNames.SCHEMA_VERSION.equals(tableName)) {
+        continue;
+      }
       purgeMapper.truncateTable(tableName);
     }
     if (vendorDatabaseProperties.disableFkBeforeTruncate()) {

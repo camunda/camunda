@@ -29,12 +29,17 @@
 #   Set to `false` for versions without product-side physical-tenant config
 #   support, so physical_tenant_count > 0 fails fast instead of silently
 #   rendering an incomplete overlay.
+#
+# - prefer_rest
+#   Whether the load testers prefer REST over gRPC (matches the load-tester
+#   application default). Set to `false` on versions that should keep gRPC (8.7).
 
 rdbms_storages ?= postgresql mysql mariadb mssql oracle
 optimize_self_sufficient_storages ?= elasticsearch opensearch
 scenario_max_override_key ?= orchestration.extraConfiguration[1].content=
 install_storage_target ?= install-storage
 physical_tenants_supported ?= true
+prefer_rest ?= true
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -98,6 +103,12 @@ additional_load_test_setup_configuration ?=
 # Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.
 _load_test_setup_flags =
+
+# load-tester-values-defaults.yaml defaults preferRest to true. Only emit an explicit
+# override when a version opts out of the REST default (e.g. 8.7, which keeps gRPC).
+ifneq ($(prefer_rest),true)
+_load_test_setup_flags += --set global.preferRest.enabled=$(prefer_rest)
+endif
 
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag = latest
@@ -262,28 +273,28 @@ ifeq ($(physical_tenants_supported),true)
 generate-physical-tenant-values:
 	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)"
 
-# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage.
-# The camunda-load-tests subchart hardcodes the starter/worker resource names, so a second
-# Helm release per tenant would collide. Instead we render only those two templates from the
-# same chart, values, scenario and image as the default tester, rename them to *-pt<i>, and
-# apply — looped over pt1..ptN. REST is required because gRPC only routes to the default
-# physical tenant.
+# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage. The
+# camunda-load-tests subchart hardcodes the starter/worker resource names, so a second Helm
+# release per tenant would collide — instead render only those two templates, rename to
+# *-pt<i>, and apply, looped over pt1..ptN. Each tenant gets its own
+# CAMUNDA_CLIENT_PHYSICAL_TENANT_ID env var, which routes both gRPC and REST to that tenant.
+#
+# extraEnvVars[4]: index 4 because scenarios/load-tester-values-defaults.yaml already sets
+# indices 0-3. Helm merges --set list indices positionally, so reusing one would silently
+# overwrite it instead of adding a new entry — bump this index if that file's list grows.
 .PHONY: install-load-test-physical-tenants
 install-load-test-physical-tenants:
 	@for i in $$(seq 1 $(physical_tenant_count)); do \
 	  tenant="pt$$i"; \
 	  echo "Deploying the $$tenant physical-tenant load tester for namespace $(namespace)..."; \
-	  kubectl get secret load-test-credentials -n $(namespace) -o json \
-	    | jq --arg tenant "$$tenant" '.data.zeebeRestAddress = ("http://camunda:8080/physical-tenants/" + $$tenant | @base64) | .metadata.name = ("load-test-credentials-" + $$tenant) | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.managedFields)' \
-	    | kubectl apply -n $(namespace) -f - ; \
 	  helm template load-test-setup $(helm_chart_load_test_setup) \
 	      --namespace $(namespace) \
 	      -s charts/load-tester/templates/starter.yaml \
 	      -s charts/load-tester/templates/workers.yaml \
 	      $(load_test_setup_flags) \
 	      --set load-tester.enabled=true \
-	      --set global.preferRest.enabled=true \
-	      --set load-tester.saas.credentials.existingSecret=load-test-credentials-$$tenant \
+	      --set-string 'global.extraEnvVars[4].name=CAMUNDA_CLIENT_PHYSICAL_TENANT_ID' \
+	      --set-string "global.extraEnvVars[4].value=$$tenant" \
 	    | sed -E "s/: starter$$/: starter-$$tenant/; s/: worker$$/: worker-$$tenant/" \
 	    | kubectl apply -n $(namespace) -f - ; \
 	done

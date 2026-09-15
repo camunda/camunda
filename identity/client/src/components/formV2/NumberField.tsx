@@ -39,7 +39,7 @@ const NumberField: FC<NumberFieldProps> = ({
   const [draft, setDraft] = useState<string | null>(null);
 
   return (
-    <FormField label={label} error={error} helperText={helperText}>
+    <FormField label={label}>
       {(control) => (
         <Input
           {...control}
@@ -47,6 +47,9 @@ const NumberField: FC<NumberFieldProps> = ({
           title={label}
           min={min}
           step={step}
+          aria-invalid={error ? true : undefined}
+          invalidText={error}
+          helperText={helperText}
           value={draft ?? (value === undefined ? "" : String(value))}
           onChange={(event) => {
             const raw = event.currentTarget.value;

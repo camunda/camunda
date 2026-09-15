@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-810-none-optimize
       namespace: c8-golden-stable-810-none-optimize
-      version: 15.0.0-alpha4
+      version: 15.0.0-alpha5
       tags:
       - dev
       custom-properties: []
@@ -29,7 +29,7 @@ data:
         url: http://c8-golden-stable-810-none-optimize.keycloak-operator.svc:18080/auth/
       - name: Identity
         id: identity
-        version: 8.10.0-alpha4.2
+        version: 8.10.0-alpha5
         url: http://localhost:8080
         readiness: http://identity.c8-golden-stable-810-none-optimize:82/actuator/health
         metrics: http://identity.c8-golden-stable-810-none-optimize:82/actuator/prometheus

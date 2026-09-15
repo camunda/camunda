@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2 } from "@camunda/design-system/icons";
 import useTranslate from "src/utility/localization";
 import { searchMembersByGroup } from "src/utility/api/membership";
 import EntityList from "src/components/entityListV2";

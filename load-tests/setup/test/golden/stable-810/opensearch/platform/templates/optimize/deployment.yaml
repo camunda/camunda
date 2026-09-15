@@ -49,7 +49,7 @@ spec:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/optimize:8.10.0-alpha4
+          image: camunda/optimize:8.10.0-alpha5
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -106,7 +106,7 @@ spec:
               subPath: application.yml
       containers:
         - name: optimize
-          image: camunda/optimize:8.10.0-alpha4
+          image: camunda/optimize:8.10.0-alpha5
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -131,6 +131,11 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: "ccsm"
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-optimize-client-token
+            - name: VALUES_OPTIMIZE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-credentials

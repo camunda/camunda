@@ -100,6 +100,26 @@ class GcpSecretManagerSecretStoreTest {
   }
 
   @Test
+  void shouldResolveOneNamePerCallByDefault() {
+    // given a store with no container secret id, so it resolves via one accessSecretVersion call
+    // per reference
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "camunda-");
+
+    // then
+    assertThat(store.namesPerCall()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldNotBeConcurrencyEligibleWithContainerSecret() {
+    // given a container secret fetches every reference in a single accessSecretVersion call, so
+    // chunking it across a thread pool would only add calls, not remove round trips
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "camunda-", "app-config");
+
+    // then
+    assertThat(store.namesPerCall()).isEqualTo(Integer.MAX_VALUE);
+  }
+
+  @Test
   void shouldReturnNotFoundForMissingSecret() {
     // given
     final var store = new GcpSecretManagerSecretStore(client, PROJECT, "");

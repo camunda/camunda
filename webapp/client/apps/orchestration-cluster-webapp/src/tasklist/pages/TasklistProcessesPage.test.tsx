@@ -15,7 +15,6 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {HttpResponse} from 'msw';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
-import {cleanup} from 'vitest-browser-react';
 import {StartProcessProvider} from '#/tasklist/modules/processes/StartProcessProvider';
 import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {TasklistProcessesPage} from './TasklistProcessesPage';
@@ -26,8 +25,7 @@ describe('<TasklistProcessesPage />', () => {
 		storeStateLocally('tasklist.hasConsentedToStartProcess', true);
 	});
 
-	afterEach(async () => {
-		await cleanup();
+	afterEach(() => {
 		sessionStorage.clear();
 		localStorage.clear();
 	});
@@ -76,7 +74,6 @@ describe('<TasklistProcessesPage />', () => {
 		);
 
 		await expect.element(screen.getByRole('heading', {name: 'No published processes yet'})).toBeVisible();
-		await expect.element(screen.getByRole('img')).toBeVisible();
 	});
 
 	it('should display the no-matching-process empty state for a filtered list', async () => {

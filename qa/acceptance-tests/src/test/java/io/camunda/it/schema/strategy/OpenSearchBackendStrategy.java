@@ -143,7 +143,6 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
         .withUnauthenticatedAccess()
         .withProperty(CREATE_SCHEMA_PROPERTY, "false")
         .withProperty("camunda.operate.opensearch.health-check-enabled", "false")
-        .withProperty("camunda.tasklist.opensearch.health-check-enabled", "false")
         .withSecondaryStorageType(SecondaryStorageType.opensearch)
         .withUnifiedConfig(
             cfg -> {

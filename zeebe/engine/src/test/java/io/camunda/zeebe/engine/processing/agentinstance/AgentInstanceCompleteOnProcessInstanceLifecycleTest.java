@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -19,11 +21,14 @@ import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,16 +63,23 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var agentTaskInstance = awaitElementActivated(processInstanceKey, AGENT_TASK_ID);
+    final var job = awaitAndActivateAgentJob(processInstanceKey, AGENT_JOB_TYPE);
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
+            .withJobKey(job.jobKey())
+            .withJobLease(job.leaseToken())
             .create()
             .getKey();
-    awaitAndActivateJob(AGENT_JOB_TYPE);
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(AGENT_JOB_TYPE)
+        .withLeaseToken(job.leaseToken())
+        .complete();
 
     // then — the batch AGENT_INSTANCE:COMPLETE command is emitted as a follow-up to
     // PROCESS:COMPLETE_ELEMENT, and the agent instance itself is completed from it
@@ -120,10 +132,13 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
             .getFirst()
             .getKey();
+    final var job = awaitAndActivateAgentJob(processInstanceKey, AGENT_JOB_TYPE);
     final long agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(adHocSubProcessInstanceKey)
+            .withJobKey(job.jobKey())
+            .withJobLease(job.leaseToken())
             .create()
             .getKey();
 
@@ -134,6 +149,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
+        .withLeaseToken(job.leaseToken())
         .withResult(jobResult)
         .complete();
 
@@ -177,13 +193,15 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var agentTaskInstance = awaitElementActivated(processInstanceKey, AGENT_TASK_ID);
+    final var job = awaitAndActivateAgentJob(processInstanceKey, AGENT_JOB_TYPE);
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
+            .withJobKey(job.jobKey())
+            .withJobLease(job.leaseToken())
             .create()
             .getKey();
-    awaitAndActivateJob(AGENT_JOB_TYPE);
 
     // when — the agentic job is still active (never completed) when cancellation happens
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
@@ -217,25 +235,39 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var agentTaskInstance = awaitElementActivated(processInstanceKey, AGENT_TASK_ID);
     final long elementInstanceKey = agentTaskInstance.getKey();
+    final var job = awaitAndActivateAgentJob(processInstanceKey, agenticJobType);
     final long agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-
-    awaitAndActivateJob(agenticJobType);
-    final long jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withType(agenticJobType)
-            .getFirst()
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(job.jobKey())
+            .withJobLease(job.leaseToken())
+            .create()
             .getKey();
 
+    final var historyItemId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(job.jobKey())
+        .withJobLease(job.leaseToken())
+        .withHistory(
+            List.of(
+                new AgentHistoryRecord()
+                    .setHistoryItemId(historyItemId)
+                    .setRole(AgentHistoryRole.USER)
+                    .setLoopIteration(1)
+                    .addContent(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText("hi"))))
+        .update();
     final long itemKey =
-        ENGINE
-            .agentHistories()
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
             .withAgentInstanceKey(agentInstanceKey)
-            .withJobKey(jobKey)
-            .withElementInstanceKey(elementInstanceKey)
-            .withRole(AgentHistoryRole.USER)
-            .create()
+            .filter(r -> r.getValue().getHistoryItemId().equals(historyItemId))
+            .getFirst()
             .getKey();
 
     // when — the agentic job and its just-created (not yet committed or discarded) history
@@ -287,20 +319,24 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var firstTaskInstance = awaitElementActivated(processInstanceKey, AGENT_TASK_ID);
     final var secondTaskInstance = awaitElementActivated(processInstanceKey, otherAgentTaskId);
+    final var firstJob = awaitAndActivateAgentJob(processInstanceKey, AGENT_JOB_TYPE);
+    final var secondJob = awaitAndActivateAgentJob(processInstanceKey, otherAgentJobType);
     final var firstAgentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
+            .withJobKey(firstJob.jobKey())
+            .withJobLease(firstJob.leaseToken())
             .create()
             .getKey();
     final var secondAgentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
+            .withJobKey(secondJob.jobKey())
+            .withJobLease(secondJob.leaseToken())
             .create()
             .getKey();
-    awaitAndActivateJob(AGENT_JOB_TYPE);
-    awaitAndActivateJob(otherAgentJobType);
 
     final String unrelatedProcessId = "unrelated-process";
     final String unrelatedAgentJobType = "unrelated-agent";
@@ -319,17 +355,31 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         ENGINE.processInstance().ofBpmnProcessId(unrelatedProcessId).create();
     final var unrelatedTaskInstance =
         awaitElementActivated(unrelatedProcessInstanceKey, AGENT_TASK_ID);
+    final var unrelatedJob =
+        awaitAndActivateAgentJob(unrelatedProcessInstanceKey, unrelatedAgentJobType);
     final var unrelatedAgentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(unrelatedTaskInstance.getKey())
+            .withJobKey(unrelatedJob.jobKey())
+            .withJobLease(unrelatedJob.leaseToken())
             .create()
             .getKey();
 
     // when — only the process instance under test completes; the unrelated one's agentic job is
     // left active on purpose
-    ENGINE.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
-    ENGINE.job().ofInstance(processInstanceKey).withType(otherAgentJobType).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(AGENT_JOB_TYPE)
+        .withLeaseToken(firstJob.leaseToken())
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(otherAgentJobType)
+        .withLeaseToken(secondJob.leaseToken())
+        .complete();
 
     // then — a single AGENT_INSTANCE:COMPLETE command is written as a follow-up of the process
     // instance completing
@@ -429,18 +479,24 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     final long childProcessInstanceKey = childProcessInstance.getValue().getProcessInstanceKey();
 
     final var agentTaskInstance = awaitElementActivated(childProcessInstanceKey, AGENT_TASK_ID);
+    final var job = awaitAndActivateAgentJob(childProcessInstanceKey, AGENT_JOB_TYPE);
     final long agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
+            .withJobKey(job.jobKey())
+            .withJobLease(job.leaseToken())
             .create()
             .getKey();
 
-    awaitAndActivateJob(AGENT_JOB_TYPE);
-
     // when — the child process instance completes (completing its agent instance), while the
     // parent's own parallel branch (parentTaskId) is still active
-    ENGINE.job().ofInstance(childProcessInstanceKey).withType(AGENT_JOB_TYPE).complete();
+    ENGINE
+        .job()
+        .ofInstance(childProcessInstanceKey)
+        .withType(AGENT_JOB_TYPE)
+        .withLeaseToken(job.leaseToken())
+        .complete();
 
     // then
     assertThat(
@@ -523,14 +579,15 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     final long childProcessInstanceKey = childProcessInstance.getValue().getProcessInstanceKey();
 
     final var agentTaskInstance = awaitElementActivated(childProcessInstanceKey, AGENT_TASK_ID);
+    final var job = awaitAndActivateAgentJob(childProcessInstanceKey, AGENT_JOB_TYPE);
     final long agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
+            .withJobKey(job.jobKey())
+            .withJobLease(job.leaseToken())
             .create()
             .getKey();
-
-    awaitAndActivateJob(AGENT_JOB_TYPE);
 
     // when — the agentic job on the child process instance is still active when the parent
     // (and, cascading from it, the child) is canceled
@@ -683,4 +740,28 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).await();
     ENGINE.jobs().withType(jobType).activate();
   }
+
+  private static ActivatedAgentJob awaitAndActivateAgentJob(
+      final long processInstanceKey, final String jobType) {
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(jobType)
+        .await();
+    final var jobBatch = ENGINE.jobs().withType(jobType).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(jobType)
+            .getFirst()
+            .getKey();
+    final var leaseToken =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+    return new ActivatedAgentJob(jobKey, leaseToken);
+  }
+
+  private record ActivatedAgentJob(long jobKey, String leaseToken) {}
 }

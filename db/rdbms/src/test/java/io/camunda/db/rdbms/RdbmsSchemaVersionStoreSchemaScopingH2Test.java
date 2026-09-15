@@ -49,7 +49,7 @@ class RdbmsSchemaVersionStoreSchemaScopingH2Test {
     final String resolved;
     try (final var conn = ds.getConnection()) {
       conn.setSchema("PT_B");
-      resolved = store.resolveCurrentSchemaVersion(conn, "");
+      resolved = store.readSchemaVersion(conn, "");
     }
 
     // then: PT_B is treated as a fresh database, not PT_A's version
@@ -72,7 +72,7 @@ class RdbmsSchemaVersionStoreSchemaScopingH2Test {
     final String resolved;
     try (final var conn = ds.getConnection()) {
       conn.setSchema("PT_A");
-      resolved = store.resolveCurrentSchemaVersion(conn, "");
+      resolved = store.readSchemaVersion(conn, "");
     }
 
     // then: the version stored in PT_A is read back

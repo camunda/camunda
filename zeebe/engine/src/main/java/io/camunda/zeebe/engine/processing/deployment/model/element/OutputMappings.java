@@ -22,4 +22,10 @@ import org.jspecify.annotations.NullMarked;
  * exists the field is always a valid expression.
  */
 @NullMarked
-public record OutputMappings(Expression combinedExpression, List<OutputMapping> mappings) {}
+public record OutputMappings(Expression combinedExpression, List<OutputMapping> mappings) {
+
+  @Override
+  public String toString() {
+    return "OutputMappings{" + "mappings=" + mappings + '}';
+  }
+}

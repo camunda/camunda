@@ -580,7 +580,7 @@ final class AgentHistoryHandlerTest {
   @ParameterizedTest(name = "[{index}] Intent ''{0}'' should map to the expected commitStatus")
   @EnumSource(
       value = AgentHistoryIntent.class,
-      names = {"CREATE", "COMMIT", "DISCARD"},
+      names = {"COMMIT", "DISCARD"},
       mode = Mode.EXCLUDE)
   void shouldMapIntentToExpectedCommitStatus(final AgentHistoryIntent intent) {
     // given

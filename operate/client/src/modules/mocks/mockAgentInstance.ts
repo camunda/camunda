@@ -28,6 +28,9 @@ function mockAgentInstance(
     metrics: {
       inputTokens: 100,
       outputTokens: 50,
+      cacheCreationTokenCount: 20,
+      cacheReadTokenCount: 10,
+      reasoningTokenCount: 5,
       modelCalls: 3,
       toolCalls: 2,
     },

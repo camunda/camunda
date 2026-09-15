@@ -6,11 +6,11 @@ For background on goals and test variants, see the [reliability testing document
 
 ## Directory Layout
 
-|   Directory    |                                                            Description                                                            |
-|----------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))                                    |
-| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                                              |
-| `docs/`        | Additional documentation: [metrics](docs/metrics.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
+|   Directory    |                                                                                         Description                                                                                         |
+|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))                                                                                              |
+| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                                                                                                        |
+| `docs/`        | Additional documentation: [metrics](docs/metrics.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md), [new stable branch checklist](docs/new-stable-branch.md) |
 
 ## Quick Start
 
@@ -175,6 +175,28 @@ A general Grafana dashboard covering all sorts of metrics is the [Zeebe Dashboar
 More details about observability can be read [here](../docs/observability.md).
 
 For a full list of Prometheus metrics, SLO targets, and PromQL queries used to evaluate load tests, see [docs/metrics.md](docs/metrics.md).
+
+### Historical results archive (GCS)
+
+The daily stress-test workflow (`camunda-daily-load-tests.yml`) persists each run's aggregated
+metrics, variant manifest, and flamegraphs to
+`gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/<benchmark>/`, outliving both
+the 90-day GH Actions artifact retention and the Prometheus retention window.
+
+To list available runs and then download one for local analysis:
+
+```bash
+gcloud storage ls gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/
+gcloud storage cp -r gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/<benchmark>/ ./<local-dir>/
+```
+
+For more details:
+
+See `camunda/infra-core`'s
+[`docs/benchmark/load-test-results-storage.md`](https://github.com/camunda/infra-core/blob/stage/docs/benchmark/load-test-results-storage.md)
+for bucket setup, and `camunda/team-reliability-testing`'s
+[`knowledge/load-tests/workflows.md`](https://github.com/camunda/team-reliability-testing/blob/main/knowledge/load-tests/workflows.md)
+for how to backfill a run if that failed.
 
 ### Accessing metrics via Claude Code (Grafana MCP)
 
@@ -371,7 +393,7 @@ Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-re
 
 ### Daily load tests (stress test)
 
-Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in three variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and run for 3 hours.
+Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in four variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and REST flavors (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and run for 3 hours.
 
 **Goal:** Validating the reliability and performance of the current main under stress, and detecting newly introduced instabilities with a short feedback loop.
 

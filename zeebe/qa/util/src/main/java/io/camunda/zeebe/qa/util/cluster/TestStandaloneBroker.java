@@ -547,6 +547,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
     unifiedConfig.getProcessing().setEnableForeignKeyChecks(true);
 
+    // Default delay is 10s, which can make some tests
+    // waiting for deployment flaky
+    unifiedConfig
+        .getProcessing()
+        .getEngine()
+        .getDistribution()
+        .setRedistributionInterval(Duration.ofSeconds(1));
+
     // Set dynamic ports via properties (these aren't in unified config yet)
     unifiedConfig
         .getCluster()

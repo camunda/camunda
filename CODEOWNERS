@@ -35,7 +35,6 @@
 # CI Files
 /.github/workflows/operate-playwright.yml                 @camunda/core-features
 /.github/workflows/ci-operate.yml                         @camunda/core-features
-/.github/workflows/ci-tasklist.yml                        @camunda/core-features
 /.github/workflows/ci-optimize.yml                        @camunda/core-features
 /.github/workflows/optimize-check-c4.yml                  @camunda/core-features
 /.github/workflows/optimize-e2e-tests-sm-nightly.yml      @camunda/core-features
@@ -167,9 +166,9 @@
 # Frontend skills
 /.claude/skills/frontend-feature/          @camunda/core-features
 /.claude/skills/frontend-integration-test/ @camunda/core-features
-/.claude/skills/frontend-migrator/         @camunda/core-features
 /.claude/skills/frontend-operate-migrator/ @camunda/core-features
 /.claude/skills/frontend-unit-test/        @camunda/core-features
+/.claude/skills/operate-engineering-loop/  @camunda/core-features
 /.claude/skills/operate-frontend/          @camunda/core-features
 /.claude/skills/tasklist-frontend/         @camunda/core-features
 

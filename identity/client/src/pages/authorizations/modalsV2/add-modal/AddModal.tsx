@@ -230,10 +230,7 @@ export const AddModal: FC<
             name="resourcePropertyName"
             control={control}
             render={({ field, fieldState }) => (
-              <FormField
-                label={t("resourcePropertyName")}
-                error={fieldState.error?.message}
-              >
+              <FormField label={t("resourcePropertyName")}>
                 {({ id, ...controlProps }) => (
                   <Select
                     value={field.value ?? ""}
@@ -241,7 +238,13 @@ export const AddModal: FC<
                       field.onChange(value as ResourcePropertyName)
                     }
                   >
-                    <SelectTrigger id={id} className="w-full" {...controlProps}>
+                    <SelectTrigger
+                      id={id}
+                      className="w-full"
+                      aria-invalid={fieldState.error ? true : undefined}
+                      invalidText={fieldState.error?.message}
+                      {...controlProps}
+                    >
                       <SelectValue
                         placeholder={t("selectResourcePropertyName")}
                       />
@@ -339,7 +342,7 @@ export const AddModal: FC<
                   as="p"
                   variant="helper"
                   role="alert"
-                  className="text-danger-action-default"
+                  className="text-danger-foreground-subtle"
                 >
                   {!hasPermissions
                     ? t("permissionsUnavailable")

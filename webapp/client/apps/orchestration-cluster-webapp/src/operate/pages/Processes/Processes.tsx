@@ -15,7 +15,7 @@ import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
-import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
+import {ProcessesLayout} from './ProcessesLayout';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
@@ -186,7 +186,7 @@ const Processes: React.FC<Props> = ({
 	};
 
 	return (
-		<InstancesList
+		<ProcessesLayout
 			type="process"
 			leftPanel={
 				<Form<FiltersFormValues> onSubmit={handleFiltersSubmit} initialValues={{tenantId, ...optionalFilterValues}}>

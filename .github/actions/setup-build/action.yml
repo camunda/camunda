@@ -101,9 +101,6 @@ runs:
           "optimize": {
             "path": "secret/data/products/optimize/ci/camunda-optimize"
           },
-          "tasklist": {
-            "path": "secret/data/products/tasklist/ci/tasklist"
-          },
           "zeebe": {
             "path": "secret/data/products/zeebe/ci/zeebe"
           }
@@ -128,7 +125,7 @@ runs:
       # Infer team from workflow (.yml) file name if possible, otherwise default to camunda
       worklow=$(basename ${WORKFLOW_REF%@*})  # remove Github ref part and extract filename
       team=camunda
-      if [[ "$worklow" =~ ^(operate|optimize|tasklist|zeebe)-.*\.(yml|yaml)$ ]]; then
+      if [[ "$worklow" =~ ^(operate|optimize|zeebe)-.*\.(yml|yaml)$ ]]; then
         team=${BASH_REMATCH[1]}
       fi
 
@@ -155,29 +152,12 @@ runs:
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
-    # wretry retries setup-java through transient network/setup failures (INC-7417). Same pattern
-    # as build-platform-docker; `_js_action` pin lets the *_context inputs be overridden.
-    # `token` is passed explicitly since github_context is blanked (setup-java defaults it from it).
-    uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
+    # Retries setup-java through transient network/setup failures (INC-7417). The pin for
+    # setup-java itself lives in that action, not here.
+    uses: ./.github/actions/setup-java-with-retry
     with:
-      action: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
-      attempt_limit: 3
-      attempt_delay: 10000
-      github_token: ${{ github.token }}
-      github_context: '{}'
-      env_context: '{}'
-      job_context: '{}'
-      matrix_context: '{}'
-      with: |
-        distribution: ${{ inputs.java-distribution }}
-        java-version: ${{ inputs.java-version }}
-        token: ${{ github.token }}
-  # wretry leaks the wrapped action's INPUT_* vars into GITHUB_ENV; blank them (cannot unset).
-  - name: Clear setup-java inputs leaked into the job environment by wretry
-    if: always()
-    shell: bash
-    run: |
-      env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
+      distribution: ${{ inputs.java-distribution }}
+      java-version: ${{ inputs.java-version }}
   - name: Register Maven problem matcher
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"

@@ -16,6 +16,12 @@ import org.junit.jupiter.api.Test;
 class AnalyticsExporterConfigTest {
 
   @Test
+  void shouldUseTelemetryEndpointByDefault() {
+    assertThat(new AnalyticsExporterConfig().getEndpoint())
+        .isEqualTo("https://telemetry.camunda.io");
+  }
+
+  @Test
   void shouldRejectBlankEndpoint() {
     assertThatThrownBy(() -> new AnalyticsExporterConfig().setEndpoint("").validate())
         .isInstanceOf(IllegalArgumentException.class)
@@ -117,6 +123,43 @@ class AnalyticsExporterConfigTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("maxBatchSize")
         .hasMessageContaining("maxQueueSize");
+  }
+
+  @Test
+  void shouldRejectInvalidHttpConnectTimeout() {
+    assertThatThrownBy(
+            () -> new AnalyticsExporterConfig().setHttpConnectTimeout("not-a-duration").validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("httpConnectTimeout");
+  }
+
+  @Test
+  void shouldRejectNonPositiveHttpConnectTimeout() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setHttpConnectTimeout("PT0S").validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must be positive");
+  }
+
+  @Test
+  void shouldRejectInvalidHttpRequestTimeout() {
+    assertThatThrownBy(
+            () -> new AnalyticsExporterConfig().setHttpRequestTimeout("not-a-duration").validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("httpRequestTimeout");
+  }
+
+  @Test
+  void shouldRejectNonPositiveHttpRequestTimeout() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setHttpRequestTimeout("PT0S").validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must be positive");
+  }
+
+  @Test
+  void shouldRejectNonPositiveHttpMaxRetryAttempts() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setHttpMaxRetryAttempts(0).validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("httpMaxRetryAttempts");
   }
 
   @Test

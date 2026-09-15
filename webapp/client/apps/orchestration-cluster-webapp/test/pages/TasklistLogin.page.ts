@@ -14,12 +14,28 @@ class TasklistLoginPage extends LoginPage {
 		return this.page.goto(`/tasklist/login${search}`);
 	}
 
+	async gotoTasklist(search = '') {
+		return this.page.goto(`/tasklist${search}`);
+	}
+
+	override get passwordInput() {
+		return this.page.getByLabel(/password/i);
+	}
+
 	get genericErrorHeading() {
 		return this.page.getByRole('heading', {name: 'Something went wrong'});
 	}
 
 	get title() {
 		return this.page.getByRole('heading', {name: 'Tasklist'});
+	}
+
+	get usernameError() {
+		return this.page.getByRole('alert').filter({hasText: /username is required/i});
+	}
+
+	get passwordError() {
+		return this.page.getByRole('alert').filter({hasText: /password is required/i});
 	}
 }
 

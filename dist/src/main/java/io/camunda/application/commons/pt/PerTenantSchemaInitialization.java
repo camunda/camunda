@@ -104,10 +104,13 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
   public void start() {
     tenants.forEach(
         (tenantId, state) -> {
-          // virtual: a tenant's task is a storage call and a sleep, and a tenant that stays
-          // degraded holds its thread for as long as it keeps retrying
+          // platform, not virtual. The virtual-thread scheduler's parallelism defaults to the
+          // CPU count, so a handful of tenants first-touching a class at once can pin every
+          // carrier (JEP-491 removed most pinning cases, but not class initialization) and
+          // starve the whole scheduler, hanging the node (see #61405)
           final var worker =
-              Thread.ofVirtual()
+              Thread.ofPlatform()
+                  .daemon()
                   .name("schema-init-" + tenantId)
                   .unstarted(() -> initializeTenant(tenantId, state));
           // registered before it runs, so that a close() racing this loop still interrupts it

@@ -31,7 +31,7 @@ const ConversationToggles: React.FC<ConversationTogglesProps> = (props) => (
       renderIcon={props.sortOrder === 'desc' ? SortDescending : SortAscending}
       onClick={props.onToggleSortOrder}
     >
-      {props.sortOrder === 'desc' ? 'Most recent first' : 'Oldest first'}
+      {props.sortOrder === 'desc' ? 'Latest first' : 'Oldest first'}
     </Button>
     {props.canBeScoped && (
       <Button

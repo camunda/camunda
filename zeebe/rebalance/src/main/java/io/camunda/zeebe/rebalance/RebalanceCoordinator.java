@@ -49,7 +49,8 @@ public final class RebalanceCoordinator
           PartitionRebalanceOutcome.TRANSFERRED,
           PartitionRebalanceOutcome.ALREADY_LEADER,
           PartitionRebalanceOutcome.CANCELLED,
-          PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+          PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED,
+          PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING);
 
   private final MemberId localMemberId;
   private final ConcurrencyControl executor;

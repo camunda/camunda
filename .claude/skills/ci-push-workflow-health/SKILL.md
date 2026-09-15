@@ -187,8 +187,6 @@ WHERE
   AND report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)
   AND workflow_name IN (
     '[Legacy] Operate / E2E Tests',
-    '[Legacy] Tasklist / E2E Tests',
-    '[Legacy] Tasklist',
     '[Legacy] Operate'
     -- add other suspect workflows here
   )
@@ -288,4 +286,3 @@ Summarize findings in this order:
 3. **High-impact problems by area** — grouped by root cause pattern
 4. **Trend** — improving, degrading, or stable
 5. **Recommendations** — concrete next steps (backport, disable, add concurrency guard, etc.)
-

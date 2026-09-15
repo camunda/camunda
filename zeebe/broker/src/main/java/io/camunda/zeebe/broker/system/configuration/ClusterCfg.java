@@ -33,8 +33,6 @@ public final class ClusterCfg implements ConfigurationEntry {
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
-  public static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
-
   private static final String ZONE_SCHEME_ERROR_MSG =
       "Broker has zone '%s' configured but partitioning scheme is %s; set scheme to REGION_AWARE.";
   private static final String ZONE_MISSING_ERROR_MSG =
@@ -62,6 +60,7 @@ public final class ClusterCfg implements ConfigurationEntry {
           + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
           + " make sure to use an odd replication factor.";
 
+  private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;

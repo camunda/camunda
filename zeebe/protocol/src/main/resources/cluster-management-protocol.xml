@@ -17,6 +17,7 @@
       <validValue name="GET_FLOW_CONTROL">6</validValue>
       <validValue name="GET_EXPORTING_STATE">7</validValue>
       <validValue name="GET_MIGRATION_STATUS">8</validValue>
+      <validValue name="GET_EXPORTING_MIGRATION_STATUS">9</validValue>
     </enum>
 
     <enum name="BackupRequestType" encodingType="uint8">

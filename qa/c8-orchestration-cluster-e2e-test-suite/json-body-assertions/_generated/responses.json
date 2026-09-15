@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "c1c1304630f06fedad4aa6da3a9758a7336c50ea",
-    "generatedAt": "2026-09-03T12:13:07.049Z",
+    "commit": "1f0cad22d3b06f799321536db3aea87bfa6162b2",
+    "generatedAt": "2026-09-10T12:12:19.408Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "f1506177e7d57fda5fd1d287043cde354acebfa461b80f62375345c44e023d20"
+    "specSha256": "a3e4fc4a504a87659e60d1d0a12187611a85bf21966180d28fda43e204248046"
   },
   "responses": [
     {
@@ -10767,7 +10767,8 @@
                           "NO_LEADER",
                           "NO_RESPONSE",
                           "CANCELLED",
-                          "PHYSICAL_TENANT_DISABLED"
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -10898,7 +10899,8 @@
                           "NO_LEADER",
                           "NO_RESPONSE",
                           "CANCELLED",
-                          "PHYSICAL_TENANT_DISABLED"
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -11000,7 +11002,8 @@
                           "NO_LEADER",
                           "NO_RESPONSE",
                           "CANCELLED",
-                          "PHYSICAL_TENANT_DISABLED"
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -11131,7 +11134,8 @@
                           "NO_LEADER",
                           "NO_RESPONSE",
                           "CANCELLED",
-                          "PHYSICAL_TENANT_DISABLED"
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -11242,6 +11246,25 @@
               "HEALTHY",
               "DEGRADED",
               "DOWN"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/status/upgrade",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "MIGRATED",
+              "MIGRATION_IN_PROGRESS",
+              "UNKNOWN"
             ]
           }
         ],

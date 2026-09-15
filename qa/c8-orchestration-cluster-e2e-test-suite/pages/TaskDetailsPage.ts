@@ -113,14 +113,19 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    this.processTab = page.getByRole('link', {
+    // Same TabListNav migration as the history tab below: this is now a
+    // `role="tab"`, not a Carbon-era nav link.
+    this.processTab = page.getByRole('tab', {
       name: 'show associated bpmn process',
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
-    this.historyTabButton = page.getByRole('link', {
+    // TabListNav renders shadcn/Radix Tabs now, not Carbon nav links — the
+    // history entry is a `role="tab"`, not a `role="link"`. Its accessible
+    // name (`taskDetailsShowHistoryLabel`) is unchanged.
+    this.historyTabButton = page.getByRole('tab', {
       name: 'Show task history',
     });
     this.historyTable = page
@@ -133,10 +138,16 @@ class TaskDetailsPage {
         name: 'Operation type',
       },
     );
+    // The redesigned history table added a new "Open details" action column
+    // (see taskDetailsHistoryDetailsLabel), so the default non-exact name
+    // match for 'Details' now also substring-matches that column's header --
+    // exact: true is required to keep matching only the literal "Details"
+    // column (taskDetailsHistoryDetailsHeader).
     this.historyTableDetailsHeader = this.historyTable.getByRole(
       'columnheader',
       {
         name: 'Details',
+        exact: true,
       },
     );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
@@ -154,16 +165,32 @@ class TaskDetailsPage {
     if (!(await this.assignedToMeText.isVisible())) {
       await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
       await this.assignToMeButton.click({timeout: 60000});
-      await expect(this.unassignButton).toBeVisible({timeout: 30000});
+      // Give the post-assign UI update the same 60s budget as the button
+      // click itself -- under CI load the assignment confirmation can take
+      // as long to reflect as the click did to become actionable.
+      await expect(this.unassignButton).toBeVisible({timeout: 60000});
     }
   }
 
   async clickUnassignButton() {
     await expect(this.unassignButton).toBeVisible({timeout: 30000});
     await this.unassignButton.click();
-    // Unassigning is processed asynchronously; the Assign-to-me button can take
-    // a while to reappear under load, so match the assign path's 60s budget.
-    await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    // Unassigning is processed asynchronously and this view doesn't poll, so
+    // under load a single (even generous) wait can still lose the race with
+    // backend re-indexing. Retry with a reload in between attempts -- same
+    // pattern as TaskPanelPage.openTask -- instead of one long wait with no
+    // way to force a fresh fetch.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.assignToMeButton).toBeVisible({timeout: 30000});
+      },
+      onFailure: async () => {
+        console.log(
+          'Assign-to-me button not visible yet after unassign, reloading and retrying...',
+        );
+        await this.page.reload();
+      },
+    });
   }
 
   async clickCompleteTaskButton() {
@@ -176,8 +203,16 @@ class TaskDetailsPage {
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
-    await this.page.getByTitle(name).clear();
-    await this.page.getByTitle(name).fill(value);
+    // Tasklist migrated its variables editor to the shadcn design system
+    // (@camunda/design-system's Label + LoadingTextarea/TextInput). The
+    // value field's accessible name now comes from a visually-hidden
+    // <label> ("<variable name> Value", via taskVariablesValueLabel)
+    // associated by htmlFor -- the old Carbon input exposed that same string
+    // as an HTML title attribute, which getByTitle matched directly;
+    // getByLabel is the equivalent for a real <label>.
+    const valueField = this.page.getByLabel(name);
+    await valueField.clear();
+    await valueField.fill(value);
   }
 
   getNthVariableNameInput(nth: number) {
@@ -423,7 +458,9 @@ class TaskDetailsPage {
     variableName: string,
     variableValue: string,
   ): Promise<void> {
-    await expect(this.page.getByTitle(variableName + ' Value')).toHaveValue(
+    // See replaceExistingVariableValue above: the value field's accessible
+    // name is now a visually-hidden <label>, not a title attribute.
+    await expect(this.page.getByLabel(variableName + ' Value')).toHaveValue(
       variableValue,
     );
   }

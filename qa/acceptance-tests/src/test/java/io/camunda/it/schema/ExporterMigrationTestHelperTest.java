@@ -22,12 +22,12 @@ class ExporterMigrationTestHelperTest {
 
   @ParameterizedTest
   @MethodSource("providePreviousVersions")
-  void shouldFindAllPatchVersionsOrLatestAlphaOrReleaseCandidate(
+  void shouldFindAllPatchReleaseVersions(
       final String previousMinorVersion,
       final List<String> allVersions,
       final List<String> expectedPreviousVersions) {
     assertThat(
-            ExporterMigrationTestHelper.findAllPatchVersionsOrLatestAlphaOrReleaseCandidate(
+            ExporterMigrationTestHelper.findAllPatchReleaseVersions(
                 previousMinorVersion, allVersions))
         .isEqualTo(expectedPreviousVersions);
   }
@@ -37,22 +37,8 @@ class ExporterMigrationTestHelperTest {
     final var allVersions = List.of("8.4.0", "8.4.1", "8.5.0");
 
     assertThatThrownBy(
-            () ->
-                ExporterMigrationTestHelper.findAllPatchVersionsOrLatestAlphaOrReleaseCandidate(
-                    "8.3", allVersions))
+            () -> ExporterMigrationTestHelper.findAllPatchReleaseVersions("8.3", allVersions))
         .hasMessage("No images found for 8.3")
-        .isInstanceOf(NoSuchElementException.class);
-  }
-
-  @Test
-  void shouldFailIfNoMatchingPrereleaseVersionsFound() {
-    final var allVersions = List.of("8.3.0-SNAPSHOT");
-
-    assertThatThrownBy(
-            () ->
-                ExporterMigrationTestHelper.findAllPatchVersionsOrLatestAlphaOrReleaseCandidate(
-                    "8.3", allVersions))
-        .hasMessage("No release or pre-release images found for 8.3")
         .isInstanceOf(NoSuchElementException.class);
   }
 
@@ -66,17 +52,6 @@ class ExporterMigrationTestHelperTest {
             "8.4",
             List.of("8.3.0", "8.3.1", "8.3.2", "8.4.0", "8.4.1", "8.3.2-alpha1", "8.3.2-alpha2"),
             List.of("8.4.0", "8.4.1")),
-        Arguments.of("8.3", List.of("8.3.2-alpha1", "8.3.2-alpha2"), List.of("8.3.2-alpha2")),
-        Arguments.of(
-            "8.3",
-            List.of("8.3.2-alpha1", "8.3.2-alpha2", "8.3.2-alpha12"),
-            List.of("8.3.2-alpha12")),
-        Arguments.of(
-            "8.3",
-            List.of("8.3.2-alpha1", "8.3.2-alpha2", "8.3.2-alpha2-rc1"),
-            List.of("8.3.2-alpha2")),
-        Arguments.of("8.3", List.of("8.3.2-rc1"), List.of("8.3.2-rc1")),
-        Arguments.of(
-            "8.3", List.of("8.3.2-alpha1.1", "8.3.2-alpha1.1-rc1"), List.of("8.3.2-alpha1.1")));
+        Arguments.of("8.3", List.of("8.3.2-alpha1", "8.3.2-alpha2"), List.of()));
   }
 }

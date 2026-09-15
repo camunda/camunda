@@ -6,54 +6,29 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ButtonSkeleton, ContainedList, ContainedListItem, Section, SkeletonText, TabsSkeleton} from '@carbon/react';
-import styles from './DetailsSkeleton.module.scss';
-import layoutStyles from './taskDetailsLayoutCommon.module.scss';
+import {Skeleton} from '@camunda/design-system';
+import {cn} from '#/shared/cn';
 
-type Props = {
-	'data-testid'?: string;
-};
-
-const DetailsSkeleton: React.FC<Props> = (props) => {
+const DetailsSkeleton: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({className, ...props}) => {
 	return (
-		<div className={layoutStyles.container} data-testid={props['data-testid']}>
-			<Section className={layoutStyles.content}>
-				<header className={layoutStyles.header}>
-					<div className={layoutStyles.headerLeftContainer}>
-						<SkeletonText width="150px" />
-						<SkeletonText width="100px" className={styles.margin0} />
+		<div
+			className={cn('grid h-full overflow-hidden max-xl:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_19.5rem]', className)}
+			{...props}
+		>
+			<div className="flex min-w-0 flex-col gap-4 p-4">
+				<Skeleton className="h-5 w-48 max-w-full" />
+				<Skeleton className="h-4 w-32 max-w-full" />
+				<Skeleton className="h-9 w-64 max-w-full" />
+			</div>
+			<div className="flex-col gap-4 border-l border-border p-4 max-xl:hidden xl:flex">
+				<Skeleton className="h-5 w-24" />
+				{Array.from({length: 5}, (_, index) => (
+					<div className="flex flex-col gap-2" key={index}>
+						<Skeleton className="h-4 w-24" />
+						<Skeleton className="h-4 w-36" />
 					</div>
-					<div className={layoutStyles.headerRightContainer}>
-						<SkeletonText width="100px" className={styles.margin0} />
-						<ButtonSkeleton size="sm" />
-					</div>
-				</header>
-				<TabsSkeleton className={layoutStyles.tabs} />
-			</Section>
-			<aside className={layoutStyles.aside}>
-				<ContainedList label={<SkeletonText width="100px" className={styles.margin0} />} kind="disclosed">
-					<ContainedListItem>
-						<SkeletonText width="75px" />
-						<SkeletonText width="125px" />
-					</ContainedListItem>
-					<ContainedListItem>
-						<SkeletonText width="75px" />
-						<SkeletonText width="125px" />
-					</ContainedListItem>
-					<ContainedListItem>
-						<SkeletonText width="75px" />
-						<SkeletonText width="125px" />
-					</ContainedListItem>
-					<ContainedListItem>
-						<SkeletonText width="75px" />
-						<SkeletonText width="125px" />
-					</ContainedListItem>
-					<ContainedListItem>
-						<SkeletonText width="75px" />
-						<SkeletonText width="125px" />
-					</ContainedListItem>
-				</ContainedList>
-			</aside>
+				))}
+			</div>
 		</div>
 	);
 };

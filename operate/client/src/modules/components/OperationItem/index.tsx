@@ -62,7 +62,6 @@ const OperationItem: React.FC<ItemProps> = ({
         onClick={onClick}
         disabled={disabled}
         data-testid={testId}
-        title={title}
         aria-label={title}
         hasIconOnly
         size={size}

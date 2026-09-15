@@ -62,6 +62,7 @@ class OperateProcessesPage {
     cellIndex?: number,
   ) => Locator;
   readonly deleteButton: Locator;
+  readonly drainingTag: Locator;
   readonly deleteBatchOperationConfirmButton: Locator;
   readonly batchOperationStartedMessage: (
     batchOperationType:
@@ -191,6 +192,7 @@ class OperateProcessesPage {
         .getByRole('cell')
         .nth(cellIndex);
     this.deleteButton = page.getByTestId('delete-batch-operation');
+    this.drainingTag = page.getByTestId('draining-tag');
     this.deleteBatchOperationConfirmButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Delete'});
@@ -302,15 +304,17 @@ class OperateProcessesPage {
   }
 
   getRetryInstanceButton(processInstanceKey: string): Locator {
-    return this.page.getByRole('button', {
-      name: `Retry Instance ${processInstanceKey}`,
-    });
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).getByTestId('retry-operation');
   }
 
   getCancelInstanceButton(processInstanceKey: string): Locator {
-    return this.page.getByRole('button', {
-      name: `Cancel Instance ${processInstanceKey}`,
-    });
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).getByTestId('cancel-operation');
   }
 
   // The per-row operation spinner is a Carbon InlineLoading (no data-testid)

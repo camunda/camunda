@@ -166,12 +166,6 @@ final class SecuredClusteredMessagingIT {
                 cfg.getCluster().getNetwork().getInternalApi().setAdvertisedHost("tasklist");
                 cfg.getCluster().setGatewayId("tasklist");
               })
-          .withEnv(
-              "CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS",
-              zeebe.getInternalAddress(CamundaPort.GATEWAY_GRPC.getPort()))
-          .withEnv(
-              "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS",
-              zeebe.getInternalAddress(CamundaPort.GATEWAY_REST.getPort()))
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
           .withExposedPorts(8080, 9600, 26502)
           .waitingFor(

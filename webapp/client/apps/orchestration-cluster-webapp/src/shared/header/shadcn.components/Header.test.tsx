@@ -44,14 +44,14 @@ describe('<Header /> (V2)', () => {
 					<div>Page content</div>
 				</Header>
 			),
-			{path: '/shadcn/tasklist'},
+			{path: '/tasklist'},
 		);
 
 		await expect.element(screen.getByRole('banner')).toBeVisible();
 		await expect.element(screen.getByText('Non-Production License')).toBeVisible();
 		await expect.element(screen.getByText('Non-commercial license')).toBeVisible();
 		await expect.element(screen.getByRole('navigation', {name: 'Camunda context'})).toBeVisible();
-		await expect.element(screen.getByRole('link', {name: 'Tasklist'})).toHaveAttribute('href', '/shadcn/tasklist');
+		await expect.element(screen.getByRole('link', {name: 'Tasklist'})).toHaveAttribute('href', '/tasklist');
 		await expect.element(screen.getByRole('button', {name: 'Info'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Settings'})).toBeVisible();
 		await expect.element(screen.getByText('Page content')).toBeVisible();
@@ -65,16 +65,16 @@ describe('<Header /> (V2)', () => {
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
-		const screen = await renderWithRouter(() => <Header>Page content</Header>, {path: '/shadcn/tasklist'});
+		const screen = await renderWithRouter(() => <Header>Page content</Header>, {path: '/tasklist'});
 
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toBeInTheDocument();
 	});
 
 	it.for([
-		{path: '/shadcn/tasklist/$userTaskKey' as const, initialEntry: '/shadcn/tasklist/task-42'},
-		{path: '/shadcn/tasklist/$userTaskKey/process' as const, initialEntry: '/shadcn/tasklist/task-42/process'},
-		{path: '/shadcn/tasklist/$userTaskKey/history' as const, initialEntry: '/shadcn/tasklist/task-42/history'},
+		{path: '/tasklist/$userTaskKey' as const, initialEntry: '/tasklist/task-42'},
+		{path: '/tasklist/$userTaskKey/process' as const, initialEntry: '/tasklist/task-42/process'},
+		{path: '/tasklist/$userTaskKey/history' as const, initialEntry: '/tasklist/task-42/history'},
 	])('should mark Tasks as active at $initialEntry', async ({path, initialEntry}, {worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
@@ -94,7 +94,7 @@ describe('<Header /> (V2)', () => {
 		);
 
 		const screen = await renderWithRouter(() => <Header>Page content</Header>, {
-			path: '/shadcn/tasklist/processes',
+			path: '/tasklist/processes',
 		});
 
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).toHaveAttribute('aria-current', 'page');

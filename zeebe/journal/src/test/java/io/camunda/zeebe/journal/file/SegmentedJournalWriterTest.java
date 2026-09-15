@@ -127,7 +127,7 @@ final class SegmentedJournalWriterTest {
     final var corruptedDescriptor =
         descriptor.withUpdatedIndices(
             descriptor.lastIndex(), firstSegment.descriptor().lastPosition() + 1);
-    final var segmentFile = firstSegment.file().file().toPath();
+    final var segmentFile = firstSegment.file().file();
     try (final FileChannel channel =
         FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
       final MappedByteBuffer buffer =

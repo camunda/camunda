@@ -50,9 +50,13 @@ public final class CamundaRdbmsTestApplication
   }
 
   public CamundaRdbmsTestApplication withH2() {
+    return withH2("testdb");
+  }
+
+  public CamundaRdbmsTestApplication withH2(final String databaseName) {
     setSecondaryStorageToRdbms();
     final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
-    rdbms.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    rdbms.setUrl("jdbc:h2:mem:" + databaseName + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
     rdbms.setUsername("sa");
     rdbms.setPassword("");
     return this;
@@ -107,10 +111,13 @@ public final class CamundaRdbmsTestApplication
   @Override
   public void close() {
     LOGGER.info("Resource closed - Stop spring application ...");
-    super.stop();
-    if (databaseContainer != null) {
-      LOGGER.info("Stop database container '{}'...", databaseContainer.getContainerInfo());
-      databaseContainer.close();
+    try {
+      super.stop();
+    } finally {
+      if (databaseContainer != null) {
+        LOGGER.info("Stop database container '{}'...", databaseContainer.getContainerInfo());
+        databaseContainer.close();
+      }
     }
   }
 

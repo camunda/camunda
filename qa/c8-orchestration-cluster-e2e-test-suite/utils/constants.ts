@@ -50,8 +50,15 @@ export const extendedAssertionOptions = {
   timeout: 90_000,
 };
 
-export const uniqueBusinessId = (prefix = 'biz'): string => {
+// Prefixed unique id for a resource a test deploys or creates — process
+// definition ids, message names, job types. Parallel workers share a cluster, so
+// a fixed id would let one test's deployment or subscription answer another's.
+export const uniquePrefixedId = (prefix: string): string => {
   return `${prefix}-${generateUniqueId()}`;
+};
+
+export const uniqueBusinessId = (prefix = 'biz'): string => {
+  return uniquePrefixedId(prefix);
 };
 
 // Create unique auth role with optional custom ID

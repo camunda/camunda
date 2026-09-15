@@ -29,17 +29,21 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByErrorSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.function.Function;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -313,6 +317,66 @@ public class IncidentIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldFindIncidentWithSearchBefore(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - three pages traversed forwards
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+
+    final var processDefinitionKey = nextKey();
+    createAndSaveRandomIncidents(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey));
+    final var sort = IncidentSort.of(s -> s.state().asc().creationTime().desc().flowNodeId().asc());
+
+    final var firstPage =
+        searchIncidents(incidentReader, processDefinitionKey, sort, p -> p.size(5));
+    final var secondPage =
+        searchIncidents(
+            incidentReader,
+            processDefinitionKey,
+            sort,
+            p -> p.size(5).after(firstPage.endCursor()));
+    final var thirdPage =
+        searchIncidents(
+            incidentReader,
+            processDefinitionKey,
+            sort,
+            p -> p.size(5).after(secondPage.endCursor()));
+
+    // when - paging backwards from the third page
+    final var backToSecondPage =
+        searchIncidents(
+            incidentReader,
+            processDefinitionKey,
+            sort,
+            p -> p.size(5).before(thirdPage.startCursor()));
+    final var backToFirstPage =
+        searchIncidents(
+            incidentReader,
+            processDefinitionKey,
+            sort,
+            p -> p.size(5).before(backToSecondPage.startCursor()));
+
+    // then - the same entries in the same order as the forward traversal produced
+    assertThat(backToSecondPage.total()).isEqualTo(20);
+    assertThat(backToSecondPage.items()).isEqualTo(secondPage.items());
+    assertThat(backToFirstPage.items()).isEqualTo(firstPage.items());
+  }
+
+  private static SearchQueryResult<IncidentEntity> searchIncidents(
+      final IncidentDbReader incidentReader,
+      final long processDefinitionKey,
+      final IncidentSort sort,
+      final Function<SearchQueryPage.Builder, ObjectBuilder<SearchQueryPage>> page) {
+    return incidentReader.search(
+        IncidentQuery.of(
+            b ->
+                b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                    .sort(sort)
+                    .page(page)));
   }
 
   private void compareIncident(final IncidentEntity instance, final IncidentDbModel original) {

@@ -82,8 +82,8 @@ class RdbmsSchemaMigrationStatusProviderTest {
 
   /**
    * Builds a {@link RdbmsSchemaVersionStore} whose {@link
-   * RdbmsSchemaVersionStore#resolveCurrentSchemaVersion} returns {@code schemaVersion}, backed by a
-   * mock data source that yields a mock connection.
+   * RdbmsSchemaVersionStore#readSchemaVersion} returns {@code schemaVersion}, backed by a mock data
+   * source that yields a mock connection.
    */
   private static RdbmsSchemaVersionStore versionStore(
       final String schemaVersion, final String appVersion) {
@@ -95,8 +95,7 @@ class RdbmsSchemaMigrationStatusProviderTest {
     }
     return new RdbmsSchemaVersionStore(dataSource, "", appVersion) {
       @Override
-      protected String resolveCurrentSchemaVersion(
-          final Connection connection, final String prefix) {
+      protected String readSchemaVersion(final Connection connection, final String prefix) {
         return schemaVersion;
       }
     };

@@ -18,8 +18,10 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.Cu
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
@@ -86,6 +88,7 @@ import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PhysicalTenantState;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
+import io.camunda.zeebe.management.cluster.TopologyChange;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -98,6 +101,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -1332,6 +1336,167 @@ final class ClusterApiUtilsTest {
             tuple(3L, ConfigurationChange.StatusEnum.IN_PROGRESS),
             tuple(1L, ConfigurationChange.StatusEnum.COMPLETED),
             tuple(4L, ConfigurationChange.StatusEnum.CANCELLED));
+  }
+
+  /**
+   * Regression test for <a href="https://github.com/camunda/camunda/issues/61586">#61586</a>: a
+   * client that reads {@code pendingChange.id} while a change runs must find that same id in {@code
+   * lastChange} once it completes. The three counters are set apart the way they were on the
+   * failing cluster: global sub-config plan 61, default group sub-config plan 40, phased plan 20.
+   */
+  @Test
+  void shouldReportPendingAndLastChangeUnderTheSamePhasedPlanId() {
+    // given: a three-phase scale-up in its partition-group phase, with one of the two joins done.
+    // The global phase already ran as global plan 61; the active group phase runs as group plan 40.
+    final var member1 = member(1);
+    final var startedAt = Instant.ofEpochSecond(1000);
+    final var graphBuilder = OperationGraph.builder();
+    final var join1Id = graphBuilder.add(new PartitionJoinOperation(member1, 1, 1, true));
+    graphBuilder.add(new PartitionJoinOperation(member1, 2, 1, true), Set.of(join1Id));
+    final var groupGraph = graphBuilder.build();
+    final List<Phase> phases =
+        List.of(
+            new GlobalPhase(List.of(new MemberJoinOperation(member1))),
+            new PartitionGroupPhase(Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, groupGraph)),
+            new GlobalPhase(
+                List.of(new PostScalingOperation(member1, new TreeSet<>(Set.of(member1))))));
+    final var globalConfiguration =
+        new GlobalConfiguration(
+            61,
+            Optional.empty(),
+            new TreeMap<>(
+                Map.of(
+                    member1,
+                    io.camunda.zeebe.dynamic.config.state.BrokerState.initializeAsActive())),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(
+                new CompletedChange(61, Status.COMPLETED, startedAt, startedAt.plusSeconds(1))));
+    final var defaultGroup =
+        new PartitionGroupConfiguration(
+                39, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty())
+            .startGraphConfigurationChange(groupGraph)
+            .completeOperation(join1Id, UnaryOperator.identity());
+    assertThat(defaultGroup.pendingChanges().orElseThrow().id()).isEqualTo(40);
+    final var running =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            globalConfiguration,
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, defaultGroup),
+            new PhasedChangeState(
+                21, Map.of(20L, new PhasedChangePlan(20, 1, phases, startedAt)), List.of()));
+
+    // when
+    final var whileRunning = ClusterApiUtils.mapClusterTopology(running);
+    final var afterCompletion =
+        ClusterApiUtils.mapClusterTopology(
+            running.completePlan(20, PhasedChangePlanStatus.COMPLETED));
+
+    // then: the running change is reported under the phased plan id, with the progress of every
+    // phase so far, not under the id of the sub-config plan executing the active phase
+    final var pendingChange = whileRunning.getPendingChange();
+    assertThat(pendingChange).isNotNull();
+    assertThat(pendingChange.getId()).isEqualTo(20L);
+    assertThat(pendingChange.getStatus()).isEqualTo(TopologyChange.StatusEnum.IN_PROGRESS);
+    assertThat(pendingChange.getStartedAt()).isEqualTo(startedAt.atOffset(ZoneOffset.UTC));
+    assertThat(pendingChange.getCompleted())
+        .extracting(
+            TopologyChangeCompletedInner::getOperation,
+            TopologyChangeCompletedInner::getPartitionId)
+        .containsExactly(
+            tuple(TopologyChangeCompletedInner.OperationEnum.BROKER_ADD, null),
+            tuple(TopologyChangeCompletedInner.OperationEnum.PARTITION_JOIN, 1));
+    // only the active phase's sub-config plan records when its operations completed
+    assertThat(pendingChange.getCompleted().get(0).getCompletedAt()).isNull();
+    assertThat(pendingChange.getCompleted().get(1).getCompletedAt()).isNotNull();
+    assertThat(pendingChange.getPending())
+        .extracting(Operation::getOperation, Operation::getPartitionId)
+        .containsExactly(tuple(PARTITION_JOIN, 2), tuple(OperationEnum.POST_SCALING, null));
+    assertThat(whileRunning.getLastChange()).isNull();
+
+    // and the completed change is found under the very same id
+    assertThat(afterCompletion.getPendingChange()).isNull();
+    assertThat(afterCompletion.getLastChange()).isNotNull();
+    assertThat(afterCompletion.getLastChange().getId()).isEqualTo(pendingChange.getId());
+    assertThat(afterCompletion.getLastChange().getStatus())
+        .isEqualTo(io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.COMPLETED);
+  }
+
+  @Test
+  void shouldReportThePendingChangeOfThePhysicalTenantInView() {
+    // given: two physical tenants, each running its own change
+    final var member1 = member(1);
+    final var startedAt = Instant.ofEpochSecond(1000);
+    final var planA =
+        new PhasedChangePlan(
+            2,
+            0,
+            List.of(
+                PartitionGroupPhase.sequential(
+                    "tenant-a", List.of(new PartitionJoinOperation(member1, 1, 1, true)))),
+            startedAt);
+    final var planB =
+        new PhasedChangePlan(
+            3,
+            0,
+            List.of(
+                PartitionGroupPhase.sequential(
+                    "tenant-b", List.of(new PartitionLeaveOperation(member1, 1, 0)))),
+            startedAt);
+    final var config =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-a", emptyGroup(), "tenant-b", emptyGroup()),
+            new PhasedChangeState(4, Map.of(2L, planA, 3L, planB), List.of()));
+
+    // when
+    final var tenantA = ClusterApiUtils.mapClusterTopology(config, "tenant-a");
+    final var tenantB = ClusterApiUtils.mapClusterTopology(config, "tenant-b");
+
+    // then
+    assertThat(tenantA.getPendingChange()).isNotNull();
+    assertThat(tenantA.getPendingChange().getId()).isEqualTo(2L);
+    assertThat(tenantA.getPendingChange().getPending())
+        .extracting(Operation::getOperation, Operation::getPhysicalTenant)
+        .containsExactly(tuple(PARTITION_JOIN, "tenant-a"));
+    assertThat(tenantB.getPendingChange()).isNotNull();
+    assertThat(tenantB.getPendingChange().getId()).isEqualTo(3L);
+    assertThat(tenantB.getPendingChange().getPending())
+        .extracting(Operation::getOperation, Operation::getPhysicalTenant)
+        .containsExactly(tuple(Operation.OperationEnum.PARTITION_LEAVE, "tenant-b"));
+  }
+
+  @Test
+  void shouldReportAClusterWidePendingChangeForEveryPhysicalTenantInView() {
+    // given: a change with a global phase touches every tenant
+    final var plan =
+        new PhasedChangePlan(
+            2,
+            0,
+            List.of(new GlobalPhase(List.of(new MemberJoinOperation(member(1))))),
+            Instant.ofEpochSecond(1000));
+    final var config =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-a", emptyGroup(), "tenant-b", emptyGroup()),
+            new PhasedChangeState(3, Map.of(2L, plan), List.of()));
+
+    // when
+    final var tenantA = ClusterApiUtils.mapClusterTopology(config, "tenant-a");
+    final var tenantB = ClusterApiUtils.mapClusterTopology(config, "tenant-b");
+
+    // then
+    assertThat(tenantA.getPendingChange()).isNotNull();
+    assertThat(tenantA.getPendingChange().getId()).isEqualTo(2L);
+    assertThat(tenantB.getPendingChange()).isNotNull();
+    assertThat(tenantB.getPendingChange().getId()).isEqualTo(2L);
+  }
+
+  private static PartitionGroupConfiguration emptyGroup() {
+    return new PartitionGroupConfiguration(
+        1, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty());
   }
 
   @Test

@@ -345,6 +345,24 @@ make template-load-test-setup-chaos
 
 In the GitHub workflow, set the `enable-chaos` input to `true`.
 
+#### Optional PostgreSQL connection pooling (PgBouncer)
+
+For `secondary_storage=postgresql`, each broker pod opens one connection pool per physical
+tenant, so client connections to Postgres scale as (broker pods x physical tenants) and can
+exceed Postgres's default `max_connections` under a large fleet (e.g. 10 brokers x 10
+tenants). Enabling this option deploys a CNPG `Pooler` (PgBouncer, transaction-pooling mode)
+in front of the PostgreSQL cluster and points Camunda's JDBC URL at it instead of the
+cluster's `-rw` Service — see [Connection pooling
+(PgBouncer)](charts/load-test-setup/README.md#connection-pooling-pgbouncer) for the full
+rationale.
+
+This is opt-in and off by default; only supported with `secondary_storage=postgresql`.
+Pass `--use-pgbouncer` to `newLoadTest.sh` when scaffolding the namespace:
+
+```sh
+./newLoadTest.sh <namespace> postgresql 1 true --use-pgbouncer
+```
+
 #### Optional physical tenants (pt1..ptN)
 
 A load test can exercise **N extra physical tenants** (`pt1`, `pt2`, ..., `ptN`) alongside the
@@ -371,12 +389,10 @@ When `physical_tenant_count > 0`, the Makefile:
   the default tenant has: `CREATE` on `RESOURCE`, `CREATE_PROCESS_INSTANCE`/`UPDATE_PROCESS_INSTANCE`/
   `READ_PROCESS_INSTANCE`/`READ_PROCESS_DEFINITION` on `PROCESS_DEFINITION`, `CREATE` on `MESSAGE`) and
   OIDC provider assignment — and layers it on top of the plain storage values.
-- Clones the generated `load-test-credentials` secret into `load-test-credentials-pt<i>` per tenant,
-  overriding only the REST address to that tenant's path `http://camunda:8080/physical-tenants/pt<i>`.
 - Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
   tester, renames them to `starter-pt<i>`/`worker-pt<i>`, and applies them — looped over `pt1..ptN`.
-  Each tester uses REST (`global.preferRest.enabled=true`) because gRPC only routes to the default
-  physical tenant.
+  Each tester gets a `CAMUNDA_CLIENT_PHYSICAL_TENANT_ID=pt<i>` env var, which routes both gRPC and
+  REST traffic to that tenant, so no per-tenant secret or address override is needed.
 
 A second Helm release per tenant is not used because the `camunda-load-tests` subchart hardcodes the
 `starter`/`worker` resource names, which would collide in the same namespace. This also means each
