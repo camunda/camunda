@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-87-elasticsearch-stable
       namespace: c8-golden-stable-87-elasticsearch-stable
-      version: 12.13.5
+      version: 12.13.6
       components:
       - name: Keycloak
         id: keycloak
@@ -39,7 +39,7 @@ data:
         metrics: http://operate.c8-golden-stable-87-elasticsearch-stable:9600/actuator/prometheus
       - name: Optimize
         id: optimize
-        version: 8.7.27
+        version: 8.7.28
         url: http://localhost:8083
         readiness: http://optimize.c8-golden-stable-87-elasticsearch-stable:80/api/readyz
         metrics: http://optimize.c8-golden-stable-87-elasticsearch-stable:8092/actuator/prometheus
