@@ -16,6 +16,7 @@ const mockProcesses = [
     tenantId: '<default>',
     processDefinitionKey: '0',
     hasStartForm: false,
+    state: 'ACTIVE',
   },
   {
     resourceName: 'orderProcess.bpmn',
@@ -24,6 +25,7 @@ const mockProcesses = [
     tenantId: '<default>',
     processDefinitionKey: '1',
     hasStartForm: false,
+    state: 'ACTIVE',
   },
 ] satisfies Array<ProcessDefinition>;
 

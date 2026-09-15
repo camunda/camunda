@@ -25,6 +25,7 @@ function getProcessDefinitionMock(
     version: 1,
     name: `Process ${id}`,
     hasStartForm: false,
+    state: 'ACTIVE',
     ...customFields,
   };
 }
