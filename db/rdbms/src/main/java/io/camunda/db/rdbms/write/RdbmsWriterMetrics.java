@@ -250,18 +250,20 @@ public class RdbmsWriterMetrics {
       final boolean paused,
       final long flushedPosition,
       final long replicatedPosition) {
-    connectedReplicasValue.set(statuses.size());
+    final List<? extends ReplicationStatus> replicas =
+        statuses.stream().filter(status -> !status.isPrimary()).toList();
+    connectedReplicasValue.set(replicas.size());
     exporterPausedValue.set(paused ? 1 : 0);
     pendingPositionsValue.set(Math.max(0, flushedPosition - replicatedPosition));
 
     final var currentReplicaIds =
-        statuses.stream().map(ReplicationStatus::replicaId).collect(Collectors.toSet());
+        replicas.stream().map(ReplicationStatus::replicaId).collect(Collectors.toSet());
 
     final var staleReplicaIds = new ArrayList<>(replicaLagGauges.keySet());
     staleReplicaIds.removeAll(currentReplicaIds);
     staleReplicaIds.forEach(id -> meterRegistry.remove(replicaLagGauges.remove(id)));
 
-    for (final var status : statuses) {
+    for (final var status : replicas) {
       final var gauge =
           replicaLagGauges.computeIfAbsent(status.replicaId(), this::registerReplicaLagGauge);
       final var lag = status.replicationLagMs();

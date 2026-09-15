@@ -18,7 +18,11 @@ import io.camunda.zeebe.exporter.common.waitstate.WaitStateConfiguration;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class ExporterConfiguration {
   public static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofMillis(500);
@@ -630,12 +634,13 @@ public class ExporterConfiguration {
     private boolean enabled = DEFAULT_ENABLED;
     private ReplicationType type = DEFAULT_TYPE;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
-    private int minSyncReplicas = DEFAULT_MIN_SYNC_REPLICAS;
     private Duration maxLag = DEFAULT_MAX_LAG;
     private boolean pauseOnMaxLagExceeded = DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
     private Duration delay;
     private Duration queueDebounceTime = DEFAULT_QUEUE_DEBOUNCE_TIME;
     private int queueCapacity = DEFAULT_QUEUE_CAPACITY;
+
+    private List<RegionConfiguration> regions = new ArrayList<>();
 
     public boolean isEnabled() {
       return enabled;
@@ -659,14 +664,6 @@ public class ExporterConfiguration {
 
     public void setPollingInterval(final Duration pollingInterval) {
       this.pollingInterval = pollingInterval;
-    }
-
-    public int getMinSyncReplicas() {
-      return minSyncReplicas;
-    }
-
-    public void setMinSyncReplicas(final int minSyncReplicas) {
-      this.minSyncReplicas = minSyncReplicas;
     }
 
     public Duration getMaxLag() {
@@ -709,17 +706,19 @@ public class ExporterConfiguration {
       this.queueCapacity = queueCapacity;
     }
 
+    public List<RegionConfiguration> getRegions() {
+      return regions;
+    }
+
+    public void setRegions(final List<RegionConfiguration> regions) {
+      this.regions = regions;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
 
       if (!enabled) {
         return errors;
-      }
-
-      if (minSyncReplicas <= 0) {
-        errors.add(
-            String.format(
-                "asyncReplication.minSyncReplicas must be greater 0 but was %d", minSyncReplicas));
       }
 
       // queueCapacity, queueDebounceTime, pollingInterval, and maxLag apply to every
@@ -736,6 +735,46 @@ public class ExporterConfiguration {
       if (type == ReplicationType.DELAY) {
         checkPositiveDuration(delay, "asyncReplication.delay", errors);
       }
+      errors.addAll(validateRegions());
+      return errors;
+    }
+
+    private List<String> validateRegions() {
+      final List<String> errors = new ArrayList<>();
+      if (regions.isEmpty()) {
+        errors.add("asyncReplication.regions must not be empty");
+        return errors;
+      }
+
+      final Set<String> names = new HashSet<>();
+      for (final RegionConfiguration region : regions) {
+        final String name = region.getName();
+        if (name == null || name.isBlank()) {
+          errors.add("asyncReplication.regions[].name must not be blank");
+        } else if (!names.add(name)) {
+          errors.add(
+              String.format(
+                  "asyncReplication.regions[].name '%s' is declared more than once", name));
+        }
+        if (region.getPattern() == null || region.getPattern().isBlank()) {
+          errors.add(String.format("asyncReplication.regions[%s].pattern must not be blank", name));
+        } else {
+          try {
+            Pattern.compile(region.getPattern());
+          } catch (final PatternSyntaxException e) {
+            errors.add(
+                String.format(
+                    "asyncReplication.regions[%s].pattern is not a valid regex: %s",
+                    name, e.getMessage()));
+          }
+        }
+        if (region.getMinReplicas() < 1) {
+          errors.add(
+              String.format(
+                  "asyncReplication.regions[%s].minReplicas must be at least 1 but was %d",
+                  name, region.getMinReplicas()));
+        }
+      }
       return errors;
     }
 
@@ -743,6 +782,37 @@ public class ExporterConfiguration {
         final Duration duration, final String name, final List<String> errors) {
       if (duration == null || duration.isNegative()) {
         errors.add(String.format("%s must be a non-negative duration but was %s", name, duration));
+      }
+    }
+
+    public static class RegionConfiguration {
+      private String name;
+      private String pattern;
+      private int minReplicas;
+
+      public String getName() {
+        return name;
+      }
+
+      public void setName(final String name) {
+        this.name = name;
+      }
+
+      /** A regex matched against a replica's label; the first matching region wins. */
+      public String getPattern() {
+        return pattern;
+      }
+
+      public void setPattern(final String pattern) {
+        this.pattern = pattern;
+      }
+
+      public int getMinReplicas() {
+        return minReplicas;
+      }
+
+      public void setMinReplicas(final int minReplicas) {
+        this.minReplicas = minReplicas;
       }
     }
 
