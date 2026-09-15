@@ -183,21 +183,26 @@
           </foreach>
         </if>
         <if test="operation.type.toString == 'LONG'">
-          (LONG_VALUE NOT IN
-          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
-            #{value}
-          </foreach>
-          OR DOUBLE_VALUE NOT IN
+          (
+          (LONG_VALUE IS NULL OR LONG_VALUE NOT IN
           <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
             #{value}
           </foreach>
           )
-        </if>
-        <if test="operation.type.toString == 'DOUBLE'">
-          DOUBLE_VALUE NOT IN
+          AND
+          (DOUBLE_VALUE IS NULL OR DOUBLE_VALUE NOT IN
           <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
             #{value}
           </foreach>
+          )
+          )
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          (DOUBLE_VALUE IS NULL OR DOUBLE_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          )
         </if>
       </when>
       <when test="operation.operator.name().equals('LIKE')">
