@@ -192,6 +192,17 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
       return createCancellationBatch(request, 500, 'batch_suspension_process');
     });
 
+    // Wait for the batch to be genuinely running (ACTIVE) before suspending.
+    // Suspending immediately can accept the command (204) and even flip the
+    // read model to SUSPENDED while the engine still has the batch INITIALIZED;
+    // that suspend does not durably hold, so the batch runs on to a terminal
+    // state and the later resume gets a permanent 404 NOT_FOUND. Confirming
+    // ACTIVE first ensures the suspend catches an in-flight batch -- the
+    // scenario this test is meant to exercise -- so it holds through resume.
+    await test.step('Poll until batch operation is active', async () => {
+      await expectBatchState(request, key, 'ACTIVE');
+    });
+
     await test.step('Suspend batch operation', async () => {
       const res = await suspendBatchOperation(request, key);
       await assertStatusCode(res, 204);
