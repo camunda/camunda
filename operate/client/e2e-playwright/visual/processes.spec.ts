@@ -11,6 +11,7 @@ import {test} from '../visual-fixtures';
 import {
   mockBatchOperations,
   mockBatchOperationItemsWithError,
+  mockFinishedOrderProcessInstances,
   mockProcessDefinitions,
   mockProcessInstances,
   mockProcessInstancesWithOperationError,
@@ -219,6 +220,45 @@ test.describe('processes page', () => {
 
     await expect(processesPage.processInstancesTable).toBeVisible();
     await expect(page.getByTestId(/^state-overlay/).first()).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('completed instance delete action', async ({page, processesPage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: mockFinishedOrderProcessInstances,
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        completed: 'true',
+      },
+    });
+
+    const deleteButton = processesPage.processInstancesTable
+      .getByRole('button', {name: 'Delete Instance'})
+      .first();
+    await expect(deleteButton).toBeVisible();
+    await deleteButton.hover();
+    await expect(
+      page.getByRole('tooltip').filter({hasText: 'Delete Instance'}).first(),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

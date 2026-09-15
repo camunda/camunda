@@ -7,7 +7,14 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryResponseBodySchema, getQueryRequestBodySchema, type Endpoint} from './common';
+import {
+	API_VERSION,
+	advancedStringFilterSchema,
+	getOrFilterSchema,
+	getQueryResponseBodySchema,
+	getQueryRequestBodySchema,
+	type Endpoint,
+} from './common';
 import {mappingRuleSchema, type MappingRule} from './mapping-rule';
 import {userSchema} from './user';
 import {groupSchema, type Group, roleSchema} from './group-role';
@@ -66,12 +73,12 @@ const deleteGroup = {
 
 const queryGroupsRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['name', 'groupId'] as const,
-	filter: groupSchema
-		.pick({
-			groupId: true,
-			name: true,
-		})
-		.partial(),
+	filter: getOrFilterSchema(
+		z.object({
+			groupId: advancedStringFilterSchema.optional(),
+			name: advancedStringFilterSchema.optional(),
+		}),
+	),
 });
 type QueryGroupsRequestBody = z.infer<typeof queryGroupsRequestBodySchema>;
 

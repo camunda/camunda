@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -89,12 +90,28 @@ public final class AgentInstanceCreateAuthorizationTest {
         PermissionType.UPDATE_PROCESS_INSTANCE,
         AuthorizationResourceMatcher.ID,
         PROCESS_ID);
+    final var jobBatch =
+        engine.jobs().withType("agent").withLease().activate(DEFAULT_USER.getUsername());
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType("agent")
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     // when
     final var created =
         engine
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create(user.getUsername());
 
     // then

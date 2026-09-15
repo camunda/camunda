@@ -50,7 +50,7 @@ spec:
       initContainers:
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.9.8
+          image: camunda/identity:8.9.9
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false

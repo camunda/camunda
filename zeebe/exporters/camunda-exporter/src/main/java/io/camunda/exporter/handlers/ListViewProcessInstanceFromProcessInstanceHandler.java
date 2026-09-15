@@ -125,7 +125,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
     if (intent.equals(ELEMENT_COMPLETED) || intent.equals(ELEMENT_TERMINATED)) {
       incrementFinishedCount();
-      piEntity.setEndDate(timestamp);
+      piEntity.setEndDate(timestamp).setSuspendedDate(null);
       if (intent.equals(ELEMENT_TERMINATED)) {
         piEntity.setState(ProcessInstanceState.CANCELED);
       } else {

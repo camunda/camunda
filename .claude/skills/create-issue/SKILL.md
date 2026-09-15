@@ -99,7 +99,7 @@ Map path prefixes to component labels:
 |--------------------------|----------------------------------|
 | `zeebe/` — see below     | `component/zeebe-engine` or `component/zeebe-platform` (fallback: `component/zeebe`) |
 | `operate/`               | `component/operate`              |
-| `tasklist/`              | `component/tasklist`             |
+| `webapp/client/apps/orchestration-cluster-webapp/src/tasklist/` | `component/tasklist` |
 | `identity/`              | `component/identity`             |
 | `optimize/`              | `component/optimize`             |
 | `clients/`               | `component/clients`              |
@@ -110,6 +110,7 @@ Map path prefixes to component labels:
 | `document/`              | `component/document-handling`    |
 | `testing/`               | `component/camunda-process-test` |
 | `qa/`                    | `component/qa`                   |
+| `load-tests/`            | `component/load-tests`           |
 | `.github/` or `.claude/` | `component/build-pipeline`       |
 
 **Zeebe label split — use the conceptual layer, not the path:**

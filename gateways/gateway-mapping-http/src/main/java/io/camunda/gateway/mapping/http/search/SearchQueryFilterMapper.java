@@ -35,11 +35,15 @@ import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
+import io.camunda.gateway.protocol.model.GroupFilterFields;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
+import io.camunda.gateway.protocol.model.MappingRuleFilterFields;
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
+import io.camunda.gateway.protocol.model.RoleFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.UserFilterFields;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
@@ -806,36 +810,73 @@ public class SearchQueryFilterMapper {
 
   static GroupFilter toGroupFilter(
       final io.camunda.gateway.protocol.model.@Nullable GroupFilter filter) {
+    final var builder = toGroupFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final GroupFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toGroupFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
+
+  static GroupFilter.Builder toGroupFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable GroupFilterFields filter) {
     final var builder = FilterBuilders.group();
     if (filter != null) {
       ofNullable(filter.getGroupId())
           .map(mapToStringOperations())
           .ifPresent(builder::groupIdOperations);
-      ofNullable(filter.getName()).ifPresent(builder::name);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     }
-    return builder.build();
+    return builder;
   }
 
   static RoleFilter toRoleFilter(
       final io.camunda.gateway.protocol.model.@Nullable RoleFilter filter) {
-    final var builder = FilterBuilders.role();
-    if (filter != null) {
-      ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
-      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+    final var builder = toRoleFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final RoleFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toRoleFilterFields(or).build());
+      }
     }
     return builder.build();
   }
 
+  static RoleFilter.Builder toRoleFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable RoleFilterFields filter) {
+    final var builder = FilterBuilders.role();
+    if (filter != null) {
+      ofNullable(filter.getRoleId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::roleIdOperations);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+    }
+    return builder;
+  }
+
   static MappingRuleFilter toMappingRuleFilter(
       final io.camunda.gateway.protocol.model.@Nullable MappingRuleFilter filter) {
+    final var builder = toMappingRuleFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final MappingRuleFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toMappingRuleFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
+
+  static MappingRuleFilter.Builder toMappingRuleFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable MappingRuleFilterFields filter) {
     final var builder = FilterBuilders.mappingRule();
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
       ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
-      ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
+      ofNullable(filter.getMappingRuleId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::mappingRuleIdOperations);
     }
-    return builder.build();
+    return builder;
   }
 
   static Either<List<String>, DecisionDefinitionFilter> toDecisionDefinitionFilter(
@@ -1103,7 +1144,17 @@ public class SearchQueryFilterMapper {
 
   static UserFilter toUserFilter(
       final io.camunda.gateway.protocol.model.@Nullable UserFilter filter) {
+    final var builder = toUserFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final UserFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toUserFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
 
+  static UserFilter.Builder toUserFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable UserFilterFields filter) {
     final var builder = FilterBuilders.user();
     if (filter != null) {
       Optional.ofNullable(filter.getUsername())
@@ -1116,7 +1167,7 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::emailOperations);
     }
-    return builder.build();
+    return builder;
   }
 
   static Either<List<String>, IncidentFilter> toIncidentFilter(

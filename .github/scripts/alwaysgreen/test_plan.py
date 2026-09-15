@@ -614,6 +614,33 @@ def test_naive_now_does_not_raise_against_an_offset_aware_created_at():
     assert plan.pr_lock_expired(_ago(minutes=30), naive_now, 2) is False
 
 
+# ---------------------------------------------------------------------------
+# Stale (CONFLICTING) fix PRs
+# ---------------------------------------------------------------------------
+
+
+def test_conflicting_pr_is_stale():
+    assert plan.pr_is_stale("CONFLICTING") is True
+
+
+def test_mergeable_pr_is_not_stale():
+    assert plan.pr_is_stale("MERGEABLE") is False
+
+
+def test_unknown_mergeable_state_is_not_stale():
+    # GitHub has not finished computing the merge base yet; treat as fine, not broken.
+    assert plan.pr_is_stale("UNKNOWN") is False
+
+
+def test_missing_mergeable_field_is_not_stale():
+    assert plan.pr_is_stale(None) is False
+    assert plan.pr_is_stale("") is False
+
+
+def test_mergeable_check_is_case_insensitive():
+    assert plan.pr_is_stale("conflicting") is True
+
+
 def test_zero_ttl_restores_the_never_expiring_lock():
     assert plan.pr_lock_expired("2026-01-01T00:00:00Z", NOW, 0) is False
 

@@ -1,0 +1,186 @@
+# Entry point for the `present-when-request-resolves` rule tests.
+#
+# The rule resolves each operation, finds `x-present-when` markers reachable
+# from its 2xx response schemas, and asserts that `request` names a top-level
+# property of the operation's request body, and that the annotated property is
+# nullable + required. Each operation below isolates one scenario; the tests
+# filter violations by the operation's path segment. Only the
+# `present-when-request-resolves` code is asserted on, so noise from other
+# rules is irrelevant.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — present-when-request-resolves
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: request resolves; marker nested under an array; nullable+required.
+  /valid:
+    post:
+      operationId: activateValid
+      x-scope: physical-tenant
+      tags: [Test]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaseRequest'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaseResultList'
+
+  # ── Invalid: `request` names no request-body property (typo).
+  /typo:
+    post:
+      operationId: activateTypo
+      x-scope: physical-tenant
+      tags: [Test]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaseRequest'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypoResult'
+
+  # ── Invalid: operation has no request body at all.
+  /no-request-body:
+    get:
+      operationId: activateNoRequestBody
+      x-scope: physical-tenant
+      tags: [Test]
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaseResult'
+
+  # ── Invalid: marked property is not nullable.
+  /not-nullable:
+    post:
+      operationId: activateNotNullable
+      x-scope: physical-tenant
+      tags: [Test]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaseRequest'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotNullableResult'
+
+  # ── Invalid: marked property is not listed in `required`.
+  /not-required:
+    post:
+      operationId: activateNotRequired
+      x-scope: physical-tenant
+      tags: [Test]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaseRequest'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotRequiredResult'
+
+components:
+  schemas:
+    LeaseRequest:
+      type: object
+      required:
+        - maxJobs
+      properties:
+        maxJobs:
+          description: Maximum jobs to activate.
+          type: integer
+        withLease:
+          description: Whether to activate with a lease.
+          type: boolean
+          nullable: true
+
+    # Nested array shape, mirroring JobActivationResult -> jobs[] -> item.
+    LeaseResultList:
+      type: object
+      required:
+        - jobs
+      properties:
+        jobs:
+          description: The activated jobs.
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaseResult'
+
+    LeaseResult:
+      type: object
+      required:
+        - leaseToken
+      properties:
+        leaseToken:
+          description: Present only when withLease is true.
+          type: string
+          nullable: true
+          x-present-when:
+            request: withLease
+            equals: true
+
+    TypoResult:
+      type: object
+      required:
+        - leaseToken
+      properties:
+        leaseToken:
+          description: Marker bound to a non-existent request field.
+          type: string
+          nullable: true
+          x-present-when:
+            request: withLeese
+            equals: true
+
+    NotNullableResult:
+      type: object
+      required:
+        - leaseToken
+      properties:
+        leaseToken:
+          description: Marked property missing nullable.
+          type: string
+          x-present-when:
+            request: withLease
+            equals: true
+
+    NotRequiredResult:
+      type: object
+      properties:
+        leaseToken:
+          description: Marked property missing from required.
+          type: string
+          nullable: true
+          x-present-when:
+            request: withLease
+            equals: true

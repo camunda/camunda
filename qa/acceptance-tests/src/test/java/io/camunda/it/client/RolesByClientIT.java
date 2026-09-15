@@ -15,6 +15,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -33,6 +34,7 @@ public class RolesByClientIT {
     createRole(EXISTING_ROLE_ID, "ARoleName", "description");
 
     Awaitility.await("Role is created and exported")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -59,6 +61,7 @@ public class RolesByClientIT {
 
     // then
     Awaitility.await("Role is assigned to the client")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -79,6 +82,7 @@ public class RolesByClientIT {
     camundaClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId).send().join();
 
     Awaitility.await("Role is assigned to the client")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -98,6 +102,7 @@ public class RolesByClientIT {
 
     // then
     Awaitility.await("Role is unassigned from the client")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -115,6 +120,7 @@ public class RolesByClientIT {
 
     // when/then
     Awaitility.await("Empty list is returned")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -138,6 +144,7 @@ public class RolesByClientIT {
 
     // when/then
     Awaitility.await("Both client IDs are returned")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -163,6 +170,7 @@ public class RolesByClientIT {
 
     // then
     Awaitility.await("Role is unassigned from the client")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

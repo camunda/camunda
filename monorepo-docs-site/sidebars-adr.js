@@ -38,6 +38,13 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'Secrets',
+      items: [
+        'secrets/central-secret-resolution-architecture',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Clients',
       items: [
         'clients/unify-spring-starter-on-multi-client-config-path',

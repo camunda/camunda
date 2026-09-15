@@ -73,17 +73,6 @@ public class HttpMessageConverterConfiguration {
 
   @Bean
   @Order(3)
-  @Profile("tasklist")
-  public MappingJackson2HttpMessageConverter tasklistV1MappingJackson2HttpMessageConverter(
-      @Qualifier("tasklistObjectMapper") final ObjectMapper objectMapper) {
-    final PackageSpecificJackson2HttpMessageConverter messageConverter =
-        new PackageSpecificJackson2HttpMessageConverter("io.camunda.tasklist");
-    messageConverter.setObjectMapper(objectMapper);
-    return messageConverter;
-  }
-
-  @Bean
-  @Order(4)
   public MappingJackson2HttpMessageConverter defaultRestMappingJackson2HttpMessageConverter(
       final ObjectMapper objectMapper) {
     return new MappingJackson2HttpMessageConverter(objectMapper);

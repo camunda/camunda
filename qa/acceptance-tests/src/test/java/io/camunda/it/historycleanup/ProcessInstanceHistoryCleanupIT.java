@@ -15,6 +15,7 @@ import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.HistoryMultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -226,7 +227,7 @@ public class ProcessInstanceHistoryCleanupIT {
       final long processInstanceKey,
       final ProcessInstanceState expectedState) {
     Awaitility.await("Wait for process instance state: " + expectedState)
-        .timeout(TIMEOUT)
+        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var processInstances =
@@ -246,7 +247,7 @@ public class ProcessInstanceHistoryCleanupIT {
 
   private long getChildProcessInstanceKey(final CamundaClient client, final long rootPiKey) {
     return Awaitility.await()
-        .timeout(TIMEOUT)
+        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () ->
                 client
@@ -365,7 +366,7 @@ public class ProcessInstanceHistoryCleanupIT {
     // Wait for user task to appear then complete it
     final var userTaskKey =
         Awaitility.await()
-            .atMost(TIMEOUT)
+            .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
             .ignoreExceptions()
             .until(
                 () ->
@@ -397,6 +398,7 @@ public class ProcessInstanceHistoryCleanupIT {
         .send()
         .join();
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () ->
                 !client
@@ -411,7 +413,7 @@ public class ProcessInstanceHistoryCleanupIT {
   private void handleIncident(final CamundaClient client, final long processInstanceKey) {
     // Wait for incident
     Awaitility.await()
-        .atMost(TIMEOUT)
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .until(
             () -> {

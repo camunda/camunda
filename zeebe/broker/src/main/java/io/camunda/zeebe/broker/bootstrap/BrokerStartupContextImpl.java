@@ -46,6 +46,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
@@ -84,7 +85,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private AdminApiRequestHandler adminApiService;
   private EmbeddedGatewayService embeddedGatewayService;
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
-  private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
+  private final Map<String, PartitionManager> partitionManagers = new ConcurrentHashMap<>();
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private ClusterConfigurationService clusterConfigurationService;

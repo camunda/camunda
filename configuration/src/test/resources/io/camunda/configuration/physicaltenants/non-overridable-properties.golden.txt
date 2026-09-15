@@ -66,6 +66,7 @@ cluster.raft.election-timeout
 cluster.raft.flush-delay
 cluster.raft.flush-enabled
 cluster.raft.heartbeat-interval
+cluster.raft.join-catch-up-timeout
 cluster.raft.max-append-batch-size
 cluster.raft.max-appends-per-follower
 cluster.raft.max-quorum-response-timeout
@@ -73,6 +74,7 @@ cluster.raft.min-step-down-failure-count
 cluster.raft.preallocate-segment-files
 cluster.raft.prefer-snapshot-replication-threshold
 cluster.raft.priority-election-enabled
+cluster.raft.promotion-lag-threshold
 cluster.raft.rebalance.leader-wait-timeout
 cluster.raft.rebalance.max-transfer-attempts
 cluster.raft.rebalance.replication-lag-threshold

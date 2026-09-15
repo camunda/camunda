@@ -290,3 +290,22 @@ export interface StatisticsJobItem {
   };
   workers: number;
 }
+
+/**
+ * Retries until exactly one job of the given type is activatable for the process
+ * instance and returns its key. Activation only becomes possible once the token
+ * has reached the task, so the wait is on the engine rather than on an index.
+ */
+export async function activateSingleJob(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+): Promise<number> {
+  let jobKey = 0;
+  await expect(async () => {
+    const jobs = await activateJobsByType(request, jobType, processInstanceKey);
+    expect(jobs).toHaveLength(1);
+    jobKey = Number(jobs[0]!.jobKey);
+  }).toPass(defaultAssertionOptions);
+  return jobKey;
+}

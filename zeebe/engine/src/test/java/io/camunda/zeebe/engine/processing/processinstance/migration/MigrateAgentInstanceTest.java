@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceDefinition;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -84,16 +86,35 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .getFirst();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+
     final long agentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create()
             .getKey();
 
-    RecordingExporter.jobRecords(JobIntent.CREATED).withType(AGENT_JOB_TYPE).await();
-    engine.jobs().withType(AGENT_JOB_TYPE).activate();
-    engine.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(AGENT_JOB_TYPE)
+        .withLeaseToken(jobLease)
+        .complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
@@ -157,11 +178,33 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .getFirst();
-    engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
-    RecordingExporter.jobRecords(JobIntent.CREATED).withType(AGENT_JOB_TYPE).await();
-    engine.jobs().withType(AGENT_JOB_TYPE).activate();
-    engine.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
+    engine
+        .agentInstances()
+        .withElementInstanceKey(agentTaskInstance.getKey())
+        .withJobKey(jobKey)
+        .withJobLease(jobLease)
+        .create();
+
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(AGENT_JOB_TYPE)
+        .withLeaseToken(jobLease)
+        .complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
@@ -270,18 +313,74 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("B")
             .getFirst();
+    // set each agent instance's definition the live way: via a CONFIGURATION history item in
+    // CREATE's own history batch, applied inline by AgentInstanceCreateProcessor before it
+    // appends AGENT_INSTANCE:CREATED.
+    final var firstJobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var firstJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var firstJobLease =
+        firstJobBatch
+            .getValue()
+            .getJobs()
+            .get(firstJobBatch.getValue().getJobKeys().indexOf(firstJobKey))
+            .getLeaseToken();
+    final var firstConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config-a")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    firstConfigItem.setModel("gpt-4o").setProvider("openai");
+    firstConfigItem.addSystemPrompt(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText(firstSystemPrompt));
+    firstConfigItem.setChangedAttributes(List.of("model", "provider", "systemPrompt"));
     final long firstAgentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
-            .withDefinition("gpt-4o", "openai", firstSystemPrompt)
+            .withJobKey(firstJobKey)
+            .withJobLease(firstJobLease)
+            .withHistory(List.of(firstConfigItem))
             .create()
             .getKey();
+
+    final var secondJobBatch = engine.jobs().withType(otherJobType).withLease().activate();
+    final var secondJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(otherJobType)
+            .getFirst()
+            .getKey();
+    final var secondJobLease =
+        secondJobBatch
+            .getValue()
+            .getJobs()
+            .get(secondJobBatch.getValue().getJobKeys().indexOf(secondJobKey))
+            .getLeaseToken();
+    final var secondConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config-b")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    secondConfigItem.setModel("claude-sonnet-4-5").setProvider("anthropic");
+    secondConfigItem.addSystemPrompt(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText(secondSystemPrompt));
+    secondConfigItem.setChangedAttributes(List.of("model", "provider", "systemPrompt"));
     final long secondAgentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
-            .withDefinition("claude-sonnet-4-5", "anthropic", secondSystemPrompt)
+            .withJobKey(secondJobKey)
+            .withJobLease(secondJobLease)
+            .withHistory(List.of(secondConfigItem))
             .create()
             .getKey();
 
@@ -400,10 +499,26 @@ public class MigrateAgentInstanceTest {
             .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
             .getFirst()
             .getKey();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+
     final long agentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(adHocSubProcessInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create()
             .getKey();
 
@@ -467,10 +582,26 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .getFirst();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+
     final long agentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create()
             .getKey();
     final long sourceAgentDefinitionKey =
@@ -542,10 +673,26 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .getFirst();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+
     final long agentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLease(jobLease)
             .create()
             .getKey();
 
@@ -605,7 +752,26 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .getFirst();
-    engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+
+    engine
+        .agentInstances()
+        .withElementInstanceKey(agentTaskInstance.getKey())
+        .withJobKey(jobKey)
+        .withJobLease(jobLease)
+        .create();
 
     // when
     final var rejection =
@@ -677,7 +843,26 @@ public class MigrateAgentInstanceTest {
             .withElementId("A")
             .getFirst();
     // create an agent instance and leave its job running so its owning element stays active
-    engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+
+    engine
+        .agentInstances()
+        .withElementInstanceKey(agentTaskInstance.getKey())
+        .withJobKey(jobKey)
+        .withJobLease(jobLease)
+        .create();
 
     // when
     final var rejection =
@@ -744,13 +929,35 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .getFirst();
-    engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
+    final var jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
+
+    engine
+        .agentInstances()
+        .withElementInstanceKey(agentTaskInstance.getKey())
+        .withJobKey(jobKey)
+        .withJobLease(jobLease)
+        .create();
 
     // complete the agentic job so "A" completes and the process moves on to "B", orphaning the
     // still-active agent instance
-    RecordingExporter.jobRecords(JobIntent.CREATED).withType(AGENT_JOB_TYPE).await();
-    engine.jobs().withType(AGENT_JOB_TYPE).activate();
-    engine.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(AGENT_JOB_TYPE)
+        .withLeaseToken(jobLease)
+        .complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)

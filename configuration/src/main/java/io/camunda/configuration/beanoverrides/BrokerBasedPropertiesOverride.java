@@ -310,6 +310,11 @@ public class BrokerBasedPropertiesOverride {
         .getEngine()
         .setOutputComparisonMode(
             outputComparisonMode != null ? toEngineOutputMode(outputComparisonMode) : null);
+    override
+        .getExperimental()
+        .getEngine()
+        .setUserTaskCompletionVariableAuditEnabled(
+            camunda.getData().getAuditLog().isUserTaskCompletionVariableAuditEnabled());
   }
 
   private static InputMappingMode toEngineMode(final InputMode mode) {
@@ -650,6 +655,8 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getRaft()
         .setConfigurationChangeTimeout(raft.getConfigurationChangeTimeout());
+    override.getExperimental().getRaft().setJoinCatchUpTimeout(raft.getJoinCatchUpTimeout());
+    override.getExperimental().getRaft().setPromotionLagThreshold(raft.getPromotionLagThreshold());
     override
         .getExperimental()
         .getRaft()
@@ -792,7 +799,10 @@ public class BrokerBasedPropertiesOverride {
       final BrokerBasedProperties override, final Camunda camunda) {
     final Export export = camunda.getData().getExport();
     final var exportingCfg =
-        new ExportingCfg(export.getSkipRecords(), export.getDistributionInterval());
+        new ExportingCfg(
+            export.getSkipRecords(),
+            export.getDistributionInterval(),
+            export.getMigrationStatusScanMaxRecords());
     override.setExporting(exportingCfg);
   }
 

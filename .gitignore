@@ -96,6 +96,7 @@ scripts/codeowners-utils/output/
 
 # Superpowers scratch specs/plans (local workflow docs, not tracked)
 docs/superpowers/
+.superpowers/
 
 # Load test
 load-tests/setup/c8-*
@@ -103,3 +104,7 @@ load-tests/setup/c8-*
 
 # python caches from scripts in skills
 **/__pycache__/**
+
+# Used by agents to persist session state
+/.agent-sessions/
+/STATE.md

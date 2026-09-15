@@ -48,11 +48,12 @@ Use the module from the test's path (e.g. `zeebe/engine`, not `zeebe`).
 
 ### Frontend test failure (Vitest / Playwright)
 
-Tests live under `webapp/client/`, `operate/client/`, `tasklist/client/`. The log will reference a `.test.ts(x)` or `.spec.ts` file. Read the test and the source it imports.
+Tests live under `webapp/client/` and `operate/client/`. Tasklist tests are part of the orchestration-cluster webapp under `webapp/client/`. The log will reference a `.test.ts(x)` or `.spec.ts` file. Read the test and the source it imports.
 
 - Vitest unit test: invoke the `frontend-unit-test` skill for conventions.
 - Playwright: invoke the `frontend-integration-test` skill.
-- Migrated to OC webapp: see `frontend-migrator`.
+- Migrated Operate code in the OC webapp: invoke `frontend-operate-migrator` for migration fidelity
+  and `operate-frontend` for current conventions.
 
 ### GHA per-job timeout (cancelled job)
 

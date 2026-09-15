@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.repository.es;
 import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_TARGET_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
@@ -23,9 +24,11 @@ import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
+import io.camunda.optimize.service.db.schema.index.BusinessValueTargetIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -96,6 +99,48 @@ public class BusinessValueTargetRepositoryES implements BusinessValueTargetRepos
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
+  }
+
+  @Override
+  public List<BusinessValueTargetDto> readByTenants(final Collection<String> tenantIds) {
+    if (tenantIds != null && tenantIds.isEmpty()) {
+      return List.of();
+    }
+    final List<FieldValue> tenantFieldValues =
+        tenantIds == null ? null : tenantIds.stream().map(FieldValue::of).toList();
+    final SearchRequest searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            b ->
+                b.optimizeIndex(esClient, BUSINESS_VALUE_TARGET_INDEX_NAME)
+                    .query(
+                        q ->
+                            tenantFieldValues == null
+                                ? q.matchAll(m -> m)
+                                : q.terms(
+                                    t ->
+                                        t.field(BusinessValueTargetIndex.TENANT_ID)
+                                            .terms(tt -> tt.value(tenantFieldValues))))
+                    .size(LIST_FETCH_LIMIT));
+    final SearchResponse<BusinessValueTargetDto> response;
+    try {
+      response = esClient.search(searchRequest, BusinessValueTargetDto.class);
+    } catch (final IOException e) {
+      final String errorMessage = "Could not read business-value targets for the given tenants.";
+      LOG.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+    final List<BusinessValueTargetDto> targets =
+        ElasticsearchReaderUtil.mapHits(
+            response.hits(), BusinessValueTargetDto.class, objectMapper);
+    if (targets.size() >= LIST_FETCH_LIMIT) {
+      throw new OptimizeRuntimeException(
+          String.format(
+              "business-value target readByTenants returned %d rows, hitting the "
+                  + "LIST_FETCH_LIMIT cap. Pagination must be introduced before the read path can "
+                  + "rely on complete results.",
+              targets.size()));
+    }
+    return targets;
   }
 
   @Override

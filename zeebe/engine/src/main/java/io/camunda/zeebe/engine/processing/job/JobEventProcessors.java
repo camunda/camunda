@@ -11,6 +11,7 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -41,7 +42,8 @@ public final class JobEventProcessors {
       final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics,
       final SecretStoreRegistry secretStoreRegistry,
-      final SecretResolutionScheduler secretResolutionScheduler) {
+      final SecretResolutionScheduler secretResolutionScheduler,
+      final SuspensionMetrics suspensionMetrics) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -106,7 +108,12 @@ public final class JobEventProcessors {
             ValueType.JOB,
             JobIntent.TIME_OUT,
             new JobTimeOutProcessor(
-                processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior(), clock))
+                processingState,
+                writers,
+                jobMetrics,
+                bpmnBehaviors.jobActivationBehavior(),
+                suspensionMetrics,
+                clock))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_RETRIES,

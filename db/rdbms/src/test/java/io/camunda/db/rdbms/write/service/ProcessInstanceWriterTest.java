@@ -65,7 +65,8 @@ class ProcessInstanceWriterTest {
                     WriteStatementType.UPDATE,
                     1L,
                     "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
-                    new EndProcessInstanceDto(1L, ProcessInstanceState.COMPLETED, NOW))));
+                    new EndProcessInstanceDto(1L, ProcessInstanceState.COMPLETED, NOW),
+                    Integer.MAX_VALUE)));
   }
 
   @Test

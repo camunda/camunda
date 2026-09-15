@@ -28,6 +28,8 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitModeChangeApplier;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
@@ -61,8 +63,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Proves the full round trip through recovery mode with a partial failure: one partition fails to
- * recover (reported {@code DEAD}) while its sibling recovers cleanly, the group still confirms and
- * writes {@code RECOVERING} only for the healthy partition, and - crucially - exiting recovery
+ * recover (reported {@code UNHEALTHY}) while its sibling recovers cleanly, the group still confirms
+ * and writes {@code RECOVERING} only for the healthy partition, and - crucially - exiting recovery
  * afterward is not blocked or corrupted by that earlier partial failure. The exit path
  * (`PartitionModeHandler#exitRecovery`/`awaitModeApplied(PROCESSING)`) gates purely on Raft role,
  * not health, and starts a brand-new partition manager from scratch, so the group must converge
@@ -88,6 +90,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
   private MemberId localMemberId;
   private TopologyManagerImpl topologyManager;
   private PartitionModeHandler handler;
+  private BrokerHealthCheckService healthCheckService;
 
   @BeforeEach
   void setUp() {
@@ -144,6 +147,12 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     when(clusterServices.getMembershipService()).thenReturn(membershipService);
     when(brokerStartupContext.getClusterServices()).thenReturn(clusterServices);
 
+    healthCheckService =
+        new BrokerHealthCheckService(
+            MemberId.from("0"), new HealthTreeMetrics(new SimpleMeterRegistry()), Set.of(GROUP));
+    actorScheduler.submitActor(healthCheckService).join();
+    healthCheckService.setBrokerStarted();
+
     // recovery manager: real, driven by the real actor scheduler, with partition 2's recovery
     // steps rigged to fail so only partition 1 actually recovers
     final var recoveryManager =
@@ -159,7 +168,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
             transport,
             (ignored) -> 0L,
             topologyManager,
-            "Broker-0");
+            healthCheckService);
 
     // exit manager: a lightweight fake standing in for a real Raft-based PartitionManagerImpl -
     // it just marks both local partitions LEADER on start, matching what PartitionModeHandlerTest
@@ -177,6 +186,9 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
 
   @AfterEach
   void tearDown() {
+    if (healthCheckService != null) {
+      healthCheckService.closeAsync().join();
+    }
     if (controlActor != null) {
       controlActor.closeAsync().join();
     }
@@ -212,7 +224,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     assertThat(enterResult).succeedsWithin(AWAIT_TIMEOUT);
 
     // and - partition 1 recovers healthily, partition 2 reaches INACTIVE but never recovers so
-    // it is reported DEAD
+    // it is reported UNHEALTHY
     await()
         .untilAsserted(
             () -> {
@@ -225,8 +237,18 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
                             .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE);
                         assertThat(info.getPartitionHealthStatuses())
                             .containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY)
-                            .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD);
+                            .containsEntry(PARTITION_ID_2, PartitionHealthStatus.UNHEALTHY);
                       });
+            });
+
+    // and - the broker reports ready to the probes while recovering, so Kubernetes keeps the pod
+    // alive for the whole restore, but not healthy, since partition 2's recovery failure must
+    // surface through the health status
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(healthCheckService.isBrokerReady()).isTrue();
+              assertThat(healthCheckService.isBrokerHealthy()).isFalse();
             });
 
     // and - confirming and writing recovery state excludes the dead partition but still completes
@@ -250,8 +272,13 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     final var exitResult = handler.exitRecovery();
     assertThat(exitResult).succeedsWithin(AWAIT_TIMEOUT);
 
+    // and - stopping the recovery manager unregistered the tenant, so readiness is now gated on
+    // the next manager genuinely installing its partitions (the fake exit manager never registers
+    // bootstrap partitions, so the broker must not claim readiness from recovery leftovers)
+    await().untilAsserted(() -> assertThat(healthCheckService.isBrokerReady()).isFalse());
+
     // and - the new manager brings both partitions to a processing role, including the one that
-    // was DEAD during recovery
+    // was UNHEALTHY during recovery
     await()
         .untilAsserted(
             () -> {
@@ -264,7 +291,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
                               .containsEntry(PARTITION_ID_2, PartitionRole.LEADER));
             });
 
-    // and - confirming exit is role-only: partition 2's earlier DEAD health status must not matter
+    // and - confirming exit is role-only: partition 2's earlier unhealthy status must not matter
     final var processingConfirmed = handler.awaitModeApplied(Mode.PROCESSING);
     assertThat(processingConfirmed).succeedsWithin(AWAIT_TIMEOUT);
     assertThat(processingConfirmed.join()).containsExactlyInAnyOrder(PARTITION_ID, PARTITION_ID_2);

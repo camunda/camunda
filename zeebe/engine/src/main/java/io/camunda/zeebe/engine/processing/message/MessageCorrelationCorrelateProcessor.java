@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -305,7 +304,12 @@ public final class MessageCorrelationCorrelateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<MessageCorrelationRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<MessageCorrelationRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<MessageCorrelationRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

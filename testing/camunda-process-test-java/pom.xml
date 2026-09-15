@@ -15,7 +15,7 @@
 
   <properties>
     <version.java>8</version.java>
-    <maven-commit-id-plugin-version>10.0.0</maven-commit-id-plugin-version>
+    <maven-commit-id-plugin-version>10.0.1</maven-commit-id-plugin-version>
     <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
@@ -146,6 +146,20 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Backs a JsonMapper test double that cannot produce Jackson 2 trees, covering the
+         assertions against a JSON library other than the one they are built on. -->
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
       <scope>test</scope>
     </dependency>
 

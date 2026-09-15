@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.agentinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior.LeaseMismatchHandling;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -21,14 +22,12 @@ import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
-import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -39,6 +38,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -47,18 +47,11 @@ public final class AgentInstanceUpdateProcessor
 
   private static final Set<String> ALLOWED_REQUEST_LEVEL_ATTRIBUTES =
       Set.of(AgentInstanceRecord.ATTR_STATUS);
-  private static final Set<String> BACKWARDS_COMPAT_ATTRIBUTES =
-      Set.of(
-          AgentInstanceRecord.ATTR_STATUS,
-          AgentInstanceRecord.ATTR_METRICS,
-          AgentInstanceRecord.ATTR_TOOLS);
 
   private static final String ERROR_MSG_NOT_FOUND =
       "Expected to update agent instance with key '%d', but no such agent instance was found.";
   private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
       "Expected to update agent instance, but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
-  private static final String ERROR_MSG_INVALID_METRIC_DELTA =
-      "Expected to update agent instance metrics, but received invalid delta(s): inputTokens=%d, outputTokens=%d, modelCalls=%d, toolCalls=%d. Each metric delta must be either -1 (field not provided) or a non-negative value.";
   private static final String ERROR_MSG_INVALID_TRANSITION =
       "Expected to update agent instance with key '%d' from status '%s' to '%s', but this transition is not allowed.";
   private static final String ERROR_MSG_ELEMENT_INSTANCE_KEY_MISSING =
@@ -78,7 +71,6 @@ public final class AgentInstanceUpdateProcessor
           + "element instance with key '%d' is still the active writer for this agent instance "
           + "and has not completed. Only one element instance may write to a given agent instance "
           + "at a time.";
-  private static final long METRIC_NOT_PROVIDED = -1L;
   private static final Set<AgentInstanceStatus> ACTIVE_STATUSES =
       EnumSet.of(
           AgentInstanceStatus.INITIALIZING,
@@ -220,12 +212,16 @@ public final class AgentInstanceUpdateProcessor
             commandValue.getJobKey(),
             commandValue.getJobLease(),
             commandValue.getElementInstanceKey(),
-            commandValue.getHistory());
+            LeaseMismatchHandling.ALLOW_STALE);
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
+
+    final var job = validJob.get();
+    final var isRequestLevelStale =
+        !Objects.equals(commandValue.getJobLease(), job.getLeaseToken());
 
     final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
     if (isHistoryValid.isLeft()) {
@@ -234,7 +230,18 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    final var validPatch = validateRequestLevelChanges(command, current);
+    // Request-level changes (currently just status) bypass the history commit/discard lifecycle,
+    // so unlike history items they have no way to resolve a stale write after the fact: the active
+    // lease's own update already applied (or will apply) the change, so a request-level change
+    // under a superseded lease must not be applied. We are not just skipping validation here: by
+    // setting validPatch to an empty list instead of validating the command's own changes, the
+    // later applyRequestLevelChanges call below sees nothing to apply either, so both validation
+    // and application are skipped in one go — validating a change that will never be applied could
+    // otherwise reject the whole command over a transition that never actually happens.
+    final var validPatch =
+        isRequestLevelStale
+            ? Either.<Rejection, List<String>>right(List.of())
+            : validateRequestLevelChanges(command, current);
     if (validPatch.isLeft()) {
       final var rejection = validPatch.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
@@ -312,31 +319,14 @@ public final class AgentInstanceUpdateProcessor
     final var agentInstanceKey = current.getAgentInstanceKey();
     final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
 
-    final var allowedAttributes =
-        commandValue.getHistory().isEmpty()
-            ? BACKWARDS_COMPAT_ATTRIBUTES
-            : ALLOWED_REQUEST_LEVEL_ATTRIBUTES;
-
-    final var unknown = changed.stream().filter(attr -> !allowedAttributes.contains(attr)).toList();
+    final var unknown =
+        changed.stream().filter(attr -> !ALLOWED_REQUEST_LEVEL_ATTRIBUTES.contains(attr)).toList();
     if (!unknown.isEmpty()) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
               ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(
-                  unknown, allowedAttributes.stream().sorted().toList())));
-    }
-
-    if (changed.contains(AgentInstanceRecord.ATTR_METRICS)
-        && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
-      final var metrics = commandValue.getMetrics();
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              ERROR_MSG_INVALID_METRIC_DELTA.formatted(
-                  metrics.getInputTokens(),
-                  metrics.getOutputTokens(),
-                  metrics.getModelCalls(),
-                  metrics.getToolCalls())));
+                  unknown, ALLOWED_REQUEST_LEVEL_ATTRIBUTES.stream().sorted().toList())));
     }
 
     if (changed.contains(AgentInstanceRecord.ATTR_STATUS)) {
@@ -358,91 +348,14 @@ public final class AgentInstanceUpdateProcessor
       final AgentInstanceRecord delta,
       final List<String> changed) {
 
-    final var allowedAttributes =
-        delta.getHistory().isEmpty()
-            ? BACKWARDS_COMPAT_ATTRIBUTES
-            : ALLOWED_REQUEST_LEVEL_ATTRIBUTES;
-
     final var effective = new ArrayList<String>(changed.size());
-    for (final var attr : allowedAttributes) {
-      if (!changed.contains(attr)) {
-        continue;
+    if (changed.contains(AgentInstanceRecord.ATTR_STATUS)) {
+      if (!delta.getStatus().equals(current.getStatus())) {
+        effective.add(AgentInstanceRecord.ATTR_STATUS);
       }
-      switch (attr) {
-        case AgentInstanceRecord.ATTR_STATUS -> {
-          if (!delta.getStatus().equals(current.getStatus())) {
-            effective.add(AgentInstanceRecord.ATTR_STATUS);
-          }
-          current.setStatus(delta.getStatus());
-        }
-        case AgentInstanceRecord.ATTR_METRICS -> {
-          if (applyMetricDeltas(current.getMetrics(), delta.getMetrics())) {
-            effective.add(AgentInstanceRecord.ATTR_METRICS);
-          }
-        }
-        case AgentInstanceRecord.ATTR_TOOLS -> {
-          if (!toolsEqual(current.getTools(), delta.getTools())) {
-            current.setTools(delta.getTools());
-            effective.add(AgentInstanceRecord.ATTR_TOOLS);
-          }
-        }
-        default -> {
-          // allowedAttributes only ever contains the three cases above; nothing else to apply.
-        }
-      }
+      current.setStatus(delta.getStatus());
     }
     return effective;
-  }
-
-  private static boolean toolsEqual(
-      final List<AgentInstanceToolValue> a, final List<AgentInstanceToolValue> b) {
-    if (a.size() != b.size()) {
-      return false;
-    }
-    for (int i = 0; i < a.size(); i++) {
-      final var x = a.get(i);
-      final var y = b.get(i);
-      if (!x.getName().equals(y.getName())
-          || !x.getDescription().equals(y.getDescription())
-          || !x.getElementId().equals(y.getElementId())) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Applies each metric delta in {@code delta} to {@code current}, skipping fields whose delta is
-   * not strictly positive (covers {@code -1} not-provided and {@code 0} no-change). Returns whether
-   * at least one field's value moved forward.
-   */
-  private static boolean applyMetricDeltas(
-      final AgentInstanceMetrics current, final AgentInstanceMetrics delta) {
-    var moved = false;
-    if (delta.getInputTokens() > 0) {
-      current.setInputTokens(current.getInputTokens() + delta.getInputTokens());
-      moved = true;
-    }
-    if (delta.getOutputTokens() > 0) {
-      current.setOutputTokens(current.getOutputTokens() + delta.getOutputTokens());
-      moved = true;
-    }
-    if (delta.getModelCalls() > 0) {
-      current.setModelCalls(current.getModelCalls() + delta.getModelCalls());
-      moved = true;
-    }
-    if (delta.getToolCalls() > 0) {
-      current.setToolCalls(current.getToolCalls() + delta.getToolCalls());
-      moved = true;
-    }
-    return moved;
-  }
-
-  private static boolean hasAllowedMetricDeltas(final AgentInstanceMetrics metrics) {
-    return metrics.getInputTokens() >= METRIC_NOT_PROVIDED
-        && metrics.getOutputTokens() >= METRIC_NOT_PROVIDED
-        && metrics.getModelCalls() >= METRIC_NOT_PROVIDED
-        && metrics.getToolCalls() >= METRIC_NOT_PROVIDED;
   }
 
   private boolean isAllowedTransition(
@@ -468,7 +381,12 @@ public final class AgentInstanceUpdateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 }

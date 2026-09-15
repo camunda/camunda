@@ -35,6 +35,7 @@ const processesSearchSchema = z.object({
 	incidents: z.boolean().default(true),
 	completed: z.boolean().default(false),
 	canceled: z.boolean().default(false),
+	sort: z.string().optional(),
 });
 
 export const Route = createFileRoute('/_carbon/_auth/operate/processes')({

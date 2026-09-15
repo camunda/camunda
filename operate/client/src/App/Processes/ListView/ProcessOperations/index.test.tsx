@@ -71,6 +71,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -138,6 +139,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -182,6 +184,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -226,6 +229,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -271,6 +275,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -313,6 +318,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -365,6 +371,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -411,6 +418,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -441,6 +449,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -476,6 +485,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -497,6 +507,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -529,6 +540,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );

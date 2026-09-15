@@ -439,6 +439,7 @@ components:
         - elementId
         - jobKey
         - elementInstanceKey
+        - leaseToken
       type: object
       required:
         - type
@@ -570,7 +571,11 @@ components:
             The lease token identifying this activation. This is `null` when the job was
             activated without a lease.
           nullable: true
-          type: string
+          x-present-when:
+            request: withLease
+            equals: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
       x-properties-added-in-version:
         - propertyName: jobKey
           addedInVersionOverride: "8.6"
@@ -1057,8 +1062,9 @@ components:
             another worker).
 
             A job that was activated without a lease requires no token.
-          type: string
           nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
       x-properties-added-in-version:
         - propertyName: leaseToken
           addedInVersion: "8.10"
@@ -1094,8 +1100,9 @@ components:
             another worker).
 
             A job that was activated without a lease requires no token.
-          type: string
           nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
       required:
         - errorCode
       x-properties-added-in-version:
@@ -1125,8 +1132,9 @@ components:
             another worker).
 
             A job that was activated without a lease requires no token.
-          type: string
           nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         businessId:
           nullable: true
           description: >
@@ -1305,8 +1313,9 @@ components:
             throw-error that always require a token for leased jobs.
 
             A job that was activated without a lease requires no token.
-          type: string
           nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
       required:
         - changeset
       x-properties-added-in-version:

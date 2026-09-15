@@ -50,10 +50,12 @@ public class RaftLeadershipTransferCatchUpTest {
   @Test
   public void shouldReportTransferredWhenTheDesiredLeaderCatchesUpAndTakesOver() throws Exception {
     // given
-    raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
     final var driver = new CoordinatedTransferDriver(raftRule, leader);
     final var target = driver.followerOutsideCoordinator();
+    raftRule.partition(target);
+    raftRule.appendEntries(5);
+    raftRule.reconnect(target);
 
     // when
     final var ack = driver.initiate(target);

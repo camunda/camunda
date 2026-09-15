@@ -13,13 +13,11 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,13 +28,13 @@ import org.slf4j.LoggerFactory;
  * configuration. So the service does not run ClusterConfigurationManager, but only contains the
  * ClusterConfigurationGossiper.
  *
- * <p>When {@link ClusterConfigurationManagerService#USE_NEW_CONFIG} is enabled, this service tracks
- * and gossips the multi-partition-group {@link CurrentClusterConfiguration} instead of the legacy
- * single-group {@link ClusterConfiguration}, mirroring what {@link ClusterConfigurationManagerImpl}
- * does for brokers. This matters beyond the gateway's own view: before this, the gateway only ever
- * gossiped the legacy field, so any real broker that fell back to {@code
- * CurrentClusterConfiguration#fromLegacy} for a message relayed by the gateway could construct a
- * lossy reconstruction of an in-progress plan that conflicted with its own, natively-tracked one.
+ * <p>This service tracks and gossips the multi-partition-group {@link CurrentClusterConfiguration}
+ * instead of the legacy single-group {@code ClusterConfiguration}, mirroring what {@link
+ * ClusterConfigurationManagerImpl} does for brokers. This matters beyond the gateway's own view:
+ * before this, the gateway only ever gossiped the legacy field, so any real broker that fell back
+ * to {@code CurrentClusterConfiguration#fromLegacy} for a message relayed by the gateway could
+ * construct a lossy reconstruction of an in-progress plan that conflicted with its own,
+ * natively-tracked one.
  */
 public class GatewayClusterConfigurationService extends Actor
     implements ClusterConfigurationUpdateNotifier {
@@ -44,9 +42,7 @@ public class GatewayClusterConfigurationService extends Actor
       LoggerFactory.getLogger(GatewayClusterConfigurationService.class);
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
 
-  // Keep an in memory copy of the configuration. No need to persist it. Exactly one of the two
-  // fields below is actively updated, matching useNewConfig.
-  private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
+  // Keep an in memory copy of the configuration. No need to persist it.
   private CurrentClusterConfiguration currentClusterConfiguration =
       CurrentClusterConfiguration.uninitialized();
   private final TopologyMetrics topologyMetrics;
@@ -57,26 +53,6 @@ public class GatewayClusterConfigurationService extends Actor
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
       final MeterRegistry meterRegistry) {
-    this(
-        communicationService,
-        memberShipService,
-        config,
-        meterRegistry,
-        ClusterConfigurationManagerService.USE_NEW_CONFIG);
-  }
-
-  /**
-   * @param useNewConfig overrides {@link ClusterConfigurationManagerService#USE_NEW_CONFIG} for
-   *     testing; production code always goes through the constructor above, which uses the
-   *     compile-time flag.
-   */
-  @VisibleForTesting
-  GatewayClusterConfigurationService(
-      final ClusterCommunicationService communicationService,
-      final ClusterMembershipService memberShipService,
-      final ClusterConfigurationGossiperConfig config,
-      final MeterRegistry meterRegistry,
-      final boolean useNewConfig) {
     topologyMetrics = new TopologyMetrics(meterRegistry);
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
@@ -85,8 +61,8 @@ public class GatewayClusterConfigurationService extends Actor
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            useNewConfig ? ignored -> {} : this::updateClusterTopology,
-            useNewConfig ? this::updateCurrentClusterTopology : null,
+            ignored -> {},
+            this::updateCurrentClusterTopology,
             topologyMetrics);
   }
 
@@ -112,34 +88,6 @@ public class GatewayClusterConfigurationService extends Actor
   @Override
   protected void onActorClosing() {
     clusterConfigurationGossiper.close();
-  }
-
-  private void updateClusterTopology(final ClusterConfiguration clusterConfiguration) {
-
-    actor.run(
-        () -> {
-          if (clusterConfiguration == null || clusterConfiguration.isUninitialized()) {
-            return;
-          }
-
-          try {
-            final var mergedTopology = this.clusterConfiguration.merge(clusterConfiguration);
-            if (mergedTopology.equals(this.clusterConfiguration)) {
-              return;
-            }
-            LOG.debug(
-                "Received new configuration {}. Updating local configuration to {}",
-                clusterConfiguration,
-                mergedTopology);
-            this.clusterConfiguration = mergedTopology;
-            clusterConfigurationGossiper.updateClusterConfiguration(this.clusterConfiguration);
-          } catch (final Exception updateFailed) {
-            LOG.warn(
-                "Failed to process received configuration update {}",
-                clusterConfiguration,
-                updateFailed);
-          }
-        });
   }
 
   private void updateCurrentClusterTopology(

@@ -235,6 +235,12 @@ describe('<AgentDetails />', () => {
     expect(within(tokensUsed).getByText('100')).toBeInTheDocument();
     expect(within(tokensUsed).getByText('Output')).toBeInTheDocument();
     expect(within(tokensUsed).getByText('50')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('Reasoning')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('5')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('Cache read')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('10')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('Cache write')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('20')).toBeInTheDocument();
 
     const toolsCalled = section.getByRole('article', {name: 'Tools Called'});
     expect(toolsCalled).toBeInTheDocument();

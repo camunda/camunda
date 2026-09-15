@@ -200,25 +200,33 @@ public final class FollowerRole extends ActiveRole {
   public CompletableFuture<TimeoutNowResponse> onTimeoutNow(final TimeoutNowRequest request) {
     logRequest(request);
 
-    if (!isTimeoutNowFromCurrentLeader(request.term(), request.leader())) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              TimeoutNowResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
-                  .build()));
-    }
+    final var future = new CompletableFuture<TimeoutNowResponse>();
+    raft.getThreadContext()
+        .execute(
+            () -> {
+              if (!isRunning()
+                  || !isTimeoutNowFromCurrentLeader(request.term(), request.leader())) {
+                future.complete(
+                    logResponse(
+                        TimeoutNowResponse.builder()
+                            .withStatus(RaftResponse.Status.ERROR)
+                            .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
+                            .build()));
+                return;
+              }
 
-    log.info(
-        "Received TimeoutNow from leader {} in term {}, starting election immediately",
-        request.leader(),
-        request.term());
+              log.info(
+                  "Received TimeoutNow from leader {} in term {}, starting election immediately",
+                  request.leader(),
+                  request.term());
 
-    final var response =
-        logResponse(TimeoutNowResponse.builder().withStatus(RaftResponse.Status.OK).build());
-    raft.transition(RaftServer.Role.CANDIDATE);
+              future.complete(
+                  logResponse(
+                      TimeoutNowResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+              raft.transition(RaftServer.Role.CANDIDATE);
+            });
 
-    return CompletableFuture.completedFuture(response);
+    return future;
   }
 
   @Override

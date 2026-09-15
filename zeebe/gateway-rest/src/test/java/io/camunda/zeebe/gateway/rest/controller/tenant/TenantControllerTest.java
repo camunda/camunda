@@ -899,4 +899,60 @@ public class TenantControllerTest {
           .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
   }
+
+  /**
+   * The tenants API must also be disabled when {@code apiEnabled} is configured in kebab-case.
+   * {@link TenantsApiDisabledTest} covers the camelCase spelling; this pins the relaxed-binding
+   * spelling that {@code dist/src/main/config/defaults.yaml} generates, which previously left the
+   * filter unregistered and the API reachable.
+   */
+  @Nested
+  @WebMvcTest(TenantController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(properties = "camunda.security.multi-tenancy.api-enabled=false")
+  public class TenantsApiDisabledWithKebabCasePropertyTest extends RestControllerTest {
+
+    @MockitoBean private TenantServices tenantServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
+
+    @ParameterizedTest
+    @MethodSource("representativeTenantRequests")
+    void shouldReturnForbiddenWhenTenantsApiIsDisabledInKebabCase(
+        final String uri, final Function<WebTestClient, ResponseSpec> webClientConsumer) {
+      // given the tenants API disabled via the kebab-case property spelling
+
+      // when
+      final var response = webClientConsumer.apply(webClient);
+
+      // then
+      response
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(
+              TenantsApiDisabledTest.FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
+    }
+
+    private static Stream<Arguments> representativeTenantRequests() {
+      return Stream.of(
+          Arguments.of(
+              "/v2/tenants",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.post().uri("/v2/tenants").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.get().uri("/v2/tenants/tenantId").exchange()),
+          Arguments.of(
+              "/v2/tenants/search",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.post().uri("/v2/tenants/search").exchange()));
+    }
+  }
 }

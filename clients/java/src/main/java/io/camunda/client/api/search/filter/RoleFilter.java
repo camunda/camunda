@@ -16,10 +16,10 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.util.List;
 import java.util.function.Consumer;
 
-public interface RoleFilter extends SearchRequestFilter {
+public interface RoleFilter extends RoleFilterBase {
 
   /**
    * Filter roles by the specified role ID.
@@ -27,7 +27,11 @@ public interface RoleFilter extends SearchRequestFilter {
    * @param roleId the ID of the role
    * @return the updated filter
    */
+  @Override
   RoleFilter roleId(final String roleId);
+
+  @Override
+  RoleFilter roleId(Consumer<StringProperty> fn);
 
   /**
    * Filter roles by the specified name.
@@ -35,7 +39,17 @@ public interface RoleFilter extends SearchRequestFilter {
    * @param name the name of the role
    * @return the updated filter
    */
+  @Override
   RoleFilter name(final String name);
 
+  @Override
   RoleFilter name(Consumer<StringProperty> fn);
+
+  /**
+   * Combine this filter with a list of alternative filter groups using OR logic.
+   *
+   * @param filters the alternative filter groups
+   * @return the updated filter
+   */
+  RoleFilterBase orFilters(List<Consumer<RoleFilterBase>> filters);
 }

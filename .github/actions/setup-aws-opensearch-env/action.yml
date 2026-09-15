@@ -4,7 +4,7 @@ name: Setup AWS OpenSearch env
 # owner: @camunda/data-layer
 
 description: |
-  Imports OpenSearch endpoints from Vault, resolves OS URL for a selected 
+  Imports OpenSearch endpoints from Vault, resolves OS URL for a selected
   version, and configures AWS credentials.
 
 inputs:
@@ -70,8 +70,12 @@ runs:
         echo "opensearch-url=$OS_URL" >> "$GITHUB_OUTPUT"
 
     - name: Pre-login to AWS
-      uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+      uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
       with:
         aws-region: ${{ env.AWS_REGION }}
         web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
         role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        # AWS OpenSearch tests take longer because we opted out of parallelizing them to avoid
+        # overloading the underlying infrastructure. Keep this credential live longer to avoid
+        # token expiry errors (set TTL to 6 hours).
+        role-duration-seconds: 21600

@@ -11,11 +11,15 @@ import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockQueryProcessDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
 
@@ -44,6 +48,8 @@ const OPTIONAL_FILTER_LABELS = [
 	'End Date Range',
 ] as const;
 
+const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesResponse());
+
 describe('Optional Filters', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
@@ -54,7 +60,10 @@ describe('Optional Filters', () => {
 	});
 
 	it('should initially hide optional filters', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderProcessesPage();
 
@@ -73,7 +82,10 @@ describe('Optional Filters', () => {
 		{filter: 'hasRetriesLeft', label: 'Failed job but retries left', remainingFilter: 'processInstanceKey'},
 	]) {
 		it(`should display ${label} field on click`, async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderProcessesPage();
 
@@ -95,7 +107,10 @@ describe('Optional Filters', () => {
 		{filter: 'endDateRange', label: 'End Date Range'},
 	]) {
 		it(`should display ${label} field on click`, async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderProcessesPage();
 
@@ -113,7 +128,10 @@ describe('Optional Filters', () => {
 	}
 
 	it('should hide more filters button when all optional filters are visible', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderProcessesPage({
 			processInstanceKey: '2251799813685467',
@@ -137,7 +155,10 @@ describe('Optional Filters', () => {
 	});
 
 	it('should delete optional filters', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderProcessesPage({
 			process: 'order-process',
@@ -198,7 +219,10 @@ describe('Optional Filters', () => {
 	});
 
 	it('should remove optional filters on filter reset', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderProcessesPage({
 			process: 'order-process',

@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
  * IT-6 — per-physical-tenant authorization enablement, converted to the {@link MultiDbTest} +
@@ -42,20 +41,12 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * <p>The per-PT authorization override is applied by the test on its own
  * {@code @MultiDbTestApplication} broker via {@code BROKER.withPtConfig(TENANT_OFF, ...)}, which
  * merges into the same per-PT config the framework stamps storage and the admin user into.
- *
- * <p>RDBMS only — Elasticsearch/OpenSearch variants are skipped because per-PT secondary-storage
- * schema init and the per-PT writer are not yet available, so non-default PTs have no ES/OS indices
- * to authorize against.
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({
   PhysicalTenantAuthorizationEnablementIT.TENANT_OFF_ID,
   PhysicalTenantAuthorizationEnablementIT.TENANT_ON_ID
 })
-@EnabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class PhysicalTenantAuthorizationEnablementIT {
 
   // Declared before BROKER so the per-PT override below can reference TENANT_OFF_ID by name rather

@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2 } from "@camunda/design-system/icons";
 import useTranslate from "src/utility/localization";
 import { useQuery } from "@tanstack/react-query";
 import { usePagination } from "src/utility/api";

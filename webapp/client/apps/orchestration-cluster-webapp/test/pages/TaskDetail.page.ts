@@ -8,14 +8,14 @@
 
 import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
-import {Header} from './Header';
+import {TasklistHeader} from './TasklistHeader';
 
 class TaskDetailPage extends BasePage {
-	readonly header: Header;
+	readonly header: TasklistHeader;
 
 	constructor(page: Page) {
 		super(page);
-		this.header = new Header(page, 'Camunda Tasklist');
+		this.header = new TasklistHeader(page);
 	}
 
 	async goto(userTaskKey: string, search?: string) {
@@ -34,28 +34,48 @@ class TaskDetailPage extends BasePage {
 		return this.page.goto(`/tasklist/${userTaskKey}/history/${auditLogKey}${search ?? ''}`);
 	}
 
-	get skeleton() {
-		return this.page.getByTestId('details-skeleton');
-	}
-
 	get detailsInfo() {
 		return this.page.getByTestId('details-info');
 	}
 
+	get detailsHeader() {
+		return this.page.getByTitle('Task details header');
+	}
+
+	taskName(name: string) {
+		return this.detailsHeader.getByText(name, {exact: true});
+	}
+
+	processName(name: string) {
+		return this.processTabContent.getByText(name, {exact: true});
+	}
+
+	get detailsNavigation() {
+		return this.page.getByRole('navigation', {name: 'Task Details Navigation', includeHidden: true});
+	}
+
 	get taskTab() {
-		return this.page.getByRole('link', {name: 'Show task', exact: true});
+		return this.detailsNavigation.getByRole('tab', {name: 'Show task', exact: true});
 	}
 
 	get processTab() {
-		return this.page.getByRole('link', {name: 'Show associated BPMN process'});
+		return this.detailsNavigation.getByRole('tab', {name: 'Show associated BPMN process', exact: true});
 	}
 
 	get historyTab() {
-		return this.page.getByRole('link', {name: 'Show task history'});
+		return this.detailsNavigation.getByRole('tab', {name: 'Show task history', exact: true, includeHidden: true});
 	}
 
 	get aside() {
 		return this.page.getByRole('complementary', {name: 'Task details right panel'});
+	}
+
+	get detailsButton() {
+		return this.detailsHeader.getByRole('button', {name: 'Task details', exact: true});
+	}
+
+	get detailsSheet() {
+		return this.page.getByRole('dialog', {name: 'Details', exact: true});
 	}
 
 	get taskTabContent() {
@@ -67,7 +87,7 @@ class TaskDetailPage extends BasePage {
 	}
 
 	get historyTabContent() {
-		return this.page.getByTestId('history-tab-content');
+		return this.page.getByRole('tabpanel');
 	}
 
 	get historyLoadError() {
@@ -83,7 +103,7 @@ class TaskDetailPage extends BasePage {
 	}
 
 	historyColumnHeader(name: RegExp | string) {
-		return this.historyTabContent.getByRole('columnheader', {name});
+		return this.historyTabContent.getByRole('button', {name});
 	}
 
 	get historyDetailsModal() {
@@ -98,44 +118,28 @@ class TaskDetailPage extends BasePage {
 		return this.historyTabContent.getByRole('link', {name: 'Open details'});
 	}
 
-	get completionLabel() {
-		return this.page.getByTestId('completion-label');
-	}
-
-	get notificationBannerAction() {
-		return this.page.getByRole('button', {name: /Turn on notifications/});
-	}
-
 	get assignButton() {
-		return this.page.getByRole('button', {name: /Assign to me/i});
+		return this.detailsHeader.getByRole('button', {name: 'Assign to me'});
+	}
+
+	get assignmentButton() {
+		return this.detailsHeader.getByRole('button', {name: /^(Assign to me|Unassign)$/});
 	}
 
 	get unassignButton() {
-		return this.page.getByRole('button', {name: /^Unassign$/i});
-	}
-
-	get assigningStatus() {
-		return this.page.getByText('Assigning...');
-	}
-
-	get unassigningStatus() {
-		return this.page.getByText('Unassigning...');
-	}
-
-	get assignmentSuccessful() {
-		return this.page.getByText('Assignment successful');
-	}
-
-	get unassignmentSuccessful() {
-		return this.page.getByText('Unassignment successful');
+		return this.detailsHeader.getByRole('button', {name: 'Unassign'});
 	}
 
 	get completeTaskButton() {
 		return this.page.getByRole('button', {name: /^Complete Task$/i});
 	}
 
+	get completionLabel() {
+		return this.page.getByTestId('completion-label');
+	}
+
 	get variablesHeading() {
-		return this.page.getByRole('heading', {name: 'Variables'});
+		return this.variablesTable.getByRole('columnheader', {name: 'Name', exact: true});
 	}
 
 	get variablesTable() {
@@ -195,11 +199,11 @@ class TaskDetailPage extends BasePage {
 	}
 
 	get invalidVariableValueError() {
-		return this.variablesTable.getByText('Value has to be JSON or a literal');
+		return this.variablesTable.getByRole('row').filter({hasText: 'Value has to be JSON or a literal'});
 	}
 
 	get missingVariableNameError() {
-		return this.variablesTable.getByText('Name has to be filled');
+		return this.variablesTable.getByRole('row').filter({hasText: 'Name has to be filled'});
 	}
 
 	async replaceVariableValue(name: string, value: string) {
@@ -216,20 +220,24 @@ class TaskDetailPage extends BasePage {
 		return this.page.getByRole('switch', {name: 'Auto-select first available task'});
 	}
 
+	get assignee() {
+		return this.detailsHeader.getByTestId('assignee');
+	}
+
+	get assigningStatus() {
+		return this.page.getByText('Assigning...');
+	}
+
+	get unassigningStatus() {
+		return this.page.getByText('Unassigning...');
+	}
+
 	get completingTaskStatus() {
 		return this.page.getByText('Completing task...');
 	}
 
 	get completionFailed() {
 		return this.page.getByText('Completion failed');
-	}
-
-	taskName(name: string) {
-		return this.page.getByText(name);
-	}
-
-	processName(name: string) {
-		return this.processTabContent.getByText(name);
 	}
 
 	processVersion(version: number) {
@@ -266,10 +274,10 @@ class TaskDetailPage extends BasePage {
 		);
 	}
 
-	async seedShowNotificationBanner() {
-		await this.page.addInitScript(`
-			window.Notification = {permission: 'default', requestPermission: () => Promise.resolve('default')};
-		`);
+	selectedTask(name: string) {
+		return this.page
+			.getByRole('region', {name: 'Tasks side panel'})
+			.getByRole('link', {name: new RegExp(`task.*:.*${name}`, 'i')});
 	}
 }
 

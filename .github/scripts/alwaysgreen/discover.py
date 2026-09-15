@@ -381,7 +381,7 @@ def open_fix_prs(repo: str) -> tuple[list[dict], bool]:
         [
             "pr", "list", "--repo", repo,
             "--search", f"label:{FIX_LABEL} is:open",
-            "--limit", "100", "--json", "labels,number,createdAt,body",
+            "--limit", "100", "--json", "labels,number,createdAt,body,mergeable",
         ],
         None,
     )
@@ -415,7 +415,12 @@ def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
     the subset: the marker comment alone is not a statement of remit.
 
     Coverage is collected from every open fix PR, expired or not: the specs a PR claims
-    stay claimed for as long as it is open, and only the coarse key lock is time-bound.
+    stay claimed for as long as it is open, and only the coarse key lock is time-bound
+    — except a PR GitHub reports as `CONFLICTING` (see `planning.pr_is_stale`), whose
+    claims are dropped immediately rather than waiting on a human to close it. Its key
+    label still counts towards `keys_with_coverage`, so a stale-but-claiming PR still
+    frees its surface's *other* specs for per-spec accounting; only the specific
+    fingerprints it can no longer land get a fresh chance.
 
     As with `inflight_keys`, a failed lookup makes the caller suppress rather than risk
     a duplicate PR.
@@ -432,7 +437,14 @@ def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
             continue
         for pr in prs:
             claims = planning.parse_coverage_block(pr.get("body"))
-            covered |= claims
+            if claims and planning.pr_is_stale(pr.get("mergeable")):
+                log(
+                    f"stale fix PR {repo}#{pr.get('number')} is "
+                    f"{pr.get('mergeable')}; not treating its {len(claims)} "
+                    f"claimed spec(s) as covered"
+                )
+            else:
+                covered |= claims
             pr_keys: set[str] = set()
             for label in pr.get("labels") or []:
                 name = (label.get("name") or "").strip()

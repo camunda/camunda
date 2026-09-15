@@ -781,7 +781,15 @@
       GROUP BY ms.PROCESS_DEFINITION_KEY, ms.TENANT_ID
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter" />
-    ORDER BY PROCESS_DEFINITION_KEY ASC, TENANT_ID ASC
+    <!-- reversed for a `before` page so the LIMIT keeps the cursor-adjacent rows, see Commons.orderBy -->
+    <choose>
+      <when test="page != null and page.searchBefore">
+        ORDER BY PROCESS_DEFINITION_KEY DESC, TENANT_ID DESC
+      </when>
+      <otherwise>
+        ORDER BY PROCESS_DEFINITION_KEY ASC, TENANT_ID ASC
+      </otherwise>
+    </choose>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging" />
   </select>
 

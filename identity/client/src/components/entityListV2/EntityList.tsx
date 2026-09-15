@@ -19,7 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@camunda/design-system";
-import { LucideIcon, Plus } from "lucide-react";
+import { type LucideIcon, Plus } from "@camunda/design-system/icons";
 import { DocumentationLink } from "src/components/documentationV2";
 import useTranslate from "src/utility/localization";
 import { PageResult, SortConfig } from "src/utility/api";

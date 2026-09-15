@@ -13,17 +13,22 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,6 +93,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(AGENTIC_JOB_TYPE)
+        .withLeaseToken(fixture.jobLease)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
@@ -141,6 +147,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(EXTERNAL_AGENT_JOB_TYPE)
+        .withLeaseToken(fixture.jobLease)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
@@ -262,35 +269,61 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .getFirst();
     final long elementInstanceKey = serviceTaskInstance.getKey();
 
-    ENGINE.jobs().withType(jobType).activate();
+    final var jobBatch = ENGINE.jobs().withType(jobType).withLease().activate();
     final long jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(jobType)
             .getFirst()
             .getKey();
+    final String jobLease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getLeaseToken();
 
     final long agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
-
-    final long itemKey =
-        ENGINE
-            .agentHistories()
-            .withAgentInstanceKey(agentInstanceKey)
             .withJobKey(jobKey)
-            .withElementInstanceKey(elementInstanceKey)
-            .withRole(AgentHistoryRole.USER)
+            .withJobLease(jobLease)
             .create()
             .getKey();
 
-    return new Fixture(processInstanceKey, elementInstanceKey, jobKey, itemKey);
+    final var historyItemId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLease(jobLease)
+        .withHistory(
+            List.of(
+                new AgentHistoryRecord()
+                    .setHistoryItemId(historyItemId)
+                    .setRole(AgentHistoryRole.USER)
+                    .setLoopIteration(1)
+                    .addContent(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText("hi"))))
+        .update();
+    final long itemKey =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .filter(r -> r.getValue().getHistoryItemId().equals(historyItemId))
+            .getFirst()
+            .getKey();
+
+    return new Fixture(processInstanceKey, elementInstanceKey, jobKey, jobLease, itemKey);
   }
 
   private record Fixture(
-      long processInstanceKey, long elementInstanceKey, long jobKey, long itemKey) {}
+      long processInstanceKey,
+      long elementInstanceKey,
+      long jobKey,
+      String jobLease,
+      long itemKey) {}
 }

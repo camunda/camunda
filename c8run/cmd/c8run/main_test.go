@@ -225,3 +225,27 @@ func TestShouldParseDisableConnectorsFlagOnStart(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, settings.DisableConnectors)
 }
+
+func TestShouldParseNoBrowserFlagOnStart(t *testing.T) {
+	// given
+	oldArgs := os.Args
+	os.Args = []string{"c8run", "start", "--no-browser"}
+	t.Cleanup(func() {
+		os.Args = oldArgs
+	})
+
+	// when
+	settings, _, err := getBaseCommandSettings("start")
+
+	// then
+	require.NoError(t, err)
+	assert.True(t, settings.NoBrowser)
+}
+
+func TestDefaultConfigurationUsesSecretEnvironmentOverrides(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("..", "..", "configuration", "application.yaml"))
+	require.NoError(t, err)
+
+	assert.NotContains(t, string(content), "stores:")
+	assert.Contains(t, string(content), "ttl: ${C8RUN_SECRETS_CACHE_TTL:20m}")
+}

@@ -37,6 +37,7 @@ import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -97,6 +98,26 @@ class GcpSecretManagerSecretStoreTest {
     final var captor = ArgumentCaptor.forClass(SecretVersionName.class);
     verify(client).accessSecretVersion(captor.capture());
     assertThat(captor.getValue().getSecret()).isEqualTo("token");
+  }
+
+  @Test
+  void shouldResolveOneNamePerCallByDefault() {
+    // given a store with no container secret id, so it resolves via one accessSecretVersion call
+    // per reference
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "camunda-");
+
+    // then
+    assertThat(store.namesPerCall()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldNotBeConcurrencyEligibleWithContainerSecret() {
+    // given a container secret fetches every reference in a single accessSecretVersion call, so
+    // chunking it across a thread pool would only add calls, not remove round trips
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "camunda-", "app-config");
+
+    // then
+    assertThat(store.namesPerCall()).isEqualTo(Integer.MAX_VALUE);
   }
 
   @Test
@@ -629,5 +650,36 @@ class GcpSecretManagerSecretStoreTest {
         return null;
       }
     };
+  }
+
+  @Test
+  void shouldBoundEveryUsedRpcByTheConfiguredCallTimeout() throws Exception {
+    // given
+    final var settings = SecretManagerServiceSettings.newBuilder();
+
+    // when
+    GcpSecretManagerSecretStore.applyCallTimeout(settings, Duration.ofSeconds(7));
+
+    // then - both RPCs the resolvers issue are bounded, so neither can hold the caller
+    assertThat(settings.accessSecretVersionSettings().getRetrySettings().getTotalTimeoutDuration())
+        .isEqualTo(Duration.ofSeconds(7));
+    assertThat(settings.listSecretsSettings().getRetrySettings().getTotalTimeoutDuration())
+        .isEqualTo(Duration.ofSeconds(7));
+  }
+
+  @Test
+  void shouldBoundSingleRpcAttemptsByTheCallTimeoutAsWell() throws Exception {
+    // given - gax caps one attempt separately from the total, and its default is wider than the
+    // total we set here, which would let a single attempt outlive the bound
+    final var settings = SecretManagerServiceSettings.newBuilder();
+
+    // when
+    GcpSecretManagerSecretStore.applyCallTimeout(settings, Duration.ofSeconds(4));
+
+    // then
+    assertThat(settings.accessSecretVersionSettings().getRetrySettings().getMaxRpcTimeoutDuration())
+        .isLessThanOrEqualTo(Duration.ofSeconds(4));
+    assertThat(settings.listSecretsSettings().getRetrySettings().getMaxRpcTimeoutDuration())
+        .isLessThanOrEqualTo(Duration.ofSeconds(4));
   }
 }

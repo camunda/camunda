@@ -19,11 +19,9 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -228,12 +226,6 @@ final class ClusterRestoreRequestTransformerTest {
         Optional.empty(),
         Optional.empty(),
         Optional.empty());
-  }
-
-  private static ClusterConfiguration recoveringConfiguration() {
-    final var partitions = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
-    return ClusterConfiguration.init()
-        .addMember(MEMBER, MemberState.initializeAsActive(partitions).toRecovering());
   }
 
   /** Resolves every request to the backups it asked for, on the single partition of the member. */

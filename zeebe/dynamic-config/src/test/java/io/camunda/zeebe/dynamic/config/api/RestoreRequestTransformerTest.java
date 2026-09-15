@@ -23,13 +23,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
@@ -76,13 +74,33 @@ final class RestoreRequestTransformerTest {
         false);
   }
 
-  private static ClusterConfiguration recoveringTopology() {
-    return ClusterConfiguration.init()
-        .addMember(
+  private static CurrentClusterConfiguration recoveringTopology() {
+    return singleTenantCluster(
+        Map.of(
             MEMBER,
-            MemberState.initializeAsActive(
+            BrokerPartitionState.initialize(
                     Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
-                .toRecovering());
+                .setMode(Mode.RECOVERING)));
+  }
+
+  /** The given members as a cluster with a single partition group on the default tenant. */
+  private static CurrentClusterConfiguration singleTenantCluster(
+      final Map<MemberId, BrokerPartitionState> members) {
+    var configuration = CurrentClusterConfiguration.init();
+    for (final var member : members.keySet()) {
+      configuration =
+          configuration.updateGlobalConfiguration(
+              globalConfiguration ->
+                  globalConfiguration.addMember(member, BrokerState.initializeAsActive()));
+    }
+    configuration = configuration.initPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
+    for (final var member : members.entrySet()) {
+      configuration =
+          configuration.updatePartitionGroupConfig(
+              DEFAULT_PHYSICAL_TENANT_ID,
+              group -> group.addMember(member.getKey(), member.getValue()));
+    }
+    return configuration;
   }
 
   private static RestoreResolvedRequest resolvedRequest() {
@@ -121,7 +139,10 @@ final class RestoreRequestTransformerTest {
             registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
 
     // when
-    final var result = plannedOperations(transformer, ClusterConfiguration.init());
+    final var result =
+        plannedOperations(
+            transformer,
+            CurrentClusterConfiguration.init().initPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID));
 
     // then
     EitherAssert.assertThat(result)
@@ -137,9 +158,12 @@ final class RestoreRequestTransformerTest {
     final var memberTwo = MemberId.from("1");
     final var partitionState = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
     final var topology =
-        ClusterConfiguration.init()
-            .addMember(memberOne, MemberState.initializeAsActive(partitionState))
-            .addMember(memberTwo, MemberState.initializeAsActive(partitionState).toRecovering());
+        singleTenantCluster(
+            Map.of(
+                memberOne,
+                BrokerPartitionState.initialize(partitionState),
+                memberTwo,
+                BrokerPartitionState.initialize(partitionState).setMode(Mode.RECOVERING)));
     final var transformer =
         new RestoreRequestTransformer(
             restoreRequest(),
@@ -279,9 +303,12 @@ final class RestoreRequestTransformerTest {
     final var memberTwo = MemberId.from("1");
     final var partitionState = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
     final var topology =
-        ClusterConfiguration.init()
-            .addMember(memberOne, MemberState.initializeAsActive(partitionState).toRecovering())
-            .addMember(memberTwo, MemberState.initializeAsActive(partitionState).toRecovering());
+        singleTenantCluster(
+            Map.of(
+                memberOne,
+                BrokerPartitionState.initialize(partitionState).setMode(Mode.RECOVERING),
+                memberTwo,
+                BrokerPartitionState.initialize(partitionState).setMode(Mode.RECOVERING)));
     final var resolved = new RestoreResolvedRequest(Map.of(1, new long[] {1L, 2L}), false);
     final var transformer =
         new RestoreRequestTransformer(

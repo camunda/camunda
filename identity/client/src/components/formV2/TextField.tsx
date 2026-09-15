@@ -6,19 +6,36 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ChangeEvent, FC, FocusEvent, ReactNode, useState } from "react";
 import {
-  Button,
+  AriaAttributes,
+  ChangeEvent,
+  FC,
+  FocusEvent,
+  ReactNode,
+  useState,
+} from "react";
+import {
   CharacterCount,
+  IconButton,
   Input,
+  type NavIcon,
   Textarea,
 } from "@camunda/design-system";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "@camunda/design-system/icons";
 import useTranslate from "src/utility/localization";
 import FormField from "./FormField";
 
+type ActionButtonProps = {
+  icon: NavIcon;
+  label: string;
+  onClick: () => void;
+  ariaHasPopup?: AriaAttributes["aria-haspopup"];
+  ariaExpanded?: boolean;
+};
+
 type TextInputProps = {
-  type?: "text" | "email";
+  type?: "text" | "email" | "time";
+  actionButton?: ActionButtonProps;
   cols?: never;
   counterMode?: never;
   enableCounter?: never;
@@ -27,6 +44,7 @@ type TextInputProps = {
 
 type TextAreaProps = {
   type?: never;
+  actionButton?: never;
   cols: number;
   counterMode?: "character" | "word";
   enableCounter?: boolean;
@@ -35,6 +53,7 @@ type TextAreaProps = {
 
 type PasswordInputProps = {
   type: "password";
+  actionButton?: never;
   cols?: never;
   counterMode?: never;
   enableCounter?: never;
@@ -51,25 +70,32 @@ export type TextFieldProps = {
   autoFocus?: boolean;
   onBlur?: (newValue: string) => void;
   readOnly?: boolean;
+  step?: number;
   onChange?: (newValue: string) => void;
+  onClick?: () => void;
   validate?: (newValue: string) => boolean;
   name?: string;
   autoComplete?: string;
+  title?: string;
 } & (TextInputProps | TextAreaProps | PasswordInputProps);
 
 const TextField: FC<TextFieldProps> = ({
   onChange,
   onBlur,
+  onClick,
+  actionButton,
   validate,
   errors = [],
   value,
   helperText,
   placeholder,
   label,
+  title = label,
   cols,
   autoFocus = false,
   type = "text",
   readOnly,
+  step,
   maxCount = 255,
   enableCounter = false,
   counterMode = "character",
@@ -102,8 +128,6 @@ const TextField: FC<TextFieldProps> = ({
   return (
     <FormField
       label={label}
-      error={errorText}
-      helperText={helperText}
       footer={
         showCounter
           ? (id) => (
@@ -121,15 +145,20 @@ const TextField: FC<TextFieldProps> = ({
       {(control) => {
         const commonProps = {
           ...control,
-          title: label,
+          title,
           value,
           placeholder,
           readOnly,
+          step,
           autoFocus,
           name,
           autoComplete,
+          "aria-invalid": errorText ? (true as const) : undefined,
+          invalidText: errorText || undefined,
+          helperText,
           onChange: handleChange,
           onBlur: handleBlur,
+          onClick,
         };
 
         if (type === "password") {
@@ -140,23 +169,16 @@ const TextField: FC<TextFieldProps> = ({
                 type={passwordVisible ? "text" : "password"}
                 className="pr-10"
               />
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon-sm"
-                className="absolute inset-y-0 right-1 my-auto"
-                aria-label={
-                  passwordVisible ? t("hidePassword") : t("showPassword")
-                }
+                size="sm"
+                className="absolute top-0.5 right-0.5"
+                label={passwordVisible ? t("hidePassword") : t("showPassword")}
+                icon={passwordVisible ? EyeOff : Eye}
                 aria-pressed={passwordVisible}
                 onClick={() => setPasswordVisible((visible) => !visible)}
-              >
-                {passwordVisible ? (
-                  <EyeOff aria-hidden="true" />
-                ) : (
-                  <Eye aria-hidden="true" />
-                )}
-              </Button>
+              />
             </div>
           );
         }
@@ -175,6 +197,25 @@ const TextField: FC<TextFieldProps> = ({
                   : undefined
               }
             />
+          );
+        }
+
+        if (actionButton) {
+          return (
+            <div className="relative">
+              <Input {...commonProps} type={type} className="pr-9" />
+              <IconButton
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute top-0.5 right-0.5"
+                label={actionButton.label}
+                icon={actionButton.icon}
+                aria-haspopup={actionButton.ariaHasPopup}
+                aria-expanded={actionButton.ariaExpanded}
+                onClick={actionButton.onClick}
+              />
+            </div>
           );
         }
 

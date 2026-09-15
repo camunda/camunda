@@ -530,6 +530,85 @@ const mockProcessDefinitionStatistics: GetProcessDefinitionInstanceStatisticsRes
     },
   };
 
+const mockHealthyIncidentsByError: GetIncidentProcessInstanceStatisticsByErrorResponseBody =
+  {
+    items: [
+      {
+        errorHashCode: 2101,
+        errorMessage: 'Cannot connect to server delivery05',
+        activeInstancesWithErrorCount: 8,
+      },
+      {
+        errorHashCode: 2102,
+        errorMessage: 'Loan request does not contain all the required data',
+        activeInstancesWithErrorCount: 4,
+      },
+      {
+        errorHashCode: 2103,
+        errorMessage: 'No space left on device.',
+        activeInstancesWithErrorCount: 2,
+      },
+    ],
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
+  };
+
+const mockHealthyProcessDefinitionStatistics: GetProcessDefinitionInstanceStatisticsResponseBody =
+  {
+    items: [
+      {
+        processDefinitionId: 'orderProcess',
+        latestProcessDefinitionName: 'Order process',
+        activeInstancesWithIncidentCount: 5,
+        activeInstancesWithoutIncidentCount: 180,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'invoice',
+        latestProcessDefinitionName: 'DMN invoice',
+        activeInstancesWithIncidentCount: 4,
+        activeInstancesWithoutIncidentCount: 120,
+        hasMultipleVersions: false,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'call-activity-process',
+        latestProcessDefinitionName: 'Call Activity Process',
+        activeInstancesWithIncidentCount: 3,
+        activeInstancesWithoutIncidentCount: 95,
+        hasMultipleVersions: false,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'flightRegistration',
+        latestProcessDefinitionName: 'Flight registration',
+        activeInstancesWithIncidentCount: 2,
+        activeInstancesWithoutIncidentCount: 60,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'eventBasedGatewayProcess',
+        latestProcessDefinitionName: 'Event based gateway with timer start',
+        activeInstancesWithIncidentCount: 0,
+        activeInstancesWithoutIncidentCount: 45,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+    ],
+    page: {
+      totalItems: 5,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
+  };
+
 const mockProcessDefinitionVersionStatistics = {
   orderProcess: {
     items: [
@@ -730,6 +809,8 @@ export {
   mockIncidentsByError,
   mockIncidentsByDefinition,
   mockProcessDefinitionStatistics,
+  mockHealthyIncidentsByError,
+  mockHealthyProcessDefinitionStatistics,
   mockProcessDefinitionVersionStatistics,
   mockDrainingProcessDefinitions,
   mockResponses,

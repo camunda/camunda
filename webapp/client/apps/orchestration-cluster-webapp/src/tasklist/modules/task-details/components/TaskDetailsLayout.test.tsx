@@ -37,9 +37,9 @@ describe('<TaskDetailsLayout />', () => {
 
 		await expect.element(screen.getByText('Review invoice')).toBeVisible();
 		await expect.element(screen.getByText('Invoice process')).toBeVisible();
-		await expect.element(screen.getByRole('link', {name: 'Show task', exact: true})).toBeVisible();
-		await expect.element(screen.getByRole('link', {name: 'Show associated BPMN process'})).toBeVisible();
-		await expect.element(screen.getByRole('link', {name: 'Show task history'})).toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: 'Show task', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: 'Show associated BPMN process'})).toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: 'Show task history'})).toBeVisible();
 		await expect.element(screen.getByRole('complementary', {name: 'Task details right panel'})).toBeVisible();
 		await expect.element(screen.getByTestId('child-content')).toBeVisible();
 		await expect.element(screen.getByTestId('details-info')).toBeVisible();
@@ -56,11 +56,11 @@ describe('<TaskDetailsLayout />', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('link', {name: 'Show task', exact: true}))
-			.toHaveAttribute('aria-current', 'page');
+			.element(screen.getByRole('tab', {name: 'Show task', exact: true}))
+			.toHaveAttribute('aria-selected', 'true');
 		await expect
-			.element(screen.getByRole('link', {name: 'Show associated BPMN process'}))
-			.not.toHaveAttribute('aria-current');
+			.element(screen.getByRole('tab', {name: 'Show associated BPMN process'}))
+			.toHaveAttribute('aria-selected', 'false');
 	});
 
 	it('should render the aside panel with task details', async () => {

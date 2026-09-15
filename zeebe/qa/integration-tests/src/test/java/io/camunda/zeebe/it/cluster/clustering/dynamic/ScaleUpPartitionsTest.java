@@ -20,11 +20,17 @@ import com.sun.management.HotSpotDiagnosticMXBean.ThreadDumpFormat;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CreateGroupResponse;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.management.backups.StateCode;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
+import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
@@ -35,15 +41,21 @@ import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractStartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -54,6 +66,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -75,9 +88,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 @ZeebeIntegration
 // Interrupt any test method hanging longer than 10 minutes so the remaining tests still run and
 // the failure is attributed with a stack trace, instead of the CI job timing out with no test
@@ -94,13 +105,17 @@ public class ScaleUpPartitionsTest {
   // broker that hangs is reported with a thread dump instead of the method timing out first.
   private static final Duration RESTORE_TIMEOUT = Duration.ofMinutes(2);
   @AutoClose CamundaClient camundaClient;
+  private String decisionUsername;
+  private String decisionPassword;
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
 
-  @TestZeebe(awaitCompleteTopology = false)
+  @TestZeebe(autoStart = false, awaitCompleteTopology = false)
   private final TestCluster cluster;
 
   ScaleUpPartitionsTest(@TempDir final Path backupPath) {
+    final var h2Url =
+        "jdbc:h2:mem:scale-up-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
     cluster =
         TestCluster.builder()
             .useRecordingExporter(true)
@@ -109,30 +124,94 @@ public class ScaleUpPartitionsTest {
             .withPartitionsCount(PARTITIONS_COUNT)
             .withReplicationFactor(3)
             .withBrokerConfig(
-                b ->
-                    b.withUnifiedConfig(
-                        cfg -> {
-                          final var backup = cfg.getData().getPrimaryStorage().getBackup();
-                          backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
-                          backup.getFilesystem().setBasePath(backupPath.toString());
+                b -> {
+                  b.withSecondaryStorageType(SecondaryStorageType.rdbms);
+                  b.withAuthenticationMethod(AuthenticationMethod.BASIC);
+                  b.withAuthorizationsEnabled();
+                  b.withUnifiedConfig(
+                      cfg -> {
+                        final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
+                        rdbms.setUrl(h2Url);
+                        rdbms.setUsername("sa");
+                        rdbms.setPassword("");
 
-                          final var membership = cfg.getCluster().getMembership();
-                          membership.setSyncInterval(Duration.ofSeconds(1));
-                          membership.setGossipInterval(Duration.ofMillis(500));
+                        final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                        backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+                        backup.getFilesystem().setBasePath(backupPath.toString());
 
-                          final var distribution =
-                              cfg.getProcessing().getEngine().getDistribution();
-                          distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
-                          distribution.setRedistributionInterval(Duration.ofMillis(200));
-                        }))
+                        final var membership = cfg.getCluster().getMembership();
+                        membership.setSyncInterval(Duration.ofSeconds(1));
+                        membership.setGossipInterval(Duration.ofMillis(500));
+
+                        final var distribution = cfg.getProcessing().getEngine().getDistribution();
+                        distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                        distribution.setRedistributionInterval(Duration.ofMillis(200));
+                      });
+                })
             .build();
   }
 
   @BeforeEach
   void createClient() {
-    camundaClient = cluster.availableGateway().newClientBuilder().build();
+    cluster.start();
+    cluster.await(TestHealthProbe.READY);
+
+    camundaClient = cluster.newClientBuilder().build();
     clusterActuator = ClusterActuator.of(cluster.availableGateway());
     backupActuator = BackupActuator.of(cluster.availableGateway());
+    initializeIdentityState();
+  }
+
+  private void initializeIdentityState() {
+    cluster.awaitHealthyTopology();
+    decisionUsername = Strings.newRandomValidUsername();
+    decisionPassword = "password";
+
+    camundaClient
+        .newCreateUserCommand()
+        .username(decisionUsername)
+        .password(decisionPassword)
+        .name("Decision user")
+        .email("decision-user@example.com")
+        .send()
+        .join();
+    final var authorizationKey =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(decisionUsername)
+            .ownerType(OwnerType.USER)
+            .resourceId("*")
+            .resourceType(ResourceType.DECISION_DEFINITION)
+            .permissionTypes(PermissionType.CREATE_DECISION_INSTANCE)
+            .send()
+            .join()
+            .getAuthorizationKey();
+    final var deploymentKey =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("dmn/decision-table.dmn")
+            .send()
+            .join()
+            .getKey();
+    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
+
+    Awaitility.await("until identity state is distributed")
+        .atMost(Duration.ofMinutes(2))
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      RecordingExporter.userRecords(UserIntent.CREATED)
+                          .withUsername(decisionUsername)
+                          .limit(PARTITIONS_COUNT)
+                          .count())
+                  .isEqualTo(PARTITIONS_COUNT);
+              assertThat(
+                      RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                          .withAuthorizationKey(authorizationKey)
+                          .limit(PARTITIONS_COUNT)
+                          .count())
+                  .isEqualTo(PARTITIONS_COUNT);
+            });
   }
 
   private Camunda getRestoreConfig(final Camunda brokerCfg, final Path workingDirectory) {
@@ -163,6 +242,7 @@ public class ScaleUpPartitionsTest {
     // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
+
     // when
     executeScaling(desiredPartitionCount);
 
@@ -699,6 +779,39 @@ public class ScaleUpPartitionsTest {
               final var allPartitions = (RequestHandlingAllPartitions) requestHandling;
               assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
             });
+    verifyExistingDecisionCanBeEvaluatedOnPartition(desiredPartitionCount);
+  }
+
+  private void verifyExistingDecisionCanBeEvaluatedOnPartition(final int partitionId) {
+    try (final var decisionClient =
+        AuthorizationsUtil.createClient(
+            cluster.availableGateway(), decisionUsername, decisionPassword)) {
+
+      Awaitility.await("until the new partition evaluates the existing decision")
+          .atMost(Duration.ofMinutes(2))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                final var response =
+                    decisionClient
+                        .newEvaluateDecisionCommand()
+                        .decisionId("jedi_or_sith")
+                        .variable("lightsaberColor", "blue")
+                        .send()
+                        .toCompletableFuture()
+                        .join();
+                assertThat(response.getDecisionOutput()).isEqualTo("\"Jedi\"");
+                assertThat(Protocol.decodePartitionId(response.getDecisionEvaluationKey()))
+                    .isEqualTo(partitionId);
+                assertThat(
+                        RecordingExporter.decisionEvaluationRecords(
+                                DecisionEvaluationIntent.EVALUATED)
+                            .withPartitionId(partitionId)
+                            .withDecisionId("jedi_or_sith")
+                            .findAny())
+                    .isPresent();
+              });
+    }
   }
 
   static class CorrelationKeyVariableProvider {

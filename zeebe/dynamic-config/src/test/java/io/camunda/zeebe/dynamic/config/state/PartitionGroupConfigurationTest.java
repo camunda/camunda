@@ -299,6 +299,42 @@ class PartitionGroupConfigurationTest {
   }
 
   @Nested
+  class Recovering {
+
+    @Test
+    void shouldNotBeRecoveringWithNoMembers() {
+      // given
+      final var config = group(1, Map.of());
+
+      // when / then
+      assertThat(config.isRecovering()).isFalse();
+    }
+
+    @Test
+    void shouldNotBeRecoveringWhenEveryMemberIsProcessing() {
+      // given
+      final var config = group(1, Map.of(MEMBER_0, broker(1, 1), MEMBER_1, broker(1, 1)));
+
+      // when / then
+      assertThat(config.isRecovering()).isFalse();
+    }
+
+    @Test
+    void shouldBeRecoveringWhenAnyMemberIsRecovering() {
+      // given
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, broker(1, 1),
+                  MEMBER_1, broker(1, 1).setMode(Mode.RECOVERING)));
+
+      // when / then
+      assertThat(config.isRecovering()).isTrue();
+    }
+  }
+
+  @Nested
   class Availability {
 
     @Test

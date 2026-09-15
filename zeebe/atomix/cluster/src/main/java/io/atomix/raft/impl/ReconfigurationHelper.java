@@ -301,9 +301,9 @@ public final class ReconfigurationHelper {
               raftContext.removeCommitListener(listener);
               result.completeExceptionally(
                   new TimeoutException(
-                      "Join request was accepted at index %d, but that configuration entry did"
-                          + " not commit locally within the join catch-up timeout of %s"
-                              .formatted(index, raftContext.getJoinCatchUpTimeout())));
+                      ("Join request was accepted at index %d, but that configuration entry did"
+                              + " not commit locally within the join catch-up timeout of %s")
+                          .formatted(index, raftContext.getJoinCatchUpTimeout())));
             });
     raftContext.addCommitListener(listener);
   }

@@ -9,13 +9,9 @@ package io.camunda.zeebe.it.cluster.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import feign.Response;
-import feign.Util;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.restapi.ClusterRebalanceRestClient;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +20,7 @@ final class ClusterRebalanceForwardingIT {
   @AutoClose private TestCluster cluster;
 
   @Test
-  void shouldForwardARequestFromANonCoordinatorToTheCoordinator() throws Exception {
+  void shouldForwardARequestFromANonCoordinatorToTheCoordinator() {
     // given
     cluster =
         TestCluster.builder()
@@ -43,19 +39,10 @@ final class ClusterRebalanceForwardingIT {
     final var coordinatorClient = ClusterRebalanceRestClient.of(coordinator.restAddress());
 
     // then
-    try (final var fromNonCoordinator = nonCoordinatorClient.getRebalance();
-        final var fromCoordinator = coordinatorClient.getRebalance()) {
-      assertThat(fromNonCoordinator.status()).isEqualTo(200);
-      final var nonCoordinatorBody = readBody(fromNonCoordinator);
-      final var coordinatorBody = readBody(fromCoordinator);
-      assertThat(nonCoordinatorBody).isEqualTo(coordinatorBody);
-    }
-  }
-
-  private static String readBody(final Response response) throws IOException {
-    if (response.body() == null) {
-      return "";
-    }
-    return Util.toString(response.body().asReader(StandardCharsets.UTF_8));
+    final var fromNonCoordinator = nonCoordinatorClient.getRebalance();
+    final var fromCoordinator = coordinatorClient.getRebalance();
+    assertThat(fromNonCoordinator.status()).isEqualTo(200);
+    assertThat(fromCoordinator.status()).isEqualTo(200);
+    assertThat(fromNonCoordinator.body()).isEqualTo(fromCoordinator.body());
   }
 }

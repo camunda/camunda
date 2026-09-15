@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button, InlineNotification} from '@carbon/react';
+import {Alert, Button} from '@camunda/design-system';
 import type {ErrorComponentProps} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import styles from './TaskDetailsTaskErrorPage.module.scss';
 import {TruncatedVariableError} from '#/shared/errors';
 
 const TaskDetailsTaskErrorPage: React.FC<ErrorComponentProps> = ({error, reset}) => {
@@ -17,24 +16,24 @@ const TaskDetailsTaskErrorPage: React.FC<ErrorComponentProps> = ({error, reset})
 	const isTruncatedVariableError = error instanceof TruncatedVariableError;
 
 	return (
-		<div className={styles.container} data-testid="task-tab-content">
-			<InlineNotification
-				kind="error"
-				hideCloseButton
+		<div className="flex h-full w-full flex-col items-center justify-center gap-4 p-4" data-testid="task-tab-content">
+			<Alert
+				className="w-full max-w-xl"
+				variant="destructive"
 				role="alert"
 				title={t(
 					isTruncatedVariableError
 						? 'tasklist.taskDetailsTruncatedVariablesErrorTitle'
 						: 'tasklist.taskDetailsFailedToFetchVariablesErrorTitle',
 				)}
-				subtitle={t(
+				description={t(
 					isTruncatedVariableError
 						? 'tasklist.taskDetailsTruncatedVariablesErrorSubtitle'
 						: 'tasklist.taskDetailsFailedToFetchVariablesErrorSubtitle',
 				)}
 			/>
 			{isTruncatedVariableError ? null : (
-				<Button kind="secondary" onClick={reset}>
+				<Button variant="secondary" onClick={reset}>
 					{t('tasklist.taskDetailsProcessRetryButtonLabel')}
 				</Button>
 			)}

@@ -308,6 +308,29 @@ public final class SuspensionStateTest {
   }
 
   @Test
+  public void shouldCountBufferedCommandsForProcessInstanceOnly() {
+    // given
+    final long processInstanceKeyA = 1L;
+    final long processInstanceKeyB = 2L;
+    assertThat(suspensionState.countBufferedCommands(processInstanceKeyA)).isZero();
+
+    // when
+    suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKeyA, 1L));
+    suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKeyA, 2L));
+    suspensionState.bufferCommand(30L, bufferedCommandRecord(processInstanceKeyB, 3L));
+
+    // then
+    assertThat(suspensionState.countBufferedCommands(processInstanceKeyA)).isEqualTo(2);
+    assertThat(suspensionState.countBufferedCommands(processInstanceKeyB)).isEqualTo(1);
+
+    // when — removing one of A's commands
+    suspensionState.removeBufferedCommand(10L);
+
+    // then
+    assertThat(suspensionState.countBufferedCommands(processInstanceKeyA)).isEqualTo(1);
+  }
+
+  @Test
   public void shouldNotFailWhenRemovingOrClearingBufferedCommandsWithNothingBuffered() {
     // given
     final long processInstanceKey = 1L;

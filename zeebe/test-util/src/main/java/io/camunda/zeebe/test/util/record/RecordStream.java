@@ -215,4 +215,9 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new ScaleRecordStream(
         filter(r -> r.getValueType() == ValueType.SCALE).map(Record.class::cast));
   }
+
+  public AgentHistoryRecordStream agentHistoryRecords() {
+    return new AgentHistoryRecordStream(
+        filter(r -> r.getValueType() == ValueType.AGENT_HISTORY).map(Record.class::cast));
+  }
 }

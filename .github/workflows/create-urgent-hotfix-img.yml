@@ -111,11 +111,18 @@ jobs:
                 exit 1
               fi
 
-              # Validate operate and tasklist version are prior to 8.9.X
-              if [[ "$COMP" == "operate" || "$COMP" == "tasklist" || "$COMP" == "zeebe" ]]; then
+              # Standalone Tasklist images only exist through stable 8.8.
+              if [[ "$COMP" == "tasklist" && ! "$VER" =~ ^8\.[6-8]\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+                echo "❌ Invalid version for $COMP: '$VER'."
+                echo "   Separate Tasklist hotfix images are only supported for versions 8.6 through 8.8."
+                exit 1
+              fi
+
+              # Validate separate Operate and Zeebe versions are prior to 8.9.X.
+              if [[ "$COMP" == "operate" || "$COMP" == "zeebe" ]]; then
                 if [[ ! "$VER" =~ ^8\.[0-8]\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
                   echo "❌ Invalid version for $COMP: '$VER'."
-                  echo "   Separate zeebe/operate/tasklist hotfix images are only supported for versions < 8.9. For 8.9+, use component 'camunda' instead."
+                  echo "   Separate zeebe/operate hotfix images are only supported for versions < 8.9. For 8.9+, use component 'camunda' instead."
                   exit 1
                 fi
               fi

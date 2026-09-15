@@ -16,6 +16,8 @@ import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetUpsertRequestDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.CycleTimeTargetDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.dashboard.BusinessValueDashboardService;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
@@ -50,12 +52,14 @@ class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
   private BusinessValueTargetWriter targetWriter;
   private BusinessValueOverviewComputeService computeService;
   private BusinessValueOverviewRepository overviewRepository;
+  private BusinessValueTargetService targetService;
 
   @BeforeEach
   void setUp() {
     targetWriter = embeddedOptimizeExtension.getBean(BusinessValueTargetWriter.class);
     computeService = embeddedOptimizeExtension.getBean(BusinessValueOverviewComputeService.class);
     overviewRepository = embeddedOptimizeExtension.getBean(BusinessValueOverviewRepository.class);
+    targetService = embeddedOptimizeExtension.getBean(BusinessValueTargetService.class);
     // AbstractBrokerlessZeebeCCSMIT.cleanupOptimizeData() wipes Optimize data between tests, so
     // the ApplicationReadyEvent-driven seed is only visible to the first test. Reseed here so the
     // compute service can look up the two per-process seeded reports on every run.
@@ -198,6 +202,8 @@ class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
     // persistProcessInstances derives its definitions on the default tenant only, so the
     // other tenant's definition has to be written explicitly for it to enter the sweep
     persistProcessDefinitions(List.of(bvdDefinition(processKey, otherTenant)));
+    givenTargetFor(tenantA, processKey);
+    givenTargetFor(otherTenant, processKey);
 
     // when compute runs for the 7d preset
     computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
@@ -222,6 +228,9 @@ class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
             bvdInstanceWithDuration(slow, 10_000L).build(),
             bvdInstanceWithDuration(mid, 5_000L).build(),
             bvdInstanceWithDuration(fast, 1_000L).build()));
+    givenTargetFor(DEFAULT_TENANT, slow);
+    givenTargetFor(DEFAULT_TENANT, mid);
+    givenTargetFor(DEFAULT_TENANT, fast);
 
     // when compute runs for the 7d preset
     computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
@@ -245,6 +254,12 @@ class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
     final String neverRun = PROCESS_KEY + "-never-run";
     persistProcessInstances(List.of(bvdInstanceWithDuration(PROCESS_KEY, 4_000L).build()));
     persistProcessDefinitions(List.of(bvdDefinition(neverRun, DEFAULT_TENANT)));
+    // Both are targeted on purpose. The point of this test is that a definition with no instance
+    // index does not disturb its neighbour's evaluation, so it has to reach the evaluation set —
+    // leaving it untargeted would exclude it for an unrelated reason and the missing-index path
+    // would go untested.
+    givenTargetFor(DEFAULT_TENANT, PROCESS_KEY);
+    givenTargetFor(DEFAULT_TENANT, neverRun);
 
     // when compute runs for the 7d preset
     computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
@@ -260,6 +275,90 @@ class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThat(overviewRepository.getByKey(DEFAULT_TENANT, neverRun, MetricRange.SEVEN_DAYS))
         .isPresent()
         .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isNull());
+  }
+
+  /**
+   * The bug this path exists for: a target saved between sweeps used to sit in the target index
+   * while the overview row kept the target it was last computed with, so L0 showed the old verdict
+   * for a full refresh interval. Deliberately runs no sweep between the save and the read — a test
+   * that swept in between would pass on the broken behaviour too.
+   */
+  @Test
+  void shouldReflectATargetOnTheOverviewRowsWithoutWaitingForASweep() {
+    // given a definition the sweep has measured, with no target yet
+    persistProcessDefinitions(List.of(bvdDefinition(PROCESS_KEY, DEFAULT_TENANT)));
+    computeService.computeOverviewRows(List.of(MetricRange.values()));
+    assertThat(overviewRepository.getByKey(DEFAULT_TENANT, PROCESS_KEY, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.isHasAnyTarget()).isFalse());
+
+    // when a target is saved through the service, and no sweep runs afterwards
+    targetService.upsertTarget(
+        "sherrin@camunda.com",
+        DEFAULT_TENANT,
+        PROCESS_KEY,
+        new BusinessValueTargetUpsertRequestDto(
+            new CycleTimeTargetDto(8L, TargetValueUnit.HOURS, null), AUTOMATION_TARGET_PCT));
+
+    // then every range preset already carries the target and its verdict
+    for (final MetricRange range : MetricRange.values()) {
+      assertThat(overviewRepository.getByKey(DEFAULT_TENANT, PROCESS_KEY, range))
+          .as("row for range %s", range)
+          .isPresent()
+          .hasValueSatisfying(
+              r -> {
+                assertThat(r.getCycleTime().getTarget()).isEqualTo(CYCLE_TARGET_MILLIS);
+                assertThat(r.getAutomationRate().getTarget()).isEqualTo(AUTOMATION_TARGET_PCT);
+                assertThat(r.isHasAnyTarget()).isTrue();
+                assertThat(r.getTargetsSet()).isEqualTo(2);
+              });
+    }
+  }
+
+  /**
+   * A definition imported since the last sweep has no rows at all, so there is nothing to update —
+   * measuring on save is what creates them.
+   */
+  @Test
+  void shouldCreateRowsWhenATargetIsSetOnADefinitionTheSweepHasNeverSeen() {
+    // given a definition that exists but has never been swept
+    final String freshKey = "fresh-import-" + System.nanoTime();
+    persistProcessDefinitions(List.of(bvdDefinition(freshKey, DEFAULT_TENANT)));
+    assertThat(overviewRepository.getByKey(DEFAULT_TENANT, freshKey, MetricRange.SEVEN_DAYS))
+        .isEmpty();
+
+    // when a target is saved
+    targetService.upsertTarget(
+        "sherrin@camunda.com",
+        DEFAULT_TENANT,
+        freshKey,
+        new BusinessValueTargetUpsertRequestDto(
+            new CycleTimeTargetDto(8L, TargetValueUnit.HOURS, null), AUTOMATION_TARGET_PCT));
+
+    // then the rows are created with the target on them
+    for (final MetricRange range : MetricRange.values()) {
+      assertThat(overviewRepository.getByKey(DEFAULT_TENANT, freshKey, range))
+          .as("row for range %s", range)
+          .isPresent()
+          .hasValueSatisfying(r -> assertThat(r.isHasAnyTarget()).isTrue());
+    }
+  }
+
+  /**
+   * Gives a definition a target, which is what puts it into the sweep's evaluation set — only
+   * targeted definitions are measured. Tests asserting on measured values have to call this for
+   * every definition whose value they check.
+   */
+  private void givenTargetFor(final String tenantId, final String processDefinitionKey) {
+    targetWriter.upsertTarget(
+        new BusinessValueTargetDto(
+            processDefinitionKey,
+            tenantId,
+            CYCLE_TARGET_MILLIS,
+            TargetValueUnit.HOURS,
+            AUTOMATION_TARGET_PCT,
+            OffsetDateTime.parse("2026-08-05T04:00:15Z"),
+            "sherrin@camunda.com"));
   }
 
   private static ProcessDefinitionOptimizeDto bvdDefinition(

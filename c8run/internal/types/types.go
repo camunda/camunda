@@ -18,6 +18,7 @@ type C8RunSettings struct {
 	ResolvedConfigPath   string
 	Detached             bool
 	DisableConnectors    bool
+	NoBrowser            bool
 	Port                 int
 	Keystore             string
 	KeystorePassword     string

@@ -6,7 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Wrapper, IncidentsCount, Label, BarContainer, ActiveInstancesBar, ActiveCount, IncidentsBar} from './styled';
+import {Tooltip} from '@carbon/react';
+import {Timer} from '@carbon/react/icons';
+import {
+	Wrapper,
+	IncidentsCount,
+	Label,
+	BarContainer,
+	RightControls,
+	ActiveInstancesBar,
+	ActiveCount,
+	IncidentsBar,
+	DrainingIndicator,
+} from './styled';
 
 type Props = {
 	label?: {
@@ -16,16 +28,27 @@ type Props = {
 	};
 	activeInstancesCount?: number;
 	incidentsCount: number;
+	isDraining?: boolean;
+	drainingDescription?: string;
 	size: 'small' | 'medium' | 'large';
 	className?: string;
 };
 
-const InstancesBar: React.FC<Props> = ({label, activeInstancesCount, incidentsCount, size, className}) => {
+const InstancesBar: React.FC<Props> = ({
+	label,
+	activeInstancesCount,
+	incidentsCount,
+	isDraining = false,
+	drainingDescription,
+	size,
+	className,
+}) => {
 	const total = (activeInstancesCount ?? 0) + incidentsCount;
 	const incidentsBarRatio = total === 0 ? 0 : (100 * incidentsCount) / total;
 	const hasIncidents = incidentsCount > 0;
 	const hasActiveInstances = (activeInstancesCount ?? 0) > 0;
 	const showIncidentsBar = activeInstancesCount !== undefined;
+	const showActiveInstancesCount = activeInstancesCount !== undefined && activeInstancesCount >= 0;
 
 	return (
 		<div className={className}>
@@ -38,10 +61,21 @@ const InstancesBar: React.FC<Props> = ({label, activeInstancesCount, incidentsCo
 						{label.text}
 					</Label>
 				)}
-				{activeInstancesCount !== undefined && activeInstancesCount >= 0 && (
-					<ActiveCount data-testid="active-instances-badge" $hasActiveInstances={hasActiveInstances}>
-						{activeInstancesCount}
-					</ActiveCount>
+				{((isDraining && drainingDescription !== undefined) || showActiveInstancesCount) && (
+					<RightControls>
+						{isDraining && drainingDescription !== undefined && (
+							<Tooltip label={drainingDescription} align="top" autoAlign>
+								<DrainingIndicator data-testid="draining-indicator">
+									<Timer size={16} aria-hidden="true" focusable="false" />
+								</DrainingIndicator>
+							</Tooltip>
+						)}
+						{showActiveInstancesCount && (
+							<ActiveCount data-testid="active-instances-badge" $hasActiveInstances={hasActiveInstances}>
+								{activeInstancesCount}
+							</ActiveCount>
+						)}
+					</RightControls>
 				)}
 			</Wrapper>
 			{showIncidentsBar && (

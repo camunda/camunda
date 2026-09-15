@@ -14,11 +14,11 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -161,7 +161,7 @@ public class CallActivityBusinessIdIT {
     // then - the child is retrievable by filtering the search API on its resolved Business ID
     // (scoped by parentProcessInstanceKey so an inherited id could never match the parent instead)
     Awaitility.await("child instance is queryable by its business id")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -256,7 +256,7 @@ public class CallActivityBusinessIdIT {
   private static ProcessInstance awaitChild(final long parentProcessInstanceKey) {
     final AtomicReference<ProcessInstance> child = new AtomicReference<>();
     Awaitility.await("child process instance is exported to the search index")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -276,7 +276,7 @@ public class CallActivityBusinessIdIT {
   private static long awaitIncidentKey(final long processInstanceKey) {
     final AtomicLong incidentKey = new AtomicLong();
     Awaitility.await("incident is exported to the search index")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {

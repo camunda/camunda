@@ -6,6 +6,13 @@ metadata:
   name: customer-notification
   labels:
     app: customer-notification
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -16,8 +23,15 @@ spec:
       labels:
         app: customer-notification
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
-        
+
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -37,19 +51,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.worker.capacity=30
-                -Dapp.worker.completionDelay=300ms
-                -Dapp.worker.workerName="customer-notification"
-                -Dapp.worker.jobType="customer_notification"
-                -Dapp.worker.payloadPath="bpmn/emptyPayload.json"
-                -Dapp.worker.sendMessage=true
-                -Dapp.worker.messageName="dispute_process_receive_documents"
-                -Dapp.worker.correlationKeyVariableName="correlationKey"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"
@@ -88,6 +89,9 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
+            # To be able to load a separate/additional configuration
+            - name: SPRING_CONFIG_ADDITIONALLOCATION
+              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -140,6 +144,15 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: load-test-config
+              mountPath: /usr/local/camunda/config/load-test-config.yaml
+              subPath: load-test-config.yaml
+      volumes:
+        - name: load-test-config
+          configMap:
+            name: load-test-config
+            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -149,6 +162,13 @@ metadata:
   name: dispute-process-request-get-vendor-info
   labels:
     app: dispute-process-request-get-vendor-info
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -159,8 +179,15 @@ spec:
       labels:
         app: dispute-process-request-get-vendor-info
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
-        
+
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -180,16 +207,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.worker.capacity=30
-                -Dapp.worker.completionDelay=10ms
-                -Dapp.worker.workerName="dispute-process-request-get-vendor-info"
-                -Dapp.worker.jobType="dispute_process_request_get_vendor_info"
-                -Dapp.worker.payloadPath="bpmn/emptyPayload.json"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"
@@ -228,6 +245,9 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
+            # To be able to load a separate/additional configuration
+            - name: SPRING_CONFIG_ADDITIONALLOCATION
+              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -274,6 +294,15 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: load-test-config
+              mountPath: /usr/local/camunda/config/load-test-config.yaml
+              subPath: load-test-config.yaml
+      volumes:
+        - name: load-test-config
+          configMap:
+            name: load-test-config
+            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -283,6 +312,13 @@ metadata:
   name: dispute-process-request-proof-from-vendor
   labels:
     app: dispute-process-request-proof-from-vendor
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -293,8 +329,15 @@ spec:
       labels:
         app: dispute-process-request-proof-from-vendor
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
-        
+
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -314,20 +357,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.worker.capacity=60
-                -Dapp.worker.threads=30
-                -Dapp.worker.completionDelay=300ms
-                -Dapp.worker.workerName="dispute-process-request-proof-from-vendor"
-                -Dapp.worker.jobType="dispute_process_request_proof_from_vendor"
-                -Dapp.worker.payloadPath="bpmn/emptyPayload.json"
-                -Dapp.worker.sendMessage=true
-                -Dapp.worker.messageName="dispute_process_refund_approved"
-                -Dapp.worker.correlationKeyVariableName="correlationKey"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"
@@ -366,6 +395,9 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
+            # To be able to load a separate/additional configuration
+            - name: SPRING_CONFIG_ADDITIONALLOCATION
+              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -420,6 +452,15 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: load-test-config
+              mountPath: /usr/local/camunda/config/load-test-config.yaml
+              subPath: load-test-config.yaml
+      volumes:
+        - name: load-test-config
+          configMap:
+            name: load-test-config
+            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -429,6 +470,13 @@ metadata:
   name: extract-data-from-document
   labels:
     app: extract-data-from-document
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -439,8 +487,15 @@ spec:
       labels:
         app: extract-data-from-document
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
-        
+
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -460,16 +515,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.worker.capacity=30
-                -Dapp.worker.completionDelay=300ms
-                -Dapp.worker.workerName="extract-data-from-document"
-                -Dapp.worker.jobType="extract_data_from_document"
-                -Dapp.worker.payloadPath="bpmn/emptyPayload.json"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"
@@ -508,6 +553,9 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
+            # To be able to load a separate/additional configuration
+            - name: SPRING_CONFIG_ADDITIONALLOCATION
+              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -554,6 +602,15 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: load-test-config
+              mountPath: /usr/local/camunda/config/load-test-config.yaml
+              subPath: load-test-config.yaml
+      volumes:
+        - name: load-test-config
+          configMap:
+            name: load-test-config
+            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -563,6 +620,13 @@ metadata:
   name: inform-about-successful-claim
   labels:
     app: inform-about-successful-claim
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -573,8 +637,15 @@ spec:
       labels:
         app: inform-about-successful-claim
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
-        
+
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -594,16 +665,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.worker.capacity=30
-                -Dapp.worker.completionDelay=300ms
-                -Dapp.worker.workerName="inform-about-successful-claim"
-                -Dapp.worker.jobType="inform_about_successful_claim"
-                -Dapp.worker.payloadPath="bpmn/emptyPayload.json"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"
@@ -642,6 +703,9 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
+            # To be able to load a separate/additional configuration
+            - name: SPRING_CONFIG_ADDITIONALLOCATION
+              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -688,6 +752,15 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: load-test-config
+              mountPath: /usr/local/camunda/config/load-test-config.yaml
+              subPath: load-test-config.yaml
+      volumes:
+        - name: load-test-config
+          configMap:
+            name: load-test-config
+            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -697,6 +770,13 @@ metadata:
   name: refunding
   labels:
     app: refunding
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -707,8 +787,15 @@ spec:
       labels:
         app: refunding
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
-        
+
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -728,17 +815,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.worker.capacity=30
-                -Dapp.worker.threads=30
-                -Dapp.worker.completionDelay=300ms
-                -Dapp.worker.workerName="refunding"
-                -Dapp.worker.jobType="refunding"
-                -Dapp.worker.payloadPath="bpmn/emptyPayload.json"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"
@@ -777,6 +853,9 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
+            # To be able to load a separate/additional configuration
+            - name: SPRING_CONFIG_ADDITIONALLOCATION
+              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -825,3 +904,12 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: load-test-config
+              mountPath: /usr/local/camunda/config/load-test-config.yaml
+              subPath: load-test-config.yaml
+      volumes:
+        - name: load-test-config
+          configMap:
+            name: load-test-config
+            defaultMode: 0754

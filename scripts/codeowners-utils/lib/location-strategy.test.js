@@ -20,9 +20,6 @@ test('LocationStrategy - classifyByLocation identifies QA integration tests', ()
 
   const result3 = classifyByLocation('operate/qa/integration-tests/src/test/java/io/camunda/operate/SomeIT.java');
   assert.equal(result3.type, 'integration');
-
-  const result4 = classifyByLocation('tasklist/qa/integration-tests/src/test/java/io/camunda/tasklist/SomeTest.java');
-  assert.equal(result4.type, 'integration');
 });
 
 test('LocationStrategy - classifyByLocation returns null for standard paths', () => {

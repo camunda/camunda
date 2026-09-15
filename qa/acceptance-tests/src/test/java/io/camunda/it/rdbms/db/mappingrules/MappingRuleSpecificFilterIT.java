@@ -29,11 +29,14 @@ import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.filter.MappingRuleFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.sort.MappingRuleSort;
+import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,6 +151,57 @@ public class MappingRuleSpecificFilterIT {
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(mappingRules.total()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldFindMappingRulesWithOrFilters() {
+    final var matchingId = Strings.newRandomValidIdentityId();
+    final var otherMatchingId = Strings.newRandomValidIdentityId();
+    final var nonMatchingId = Strings.newRandomValidIdentityId();
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(matchingId)));
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(otherMatchingId)));
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(nonMatchingId)));
+
+    final var searchResult =
+        mappingRuleReader.search(
+            new MappingRuleQuery(
+                new MappingRuleFilter.Builder()
+                    .orFilters(
+                        List.of(
+                            new MappingRuleFilter.Builder().mappingRuleId(matchingId).build(),
+                            new MappingRuleFilter.Builder().mappingRuleId(otherMatchingId).build()))
+                    .build(),
+                MappingRuleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldFilterMappingRulesByMappingRuleIdLike() {
+    final var matchingId = "like-test-" + Strings.newRandomValidIdentityId();
+    final var nonMatchingId = Strings.newRandomValidIdentityId();
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(matchingId)));
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(nonMatchingId)));
+
+    final var searchResult =
+        mappingRuleReader.search(
+            new MappingRuleQuery(
+                new MappingRuleFilter.Builder()
+                    .mappingRuleIdOperations(Operation.like("like-test-*"))
+                    .build(),
+                MappingRuleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items())
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly(matchingId);
   }
 
   private void assignMappingRuleToGroup(final String groupId, final String mappingRuleId) {

@@ -29913,7 +29913,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Outcome of each partition a rebalance attempted, within the selected range. TRANSFERRED is success; other results explain why leadership stayed put: CANCELLED means the operator stopped the rebalance first; LAG_TOO_HIGH and REPLICATION_TIMED_OUT point at the follower replication lag panel in the Raft row; NO_RESPONSE and NO_LEADER mean the leader, or the topology, never answered; PHYSICAL_TENANT_DISABLED means the partition's physical tenant was disabled after the rebalance was planned.",
+          "description": "Outcome of each partition a rebalance attempted, within the selected range. TRANSFERRED is success; other results explain why leadership stayed put: CANCELLED means the operator stopped the rebalance first; LAG_TOO_HIGH and REPLICATION_TIMED_OUT point at the follower replication lag panel in the Raft row; NO_RESPONSE and NO_LEADER mean the leader, or the topology, never answered; PHYSICAL_TENANT_DISABLED means the partition's physical tenant was disabled after the rebalance was planned; PHYSICAL_TENANT_RECOVERING means the partition's physical tenant entered recovery after the rebalance was planned.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30261,7 +30261,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by (le) (clamp_min((zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_LEADER|CANCELLED|PHYSICAL_TENANT_DISABLED\"} - (zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_LEADER|CANCELLED|PHYSICAL_TENANT_DISABLED\"} offset $__rate_interval)) or zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_LEADER|CANCELLED|PHYSICAL_TENANT_DISABLED\"}, 0))",
+              "expr": "sum by (le) (clamp_min((zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_LEADER|CANCELLED|PHYSICAL_TENANT_DISABLED|PHYSICAL_TENANT_RECOVERING\"} - (zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_LEADER|CANCELLED|PHYSICAL_TENANT_DISABLED|PHYSICAL_TENANT_RECOVERING\"} offset $__rate_interval)) or zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_LEADER|CANCELLED|PHYSICAL_TENANT_DISABLED|PHYSICAL_TENANT_RECOVERING\"}, 0))",
               "format": "heatmap",
               "instant": false,
               "legendFormat": "{{le}}",

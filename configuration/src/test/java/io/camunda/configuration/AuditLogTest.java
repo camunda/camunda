@@ -30,6 +30,7 @@ class AuditLogTest {
     final AuditLog auditLog = new AuditLog();
 
     assertThat(auditLog.isEnabled()).as("AuditLog should be enabled by default").isTrue();
+    assertThat(auditLog.isUserTaskCompletionVariableAuditEnabled()).isFalse();
   }
 
   @Test
@@ -112,6 +113,7 @@ class AuditLogTest {
       properties = {
         "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.audit-log.enabled=false",
+        "camunda.data.audit-log.user-task-completion-variable-audit-enabled=true",
         "camunda.data.audit-log.user.categories[0]=DEPLOYED_RESOURCES",
         "camunda.data.audit-log.user.categories[1]=USER_TASKS",
         "camunda.data.audit-log.user.excludes[0]=VARIABLE",
@@ -130,6 +132,19 @@ class AuditLogTest {
               io.camunda.exporter.rdbms.ExporterConfiguration.class, exporter.getArgs());
 
       assertThat(config.getAuditLog().isEnabled()).isFalse();
+      assertThat(
+              brokerBasedProperties
+                  .getExperimental()
+                  .getEngine()
+                  .isUserTaskCompletionVariableAuditEnabled())
+          .isTrue();
+      assertThat(
+              brokerBasedProperties
+                  .getExperimental()
+                  .getEngine()
+                  .createEngineConfiguration()
+                  .isUserTaskCompletionVariableAuditEnabled())
+          .isTrue();
       assertThat(config.getAuditLog().getUser().getCategories())
           .containsExactlyInAnyOrder(
               AuditLogOperationCategory.DEPLOYED_RESOURCES, AuditLogOperationCategory.USER_TASKS);

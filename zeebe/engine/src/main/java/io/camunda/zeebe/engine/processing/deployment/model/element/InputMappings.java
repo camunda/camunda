@@ -33,4 +33,10 @@ public record InputMappings(
     List<InputMapping> mappings,
     Expression combinedExpression,
     Map<String, Set<SecretReference>> secretReferences,
-    Map<String, Set<ClusterVariableReference>> clusterVariableReferences) {}
+    Map<String, Set<ClusterVariableReference>> clusterVariableReferences) {
+
+  @Override
+  public String toString() {
+    return "InputMappings{" + "mappings=" + mappings + '}';
+  }
+}

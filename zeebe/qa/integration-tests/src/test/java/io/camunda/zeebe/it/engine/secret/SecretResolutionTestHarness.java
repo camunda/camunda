@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.SecretsWriter;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
@@ -99,10 +100,19 @@ public final class SecretResolutionTestHarness {
    * under its own name, and a background resolution that does not keep tests waiting.
    */
   public static TestStandaloneBroker newBrokerWithEmptySecretStore() {
+    return newBrokerWithSecretStore(directory -> {});
+  }
+
+  /**
+   * The same broker with {@code secrets} holding the store's content, for a test whose secrets have
+   * to survive a broker that is closed and started again: the directory is rebuilt from this writer
+   * on the next start, while anything {@link #writeSecret} put there goes with the close.
+   */
+  public static TestStandaloneBroker newBrokerWithSecretStore(final SecretsWriter secrets) {
     return new TestStandaloneBroker()
         .withRecordingExporter(true)
         .withUnauthenticatedAccess()
-        .withFileBasedSecretStore(directory -> {})
+        .withFileBasedSecretStore(secrets)
         .withProcessingConfig(
             processing -> processing.getEngine().getSecrets().setInterval(RESOLUTION_INTERVAL));
   }

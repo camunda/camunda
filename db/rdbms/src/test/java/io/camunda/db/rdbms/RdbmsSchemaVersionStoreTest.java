@@ -72,15 +72,14 @@ class RdbmsSchemaVersionStoreTest {
 
   @Test
   void shouldTreatFreshDatabaseAsNoVersionCheck() {
-    // given - resolveCurrentSchemaVersion returns null (fresh DB)
+    // given - readSchemaVersion returns null (fresh DB)
     versionStore(null, "8.11.0").checkCompatibility();
   }
 
   @Test
-  void shouldAllowUpgradeFromInferredPreVersioningSchema() {
-    // given: RDBMS_SCHEMA_VERSION doesn't exist but EXPORTER_POSITION does → inferred 8.9.0
-    versionStore(RdbmsSchemaVersionStore.INFERRED_PRE_VERSIONING_SCHEMA_VERSION, "8.10.0")
-        .checkCompatibility();
+  void shouldAllowUpgradeFromSeededPreVersioningSchema() {
+    // given: a pre-versioning schema, for which schema-version-seed.xml recorded 8.9.0
+    versionStore("8.9.0", "8.10.0").checkCompatibility();
   }
 
   @Test
@@ -201,7 +200,7 @@ class RdbmsSchemaVersionStoreTest {
 
   @Test
   void shouldReportFreshDatabaseCurrentSchemaVersion() {
-    // given - resolveCurrentSchemaVersion returns null (fresh DB, not yet initialized)
+    // given - readSchemaVersion returns null (fresh DB, not yet initialized)
     final var currentSchemaVersion = versionStore(null, "8.11.0").getCurrentSchemaVersion();
 
     // then
@@ -258,8 +257,7 @@ class RdbmsSchemaVersionStoreTest {
     }
     return new RdbmsSchemaVersionStore(dataSource, "", appVersion) {
       @Override
-      protected String resolveCurrentSchemaVersion(
-          final Connection connection, final String prefix) {
+      protected String readSchemaVersion(final Connection connection, final String prefix) {
         return schemaVersion;
       }
     };

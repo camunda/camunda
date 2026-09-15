@@ -7,7 +7,7 @@
   "dependencies": {
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
     "@camunda/camunda-composite-components": "^0.25.2",
-    "@camunda/design-system": "0.48.0",
+    "@camunda/design-system": "0.54.0",
     "@carbon/icons-react": "^11.41.0",
     "@carbon/react": "^1.77.0",
     "@lexical/react": "^0.41.0",
@@ -84,7 +84,7 @@
     "@types/enzyme": "3.10.19",
     "@types/enzyme-adapter-react-16": "1.0.9",
     "@types/jest": "29.5.14",
-    "@types/node": "22.20.1",
+    "@types/node": "22.20.2",
     "@types/react": "^18.3.5",
     "@types/react-date-range": "1.4.10",
     "@types/react-dom": "^18.3.0",

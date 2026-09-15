@@ -35,10 +35,15 @@ export class IdentityRolesDetailsPage {
     this.assignUserButton = page.getByRole('button', {
       name: 'assign user',
     });
+    // The row's "Remove" action is a design-system EntityList row action
+    // (Members.tsx's menuItems), rendered inline (only one action, below the
+    // 3-action overflow-menu threshold) as a button with visible text
+    // "Remove" -- not an icon-only button with an explicit aria-label like
+    // the old Carbon row action, which is why getByLabel no longer matches.
     this.unassignUserButton = (rowName) =>
       this.assignedUsersList
         .getByRole('row', {name: rowName})
-        .getByLabel('Remove');
+        .getByRole('button', {name: 'Remove'});
     this.assignUserModal = page.getByRole('dialog', {
       name: 'Assign user',
     });
@@ -46,10 +51,10 @@ export class IdentityRolesDetailsPage {
       name: 'Close',
     });
     // On the new design system the assign-user modal's search field is a cmdk
-    // combobox ("Search by Username or Name") rather than Carbon's searchbox.
+    // combobox ("Search by name, email, or username") rather than Carbon's searchbox.
     this.assignUserModalSearchField = this.assignUserModal.getByRole(
       'combobox',
-      {name: 'Search by Username or Name'},
+      {name: 'Search by name, email, or username'},
     );
     // The results render in a Radix popover that portals as a *sibling* of the
     // dialog (DS #496), so the listbox is not a descendant of the modal —

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.container.AdHocSubProcessInnerInstanceProcessor;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.engine.processing.bpmn.task.UndefinedTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.UserTaskProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.EnumMap;
 import java.util.Map;
@@ -49,7 +51,9 @@ public final class BpmnElementProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
       final AsyncRequestState asyncRequestState,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final SuspensionState suspensionState,
+      final SuspensionMetrics suspensionMetrics) {
     // tasks
     processors.put(
         BpmnElementType.SERVICE_TASK,
@@ -90,7 +94,12 @@ public final class BpmnElementProcessors {
     // containers
     processors.put(
         BpmnElementType.PROCESS,
-        new ProcessProcessor(bpmnBehaviors, stateTransitionBehavior, asyncRequestState));
+        new ProcessProcessor(
+            bpmnBehaviors,
+            stateTransitionBehavior,
+            asyncRequestState,
+            suspensionState,
+            suspensionMetrics));
     processors.put(
         BpmnElementType.SUB_PROCESS,
         new SubProcessProcessor(bpmnBehaviors, stateTransitionBehavior));

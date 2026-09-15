@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.net.http.HttpClient;
@@ -99,6 +100,7 @@ public class MappingRuleIT {
       final String claimName,
       final String claimValue) {
     Awaitility.await("Mapping rule exists in the secondary storage system")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

@@ -10,7 +10,7 @@ import Editor from "@monaco-editor/react";
 import { Button, Label, Text } from "@camunda/design-system";
 import { observer } from "mobx-react-lite";
 import { ComponentProps, FC, useEffect, useRef, useState } from "react";
-import { Copy, Pencil } from "lucide-react";
+import { Copy, Pencil } from "@camunda/design-system/icons";
 import { beautify as beautifyJSON } from "src/utility/components/editor/jsonUtils.ts";
 import { options } from "src/utility/components/editor/options.ts";
 import useTranslate from "src/utility/localization";
@@ -142,7 +142,7 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
               as="p"
               variant="helper"
               role="alert"
-              className="text-danger-action-default"
+              className="text-danger-foreground-subtle"
             >
               {errors}
             </Text>

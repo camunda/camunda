@@ -189,7 +189,7 @@ final class LeadershipTransferAttempt {
     final var catchUpWait =
         new CatchUpWait(
             raft,
-            leader::isRunning,
+            leader,
             desiredLeader,
             targetIndex,
             startMs + configuration.replicationTimeout().toMillis());

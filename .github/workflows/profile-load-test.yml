@@ -6,7 +6,7 @@
 #              to fixed intermediate paths on the pod -- profiling the same pod with two
 #              events at once would collide.
 #              Uploads flamegraph artifacts named
-#              flamegraph-{test-type}-{event}-{pod}-{date}.
+#              {name-prefix}{pod}, where name-prefix defaults to flamegraph-{name}-{date}-.
 # called-by: camunda-pr-load-test.yml, stress-load-test.yml (itself called by
 #            camunda-daily-load-tests.yml)
 # type: CI
@@ -28,10 +28,6 @@ on:
         description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
         default: ''
         required: false
-      test-type:
-        description: 'Short label identifying the calling test/database variant (e.g. "grpc", "rest", "elasticsearch", "opensearch"), used to disambiguate artifact/file names when multiple variants run in the same workflow.'
-        required: true
-        type: string
       duration-seconds:
         description: 'Profiling duration in seconds'
         default: '100'
@@ -52,10 +48,6 @@ on:
         default: ''
         required: false
         type: string
-      test-type:
-        description: 'Short label identifying the calling test/database variant (e.g. "grpc", "rest", "elasticsearch", "opensearch"), used to disambiguate artifact/file names when multiple variants run in the same workflow.'
-        required: true
-        type: string
       duration-seconds:
         description: 'Profiling duration in seconds'
         default: '100'
@@ -74,25 +66,25 @@ env:
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
   NAME: ${{ inputs.name }}
-  PROFILER_OPTIONS: ${{ inputs.profiler_options }}
-  PROFILING_DURATION: ${{ inputs.duration-seconds }}
-  TEST_TYPE: ${{ inputs.test-type }}
 
 jobs:
-  compute-pods:
-    name: Compute pods matrix
+  init:
+    name: Compute metadata
     runs-on: ubuntu-latest
     permissions: {}
     outputs:
-      pods: ${{ steps.compute.outputs.pods }}
+      pods: ${{ steps.metadata.outputs.pods }}
+      name-prefix: ${{ steps.metadata.outputs.name-prefix }}
     env:
       POD: ${{ inputs.pod }}
     steps:
       # A specific pod (inputs.pod set) becomes the matrix's single entry; otherwise the
       # matrix defaults to all three pods. Every pod in the matrix gets all 3 events (cpu,
-      # wall, alloc) below.
-      - name: Compute pods matrix
-        id: compute
+      # wall, alloc) below. name-prefix is computed once here so every "Profile ..." step
+      # below (across every pod in the matrix) writes its flamegraph with the same prefix,
+      # matching the date in the uploaded artifact name.
+      - name: Compute metadata
+        id: metadata
         run: |
           if [ -n "${POD}" ]; then
             pods=$(jq -cn --arg pod "${POD}" '[$pod]')
@@ -101,26 +93,23 @@ jobs:
           fi
           echo "pods=${pods}" >> "$GITHUB_OUTPUT"
 
+          date="$(date +%Y%m%d)"
+          echo "name-prefix=flamegraph-${NAME}-${date}-" >> "$GITHUB_OUTPUT"
+
   profile:
     name: Profile ${{ matrix.pod }}
-    needs: compute-pods
+    needs: init
     runs-on: ubuntu-latest
-    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds * 3, since this job
-    # profiles cpu, wall and alloc *sequentially* against its pod (see the matrix comment
-    # below for why the events can't run in parallel against the same pod), plus a buffer
-    # for the checkout/teleport-auth/kubectl-context/upload-artifact/summary steps.
-    # Profiling is best-effort so this is not sized to let every retry play out
-    # -- a run that fails or times out here is fine. GitHub Actions does not
-    # support arithmetic in `timeout-minutes` expressions (no +/-/*//
-    # operators), so this can't be computed from `inputs.duration-seconds`
-    # automatically -- bump it manually if a caller raises duration-seconds.
-    # Largest known caller today: stress-load-test.yml's profile job passes
-    # duration-seconds: '600' (10 min), i.e. up to 30 minutes of profiling
-    # alone per pod.
+    # INVARIANT: timeout-minutes must cover cpu, wall and alloc running *sequentially*
+    # against the pod (see the matrix comment below for why they can't run in
+    # parallel), including retries, etc.
+    # Bump this manually if a caller raises duration-seconds or the retry
+    # settings below change -- GitHub Actions doesn't support arithmetic in
+    # `timeout-minutes` expressions.
     # If the job timeout is increased, make sure to also increase the Teleport
     # "certificate-ttl" below to keep it roughly greater or equal to the job
     # timeout.
-    timeout-minutes: 40
+    timeout-minutes: 90
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -134,17 +123,22 @@ jobs:
         # at the same time would collide (attach failures and/or one event's
         # cleanup deleting files the other event is still using). Events are
         # instead run via separate sequential steps below.
-        pod: ${{ fromJSON(needs.compute-pods.outputs.pods) }}
+        pod: ${{ fromJSON(needs.init.outputs.pods) }}
 
     env:
       POD: ${{ matrix.pod }}
-      # Shared nick-fields/retry settings for the "Profile ..." steps below, so tuning them
-      # only has to happen in one place instead of once per event.
-      PROFILE_RETRY_MAX_ATTEMPTS: 5
+      OUTPUT_DIR: profiling/${{ inputs.name }}/${{ matrix.pod }}
+      # The duration of the profiling sessions.
+      PROFILING_DURATION: ${{ inputs.duration-seconds }}
+      PROFILER_OPTIONS: ${{ inputs.profiler_options }}
+
+      # Shared nick-fields/retry settings for the "Profile ..." steps below.
+      # Attempts + wait + timeout must be covered by the job timeout above (see
+      # comment above).
+      PROFILE_RETRY_MAX_ATTEMPTS: 2
       # Give enough time for a preempted pod to come back, if any.
       PROFILE_RETRY_WAIT_SECONDS: 120
       PROFILE_RETRY_TIMEOUT_MINUTES: 15
-      OUTPUT_DIR: profiling/${{ matrix.pod }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -172,9 +166,6 @@ jobs:
       - name: Set right namespace
         run: |
           kubectl config set-context --current --namespace="${NAME}"
-      - name: Compute run date
-        id: run-date
-        run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
 
       # Profiling is best-effort: continue-on-error keeps a permanently-failing event from
       # failing this job, so a single flaky/preempted pod doesn't spuriously fail the whole
@@ -188,7 +179,7 @@ jobs:
           retry_on: error
           retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
           timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
-          command: ./load-tests/docs/scripts/executeProfiling.sh "${POD}" cpu "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+          command: ./load-tests/docs/scripts/executeProfiling.sh --prefix "${{ needs.init.outputs.name-prefix }}" "${POD}" cpu "${PROFILER_OPTIONS}"
       - name: Profile wall on ${{ matrix.pod }}
         continue-on-error: true
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -197,7 +188,7 @@ jobs:
           retry_on: error
           retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
           timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
-          command: ./load-tests/docs/scripts/executeProfiling.sh "${POD}" wall "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+          command: ./load-tests/docs/scripts/executeProfiling.sh --prefix "${{ needs.init.outputs.name-prefix }}" "${POD}" wall "${PROFILER_OPTIONS}"
       - name: Profile alloc on ${{ matrix.pod }}
         continue-on-error: true
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -206,12 +197,12 @@ jobs:
           retry_on: error
           retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
           timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
-          command: ./load-tests/docs/scripts/executeProfiling.sh "${POD}" alloc "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+          command: ./load-tests/docs/scripts/executeProfiling.sh --prefix "${{ needs.init.outputs.name-prefix }}" "${POD}" alloc "${PROFILER_OPTIONS}"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         id: upload-artifact
         with:
-          name: flamegraph-${{ inputs.test-type }}-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
+          name: "${{ needs.init.outputs.name-prefix }}${{ matrix.pod }}"
           # The name of the directory in which the profiling output has been written.
           # This is set in executeProfiling.sh.
           path: ${{ env.OUTPUT_DIR }}

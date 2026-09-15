@@ -9,6 +9,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {defaultAssertionOptions} from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
+import {sleep} from 'utils/sleep';
 export class IdentityRolesPage {
   readonly page: Page;
   readonly rolesList: Locator;
@@ -33,6 +34,7 @@ export class IdentityRolesPage {
   readonly roleCell: (name: string) => Locator;
   readonly rolesHeading: Locator;
   readonly assignUserButton: Locator;
+  readonly assignUserModal: Locator;
   readonly assignUserButtonModal: Locator;
   readonly searchBox: Locator;
   readonly searchBoxResult: Locator;
@@ -114,11 +116,19 @@ export class IdentityRolesPage {
       this.rolesList.getByRole('cell', {name: roleID, exact: true});
     this.rolesHeading = this.page.getByRole('heading', {name: 'Roles'});
     this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
-    this.searchBox = page.getByRole('searchbox');
-    this.searchBoxResult = page.getByRole('listitem');
-    this.assignUserButtonModal = page
-      .getByLabel('Assign user')
-      .getByRole('button', {name: 'Assign user'});
+    this.assignUserModal = page.getByRole('dialog', {name: 'Assign user'});
+    // Same design-system migration IdentityRolesDetailsPage.ts already
+    // accounts for: the search field is a cmdk combobox now, not a Carbon
+    // searchbox, and its results render in a Radix popover that portals as a
+    // *sibling* of the dialog (DS #496) -- scope the results to the page, not
+    // to the modal.
+    this.searchBox = this.assignUserModal.getByRole('combobox', {
+      name: 'Search by name, email, or username',
+    });
+    this.searchBoxResult = page.getByRole('listbox');
+    this.assignUserButtonModal = this.assignUserModal.getByRole('button', {
+      name: 'assign user',
+    });
     this.removeButton = page.getByRole('button', {name: 'Remove'});
     this.removeUserModalButton = page.getByRole('button', {
       name: 'Remove user',
@@ -157,14 +167,34 @@ export class IdentityRolesPage {
   }
 
   async assignUserToRole(userName: string) {
-    await this.assignUserButton.click({timeout: 60000});
-    await this.searchBox.fill(userName);
-    await this.searchBoxResult
-      .filter({
-        hasText: userName,
-      })
-      .click({timeout: 60000});
-    await this.assignUserButtonModal.click();
+    // The assign-user modal's cmdk search is debounced + server-driven, and
+    // the option for a just-created user is eventually consistent -- a single
+    // query can return empty and get cached, so waiting longer on one search
+    // does not recover. Mirror IdentityRolesDetailsPage.ts's remedy for the
+    // same modal: reload and retry the whole open-search-select flow.
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.assignUserButton.click({timeout: 60000});
+        await expect(this.assignUserModal).toBeVisible();
+        await this.searchBox.fill(userName);
+        const option = this.searchBoxResult
+          .getByRole('option')
+          .filter({hasText: userName})
+          .first();
+        await expect(option).toBeVisible({timeout: 30000});
+        await option.click({timeout: 20000});
+        await this.assignUserButtonModal.click();
+        await expect(this.assignUserModal).toBeHidden();
+        return;
+      } catch (error) {
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        await sleep(10000);
+        await this.page.reload();
+      }
+    }
   }
 
   async deleteRole(roleName: string) {

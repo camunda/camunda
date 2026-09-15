@@ -272,10 +272,17 @@
     </if>
   </sql>
 
+  <!--
+    A `before` page seeks backwards from its cursor, so the statement is ordered against the display
+    direction: only then does the page-size LIMIT keep the rows adjacent to the cursor instead of the
+    first rows of the whole filtered range. The reader reverses the returned rows back into display
+    order (see AbstractEntityReader#restoreDisplayOrder).
+  -->
   <sql id="orderBy">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.column} ${item.order}
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
       </foreach>
     </if>
   </sql>
@@ -288,18 +295,20 @@
   <sql id="orderBy" databaseId="oracle">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.column} ${item.order}
-        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
-        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
+        <if test="seekOrder.name().equals('ASC')">NULLS FIRST</if>
+        <if test="seekOrder.name().equals('DESC')">NULLS LAST</if>
       </foreach>
     </if>
   </sql>
   <sql id="orderBy" databaseId="postgresql">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.column} ${item.order}
-        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
-        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
+        <if test="seekOrder.name().equals('ASC')">NULLS FIRST</if>
+        <if test="seekOrder.name().equals('DESC')">NULLS LAST</if>
       </foreach>
     </if>
   </sql>

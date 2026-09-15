@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -24,6 +25,11 @@ import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
+import liquibase.exception.DuplicateChangeSetException;
+import liquibase.exception.LiquibaseParseException;
+import liquibase.exception.SetupException;
+import liquibase.exception.UnknownChangelogFormatException;
+import liquibase.exception.ValidationFailedException;
 import liquibase.integration.spring.SpringLiquibase;
 import liquibase.lockservice.LockService;
 import liquibase.lockservice.LockServiceFactory;
@@ -52,6 +58,14 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   private static final int DEFAULT_MIGRATION_RETRY_ATTEMPTS = 3;
   private static final Duration DEFAULT_RETRY_BACKOFF = Duration.ofMillis(200);
   private static final String CHANGE_LOG = "db/changelog/rdbms-exporter/changelog-master.xml";
+
+  /**
+   * Applied as a run of its own before {@link #CHANGE_LOG}, and deliberately not included by it.
+   * See the changelog's own comment for why the schema version has to be recorded before the schema
+   * is migrated rather than inferred from it afterwards.
+   */
+  private static final String SCHEMA_VERSION_SEED_CHANGE_LOG =
+      "db/changelog/rdbms-exporter/schema-version-seed.xml";
 
   /**
    * Forces Liquibase runs in this JVM to execute one at a time, because two of them overlapping
@@ -157,10 +171,40 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
     LOG.info("[RDBMS Schema] Running Liquibase migration with prefix '{}'.", prefix);
     final var runner = buildRunner();
     releaseStaleLockIfPresent();
-    versionStore.checkCompatibility();
-    performMigrationWithRetry(runner);
+    try {
+      seedSchemaVersion();
+      versionStore.checkCompatibility();
+      performMigrationWithRetry(runner);
+    } catch (final Exception e) {
+      throw isDeterministicFailure(e)
+          ? new RdbmsSchemaMigrationFailedException(
+              "[RDBMS Schema] Liquibase migration for prefix '"
+                  + prefix
+                  + "' cannot succeed as configured and will not be retried.",
+              e)
+          : e;
+    }
     versionStore.recordCurrentVersion();
     LOG.debug("[RDBMS Schema] Liquibase migration completed for prefix '{}'.", prefix);
+  }
+
+  /**
+   * Records the version this schema is already at, so that {@link
+   * RdbmsSchemaVersionStore#checkCompatibility()} reads a recorded fact instead of deducing one
+   * from which tables the schema happens to have.
+   *
+   * <p>A run of its own, ahead of the schema's: the check cannot read a row written by the
+   * migration it guards, and only Liquibase's changelog lock keeps a peer from being part-way
+   * through creating the tables the legacy-or-fresh decision is read from. Deducing it outside that
+   * lock is what #62554 was.
+   *
+   * <p>The extra run costs an extra changelog lock once per schema — on initial creation, or on the
+   * upgrade from 8.9. Both of its changesets are recorded in {@code DATABASECHANGELOG} after that,
+   * so Liquibase's fast check finds nothing to run and returns without taking the lock at all.
+   */
+  @VisibleForTesting
+  protected void seedSchemaVersion() throws Exception {
+    performMigrationWithRetry(buildRunner(SCHEMA_VERSION_SEED_CHANGE_LOG));
   }
 
   /**
@@ -197,9 +241,17 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
 
   @VisibleForTesting
   protected SpringLiquibase buildRunner() {
+    return buildRunner(CHANGE_LOG);
+  }
+
+  /**
+   * A runner for one changelog, against this tenant's data source and bookkeeping tables. Every
+   * changelog shares those tables, so a changeset applied by one run is skipped by the next.
+   */
+  private SpringLiquibase buildRunner(final String changeLog) {
     final var runner = new SpringLiquibase();
     runner.setDataSource(dataSource);
-    runner.setChangeLog(CHANGE_LOG);
+    runner.setChangeLog(changeLog);
     runner.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
     runner.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
     runner.setChangeLogParameters(
@@ -208,6 +260,13 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
             "userCharColumnSize", Integer.toString(vendorDatabaseProperties.userCharColumnSize()),
             "errorMessageSize", Integer.toString(vendorDatabaseProperties.errorMessageSize()),
             "treePathSize", Integer.toString(vendorDatabaseProperties.treePathSize())));
+    /**
+     * to avoid that Liquibase's JVM-wide fast-check mistakes one prefixed physical tenant's schema
+     * for another's {@link liquibase.changelog.FastCheckService#isUpToDateFastCheck}
+     */
+    if (StringUtils.isNotBlank(prefix)) {
+      runner.setContexts(prefix + "CONTEXT");
+    }
     return runner;
   }
 
@@ -262,6 +321,30 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
       Thread.currentThread().interrupt();
       throw e;
     }
+  }
+
+  /**
+   * Whether re-running the changelog could change the outcome. Walks the cause chain because
+   * Liquibase nests these: a checksum mismatch arrives as {@code LiquibaseException ->
+   * CommandExecutionException -> ValidationFailedException}.
+   *
+   * <p>Only {@link ValidationFailedException}, not its supertype {@code MigrationFailedException}:
+   * that also covers a changeset failing for want of a DDL grant, which retrying does repair.
+   */
+  @VisibleForTesting
+  static boolean isDeterministicFailure(final Throwable throwable) {
+    var current = throwable;
+    while (current != null) {
+      if (current instanceof ValidationFailedException
+          || current instanceof LiquibaseParseException
+          || current instanceof UnknownChangelogFormatException
+          || current instanceof DuplicateChangeSetException
+          || current instanceof SetupException) {
+        return true;
+      }
+      current = current.getCause();
+    }
+    return false;
   }
 
   private boolean isRetryableException(final Throwable throwable) {

@@ -10,6 +10,7 @@ import {z} from 'zod';
 import {
 	API_VERSION,
 	advancedStringFilterSchema,
+	getOrFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
@@ -41,12 +42,14 @@ type UpdateMappingRuleResponseBody = z.infer<typeof updateMappingRuleResponseBod
 
 const queryMappingRulesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['mappingRuleId', 'claimName', 'claimValue', 'name'] as const,
-	filter: z.object({
-		mappingRuleId: z.string().optional(),
-		claimName: z.string().optional(),
-		claimValue: z.string().optional(),
-		name: advancedStringFilterSchema.optional(),
-	}),
+	filter: getOrFilterSchema(
+		z.object({
+			mappingRuleId: advancedStringFilterSchema.optional(),
+			claimName: z.string().optional(),
+			claimValue: z.string().optional(),
+			name: advancedStringFilterSchema.optional(),
+		}),
+	),
 });
 type QueryMappingRulesRequestBody = z.infer<typeof queryMappingRulesRequestBodySchema>;
 

@@ -1,5 +1,5 @@
-# description: This is a reuseable workflow used to run Unit tests for Optimize, Tasklist, and Operate. Uses Junit5 Suite to determine which set of tests to run
-# test location: Optimize, Tasklist, Operate
+# description: This is a reusable workflow used to run unit tests for Optimize and Operate. Uses JUnit 5 suites to determine which set of tests to run
+# test location: Optimize, Operate
 # type: CI
 # owner: @camunda/core-features
 ---
@@ -84,7 +84,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # When called from ci.yml (use-shared-distball=true) restore the io.camunda SNAPSHOTs
       # build-distball archived to GCS instead of re-running the ~2 min reactor in each of the
-      # operate/tasklist/optimize back-end UT entries. github.run_id is stable across nested
+      # operate/optimize back-end UT entries. github.run_id is stable across nested
       # workflow_call, addressing the same run-scoped prefix build-distball wrote. See #52693.
       # (gcloud is authenticated by the GCS build-cache auth step above.)
       - if: ${{ inputs.use-shared-distball }}

@@ -47,4 +47,14 @@ public interface HealthMonitor extends HealthMonitorable {
    * @param component to be removed
    */
   void removeComponent(final HealthMonitorable component);
+
+  /**
+   * Stop monitoring the component with this name, whether it was added by {@link
+   * #monitorComponent(String)} or {@link #registerComponent(HealthMonitorable)}. This is the only
+   * way to undo a {@link #monitorComponent(String)} call, whose placeholder counts as not healthy
+   * and so keeps the monitor unhealthy until something removes it.
+   *
+   * @param componentName name of the component to be removed
+   */
+  void removeComponent(final String componentName);
 }

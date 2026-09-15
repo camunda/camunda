@@ -10,6 +10,7 @@ package io.camunda.optimize.service.businessvalue;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 
 import io.camunda.optimize.dto.optimize.DefinitionType;
+import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.AutomationRateBlock;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.CycleTimeBlock;
@@ -30,6 +31,7 @@ import io.camunda.optimize.service.dashboard.BusinessValueDashboardService;
 import io.camunda.optimize.service.db.report.PlainReportEvaluationHandler;
 import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.db.report.result.MapCommandResult;
+import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.db.repository.SearchLimitsRepository;
@@ -72,6 +74,32 @@ import org.springframework.stereotype.Component;
  * scheduler tick, so two full-scope sweeps may build chunk state and upsert the same document ids
  * at once. That is tolerable because a row is a pure function of its inputs and the writes are
  * idempotent, but it is worth knowing before adding per-sweep state that is not.
+ *
+ * <p>That purity holds only because targets are read immediately before the write rather than at
+ * the start of the sweep — a snapshot taken minutes earlier is a second input with a lifetime of
+ * its own, and two overlapping sweeps holding different ones produce different rows for the same
+ * id. Keep target reads adjacent to the write if this is restructured.
+ *
+ * <h2>Known limitations</h2>
+ *
+ * <p>Rows are eventually consistent, converging within one sweep interval. Nothing accumulates and
+ * no state is unrecoverable; the cases below trade a bounded window of slightly-stale measurements
+ * for not serializing writes, which this module has no precedent for.
+ *
+ * <ul>
+ *   <li><b>A target cleared while a sweep runs.</b> The definition was selected for measurement, so
+ *       the sweep writes its row with the target and verdict cleared — correct, but carrying the
+ *       measurements this sweep took rather than the fresher ones the save itself wrote. The
+ *       opposite transition — a definition that became targeted mid-sweep — is the one skipped
+ *       before the write, because there the sweep has no measurements at all and would replace good
+ *       values with nulls.
+ *   <li><b>Two saves for the same definition at once.</b> Each applies the target it persisted, so
+ *       neither can blend the other's values, but the writes are not ordered. If the later save's
+ *       measurement finishes first, the earlier one lands last and the rows end up describing a
+ *       target the target index no longer holds. Ordering this needs a version precondition or a
+ *       per-definition lock; neither is worth it for a window this small, on an action a single
+ *       user performs from one modal.
+ * </ul>
  */
 @Component
 public class BusinessValueOverviewComputeService {
@@ -97,6 +125,7 @@ public class BusinessValueOverviewComputeService {
       org.slf4j.LoggerFactory.getLogger(BusinessValueOverviewComputeService.class);
 
   private final BusinessValueTargetRepository targetRepository;
+  private final BusinessValueOverviewRepository overviewRepository;
   private final BusinessValueOverviewWriter overviewWriter;
   private final DefinitionService definitionService;
   private final ReportService reportService;
@@ -107,6 +136,7 @@ public class BusinessValueOverviewComputeService {
 
   public BusinessValueOverviewComputeService(
       final BusinessValueTargetRepository targetRepository,
+      final BusinessValueOverviewRepository overviewRepository,
       final BusinessValueOverviewWriter overviewWriter,
       final DefinitionService definitionService,
       final ReportService reportService,
@@ -115,6 +145,7 @@ public class BusinessValueOverviewComputeService {
       final SearchLimitsRepository searchLimitsRepository,
       final ConfigurationService configurationService) {
     this.targetRepository = targetRepository;
+    this.overviewRepository = overviewRepository;
     this.overviewWriter = overviewWriter;
     this.definitionService = definitionService;
     this.reportService = reportService;
@@ -146,10 +177,19 @@ public class BusinessValueOverviewComputeService {
       return;
     }
 
-    final Map<String, BusinessValueTargetDto> targetsByDocId = readTargets();
+    // Read once here to decide what is worth measuring, and again below to decide what is written.
+    // The two answer different questions and cannot be collapsed into one: this read has to happen
+    // before the evaluations, the one below has to happen after them, and moving either to the
+    // other side reintroduces a bug — reading only up front lets the sweep overwrite a target saved
+    // mid-run, reading only at the end leaves nothing to select on. A target that lands between the
+    // two is handled by dropping its row before the write; see below.
+    final Set<String> targetedDocIds = targetedDocIds();
+    if (targetedDocIds.isEmpty()) {
+      LOG.debug("No business-value targets set; sweeping rows without measuring any definition");
+    }
+
     final Set<String> keysWithInstanceIndex =
         mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex();
-    final OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
     final Map<String, List<DefinitionEntry>> definitionsByTenant =
         definitions.stream()
@@ -166,11 +206,174 @@ public class BusinessValueOverviewComputeService {
               perTenant.getValue(),
               ranges,
               keysWithInstanceIndex,
-              targetsByDocId,
-              now));
+              targetedDocIds));
+    }
+
+    // Targets are read here, after every evaluation has returned, rather than up front: the row
+    // carries the target it was written with, and a target saved while the sweep was still
+    // evaluating would otherwise be overwritten by the snapshot taken before it existed. The upsert
+    // is a blind write with no version precondition, so the sweep always wins that exchange and the
+    // user's target silently reverts until the next tick. Reading last narrows the window from the
+    // whole sweep — tens of seconds, and longer the bigger the catalog — to the bulk write itself.
+    final Map<String, BusinessValueTargetDto> targetsByDocId = readTargets();
+
+    // A definition targeted after the selection snapshot was never evaluated, so the row built for
+    // it here carries null values. The save that created that target has already measured the
+    // definition and written real values, and upserting this row would replace them with nulls —
+    // then stamp it fresh, so the backstop would not treat it as stale either. The user would see
+    // "target set, no data" until the next sweep, which is the outcome this whole change exists to
+    // prevent. Leave those rows out; the next sweep selects and measures them properly.
+    rowsToUpsert.removeIf(
+        row -> {
+          final String docId = targetDocId(row.getTenantId(), row.getProcessDefinitionKey());
+          final BusinessValueTargetDto target = targetsByDocId.get(docId);
+          return target != null && hasAnyTarget(target) && !targetedDocIds.contains(docId);
+        });
+
+    // Stamped here rather than when the sweep started, so that whichever writer touches a row last
+    // also leaves the latest timestamp on it. A sweep that began before a target write and finished
+    // after it would otherwise move the row's freshness backwards, and the stale-read backstop keys
+    // off exactly that field. The cost is that a long sweep overstates freshness by its own
+    // duration, which is the price of the ordering property.
+    final OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+    for (final BusinessValueOverviewDto row : rowsToUpsert) {
+      row.setLastComputedAt(now);
+      applyTarget(
+          row, targetsByDocId.get(targetDocId(row.getTenantId(), row.getProcessDefinitionKey())));
     }
 
     overviewWriter.bulkUpsertFromScheduler(rowsToUpsert);
+  }
+
+  /**
+   * Writes a target and the verdict it implies onto a row that already carries its measured values.
+   * A {@code null} target clears both, which is what a cleared target must produce.
+   *
+   * <p>Separated from row construction so the target can be applied after every evaluation has
+   * returned rather than from a snapshot taken before the first — see {@link #computeOverviewRows}.
+   * {@link BusinessValueVerdict} is a pure function of the measured value and the target, so
+   * applying it last produces the same row as applying it during construction would have.
+   *
+   * <p>All five fields move together because {@code BusinessValueOverviewWriter} rejects a row
+   * whose {@code targetsSet} or {@code hasAnyTarget} disagrees with its blocks.
+   */
+  static void applyTarget(final BusinessValueOverviewDto row, final BusinessValueTargetDto target) {
+    final CycleTimeBlock cycleTime =
+        BusinessValueVerdict.cycleTimeBlock(
+            row.getCycleTime() == null ? null : row.getCycleTime().getValue(),
+            target == null ? null : target.getCycleTimeTargetMillis());
+    final AutomationRateBlock automationRate =
+        BusinessValueVerdict.automationRateBlock(
+            row.getAutomationRate() == null ? null : row.getAutomationRate().getValue(),
+            target == null ? null : target.getAutomationRateTargetPct());
+
+    final int targetsSet =
+        (cycleTime.getTarget() != null ? 1 : 0) + (automationRate.getTarget() != null ? 1 : 0);
+    final int targetsMet =
+        (Boolean.TRUE.equals(cycleTime.getMet()) ? 1 : 0)
+            + (Boolean.TRUE.equals(automationRate.getMet()) ? 1 : 0);
+
+    row.setCycleTime(cycleTime);
+    row.setAutomationRate(automationRate);
+    row.setHasAnyTarget(targetsSet > 0);
+    row.setTargetsSet(targetsSet);
+    row.setTargetsMet(targetsMet);
+  }
+
+  /**
+   * Measures one definition and writes its overview rows, so the caller's next {@code GET
+   * /business-value/overview} reflects a target the moment it is saved instead of waiting out a
+   * sweep interval.
+   *
+   * <p>Delegates to the same {@link #rowsForTenant} the sweep uses, with a single-entry list. That
+   * also covers a definition imported since the last sweep, which has no rows at all: rowsForTenant
+   * builds a row per range for every definition it is given, evaluated or not, so the row is
+   * created here rather than needing a separate path.
+   *
+   * <p><b>Always evaluates.</b> Re-deriving the verdict from whatever values the row already holds
+   * would be cheaper, and is wrong: a target cleared and re-set months later would pair a fresh
+   * target with a stale measurement and produce a confident, incorrect verdict. The only case where
+   * stored values are used instead is the kill switch below, where the alternative is no update at
+   * all.
+   *
+   * <p>Cost is one definition's worth of aggregations — two reports across four ranges, pinning a
+   * single instance index — which is what makes this affordable inside a request.
+   *
+   * @param target the target exactly as persisted — passed in rather than re-read so that two
+   *     concurrent saves for the same definition cannot each apply the other's value
+   */
+  public void computeRowsForTarget(final BusinessValueTargetDto target) {
+    if (target == null) {
+      throw new IllegalArgumentException("target must not be null");
+    }
+
+    // Evaluation is what overviewComputeEnabled exists to stop, so it is gated here too. Falling
+    // back to the stored values keeps the target itself coherent at no query cost, which is the
+    // behaviour the switch is meant to preserve: numbers freeze, the dashboard keeps working.
+    if (!configurationService.getBusinessValueConfiguration().isOverviewComputeEnabled()) {
+      LOG.debug(
+          "Business-value overview compute is disabled; re-deriving the verdict for tenant [{}] "
+              + "definition [{}] from stored values instead of evaluating",
+          target.getTenantId(),
+          target.getProcessDefinitionKey());
+      applyTargetToExistingRows(target);
+      return;
+    }
+
+    final DefinitionEntry entry =
+        new DefinitionEntry(
+            target.getTenantId(),
+            target.getProcessDefinitionKey(),
+            definitionName(target.getProcessDefinitionKey()));
+
+    final List<BusinessValueOverviewDto> rows =
+        rowsForTenant(
+            target.getTenantId(),
+            List.of(entry),
+            List.of(MetricRange.values()),
+            mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex(),
+            // Measured whatever the new target says, including a clear: the values are refreshed
+            // one last time on the way out, and the sweep stops measuring it from the next tick.
+            Set.of(targetDocId(target.getTenantId(), target.getProcessDefinitionKey())));
+
+    final OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+    for (final BusinessValueOverviewDto row : rows) {
+      row.setLastComputedAt(now);
+      applyTarget(row, target);
+    }
+    overviewWriter.bulkUpsertFromTargetWrite(rows);
+  }
+
+  /**
+   * Applies a target to the rows that already exist, without measuring anything. Used only when the
+   * sweep is switched off — a definition with no rows yet gets nothing, and {@code
+   * BusinessValueOverviewReadService} surfaces that case by joining live targets onto the rows it
+   * reads.
+   *
+   * <p>{@link BusinessValueOverviewDto#getLastComputedAt()} is left as it was: it records when the
+   * values were measured, and nothing was measured here.
+   */
+  private void applyTargetToExistingRows(final BusinessValueTargetDto target) {
+    final List<BusinessValueOverviewDto> rows = new ArrayList<>();
+    for (final MetricRange range : MetricRange.values()) {
+      overviewRepository
+          .getByKey(target.getTenantId(), target.getProcessDefinitionKey(), range)
+          .ifPresent(
+              row -> {
+                applyTarget(row, target);
+                rows.add(row);
+              });
+    }
+    if (!rows.isEmpty()) {
+      overviewWriter.bulkUpsertFromTargetWrite(rows);
+    }
+  }
+
+  private String definitionName(final String processDefinitionKey) {
+    return definitionService
+        .getProcessDefinitionWithTenants(processDefinitionKey)
+        .map(SimpleDefinitionDto::getName)
+        .orElse(processDefinitionKey);
   }
 
   /**
@@ -183,10 +386,9 @@ public class BusinessValueOverviewComputeService {
       final List<DefinitionEntry> tenantDefinitions,
       final List<MetricRange> ranges,
       final Set<String> keysWithInstanceIndex,
-      final Map<String, BusinessValueTargetDto> targetsByDocId,
-      final OffsetDateTime now) {
+      final Set<String> targetedDocIds) {
     final List<List<DefinitionEntry>> chunks =
-        chunk(evaluableDefinitions(tenantDefinitions, keysWithInstanceIndex));
+        chunk(evaluableDefinitions(tenantDefinitions, keysWithInstanceIndex, targetedDocIds));
     final List<BusinessValueOverviewDto> rows = new ArrayList<>();
 
     for (final MetricRange range : ranges) {
@@ -206,9 +408,7 @@ public class BusinessValueOverviewComputeService {
                 def,
                 range,
                 cycleMillisByKey.get(def.processDefinitionKey()),
-                automationPctByKey.get(def.processDefinitionKey()),
-                targetsByDocId,
-                now));
+                automationPctByKey.get(def.processDefinitionKey())));
       }
     }
     return rows;
@@ -246,13 +446,47 @@ public class BusinessValueOverviewComputeService {
    * from the query and left with a permanently null-valued row.
    */
   private static List<DefinitionEntry> evaluableDefinitions(
-      final List<DefinitionEntry> definitions, final Set<String> lowercasedKeysWithInstanceIndex) {
+      final List<DefinitionEntry> definitions,
+      final Set<String> lowercasedKeysWithInstanceIndex,
+      final Set<String> targetedDocIds) {
     return definitions.stream()
         .filter(
             def ->
                 lowercasedKeysWithInstanceIndex.contains(
                     def.processDefinitionKey().toLowerCase(Locale.ENGLISH)))
+        .filter(
+            def -> targetedDocIds.contains(targetDocId(def.tenantId(), def.processDefinitionKey())))
         .toList();
+  }
+
+  /**
+   * The {@code (tenantId, processDefinitionKey)} pairs worth measuring — those that currently carry
+   * a target.
+   *
+   * <p>Keyed by the pair rather than by definition key alone. The same BPMN process id can be
+   * deployed on several tenants and targeted on only one of them, and the Hub's target modal lets a
+   * user pick that tenant, so a key-level set would measure a definition for tenants nobody asked
+   * about and attribute one tenant's answer to another.
+   *
+   * <p>A cleared target leaves its document behind with null fields rather than deleting it, so
+   * presence alone is not enough — the definition stops being measured only once every target field
+   * is null, which is what clearing is supposed to mean.
+   */
+  private Set<String> targetedDocIds() {
+    return readTargets().entrySet().stream()
+        .filter(entry -> hasAnyTarget(entry.getValue()))
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * Whether a target document actually carries a target. Clearing a target leaves the document
+   * behind with every field null rather than deleting it, so presence in the index is not the same
+   * as being targeted — the sweep uses this to decide what to measure, and {@code
+   * BusinessValueOverviewReadService} to decide what is worth surfacing.
+   */
+  static boolean hasAnyTarget(final BusinessValueTargetDto target) {
+    return target.getCycleTimeTargetMillis() != null || target.getAutomationRateTargetPct() != null;
   }
 
   /**
@@ -327,40 +561,28 @@ public class BusinessValueOverviewComputeService {
         || c == '~';
   }
 
+  /**
+   * Builds a row carrying its measured values and no target. {@link #applyTarget} fills in the
+   * target and the verdict it implies once every evaluation has returned — see {@link
+   * #computeOverviewRows} for why that happens last rather than here.
+   */
   private BusinessValueOverviewDto buildRow(
       final DefinitionEntry def,
       final MetricRange range,
       final Double cycleMillis,
-      final Double automationPct,
-      final Map<String, BusinessValueTargetDto> targetsByDocId,
-      final OffsetDateTime now) {
-    final BusinessValueTargetDto target =
-        targetsByDocId.get(targetDocId(def.tenantId(), def.processDefinitionKey()));
-
-    final CycleTimeBlock cycleTime =
-        BusinessValueVerdict.cycleTimeBlock(
-            toLongMillis(cycleMillis), target == null ? null : target.getCycleTimeTargetMillis());
-    final AutomationRateBlock automationRate =
-        BusinessValueVerdict.automationRateBlock(
-            automationPct, target == null ? null : target.getAutomationRateTargetPct());
-
-    final int targetsSet =
-        (cycleTime.getTarget() != null ? 1 : 0) + (automationRate.getTarget() != null ? 1 : 0);
-    final int targetsMet =
-        (Boolean.TRUE.equals(cycleTime.getMet()) ? 1 : 0)
-            + (Boolean.TRUE.equals(automationRate.getMet()) ? 1 : 0);
-
+      final Double automationPct) {
     return new BusinessValueOverviewDto(
         def.tenantId(),
         def.processDefinitionKey(),
         def.processDefinitionName(),
         range,
-        now,
-        cycleTime,
-        automationRate,
-        targetsSet > 0,
-        targetsSet,
-        targetsMet);
+        // Replaced with the write-time stamp by the caller; see computeOverviewRows.
+        null,
+        BusinessValueVerdict.cycleTimeBlock(toLongMillis(cycleMillis), null),
+        BusinessValueVerdict.automationRateBlock(automationPct, null),
+        false,
+        0,
+        0);
   }
 
   /**

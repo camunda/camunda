@@ -20,6 +20,11 @@ interface ProcessDefinitionWithIdentifier extends ProcessDefinition {
   label: string;
 }
 
+interface ProcessDefinitionVersionOption {
+  value: number | 'all';
+  state?: ProcessDefinition['state'];
+}
+
 type ProcessDefinitionSelection =
   | {kind: 'no-match'}
   | {kind: 'single-version'; definition: ProcessDefinition}
@@ -83,8 +88,15 @@ function useProcessDefinitionVersions(
       sort: [{field: 'version', order: 'desc'}],
     },
     select: (definitions) => {
-      const versions = definitions.map((definition) => definition.version);
-      return versions.length > 1 ? ['all', ...versions] : versions;
+      const versions: ProcessDefinitionVersionOption[] = definitions.map(
+        ({version, state}) => ({
+          value: version,
+          state,
+        }),
+      );
+      return versions.length > 1
+        ? [{value: 'all' as const}, ...versions]
+        : versions;
     },
   });
 }

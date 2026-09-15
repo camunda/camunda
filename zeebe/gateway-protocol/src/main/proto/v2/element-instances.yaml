@@ -903,7 +903,6 @@ components:
     JobWaitStateDetails:
       type: object
       required:
-        - waitStateType
         - jobKey
         - jobType
         - jobKind
@@ -937,7 +936,6 @@ components:
     MessageWaitStateDetails:
       type: object
       required:
-        - waitStateType
         - messageName
         - correlationKey
       allOf:
@@ -954,7 +952,6 @@ components:
     UserTaskWaitStateDetails:
       type: object
       required:
-        - waitStateType
         - taskKey
         - dueDate
       allOf:
@@ -973,7 +970,6 @@ components:
     TimerWaitStateDetails:
       type: object
       required:
-        - waitStateType
         - dueDate
         - repetitions
       allOf:
@@ -993,7 +989,6 @@ components:
     SignalWaitStateDetails:
       type: object
       required:
-        - waitStateType
         - signalName
       allOf:
         - $ref: '#/components/schemas/BaseWaitStateDetails'
@@ -1006,7 +1001,6 @@ components:
     ConditionWaitStateDetails:
       type: object
       required:
-        - waitStateType
         - expression
         - events
       allOf:

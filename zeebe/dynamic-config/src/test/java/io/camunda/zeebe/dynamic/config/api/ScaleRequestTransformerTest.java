@@ -8,14 +8,15 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -183,9 +184,15 @@ class ScaleRequestTransformerTest {
         distributor.distributePartitions(
             oldMembers, getSortedPartitionIds(partitionCount), replicationFactor);
     var oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "clusterId");
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            oldMembers,
+            oldDistribution,
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, partitionConfig),
+            "clusterId");
     if (config != null) {
-      oldClusterTopology = oldClusterTopology.setPartitionDistributorConfig(config);
+      oldClusterTopology =
+          oldClusterTopology.updateGlobalConfiguration(
+              globalConfiguration -> globalConfiguration.setPartitionDistributorConfig(config));
     }
 
     // when
@@ -229,23 +236,29 @@ class ScaleRequestTransformerTest {
         distributor.distributePartitions(
             oldMembers, getSortedPartitionIds(partitionCount), replicationFactor);
     var oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "clusterId");
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            oldMembers,
+            oldDistribution,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionConfig),
+            "clusterId");
     if (config != null) {
-      oldClusterTopology = oldClusterTopology.setPartitionDistributorConfig(config);
+      oldClusterTopology =
+          oldClusterTopology.updateGlobalConfiguration(
+              globalConfiguration -> globalConfiguration.setPartitionDistributorConfig(config));
     }
 
     // when
-    final var operations =
-        plannedOperations(new ScaleRequestTransformer(newMembers), oldClusterTopology).get();
+    final var phases = new ScaleRequestTransformer(newMembers).phases(oldClusterTopology).get();
 
-    // apply operations to generate new topology
-    final ClusterConfiguration newTopology =
-        TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
+    // apply phases to generate new topology
+    final var newTopology = TestTopologyChangeSimulator.apply(oldClusterTopology, phases);
 
     // then
-    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
+    final var newDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(
+            newTopology, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(newDistribution).isEqualTo(expectedNewDistribution);
-    assertThat(newTopology.members().keySet()).containsExactlyInAnyOrderElementsOf(newMembers);
+    assertThat(newTopology.getMembers()).containsExactlyInAnyOrderElementsOf(newMembers);
   }
 
   @Test
@@ -298,7 +311,7 @@ class ScaleRequestTransformerTest {
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(id -> new PartitionId("temp", id))
+        .mapToObj(id -> new PartitionId(CurrentClusterConfiguration.DEFAULT_GROUP, id))
         .collect(Collectors.toList());
   }
 
@@ -315,18 +328,24 @@ class ScaleRequestTransformerTest {
       final Consumer<List<ClusterConfigurationChangeOperation>> whenRight) {
     final var clusterSize = 3;
     final var replicationFactor = 3;
+    final var members =
+        IntStream.range(1, clusterSize)
+            .mapToObj(id -> MemberId.from(Integer.toString(id)))
+            .collect(Collectors.toSet());
     final var distribution =
         new RoundRobinPartitionDistributor()
             .distributePartitions(
-                IntStream.range(1, clusterSize)
-                    .mapToObj(id -> MemberId.from(Integer.toString(id)))
-                    .collect(Collectors.toSet()),
+                members,
                 partitionsInRange(1, 1 + currentPartitionCount).stream()
-                    .map(i -> new PartitionId("temp", i))
+                    .map(i -> new PartitionId(CurrentClusterConfiguration.DEFAULT_GROUP, i))
                     .toList(),
                 replicationFactor);
     final var config =
-        ConfigurationUtil.getClusterConfigFrom(distribution, partitionConfig, "clusterId");
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            members,
+            distribution,
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, partitionConfig),
+            "clusterId");
     final var transformer =
         new ScaleRequestTransformer(
             getClusterMembers(clusterSize), Optional.of(3), Optional.of(desiredPartitionCount));
@@ -359,22 +378,13 @@ class ScaleRequestTransformerTest {
     }
 
     private CurrentClusterConfiguration twoTenantCluster(final Set<MemberId> members) {
-      final var legacy =
-          ConfigurationUtil.getClusterConfigFrom(
+      return withMirroredTenant(
+          ConfigurationUtil.getCurrentClusterConfigurationFrom(
+              members,
               new RoundRobinPartitionDistributor()
                   .distributePartitions(members, sortedPartitionIds(3), 1),
-              DynamicPartitionConfig.init(),
-              "clusterId");
-      final var single = CurrentClusterConfiguration.fromLegacy(legacy);
-      return new CurrentClusterConfiguration(
-          single.version(),
-          single.globalConfiguration(),
-          Map.of(
-              CurrentClusterConfiguration.DEFAULT_GROUP,
-              single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
-              TENANT_A,
-              single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)),
-          single.phasedChangeState());
+              Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, DynamicPartitionConfig.init()),
+              "clusterId"));
     }
 
     @Test
@@ -621,16 +631,19 @@ class ScaleRequestTransformerTest {
       final Set<MemberId> newMembers = new HashSet<>(UNSCALED_MEMBERS);
       newMembers.add(MemberId.from("zone-b", 1));
       final var oldTopology =
-          ConfigurationUtil.getClusterConfigFrom(
+          ConfigurationUtil.getCurrentClusterConfigurationFrom(
+                  UNSCALED_MEMBERS,
                   ZONE_AWARE_CONFIG
                       .toDistributor()
                       .distributePartitions(
                           UNSCALED_MEMBERS,
                           getSortedPartitionIds(3),
                           ZONE_AWARE_CONFIG.replicationFactor()),
-                  partitionConfig,
+                  Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, partitionConfig),
                   "clusterId")
-              .setPartitionDistributorConfig(ZONE_AWARE_CONFIG);
+              .updateGlobalConfiguration(
+                  globalConfiguration ->
+                      globalConfiguration.setPartitionDistributorConfig(ZONE_AWARE_CONFIG));
 
       // when
       final var operations =
@@ -703,25 +716,18 @@ class ScaleRequestTransformerTest {
     }
 
     private CurrentClusterConfiguration twoTenantZoneAwareCluster(final Set<MemberId> members) {
-      final var legacy =
-          ConfigurationUtil.getClusterConfigFrom(
+      return withMirroredTenant(
+          ConfigurationUtil.getCurrentClusterConfigurationFrom(
+                  members,
                   ZONE_AWARE_CONFIG
                       .toDistributor()
                       .distributePartitions(
                           members, sortedPartitionIds(3), ZONE_AWARE_CONFIG.replicationFactor()),
-                  DynamicPartitionConfig.init(),
+                  Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, DynamicPartitionConfig.init()),
                   "clusterId")
-              .setPartitionDistributorConfig(ZONE_AWARE_CONFIG);
-      final var single = CurrentClusterConfiguration.fromLegacy(legacy);
-      return new CurrentClusterConfiguration(
-          single.version(),
-          single.globalConfiguration(),
-          Map.of(
-              CurrentClusterConfiguration.DEFAULT_GROUP,
-              single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
-              TENANT_A,
-              single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)),
-          single.phasedChangeState());
+              .updateGlobalConfiguration(
+                  globalConfiguration ->
+                      globalConfiguration.setPartitionDistributorConfig(ZONE_AWARE_CONFIG)));
     }
 
     @Test
@@ -731,16 +737,19 @@ class ScaleRequestTransformerTest {
       final Set<MemberId> newMembers = new HashSet<>(UNSCALED_MEMBERS);
       newMembers.add(MemberId.from("zone-c", 0));
       final var oldTopology =
-          ConfigurationUtil.getClusterConfigFrom(
+          ConfigurationUtil.getCurrentClusterConfigurationFrom(
+                  UNSCALED_MEMBERS,
                   ZONE_AWARE_CONFIG
                       .toDistributor()
                       .distributePartitions(
                           UNSCALED_MEMBERS,
                           getSortedPartitionIds(3),
                           ZONE_AWARE_CONFIG.replicationFactor()),
-                  partitionConfig,
+                  Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, partitionConfig),
                   "clusterId")
-              .setPartitionDistributorConfig(ZONE_AWARE_CONFIG);
+              .updateGlobalConfiguration(
+                  globalConfiguration ->
+                      globalConfiguration.setPartitionDistributorConfig(ZONE_AWARE_CONFIG));
 
       // when
       final var operations =

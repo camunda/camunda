@@ -23,7 +23,16 @@ const itemToString = (mappingRule: MappingRule) =>
 const itemSubTitle = (mappingRule: MappingRule) => mappingRule.name;
 const search = (search: string) =>
   mappingRuleQueries.search(
-    search.trim() ? { filter: { name: { $like: `*${search}*` } } } : {},
+    search.trim()
+      ? {
+          filter: {
+            $or: [
+              { name: { $like: `*${search}*` } },
+              { mappingRuleId: { $like: `*${search}*` } },
+            ],
+          },
+        }
+      : {},
   );
 
 export const MappingRuleMultiSelect: FC<

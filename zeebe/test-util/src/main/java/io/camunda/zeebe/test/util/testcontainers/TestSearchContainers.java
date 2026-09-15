@@ -8,11 +8,14 @@
 package io.camunda.zeebe.test.util.testcontainers;
 
 import java.time.Duration;
+import java.util.Locale;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.mssqlserver.MSSQLServerContainer;
 import org.testcontainers.oracle.OracleContainer;
@@ -23,22 +26,23 @@ public final class TestSearchContainers {
   public static final String CAMUNDA_DATABASE = "camunda";
   public static final String CAMUNDA_USER = "camunda";
   public static final String CAMUNDA_PASSWORD = "Strong_Pass123!";
-
+  // startup can be slow in CI
+  private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(5);
   // Keep in sync with version.elasticsearch.container in parent/pom.xml
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("8.19.16");
   // Keep in sync with version.opensearch.container in parent/pom.xml
   private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.5");
+      DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.6");
   private static final DockerImageName POSTGRES_IMAGE =
-      DockerImageName.parse("postgres").withTag("15.3-alpine");
+      DockerImageName.parse("postgres").withTag("15-alpine");
   private static final DockerImageName MARIADB_IMAGE =
       DockerImageName.parse("mariadb").withTag("12.3");
   private static final DockerImageName MYSQL_IMAGE = DockerImageName.parse("mysql").withTag("9.7");
   private static final DockerImageName MSSQLSERVER_IMAGE =
       DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2022-latest");
   private static final DockerImageName ORACLE_IMAGE =
-      DockerImageName.parse("gvenzl/oracle-free").withTag("slim");
+      DockerImageName.parse("gvenzl/oracle-free").withTag("23.26.2-slim-faststart");
 
   private TestSearchContainers() {}
 
@@ -92,8 +96,7 @@ public final class TestSearchContainers {
             "elasticsearch-fast-startup.options",
             "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
             BindMode.READ_ONLY)
-        // can be slow in CI
-        .withStartupTimeout(Duration.ofMinutes(5))
+        .withStartupTimeout(STARTUP_TIMEOUT)
         .withEnv("action.auto_create_index", "true")
         .withEnv("xpack.security.enabled", "false")
         .withEnv("xpack.watcher.enabled", "false")
@@ -101,12 +104,24 @@ public final class TestSearchContainers {
         .withEnv("action.destructive_requires_name", "false");
   }
 
+  public static HttpWaitStrategy waitForClusterHealth() {
+    // only waiting for yellow as that means we should be able to start
+    // using the cluster - even if not all replicas are ready
+    return (HttpWaitStrategy)
+        Wait.forHttp("/_cluster/health?wait_for_status=yellow")
+            .forPort(9200)
+            .forStatusCode(200)
+            .forResponsePredicate(
+                response -> !response.toLowerCase(Locale.ROOT).contains("\"red\""))
+            .withStartupTimeout(STARTUP_TIMEOUT);
+  }
+
   public static PostgreSQLContainer<?> createDefaultPostgresContainer() {
     return new PostgreSQLContainer<>(POSTGRES_IMAGE)
         .withDatabaseName(CAMUNDA_DATABASE)
         .withUsername(CAMUNDA_USER)
         .withPassword(CAMUNDA_PASSWORD)
-        .withStartupTimeout(Duration.ofMinutes(5));
+        .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
   public static PostgreSQLContainer<?> createManualPostgresContainer() {
@@ -117,7 +132,7 @@ public final class TestSearchContainers {
         .withInitScripts(
             "db-init-scripts/postgres-manual-user.sql",
             "liquibase/sql/create/postgresql/postgresql_master.sql")
-        .withStartupTimeout(Duration.ofMinutes(5));
+        .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
   public static OracleContainer createDefaultOracleContainer() {
@@ -125,7 +140,7 @@ public final class TestSearchContainers {
         .withDatabaseName(CAMUNDA_DATABASE)
         .withUsername(CAMUNDA_USER)
         .withPassword(CAMUNDA_PASSWORD)
-        .withStartupTimeout(Duration.ofMinutes(5));
+        .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
   /**
@@ -140,7 +155,7 @@ public final class TestSearchContainers {
         .withUsername(CAMUNDA_USER)
         .withPassword(CAMUNDA_PASSWORD)
         .withInitScripts("liquibase/sql/create/oracle/oracle_master.sql")
-        .withStartupTimeout(Duration.ofMinutes(5));
+        .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
   public static MariaDBContainer<?> createDefaultMariaDBContainer() {
@@ -148,7 +163,7 @@ public final class TestSearchContainers {
         .withDatabaseName(CAMUNDA_DATABASE)
         .withUsername(CAMUNDA_USER)
         .withPassword(CAMUNDA_PASSWORD)
-        .withStartupTimeout(Duration.ofMinutes(5));
+        .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
   public static MariaDBContainer<?> createManualMariaDBContainer() {
@@ -164,7 +179,7 @@ public final class TestSearchContainers {
             "/docker-entrypoint-initdb.d/mariadb-manual-user.sql",
             BindMode.READ_ONLY)
         .withInitScripts("liquibase/sql/create/mariadb/mariadb_master.sql")
-        .withStartupTimeout(Duration.ofMinutes(5));
+        .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
   public static MySQLContainer<?> createDefaultMySQLContainer() {
@@ -172,7 +187,7 @@ public final class TestSearchContainers {
         .withDatabaseName(CAMUNDA_DATABASE)
         .withUsername(CAMUNDA_USER)
         .withPassword(CAMUNDA_PASSWORD)
-        .withStartupTimeout(Duration.ofMinutes(5));
+        .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
   public static MySQLContainer<?> createManualMySQLContainer() {
@@ -188,13 +203,13 @@ public final class TestSearchContainers {
             "/docker-entrypoint-initdb.d/mysql-manual-user.sql",
             BindMode.READ_ONLY)
         .withInitScripts("liquibase/sql/create/mysql/mysql_master.sql")
-        .withStartupTimeout(Duration.ofMinutes(5));
+        .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
   public static MSSQLServerContainer createDefaultMSSQLServerContainer() {
     return new MSSQLServerContainer(MSSQLSERVER_IMAGE)
         .withPassword(CAMUNDA_PASSWORD)
-        .withStartupTimeout(Duration.ofMinutes(5))
+        .withStartupTimeout(STARTUP_TIMEOUT)
         .acceptLicense();
   }
 
@@ -202,7 +217,7 @@ public final class TestSearchContainers {
     return new MSSQLServerContainer(MSSQLSERVER_IMAGE)
         .withInitScripts(
             "db-init-scripts/mssql-manual-user.sql", "liquibase/sql/create/mssql/mssql_master.sql")
-        .withStartupTimeout(Duration.ofMinutes(5))
+        .withStartupTimeout(STARTUP_TIMEOUT)
         .acceptLicense();
   }
 }

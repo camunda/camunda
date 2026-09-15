@@ -14,6 +14,7 @@ import type {CreateDecisionInstancesDeletionBatchOperationResponseBody} from '@c
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
 import {buildInstanceKeyCriterion, type DecisionInstancesFilter} from './decisionsFilter';
 
 type Props = {
@@ -67,10 +68,7 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 
 		const {batchOperationKey, batchOperationType}: CreateDecisionInstancesDeletionBatchOperationResponseBody =
 			await response.json();
-		const operationTypeLabel = batchOperationType
-			.split('_')
-			.map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-			.join(' ');
+		const operationTypeLabel = formatOperationType(batchOperationType);
 
 		notificationsStore.displayNotification({
 			kind: 'success',

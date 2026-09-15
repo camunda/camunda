@@ -168,7 +168,7 @@
     <dependency>
       <groupId>com.ibm.icu</groupId>
       <artifactId>icu4j</artifactId>
-      <version>78.3</version>
+      <version>${version.icu4j}</version>
       <scope>test</scope>
     </dependency>
 
@@ -747,6 +747,7 @@
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
           <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly, async-repl</excludedGroups>
+          <forkedProcessTimeoutInSeconds>10800</forkedProcessTimeoutInSeconds>
         </configuration>
         <dependencies>
           <dependency>

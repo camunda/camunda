@@ -19,4 +19,15 @@ import org.jspecify.annotations.NullMarked;
  * OutputMappingResultBuilder}).
  */
 @NullMarked
-public record OutputMapping(Expression source, List<String> targetPath) {}
+public record OutputMapping(Expression source, List<String> targetPath) {
+
+  @Override
+  public String toString() {
+    return "OutputMapping{"
+        + "source='"
+        + source.getExpression()
+        + "', targetPath="
+        + targetPath
+        + '}';
+  }
+}

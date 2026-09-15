@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.tasks.incident;
 
-import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,7 +16,7 @@ import java.util.concurrent.CompletionStage;
 
 class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository {
   private IncidentUpdateRepository realUpdateRepository;
-  private boolean failFlowNodeBulkUpdates;
+  private volatile boolean failFlowNodeBulkUpdates;
 
   void setRealUpdateRepository(final IncidentUpdateRepository realUpdateRepository) {
     this.realUpdateRepository = realUpdateRepository;
@@ -25,6 +24,11 @@ class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository
 
   void setFailFlowNodeBulkUpdates(final boolean failFlowNodeBulkUpdates) {
     this.failFlowNodeBulkUpdates = failFlowNodeBulkUpdates;
+  }
+
+  @Override
+  public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+    return realUpdateRepository.getCountOfPendingIncidentUpdates(fromPosition);
   }
 
   @Override

@@ -37,4 +37,14 @@ interface AwsSecretResolver {
    * to the caller, which logs a warning and continues; called once at construction time.
    */
   void validateConnectivity();
+
+  /**
+   * How many names one {@link #resolve} call covers. {@code 1} for the unbatched flat mode, issuing
+   * one {@code GetSecretValue} call per name; the configured batch size for the batched flat mode,
+   * issuing one {@code BatchGetSecretValue} call per that many names; {@link Integer#MAX_VALUE} for
+   * a container secret, which reads every requested name from one shared secret in a single call.
+   */
+  default int namesPerCall() {
+    return Integer.MAX_VALUE;
+  }
 }

@@ -7,7 +7,7 @@
  */
 
 import {Suspense, useMemo} from 'react';
-import {useInfiniteQuery} from '@tanstack/react-query';
+import {useInfiniteQuery, useQuery} from '@tanstack/react-query';
 import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -18,7 +18,12 @@ import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
 import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {LinkWrapper, LoadingRow} from '../styled';
-import {instancesByProcessInfiniteQuery, PAGE_SIZE} from './instancesByProcess.queries';
+import {
+	drainingByIdKey,
+	drainingProcessDefinitionsQuery,
+	instancesByProcessInfiniteQuery,
+	PAGE_SIZE,
+} from './instancesByProcess.queries';
 import {InstancesByProcessVersions} from './InstancesByProcessVersions';
 
 const InstancesByProcess: React.FC = () => {
@@ -34,6 +39,8 @@ const InstancesByProcess: React.FC = () => {
 		isFetchingNextPage,
 		isFetchingPreviousPage,
 	} = useInfiniteQuery({...instancesByProcessInfiniteQuery(), refetchInterval: 5000});
+
+	const {data: draining} = useQuery(drainingProcessDefinitionsQuery());
 
 	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 
@@ -68,13 +75,15 @@ const InstancesByProcess: React.FC = () => {
 								label={{type: 'process', size: 'medium', text: labelText}}
 								activeInstancesCount={item.activeInstancesWithoutIncidentCount}
 								incidentsCount={item.activeInstancesWithIncidentCount}
+								isDraining={!!draining?.byId.has(drainingByIdKey(item.tenantId, item.processDefinitionId))}
+								drainingDescription={t('operate.dashboard.drainingDescriptionAllVersions')}
 								size="medium"
 							/>
 						</LinkWrapper>
 					),
 				};
 			}),
-		[items, t],
+		[items, t, draining],
 	);
 
 	const expandedContents = useMemo(
@@ -92,14 +101,18 @@ const InstancesByProcess: React.FC = () => {
 									</LoadingRow>
 								}
 							>
-								<InstancesByProcessVersions processDefinitionId={item.processDefinitionId} tenantId={item.tenantId} />
+								<InstancesByProcessVersions
+									processDefinitionId={item.processDefinitionId}
+									tenantId={item.tenantId}
+									drainingDefinitionKeys={draining?.byKey}
+								/>
 							</Suspense>
 						</ErrorBoundary>
 					);
 				}
 				return accumulator;
 			}, {}),
-		[items, t],
+		[items, t, draining?.byKey],
 	);
 
 	return (

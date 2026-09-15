@@ -9,7 +9,6 @@ writing forms in `@camunda/orchestration-cluster-webapp`.
 | App                                     | Library          |
 | --------------------------------------- | ---------------- |
 | `@camunda/orchestration-cluster-webapp` | react-final-form |
-| Tasklist (`tasklist/client`)            | react-final-form |
 | Operate (`operate/client`)              | react-final-form |
 | Identity (`identity/client`)            | react-hook-form  |
 

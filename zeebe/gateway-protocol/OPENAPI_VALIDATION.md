@@ -218,6 +218,46 @@ paths:
 
 See §2.20 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention, including how this maps to the `@ClusterScoped` controller annotation.
 
+### Conditional-presence annotations (`x-present-when`)
+
+A response property may be present only for certain request shapes. OpenAPI 3.x
+cannot express that a response field's presence depends on a request field, so
+generated SDKs default to typing such fields as always-nullable — which lets
+users write code that fails at runtime but compiles cleanly. `x-present-when`
+encodes that dependency as ground truth on the response property so SDK
+generators can derive request→response dependent typing.
+
+The `present-when-shape` rule validates the marker's structure: it must be an
+object with a `request` field (a top-level request-body property name) and a
+scalar `equals` literal (`boolean`, `string`, or `number`).
+
+```yaml
+ActivatedJobResult:
+  properties:
+    leaseToken:
+      description: The lease token; `null` when activated without a lease.
+      nullable: true
+      x-present-when:
+        request: withLease   # top-level field on the operation's request body
+        equals: true         # property is present (required, non-null) iff withLease === true
+      allOf:
+        - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+```
+
+Semantics: SDK generators derive from the marker: when the request field is the
+compile-time literal `equals` value (`V`), the property is **present** (required,
+non-null); when it is any other compile-time literal — `false`/`null`/omitted, or
+a non-matching string/number such as `mode: "compact"` when `equals: "full"` —
+the property is **absent** (omitted for nominal languages; typed `?: never` for
+JS/TS; for Python, which has no `?: never` equivalent, modelled via an overload
+whose return type omits the property, e.g. a `TypedDict` without the key); when
+the request field is not a compile-time literal, the base nullable shape is
+preserved. The marker is inert
+on the wire — the property keeps its declared `nullable` shape and stays in
+`required`, so any consumer that does not derive from it is unaffected. See §2.21
+of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md)
+for the full derivation contract each SDK implements.
+
 ### Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`)
 
 Three rules validate the producer/consumer dependency annotations consumed by the API test generator:

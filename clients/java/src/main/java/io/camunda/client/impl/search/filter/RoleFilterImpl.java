@@ -16,9 +16,13 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.RoleFilter;
+import io.camunda.client.api.search.filter.RoleFilterBase;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.RoleFilterMapper;
+import io.camunda.client.protocol.rest.RoleFilterFields;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class RoleFilterImpl
@@ -33,7 +37,14 @@ public class RoleFilterImpl
 
   @Override
   public RoleFilter roleId(final String roleId) {
-    filter.setRoleId(roleId);
+    return roleId(b -> b.eq(roleId));
+  }
+
+  @Override
+  public RoleFilter roleId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setRoleId(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -47,6 +58,18 @@ public class RoleFilterImpl
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public RoleFilterBase orFilters(final List<Consumer<RoleFilterBase>> fns) {
+    for (final Consumer<RoleFilterBase> fn : fns) {
+      final RoleFilterImpl orFilter = new RoleFilterImpl();
+      fn.accept(orFilter);
+      final RoleFilterFields protocolFilterFields =
+          RoleFilterMapper.from(orFilter.getSearchRequestProperty());
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 

@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -721,10 +720,14 @@ public class ProcessInstanceMigrationMigrateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessInstanceMigrationRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceMigrationRecord> record) {
     // migration restructures a running instance, which is unsafe while suspended; reject.
-    return SuspensionBehavior.REJECT;
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceMigrationRecord> record) {
+    return SuspensionAction.REJECT;
   }
 
   /**

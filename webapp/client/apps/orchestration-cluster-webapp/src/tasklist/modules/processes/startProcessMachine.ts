@@ -18,7 +18,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {endpoints} from '#/shared/http/endpoints';
 import {request, requestErrorSchema} from '#/shared/http/request';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 
 const HTTP_STATUS_FORBIDDEN = 403;
@@ -47,46 +46,6 @@ type StartProcessEvent = {
 
 type StartProcessStatusTag =
 	'status:starting' | 'status:waiting_for_tasks' | 'status:start_succeeded' | 'status:start_failed';
-
-type NotifyOptions = {
-	kind: 'success' | 'error';
-	title: string;
-	subtitle?: string;
-	isDismissable?: boolean;
-	isActionable?: boolean;
-	actionButtonLabel?: string;
-	onActionButtonClick?: () => void;
-};
-
-function isShadcnRoute() {
-	return window.location.pathname.startsWith('/shadcn');
-}
-
-function notify(options: NotifyOptions) {
-	const {kind, title, subtitle, isDismissable = true, isActionable, actionButtonLabel, onActionButtonClick} = options;
-
-	if (isShadcnRoute()) {
-		toast[kind](title, {
-			description: subtitle,
-			action:
-				isActionable === true && actionButtonLabel !== undefined && onActionButtonClick !== undefined
-					? {label: actionButtonLabel, onClick: onActionButtonClick}
-					: undefined,
-			duration: isDismissable ? undefined : Infinity,
-		});
-		return;
-	}
-
-	notificationsStore.displayNotification({
-		kind,
-		title,
-		subtitle,
-		isDismissable,
-		isActionable,
-		actionButtonLabel,
-		onActionButtonClick,
-	});
-}
 
 function getStartProcessFailureReason(error: unknown): StartProcessFailureReason {
 	const result = requestErrorSchema.safeParse(error);
@@ -136,7 +95,7 @@ const queryNewProcessInstanceTasksLogic = fromPromise<QueryUserTasksResponseBody
 
 const navigateToTaskLogic = fromPromise<void, {navigate: Navigate; userTaskKey: string}>(async ({input}) => {
 	await input.navigate({
-		to: isShadcnRoute() ? '/shadcn/tasklist/$userTaskKey' : '/tasklist/$userTaskKey',
+		to: '/tasklist/$userTaskKey',
 		params: {userTaskKey: input.userTaskKey},
 		search: {filter: 'all-open', sortBy: 'creation'},
 	});
@@ -166,8 +125,8 @@ const startProcessMachine = setup({
 		})),
 		closeStartForm: ({context, event}) => {
 			if (event.process.hasStartForm) {
-				void context.navigate({
-					to: isShadcnRoute() ? '/shadcn/tasklist/processes' : '/tasklist/processes',
+				context.navigate({
+					to: '/tasklist/processes',
 					search: true,
 				});
 			}
@@ -187,11 +146,7 @@ const startProcessMachine = setup({
 			failureReason: getStartProcessFailureReason(params.error),
 		})),
 		notifySuccess: () => {
-			notify({
-				kind: 'success',
-				title: t('tasklist.processesStartProcessNotificationSuccess'),
-				isDismissable: true,
-			});
+			toast.success(t('tasklist.processesStartProcessNotificationSuccess'));
 		},
 		notifyFailure: ({context}) => {
 			const process = context.selectedProcess;
@@ -201,43 +156,41 @@ const startProcessMachine = setup({
 			}
 
 			if (context.failureReason === 'forbidden') {
-				notify({
-					kind: 'error',
-					title: t('tasklist.processesStartProcessFailed'),
-					subtitle: t('tasklist.taskActionForbidden'),
-					isDismissable: true,
+				toast.error(t('tasklist.processesStartProcessFailed'), {
+					description: t('tasklist.taskActionForbidden'),
 				});
 				return;
 			}
 
-			notify({
-				kind: 'error',
-				title:
-					getClientConfig().deployment.isMultiTenancyEnabled && process.tenantId === undefined
-						? t('tasklist.processesStartProcessFailedMissingTenant')
-						: t('tasklist.processesStartProcessFailed'),
-				subtitle: process.name ?? process.processDefinitionId,
-				isDismissable: false,
-			});
+			toast.error(
+				getClientConfig().deployment.isMultiTenancyEnabled && process.tenantId === undefined
+					? t('tasklist.processesStartProcessFailedMissingTenant')
+					: t('tasklist.processesStartProcessFailed'),
+				{
+					description: process.name ?? process.processDefinitionId,
+				},
+			);
 		},
 		notifyNewTasks: ({context}) => {
 			context.tasks.forEach(({elementId, name, processDefinitionId, processName, userTaskKey}) => {
-				notify({
-					kind: 'success',
-					title: t('tasklist.processesNewTaskNotification', {
+				toast.success(
+					t('tasklist.processesNewTaskNotification', {
 						processName: processName ?? processDefinitionId,
 						taskName: name ?? elementId,
 					}),
-					isActionable: true,
-					actionButtonLabel: t('tasklist.processesNewTaskNotificationAction'),
-					onActionButtonClick: () => {
-						void context.navigate({
-							to: isShadcnRoute() ? '/shadcn/tasklist/$userTaskKey' : '/tasklist/$userTaskKey',
-							params: {userTaskKey},
-							search: {filter: 'all-open', sortBy: 'creation'},
-						});
+					{
+						action: {
+							label: t('tasklist.processesNewTaskNotificationAction'),
+							onClick: () => {
+								context.navigate({
+									to: '/tasklist/$userTaskKey',
+									params: {userTaskKey},
+									search: {filter: 'all-open', sortBy: 'creation'},
+								});
+							},
+						},
 					},
-				});
+				);
 			});
 		},
 	},

@@ -13,17 +13,18 @@ type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
   onExecute: () => void;
   disabled?: boolean;
+  title?: string;
 };
 
 const Suspend: React.FC<Props> = ({
-  processInstanceKey,
   onExecute,
   disabled = false,
+  title = 'Suspend Instance',
 }) => (
   <OperationItem
     type="SUSPEND_PROCESS_INSTANCE"
     onClick={onExecute}
-    title={`Suspend Instance ${processInstanceKey}`}
+    title={title}
     disabled={disabled}
     size="sm"
   />

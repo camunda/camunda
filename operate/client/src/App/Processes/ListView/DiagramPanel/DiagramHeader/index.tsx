@@ -118,6 +118,7 @@ const ProcessOperationsContent: React.FC<
       processDefinitionKey={definitionKey}
       processName={name}
       processVersion={version}
+      processDefinitionState={definition.state}
     />
   );
 };

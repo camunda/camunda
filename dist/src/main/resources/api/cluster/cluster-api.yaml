@@ -351,6 +351,7 @@ paths:
           $ref: 'components.yaml#/responses/GatewayError'
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
 
   /zones/{zoneId}:
     delete:
@@ -378,6 +379,7 @@ paths:
           $ref: 'components.yaml#/responses/GatewayError'
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
     post:
       summary: Add back a previously force-removed zone
       description: Re-adds the operator-supplied brokers and re-includes the given zone in the
@@ -409,6 +411,7 @@ paths:
           $ref: 'components.yaml#/responses/GatewayError'
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
 
   /zones:
     put:

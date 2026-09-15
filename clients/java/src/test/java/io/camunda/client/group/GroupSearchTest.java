@@ -21,14 +21,22 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.filter.ClientFilter;
+import io.camunda.client.api.search.filter.GroupFilterBase;
 import io.camunda.client.api.search.filter.GroupUserFilter;
 import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
 import io.camunda.client.api.search.sort.MappingRuleSort;
 import io.camunda.client.api.search.sort.RoleSort;
+import io.camunda.client.protocol.rest.GroupFilter;
 import io.camunda.client.protocol.rest.GroupResult;
+import io.camunda.client.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.client.util.ClientRestTest;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -223,5 +231,67 @@ public class GroupSearchTest extends ClientRestTest {
                     .join())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("This command does not support filtering");
+  }
+
+  @Test
+  void shouldSearchGroupsWithOrFilters() {
+    // when
+    client
+        .newGroupsSearchRequest()
+        .filter(
+            fn ->
+                fn.orFilters(
+                    Arrays.asList(f1 -> f1.groupId("group-1"), f2 -> f2.groupId("group-2"))))
+        .send()
+        .join();
+
+    // then
+    final GroupSearchQueryRequest request =
+        gatewayService.getLastRequest(GroupSearchQueryRequest.class);
+    final GroupFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getGroupId().get$Eq()).isEqualTo("group-1");
+    assertThat(filter.get$Or().get(1).getGroupId().get$Eq()).isEqualTo("group-2");
+  }
+
+  @Test
+  void shouldSearchGroupsByNameLike() {
+    // when
+    client.newGroupsSearchRequest().filter(f -> f.name(b -> b.like("Group*"))).send().join();
+
+    // then
+    final GroupSearchQueryRequest request =
+        gatewayService.getLastRequest(GroupSearchQueryRequest.class);
+    final GroupFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getName().get$Like()).isEqualTo("Group*");
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods = publicMethodSignatures(GroupFilterBase.class);
+    final Set<String> fullMethods =
+        publicMethodSignatures(io.camunda.client.api.search.filter.GroupFilter.class);
+
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
+
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
+
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
+  }
+
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }

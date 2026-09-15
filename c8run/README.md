@@ -1,6 +1,6 @@
 # Camunda 8 Run
 
-C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds.
+c8run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds.
 It packages the Java-based local Camunda runtime with a bundled JRE; the Docker Compose distribution is published separately.
 
 Please refer to the [local installation with Camunda 8 Run guide](https://docs.camunda.io/docs/next/self-managed/quickstart/developer-quickstart/c8run/) for further details.
@@ -19,6 +19,20 @@ Camunda 8 Run now starts with H2 as the secondary storage backend. No additional
    ```bash
    ./c8run stop
    ```
+
+## Local secrets
+
+c8run configures a local file secret store in your platform's user data directory. Add a value without exposing it in your shell history:
+
+```bash
+./c8run secrets set OPENAI_API_KEY
+```
+
+Reference it in Process Models with `=camunda.secrets.OPENAI_API_KEY`. To set several values, pass multiple names and enter each value at its prompt. Use `C8RUN_SECRETS_DIR` in your environment or c8run `.env` file to store secrets in another directory, and `C8RUN_SECRETS_CACHE_TTL` to change the default 20-minute resolution cache. Run `./c8run secrets path` to show the c8run-managed local directory. The default directory is shared across projects and c8run versions for the current OS user. This store is for local development only.
+
+Use a dedicated dotenv file such as `.env.secrets` for imports. `c8run secrets` refuses to import the c8run `.env` because that file can contain runtime, download, and packaging credentials.
+
+`C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode.
 
 ## CI requirement for merging
 
@@ -97,3 +111,7 @@ The workflow produces platform-specific artifacts for Linux, macOS (ARM and Inte
 C8Run automatically starts the connectors runtime through Spring Boot's `PropertiesLauncher` for connector bundles versioned 8.9.0 or newer (including snapshots). Older bundles continue to run via the legacy `JarLauncher`, so you can switch versions in `.env` without extra configuration.
 
 If you want to run your own connectors runtime, start C8Run with `./c8run start --disable-connectors` to skip launching the bundled connectors jar.
+
+### Headless startup
+
+To start C8Run without opening a browser window (for example, in a headless dev environment or an autostart script), use `./c8run start --no-browser`. A headless start also leaves the quickstart marker untouched, so the next regular (non-headless) start still shows the quickstart URL instead of jumping straight to Operate.

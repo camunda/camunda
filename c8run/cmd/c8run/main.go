@@ -16,6 +16,7 @@ import (
 	"syscall"
 
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
 	"github.com/camunda/camunda/c8run/internal/start"
 	"github.com/camunda/camunda/c8run/internal/startupurl"
@@ -67,6 +68,7 @@ var helpTemplate = `Usage:
 Commands:
   start                 Start Camunda 8 Run
   stop                  Stop any running Camunda 8 Run processes
+  secrets               Manage local development secrets
   help                  Show this help message
 
 Options:
@@ -75,14 +77,18 @@ Options:
   --extra-driver <path>     Copy a JDBC driver into the Camunda lib directory before startup (repeat per jar)
   --keystore <path>         Enable HTTPS with a TLS certificate (JKS format)
   --keystorePassword <pw>  Password for the provided keystore
+  --no-browser              Start Camunda 8 Run without opening a browser window
   --port <number>           Set the main Camunda port (default: 8080)
   --log-level <level>       Set log level (e.g., info, debug)
 
 Examples:
   %[1]s start
   %[1]s start --disable-connectors
+  %[1]s start --no-browser
   %[1]s start --config ./my-config.yaml
   %[1]s stop
+  %[1]s secrets set OPENAI_API_KEY
+  %[1]s secrets import .env.secrets
 
 Docs & Support:
   https://docs.camunda.io/docs/guides/getting-started-java-spring/
@@ -116,6 +122,8 @@ func getBaseCommand() (string, error) {
 		return "start", nil
 	case "stop":
 		return "stop", nil
+	case "secrets":
+		return "secrets", nil
 	case "help":
 		usage(0)
 	case "-h", "--help":
@@ -173,6 +181,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.Config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.DisableConnectors, "disable-connectors", false, "Skips starting the bundled connectors runtime.")
+	startFlagSet.BoolVar(&settings.NoBrowser, "no-browser", false, "Skips opening a browser window after startup.")
 	startFlagSet.Var((*stringSliceFlag)(&settings.ExtraDrivers), "extra-driver", "Path to a JDBC driver jar to copy into the Camunda lib directory (repeatable).")
 	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
 	startFlagSet.IntVar(&settings.Port, "port", 8080, "Port to run Camunda on")
@@ -195,11 +204,6 @@ func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 }
 
 func initialize(baseCommand string, baseDir string) *types.State {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 
@@ -512,6 +516,7 @@ func main() {
 		logger = logger.With().Caller().Logger()
 	}
 	log.Logger = logger
+	_ = godotenv.Load()
 
 	baseCommand, err := getBaseCommand()
 	if err != nil {
@@ -520,7 +525,41 @@ func main() {
 	}
 
 	baseDir, _ := os.Getwd()
+	if baseCommand == "secrets" {
+		if err := newSecretsCommand().run(baseDir, os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	state := initialize(baseCommand, baseDir)
+	if baseCommand == "start" {
+		mode, err := localsecrets.Mode()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		if mode == "local" {
+			secretStore := localsecrets.New(baseDir)
+			if err := secretStore.Ensure(); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			secretDirectory, err := secretStore.Directory()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			if err := os.Setenv(localsecrets.DirectoryEnv, secretDirectory); err != nil {
+				fmt.Fprintln(os.Stderr, "failed to configure local secrets directory:", err)
+				os.Exit(1)
+			}
+			if err := os.Setenv("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH", secretDirectory); err != nil {
+				fmt.Fprintln(os.Stderr, "failed to configure Camunda secret store:", err)
+				os.Exit(1)
+			}
+		}
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGKILL, syscall.SIGINT, syscall.SIGTERM)
 

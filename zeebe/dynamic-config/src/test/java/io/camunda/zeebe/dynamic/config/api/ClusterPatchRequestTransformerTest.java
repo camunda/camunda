@@ -14,18 +14,15 @@ import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.RoutingStateInitializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -38,6 +35,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.util.Either;
@@ -77,7 +75,7 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
                 patchRequest.newReplicationFactor()),
-            ClusterConfiguration.init());
+            CurrentClusterConfiguration.init());
 
     // then
     assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
@@ -86,16 +84,10 @@ final class ClusterPatchRequestTransformerTest {
   @Test
   void shouldRejectWhenScalingDownPartitions() {
     // given
-    final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
-
-    // when
     final var patchRequest =
         new ClusterPatchRequest(Set.of(), Set.of(), Optional.of(1), Optional.empty(), false);
+
+    // when
     final var result =
         plannedOperations(
             new ClusterPatchRequestTransformer(
@@ -103,7 +95,19 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
                 patchRequest.newReplicationFactor()),
-            ClusterConfiguration.init());
+            CurrentClusterConfiguration.init()
+                .initPartitionGroup(DEFAULT_GROUP)
+                .updatePartitionGroupConfig(
+                    DEFAULT_GROUP,
+                    partitionGroupConfiguration ->
+                        partitionGroupConfiguration.addMember(
+                            id0,
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1,
+                                    PartitionState.active(1, partitionConfig),
+                                    2,
+                                    PartitionState.active(1, partitionConfig))))));
 
     // then
     assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
@@ -113,13 +117,30 @@ final class ClusterPatchRequestTransformerTest {
   void shouldScaleUpBrokersWhenPartitionUnchanged() {
     // given
     final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)));
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(id0, BrokerState.initializeAsActive())
+                        .addMember(id1, BrokerState.initializeAsActive()))
+            .initPartitionGroup(DEFAULT_GROUP)
+            .updatePartitionGroupConfig(
+                DEFAULT_GROUP,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            id0,
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1, PartitionState.active(1, partitionConfig),
+                                    2, PartitionState.active(2, partitionConfig))))
+                        .addMember(
+                            id1,
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1, PartitionState.active(1, partitionConfig),
+                                    2, PartitionState.active(1, partitionConfig))))
+                        .setRoutingState(RoutingState.initializeWithPartitionCount(2)));
 
     // when
     final var patchRequest =
@@ -137,11 +158,24 @@ final class ClusterPatchRequestTransformerTest {
   void shouldScaleDownBrokersWhenPartitionUnchanged() {
     // given
     final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(id0, BrokerState.initializeAsActive())
+                        .addMember(id1, BrokerState.initializeAsActive()))
+            .initPartitionGroup(DEFAULT_GROUP)
+            .updatePartitionGroupConfig(
+                DEFAULT_GROUP,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            id0,
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1, PartitionState.active(1, partitionConfig),
+                                    2, PartitionState.active(1, partitionConfig))))
+                        .setRoutingState(RoutingState.initializeWithPartitionCount(2)));
 
     // when
     final var patchRequest =
@@ -160,11 +194,24 @@ final class ClusterPatchRequestTransformerTest {
   void shouldAddAndRemoveBrokersWhenPartitionsUnchanged() {
     // given
     final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(id0, BrokerState.initializeAsActive())
+                        .addMember(id1, BrokerState.initializeAsActive()))
+            .initPartitionGroup(DEFAULT_GROUP)
+            .updatePartitionGroupConfig(
+                DEFAULT_GROUP,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            id0,
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1, PartitionState.active(1, partitionConfig),
+                                    2, PartitionState.active(1, partitionConfig))))
+                        .setRoutingState(RoutingState.initializeWithPartitionCount(2)));
 
     // when
     final var patchRequest =
@@ -183,13 +230,25 @@ final class ClusterPatchRequestTransformerTest {
   @Test
   void shouldAddAndRemoveBrokersAndAddPartitions() {
     // given
-    var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
-    currentTopology = new RoutingStateInitializer().modify(currentTopology).join();
+    final var currentTopology =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(id0, BrokerState.initializeAsActive())
+                        .addMember(id1, BrokerState.initializeAsActive()))
+            .initPartitionGroup(DEFAULT_GROUP)
+            .updatePartitionGroupConfig(
+                DEFAULT_GROUP,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            id0,
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1, PartitionState.active(1, partitionConfig),
+                                    2, PartitionState.active(1, partitionConfig))))
+                        .setRoutingState(RoutingState.initializeWithPartitionCount(2)));
 
     // when
     final int newPartitionCount = 4;
@@ -214,13 +273,27 @@ final class ClusterPatchRequestTransformerTest {
   @Test
   void shouldAddAndRemoveBrokersAndAddPartitionsAndChangeReplicationFactor() {
     // given
-    var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
-    currentTopology = new RoutingStateInitializer().modify(currentTopology).join();
+    final var currentTopology =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(id0, BrokerState.initializeAsActive())
+                        .addMember(id1, BrokerState.initializeAsActive()))
+            .initPartitionGroup(DEFAULT_GROUP)
+            .updatePartitionGroupConfig(
+                DEFAULT_GROUP,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            id0,
+                            BrokerPartitionState.initialize(
+                                Map.of(1, PartitionState.active(1, partitionConfig))))
+                        .addMember(
+                            id1,
+                            BrokerPartitionState.initialize(
+                                Map.of(2, PartitionState.active(1, partitionConfig))))
+                        .setRoutingState(RoutingState.initializeWithPartitionCount(2)));
 
     // when
     final int newPartitionCount = 4;
@@ -247,35 +320,36 @@ final class ClusterPatchRequestTransformerTest {
       final int partitionCount,
       final Set<MemberId> expectedMembers,
       final ClusterPatchRequest patchRequest,
-      final ClusterConfiguration oldClusterTopology,
+      final CurrentClusterConfiguration oldClusterTopology,
       final Set<PartitionMetadata> expectedNewDistribution) {
 
     // when
-    final var result =
-        plannedOperations(
-            new ClusterPatchRequestTransformer(
+    final var phasesResult =
+        new ClusterPatchRequestTransformer(
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor()),
-            oldClusterTopology);
-    assertThat(result).isRight();
-    final var operations = result.get();
+                patchRequest.newReplicationFactor())
+            .phases(oldClusterTopology);
+    assertThat(phasesResult).isRight();
+    final var phases = phasesResult.get();
+    final var operations = TestChangePlan.flatten(phases);
 
-    // apply operations to generate new topology
-    final ClusterConfiguration newTopology =
-        TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
+    // apply phases to generate new topology
+    final var newTopology = TestTopologyChangeSimulator.apply(oldClusterTopology, phases);
 
     // then
-    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
+    final var newDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(newTopology, DEFAULT_GROUP);
     Assertions.assertThat(newDistribution)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedNewDistribution);
-    Assertions.assertThat(newTopology.members().keySet())
+    Assertions.assertThat(newTopology.getMembers())
         .describedAs("Expected cluster members")
         .containsExactlyInAnyOrderElementsOf(expectedMembers);
-    Assertions.assertThat(newTopology.partitionCount()).isEqualTo(partitionCount);
+    Assertions.assertThat(newTopology.partitionGroup(DEFAULT_GROUP).partitionCount())
+        .isEqualTo(partitionCount);
     if (oldPartitionCount == partitionCount) {
       Assertions.assertThat(operations)
           .allSatisfy(
@@ -300,7 +374,7 @@ final class ClusterPatchRequestTransformerTest {
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(id -> new PartitionId("temp", id))
+        .mapToObj(id -> new PartitionId(DEFAULT_GROUP, id))
         .collect(Collectors.toList());
   }
 

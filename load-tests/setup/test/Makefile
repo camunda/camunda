@@ -34,9 +34,15 @@ PARALLEL ?= 4
 
 # Optional: scope test/update-golden to one setup version (e.g. PATTERN=stable-89).
 # Leave unset to run/update every version listed in golden_test.go.
+#
+# Version/scenario names live in the sub-test name (e.g. TestGoldenFiles/c8-golden-stable-89-elasticsearch),
+# not the top-level Go test function name. go test's -run splits on unescaped "/" into one regexp per
+# test-name level, so an unslashed pattern only ever matches level 0 (the function name) and silently
+# selects zero tests for any PATTERN that isn't itself a function name. The leading "/" below adds an
+# empty (always-matching) level-0 regexp so filtering applies to the sub-test level instead.
 PATTERN ?=
 ifneq ($(PATTERN),)
-run_filter := -run '.*$(PATTERN).*'
+run_filter := -run '/.*$(PATTERN).*'
 endif
 
 # Ephemeral chart cache consumed by newLoadTest.sh (via LOAD_TEST_CHART_CACHE_DIR,

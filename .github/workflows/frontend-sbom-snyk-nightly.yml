@@ -39,6 +39,10 @@ permissions:
 
 env:
   TEST_OWNER: '@camunda/orchestration-cluster-webapps'
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  # A shallow clone of this repo normally lands in well under a minute, but GitHub-side slowness
+  # occasionally needs more headroom.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
   identity-fe-sbom-snyk:
@@ -53,9 +57,9 @@ jobs:
       run:
         working-directory: identity/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
@@ -99,9 +103,9 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
@@ -135,6 +139,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   tasklist-fe-sbom-snyk:
+    if: inputs.branch == 'stable/8.8' || inputs.branch == 'stable/8.9'
     name: "Tasklist / Front End - Snyk SBOM (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -146,9 +151,9 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
@@ -193,20 +198,20 @@ jobs:
       TEST_TYPE: Tool
       TEST_PRODUCT: Optimize
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
+        uses: YunaBraska/java-info-action@085d09be3659b484e0a6d0c95aac6612687ce8d9 # 3.0.13
         with:
           work-dir: ./parent
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache-1.0.0
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
         with:
           directory: optimize/client
       - name: Import Snyk token from Vault
@@ -255,7 +260,7 @@ jobs:
     if: always() && inputs['notify-on-failure'] && github.event_name != 'workflow_dispatch' && contains(needs.*.result, 'failure')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
@@ -289,7 +294,9 @@ jobs:
             echo "*Branch:* \`${branch}\`"
             echo "$(icon "$identity") *Identity* — ${identity}"
             echo "$(icon "$operate") *Operate* — ${operate}"
-            echo "$(icon "$tasklist") *Tasklist* — ${tasklist}"
+            if [[ "$tasklist" != "skipped" ]]; then
+              echo "$(icon "$tasklist") *Tasklist* — ${tasklist}"
+            fi
             echo "$(icon "$optimize") *Optimize* — ${optimize}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"

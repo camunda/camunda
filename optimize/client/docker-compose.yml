@@ -31,7 +31,7 @@ services:
       timeout: 5s
       retries: 3
   opensearch:
-    image: opensearchproject/opensearch:${OS_VERSION:-2.19.5}
+    image: opensearchproject/opensearch:${OS_VERSION:-2.19.6}
     container_name: opensearch
     profiles: ['cloud:opensearch', 'self-managed:opensearch']
     environment:
@@ -140,7 +140,8 @@ services:
       KEYCLOAK_USERS_6_ROLES_1: 'ManagementIdentity'
   camunda:
     profiles: ['self-managed', 'self-managed:elasticsearch']
-    image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
+    image: ${CAMUNDA_IMAGE:-camunda/camunda:${CAMUNDA_VERSION:-8.9.0}}
+    pull_policy: ${CAMUNDA_PULL_POLICY:-missing}
     container_name: camunda
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
@@ -162,9 +163,16 @@ services:
       - "9600:9600"
       - "8080:8080"
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9600 &&
+          printf 'GET /actuator/health/readiness HTTP/1.0\r\n\r\n' >&3 &&
+          grep -q '"status":"UP","components"' <&3
       interval: 30s
-      timeout: 1s
+      timeout: 5s
       retries: 5
       start_period: 30s
     depends_on:
@@ -174,7 +182,8 @@ services:
       - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml
   camunda-opensearch:
     profiles: ['self-managed:opensearch']
-    image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
+    image: ${CAMUNDA_IMAGE:-camunda/camunda:${CAMUNDA_VERSION:-8.9.0}}
+    pull_policy: ${CAMUNDA_PULL_POLICY:-missing}
     container_name: camunda-opensearch
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
@@ -200,9 +209,16 @@ services:
       - "9600:9600"
       - "8080:8080"
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9600 &&
+          printf 'GET /actuator/health/readiness HTTP/1.0\r\n\r\n' >&3 &&
+          grep -q '"status":"UP","components"' <&3
       interval: 30s
-      timeout: 1s
+      timeout: 5s
       retries: 5
       start_period: 30s
     depends_on:

@@ -8,6 +8,7 @@
 package io.camunda.secretstore.aws;
 
 import java.net.URI;
+import java.time.Duration;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -33,6 +34,13 @@ import org.jspecify.annotations.Nullable;
  *     Mutually exclusive with {@code containerSecretId}
  * @param batchSize maximum secret ids per {@code BatchGetSecretValue} call when {@code
  *     batchEnabled} is set; must be between 1 and {@value #MAX_BATCH_SIZE} (AWS's hard limit)
+ * @param callTimeout upper bound on one {@code resolve}/{@code list} call to AWS, retries included.
+ *     Must be positive. The SDK sets no such bound by default, which lets an unresponsive endpoint
+ *     hold the caller for minutes; the background resolution calls this store from an IO-bound
+ *     actor thread shared with every partition's exporter, so an unbounded call there stalls
+ *     exporting broker-wide (camunda/camunda#62869)
+ * @param attemptTimeout upper bound on a single HTTP attempt within a call. Must be positive and
+ *     not longer than {@code callTimeout}, which would make it unreachable
  */
 public record AwsSecretsManagerStoreConfig(
     @Nullable String region,
@@ -41,7 +49,9 @@ public record AwsSecretsManagerStoreConfig(
     @Nullable URI endpoint,
     int maxRetries,
     boolean batchEnabled,
-    int batchSize) {
+    int batchSize,
+    Duration callTimeout,
+    Duration attemptTimeout) {
 
   /** Default number of retries applied when none is configured. */
   public static final int DEFAULT_MAX_RETRIES = 3;
@@ -51,6 +61,17 @@ public record AwsSecretsManagerStoreConfig(
 
   /** Default batch size when batching is enabled but none is configured. */
   public static final int DEFAULT_BATCH_SIZE = MAX_BATCH_SIZE;
+
+  /**
+   * Default upper bound on one call to AWS, retries included. Chosen so that a store that has
+   * stopped answering is reported unavailable within a few resolution cycles rather than after
+   * minutes: that is what lets the scheduler's retry ladder and its cooldown skip engage, which is
+   * the mechanism that actually keeps an unreachable store off the IO threads.
+   */
+  public static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(5);
+
+  /** Default upper bound on a single HTTP attempt within a call. */
+  public static final Duration DEFAULT_ATTEMPT_TIMEOUT = Duration.ofSeconds(2);
 
   // batchSize/containerSecretId invariants below are mirrored (with property-path-aware messages)
   // by io.camunda.configuration.Secrets.AwsSecretsManagerStore#validate in the configuration
@@ -70,6 +91,44 @@ public record AwsSecretsManagerStoreConfig(
       throw new IllegalArgumentException(
           "batchEnabled and containerSecretId are mutually exclusive, but both were set");
     }
+    if (callTimeout == null || !callTimeout.isPositive()) {
+      throw new IllegalArgumentException("callTimeout must be positive, but was " + callTimeout);
+    }
+    if (attemptTimeout == null || !attemptTimeout.isPositive()) {
+      throw new IllegalArgumentException(
+          "attemptTimeout must be positive, but was " + attemptTimeout);
+    }
+    if (attemptTimeout.compareTo(callTimeout) > 0) {
+      throw new IllegalArgumentException(
+          "attemptTimeout must not be longer than callTimeout ("
+              + callTimeout
+              + "), but was "
+              + attemptTimeout);
+    }
+  }
+
+  /**
+   * Creates a config with the default timeouts. Every caller that does not tune them goes through
+   * here, so a store is bounded whether or not an operator configured it.
+   */
+  public AwsSecretsManagerStoreConfig(
+      final @Nullable String region,
+      final @Nullable String pathPrefix,
+      final @Nullable String containerSecretId,
+      final @Nullable URI endpoint,
+      final int maxRetries,
+      final boolean batchEnabled,
+      final int batchSize) {
+    this(
+        region,
+        pathPrefix,
+        containerSecretId,
+        endpoint,
+        maxRetries,
+        batchEnabled,
+        batchSize,
+        DEFAULT_CALL_TIMEOUT,
+        DEFAULT_ATTEMPT_TIMEOUT);
   }
 
   /**

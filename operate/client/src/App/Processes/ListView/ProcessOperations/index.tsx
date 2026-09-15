@@ -9,7 +9,7 @@
 import {useState} from 'react';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
 import {OperationItems} from 'modules/components/OperationItems';
-import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
+import {DeleteButtonContainer} from './styled';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DrainingTag} from 'modules/components/DrainingTag';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
@@ -23,15 +23,23 @@ import {useRunningInstancesCount} from 'modules/queries/processInstance/useRunni
 import {useDeleteResource} from 'modules/mutations/resource/useDeleteResource';
 import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
 import {DRAINING_MESSAGES} from 'modules/utils/draining';
+import {DeletedTag} from 'modules/components/DeletedTag';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type Props = {
   processDefinitionKey: string;
   processName: string;
   processVersion: number;
+  processDefinitionState: ProcessDefinition['state'];
 };
 
 const ProcessOperations: React.FC<Props> = observer(
-  ({processDefinitionKey, processName, processVersion}) => {
+  ({
+    processDefinitionKey,
+    processName,
+    processVersion,
+    processDefinitionState,
+  }) => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] =
       useState<boolean>(false);
 
@@ -58,6 +66,7 @@ const ProcessOperations: React.FC<Props> = observer(
 
     const {data: draining} = useDrainingProcessDefinitions();
     const isDraining = !!draining?.byKey.has(processDefinitionKey);
+    const isDeleted = processDefinitionState === 'DELETED';
 
     const isOperationRunning = deleteResourceMutation.isPending;
 
@@ -73,37 +82,53 @@ const ProcessOperations: React.FC<Props> = observer(
               align="left-top"
             />
           ) : (
-            <OperationItems>
-              <DangerButton
-                title={
-                  (runningInstancesCount ?? 0) > 0
-                    ? 'Only process definitions without running instances can be deleted.'
-                    : `Delete Process Definition "${processName} - Version ${processVersion}"`
-                }
-                type="DELETE"
-                disabled={
-                  isOperationRunning || (runningInstancesCount ?? 0) !== 0
-                }
-                onClick={() => {
-                  tracking.track({
-                    eventName: 'definition-deletion-button',
-                    resource: 'process',
-                    version: processVersion.toString(),
-                  });
+            <>
+              {isDeleted && <DeletedTag align="left-top" />}
+              <OperationItems>
+                <DangerButton
+                  title={
+                    (runningInstancesCount ?? 0) > 0
+                      ? 'Only process definitions without running instances can be deleted.'
+                      : isDeleted
+                        ? `Delete Process Definition History "${processName} - Version ${processVersion}"`
+                        : `Delete Process Definition "${processName} - Version ${processVersion}"`
+                  }
+                  type="DELETE"
+                  disabled={
+                    isOperationRunning || (runningInstancesCount ?? 0) !== 0
+                  }
+                  onClick={() => {
+                    tracking.track({
+                      eventName: 'definition-deletion-button',
+                      resource: 'process',
+                      version: processVersion.toString(),
+                    });
 
-                  setIsDeleteModalVisible(true);
-                }}
-              />
-            </OperationItems>
+                    setIsDeleteModalVisible(true);
+                  }}
+                />
+              </OperationItems>
+            </>
           )}
         </DeleteButtonContainer>
         <DeleteDefinitionModal
           title="Delete Process Definition"
-          description="You are about to delete the following process definition:"
-          confirmationText="Yes, I confirm I want to delete this process definition."
+          description={
+            isDeleted
+              ? 'This process definition is already deleted. Continuing will permanently remove its remaining history:'
+              : 'You are about to delete the following process definition:'
+          }
+          confirmationText={
+            isDeleted
+              ? 'Yes, I confirm I want to permanently delete this process definition history.'
+              : 'Yes, I confirm I want to delete this process definition.'
+          }
           isVisible={isDeleteModalVisible}
-          warningTitle="Deleting a process definition will permanently remove it and will
-        impact the following:"
+          warningTitle={
+            isDeleted
+              ? 'Deleting the remaining process definition history is permanent and will impact the following:'
+              : 'Deleting a process definition will permanently remove it and will impact the following:'
+          }
           warningContent={
             <Stack gap={6}>
               <UnorderedList nested>

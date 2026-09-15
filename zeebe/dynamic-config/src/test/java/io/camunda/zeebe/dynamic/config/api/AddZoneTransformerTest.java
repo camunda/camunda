@@ -16,7 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
@@ -33,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Nested;
@@ -40,25 +40,24 @@ import org.junit.jupiter.api.Test;
 
 final class AddZoneTransformerTest {
 
+  public static final String GROUP_NAME = "temp";
   private static final DynamicPartitionConfig PARTITION_CONFIG = DynamicPartitionConfig.init();
-
   // single-zone cluster left over after zone-b failed over: 2 partitions, zone-a only (RF=1)
   private static final ZoneAwareConfig SINGLE_ZONE_CONFIG =
       new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
-
   private static final Set<MemberId> SINGLE_ZONE_MEMBERS = Set.of(ZONE_A_0);
-
   private static final List<PartitionId> PARTITION_IDS =
-      IntStream.rangeClosed(1, 2).mapToObj(i -> new PartitionId("temp", i)).toList();
+      IntStream.rangeClosed(1, 2).mapToObj(i -> new PartitionId(GROUP_NAME, i)).toList();
 
-  private static ClusterConfiguration buildTopology(
+  private static CurrentClusterConfiguration buildTopology(
       final ZoneAwareConfig config, final Set<MemberId> members) {
     final var distribution =
         new ZoneAwarePartitionDistributor(config.zones())
             .distributePartitions(members, PARTITION_IDS, config.replicationFactor());
-    final var topology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
-    return topology.setPartitionDistributorConfig(config);
+    return ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            members, distribution, Map.of(GROUP_NAME, PARTITION_CONFIG), "c")
+        .updateGlobalConfiguration(
+            globalConfiguration -> globalConfiguration.setPartitionDistributorConfig(config));
   }
 
   @Test
@@ -69,13 +68,13 @@ final class AddZoneTransformerTest {
         new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
 
     // when
-    final var result =
-        plannedOperations(
-            new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)), currentTopology);
+    final var phasesResult =
+        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)).phases(currentTopology);
 
     // then
-    EitherAssert.assertThat(result).isRight();
-    final var operations = result.get();
+    EitherAssert.assertThat(phasesResult).isRight();
+    final var phases = phasesResult.get();
+    final var operations = TestChangePlan.flatten(phases);
     assertThat(operations)
         .containsExactly(
             new MemberJoinOperation(ZONE_B_0),
@@ -87,9 +86,11 @@ final class AddZoneTransformerTest {
             new PartitionPromoteOperation(ZONE_B_0, 2),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 2, 2));
 
-    final var newTopology = TestTopologyChangeSimulator.apply(currentTopology, operations);
-    assertThat(newTopology.partitionDistributorConfig()).hasValue(expectedConfig);
-    assertThat(newTopology.members().keySet()).containsExactlyInAnyOrder(ZONE_A_0, ZONE_B_0);
+    final var newTopology = TestTopologyChangeSimulator.apply(currentTopology, phases);
+    assertThat(newTopology.globalConfiguration().partitionDistributorConfig())
+        .hasValue(expectedConfig);
+    assertThat(newTopology.globalConfiguration().members().keySet())
+        .containsExactlyInAnyOrder(ZONE_A_0, ZONE_B_0);
   }
 
   @Test
@@ -118,12 +119,16 @@ final class AddZoneTransformerTest {
     final var distribution =
         new RoundRobinPartitionDistributor().distributePartitions(plainMembers, PARTITION_IDS, 2);
     final var roundRobinTopology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c")
-            .setPartitionDistributorConfig(new RoundRobinConfig());
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+                plainMembers, distribution, Map.of(GROUP_NAME, PARTITION_CONFIG), "c")
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration.setPartitionDistributorConfig(new RoundRobinConfig()));
     // and: the same topology without any persisted partition distributor config
     final var noConfigTopology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
-    assertThat(noConfigTopology.partitionDistributorConfig()).isEmpty();
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            plainMembers, distribution, Map.of(GROUP_NAME, PARTITION_CONFIG), "c");
+    assertThat(noConfigTopology.globalConfiguration().partitionDistributorConfig()).isEmpty();
 
     // when / then: config present but not ZoneAware
     final var roundRobinResult =

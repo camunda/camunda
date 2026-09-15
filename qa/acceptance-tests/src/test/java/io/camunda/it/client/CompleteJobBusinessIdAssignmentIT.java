@@ -17,6 +17,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -185,7 +186,7 @@ class CompleteJobBusinessIdAssignmentIT {
 
   private void awaitBusinessId(final long processInstanceKey, final String businessId) {
     await("business id is reflected in secondary storage")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(() -> assertThat(getBusinessId(processInstanceKey)).isEqualTo(businessId));
   }

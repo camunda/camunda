@@ -105,6 +105,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty private Bulk bulk = new Bulk(databaseName());
 
   @NestedConfigurationProperty
+  private SchemaManagerRetry retry = new SchemaManagerRetry(databaseName());
+
+  @NestedConfigurationProperty
   private DocumentBasedSecondaryStorageBackup backup =
       new DocumentBasedSecondaryStorageBackup(databaseName());
 
@@ -268,6 +271,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.bulk = bulk;
   }
 
+  public SchemaManagerRetry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final SchemaManagerRetry retry) {
+    this.retry = retry;
+  }
+
   public SecondaryStorageSecurity getSecurity() {
     return security;
   }
@@ -344,13 +355,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.dateFormat = dateFormat;
   }
 
+  /** See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. */
   public Duration getSocketTimeout() {
     final var socketTimeout =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".socket-timeout",
             this.socketTimeout != null ? Math.toIntExact(this.socketTimeout.toMillis()) : null,
             Integer.class,
-            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            BackwardsCompatibilityMode.SUPPORTED,
             legacySocketTimeoutProperties());
     return socketTimeout != null ? Duration.ofMillis(socketTimeout) : null;
   }
@@ -359,13 +371,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.socketTimeout = socketTimeout;
   }
 
+  /** See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. */
   public Duration getConnectionTimeout() {
     final var connectionTimeoutInt =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".connection-timeout",
             connectionTimeout != null ? Math.toIntExact(connectionTimeout.toMillis()) : null,
             Integer.class,
-            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            BackwardsCompatibilityMode.SUPPORTED,
             legacyConnectionTimeoutProperties());
     return connectionTimeoutInt != null ? Duration.ofMillis(connectionTimeoutInt) : null;
   }
@@ -376,10 +389,16 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   /**
    * Resolved with {@link BackwardsCompatibilityMode#SUPPORTED} rather than the {@code
-   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use. The neighbours all have a non-null default,
-   * so a legacy value has something to be compared against; this property is unset by default.
-   * Under {@code SUPPORTED_ONLY_IF_VALUES_MATCH} every deployment that configures only the legacy
-   * property would compare it against the unset unified value and fail to start.
+   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use, and deliberately kept that way.
+   *
+   * <p>{@code SUPPORTED} was originally chosen because matching mode failed startup whenever the
+   * unified value was unset, which is always the case here - the field has no default. {@link
+   * UnifiedConfigurationHelper} now falls back to the legacy value instead of failing, so that
+   * reason no longer applies. The connection-pool and timeout properties stay on {@code SUPPORTED}
+   * on a different one: when a deployment sets both a unified and a differing legacy value, these
+   * properties prefer the unified value and warn, where matching mode would refuse to start.
+   * Realigning them would turn that warning into a startup failure for clusters running today, so
+   * it is a decision of its own rather than a side effect of fixing the validation.
    *
    * @throws IllegalArgumentException if configured with a non-positive value
    */

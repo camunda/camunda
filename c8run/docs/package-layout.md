@@ -14,7 +14,7 @@
 | `internal/connectors/`        | Connectors launcher compatibility logic                     |
 | `internal/packages/`          | Distribution download, clean, extract, and package logic    |
 | `configuration/`              | Default runtime configuration loaded by every start         |
-| `e2e_tests/`                  | API and Playwright checks used by C8Run CI                  |
+| `e2e_tests/`                  | API-level checks used by C8Run CI                           |
 
 ## Runtime and Generated Artifacts
 
@@ -24,6 +24,7 @@ The following are runtime or packaging output. Do not edit them as source and do
 - Built `camunda8-run-*/` archives
 - `jre/` — jlink-created Java runtime image
 - `camunda-data/` — runtime data directory
+- `secrets/` — local file secret store
 - `log/` — log output (`camunda.log`, `connectors.log`)
 - Built binaries: `c8run`, `c8run.exe`, `packager`
 - PID files and lock files

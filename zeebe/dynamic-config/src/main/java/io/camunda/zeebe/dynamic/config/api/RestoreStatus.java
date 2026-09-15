@@ -10,9 +10,9 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
@@ -45,7 +45,7 @@ public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) 
     this(plan, mapBrokers(plan));
   }
 
-  public static Optional<RestoreStatus> of(final ClusterConfiguration configuration) {
+  public static Optional<RestoreStatus> of(final PartitionGroupConfiguration configuration) {
     return configuration
         .pendingChanges()
         .filter(RestoreStatus::isRestoreInProgress)

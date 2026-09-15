@@ -287,6 +287,31 @@ issues.
 
 ---
 
+### Snapshot Artifact No Longer Published
+
+Either snapshot alert can also fire because the artifact was intentionally retired (e.g. a module
+removed from the monorepo), not because publishing broke.
+
+The artifact-metadata-exporter only tracks the highest version it has ever seen per Maven
+coordinate, so alerts effectively cover the latest minor release only. Once a module is dropped
+from `main`, that frozen version keeps alerting even though the older `stable/X.Y` branches that
+still build it are publishing fine.
+
+#### Troubleshooting
+
+- Check the alert's `tag` label. A version higher than anything an active branch builds means the
+  exporter is tracking a retired artifact.
+- Confirm the module is gone from the branch that produced that tag (grep that branch's `pom.xml`,
+  or look for the removal PR).
+
+#### Solutions
+
+Ask the Infra team to drop it from the
+artifact-metadata-exporter's watchlist — see
+[infra-core#14262](https://github.com/camunda/infra-core/pull/14262) for an example.
+
+---
+
 ### Camunda Helm Chart Integration Test Failure
 
 You may observe one or more of the following:
@@ -366,6 +391,18 @@ The [Preview Environment Smoke Test](https://github.com/camunda/camunda/actions/
 runs weekly on Mondays to verify that preview environment deployments are working correctly. A
 failure indicates a potential issue with the preview environment infrastructure that could affect
 developers using the `deploy-preview` label on their PRs.
+
+> **Note — a job for an unreleased version is skipped on purpose:** The `deploy-<version>` job for a
+> minor that hasn't been released yet is set up to run only when someone starts the workflow by hand.
+> This is because its smoke tests often don't exist yet in
+> [`camunda/c8-cross-component-e2e-tests`](https://github.com/camunda/c8-cross-component-e2e-tests).
+> If that job did run on schedule, it would fail every Monday with `No tests found` and page
+> `monorepo-ci-medic` for something no one can fix.
+>
+> **So:** don't turn on a version's job (or move the smoke tests to a new version) until that minor is
+> released and its tests exist — see the [minor-release checklist](release/release-monorepo.md). If the
+> Monday run fails only on a version that isn't released yet, that's expected. Skip that job instead of
+> treating it as a real infra failure.
 
 #### Troubleshooting
 

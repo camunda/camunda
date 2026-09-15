@@ -17,8 +17,8 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -48,7 +48,7 @@ public class ProcessInstanceSuspendedSearchIT {
 
     // wait until the suspension is visible in secondary storage
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final ProcessInstance instance =

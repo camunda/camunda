@@ -31,6 +31,7 @@ import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -90,6 +91,7 @@ public class AuthorizationIT {
 
     // then
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -155,6 +157,7 @@ public class AuthorizationIT {
 
     // then
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -168,6 +171,7 @@ public class AuthorizationIT {
     updateAuthorization(authorizationKey, request);
 
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -270,6 +274,7 @@ public class AuthorizationIT {
 
     // when
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -312,6 +317,7 @@ public class AuthorizationIT {
         .join();
 
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -356,6 +362,7 @@ public class AuthorizationIT {
         .join();
 
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -398,6 +405,7 @@ public class AuthorizationIT {
         .execute();
 
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -442,6 +450,7 @@ public class AuthorizationIT {
         .join();
 
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -497,6 +506,7 @@ public class AuthorizationIT {
         .join();
 
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -557,6 +567,7 @@ public class AuthorizationIT {
         .join();
 
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -602,6 +613,7 @@ public class AuthorizationIT {
     // when / then — sort by ownerType (tied), paginate with limit 1
     // the authorization key should break the tie and cursors should work
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -662,6 +674,7 @@ public class AuthorizationIT {
 
     // when / then — a search with no explicit sort should still return cursors
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -706,6 +719,7 @@ public class AuthorizationIT {
 
     // when / then — paginate with limit 1 and use cursors to navigate
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

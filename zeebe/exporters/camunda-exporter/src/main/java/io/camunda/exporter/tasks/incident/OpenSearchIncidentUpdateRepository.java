@@ -40,6 +40,7 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -89,6 +90,25 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+  }
+
+  @Override
+  public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+    final var query = createPendingIncidentsBatchQuery(fromPosition);
+
+    final CountRequest request =
+        new CountRequest.Builder()
+            .index(pendingUpdateAlias)
+            .query(query)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    try {
+      return client.count(request).thenApplyAsync(r -> Math.toIntExact(r.count()), executor);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   @Override
@@ -270,7 +290,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   private CompletableFuture<List<String>> bulkUpdate(
-      final Stream<DocumentUpdate> docUpdatesStream, final Refresh refresh) {
+      final Stream<? extends IncidentTaskUpdate> docUpdatesStream, final Refresh refresh) {
     final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
     if (updates.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
@@ -369,7 +389,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     return QueryBuilders.bool().must(piKeyQ, typeQ, stateQ).build().toQuery();
   }
 
-  private BulkOperation createUpdateOperation(final DocumentUpdate update) {
+  private BulkOperation createUpdateOperation(final IncidentTaskUpdate update) {
     return new UpdateOperation.Builder<>()
         .index(update.index())
         .id(update.id())

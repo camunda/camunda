@@ -14,6 +14,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -87,6 +88,21 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+  }
+
+  @Override
+  public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+    final var query = createPendingIncidentsBatchQuery(fromPosition);
+
+    final CountRequest countRequest =
+        new CountRequest.Builder()
+            .index(pendingUpdateAlias)
+            .query(query)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.count(countRequest).thenApplyAsync(r -> Math.toIntExact(r.count()), executor);
   }
 
   @Override
@@ -250,7 +266,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   }
 
   private CompletableFuture<List<String>> bulkUpdate(
-      final Stream<DocumentUpdate> docUpdatesStream, final Refresh refresh) {
+      final Stream<? extends IncidentTaskUpdate> docUpdatesStream, final Refresh refresh) {
     final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
     if (updates.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
@@ -324,7 +340,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     return QueryBuilders.bool(b -> b.must(piKeyQ, typeQ, stateQ));
   }
 
-  private BulkOperation createUpdateOperation(final DocumentUpdate update) {
+  private BulkOperation createUpdateOperation(final IncidentTaskUpdate update) {
     return new UpdateOperation.Builder<>()
         .index(update.index())
         .id(update.id())
@@ -381,9 +397,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   private Query createPendingIncidentsBatchQuery(final long fromPosition) {
     final var positionQ =
         QueryBuilders.range(
-            r ->
-                r.number(
-                    n -> n.field(PostImporterQueueTemplate.POSITION).gt((double) fromPosition)));
+            r -> r.longNumber(n -> n.field(PostImporterQueueTemplate.POSITION).gt(fromPosition)));
     final var typeQ =
         QueryBuilders.term(
             t ->

@@ -18,7 +18,7 @@ import {
   Users,
   Waypoints,
   Zap,
-} from "lucide-react";
+} from "@camunda/design-system/icons";
 import type { NavIcon, SidebarNode } from "@camunda/design-system";
 
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";

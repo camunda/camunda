@@ -112,7 +112,7 @@ dots become underscores), not as log line text — use `|` (structured-metadata 
 |-------------------------------------------------------------------------------------|------------------------------|
 | `{service_name="camunda-zeebe"}`                                                    | All raw analytics events     |
 | `{service_name="camunda-zeebe"} \| event_name="camunda.process.instance.activated"` | Process instance events only |
-| `{service_name="camunda-zeebe"} \| event_name="user_task_created"`                  | User task events only        |
+| `{service_name="camunda-zeebe"} \| event_name="camunda.user_task.created"`          | User task events only        |
 
 ## 5. Tear down
 

@@ -6,14 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
 import styled from 'styled-components';
-
-const OperationsContainer = styled(Stack)`
-  .cds--popover[role='tooltip'] {
-    display: none;
-  }
-`;
 
 const LoadingSlot = styled.li`
   align-items: center;
@@ -31,4 +24,4 @@ const EmptyOperationSlot = styled.li.attrs({
   inline-size: 2rem;
 `;
 
-export {EmptyOperationSlot, LoadingSlot, OperationsContainer};
+export {EmptyOperationSlot, LoadingSlot};

@@ -29,14 +29,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @MultiDbTest
 @MultiDbPhysicalTenants({"tenanta", "tenantb"})
-@EnabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class MultiPhysicalTenantDocumentAuthorizationIT {
 
   @MultiDbTestApplication

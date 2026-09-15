@@ -7942,111 +7942,9 @@
           "title": "",
           "transparent": true,
           "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Import times by namespace and partition across all record types.\n\nFilters by namespace, geo area, cloud provider, generation and sales plan type.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "showValues": false,
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 11,
-            "x": 0,
-            "y": 1534
-          },
-          "id": 94,
-          "options": {
-            "legend": {
-              "calcs": [
-                "max",
-                "mean",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": true,
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "12.2.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "avg by (namespace, partition) (\r\n    (\r\n      rate(tasklist_import_time_seconds_sum{\r\n        namespace=~\"$namespace\",\r\n        camunda_geo_area=~\"$geo_area\", \r\n        camunda_provider=~\"$cloud_provider\"\r\n        }[$__rate_interval])\r\n      /\r\n      rate(tasklist_import_time_seconds_count{\r\n        namespace=~\"$namespace\",\r\n        camunda_geo_area=~\"$geo_area\", \r\n        camunda_provider=~\"$cloud_provider\"\r\n        }[$__rate_interval])\r\n    )\r\n    * on(namespace)\r\n    group_left(\r\n      label_cloud_camunda_io_generation,\r\n      label_cloud_camunda_io_sales_plan_type\r\n    )\r\n    max(\r\n      kube_namespace_labels{\r\n        namespace=~\"$namespace\",\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n      }\r\n    ) by (\r\n      namespace\r\n    )\r\n  )",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "{{namespace}} p{{partition}} {{type}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Tasklist Average Import Time",
-          "type": "timeseries"
         }
       ],
-      "title": "Legacy Operate/Tasklist",
+      "title": "Legacy Operate",
       "type": "row"
     },
     {
@@ -8155,7 +8053,7 @@
               },
               "disableTextWrap": false,
               "editorMode": "code",
-              "expr": "topk(20,\r\n  avg (node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{\r\n    container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\",\r\n    namespace=~\"$namespace\",\r\n    cluster=~\"$cluster\"\r\n  }\r\n  * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n  }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n  /\r\n  avg (kube_pod_container_resource_limits{resource=\"cpu\", namespace=~\"$namespace\", cluster=~\"$cluster\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n    group_left(\r\n      label_cloud_camunda_io_generation,\r\n      label_cloud_camunda_io_sales_plan_type\r\n    )\r\n    max(\r\n      kube_namespace_labels{\r\n        namespace=~\"$namespace\",\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n      }\r\n    ) by (\r\n      namespace\r\n    )\r\n  ) by (container, namespace)\r\n)",
+              "expr": "topk(20,\r\n  avg (node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{\r\n    container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*|camunda-gateway.*\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\",\r\n    namespace=~\"$namespace\",\r\n    cluster=~\"$cluster\"\r\n  }\r\n  * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n  }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n  /\r\n  avg (kube_pod_container_resource_limits{resource=\"cpu\", namespace=~\"$namespace\", cluster=~\"$cluster\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n    group_left(\r\n      label_cloud_camunda_io_generation,\r\n      label_cloud_camunda_io_sales_plan_type\r\n    )\r\n    max(\r\n      kube_namespace_labels{\r\n        namespace=~\"$namespace\",\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n      }\r\n    ) by (\r\n      namespace\r\n    )\r\n  ) by (container, namespace)\r\n)",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "legendFormat": "{{namespace}} {{container}}",
@@ -8262,7 +8160,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "topk(20,\r\navg (node_namespace_pod_container:container_memory_working_set_bytes{container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*\",\r\n    cluster=~\"$cluster\",\r\n    namespace=~\"$namespace\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n    /\r\navg (kube_pod_container_resource_limits{resource=\"memory\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n* on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n)",
+              "expr": "topk(20,\r\navg (node_namespace_pod_container:container_memory_working_set_bytes{container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*|camunda-gateway.*\",\r\n    cluster=~\"$cluster\",\r\n    namespace=~\"$namespace\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n    /\r\navg (kube_pod_container_resource_limits{resource=\"memory\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n* on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n)",
               "legendFormat": "{{namespace}} {{container}}",
               "range": true,
               "refId": "A"
@@ -8811,7 +8709,7 @@
         "type": "query"
       },
       {
-        "allValue": "zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*",
+        "allValue": "zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*|camunda-gateway.*",
         "allowCustomValue": true,
         "current": {
           "text": "All",
@@ -8834,7 +8732,7 @@
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
-        "regex": "zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*",
+        "regex": "zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*|camunda-gateway.*",
         "sort": 1,
         "type": "query"
       },

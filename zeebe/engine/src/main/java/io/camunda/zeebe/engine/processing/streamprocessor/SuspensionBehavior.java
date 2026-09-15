@@ -1,0 +1,191 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.streamprocessor;
+
+import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionAction;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+
+/**
+ * The primary suspension gate: decides how a command should be treated while its target process
+ * instance carries a suspension marker.
+ *
+ * <p>Only processors that implement {@link SuspensionAware} are gated; every other command is
+ * processed normally. An implementing processor's {@link SuspensionAware#onSuspended} classifies
+ * the command as {@code PROCESS}, {@code REJECT}, or {@code BUFFER} while {@code SUSPENDED}. While
+ * {@code RESUMING}, {@link SuspensionAware#onResuming} classifies instead.
+ */
+@NullMarked
+public final class SuspensionBehavior {
+
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
+
+  private final ProcessingState processingState;
+
+  public SuspensionBehavior(final ProcessingState processingState) {
+    this.processingState = processingState;
+  }
+
+  /**
+   * Decides how to treat the command; commands whose processor is not {@link SuspensionAware}, or
+   * whose target is not suspended, are always processed. The resolved target process instance key
+   * is returned alongside the decision so callers reuse it rather than re-deriving it (external
+   * {@code JOB}/{@code INCIDENT}/{@code USER_TASK}/{@code AD_HOC_SUB_PROCESS_INSTRUCTION} commands
+   * don't carry it on the wire).
+   */
+  public SuspensionResult process(
+      final TypedRecord<?> command, final TypedRecordProcessor<?> processor) {
+    if (!(processor instanceof final SuspensionAware<?> suspensionAware)) {
+      // processors that don't opt in via SuspensionAware are never gated; checked before resolving
+      // the process instance key to keep the state lookups off the hot path for unrelated commands
+      return passThrough(-1);
+    }
+
+    final long processInstanceKey = resolveProcessInstanceKey(command);
+    if (processInstanceKey <= 0) {
+      return passThrough(processInstanceKey);
+    }
+
+    final State marker =
+        processingState.getSuspensionState().getSuspensionState(processInstanceKey);
+
+    final SuspensionAction action =
+        switch (marker) {
+          case SUSPENDED -> onSuspended(suspensionAware, command);
+          case RESUMING -> onResuming(suspensionAware, command);
+          case null -> SuspensionAction.PROCESS;
+        };
+
+    // captures onSuspended and onResuming null return values
+    if (action == null) {
+      LOG.error(
+          "Processor '{}' implements SuspensionAware but returned a null suspension behavior for"
+              + " command '{}'; processing it normally. Please report this as a bug.",
+          processor.getClass().getName(),
+          command.getValueType());
+      return passThrough(processInstanceKey);
+    }
+
+    return new SuspensionResult(action, processInstanceKey);
+  }
+
+  private static SuspensionResult passThrough(final long processInstanceKey) {
+    return new SuspensionResult(SuspensionAction.PROCESS, processInstanceKey);
+  }
+
+  /**
+   * Resolves the process instance a command targets. Most values carry their own {@code
+   * processInstanceKey}. However, a few other external commands only carry the entity key, so the
+   * persisted entity is consulted. Returns {@code -1} when it can't be resolved.
+   */
+  private long resolveProcessInstanceKey(final TypedRecord<?> command) {
+    if (command.getValue() instanceof final ProcessInstanceRelated processInstanceRelated) {
+      final long processInstanceKey = processInstanceRelated.getProcessInstanceKey();
+      if (processInstanceKey > 0) {
+        return processInstanceKey;
+      }
+    }
+
+    final long key = command.getKey();
+    return switch (command.getValueType()) {
+      case JOB -> {
+        final var job = processingState.getJobState().getJob(key);
+        yield job != null ? job.getProcessInstanceKey() : -1;
+      }
+      case INCIDENT -> {
+        final var incident = processingState.getIncidentState().getIncidentRecord(key);
+        yield incident != null ? incident.getProcessInstanceKey() : -1;
+      }
+      case USER_TASK -> {
+        final var userTask = processingState.getUserTaskState().getUserTask(key);
+        yield userTask != null ? userTask.getProcessInstanceKey() : -1;
+      }
+      case AD_HOC_SUB_PROCESS_INSTRUCTION -> {
+        final var adHocValue = (AdHocSubProcessInstructionRecordValue) command.getValue();
+        final var elementInstance =
+            processingState
+                .getElementInstanceState()
+                .getInstance(adHocValue.getAdHocSubProcessInstanceKey());
+        yield elementInstance != null ? elementInstance.getValue().getProcessInstanceKey() : -1;
+      }
+      case VARIABLE_DOCUMENT -> {
+        final var scopeKey = ((VariableDocumentRecordValue) command.getValue()).getScopeKey();
+        final var scope = processingState.getElementInstanceState().getInstance(scopeKey);
+        yield scope != null ? scope.getValue().getProcessInstanceKey() : -1;
+      }
+      case AGENT_INSTANCE -> resolveAgentInstanceProcessInstanceKey(command);
+      case AGENT_HISTORY -> resolveAgentHistoryProcessInstanceKey(command);
+      default -> -1;
+    };
+  }
+
+  /**
+   * CREATE carries {@code elementInstanceKey} on the value; the target element instance's process
+   * instance key is looked up. Every other AgentInstance command (currently only UPDATE) targets an
+   * existing agent instance identified by the command's own key.
+   */
+  private long resolveAgentInstanceProcessInstanceKey(final TypedRecord<?> command) {
+    if (command.getIntent() == AgentInstanceIntent.CREATE) {
+      final var value = (AgentInstanceRecordValue) command.getValue();
+      final var elementInstance =
+          processingState.getElementInstanceState().getInstance(value.getElementInstanceKey());
+      return elementInstance != null ? elementInstance.getValue().getProcessInstanceKey() : -1;
+    }
+
+    final var agentInstance = processingState.getAgentInstanceState().getRecord(command.getKey());
+    return agentInstance != null ? agentInstance.getProcessInstanceKey() : -1;
+  }
+
+  /**
+   * Every agent history command (COMMIT, DISCARD) carries {@code agentInstanceKey} on the value;
+   * the target agent instance's process instance key is looked up.
+   */
+  private long resolveAgentHistoryProcessInstanceKey(final TypedRecord<?> command) {
+    final var value = (AgentHistoryRecordValue) command.getValue();
+    final var agentInstance =
+        processingState.getAgentInstanceState().getRecord(value.getAgentInstanceKey());
+    return agentInstance != null ? agentInstance.getProcessInstanceKey() : -1;
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static SuspensionAware.@Nullable SuspensionAction onSuspended(
+      final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
+    return ((SuspensionAware) suspensionAware).onSuspended(command);
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static SuspensionAware.@Nullable SuspensionAction onResuming(
+      final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
+    final SuspensionAction action = ((SuspensionAware) suspensionAware).onResuming(command);
+    if (action == SuspensionAction.BUFFER) {
+      throw new IllegalStateException(
+          "Expected PROCESS or REJECT from onResuming, but got BUFFER from processor '%s' for command '%s'."
+              .formatted(suspensionAware.getClass().getName(), command.getValueType()));
+    }
+    return action;
+  }
+
+  /**
+   * The gate outcome for a command, with the resolved target process instance key.
+   *
+   * @param outcome the gate action to take
+   * @param processInstanceKey the resolved target instance, or {@code -1}
+   */
+  public record SuspensionResult(SuspensionAction outcome, long processInstanceKey) {}
+}

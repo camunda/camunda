@@ -21,9 +21,6 @@ import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.tasklist.TasklistPropertiesOverride;
-import io.camunda.tasklist.property.TasklistOpenSearchProperties;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -36,11 +33,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@ActiveProfiles({"broker", "tasklist", "operate"})
+@ActiveProfiles({"broker", "operate"})
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
-  TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
   SearchEngineConnectPropertiesOverride.class,
@@ -184,19 +180,16 @@ public class SecondaryStorageOpensearchTest {
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final SearchEngineIndexProperties searchEngineIndexProperties;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.searchEngineIndexProperties = searchEngineIndexProperties;
@@ -228,29 +221,6 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
       assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
           .isEqualTo(EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT);
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageTasklistProperties() {
-      final String expectedTasklistDatabaseType = DatabaseType.Opensearch.name().toLowerCase();
-      final String expectedUrl = "http://expected-url:4321";
-
-      assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
-
-      assertThat(tasklistProperties.getOpenSearch().getUrl()).isEqualTo(expectedUrl);
-      assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(tasklistProperties.getOpenSearch().getClusterName())
-          .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(tasklistProperties.getOpenSearch().getIndexPrefix())
-          .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(tasklistProperties.getOpenSearch().getDateFormat())
-          .isEqualTo(EXPECTED_DATE_FORMAT);
-      assertThat(tasklistProperties.getOpenSearch().getSocketTimeout())
-          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
-      assertThat(tasklistProperties.getOpenSearch().getConnectTimeout())
-          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
-      assertThat(tasklistProperties.getOpenSearch().isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
     }
 
     @Test
@@ -443,6 +413,61 @@ public class SecondaryStorageOpensearchTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=opensearch",
+        "camunda.data.secondary-storage.opensearch.url=http://expected-url:4321",
+        "camunda.database.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.tasklist.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.operate.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.connect.socketTimeout="
+            + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.database.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.tasklist.opensearch.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.operate.opensearch.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout="
+            + EXPECTED_CONNECTION_TIMEOUT,
+      })
+  class WithOnlyLegacyTimeoutsSet {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithOnlyLegacyTimeoutsSet(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTimeoutsForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect())
+          .returns(EXPECTED_SOCKET_TIMEOUT, ConnectConfiguration::getSocketTimeout)
+          .returns(EXPECTED_CONNECTION_TIMEOUT, ConnectConfiguration::getConnectTimeout);
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTimeoutsForTheSearchEngineConnectProperties() {
+      // then
+      assertThat(searchEngineConnectProperties)
+          .returns(EXPECTED_SOCKET_TIMEOUT, SearchEngineConnectProperties::getSocketTimeout)
+          .returns(EXPECTED_CONNECTION_TIMEOUT, SearchEngineConnectProperties::getConnectTimeout);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         // type
         "camunda.data.secondary-storage.type=opensearch",
         "camunda.database.type=opensearch",
@@ -541,25 +566,23 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.backup.snapshot-timeout="
             + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
         "camunda.data.secondary-storage.opensearch.backup.incomplete-check-timeout=10s",
+        "camunda.tasklist.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
         "camunda.operate.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
         "camunda.operate.backup.snapshotTimeout=" + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
         "camunda.operate.backup.incompleteCheckTimeoutInSeconds=10",
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final SearchEngineIndexProperties searchEngineIndexProperties;
 
     WithNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.searchEngineIndexProperties = searchEngineIndexProperties;
@@ -590,30 +613,6 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
       assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
           .isEqualTo(EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT);
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageTasklistProperties() {
-      final String expectedTasklistDatabaseType = DatabaseType.Opensearch.name().toLowerCase();
-      final String expectedUrl = "http://matching-url:4321";
-
-      assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
-
-      assertThat(tasklistProperties.getOpenSearch().getUrl()).isEqualTo(expectedUrl);
-      assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(tasklistProperties.getOpenSearch().getIndexPrefix())
-          .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(tasklistProperties.getOpenSearch().getClusterName())
-          .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(tasklistProperties.getOpenSearch().getDateFormat())
-          .isEqualTo(EXPECTED_DATE_FORMAT);
-      assertThat(tasklistProperties.getOpenSearch().getSocketTimeout())
-          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
-      assertThat(tasklistProperties.getOpenSearch().getConnectTimeout())
-          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
-      assertThat(tasklistProperties.getBackup().getRepositoryName())
-          .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
     }
 
     @Test
@@ -743,17 +742,14 @@ public class SecondaryStorageOpensearchTest {
   @Nested
   class WithoutNewAndLegacySet {
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithoutNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
@@ -765,15 +761,6 @@ public class SecondaryStorageOpensearchTest {
               OperateOpensearchProperties.SOCKET_TIMEOUT_DEFAULT,
               OperateOpensearchProperties::getSocketTimeout)
           .returns(null, OperateOpensearchProperties::getConnectTimeout);
-    }
-
-    @Test
-    void shouldUseTasklistPropertiesDefaults() {
-      assertThat(tasklistProperties.getOpenSearch())
-          .returns(
-              TasklistOpenSearchProperties.SOCKET_TIMEOUT_DEFAULT,
-              TasklistOpenSearchProperties::getSocketTimeout)
-          .returns(null, TasklistOpenSearchProperties::getConnectTimeout);
     }
 
     @Test
@@ -812,17 +799,14 @@ public class SecondaryStorageOpensearchTest {
         List.of("http://node1:9200", "http://node2:9200", "http://node3:9200");
 
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithUrlsConfigured(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
@@ -832,13 +816,6 @@ public class SecondaryStorageOpensearchTest {
       assertThat(operateProperties.getOpensearch().getUrls()).isEqualTo(EXPECTED_URLS);
       assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-    }
-
-    @Test
-    void testUrlsPropagatedToTasklistProperties() {
-      assertThat(tasklistProperties.getOpenSearch().getUrls()).isEqualTo(EXPECTED_URLS);
-      assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
 
     @Test
@@ -882,17 +859,14 @@ public class SecondaryStorageOpensearchTest {
     private static final String EXPECTED_PROXY_PASSWORD = "proxyPass";
 
     final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithProxyConfigured(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
@@ -900,18 +874,6 @@ public class SecondaryStorageOpensearchTest {
     @Test
     void testProxyPropagatedToOperateProperties() {
       final var proxy = operateProperties.getOpensearch().getProxy();
-      assertThat(proxy).isNotNull();
-      assertThat(proxy.isEnabled()).isTrue();
-      assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);
-      assertThat(proxy.getPort()).isEqualTo(EXPECTED_PROXY_PORT);
-      assertThat(proxy.isSslEnabled()).isTrue();
-      assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
-      assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
-    }
-
-    @Test
-    void testProxyPropagatedToTasklistProperties() {
-      final var proxy = tasklistProperties.getOpenSearch().getProxy();
       assertThat(proxy).isNotNull();
       assertThat(proxy.isEnabled()).isTrue();
       assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);

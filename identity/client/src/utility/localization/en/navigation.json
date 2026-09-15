@@ -24,5 +24,14 @@
   "sidebarCollapseAria": "Collapse sidebar",
   "sidebarExpandAria": "Expand sidebar",
   "sidebarGroupCollapseAria": "Collapse {{label}}",
-  "sidebarGroupExpandAria": "Expand {{label}}"
+  "sidebarGroupExpandAria": "Expand {{label}}",
+  "licenseProductionLabel": "Production license",
+  "licenseNonProductionLabel": "Non-production license",
+  "licenseNonProductionDescription": "Non-production license. For production usage details, visit our <termsLink>terms & conditions page</termsLink> or <salesLink>contact our sales team</salesLink>.",
+  "licenseNonCommercialLabel": "Non-commercial license",
+  "licenseNonCommercialExpiredLabel": "Non-commercial license - expired",
+  "licenseNonCommercialExpiredDescription": "To continue using all features, please renew your license.",
+  "licenseNonCommercialExpiringLabel_one": "Non-commercial license - {{count}} day left",
+  "licenseNonCommercialExpiringLabel_other": "Non-commercial license - {{count}} days left",
+  "licenseNonCommercialExpiringDescription": "Please renew and provide new license keys to continue production use of Camunda."
 }

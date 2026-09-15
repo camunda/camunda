@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.service.ClusterHistoryBackupServices;
+import io.camunda.service.GroupServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import org.junit.jupiter.api.Test;
@@ -48,5 +49,44 @@ class DefaultServiceRegistryTest {
 
     // when / then
     assertThat(registry.clusterHistoryBackupServices()).isSameAs(services);
+  }
+
+  /**
+   * A tenant-scoped accessor is reached with whatever physical tenant id was stamped on the
+   * request, and that id is taken from the request path without being validated against the
+   * configured tenants (ADR-0003). Rejecting an unknown one here is therefore the point at which an
+   * arbitrary id stops, and callers rely on that: {@code DefaultMembershipService} keys a
+   * per-outage map by the tenant in context, and only stays bounded by the configured tenants
+   * because an unknown one never gets past this accessor to fail transiently.
+   *
+   * <p>Falling back to the default tenant instead would also be an isolation fault in its own
+   * right, serving one tenant's data under another's id.
+   */
+  @Test
+  void shouldRejectAnUnknownPhysicalTenant() {
+    // given a registry that knows one tenant
+    final var registry =
+        DefaultServiceRegistry.of(
+            builder -> builder.groupServices("tenanta", mock(GroupServices.class)));
+
+    // when / then — asking for another is an error, not a fallback
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> registry.groupServices("tenantz"))
+        .withMessageContaining("tenantz");
+  }
+
+  @Test
+  void shouldReturnTheServicesOfTheRequestedPhysicalTenant() {
+    // given two tenants with distinct instances
+    final var tenantA = mock(GroupServices.class);
+    final var tenantB = mock(GroupServices.class);
+    final var registry =
+        DefaultServiceRegistry.of(
+            builder -> builder.groupServices("tenanta", tenantA).groupServices("tenantb", tenantB));
+
+    // when / then — each id resolves to its own, so a rejection above cannot be mistaken for the
+    // accessor simply never returning anything
+    assertThat(registry.groupServices("tenanta")).isSameAs(tenantA);
+    assertThat(registry.groupServices("tenantb")).isSameAs(tenantB);
   }
 }

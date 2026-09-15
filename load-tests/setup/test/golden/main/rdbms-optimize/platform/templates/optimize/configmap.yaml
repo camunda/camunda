@@ -53,6 +53,20 @@ data:
         audience: "optimize-api"
         issuer: ""
         issuerBackendUrl: "http://c8-golden-main-rdbms-optimize.keycloak-operator.svc:18080/auth/realms/camunda-platform"
+      security:
+        authentication:
+          method: "oidc"
+          oidc:
+            client-id: "optimize"
+            client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}
+            audiences:
+              - "optimize"
+              - "optimize-api"
+              - "web-modeler-api"
+            authorization-uri: "/protocol/openid-connect/auth"
+            jwk-set-uri: "http://c8-golden-main-rdbms-optimize.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
+            token-uri: "http://c8-golden-main-rdbms-optimize.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
+            redirect-uri: "http://localhost:8083/api/authentication/callback"
   application.yml: |
     historyCleanup:
       cronTrigger: '*/30 * * * *'

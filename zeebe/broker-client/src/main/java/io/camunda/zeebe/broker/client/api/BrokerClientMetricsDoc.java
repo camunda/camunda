@@ -144,6 +144,11 @@ public enum BrokerClientMetricsDoc implements ExtendedMeterDocumentation {
     TIMEOUT,
     /** The requested partition was inactive, meaning it could not process requests at the time */
     PARTITION_INACTIVE,
+    /**
+     * The requested partition was in recovery mode, during which only backup and recovery related
+     * requests are served.
+     */
+    PARTITION_IN_RECOVERY,
     UNKNOWN
   }
 

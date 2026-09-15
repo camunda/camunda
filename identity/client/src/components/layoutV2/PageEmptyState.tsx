@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Button, EmptyState } from "@camunda/design-system";
-import { Plus } from "lucide-react";
+import { Button, EmptyState, Link } from "@camunda/design-system";
+import { Plus } from "@camunda/design-system/icons";
 import { FC } from "react";
 import { documentationHref } from "src/components/documentationV2";
 import { useDocsUrl } from "../documentation/DocsUrlContext";
@@ -44,15 +44,13 @@ const PageEmptyState: FC<PageEmptyStateProps> = ({
         </Button>
       }
       secondaryAction={
-        <Button variant="link" size="sm" asChild>
-          <a
-            href={documentationHref(docsUrl, docsLinkPath)}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            {t("emptyStateLearnText", { resourceType: resourceTypeText })}
-          </a>
-        </Button>
+        <Link
+          href={documentationHref(docsUrl, docsLinkPath)}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          {t("emptyStateLearnText", { resourceType: resourceTypeText })}
+        </Link>
       }
     />
   );

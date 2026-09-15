@@ -270,6 +270,7 @@ test.describe('Identity User Flows', () => {
     identityHeader,
     loginPage,
     operateHomePage,
+    taskPanelPage,
     tasklistHeader,
   }) => {
     const testData = createTestData({
@@ -421,8 +422,15 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify test user can view the userTask in Tasklist', async () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
-      await expect(page.getByText('identityProcess').first()).toBeVisible({
-        timeout: 60000,
+      // Go through the task panel rather than asserting on the card here: on
+      // top of waiting out the group authorization's propagation (Tasklist's
+      // task search doesn't poll aggressively enough to always pick it up in
+      // one wait, unlike Operate's process-instance list in the step above),
+      // the available-tasks list is virtualized, so under parallel load this
+      // task can sit below the rendered window where no wait or reload will
+      // ever reveal it.
+      await taskPanelPage.assertTaskCardVisible('identityProcess', {
+        timeout: 20000,
       });
     });
   });

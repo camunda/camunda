@@ -12,11 +12,11 @@ import io.camunda.application.commons.pt.SchemaInitialization;
 import io.camunda.application.commons.pt.SingleTenantSchemaInitialization;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
-import java.time.Duration;
 import java.util.Map;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
@@ -62,36 +62,21 @@ import org.springframework.beans.factory.InitializingBean;
 public class RdbmsSchemaInitializer
     implements InitializingBean, DisposableBean, RdbmsSchemaManagerRegistry {
 
-  static final Duration MIN_RETRY_DELAY = Duration.ofMillis(500);
-  static final Duration MAX_RETRY_DELAY = Duration.ofSeconds(10);
-  static final int MAX_RETRIES = Integer.MAX_VALUE;
-
-  /**
-   * The backoff a degraded tenant retries on, deliberately not configurable: what a degraded node
-   * needs is to keep retrying, no deployment has asked to tune that, and a property surface is
-   * easier to add later than to withdraw. The values are Elasticsearch/OpenSearch's, so that a
-   * tenant degrades and recovers the same way whichever secondary storage it uses.
-   *
-   * <p>Unbounded is the load-bearing part. A finite budget would leave every tenant that was
-   * migrating during a transient database outage permanently degraded until an operator restarts
-   * the node, where a node with no serviceable tenant should stay held and retrying instead. It is
-   * also why {@code LiquibaseSchemaManager}'s own three attempts are not a give-up policy but a
-   * transient-deadlock retry inside a single attempt: nothing about this outer budget duplicates
-   * them.
-   */
-  @VisibleForTesting static final RetryConfiguration DEFAULT_RETRY = unboundedRetry();
-
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSchemaInitializer.class);
 
   private final Map<String, RdbmsSchemaManager> schemaManagers;
   private final SchemaInitialization initialization;
 
-  public RdbmsSchemaInitializer(final Map<String, RdbmsSchemaManager> schemaManagersByTenant) {
-    this(schemaManagersByTenant, physicalTenantId -> DEFAULT_RETRY);
-  }
-
-  @VisibleForTesting
-  RdbmsSchemaInitializer(
+  /**
+   * @param retryConfig the backoff a degraded tenant retries on, per physical tenant. Unbounded is
+   *     the load-bearing default: a finite budget leaves every tenant that was migrating during a
+   *     transient database outage permanently degraded until an operator restarts the node, where a
+   *     node with no serviceable tenant should stay held and retrying instead. It is also why
+   *     {@code LiquibaseSchemaManager}'s own three attempts are not a give-up policy but a
+   *     transient-deadlock retry inside a single attempt: nothing about this outer budget
+   *     duplicates them.
+   */
+  public RdbmsSchemaInitializer(
       final Map<String, RdbmsSchemaManager> schemaManagersByTenant,
       final Function<String, RetryConfiguration> retryConfig) {
     schemaManagers = schemaManagersByTenant;
@@ -193,14 +178,15 @@ public class RdbmsSchemaInitializer
   /**
    * A schema whose recorded version the running code cannot migrate from stays that way however
    * often it is retried, and so does a version that cannot be determined at all — an absent data
-   * source, or a stored value that is not a semantic version. Everything else is retried, including
-   * a missing DDL grant: a grant can be added while the node runs, so retrying genuinely repairs
-   * it.
+   * source, or a stored value that is not a semantic version — and so does a changelog that cannot
+   * be applied to the schema as recorded. Everything else is retried, including a missing DDL
+   * grant: a grant can be added while the node runs, so retrying genuinely repairs it.
    */
   @VisibleForTesting
   static boolean isTerminal(final Throwable failure) {
     return failure instanceof RdbmsSchemaVersionIncompatibleException
         || failure instanceof RdbmsSchemaVersionIndeterminateException
+        || failure instanceof RdbmsSchemaMigrationFailedException
         || failure instanceof TerminalSchemaInitializationException;
   }
 
@@ -227,14 +213,6 @@ public class RdbmsSchemaInitializer
       LOG.debug("JVM is shutting down, cannot add the schema initializer shutdown hook", e);
       return false;
     }
-  }
-
-  private static RetryConfiguration unboundedRetry() {
-    final var retry = new RetryConfiguration();
-    retry.setMaxRetries(MAX_RETRIES);
-    retry.setMinRetryDelay(MIN_RETRY_DELAY);
-    retry.setMaxRetryDelay(MAX_RETRY_DELAY);
-    return retry;
   }
 
   /** Marks a failure that no amount of retrying can repair. */

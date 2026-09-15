@@ -6,37 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Popover} from '@carbon/react';
-import {SkillLevelBasic, SkillLevelIntermediate, SkillLevelAdvanced, Critical} from '@carbon/react/icons';
-import {LabelWithPopover} from './LabelWithPopover';
+import {ChevronDown, ChevronUp, ChevronsUp, Equal} from '@camunda/design-system/icons';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
-import styles from './PriorityLabel.module.scss';
+import {LabelWithTooltip, type Align} from './LabelWithTooltip';
 
-type PriorityLabelProps = {
+type Props = {
 	priority: number;
-	align?: React.ComponentProps<typeof Popover>['align'];
+	align?: Align;
 };
 
 const ICON_MAPPINGS = {
-	low: SkillLevelBasic,
-	medium: SkillLevelIntermediate,
-	high: SkillLevelAdvanced,
-	critical: Critical,
+	low: ChevronDown,
+	medium: Equal,
+	high: ChevronUp,
+	critical: ChevronsUp,
 };
 
-const PriorityLabel: React.FC<PriorityLabelProps> = ({priority, align = 'top-end'}) => {
+const PriorityLabel: React.FC<Props> = ({priority, align = 'top-end'}) => {
 	const priorityLabel = getPriorityLabel(priority);
 	const PriorityIcon = ICON_MAPPINGS[priorityLabel.key];
 
 	return (
-		<LabelWithPopover
-			title={priorityLabel.long}
-			popoverContent={<span className={styles.popoverBody}>{priorityLabel.long}</span>}
-			align={align}
-		>
-			<PriorityIcon className={styles.inlineIcon} />
+		<LabelWithTooltip title={priorityLabel.long} content={priorityLabel.long} align={align}>
+			<PriorityIcon className="size-4 shrink-0" data-testid={`${priorityLabel.key}-priority-icon`} aria-hidden />
 			{priorityLabel.short}
-		</LabelWithPopover>
+		</LabelWithTooltip>
 	);
 };
 

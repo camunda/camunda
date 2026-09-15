@@ -198,6 +198,9 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             <TokensUsedMetric
               inputTokens={metrics.inputTokens}
               outputTokens={metrics.outputTokens}
+              cacheReadTokens={metrics.cacheReadTokenCount}
+              cacheCreationTokens={metrics.cacheCreationTokenCount}
+              reasoningTokens={metrics.reasoningTokenCount}
               maxTokens={limits.maxTokens}
             />
             <ToolsCalledMetric

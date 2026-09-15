@@ -6,6 +6,13 @@ metadata:
   name: worker
   labels:
     app: worker
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
@@ -16,6 +23,13 @@ spec:
       labels:
         app: worker
         app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: load-tester
+        app.kubernetes.io/instance: load-test-setup
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
       annotations:
 
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
@@ -37,17 +51,6 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
-                -Dconfig.override_with_env_vars=true
-                -Dapp.tls=true
-                -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
-                -Dzeebe.client.requestTimeout=62000
-                -Dapp.worker.capacity=60
-                -Dapp.worker.threads=10
-                -Dapp.worker.completionDelay=50ms
-                -Dapp.worker.workerName="worker"
-                -Dapp.worker.jobType="benchmark-task"
-                -Dapp.worker.payloadPath="bpmn/typical_payload.json"
                 -XX:+HeapDumpOnOutOfMemoryError
             - name: LOG_LEVEL
               value: "INFO"
@@ -106,7 +109,7 @@ spec:
             ## Spring Boot compatible env vars (for migrated load tester, ignored by old HOCON app)
             ##
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
-              value: "false"
+              value: "true"
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
               value: "false"
             - name: CAMUNDA_CLIENT_MODE

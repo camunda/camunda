@@ -55,6 +55,9 @@ spec:
       value: json
     - name: log-level
       value: info
+    # Show HTTP access logs on each requests to Keycloak
+    - name: http-access-log-enabled
+      value: "true"
 
   ingress:
     enabled: false

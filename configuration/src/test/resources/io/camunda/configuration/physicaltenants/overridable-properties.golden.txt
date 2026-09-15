@@ -15,9 +15,11 @@ data.audit-log.client.excludes
 data.audit-log.enabled
 data.audit-log.unknown.categories
 data.audit-log.unknown.excludes
+data.audit-log.user-task-completion-variable-audit-enabled
 data.audit-log.user.categories
 data.audit-log.user.excludes
 data.export.distribution-interval
+data.export.migration-status-scan-max-records
 data.export.skip-records
 data.exporters
 data.extension-properties.inbound-connector-type-property
@@ -128,6 +130,7 @@ data.secondary-storage.elasticsearch.proxy.ssl-enabled
 data.secondary-storage.elasticsearch.proxy.username
 data.secondary-storage.elasticsearch.refresh-interval
 data.secondary-storage.elasticsearch.refresh-interval-by-index-name
+data.secondary-storage.elasticsearch.retry.database-name
 data.secondary-storage.elasticsearch.security.database-name
 data.secondary-storage.elasticsearch.socket-timeout
 data.secondary-storage.elasticsearch.template-priority
@@ -187,6 +190,7 @@ data.secondary-storage.opensearch.proxy.ssl-enabled
 data.secondary-storage.opensearch.proxy.username
 data.secondary-storage.opensearch.refresh-interval
 data.secondary-storage.opensearch.refresh-interval-by-index-name
+data.secondary-storage.opensearch.retry.database-name
 data.secondary-storage.opensearch.security.database-name
 data.secondary-storage.opensearch.socket-timeout
 data.secondary-storage.opensearch.template-priority
@@ -243,6 +247,7 @@ data.secondary-storage.rdbms.process-cache
 data.secondary-storage.rdbms.query.max-total-hits
 data.secondary-storage.rdbms.queue-memory-limit
 data.secondary-storage.rdbms.queue-size
+data.secondary-storage.rdbms.retry.database-name
 data.secondary-storage.rdbms.rewrite-batched-statements
 data.secondary-storage.rdbms.url
 data.secondary-storage.rdbms.urls
@@ -357,6 +362,7 @@ processing.scheduled-tasks-check-interval
 processing.skip-positions
 secrets.cache.max-size
 secrets.cache.ttl
+secrets.max-concurrency
 secrets.stores.aws
 secrets.stores.file
 secrets.stores.gcp

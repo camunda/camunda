@@ -6,9 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Toggle} from '@carbon/react';
+import {Label, Switch} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
-import styles from './AutoSelectNextTaskToggle.module.scss';
 import {useCallback, useState} from 'react';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 
@@ -24,17 +23,14 @@ const AutoSelectNextTaskToggle: React.FC = () => {
 	}, []);
 
 	return (
-		<section className={styles.container} aria-label={t('tasklist.taskOptionsSectionAria')}>
-			<Toggle
-				id="toggle-auto-select-task"
-				size="sm"
-				labelText={t('tasklist.taskOptionsAutoSelectLabel')}
-				hideLabel
-				labelA={t('tasklist.taskOptionsAutoSelectOffAria')}
-				labelB={t('tasklist.taskOptionsAutoSelectOnAria')}
-				toggled={isAutoSelectEnabled}
-				onToggle={handleToggle}
-			/>
+		<section
+			className="flex h-10 items-center gap-2 border-t border-border px-4"
+			aria-label={t('tasklist.taskOptionsSectionAria')}
+		>
+			<Switch id="toggle-auto-select-task" size="sm" checked={isAutoSelectEnabled} onCheckedChange={handleToggle} />
+			<Label htmlFor="toggle-auto-select-task" className="text-sm">
+				{t('tasklist.taskOptionsAutoSelectLabel')}
+			</Label>
 		</section>
 	);
 };

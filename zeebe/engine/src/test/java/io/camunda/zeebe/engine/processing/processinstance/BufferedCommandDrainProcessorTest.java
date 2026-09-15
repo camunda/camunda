@@ -16,6 +16,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -42,18 +43,20 @@ public final class BufferedCommandDrainProcessorTest {
 
   private StateWriter stateWriter;
   private TypedCommandWriter commandWriter;
+  private SuspensionMetrics suspensionMetrics;
   private BufferedCommandDrainProcessor processor;
 
   @BeforeEach
   void setUp() {
     stateWriter = mock(StateWriter.class);
     commandWriter = mock(TypedCommandWriter.class);
+    suspensionMetrics = mock(SuspensionMetrics.class);
 
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
     when(writers.command()).thenReturn(commandWriter);
 
-    processor = new BufferedCommandDrainProcessor(processingState, writers);
+    processor = new BufferedCommandDrainProcessor(processingState, writers, suspensionMetrics);
   }
 
   @Test

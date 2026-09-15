@@ -126,8 +126,16 @@ jobs:
         # zizmor: ignore[artipacked]
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Transient GitHub HTTP/2 cancels fail this fetch with exit 128; retry
+      # in-step so the 30m job is not spent on a one-shot RPC flake.
       - name: Fetch main branch
-        run: git fetch origin main:refs/remote/origin/main
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          shell: bash
+          command: git fetch origin main:refs/remote/origin/main
 
       - name: Setup Maven
         uses: ./.github/actions/setup-build
@@ -225,8 +233,16 @@ jobs:
         # zizmor: ignore[artipacked]
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Transient GitHub HTTP/2 cancels fail this fetch with exit 128; retry
+      # in-step so the 30m job is not spent on a one-shot RPC flake.
       - name: Fetch main branch
-        run: git fetch origin main:refs/remote/origin/main
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          shell: bash
+          command: git fetch origin main:refs/remote/origin/main
 
       - name: Setup Maven
         uses: ./.github/actions/setup-build
@@ -312,7 +328,7 @@ jobs:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -321,13 +337,13 @@ jobs:
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
+        uses: YunaBraska/java-info-action@085d09be3659b484e0a6d0c95aac6612687ce8d9 # 3.0.13
         with:
           work-dir: ./parent
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache-1.0.0
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
         with:
           directory: optimize/client
       - name: Install dependencies
@@ -372,7 +388,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -409,7 +425,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -464,9 +480,11 @@ jobs:
     env:
       TEST_TYPE: E2E
       TEST_OWNER: '@camunda/optimize-frontend'
+      CAMUNDA_IMAGE: camunda/camunda:current-test
+      CAMUNDA_PULL_POLICY: never
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -511,7 +529,7 @@ jobs:
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
+        uses: YunaBraska/java-info-action@085d09be3659b484e0a6d0c95aac6612687ce8d9 # 3.0.13
         with:
           work-dir: ./optimize
 
@@ -519,6 +537,7 @@ jobs:
         uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: optimize-e2e-smoke
+          minimus: true
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -529,6 +548,18 @@ jobs:
         with:
           directory: ./optimize/client
 
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
+
+      - name: Build Camunda image under test
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: camunda/camunda
+          version: current-test
+          distball: ${{ steps.build-camunda.outputs.distball }}
+
       - name: Start services (Camunda, Keycloak, Identity and Elasticsearch)
         uses: ./.github/actions/compose
         with:
@@ -537,11 +568,6 @@ jobs:
           additional_flags: "--profile self-managed"
         env:
           CAMUNDA_VERSION: ${{ steps.pom_info.outputs.x_camunda_docker_version }}
-
-      - uses: ./.github/actions/build-zeebe
-        id: build-camunda
-        with:
-          maven-extra-args: -PskipFrontendBuild -Dskip.docker
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
@@ -556,30 +582,7 @@ jobs:
         run: yarn start &
 
       - name: Wait for import to complete
-        run: |
-          while : ; do
-            count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
-            if [[ $count -eq 60 ]]; then
-              echo "Process definitions imported ($count). Waiting for process instance import to stabilize..."
-              prev="-1"
-              stable=0
-              while [[ $stable -lt 2 ]]; do
-                cur=$(curl -s -X GET "http://localhost:9200/optimize-process-instance/_count" | jq '.count // 0')
-                echo "Process instances: $cur"
-                if [[ "$cur" == "$prev" ]]; then
-                  stable=$((stable + 1))
-                else
-                  stable=0
-                fi
-                prev="$cur"
-                sleep 10
-              done
-              echo "Import stabilized at $cur process instances"
-              break
-            fi
-            echo "Index has $count entities. Waiting for 60..."
-            sleep 10
-          done
+        run: ./.github/optimize/scripts/wait-for-import.sh
 
       - name: Wait for frontend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready

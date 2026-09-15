@@ -19,14 +19,13 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChange
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import java.util.List;
 import java.util.TreeMap;
@@ -34,17 +33,12 @@ import java.util.TreeMap;
 /**
  * Drains a change plan against the same appliers the broker uses, so a transformer test can assert
  * on the configuration its request actually produces rather than on the operation list alone.
- *
- * <p>Takes and returns the legacy single-group {@link ClusterConfiguration} because that is what
- * the transformer tests build their fixtures and expectations in. On a single-tenant cluster the
- * conversion is lossless in both directions, so the plan is simulated on the real model in between.
  */
 final class TestTopologyChangeSimulator {
 
-  static ClusterConfiguration apply(
-      final ClusterConfiguration currentTopology,
-      final List<ClusterConfigurationChangeOperation> operations) {
-    if (operations.isEmpty()) {
+  static CurrentClusterConfiguration apply(
+      final CurrentClusterConfiguration currentTopology, final List<Phase> phases) {
+    if (phases.isEmpty()) {
       return currentTopology;
     }
 
@@ -58,12 +52,10 @@ final class TestTopologyChangeSimulator {
             new NoopModeChangeExecutor(),
             new RestoreChangeExecutor.NoopRestoreChangeExecutor());
 
-    final var started =
-        CurrentClusterConfiguration.fromLegacy(currentTopology)
-            .initPlan(CurrentClusterConfiguration.toPhases(operations));
+    final var started = currentTopology.initPlan(phases);
     final var planId = started.phasedChangeState().pending().keySet().iterator().next();
 
-    return drainPlan(started, planId, globalAppliers, groupAppliers).toLegacyDefault();
+    return drainPlan(started, planId, globalAppliers, groupAppliers);
   }
 
   private static CurrentClusterConfiguration drainPlan(
