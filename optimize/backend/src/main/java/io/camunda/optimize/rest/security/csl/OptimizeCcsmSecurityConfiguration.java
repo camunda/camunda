@@ -8,15 +8,18 @@
 package io.camunda.optimize.rest.security.csl;
 
 import io.camunda.optimize.service.security.CCSMTokenService;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.oidc.AudienceValidator;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import io.camunda.security.spring.security.SecurityHeadersCustomizer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -135,6 +138,13 @@ public class OptimizeCcsmSecurityConfiguration {
    * {@link TokenValidatorFactory} that carries none of the extra validators — i.e. the same
    * issuer/signature/expiry/audience checks CSL would otherwise apply, just without the Identity
    * gate {@link #tokenValidatorFactory} adds for every other path.
+   *
+   * <p>Instead it requires {@code api.audience}, the way the legacy decoder did. CSL validates
+   * against one merged audience set ({@code OptimizeSecurityConfigCompatibilityPostProcessor}
+   * bridges the Identity and public-API audiences into it) and its {@code AudienceValidator}
+   * accepts a token matching any entry, so the shared set alone would let an Identity-audience
+   * token through here, and this chain has no Identity gate to catch it. When {@code api.audience}
+   * is not configured there is nothing to pin to and the merged set stays the only audience check.
    */
   @Bean
   @Order(CamundaSecurityFilterChainConstants.ORDER_UNPROTECTED)
@@ -143,11 +153,14 @@ public class OptimizeCcsmSecurityConfiguration {
       final ClientRegistrationRepository clientRegistrationRepository,
       final OidcProviderConfigurationPort oidcProviderConfigurationPort,
       final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
-      final CamundaSecurityLibraryProperties cslProperties)
+      final CamundaSecurityLibraryProperties cslProperties,
+      final ConfigurationService configurationService)
       throws Exception {
     final TokenValidatorFactory validatorFactoryWithoutIdentityGate =
         OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
-            oidcProviderConfigurationPort, cslProperties, List.of());
+            oidcProviderConfigurationPort,
+            cslProperties,
+            publicApiAudienceValidator(configurationService));
     final JwtDecoder decoder =
         oidcAccessTokenDecoderFactory.selectAccessTokenDecoder(
             allClientRegistrations(clientRegistrationRepository),
@@ -164,6 +177,15 @@ public class OptimizeCcsmSecurityConfiguration {
         .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
         .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(decoder)));
     return http.build();
+  }
+
+  private static List<OAuth2TokenValidator<Jwt>> publicApiAudienceValidator(
+      final ConfigurationService configurationService) {
+    final String audience = configurationService.getOptimizeApiConfiguration().getAudience();
+    if (audience == null || audience.isBlank()) {
+      return List.of();
+    }
+    return List.of(new AudienceValidator(Set.of(audience)));
   }
 
   // Mirrors OptimizeCamundaSecurityConfig#resolveLoginRedirectTarget: ClientRegistrationRepository
