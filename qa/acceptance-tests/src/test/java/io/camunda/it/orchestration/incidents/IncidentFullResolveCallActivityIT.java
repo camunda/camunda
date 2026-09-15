@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
  * instances in the call stack stay go out of incident state.
  */
 @MultiDbTest
-public class IncidentFullResolveCallActivityTest {
+public class IncidentFullResolveCallActivityIT {
 
   private static CamundaClient camundaClient;
   private static final String CALLED_PROCESS_ID = "calledProcess";
