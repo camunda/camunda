@@ -68,17 +68,6 @@ const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
     onInputChange,
   } = useEntitySearchQuery(search);
 
-  // `MultiSelect` only deals in ids, but callers need the full selected
-  // `Entity` objects back. `externalFiltering` also means `items` is only the
-  // current query's result page, so a value selected on a prior query can
-  // drop off `items` entirely. This keeps selections resolvable by id.
-  const entityById = useMemo(() => {
-    const map = new Map<string, Entity>();
-    for (const entity of items) map.set(getId(entity), entity);
-    for (const entity of value) map.set(getId(entity), entity);
-    return map;
-  }, [items, value, getId]);
-
   const excludedIds = useMemo(
     () => new Set(excluded.map(getId)),
     [excluded, getId],
@@ -91,6 +80,19 @@ const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
         .map((entity) => ({ label: itemLabel(entity), value: getId(entity) })),
     [searchText, items, value, excludedIds, getId, itemLabel],
   );
+
+  // The existing entity-selection multi-select components operate on the whole
+  // entity objects not just IDs. However, the design-system's `MultiSelect`
+  // only allows simple string IDs as values and reports `string[]` back
+  // when the selection changes.
+  // Unless we refactor the component API, we need to keep track of currently
+  // relevant entities to resolve IDs back to whole entities on selection change.
+  const entityById = useMemo(() => {
+    const map = new Map<string, Entity>();
+    for (const entity of items) map.set(getId(entity), entity);
+    for (const entity of value) map.set(getId(entity), entity);
+    return map;
+  }, [items, value, getId]);
 
   const handleValueChange = useCallback(
     (ids: string[]) => {
