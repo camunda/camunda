@@ -884,7 +884,7 @@ public final class CamundaClientImpl implements CamundaClient {
   public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(final ActivatedJob job) {
     final JobUpdateRetriesCommandImpl command =
         (JobUpdateRetriesCommandImpl) newUpdateRetriesCommand(job.getKey());
-    command.withLeaseToken(job.getLeaseToken());
+    command.withJobLeaseToken(job.getJobLeaseToken());
     return command;
   }
 
@@ -904,7 +904,7 @@ public final class CamundaClientImpl implements CamundaClient {
   public UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(final ActivatedJob job) {
     final JobUpdateTimeoutCommandImpl command =
         (JobUpdateTimeoutCommandImpl) newUpdateTimeoutCommand(job.getKey());
-    command.withLeaseToken(job.getLeaseToken());
+    command.withJobLeaseToken(job.getJobLeaseToken());
     return command;
   }
 
@@ -924,7 +924,7 @@ public final class CamundaClientImpl implements CamundaClient {
   public UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(final ActivatedJob job) {
     final JobUpdatePriorityCommandImpl command =
         (JobUpdatePriorityCommandImpl) newUpdateJobPriorityCommand(job.getKey());
-    command.withLeaseToken(job.getLeaseToken());
+    command.withJobLeaseToken(job.getJobLeaseToken());
     return command;
   }
 
@@ -978,7 +978,7 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UpdateJobCommandStep1 newUpdateJobCommand(final ActivatedJob job) {
     final UpdateJobCommandImpl command = (UpdateJobCommandImpl) newUpdateJobCommand(job.getKey());
-    command.withLeaseToken(job.getLeaseToken());
+    command.withJobLeaseToken(job.getJobLeaseToken());
     return command;
   }
 

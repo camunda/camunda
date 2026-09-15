@@ -60,8 +60,8 @@ public class AgentInstanceRequestValidator {
             validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
           }
 
-          if (request.getJobLease() == null || request.getJobLease().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobLease"));
+          if (request.getJobLeaseToken() == null || request.getJobLeaseToken().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobLeaseToken"));
           }
 
           final var history = request.getHistory();
@@ -103,8 +103,8 @@ public class AgentInstanceRequestValidator {
             validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
           }
 
-          if (request.getJobLease() == null || request.getJobLease().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobLease"));
+          if (request.getJobLeaseToken() == null || request.getJobLeaseToken().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobLeaseToken"));
           }
 
           if (request.getHistory() != null && !request.getHistory().isEmpty()) {

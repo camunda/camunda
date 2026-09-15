@@ -207,7 +207,7 @@ class ResponseMapperTest {
     }
 
     @Test
-    void shouldMapActivatedJobWithLeaseToken() {
+    void shouldMapActivatedJobWithJobLeaseToken() {
       // given
       final JobRecord jobRecord =
           new JobRecord()
@@ -239,11 +239,11 @@ class ResponseMapperTest {
       final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
-          .satisfies(job -> assertThat(job.getLeaseToken()).isEqualTo("lease-token-1"));
+          .satisfies(job -> assertThat(job.getJobLeaseToken()).isEqualTo("lease-token-1"));
     }
 
     @Test
-    void shouldNotSetLeaseTokenWhenNotLeasedForActivatedJob() {
+    void shouldNotSetJobLeaseTokenWhenNotLeasedForActivatedJob() {
       // given - job activated without a lease (empty string on the record)
       final JobRecord jobRecord =
           new JobRecord()
@@ -258,7 +258,7 @@ class ResponseMapperTest {
               .setWorker("worker")
               .setRetries(3)
               .setDeadline(0L)
-              // leaseToken defaults to an empty string when not set
+              // jobLeaseToken defaults to an empty string when not set
               .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
@@ -275,8 +275,8 @@ class ResponseMapperTest {
       final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
-          // leaseToken should be null when the record carries an empty string
-          .satisfies(job -> assertThat(job.getLeaseToken()).isNull());
+          // jobLeaseToken should be null when the record carries an empty string
+          .satisfies(job -> assertThat(job.getJobLeaseToken()).isNull());
     }
 
     @Test

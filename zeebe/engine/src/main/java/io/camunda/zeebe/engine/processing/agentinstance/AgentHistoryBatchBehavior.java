@@ -60,7 +60,7 @@ public final class AgentHistoryBatchBehavior {
       "Expected to update agent instance, but no jobKey was provided. A command must always be "
           + "attributed to the active job that produced it.";
   static final String ERROR_MSG_JOB_LEASE_REQUIRED =
-      "Expected to update agent instance related to job with key '%d', but no jobLease was "
+      "Expected to update agent instance related to job with key '%d', but no jobLeaseToken was "
           + "provided. A command must always carry the lease its job was activated with.";
   static final String ERROR_MSG_JOB_NOT_ACTIVE =
       "Expected to update agent instance related to job with key '%d', but job was not active.";
