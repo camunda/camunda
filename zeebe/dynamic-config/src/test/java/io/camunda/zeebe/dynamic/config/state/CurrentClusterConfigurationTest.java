@@ -811,6 +811,115 @@ class CurrentClusterConfigurationTest {
   }
 
   @Nested
+  class IsAfterRestore {
+
+    @Test
+    void shouldDetectRestoreOfASinglePhysicalTenant() {
+      // given
+      final var configuration = restoreConfiguration("default");
+
+      // when / then
+      assertThat(configuration.isAfterRestore()).isTrue();
+    }
+
+    @Test
+    void shouldDetectRestoreOfSeveralPhysicalTenants() {
+      // given — what RestoreManager writes for a multi-tenant cluster: one phase naming every
+      // restored group, each running its own UpdateRoutingState
+      final var configuration = restoreConfiguration("default", "tenant-a", "tenant-b");
+
+      // when / then — the post-restore handling must not switch itself off as tenants are added
+      assertThat(configuration.isAfterRestore()).isTrue();
+    }
+
+    @Test
+    void shouldNotDetectRestoreForAPhaseNamingNoGroup() {
+      // given — a restore plan whose phase targets nothing; there is no group to reconcile on
+      // anyone's behalf, so this must not pass as a restore just because every (absent) group
+      // satisfies the per-group shape check vacuously
+      final var plan =
+          PhasedChangePlan.initForRestore(
+              List.of(new PartitionGroupPhase(Map.of())), Instant.EPOCH);
+      final var configuration =
+          config(
+              global(1, Map.of()),
+              Map.of("default", group(1, Map.of())),
+              new PhasedChangeState(
+                  PhasedChangePlan.INITIAL_PLAN_ID, Map.of(plan.id(), plan), List.of()));
+
+      // when / then
+      assertThat(configuration.isAfterRestore()).isFalse();
+    }
+
+    @Test
+    void shouldNotDetectRestoreWhenAGroupRunsMoreThanUpdateRoutingState() {
+      // given — one group carries an extra operation, so this is not the shape a restore produces
+      final var plan =
+          PhasedChangePlan.initForRestore(
+              List.of(
+                  PartitionGroupPhase.sequential(
+                      Map.of(
+                          "default",
+                          List.of(updateRoutingState()),
+                          "tenant-a",
+                          List.of(updateRoutingState(), new DeleteHistoryOperation(MEMBER_0))))),
+              Instant.EPOCH);
+      final var configuration =
+          config(
+              global(1, Map.of()),
+              Map.of("default", group(1, Map.of()), "tenant-a", group(1, Map.of())),
+              new PhasedChangeState(
+                  PhasedChangePlan.INITIAL_PLAN_ID, Map.of(plan.id(), plan), List.of()));
+
+      // when / then
+      assertThat(configuration.isAfterRestore()).isFalse();
+    }
+
+    @Test
+    void shouldNotDetectRestoreForAnOrdinaryMultiGroupUpdateRoutingState() {
+      // given — the same per-group shape as a restore, but issued by the plan counter rather than
+      // carrying the restore sentinel id: an admin-triggered updateRoutingState across tenants
+      final var phase =
+          PartitionGroupPhase.sequential(
+              Map.of(
+                  "default", List.of(updateRoutingState()),
+                  "tenant-a", List.of(updateRoutingState())));
+      final var plan =
+          PhasedChangePlan.init(PhasedChangePlan.INITIAL_PLAN_ID, List.of(phase), Instant.EPOCH);
+      final var configuration =
+          config(
+              global(1, Map.of()),
+              Map.of("default", group(1, Map.of()), "tenant-a", group(1, Map.of())),
+              new PhasedChangeState(
+                  PhasedChangePlan.INITIAL_PLAN_ID + 1, Map.of(plan.id(), plan), List.of()));
+
+      // when / then
+      assertThat(configuration.isAfterRestore()).isFalse();
+    }
+
+    private static CurrentClusterConfiguration restoreConfiguration(final String... groupIds) {
+      final Map<String, List<PartitionGroupOperation>> operations = new TreeMap<>();
+      final Map<String, PartitionGroupConfiguration> groups = new TreeMap<>();
+      for (final var groupId : groupIds) {
+        operations.put(groupId, List.of(updateRoutingState()));
+        groups.put(groupId, group(1, Map.of()));
+      }
+      final var plan =
+          PhasedChangePlan.initForRestore(
+              List.of(PartitionGroupPhase.sequential(operations)), Instant.EPOCH);
+      return config(
+          global(1, Map.of()),
+          groups,
+          new PhasedChangeState(
+              PhasedChangePlan.INITIAL_PLAN_ID, Map.of(plan.id(), plan), List.of()));
+    }
+
+    private static PartitionGroupOperation updateRoutingState() {
+      return new PartitionGroupOperation.UpdateRoutingState(MEMBER_0, Optional.empty());
+    }
+  }
+
+  @Nested
   class Merge {
 
     @Test
