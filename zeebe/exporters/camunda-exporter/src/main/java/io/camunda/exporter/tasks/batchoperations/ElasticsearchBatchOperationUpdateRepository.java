@@ -62,15 +62,23 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
   }
 
   @Override
-  public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations() {
+  public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+      final int batchSize) {
     final var request =
         new SearchRequest.Builder()
             .index(batchOperationIndex)
-            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return fetchUnboundedDocumentCollection(
-        request,
-        BatchOperationEntity.class,
-        ElasticsearchBatchOperationUpdateRepository::toNotFinishedBatchOperation);
+            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
+            .size(batchSize)
+            .build();
+
+    return client
+        .search(request, BatchOperationEntity.class)
+        .thenApplyAsync(
+            response ->
+                response.hits().hits().stream()
+                    .map(ElasticsearchBatchOperationUpdateRepository::toNotFinishedBatchOperation)
+                    .toList(),
+            executor);
   }
 
   @Override

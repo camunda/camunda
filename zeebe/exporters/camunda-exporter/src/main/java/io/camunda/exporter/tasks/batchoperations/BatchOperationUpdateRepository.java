@@ -26,7 +26,12 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * from one whose single operations are simply not in the operation index anymore. See {@link
    * BatchOperationUpdateTask}.
    */
-  CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations();
+  /**
+   * Returns at most {@code batchSize} batch operations, which bounds both the aggregation that
+   * counts their operations and the bulk update that writes them back.
+   */
+  CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+      int batchSize);
 
   /**
    * Counts amount of single operations by state that are included in given batch operations.
@@ -91,7 +96,8 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
   class NoopBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
 
     @Override
-    public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations() {
+    public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+        final int batchSize) {
       return CompletableFuture.completedFuture(List.of());
     }
 

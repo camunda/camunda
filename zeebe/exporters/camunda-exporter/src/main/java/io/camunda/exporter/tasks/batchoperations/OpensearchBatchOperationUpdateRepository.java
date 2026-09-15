@@ -66,15 +66,27 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations() {
+  public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+      final int batchSize) {
     final var request =
         new SearchRequest.Builder()
             .index(batchOperationIndex)
-            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return fetchUnboundedDocumentCollection(
-        request,
-        BatchOperationEntity.class,
-        OpensearchBatchOperationUpdateRepository::toNotFinishedBatchOperation);
+            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
+            .size(batchSize)
+            .build();
+
+    try {
+      return client
+          .search(request, BatchOperationEntity.class)
+          .thenApplyAsync(
+              response ->
+                  response.hits().hits().stream()
+                      .map(OpensearchBatchOperationUpdateRepository::toNotFinishedBatchOperation)
+                      .toList(),
+              executor);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
