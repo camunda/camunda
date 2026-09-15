@@ -88,7 +88,8 @@ as the carrier for two reasons: the changes are then traceable — what changed,
 activation — and a change reported by an update follows the same pending, committed, or discarded
 path as any other history item, so a change from an activation that goes on to lose does not stick.
 The configuration supplied on create is the exception: it is applied and committed as the instance is
-created, because there is no earlier state a losing activation could corrupt.
+created, because D4 makes the create permanent. A retry cannot re-supply the configuration, so a
+discarded create configuration would leave an instance that can never be configured.
 
 **D7. Metrics are deltas going in and totals coming out, and are never rolled back.**
 An update reports what one activation consumed; the engine keeps the running total and reports the
