@@ -63,12 +63,12 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   }
 
   @Override
-  public boolean isApplicableFor(final BeanInfo beanInfo) {
+  protected boolean isApplicableFor(final BeanInfo beanInfo) {
     return isDeployment(beanInfo);
   }
 
   @Override
-  public void configureFor(final BeanInfo beanInfo) {
+  protected void configureFor(final BeanInfo beanInfo) {
     final List<DeploymentValue> extractedDeploymentValues =
         deploymentValuesExtractor.apply(beanInfo);
     extractedDeploymentValues.forEach(this::overrideFromProperties);
@@ -84,7 +84,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   }
 
   @Override
-  public void start(final CamundaClient client) {
+  protected void start(final CamundaClient client) {
     if (deploymentValues.isEmpty()) {
       return;
     }
@@ -94,7 +94,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   }
 
   @Override
-  public void stop(final CamundaClient client) {
+  protected void stop(final CamundaClient client) {
     deploymentValues.clear();
   }
 

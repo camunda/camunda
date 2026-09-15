@@ -29,7 +29,7 @@ public class DeleteDataStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
+  protected void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.deleteDataByIndexName(index, queryWrapper);
   }
 

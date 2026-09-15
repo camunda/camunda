@@ -105,7 +105,7 @@ public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNod
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
@@ -147,7 +147,7 @@ public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNod
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return definitionService;
   }
 }

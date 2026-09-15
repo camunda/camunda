@@ -112,7 +112,7 @@ public class EngineLargeStatePerformanceTest {
   @TearDown
   public void tearDown() {
     LOG.info("Started {} process instances", count);
-    testContext.autoCloseableRule().after();
+    testContext.autoCloseableRule().close();
   }
 
   @Benchmark

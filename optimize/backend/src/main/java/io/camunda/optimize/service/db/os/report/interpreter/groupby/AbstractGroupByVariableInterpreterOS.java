@@ -235,7 +235,7 @@ public abstract class AbstractGroupByVariableInterpreterOS<
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse<RawResult> response,
       final ExecutionContext<DATA, PLAN> context) {
