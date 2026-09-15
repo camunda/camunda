@@ -7,7 +7,6 @@
  */
 package io.camunda.debug.cli.state;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
@@ -20,7 +19,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
+import org.msgpack.core.MessagePack;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.msgpack.value.ValueType;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
@@ -120,8 +121,7 @@ public final class StateListCommand implements Callable<Integer> {
     output.put("entries", entries);
     output.put("truncated", truncated[0]);
     final PrintWriter out = spec.commandLine().getOut();
-    OBJECT_MAPPER.writeValue(out, output);
-    out.println();
+    out.println(OBJECT_MAPPER.writeValueAsString(output));
     out.flush();
     return 0;
   }
@@ -136,15 +136,15 @@ public final class StateListCommand implements Callable<Integer> {
 
   private static Value decodeValue(final byte[] value, final int offset, final int length) {
     final var valueBytes = Arrays.copyOfRange(value, offset, offset + length);
-    try (final JsonParser parser = MESSAGE_PACK_FACTORY.createParser(valueBytes)) {
-      parser.setCodec(MESSAGE_PACK_MAPPER);
-      if (parser.nextToken() == null) {
+    try (final var unpacker = MessagePack.newDefaultUnpacker(valueBytes)) {
+      if (!unpacker.hasNext() || unpacker.getNextFormat().getValueType() != ValueType.MAP) {
         return new Value(null, hex(valueBytes, 0, valueBytes.length));
       }
-      final JsonNode json = parser.readValueAsTree();
-      if (json == null) {
+      unpacker.skipValue();
+      if (unpacker.hasNext()) {
         return new Value(null, hex(valueBytes, 0, valueBytes.length));
       }
+      final JsonNode json = MESSAGE_PACK_MAPPER.readTree(valueBytes);
       return new Value(json, null);
     } catch (final RuntimeException | java.io.IOException e) {
       return new Value(null, hex(valueBytes, 0, valueBytes.length));

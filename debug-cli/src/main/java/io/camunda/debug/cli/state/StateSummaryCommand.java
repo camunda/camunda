@@ -23,6 +23,8 @@ import picocli.CommandLine.Spec;
 @Command(name = "summary", description = "Print entry counts for all known state column families")
 public final class StateSummaryCommand implements Callable<Integer> {
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   @Option(
       names = {"-r", "--root"},
       description = "Path of the partition directory containing 'snapshots/'",
@@ -75,8 +77,7 @@ public final class StateSummaryCommand implements Callable<Integer> {
     output.put("snapshot", snapshotId);
     output.put("columnFamilies", columnFamilies);
     final var out = spec.commandLine().getOut();
-    new ObjectMapper().writeValue(out, output);
-    out.println();
+    out.println(OBJECT_MAPPER.writeValueAsString(output));
     out.flush();
     return 0;
   }

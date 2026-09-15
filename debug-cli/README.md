@@ -83,11 +83,11 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
   ##### `state list`
 
   Print bounded JSON entries for one column family. Keys use the zdb-compatible
-  column-family format when known, with `keyHex` retaining the raw key bytes.
-  Values are decoded from Camunda's MsgPack representation when applicable;
-  non-MsgPack values are exposed through `valueHex`. The source snapshot is
-  copied into a temporary runtime before it is read, and output is limited to
-  1,000 entries by default.
+  column-family format when known, with `keyHex` retaining the key payload
+  without the column-family prefix. MessagePack object values are exposed
+  through `value`; raw database values are exposed through `valueHex`. The
+  source snapshot is copied into a temporary runtime before it is read, and
+  output is limited to 1,000 entries by default.
 
   ```
   debug-cli state list -r /path/to/partition -s <snapshot-id> \

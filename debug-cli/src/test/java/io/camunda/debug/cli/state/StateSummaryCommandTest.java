@@ -65,6 +65,7 @@ class StateSummaryCommandTest {
           .contains("\"name\":\"DEFAULT\"")
           .contains("\"name\":\"INCIDENTS\"")
           .contains("\"entries\":1");
+      assertThat(output.toString()).endsWith(System.lineSeparator());
     }
   }
 }
