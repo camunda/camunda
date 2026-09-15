@@ -617,6 +617,11 @@ def test_should_load_packaged_query_files():
     for query_file_name in PACKAGED_QUERY_FILES:
         document = QueriesDocument.from_file(PROJECT_DIR / query_file_name, substitutions)
         assert len(document.queries) > 0
+        for query in document.queries:
+            assert "$NAMESPACE" not in query.query
+            assert "$DURATION_S" not in query.query
+            assert "$RATE_INTERVAL" not in query.query
+            assert "$SAMPLE_STEP" not in query.query
 
 
 def test_should_substitute_queries(tmp_path):
@@ -643,13 +648,12 @@ def test_should_substitute_queries(tmp_path):
         encoding="utf-8",
     )
 
-    for query_file_name in PACKAGED_QUERY_FILES:
-        document = QueriesDocument.from_file(queries_file, substitutions)
+    document = QueriesDocument.from_file(queries_file, substitutions)
 
-        assert len(document.queries) > 0
-        for query in document.queries:
-            assert "c8-ck-test" in query.query
-            assert "600s" in query.query
+    assert len(document.queries) > 0
+    for query in document.queries:
+        assert "c8-ck-test" in query.query
+        assert "600s" in query.query
 
 
 def test_should_use_namespace_created_metric():
