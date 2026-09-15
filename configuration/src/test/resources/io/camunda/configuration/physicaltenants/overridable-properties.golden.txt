@@ -138,7 +138,9 @@ data.secondary-storage.elasticsearch.proxy.ssl-enabled
 data.secondary-storage.elasticsearch.proxy.username
 data.secondary-storage.elasticsearch.refresh-interval
 data.secondary-storage.elasticsearch.refresh-interval-by-index-name
-data.secondary-storage.elasticsearch.retry.database-name
+data.secondary-storage.elasticsearch.retry.max-retries
+data.secondary-storage.elasticsearch.retry.max-retry-delay
+data.secondary-storage.elasticsearch.retry.min-retry-delay
 data.secondary-storage.elasticsearch.security.certificate-path
 data.secondary-storage.elasticsearch.security.enabled
 data.secondary-storage.elasticsearch.security.self-signed
@@ -209,7 +211,9 @@ data.secondary-storage.opensearch.proxy.ssl-enabled
 data.secondary-storage.opensearch.proxy.username
 data.secondary-storage.opensearch.refresh-interval
 data.secondary-storage.opensearch.refresh-interval-by-index-name
-data.secondary-storage.opensearch.retry.database-name
+data.secondary-storage.opensearch.retry.max-retries
+data.secondary-storage.opensearch.retry.max-retry-delay
+data.secondary-storage.opensearch.retry.min-retry-delay
 data.secondary-storage.opensearch.security.certificate-path
 data.secondary-storage.opensearch.security.enabled
 data.secondary-storage.opensearch.security.self-signed
@@ -269,7 +273,9 @@ data.secondary-storage.rdbms.process-cache
 data.secondary-storage.rdbms.query.max-total-hits
 data.secondary-storage.rdbms.queue-memory-limit
 data.secondary-storage.rdbms.queue-size
-data.secondary-storage.rdbms.retry.database-name
+data.secondary-storage.rdbms.retry.max-retries
+data.secondary-storage.rdbms.retry.max-retry-delay
+data.secondary-storage.rdbms.retry.min-retry-delay
 data.secondary-storage.rdbms.rewrite-batched-statements
 data.secondary-storage.rdbms.url
 data.secondary-storage.rdbms.urls
