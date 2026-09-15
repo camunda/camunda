@@ -249,6 +249,37 @@ class CslChainIntegrationTest {
   }
 
   @Test
+  void shouldNotResolveASessionOnTheUnprotectedChainForCcsm() {
+    // The filter installer uses SecurityHeadersCustomizer, which CSL also applies to its
+    // unprotected-paths chain, so the filter lands there too. It cannot deny a request to
+    // /api/readyz or /api/external/** for carrying a revoked session cookie, because that chain
+    // resolves no session at all: it installs no SessionRepositoryFilter, and CSL registers the
+    // default one disabled as a servlet filter. Without a restored SecurityContext there is no
+    // OAuth2AuthenticationToken and therefore no token to check.
+    ccsmRunner()
+        .run(
+            ctx -> {
+              // given
+              final SecurityFilterChain unprotectedChain =
+                  (SecurityFilterChain) ctx.getBean("unprotectedPathsSecurityFilterChain");
+
+              // when
+              final var filterTypes =
+                  unprotectedChain.getFilters().stream()
+                      .map(filter -> filter.getClass().getName())
+                      .toList();
+
+              // then
+              assertThat(filterTypes)
+                  .as("the installer reaches the unprotected chain")
+                  .contains(OptimizeCcsmSessionPermissionEnforcementFilter.class.getName());
+              assertThat(filterTypes)
+                  .as("but that chain never resolves a session, so the filter has nothing to check")
+                  .doesNotContain(SessionRepositoryFilter.class.getName());
+            });
+  }
+
+  @Test
   void
       shouldRejectSessionOnWebappPathWithCleanUnauthorizedWhenAccessTokenCannotBeVerifiedForCcsm() {
     // CCSMTokenService#verifyAccessToken throws TokenVerificationException (not
