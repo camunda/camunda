@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskActions;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
@@ -40,7 +41,6 @@ import org.slf4j.LoggerFactory;
 public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskUpdateProcessor.class);
-  private static final String DEFAULT_ACTION = "update";
 
   private final StateWriter stateWriter;
   private final VariableState variableState;
@@ -86,7 +86,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
 
     userTaskRecord.wrapChangedAttributesIfValueChanged(command.getValue());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(UserTaskActions.UPDATE));
 
     stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.UPDATING, userTaskRecord);
   }
