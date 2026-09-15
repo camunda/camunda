@@ -213,6 +213,62 @@ abstract class BatchOperationUpdateRepositoryIT {
           .containsExactly(new NotFinishedBatchOperation("1", BatchOperationState.COMPLETED, 0));
     }
 
+    @Test
+    void shouldReturnNoMoreThanTheRequestedBatchSize() throws PersistenceException {
+      // given - more unfinished batch operations than a cycle is allowed to read. Unbounded, every
+      // one of them went into a single operations-count aggregation and a single bulk update, which
+      // is how a support cluster built a request the circuit breaker refused.
+      final var repository = createRepository();
+      for (int i = 0; i < 25; i++) {
+        createBatchOperationEntity(String.valueOf(i), null, BatchOperationState.ACTIVE, 5);
+      }
+
+      // when
+      final var documents = repository.getNotFinishedBatchOperations(10);
+
+      // then - the read is capped, and with it both requests derived from what it returns
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(NotFinishedBatchOperation.class))
+          .hasSize(10);
+    }
+
+    @Test
+    void shouldReturnTheOldestUnfinishedOperationsFirst() throws PersistenceException {
+      // given - three unfinished operations indexed newest first
+      final var repository = createRepository();
+      final var now = OffsetDateTime.now();
+      indexBatchOperation(
+          new BatchOperationEntity()
+              .setId("newest")
+              .setState(BatchOperationState.ACTIVE)
+              .setOperationsTotalCount(5)
+              .setStartDate(now));
+      indexBatchOperation(
+          new BatchOperationEntity()
+              .setId("middle")
+              .setState(BatchOperationState.ACTIVE)
+              .setOperationsTotalCount(5)
+              .setStartDate(now.minusHours(1)));
+      indexBatchOperation(
+          new BatchOperationEntity()
+              .setId("oldest")
+              .setState(BatchOperationState.ACTIVE)
+              .setOperationsTotalCount(5)
+              .setStartDate(now.minusHours(2)));
+
+      // when - only two of the three fit in this read
+      final var documents = repository.getNotFinishedBatchOperations(2);
+
+      // then - a bounded read drains from the head rather than leaving the choice to the store, so
+      // operations cannot sit behind newer ones indefinitely
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(NotFinishedBatchOperation.class))
+          .extracting(NotFinishedBatchOperation::id)
+          .containsExactly("oldest", "middle");
+    }
+
     private void createBatchOperationEntity(
         final String id,
         final OffsetDateTime endTime,
