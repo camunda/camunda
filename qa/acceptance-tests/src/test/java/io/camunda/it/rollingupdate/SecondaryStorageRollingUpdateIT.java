@@ -30,8 +30,6 @@ import io.camunda.container.volume.CamundaVolume;
 import io.camunda.it.schema.ExporterMigrationTestHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -66,7 +64,7 @@ import org.testcontainers.containers.output.OutputFrame;
  * <p>The same scenario is parameterized across all supported secondary storage implementations
  * (RDBMS, Elasticsearch, and OpenSearch) to avoid duplicated test logic.
  */
-final class SecondaryStorageRollingUpdateIT {
+abstract class SecondaryStorageRollingUpdateIT {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(SecondaryStorageRollingUpdateIT.class);
@@ -123,39 +121,30 @@ final class SecondaryStorageRollingUpdateIT {
           .endEvent()
           .done();
 
+  abstract StorageTestCase getStorageTestCase();
+
   // ---------------------------------------------------------------------------
   // Test matrix
   // ---------------------------------------------------------------------------
-
-  private static final List<StorageTestCase> STORAGE_TEST_CASES =
-      List.of(
-          StorageTestCase.rdbms(), StorageTestCase.elasticsearch(), StorageTestCase.opensearch());
-
-  static Stream<Arguments> versionAndStorageMatrix() throws IOException, InterruptedException {
+  static Stream<Arguments> versionMatrix() {
     final List<String> versions = ExporterMigrationTestHelper.fetchAllPatchesFromPreviousMinor();
 
-    return versions.stream()
-        .flatMap(
-            fromVersion ->
-                STORAGE_TEST_CASES.stream()
-                    .map(storage -> Arguments.of(fromVersion, "CURRENT", storage)));
-  }
-
-  static Stream<Arguments> versionAndStorageMatrixLocal() throws IOException, InterruptedException {
-    final List<String> versions = ExporterMigrationTestHelper.fetchAllPatchesFromPreviousMinor();
-
-    return versions.stream()
-        .map(fromVersion -> Arguments.of(fromVersion, "SNAPSHOT", StorageTestCase.elasticsearch()));
+    return versions.stream().map(fromVersion -> Arguments.of(fromVersion, "CURRENT"));
   }
 
   // ---------------------------------------------------------------------------
   // Test
   // ---------------------------------------------------------------------------
 
-  @ParameterizedTest(name = "storage={2}, from {0} to {1}", allowZeroInvocations = true)
+  @ParameterizedTest(name = "from {0} to {1}", allowZeroInvocations = true)
   @Tag("dl-nightly")
-  @MethodSource("versionAndStorageMatrix")
+  @MethodSource("versionMatrix")
   void shouldPreserveSecondaryStorageEntitiesDuringRollingUpdate(
+      final String from, final String to) {
+    shouldPreserveSecondaryStorageEntitiesDuringRollingUpdate(from, to, getStorageTestCase());
+  }
+
+  private void shouldPreserveSecondaryStorageEntitiesDuringRollingUpdate(
       final String from, final String to, final StorageTestCase storage) {
     final Network network = Network.newNetwork();
     final GenericContainer<?> storageContainer = storage.newContainer(network);
@@ -464,34 +453,7 @@ final class SecondaryStorageRollingUpdateIT {
     }
   }
 
-  private static final class ContainerLogBuffer implements Consumer<OutputFrame> {
-
-    private final StringBuilder buffer = new StringBuilder();
-
-    @Override
-    public void accept(final OutputFrame outputFrame) {
-      synchronized (buffer) {
-        buffer.append(outputFrame.getUtf8String());
-      }
-    }
-
-    @Override
-    public String toString() {
-      synchronized (buffer) {
-        if (buffer.isEmpty()) {
-          return "<no logs captured>";
-        }
-
-        return buffer.toString();
-      }
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Storage test cases
-  // ---------------------------------------------------------------------------
-
-  private record StorageTestCase(
+  record StorageTestCase(
       String name,
       SecondaryStorageType type,
       String networkAlias,
@@ -499,39 +461,6 @@ final class SecondaryStorageRollingUpdateIT {
       Supplier<GenericContainer<?>> containerSupplier,
       String username,
       String password) {
-
-    static StorageTestCase rdbms() {
-      return new StorageTestCase(
-          "rdbms",
-          SecondaryStorageType.rdbms,
-          "postgres",
-          5432,
-          TestSearchContainers::createDefaultPostgresContainer,
-          CAMUNDA_USER,
-          CAMUNDA_PASSWORD);
-    }
-
-    static StorageTestCase elasticsearch() {
-      return new StorageTestCase(
-          "elasticsearch",
-          SecondaryStorageType.elasticsearch,
-          "elasticsearch",
-          9200,
-          TestSearchContainers::createDefaultElasticsearchContainer,
-          null,
-          null);
-    }
-
-    static StorageTestCase opensearch() {
-      return new StorageTestCase(
-          "opensearch",
-          SecondaryStorageType.opensearch,
-          "opensearch",
-          9200,
-          TestSearchContainers::createDefaultOpensearchContainer,
-          null,
-          null);
-    }
 
     GenericContainer<?> newContainer(final Network network) {
       return containerSupplier.get().withNetwork(network).withNetworkAliases(networkAlias);
@@ -592,6 +521,33 @@ final class SecondaryStorageRollingUpdateIT {
     @Override
     public String toString() {
       return name;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Storage test cases
+  // ---------------------------------------------------------------------------
+
+  private static final class ContainerLogBuffer implements Consumer<OutputFrame> {
+
+    private final StringBuilder buffer = new StringBuilder();
+
+    @Override
+    public void accept(final OutputFrame outputFrame) {
+      synchronized (buffer) {
+        buffer.append(outputFrame.getUtf8String());
+      }
+    }
+
+    @Override
+    public String toString() {
+      synchronized (buffer) {
+        if (buffer.isEmpty()) {
+          return "<no logs captured>";
+        }
+
+        return buffer.toString();
+      }
     }
   }
 }
