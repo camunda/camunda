@@ -578,6 +578,19 @@ public final class SearchQueryBuilders {
     }
   }
 
+  /**
+   * Zeebe serializes whole numbers as doubles (e.g. "356.0"), so each value is expanded to both its
+   * plain integer and its double string representation to match either form on the keyword field.
+   */
+  private static List<Object> expandLongValuesForKeywordMatch(final List<Object> values) {
+    final var expandedValues = new ArrayList<>();
+    for (final var value : values) {
+      expandedValues.add(String.valueOf(value));
+      expandedValues.add(value + ".0");
+    }
+    return expandedValues;
+  }
+
   public static <C extends UntypedOperation> SearchQuery variableOperation(
       final String field, final C operation) {
     // Handle common operations
@@ -618,14 +631,7 @@ public final class SearchQueryBuilders {
               yield term(field, TypedValue.of(ValueTypeUtil.JSON_NULL));
             }
             if (operation.type().equals(ValueTypeEnum.LONG)) {
-              // Zeebe serializes whole numbers as doubles (e.g. "356.0"), so match both the
-              // integer and double string representations on the keyword field.
-              final var expandedValues = new ArrayList<>();
-              for (final var value : operation.values()) {
-                expandedValues.add(String.valueOf(value));
-                expandedValues.add(value + ".0");
-              }
-              yield objectTerms(field, expandedValues);
+              yield objectTerms(field, expandLongValuesForKeywordMatch(operation.values()));
             }
             yield objectTerms(field, operation.values());
           }
@@ -635,14 +641,8 @@ public final class SearchQueryBuilders {
               yield mustNot(term(field, TypedValue.of(ValueTypeUtil.JSON_NULL)));
             }
             if (operation.type().equals(ValueTypeEnum.LONG)) {
-              // Zeebe serializes whole numbers as doubles (e.g. "356.0"), so match both the
-              // integer and double string representations on the keyword field.
-              final var expandedValues = new ArrayList<>();
-              for (final var value : operation.values()) {
-                expandedValues.add(String.valueOf(value));
-                expandedValues.add(value + ".0");
-              }
-              yield mustNot(objectTerms(field, expandedValues));
+              yield mustNot(
+                  objectTerms(field, expandLongValuesForKeywordMatch(operation.values())));
             }
             yield mustNot(objectTerms(field, operation.values()));
           }
