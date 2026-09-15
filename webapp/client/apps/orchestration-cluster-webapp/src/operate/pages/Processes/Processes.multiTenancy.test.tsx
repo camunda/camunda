@@ -13,10 +13,14 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
@@ -33,13 +37,22 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 		],
 	}),
 );
+const PROCESS_STATISTICS = HttpResponse.json(createGetProcessDefinitionStatisticsResponse([]));
 
-function renderProcessesPage(searchParams?: Record<string, string>) {
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderProcessesPage(searchParams?: Record<string, string>) {
 	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
-	return renderWithRouter(ProcessesHarness, {
+	const screen = await renderWithRouter(ProcessesHarness, {
 		path: '/operate/processes',
 		initialEntry: `/operate/processes${query}`,
 	});
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 const CURRENT_USER = HttpResponse.json(
@@ -65,8 +78,15 @@ describe('Multi tenancy', () => {
 		);
 	});
 
-	afterEach(() => {
-		sessionStorage.clear();
+	afterEach(async () => {
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+		}
 	});
 
 	it('should hide the tenant filter when multi tenancy is not enabled', async ({worker}) => {
@@ -118,6 +138,8 @@ describe('Multi tenancy', () => {
 
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({successResponse: PROCESS_STATISTICS}),
 		);
 
 		const screen = await renderProcessesPage({
@@ -156,6 +178,7 @@ describe('Multi tenancy', () => {
 	});
 
 	it('should not scope the process-definitions request when "all tenants" is selected', async ({worker}) => {
+		let isRequestReceived = false;
 		let requestedFilter: unknown;
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
@@ -164,6 +187,7 @@ describe('Multi tenancy', () => {
 				endpoints.queryProcessDefinitions.getUrl(),
 				async ({request}) => {
 					requestedFilter = (await request.json()).filter;
+					isRequestReceived = true;
 					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: []}));
 				},
 			),
@@ -172,6 +196,7 @@ describe('Multi tenancy', () => {
 
 		await renderProcessesPage({tenantId: 'all'});
 
-		await expect.poll(() => requestedFilter).toBeUndefined();
+		await expect.poll(() => isRequestReceived).toBe(true);
+		expect(requestedFilter).toBeUndefined();
 	});
 });

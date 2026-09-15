@@ -19,11 +19,22 @@ import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate'
 
 const DECISION_INSTANCE_ID = '123567';
 
-function renderHeader() {
-	return renderWithRouter(() => <Header decisionEvaluationInstanceKey={DECISION_INSTANCE_ID} onOpenDrd={() => {}} />, {
-		path: '/operate/decisions/$decisionInstanceId',
-		initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
-	});
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderHeader() {
+	const screen = await renderWithRouter(
+		() => <Header decisionEvaluationInstanceKey={DECISION_INSTANCE_ID} onOpenDrd={() => {}} />,
+		{
+			path: '/operate/decisions/$decisionInstanceId',
+			initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
+		},
+	);
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 describe('<Header />', () => {
@@ -31,8 +42,15 @@ describe('<Header />', () => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
-		sessionStorage.clear();
+	afterEach(async () => {
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+		}
 	});
 
 	it('should show a loading skeleton', async ({worker}) => {

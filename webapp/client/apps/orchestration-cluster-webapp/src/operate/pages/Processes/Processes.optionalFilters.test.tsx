@@ -12,9 +12,13 @@ import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
+	mockGetProcessDefinitionStatisticsEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
@@ -28,13 +32,22 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 		items: [createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process', version: 1})],
 	}),
 );
+const PROCESS_STATISTICS = HttpResponse.json(createGetProcessDefinitionStatisticsResponse([]));
 
-function renderProcessesPage(searchParams?: Record<string, string>) {
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderProcessesPage(searchParams?: Record<string, string>) {
 	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
-	return renderWithRouter(ProcessesHarness, {
+	const screen = await renderWithRouter(ProcessesHarness, {
 		path: '/operate/processes',
 		initialEntry: `/operate/processes${query}`,
 	});
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 const OPTIONAL_FILTER_LABELS = [
@@ -55,8 +68,15 @@ describe('Optional Filters', () => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
-		sessionStorage.clear();
+	afterEach(async () => {
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+		}
 	});
 
 	it('should initially hide optional filters', async ({worker}) => {
@@ -158,6 +178,8 @@ describe('Optional Filters', () => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({successResponse: PROCESS_STATISTICS}),
 		);
 
 		const screen = await renderProcessesPage({
@@ -225,8 +247,6 @@ describe('Optional Filters', () => {
 		);
 
 		const screen = await renderProcessesPage({
-			process: 'order-process',
-			version: '1',
 			processInstanceKey: '2251799813685467',
 			parentProcessInstanceKey: '1954699813693756',
 			errorMessage: 'a random error',
