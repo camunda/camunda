@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_agent_visibility" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.5.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="agentVisibilityBenchmark" name="Agent visibility benchmark" isExecutable="true">
+    <bpmn:startEvent id="start" name="start">
+      <bpmn:outgoing>Flow_start_orchestrator</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:adHocSubProcess id="agent-orchestrator" name="AI Agent">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="agent-visibility-orchestrator" />
+        <zeebe:agentDefinition agentType="aiAgentSubProcess" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_orchestrator</bpmn:incoming>
+      <bpmn:outgoing>Flow_orchestrator_end</bpmn:outgoing>
+      <bpmn:serviceTask id="tool-lookup-account" name="Lookup account">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="tool-lookup-account" />
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="tool-calculate-score" name="Calculate score">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="tool-calculate-score" />
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="tool-send-notification" name="Send notification">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="tool-send-notification" />
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:endEvent id="end" name="end">
+      <bpmn:incoming>Flow_orchestrator_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_start_orchestrator" sourceRef="start" targetRef="agent-orchestrator" />
+    <bpmn:sequenceFlow id="Flow_orchestrator_end" sourceRef="agent-orchestrator" targetRef="end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="agentVisibilityBenchmark">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="agent-orchestrator_di" bpmnElement="agent-orchestrator" isExpanded="true">
+        <dc:Bounds x="280" y="60" width="350" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="tool-lookup-account_di" bpmnElement="tool-lookup-account">
+        <dc:Bounds x="310" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="tool-calculate-score_di" bpmnElement="tool-calculate-score">
+        <dc:Bounds x="450" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="tool-send-notification_di" bpmnElement="tool-send-notification">
+        <dc:Bounds x="450" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="672" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_orchestrator_di" bpmnElement="Flow_start_orchestrator">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="280" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_orchestrator_end_di" bpmnElement="Flow_orchestrator_end">
+        <di:waypoint x="630" y="117" />
+        <di:waypoint x="672" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
