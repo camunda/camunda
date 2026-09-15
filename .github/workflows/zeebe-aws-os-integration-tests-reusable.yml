@@ -130,9 +130,9 @@ jobs:
     # All groups below share the one AWS OpenSearch cluster for this os_version, and
     # running all 5 at once overloaded it (cluster event queue timeouts,
     # search_phase_execution_exception, and jobs hanging until the job timeout). A
-    # concurrency group admits one job at a time, so the legs are spread over two
-    # lanes via matrix.lane: two run concurrently, the rest queue behind them. If the
-    # cluster shows overload symptoms again, set every lane back to 1 to serialize.
+    # concurrency group admits one job at a time, so the legs are spread over lanes
+    # via matrix.lane: one job per lane runs at a time, the rest queue behind it, and
+    # the lane count is how many jobs hit the cluster at once.
     concurrency:
       group: aws-opensearch-${{ inputs.os_version }}-lane-${{ matrix.lane }}
       cancel-in-progress: false
@@ -164,7 +164,7 @@ jobs:
             maven-test-profiles: multi-db-test-non-client
             runs-on: aws-core-8-default
             owner: '@camunda/engineering-operations'
-            lane: 2
+            lane: 3
           - group: search-client-opensearch
             name: "Search Client OpenSearch ITs"
             maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
@@ -173,7 +173,7 @@ jobs:
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: '@camunda/core-features'
-            lane: 1
+            lane: 2
           - group: camunda-exporter
             name: "Camunda Exporter ITs"
             maven-modules: "'io.camunda:camunda-exporter'"
@@ -191,7 +191,7 @@ jobs:
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: '@camunda/data-layer'
-            lane: 1
+            lane: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
