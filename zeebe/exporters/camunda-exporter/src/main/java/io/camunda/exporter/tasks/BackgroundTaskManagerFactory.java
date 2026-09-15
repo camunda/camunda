@@ -420,7 +420,8 @@ public final class BackgroundTaskManagerFactory {
   private ReschedulingTask buildBatchOperationUpdateTask() {
     final var postExport = config.getPostExport();
     return new ReschedulingTask(
-        new BatchOperationUpdateTask(batchOperationUpdateRepository, logger, executor),
+        new BatchOperationUpdateTask(
+            batchOperationUpdateRepository, postExport.getBatchSize(), logger, executor),
         1,
         postExport.getDelayBetweenRuns(),
         postExport.getMaxDelayBetweenRuns(),
