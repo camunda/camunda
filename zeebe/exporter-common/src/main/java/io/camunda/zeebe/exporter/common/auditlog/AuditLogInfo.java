@@ -109,7 +109,10 @@ public record AuditLogInfo(
 
           // Process
           Map.entry(ProcessIntent.CREATED, AuditLogOperationType.CREATE),
-          Map.entry(ProcessIntent.DELETED, AuditLogOperationType.DELETE),
+          // A deletion is audited on DRAINING, not DELETED. DRAINING is written synchronously under
+          // the deleter's command; DELETED is deferred until the definition finishes draining and
+          // would otherwise be attributed to whoever finished the last instance.
+          Map.entry(ProcessIntent.DRAINING, AuditLogOperationType.DELETE),
 
           // ProcessInstanceCreation
           Map.entry(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE),
