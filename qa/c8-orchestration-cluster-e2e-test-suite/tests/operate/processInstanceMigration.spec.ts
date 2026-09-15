@@ -726,8 +726,32 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
-      // v1 flow-node-metadata can lag behind v2 incident export by more than
-      // the default 3 retries after a migration; give it more headroom.
+      // Polling the popover directly (the previous approach here) waits on
+      // the v1 flow-node-metadata endpoint, which can lag well behind the
+      // engine actually raising the incident on the migrated element - see
+      // #59919/#63043, where 6- then 12-attempt popover-only retry budgets
+      // both exhausted without the incident ever appearing. The flow node's
+      // incidents overlay reflects a different, faster-updating signal
+      // (Operate repolls per-flow-node statistics every 5s while the
+      // instance is running), so wait for that first; only once the engine
+      // has actually raised the incident does it make sense to poll the
+      // popover for it. This mirrors the pattern already proven on
+      // stable/8.7 (see #63043), which passed in 7.1s with zero retries
+      // needed in the same nightly window this branch was still failing.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateDiagramPage.getIncidentsOverlay('BusinessRuleTask2'),
+          ).toBeVisible({timeout: 60000});
+        },
+        onFailure: async () => {
+          await sleep(5000);
+          await page.reload();
+          await operateDiagramPage.resetDiagramZoomButton.click();
+        },
+        maxRetries: 2,
+      });
+
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -736,9 +760,11 @@ test.describe.serial('Process Instance Migration', () => {
           );
         },
         onFailure: async () => {
+          await sleep(5000);
           await page.reload();
+          await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 6,
+        maxRetries: 10,
       });
     });
   });
