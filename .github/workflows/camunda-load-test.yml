@@ -254,8 +254,8 @@ env:
   # Namespaces MUST start with c8 due to access policy
   NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
 
-  CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
-  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
+  CLUSTER: camunda-benchmark-dev  # TEMP: switched from camunda-benchmark-prod for agent-visibility experimentation - revert before merging
+  TELEPORT_JOIN_TOKEN: infra-benchmark-dev-github-action-zeebe  # TEMP: switched from infra-benchmark-prod-github-action-zeebe - revert before merging
 
   BUILD_FRONTEND: ${{ inputs.build-frontend }}
   CONNECTORS_TAG: ${{ inputs.connectors-tag }}
