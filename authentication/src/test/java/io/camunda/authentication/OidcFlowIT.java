@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
+import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -72,7 +73,7 @@ class OidcFlowIT {
 
   @Container
   static KeycloakContainer keycloak =
-      KeycloakContainers.createDefaultKeycloak()
+      DefaultTestContainers.createDefaultKeycloak()
           .withRealmImportFile("/camunda-identity-test-realm.json");
 
   @Autowired MockMvcTester mockMvcTester;

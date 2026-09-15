@@ -273,24 +273,13 @@
       <artifactId>testcontainers-keycloak</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
-    <testResources>
-      <testResource>
-        <filtering>false</filtering>
-        <directory>src/test/resources</directory>
-        <excludes>
-          <exclude>authentication-testcontainers.properties</exclude>
-        </excludes>
-      </testResource>
-      <testResource>
-        <filtering>true</filtering>
-        <directory>src/test/resources</directory>
-        <includes>
-          <include>authentication-testcontainers.properties</include>
-        </includes>
-      </testResource>
-    </testResources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
