@@ -195,6 +195,7 @@ public class SchemaManager implements CloseableSilently {
       schemaMetadataStore.storeSchemaVersion(currentVersion);
     }
     updateSchemaSettings();
+    checkShardConfiguration();
     createLifecyclePolicies();
     LOG.info("Schema management completed.");
   }
@@ -276,6 +277,71 @@ public class SchemaManager implements CloseableSilently {
     final boolean performCleanup = config.schemaManager().isPerformCleanup();
     final SchemaCleanup schemaCleanup = new SchemaCleanup(performCleanup, searchEngineClient);
     CompletableFuture.runAsync(schemaCleanup::performCleanup, virtualThreadExecutor);
+  }
+
+  /**
+   * Reports per-index shard configuration that will not do what the operator expects.
+   *
+   * <p>Runs once per startup rather than from {@link #getIndexSettingsFromConfig}: that resolver is
+   * called again for every descriptor during template creation, index creation and the settings
+   * update, so warning from there would repeat each message up to three times.
+   */
+  private void checkShardConfiguration() {
+    final var explicitShards = config.index().getShardsByIndexName();
+    if (explicitShards.isEmpty()) {
+      return;
+    }
+
+    // Smaller than explicitShards when a configured name matches no descriptor here — a typo, or a
+    // component running with a subset of the schema. Those names are simply not ours to check.
+    final var configuredShardsByIndexName = new HashMap<String, Integer>();
+    allIndexDescriptors.forEach(
+        descriptor ->
+            ofNullable(explicitShards.get(descriptor.getIndexName()))
+                .ifPresent(
+                    shards -> {
+                      warnIfOverridingPinnedShardCount(descriptor, shards);
+                      configuredShardsByIndexName.put(descriptor.getFullQualifiedName(), shards);
+                    }));
+
+    warnOnUnappliedShardCounts(configuredShardsByIndexName);
+  }
+
+  /**
+   * Reports configured shard counts that an existing index does not actually have.
+   *
+   * <p>{@link #updateIndexSettings} only pushes {@code number_of_replicas}, because shards are
+   * immutable once an index exists. Changing {@code number-of-shards-per-index} on a running
+   * installation is therefore a silent no-op: the operator sees the setting they asked for in their
+   * configuration and a differently sharded index in the engine, with nothing connecting the two.
+   *
+   * <p>Only indices that already exist are compared — a missing one was either just created with
+   * the configured count or is not in use.
+   */
+  private void warnOnUnappliedShardCounts(final Map<String, Integer> configuredShardsByIndexName) {
+    final Map<String, Integer> actualShardsByIndexName;
+    try {
+      actualShardsByIndexName =
+          searchEngineClient.getNumberOfShards(configuredShardsByIndexName.keySet());
+    } catch (final Exception e) {
+      // A diagnostic must never be the thing that fails a startup that would otherwise succeed.
+      LOG.debug("Could not read shard counts to check them against the configuration", e);
+      return;
+    }
+
+    actualShardsByIndexName.forEach(
+        (indexName, actual) -> {
+          final var configured = configuredShardsByIndexName.get(indexName);
+          if (configured != null && !configured.equals(actual)) {
+            LOG.warn(
+                "Index '{}' is configured with '{}' primary shards but was created with '{}'. "
+                    + "Shards cannot be changed after creation, so the configured value has no "
+                    + "effect on this index; it applies only to newly created indices.",
+                indexName,
+                configured,
+                actual);
+          }
+        });
   }
 
   private void updateSchemaSettings() {
@@ -484,6 +550,28 @@ public class SchemaManager implements CloseableSilently {
       return explicit;
     }
     return descriptor.getDefaultShardCount().orElse(config.index().getNumberOfShards());
+  }
+
+  /**
+   * Explicit configuration wins over the descriptor default by design, so this only warns.
+   *
+   * <p>Descriptors that pin a count do so for a reason the operator cannot see from their own
+   * configuration file, so overriding one deserves a line in the log. The linked issue carries why
+   * it matters — post-importer-queue skipped entries once it was spread over several shards — which
+   * keeps that detail out of a message most readers only need to act on.
+   */
+  private void warnIfOverridingPinnedShardCount(
+      final IndexDescriptor descriptor, final int configured) {
+    final var pinned = descriptor.getDefaultShardCount();
+    if (pinned.isEmpty() || pinned.getAsInt() == configured) {
+      return;
+    }
+    LOG.warn(
+        "Index '{}' is pinned to '{}' primary shards by design but is configured with '{}'; "
+            + "the configuration wins. See https://github.com/camunda/camunda/issues/56117.",
+        descriptor.getIndexName(),
+        pinned.getAsInt(),
+        configured);
   }
 
   private int getNumberOfReplicasFromConfig(final String indexName) {
