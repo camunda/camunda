@@ -1,0 +1,10 @@
+# Default configuration for the version this folder configures.
+
+elasticsearch:
+  # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
+  version: '8.19.16'
+
+opensearch:
+  image:
+    # renovate: datasource=docker depName=opensearchproject/opensearch
+    tag: '2.19.6'
