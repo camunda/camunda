@@ -67,24 +67,19 @@ public class SecondaryStorage {
   }
 
   public SecondaryStorageType getType() {
-    SecondaryStorageType result = this.resolvedType;
-
-    if (result == null) {
+    if (resolvedType == null) {
       synchronized (this) {
-        result = this.resolvedType;
-        if (result == null) {
-          result = UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        if (resolvedType == null) {
+          resolvedType = UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               PREFIX + ".type",
               type,
               SecondaryStorageType.class,
               SUPPORTED_ONLY_IF_VALUES_MATCH,
               LEGACY_TYPE_PROPERTIES);
-          this.resolvedType = result;
         }
       }
     }
-
-    return result;
+    return resolvedType;
   }
 
   public void setType(final SecondaryStorageType type) {
