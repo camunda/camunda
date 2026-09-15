@@ -19,6 +19,11 @@ import {
 	mockSystemConfigurationEndpoint,
 	mockCreateCancellationBatchOperationEndpoint,
 	mockGetBatchOperationEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
+	mockGetProcessInstanceCallHierarchyEndpoint,
+	mockGetProcessInstanceEndpoint,
+	mockGetProcessInstanceWaitStateStatisticsEndpoint,
+	mockQueryProcessInstanceIncidentsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -31,12 +36,38 @@ import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
+import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {
 	createBatchOperationItem,
 	createBatchOperation,
 	createQueryBatchOperationItemsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
-import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+
+const PROCESS_INSTANCE_XML =
+	'<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"><process id="order-process"><callActivity id="call-activity" /></process></definitions>';
+
+function getProcessInstanceShellHandlers({
+	processInstance = createProcessInstance({
+		processInstanceKey: '1001',
+		processDefinitionName: 'Order Process',
+		hasIncident: false,
+	}),
+	callHierarchy = [],
+}: {
+	processInstance?: ReturnType<typeof createProcessInstance>;
+	callHierarchy?: ReturnType<typeof createCallHierarchy>[];
+} = {}) {
+	return [
+		mockGetProcessInstanceEndpoint({
+			successResponse: HttpResponse.json(processInstance),
+		}),
+		mockGetProcessInstanceCallHierarchyEndpoint({
+			successResponse: HttpResponse.json(callHierarchy),
+		}),
+		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_INSTANCE_XML)}),
+	] as const;
+}
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -74,6 +105,9 @@ test.beforeEach(({network}) => {
 					],
 				}),
 			),
+		}),
+		mockGetProcessInstanceWaitStateStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 	);
 });
@@ -130,13 +164,20 @@ test.describe('Operate processes page', () => {
 	});
 
 	test('should list the matching process instances and link each one to its details page', async ({
+		network,
+		page,
 		operateProcessesPage,
 	}) => {
+		network.use(...getProcessInstanceShellHandlers());
 		await operateProcessesPage.goto();
 
 		await expect(operateProcessesPage.instancesTable).toBeVisible();
 		await expect(operateProcessesPage.instanceLink('1001')).toHaveAttribute('href', '/operate/processes/1001');
 		await expect(operateProcessesPage.instanceLink('1002')).toHaveAttribute('href', '/operate/processes/1002');
+		await operateProcessesPage.instanceLink('1001').click();
+		await expect(page).toHaveURL('/operate/processes/1001/variables');
+		await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
+		await expect(page.getByRole('cell', {name: '1001'})).toBeVisible();
 	});
 
 	test('should show operation states when filtering by a batch operation', async ({network, operateProcessesPage}) => {
@@ -154,5 +195,173 @@ test.describe('Operate processes page', () => {
 
 		await expect(operateProcessesPage.operationStateColumn).toBeVisible();
 		await expect(operateProcessesPage.operationState('ACTIVE')).toBeVisible();
+	});
+
+	test('should render forbidden process-instance content when the instance request returns 403', async ({
+		network,
+		page,
+	}) => {
+		network.use(
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 403}), {status: 403}),
+			}),
+		);
+
+		await page.goto('/operate/processes/1001');
+
+		await expect(page).toHaveURL('/operate/processes/1001');
+		await expect(page.getByText('403 - You do not have permission to view this information')).toBeVisible({
+			timeout: 15000,
+		});
+		await expect(page.getByText('Contact your administrator to get access.')).toBeVisible();
+		await expect(page.getByRole('link', {name: 'Learn more about permissions'})).toHaveAttribute(
+			'href',
+			'https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/#resource-based-permissions',
+		);
+	});
+
+	test('should show the incident count fetched from the incidents endpoint', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessInstanceIncidentsEndpoint({
+				successResponse: HttpResponse.json({
+					items: [],
+					page: {totalItems: 4, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			}),
+			...getProcessInstanceShellHandlers({
+				processInstance: createProcessInstance({
+					processInstanceKey: '1001',
+					processDefinitionName: 'Order Process',
+					hasIncident: true,
+				}),
+			}),
+		);
+
+		await operateProcessesPage.goto();
+		await operateProcessesPage.instanceLink('1001').click();
+
+		await expect(page).toHaveURL('/operate/processes/1001/incidents');
+		await expect(page.getByText('4 incidents')).toBeVisible();
+	});
+
+	test('should redirect unknown process-instance child paths to the default tab while preserving search params', async ({
+		network,
+		page,
+	}) => {
+		network.use(...getProcessInstanceShellHandlers());
+
+		await page.goto('/operate/processes/1001/custom-tab?elementId=call-activity&isPlaceholder=true');
+
+		await expect(page).toHaveURL('/operate/processes/1001/details?elementId=call-activity&isPlaceholder=true');
+	});
+
+	test('should show call-hierarchy overflow in a More menu and keep the current process breadcrumb', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			...getProcessInstanceShellHandlers({
+				processInstance: createProcessInstance({
+					processInstanceKey: '1001',
+					processDefinitionName: 'Order Process',
+				}),
+				callHierarchy: [
+					createCallHierarchy({processInstanceKey: '10', processDefinitionName: 'Root'}),
+					createCallHierarchy({processInstanceKey: '11', processDefinitionName: 'Step 1'}),
+					createCallHierarchy({processInstanceKey: '12', processDefinitionName: 'Step 2'}),
+					createCallHierarchy({processInstanceKey: '13', processDefinitionName: 'Step 3'}),
+					createCallHierarchy({processInstanceKey: '14', processDefinitionName: 'Step 4'}),
+					createCallHierarchy({processInstanceKey: '15', processDefinitionName: 'Step 5'}),
+					createCallHierarchy({processInstanceKey: '1001', processDefinitionName: 'Order Process'}),
+				],
+			}),
+		);
+
+		await operateProcessesPage.goto();
+		await operateProcessesPage.instanceLink('1001').click();
+
+		await expect(page.getByRole('button', {name: 'More'})).toBeVisible();
+		await page.getByRole('button', {name: 'More'}).click();
+		await expect(page.getByRole('menuitem', {name: 'Step 2'})).toBeVisible();
+		await expect(page.getByLabel('Breadcrumb').getByText('Order Process')).toBeVisible();
+	});
+
+	test('should preserve search params when redirecting from process-instance shell to the default tab', async ({
+		network,
+		page,
+	}) => {
+		network.use(...getProcessInstanceShellHandlers());
+
+		await page.goto('/operate/processes/1001?elementId=call-activity&isPlaceholder=true&customHint=focus');
+
+		await expect(page).toHaveURL(/\/operate\/processes\/1001\/details\?/);
+		const {searchParams} = new URL(page.url());
+		expect(searchParams.get('elementId')).toBe('call-activity');
+		expect(searchParams.get('isPlaceholder')).toBe('true');
+		expect(searchParams.get('customHint')).toBe('focus');
+		await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
+	});
+
+	test('should redirect to details by default when wait states are enabled and present at process scope', async ({
+		network,
+		page,
+	}) => {
+		const systemConfiguration = createSystemConfiguration({components: {active: ['operate']}});
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json({
+					...systemConfiguration,
+					deployment: {
+						...systemConfiguration.deployment,
+						waitStatesEnabled: true,
+					},
+				}),
+			}),
+			mockGetProcessInstanceWaitStateStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [{elementId: 'order-process', waitingCount: 1}],
+					}),
+				),
+			}),
+			...getProcessInstanceShellHandlers({
+				processInstance: createProcessInstance({
+					processInstanceKey: '1001',
+					processDefinitionId: 'order-process',
+					processDefinitionName: 'Order Process',
+					hasIncident: false,
+				}),
+			}),
+		);
+
+		await page.goto('/operate/processes/1001');
+
+		await expect(page).toHaveURL('/operate/processes/1001/details');
+	});
+
+	test('should hide start, end and called instances columns on reduced layouts', async ({network, page}) => {
+		await page.setViewportSize({width: 1000, height: 900});
+		network.use(
+			...getProcessInstanceShellHandlers({
+				processInstance: createProcessInstance({
+					processInstanceKey: '1001',
+					processDefinitionName: 'Order Process',
+					endDate: '2026-01-15T12:00:00.000Z',
+					hasIncident: false,
+				}),
+			}),
+		);
+
+		await page.goto('/operate/processes/1001');
+
+		await expect(page).toHaveURL('/operate/processes/1001/variables');
+		await expect(page.getByRole('columnheader', {name: 'Start Date'})).toHaveCount(0);
+		await expect(page.getByRole('columnheader', {name: 'End Date'})).toHaveCount(0);
+		await expect(page.getByRole('columnheader', {name: 'Called Instances'})).toHaveCount(0);
 	});
 });
