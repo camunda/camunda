@@ -20,7 +20,7 @@ from .report import render_report
 HERE = Path(__file__).resolve().parent
 DEFAULT_QUERIES_FILE = HERE / "report-queries.yaml"
 NAMESPACE_PATTERN = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
-DURATION_PATTERN = re.compile(r"^[1-9][0-9]*(ms|s|m|h|d|w|y)$")
+DURATION_PATTERN = re.compile(r"^(?:[1-9][0-9]*(ms|s|m|h|d|w|y))+$")
 
 
 @dataclass(frozen=True)
@@ -182,13 +182,14 @@ def parse_args(argv: Sequence[str]) -> Options:
             raise ReportError("--end must be after --start.")
 
         duration_seconds = end_epoch - start_epoch
-        time_anchor = args.end
         start_label = datetime.fromtimestamp(start_epoch, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         end_label = datetime.fromtimestamp(end_epoch, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        time_anchor = end_label
     elif time_anchor:
         anchor_epoch = parse_epoch(time_anchor)
         start_label = datetime.fromtimestamp(anchor_epoch - duration_seconds, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         end_label = datetime.fromtimestamp(anchor_epoch, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        time_anchor = end_label
 
     return Options(
         namespace=args.namespace,

@@ -590,6 +590,26 @@ def test_should_derive_duration_from_start_and_end(tmp_path):
     assert options.end_label == "2026-08-14T10:30:00Z"
 
 
+def test_should_normalize_timezone_less_time_window():
+    options = parse_args(
+        [
+            "c8-ck-test",
+            "--start",
+            "2026-08-14T10:00:00",
+            "--end",
+            "2026-08-14T10:30:00",
+        ]
+    )
+
+    assert options.time_anchor == "2026-08-14T10:30:00Z"
+
+
+def test_should_accept_composite_prometheus_durations():
+    options = parse_args(["c8-ck-test", "--rate-interval", "1h30m"])
+
+    assert options.rate_interval == "1h30m"
+
+
 def test_should_reject_unrepresentable_timestamp():
     with pytest.raises(SystemExit):
         parse_args(["c8-ck-test", "--at", "999999999999999999999"])
