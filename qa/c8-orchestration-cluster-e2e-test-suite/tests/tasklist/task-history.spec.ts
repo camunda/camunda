@@ -19,7 +19,12 @@ type ProcessInstance = {
 
 test.describe('Task History Audit Log', () => {
   test.beforeAll(async () => {
-    await deploy(['./resources/usertask_to_be_completed.bpmn']);
+    // Own process, not the shared usertask_to_be_completed: the tasks this file
+    // creates stay assigned to demo (see beforeEach), and task-details.spec.ts
+    // picks that process by name and expects the first card it finds to be
+    // unassigned. Two specs cannot share a process id when one of them leaves
+    // its tasks assigned.
+    await deploy(['./resources/usertask_for_task_history.bpmn']);
   });
 
   test.beforeEach(
@@ -38,7 +43,7 @@ test.describe('Task History Audit Log', () => {
       // task-details.spec.ts's 'assign and unassign task' covers that -- so
       // isolating the tests removes the step instead of waiting longer on it.
       const processInstance: ProcessInstance = await createSingleInstance(
-        'usertask_to_be_completed',
+        'usertask_for_task_history',
         1,
       );
       const taskKey = await findUserTask(
