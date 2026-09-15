@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
  * ACTIVE state.
  */
 @MultiDbTest
-public class IncidentSimpleResolveTest {
+public class IncidentSimpleResolveIT {
 
   private static CamundaClient camundaClient;
 
