@@ -339,9 +339,13 @@ install-load-test-setup: create-namespace
 		--take-ownership --create-namespace \
 		$(load_test_setup_flags)
 
-# Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
+	$(MAKE) template-camunda-platform template-load-test-setup
+
+# Generates templates from the Camunda Platform helm chart
+.PHONY: template-camunda-platform
+template-camunda-platform:
 	helm template $(namespace) $(helm_chart_platform) \
 		--namespace $(namespace) \
 		$(platform_values) \
