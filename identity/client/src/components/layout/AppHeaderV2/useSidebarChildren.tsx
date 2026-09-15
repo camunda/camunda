@@ -21,8 +21,8 @@ import {
 } from "@camunda/design-system/icons";
 import type { NavIcon, SidebarNode } from "@camunda/design-system";
 
-import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
-import { Paths } from "src/components/global/routePaths";
+import { useGlobalRoutes } from "src/components/globalV2/useGlobalRoutes";
+import { Paths } from "src/components/globalV2/routePaths";
 
 const ROUTE_ICONS: Record<string, NavIcon> = {
   [Paths.users()]: User,
