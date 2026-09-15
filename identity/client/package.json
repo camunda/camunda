@@ -20,7 +20,11 @@
   "dependencies": {
     "@camunda/camunda-api-zod-schemas": "0.0.90",
     "@camunda/camunda-composite-components": "0.25.4",
+<<<<<<< HEAD
     "@camunda/design-system": "0.54.0",
+=======
+    "@camunda/design-system": "0.57.0",
+>>>>>>> 360b2da2 (feat: bump design-system to latest version)
     "@camunda/session-heartbeat": "0.0.1",
     "@carbon/elements": "11.95.0",
     "@carbon/react": "1.112.0",
