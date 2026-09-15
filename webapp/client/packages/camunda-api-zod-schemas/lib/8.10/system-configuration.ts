@@ -26,6 +26,7 @@ type ComponentsConfiguration = z.infer<typeof componentsConfigurationSchema>;
 
 const deploymentConfigurationSchema = z.object({
 	isMultiTenancyEnabled: z.boolean(),
+	waitStatesEnabled: z.boolean(),
 	maxRequestSize: z.number(),
 });
 type DeploymentConfiguration = z.infer<typeof deploymentConfigurationSchema>;

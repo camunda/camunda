@@ -26,11 +26,20 @@ public class GatewayRestConfiguration {
       MAX_CLUSTER_VARIABLE_METADATA_ENTRIES * MAX_CLUSTER_VARIABLE_METADATA_ENTRY_LENGTH;
 
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
+  private boolean waitStatesEnabled = true;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxClusterVariableMetadataSize = DEFAULT_MAX_CLUSTER_VARIABLE_METADATA_SIZE;
 
   public JobMetricsConfiguration getJobMetrics() {
     return jobMetrics;
+  }
+
+  public boolean isWaitStatesEnabled() {
+    return waitStatesEnabled;
+  }
+
+  public void setWaitStatesEnabled(final boolean waitStatesEnabled) {
+    this.waitStatesEnabled = waitStatesEnabled;
   }
 
   /**
