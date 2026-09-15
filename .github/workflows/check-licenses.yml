@@ -124,7 +124,9 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@93f5c8735a476ebc5127babd29477cf9610c6bf6 # fossa-1.0.18
+      # TEST: temporarily pinned to camunda/infra-global-github-actions#819 (fix/fossa-setup-download-retry)
+      # to validate the retry/checksum fix before it's released. Revert to the fossa-1.0.18 tag before merging.
+      uses: camunda/infra-global-github-actions/fossa/setup@55cf094484441d46043337d75477e42f77ad596e # PR#819 test
 
     - name: Get context info
       id: info
