@@ -17,7 +17,7 @@ public class SchemaManagerRetry {
 
   private static final String LEGACY_PREFIX = "camunda.database.schema-manager.retry";
 
-  private final String prefix;
+  private String prefix = "";
 
   /** Null for a storage whose retry settings never had a legacy property to migrate from. */
   private @Nullable String legacyPrefix = LEGACY_PREFIX;
@@ -29,6 +29,16 @@ public class SchemaManagerRetry {
   public SchemaManagerRetry(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.retry".formatted(databaseName);
   }
+
+  /**
+   * No-arg constructor solely so spring-boot-configuration-processor does not treat this class as
+   * constructor-bound — with a single parameterized constructor, the processor derives metadata
+   * only from that constructor's parameters and silently ignores every getter/setter below.
+   * Deliberately unused and {@code private}: nothing — not even a test — should ever call it;
+   * {@link #SchemaManagerRetry(String)} remains the only real construction path (see {@link
+   * DocumentBasedSecondaryStorageDatabase}). Do not remove as dead code.
+   */
+  private SchemaManagerRetry() {}
 
   SchemaManagerRetry withoutLegacyProperties() {
     legacyPrefix = null;
