@@ -73,7 +73,11 @@ class OidcFlowIT {
 
   @Container
   static KeycloakContainer keycloak =
+<<<<<<< HEAD:authentication/src/test/java/io/camunda/authentication/OidcFlowIT.java
       DefaultTestContainers.createDefaultKeycloak()
+=======
+      TestKeycloakContainers.createDefaultKeycloak()
+>>>>>>> 0bfe4235f (test: pin the Keycloak testcontainer image and harden its startup):authentication/src/test/java/io/camunda/authentication/OidcFlowTest.java
           .withRealmImportFile("/camunda-identity-test-realm.json");
 
   @Autowired MockMvcTester mockMvcTester;

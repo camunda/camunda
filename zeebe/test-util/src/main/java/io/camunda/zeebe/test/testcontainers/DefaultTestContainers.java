@@ -11,12 +11,21 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
+<<<<<<< HEAD
 import java.util.Properties;
 
 public final class DefaultTestContainers {
   private static final String VERSIONS_FILE = "/zeebe-test-util-testcontainers.properties";
 
   private static final String KEYCLOAK_IMAGE = keycloakImage();
+=======
+import org.testcontainers.utility.DockerImageName;
+
+public final class DefaultTestContainers {
+  // Keep in sync with version.keycloak.container in parent/pom.xml
+  private static final DockerImageName KEYCLOAK_IMAGE =
+      DockerImageName.parse("quay.io/keycloak/keycloak").withTag("26.7.3");
+>>>>>>> 0bfe4235f (test: pin the Keycloak testcontainer image and harden its startup)
 
   private DefaultTestContainers() {}
 
