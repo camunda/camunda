@@ -22,6 +22,7 @@ import permissionDeniedIconUrl from '#/operate/assets/permission-denied.svg';
 import {useBatchOperation} from './batchOperation.queries';
 import {formatOperationType, formatDate} from './utils';
 import {BatchItemsTable} from './BatchItemsTable';
+import {BatchOperationActions} from './BatchOperationActions';
 import {PageContainer, Header, HeaderTitleContainer, TilesContainer, Tile, TileLabel} from './styled';
 
 const TILE_LABEL_KEYS = [
@@ -143,6 +144,16 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 					</IconButton>
 					<h3>{operationType}</h3>
 				</HeaderTitleContainer>
+				{data && (
+					// keyed by batchOperationKey: TanStack Router reuses this route component across a
+					// param-only navigation (one batch operation's detail page to another's), so without a
+					// key an in-flight mutation for the previous key would carry over into the new one.
+					<BatchOperationActions
+						key={batchOperationKey}
+						batchOperationKey={batchOperationKey}
+						batchOperationState={data.state}
+					/>
+				)}
 			</Header>
 			{error && !isNotFound && (
 				<InlineNotification
