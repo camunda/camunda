@@ -28,6 +28,10 @@ recorded in the engine at all stays in [0010](0010-810-agent-execution-in-engine
 
 **D1. History items ride on the agent instance command that reports them.**
 A create or update carries a batch of history items along with the job key and that job's lease token.
+Both are required, although [0005](0005-810-job-lease.md) makes the lease opt-in for jobs in
+general. An unleased write has nothing to attribute its items to, and the engine would then have to
+commit every pending item for the job. That would commit a superseded activation's items instead of
+discarding them, so the API rejects such a write.
 Batching them onto a command the runtime already sends also keeps its request count down: a call per
 item would be slower and more brittle, giving network failures more chances to interrupt reporting
 that the runtime would then have to recover from. A separate command surface for history writes was
@@ -44,12 +48,6 @@ current lease token: the items matching it commit, and the rest are discarded in
 Attribution is therefore per activation rather than per job. A job that ends without completing —
 cancelled, terminated with its element, or resolved through a caught error — discards every pending
 item for the job key instead, whatever lease reported it, so no item is left without a terminal state.
-
-The lease is opt-in under [0005](0005-810-job-lease.md), so a completion can arrive without one, and
-then the commit takes every pending item for the job key. There is no identity to fence with, so the
-choice is between committing everything and losing the history, and the engine keeps it. That path is
-unfenced by construction: two activations under one job key both commit, which is the corruption the
-lease prevents everywhere else. The per-activation guarantee is a guarantee about leased activations.
 
 **D3. Items from a superseded activation are discarded at the next commit, not when the job is
 re-activated.** The commit pass commits the items matching the job's current lease and, in the same
@@ -118,9 +116,7 @@ processor.
 - A history item that never reaches a terminal state leaks primary storage and shows as pending
   forever. This has happened once during development, when the engine could not recognise an external
   agent's job as agentic — see [0011](0011-810-agent-definition-from-bpmn-marker.md).
-- Writers must supply a job key and that job's lease token whenever they attach history. Enforcement
-  of that requirement in the validator and clients is still being completed (camunda/camunda#60864);
-  until it is, the unleased commit path in D2 stays reachable.
+- Writers must supply a job key and that job's lease token whenever they attach history.
 - The committed record is only as faithful as the writer. The engine guarantees that at most one
   activation's items commit, not that those items match what the model actually saw.
 - Metrics accumulate once per history item id and are never rolled back, so a re-activation's new
