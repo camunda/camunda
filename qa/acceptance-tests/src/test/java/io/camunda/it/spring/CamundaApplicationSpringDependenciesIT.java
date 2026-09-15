@@ -18,7 +18,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-final class CamundaApplicationSpringDependenciesTest extends AbstractSpringDependenciesTest {
+final class CamundaApplicationSpringDependenciesIT extends AbstractSpringDependenciesTest {
 
   @MultiDbTestApplication
   private static final TestCamundaApplication CAMUNDA_APPLICATION =

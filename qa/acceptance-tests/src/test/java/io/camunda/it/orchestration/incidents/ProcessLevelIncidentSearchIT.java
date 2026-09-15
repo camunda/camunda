@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
  * searching process instances by error message.
  */
 @MultiDbTest
-public class ProcessLevelIncidentSearchTest {
+public class ProcessLevelIncidentSearchIT {
 
   private static final String PROCESS_ID = "process_level_incident";
   private static final String LISTENER_JOB_TYPE = "processLevelListener";
