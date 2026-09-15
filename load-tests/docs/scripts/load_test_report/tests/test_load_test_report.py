@@ -12,7 +12,6 @@ from load_test_report.cli import Options
 from load_test_report.cli import build_parser
 from load_test_report.cli import parse_args
 from load_test_report.cli import query_substitutions
-from load_test_report.cli import resolve_queries_file
 from load_test_report.cli import run
 from load_test_report.errors import MissingMetric
 from load_test_report.errors import ReportError
@@ -75,8 +74,8 @@ def test_should_return_error_for_missing_namespace():
     with mock.patch.object(sys, "stderr", stderr):
         exit_code = run([])
 
-    assert exit_code == 1
-    assert "Missing <namespace>" in stderr.getvalue()
+    assert exit_code == 2
+    assert "the following arguments are required: namespace" in stderr.getvalue()
 
 
 def test_should_extract_numeric_sample():
@@ -520,8 +519,7 @@ def test_should_parse_auth_flags(tmp_path):
             "abc123",
             "--queries",
             str(queries_file),
-        ],
-        tmp_path,
+        ]
     )
 
     assert options.bearer_token == "abc123"
@@ -543,8 +541,7 @@ def test_should_derive_duration_from_start_and_end(tmp_path):
             "2026-08-14T10:30:00Z",
             "--queries",
             str(queries_file),
-        ],
-        tmp_path,
+        ]
     )
 
     assert options.duration_seconds == 1800
@@ -553,46 +550,21 @@ def test_should_derive_duration_from_start_and_end(tmp_path):
     assert options.end_label == "2026-08-14T10:30:00Z"
 
 
-def test_should_use_packaged_default_queries(tmp_path):
-    default_queries_file = tmp_path / "report-queries.yaml"
-    default_queries_file.write_text(
-        """queries:
-- key: namespace
-  description: Namespace.
-  header: Namespace
-  query: namespace_metric{namespace="test"}
-""",
-        encoding="utf-8",
-    )
+def test_should_use_packaged_default_queries():
+    options = parse_args(["c8-ck-test"])
 
-    options = parse_args(["c8-ck-test"], tmp_path)
-
-    assert options.queries_file == default_queries_file
+    assert options.queries_file == PROJECT_DIR / "report-queries.yaml"
 
 
 def test_should_use_packaged_queries_file_by_path(tmp_path):
-    stable_queries_file = tmp_path / "report-queries-stable-87.yaml"
-    stable_queries_file.write_text(
-        """queries:
-- key: namespace
-  description: Namespace.
-  header: Namespace
-  query: namespace_metric{namespace="test"}
-""",
-        encoding="utf-8",
-    )
+    options = parse_args(["c8-ck-test", "--queries", "report-queries-stable-87.yaml"])
 
-    options = parse_args(["c8-ck-test", "--queries", "report-queries-stable-87.yaml"], tmp_path)
-
-    assert options.queries_file == stable_queries_file
+    assert options.queries_file == PROJECT_DIR / "report-queries-stable-87.yaml"
 
 
-def test_should_reject_missing_queries_file(tmp_path):
-    with pytest.raises(ReportError, match="must be an existing YAML file"):
-        parse_args(
-            ["c8-ck-test", "--queries", "daily"],
-            tmp_path,
-        )
+def test_should_reject_missing_queries_file():
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--queries", "daily"])
 
 
 def test_should_resolve_external_queries_file(tmp_path):
@@ -607,7 +579,7 @@ def test_should_resolve_external_queries_file(tmp_path):
         encoding="utf-8",
     )
 
-    assert resolve_queries_file(tmp_path, str(queries_file)) == queries_file
+    assert parse_args(["c8-ck-test", "--queries", str(queries_file)]).queries_file == queries_file
 
 
 def test_should_build_query_substitutions():
