@@ -7,14 +7,27 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import java.util.List;
+import org.apache.ibatis.annotations.Param;
+
 /** Mapper for table metrics operations. */
 public interface TableMetricsMapper {
+  /**
+   * Counts the rows of each of the given tables in a single round trip. A table missing from the
+   * catalog is absent from the result rather than returned with {@code -1}.
+   *
+   * @param tableNames the prefixed, already case-folded table identifiers to look up
+   */
+  List<TableRowCount> countTableRows(@Param("tableNames") List<String> tableNames);
 
   /**
-   * Counts the number of rows in the specified table.
+   * Counts the rows of a single table with a live {@code COUNT(*)}, for vendors without catalog
+   * row-count statistics.
    *
-   * @param tableName the name of the table to count rows in
-   * @return the number of rows in the table
+   * @param tableName the prefixed, already case-folded table identifier to count
    */
-  long countTableRows(String tableName);
+  long countSingleTableRows(String tableName);
+
+  /** {@code tableName} is the searched-for identifier, not the bare table name. */
+  record TableRowCount(String tableName, Long rowCount) {}
 }

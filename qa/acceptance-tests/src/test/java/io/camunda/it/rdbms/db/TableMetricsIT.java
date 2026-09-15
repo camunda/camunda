@@ -8,14 +8,18 @@
 package io.camunda.it.rdbms.db;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.rdbms.RdbmsTableNames;
+import io.camunda.db.rdbms.sql.TableMetricsMapper.TableRowCount;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.ibatis.session.SqlSession;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -31,6 +35,7 @@ public class TableMetricsIT {
         testApplication.bean("rdbmsMapperBundles");
     final var rdbmsMapperBundle = rdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID);
     final var tableMetricsMapper = rdbmsMapperBundle.tableMetricsMapper();
+    final var vendorDatabaseProperties = rdbmsMapperBundle.vendorDatabaseProperties();
 
     final String tableName = "AUTHORIZATIONS";
 
@@ -40,13 +45,33 @@ public class TableMetricsIT {
     // refresh first to get a deterministic, non-negative count for those vendors.
     refreshTableStatistics(rdbmsMapperBundle, tableName);
 
-    // Get the count using the optimized vendor-specific query
-    final long rowCount = tableMetricsMapper.countTableRows(tableName);
+    // Bound the same way RdbmsTableRowCountProvider builds them, which is what catches an
+    // identifier-case mistake in a vendor-specific query.
+    final var tableNameBySearchName =
+        RdbmsTableNames.TABLE_NAMES.stream()
+            .collect(Collectors.toMap(vendorDatabaseProperties::foldTableIdentifier, name -> name));
 
-    // having any number here is sufficient for the test because it shows that the SQL is working
+    final Map<String, Long> rowCounts =
+        vendorDatabaseProperties.usesCatalogRowCountStatistics()
+            ? tableMetricsMapper
+                .countTableRows(tableNameBySearchName.keySet().stream().toList())
+                .stream()
+                .collect(
+                    Collectors.toMap(
+                        row -> tableNameBySearchName.get(row.tableName()), TableRowCount::rowCount))
+            : tableNameBySearchName.entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                        Entry::getValue,
+                        entry -> tableMetricsMapper.countSingleTableRows(entry.getKey())));
+
+    // every known table on this vendor must report a row count
+    assertThat(rowCounts).containsOnlyKeys(RdbmsTableNames.TABLE_NAMES);
+
+    // having any number here is sufficient for the test because it shows that the SQL is working;
     // asserting for a specific number would make the test fragile as the statistics are
-    // eventual consistent and only a rough number for each vendor
-    assertThat(rowCount).isGreaterThanOrEqualTo(0);
+    // eventually consistent and only a rough number for each vendor
+    assertThat(rowCounts.get(tableName)).isGreaterThanOrEqualTo(0);
   }
 
   /**
