@@ -25,6 +25,8 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   private long[] backupId;
   private Instant from;
   private Instant to;
+  private String physicalTenantId;
+  private boolean allTenants;
 
   public TestRestoreApp() {
     this(new Camunda());
@@ -66,6 +68,11 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
       args.add("--from=" + from);
       args.add("--to=" + to);
     }
+    if (allTenants) {
+      args.add("--all-tenants");
+    } else if (physicalTenantId != null) {
+      args.add("--tenant-id=" + physicalTenantId);
+    }
     return args.toArray(String[]::new);
   }
 
@@ -82,6 +89,16 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   public TestRestoreApp withTimeRange(final Instant from, final Instant to) {
     this.from = from;
     this.to = to;
+    return this;
+  }
+
+  public TestRestoreApp withPhysicalTenant(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
+    return this;
+  }
+
+  public TestRestoreApp withAllPhysicalTenants() {
+    allTenants = true;
     return this;
   }
 }
