@@ -11,23 +11,21 @@ import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import java.util.List;
-import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 
 /**
  * Shared wiring for {@link OptimizeCloudSecurityConfiguration} (CCSaaS) and {@link
  * OptimizeCcsmSecurityConfiguration} (CCSM): both override CSL's default {@link
  * TokenValidatorFactory} to append edition-specific validators. {@link #tokenValidatorFactory} is
  * used by both editions and gates the bearer/API {@code JwtDecoder} plus the session's per-request
- * access token decode. {@link #idTokenDecoderFactory} additionally reuses the same factory to gate
- * the login id_token too — CCSaaS uses it because its org/cluster validators are lenient on claim
- * absence, but CCSM does <em>not</em> use it: see {@link OptimizeIdentityPermissionValidator}'s
- * javadoc for why routing the id_token through an audience-strict Identity check would reject every
- * real login. This class carries the identical construction logic so a future change to how {@link
- * TokenValidatorFactory}/{@code idTokenDecoderFactory} must be wired only needs applying once.
+ * access token decode. {@link OptimizeCloudSecurityConfiguration} additionally reuses the same
+ * factory to gate the login id_token too — CCSaaS does so because its org/cluster validators are
+ * lenient on claim absence, but CCSM does <em>not</em>: see {@link
+ * OptimizeIdentityPermissionValidator}'s javadoc for why routing the id_token through an
+ * audience-strict Identity check would reject every real login. That id_token wiring has exactly
+ * one caller, so it is inlined directly in {@link OptimizeCloudSecurityConfiguration} rather than
+ * shared here.
  */
 final class OptimizeTokenValidatorFactorySupport {
 
@@ -41,12 +39,5 @@ final class OptimizeTokenValidatorFactorySupport {
         oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
         cslProperties.getAuthentication().getOidc().getClockSkew(),
         extraValidators);
-  }
-
-  static JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
-      final TokenValidatorFactory tokenValidatorFactory) {
-    final OidcIdTokenDecoderFactory decoderFactory = new OidcIdTokenDecoderFactory();
-    decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
-    return decoderFactory;
   }
 }
