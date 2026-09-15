@@ -497,11 +497,7 @@ public class SchemaManager implements CloseableSilently {
             descriptor.getAlias(),
             newProperties);
       }
-      // no backing index exists yet (e.g. all indices were dropped) - the template update above
-      // already covers future indices, and there is nothing to put the mapping on
-      if (searchEngineClient.indexExists(descriptor.getFullQualifiedName())) {
-        searchEngineClient.putMapping(descriptor, newProperties);
-      }
+      searchEngineClient.putMapping(descriptor, newProperties);
     }
   }
 
