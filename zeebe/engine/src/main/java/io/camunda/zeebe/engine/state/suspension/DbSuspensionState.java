@@ -19,7 +19,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedComma
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class DbSuspensionState implements MutableSuspensionState {
 
@@ -106,31 +108,30 @@ public final class DbSuspensionState implements MutableSuspensionState {
   }
 
   @Override
-  public Optional<BufferedCommand> getOldestBufferedCommand(
-      final long key, final long afterCommandKey) {
+  public DrainLookup findNextBufferedCommand(final long key, final long afterCommandKey) {
     processInstanceKey.wrapLong(key);
     final long startAtBufferedKey = afterCommandKey < 0 ? 0 : afterCommandKey;
     bufferedCommandKey.wrapLong(startAtBufferedKey);
 
-    final var oldest = new BufferedCommand[1];
+    final var oldest = new AtomicReference<BufferedCommand>();
+    final var hasMore = new AtomicBoolean();
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
         processInstanceKeyAndBufferedCommandKey,
         (compositeKey, stored) -> {
-          // the key is ordered by bufferedCommandKey, so the first hit is the oldest. stored is
-          // the column family's single reusable value instance - copy it, since the caller (the
-          // resume/drain hot path) holds onto this well beyond this method returning, and any
-          // later read from this column family would otherwise silently mutate it out from under
-          // them
           if (compositeKey.second().getValue() == startAtBufferedKey) {
-            return true; // skip the entry with the same key as afterCommandKey
+            return true; // skip the entry at afterCommandKey itself
           }
-          final var copy = new BufferedCommandRecord();
-          copy.copyFrom(stored.getRecord());
-          oldest[0] = new BufferedCommand(compositeKey.second().getValue(), copy);
+          if (oldest.get() == null) {
+            final var copy = new BufferedCommandRecord();
+            copy.copyFrom(stored.getRecord()); // stored is reused per row - copy before it changes
+            oldest.set(new BufferedCommand(compositeKey.second().getValue(), copy));
+            return true; // peek one more row to see if anything follows
+          }
+          hasMore.set(true);
           return false;
         });
-    return Optional.ofNullable(oldest[0]);
+    return new DrainLookup(Optional.ofNullable(oldest.get()), hasMore.get());
   }
 
   @Override
