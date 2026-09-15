@@ -22,6 +22,8 @@ import {
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -41,6 +43,12 @@ test('should have no accessibility violations on the process instance shell page
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 		}),
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
 		mockGetProcessInstanceEndpoint({
 			successResponse: HttpResponse.json(
 				createProcessInstance({
@@ -67,5 +75,6 @@ test('should have no accessibility violations on the process instance shell page
 	await page.goto(`/operate/processes/${PROCESS_INSTANCE_ID}`);
 	await expect(page).toHaveURL(`/operate/processes/${PROCESS_INSTANCE_ID}/variables`);
 	await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
+	await page.getByRole('link', {name: 'Dashboard', exact: true}).hover();
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 });
