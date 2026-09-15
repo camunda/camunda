@@ -1046,7 +1046,7 @@ final class CheckpointRecordsProcessorTest {
     processor.onRecovered(readonlyContext);
 
     // then — no exception, backup manager still called for fail in-progress
-    verify(backupManager).failInProgressBackup(anyLong());
+    verify(backupManager).failInProgressBackup(anyLong(), anyLong());
   }
 
   @Test

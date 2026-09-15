@@ -47,7 +47,15 @@ public interface BackupManager extends ReadOnlyBackupManager {
   /** Close Backup manager */
   ActorFuture<Void> closeAsync();
 
-  void failInProgressBackup(long lastCheckpointId);
+  /**
+   * Marks the backups a previous leader left in progress as failed.
+   *
+   * @param lastCheckpointId the latest checkpoint of the partition; newer backups are not touched
+   * @param latestBackupId the latest confirmed backup of the partition, or {@code NO_CHECKPOINT}.
+   *     Only backups newer than it, plus a small margin below it, can still be in progress, which
+   *     bounds the scan of the backup store.
+   */
+  void failInProgressBackup(long lastCheckpointId, long latestBackupId);
 
   /**
    * Creates a backup with failed status. This is used when a backup cannot be taken due to system

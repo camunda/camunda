@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
@@ -26,7 +27,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -123,9 +124,13 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
+        () ->
+            manifestManager.listManifests(wildcard, options).stream()
+                .map(Manifest::toStatus)
+                .toList(),
         executor);
   }
 
