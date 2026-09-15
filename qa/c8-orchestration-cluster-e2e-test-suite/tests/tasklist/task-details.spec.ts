@@ -13,7 +13,7 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {findUserTask} from '@requestHelpers';
+import {expectUserTaskUnassigned, findUserTask} from '@requestHelpers';
 import {buildUrl, jsonHeaders} from 'utils/http';
 import {defaultAssertionOptions} from 'utils/constants';
 
@@ -144,7 +144,12 @@ test.describe('task details page', () => {
     );
   });
 
-  test('assign and unassign task', async ({taskPanelPage, taskDetailsPage}) => {
+  test('assign and unassign task', async ({
+    page,
+    request,
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
     // This task is one of ~24 instances created concurrently in this file's
     // beforeAll -- give openTask's retry-with-reload a generous per-attempt
     // timeout, same as the processWithDeployedForm calls below, instead of
@@ -165,18 +170,28 @@ test.describe('task details page', () => {
       useInnerText: true,
     });
 
-    // Unassigning only flips the button once the backend reports the task out
-    // of ASSIGNING, which under CI load outlives the default 10s wait. Go
-    // through the page object, which waits on that transition with the same
-    // retry-and-reload budget the other unassigning tests use.
-    await taskDetailsPage.clickUnassignButton();
+    // The task's own key, for the propagation wait below. openTask navigated
+    // here, so the details URL carries it.
+    const userTaskKey = new URL(page.url()).pathname.split('/').pop() as string;
+
+    // Unassign, then wait on the API rather than on the button flipping. The
+    // toggle flips only once /user-tasks reports the assignee cleared, and it
+    // is that propagation -- not the command -- that has been outliving every
+    // UI budget we gave it in the nightly (a rejected command raises a toast,
+    // and the toggle's logging has yet to catch one). Waiting here with the
+    // suite's propagation budget keeps a failure honest about which side is
+    // behind, and reloading afterwards makes the UI assertions deterministic
+    // rather than a second race on the same propagation.
+    await taskDetailsPage.unassignButton.click();
+    await expectUserTaskUnassigned(request, userTaskKey);
+    await page.reload();
+
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+      timeout: 30000,
+    });
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await expect(taskDetailsPage.assignee).toHaveText('Unassigned', {
       useInnerText: true,
-    });
-
-    await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
     });
   });
 

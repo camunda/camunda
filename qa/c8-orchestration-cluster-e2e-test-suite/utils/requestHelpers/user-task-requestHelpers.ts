@@ -16,7 +16,7 @@ import {
   paginatedResponseFields,
 } from '../http';
 import {userTaskSearchPageResponseRequiredFields} from '../beans/requestBeans';
-import {defaultAssertionOptions} from '../constants';
+import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
 import {validateResponse} from 'json-body-assertions';
 
 export async function findUserTask(
@@ -66,6 +66,33 @@ export async function findUserTask(
   }).toPass(assertionOptions);
   return localState['userTaskKey'] as string;
 }
+/**
+ * Waits until the user task reports no assignee.
+ *
+ * The task-details view flips its assignment toggle only once this endpoint
+ * reports the change, so a UI test that just waits on the button cannot say
+ * whether the command was lost or the propagation is slow. Waiting here, with
+ * the propagation budget, keeps that distinction in the failure message.
+ */
+export async function expectUserTaskUnassigned(
+  request: APIRequestContext,
+  userTaskKey: string,
+  assertionOptions = extendedAssertionOptions,
+) {
+  await expect(async () => {
+    const res = await request.get(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {headers: jsonHeaders()},
+    );
+    await assertStatusCode(res, 200);
+    const json = await res.json();
+    expect(
+      json.assignee ?? null,
+      `user task ${userTaskKey} is still assigned`,
+    ).toBeNull();
+  }).toPass(assertionOptions);
+}
+
 export async function completeUserTask(
   request: APIRequestContext,
   userTaskKey: string,
