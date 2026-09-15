@@ -627,10 +627,20 @@
 					"deleteModalBody_other": "{{count}} instancias seleccionadas para la operación de eliminación. Esto elimina permanentemente las instancias de decisión seleccionadas y su historial. Esta acción no se puede deshacer.",
 					"deleteSuccessTitle": "La operación por lotes «{{operationType}}» se ha iniciado",
 					"deleteSuccessSubtitle": "Puede seguir su progreso en la página Operaciones por lotes",
-					"deleteSuccessActionLabel": "Ir a los detalles de la operación",
-					"deleteErrorTitle": "No se pudo crear la operación",
-					"forbiddenTitle": "No tiene permiso para realizar esta operación",
-					"forbiddenSubtitle": "Póngase en contacto con su administrador si necesita acceso."
+					"deleteSuccessActionLabel": "Ir a los detalles de la operación"
+				},
+				"definitionDeletion": {
+					"buttonTitle": "Eliminar la definición de decisión \"{{name}} - Versión {{version}}\"",
+					"title": "Eliminar DRD",
+					"description": "Está a punto de eliminar el siguiente DRD:",
+					"confirmation": "Sí, confirmo que quiero eliminar este DRD y todas las instancias relacionadas.",
+					"warningTitle": "Al eliminar una definición de decisión se eliminará el DRD y se producirán los siguientes efectos:",
+					"warningDrd": "Al eliminar una definición de decisión, eliminará el DRD que la contiene. También se eliminarán todas las demás tablas de decisión y expresiones literales que formen parte del DRD.",
+					"warningIncidents": "Eliminar la única versión existente de una definición de decisión podría provocar incidentes de proceso.",
+					"documentation": "Más información sobre cómo eliminar una definición de decisión",
+					"details": "Detalles del DRD",
+					"drdName": "Nombre del DRD",
+					"successTitle": "Operación creada"
 				}
 			},
 			"decisionInstance": {
@@ -785,6 +795,9 @@
 					"modifyTitle": "Modificar instancia {{processInstanceKey}}",
 					"deleteTitle": "Eliminar instancia {{processInstanceKey}}",
 					"deleteButtonLabel": "Eliminar",
+					"creationErrorTitle": "No se pudo crear la operación",
+					"forbiddenTitle": "No tiene permiso para realizar esta operación",
+					"forbiddenSubtitle": "Póngase en contacto con el administrador si necesita acceso.",
 					"cancelConfirmationModal": {
 						"heading": "Aplicar operación",
 						"applyButton": "Aplicar",
