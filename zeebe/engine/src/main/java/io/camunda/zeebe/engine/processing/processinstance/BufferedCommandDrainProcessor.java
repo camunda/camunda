@@ -81,7 +81,9 @@ public final class BufferedCommandDrainProcessor
     final var drainValue = command.getValue();
     final long processInstanceKey = drainValue.getProcessInstanceKey();
 
-    final var buffered = suspensionState.getOldestBufferedCommand(processInstanceKey).orElse(null);
+    final var lookup =
+        suspensionState.findNextBufferedCommand(processInstanceKey, drainValue.getCommandKey());
+    final var buffered = lookup.command().orElse(null);
     if (buffered == null) {
       advanceOrWait(command, drainValue);
       return;
@@ -90,12 +92,10 @@ public final class BufferedCommandDrainProcessor
     appendBufferedCommand(buffered);
     appendDrainedEvent(buffered);
 
-    // DRAINED already applied (event appliers run synchronously), so this reflects the buffer as
-    // it stands now, without an extra empty DRAIN cycle to find out
-    if (suspensionState.getOldestBufferedCommand(processInstanceKey).isEmpty()) {
-      advanceOrWait(command, drainValue);
+    if (lookup.hasMore()) {
+      appendNextDrainCommand(buffered.command(), buffered.key());
     } else {
-      appendNextDrainCommand(drainValue);
+      advanceOrWait(command, drainValue);
     }
     suspensionMetrics.commandDrained();
   }
@@ -193,14 +193,16 @@ public final class BufferedCommandDrainProcessor
             .setIntent(value.getIntent()));
   }
 
-  private void appendNextDrainCommand(final BufferedCommandRecord drainValue) {
+  private void appendNextDrainCommand(
+      final BufferedCommandRecord drainValue, final long lastDrainedCommandKey) {
     commandWriter.appendFollowUpCommand(
         drainValue.getProcessInstanceKey(),
         BufferedCommandIntent.DRAIN,
         new BufferedCommandRecord()
             .setProcessInstanceKey(drainValue.getProcessInstanceKey())
             .setProcessDefinitionKey(drainValue.getProcessDefinitionKey())
-            .setTenantId(drainValue.getTenantId()));
+            .setTenantId(drainValue.getTenantId())
+            .setCommandKey(lastDrainedCommandKey));
   }
 
   private void appendResumeJobs(final BufferedCommandRecord drainValue) {
