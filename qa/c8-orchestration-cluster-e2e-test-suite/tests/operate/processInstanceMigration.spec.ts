@@ -726,8 +726,16 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
-      // v1 flow-node-metadata can lag behind v2 incident export by more than
-      // the default 3 retries after a migration; give it more headroom.
+      // The incident popover's "Incident" section is driven by the v1
+      // flow-node-metadata endpoint (via flowNodeMetaDataStore), while the
+      // incident itself is exported through the v2 pipeline. After a
+      // migration the v1 endpoint re-associates the incident with the new
+      // element instance only once the importer catches up, so it can report
+      // incidentCount: 0 for the migrated Business rule task well after the
+      // incident is already visible via the v2 APIs and the instance banner.
+      // The store fetches once per selection (no polling), so each retry must
+      // reload to force a fresh fetch. Observed lag has exceeded the previous
+      // 6-attempt (~70s) budget, so widen the window to absorb the tail.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -738,7 +746,7 @@ test.describe.serial('Process Instance Migration', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 6,
+        maxRetries: 12,
       });
     });
   });
