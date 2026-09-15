@@ -17,6 +17,7 @@ import {TaskDetailPage} from '#/pages/TaskDetail.page';
 import {OperateIndexPage} from '#/pages/OperateIndex.page';
 import {OperateBatchOperationsPage} from '#/pages/OperateBatchOperations.page';
 import {OperateProcessesPage} from '#/pages/OperateProcesses.page';
+import {OperateDecisionsPage} from '#/pages/OperateDecisions.page';
 import {AdminIndexPage} from '#/pages/AdminIndex.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
@@ -35,6 +36,7 @@ type Fixtures = {
 	operateIndexPage: OperateIndexPage;
 	operateBatchOperationsPage: OperateBatchOperationsPage;
 	operateProcessesPage: OperateProcessesPage;
+	operateDecisionsPage: OperateDecisionsPage;
 	adminIndexPage: AdminIndexPage;
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
@@ -69,6 +71,9 @@ const test = base.extend<Fixtures>({
 	},
 	operateProcessesPage: async ({page}, use) => {
 		await use(new OperateProcessesPage(page));
+	},
+	operateDecisionsPage: async ({page}, use) => {
+		await use(new OperateDecisionsPage(page));
 	},
 	adminIndexPage: async ({page}, use) => {
 		await use(new AdminIndexPage(page));
