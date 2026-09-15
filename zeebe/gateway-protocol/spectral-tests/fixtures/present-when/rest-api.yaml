@@ -33,7 +33,7 @@ components:
     ValidBooleanTrueResult:
       type: object
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Present only when withLease is true.
           type: string
           nullable: true
@@ -69,7 +69,7 @@ components:
     InvalidMissingEqualsResult:
       type: object
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marker without an equals literal.
           type: string
           nullable: true
@@ -80,7 +80,7 @@ components:
     InvalidMissingRequestResult:
       type: object
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marker without a request field.
           type: string
           nullable: true
@@ -91,7 +91,7 @@ components:
     InvalidEmptyRequestResult:
       type: object
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marker with an empty request field.
           type: string
           nullable: true
@@ -103,7 +103,7 @@ components:
     InvalidExtraPropertyResult:
       type: object
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marker with an unrecognised extra key.
           type: string
           nullable: true
@@ -116,7 +116,7 @@ components:
     InvalidArrayEqualsResult:
       type: object
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marker with an array equals value.
           type: string
           nullable: true
@@ -129,7 +129,7 @@ components:
     InvalidObjectEqualsResult:
       type: object
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marker with an object equals value.
           type: string
           nullable: true

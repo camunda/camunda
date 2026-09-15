@@ -106,7 +106,7 @@ public class AgentInstanceTenancyIT {
         .newUpdateAgentInstanceCommand(agentInstanceKeyA)
         .elementInstanceKey(elementInstanceKeyA)
         .jobKey(jobKeyA)
-        .jobLease(resultA.jobLease())
+        .jobLeaseToken(resultA.jobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -117,7 +117,7 @@ public class AgentInstanceTenancyIT {
                     .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job A so JobCompleteProcessor emits AGENT_HISTORY:COMMIT for its items.
-    adminClient.newCompleteCommand(jobKeyA).withLeaseToken(resultA.jobLease()).execute();
+    adminClient.newCompleteCommand(jobKeyA).withJobLeaseToken(resultA.jobLeaseToken()).execute();
 
     final var resultB = createAgentInstanceWithResult(adminClient, TENANT_B);
     agentInstanceKeyB = resultB.agentInstanceKey();
@@ -129,7 +129,7 @@ public class AgentInstanceTenancyIT {
         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
         .elementInstanceKey(elementInstanceKeyB)
         .jobKey(jobKeyB)
-        .jobLease(resultB.jobLease())
+        .jobLeaseToken(resultB.jobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -140,7 +140,7 @@ public class AgentInstanceTenancyIT {
                     .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job B so its history items also transition to COMMITTED.
-    adminClient.newCompleteCommand(jobKeyB).withLeaseToken(resultB.jobLease()).execute();
+    adminClient.newCompleteCommand(jobKeyB).withJobLeaseToken(resultB.jobLeaseToken()).execute();
 
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyA);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyB);
@@ -232,7 +232,7 @@ public class AgentInstanceTenancyIT {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(1L)
-                        .jobLease("test-job-lease")
+                        .jobLeaseToken("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(
@@ -261,7 +261,7 @@ public class AgentInstanceTenancyIT {
                         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(1L)
-                        .jobLease("test-job-lease")
+                        .jobLeaseToken("test-job-lease")
                         .execute())
             .actual();
 
@@ -325,7 +325,7 @@ public class AgentInstanceTenancyIT {
                         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(jobKeyB)
-                        .jobLease("test-job-lease")
+                        .jobLeaseToken("test-job-lease")
                         .history(
                             List.of(
                                 new AgentInstanceHistoryItem()
@@ -413,21 +413,22 @@ public class AgentInstanceTenancyIT {
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
     final long jobKey = activatedJobs.get(0).getKey();
-    final String jobLease = activatedJobs.get(0).getLeaseToken();
+    final String jobLeaseToken = activatedJobs.get(0).getJobLeaseToken();
 
     final var agentInstanceKey =
         client
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .jobLease(jobLease)
+            .jobLeaseToken(jobLeaseToken)
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
             .execute()
             .getAgentInstanceKey();
 
-    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey, jobLease);
+    return new AgentInstanceCreationResult(
+        agentInstanceKey, elementInstanceKey, jobKey, jobLeaseToken);
   }
 
   private static AgentInstanceHistoryItem configurationHistoryItem(
@@ -444,5 +445,5 @@ public class AgentInstanceTenancyIT {
   }
 
   private record AgentInstanceCreationResult(
-      long agentInstanceKey, long elementInstanceKey, long jobKey, String jobLease) {}
+      long agentInstanceKey, long elementInstanceKey, long jobKey, String jobLeaseToken) {}
 }

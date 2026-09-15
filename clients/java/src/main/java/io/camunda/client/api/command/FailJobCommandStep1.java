@@ -64,7 +64,8 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
     /**
      * Sets the lease token identifying the job's activation, fencing this command against a
      * superseded activation of the same job. Obtain it from {@link
-     * io.camunda.client.api.response.ActivatedJob#getLeaseToken() ActivatedJob#getLeaseToken()}.
+     * io.camunda.client.api.response.ActivatedJob#getJobLeaseToken()
+     * ActivatedJob#getJobLeaseToken()}.
      *
      * <p>For a leased job, the matching token must be supplied to prove the command comes from the
      * worker that holds the current lease; a command with no token is rejected. A command carrying
@@ -76,11 +77,11 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
      * newFailCommand(activatedJob)}) the job's lease token is carried automatically, so this method
      * is only needed when building the command from a job key.
      *
-     * @param leaseToken the opaque lease token the worker received when the job was activated
+     * @param jobLeaseToken the opaque lease token the worker received when the job was activated
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    FailJobCommandStep2 withLeaseToken(String leaseToken);
+    FailJobCommandStep2 withJobLeaseToken(String jobLeaseToken);
 
     /**
      * Set the variables of this job.

@@ -34,7 +34,7 @@ class AgentInstanceRequestValidatorTest {
   private static final String AGENT_INSTANCE_KEY = "9007199254741017";
   private static final String ELEMENT_INSTANCE_KEY = "2251799813685248";
   private static final String JOB_KEY = "2251799813685249";
-  private static final String JOB_LEASE = "lease-token-1";
+  private static final String JOB_LEASE_TOKEN = "lease-token-1";
 
   private final AgentInstanceRequestValidator validator = new AgentInstanceRequestValidator();
 
@@ -50,7 +50,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
 
       final Optional<ProblemDetail> result =
@@ -66,7 +66,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(null)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
 
       final Optional<ProblemDetail> result =
@@ -83,7 +83,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(null)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
 
       final Optional<ProblemDetail> result =
@@ -94,37 +94,37 @@ class AgentInstanceRequestValidatorTest {
     }
 
     @Test
-    @DisplayName("Should reject missing (null) jobLease")
-    void shouldRejectNullJobLeaseOnUpdate() {
+    @DisplayName("Should reject missing (null) jobLeaseToken")
+    void shouldRejectNullJobLeaseTokenOnUpdate() {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(null)
+              .jobLeaseToken(null)
               .build();
 
       final Optional<ProblemDetail> result =
           validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
 
       assertThat(result).isPresent();
-      assertThat(result.get().getDetail()).isEqualTo("No jobLease provided.");
+      assertThat(result.get().getDetail()).isEqualTo("No jobLeaseToken provided.");
     }
 
     @Test
-    @DisplayName("Should reject blank jobLease")
-    void shouldRejectBlankJobLeaseOnUpdate() {
+    @DisplayName("Should reject blank jobLeaseToken")
+    void shouldRejectBlankJobLeaseTokenOnUpdate() {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease("   ")
+              .jobLeaseToken("   ")
               .build();
 
       final Optional<ProblemDetail> result =
           validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
 
       assertThat(result).isPresent();
-      assertThat(result.get().getDetail()).isEqualTo("No jobLease provided.");
+      assertThat(result.get().getDetail()).isEqualTo("No jobLeaseToken provided.");
     }
   }
 
@@ -140,7 +140,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -170,7 +170,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -201,7 +201,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -232,7 +232,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -264,7 +264,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -294,7 +294,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -337,7 +337,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -368,7 +368,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(null)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -399,7 +399,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey("not-a-number")
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -433,7 +433,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -464,7 +464,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -489,7 +489,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -520,7 +520,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -554,7 +554,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey("not-a-number")
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
 
       final Optional<ProblemDetail> result =
@@ -574,7 +574,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       final var history = new ArrayList<AgentInstanceHistoryItem>();
       history.add(null);
@@ -594,7 +594,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -626,7 +626,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -658,7 +658,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -690,7 +690,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -723,7 +723,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -755,7 +755,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -793,7 +793,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -825,7 +825,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -868,7 +868,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -906,7 +906,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -944,7 +944,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -982,7 +982,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -1020,7 +1020,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -1052,7 +1052,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -1084,7 +1084,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -1146,7 +1146,7 @@ class AgentInstanceRequestValidatorTest {
       return AgentInstanceCreationRequest.Builder.create()
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(jobKey)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(history)
           .build();
     }
@@ -1158,7 +1158,7 @@ class AgentInstanceRequestValidatorTest {
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(null)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .history(
                   List.of(
                       AgentInstanceHistoryItem.Builder.create()
@@ -1306,37 +1306,37 @@ class AgentInstanceRequestValidatorTest {
     }
 
     @Test
-    @DisplayName("Should reject missing (null) jobLease on create")
-    void shouldRejectNullJobLeaseOnCreate() {
+    @DisplayName("Should reject missing (null) jobLeaseToken on create")
+    void shouldRejectNullJobLeaseTokenOnCreate() {
       final var request =
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(null)
+              .jobLeaseToken(null)
               .history(validRequest(JOB_KEY).getHistory())
               .build();
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
       assertThat(result).isPresent();
-      assertThat(result.get().getDetail()).isEqualTo("No jobLease provided.");
+      assertThat(result.get().getDetail()).isEqualTo("No jobLeaseToken provided.");
     }
 
     @Test
-    @DisplayName("Should reject blank jobLease on create")
-    void shouldRejectBlankJobLeaseOnCreate() {
+    @DisplayName("Should reject blank jobLeaseToken on create")
+    void shouldRejectBlankJobLeaseTokenOnCreate() {
       final var request =
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease("   ")
+              .jobLeaseToken("   ")
               .history(validRequest(JOB_KEY).getHistory())
               .build();
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
       assertThat(result).isPresent();
-      assertThat(result.get().getDetail()).isEqualTo("No jobLease provided.");
+      assertThat(result.get().getDetail()).isEqualTo("No jobLeaseToken provided.");
     }
 
     @Test

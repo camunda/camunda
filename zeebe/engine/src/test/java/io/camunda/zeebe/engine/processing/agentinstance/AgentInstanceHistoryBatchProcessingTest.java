@@ -1202,7 +1202,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected to update agent instance related to job with key '%d', but no jobLease was "
+            "Expected to update agent instance related to job with key '%d', but no jobLeaseToken was "
                     .formatted(jobKey)
                 + "provided. A command must always carry the lease its job was activated with.");
   }

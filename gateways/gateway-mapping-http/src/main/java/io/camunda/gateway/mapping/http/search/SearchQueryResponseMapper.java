@@ -2315,7 +2315,7 @@ public final class SearchQueryResponseMapper {
         .agentInstanceKey(keyToString(entity.agentInstanceKey()))
         .elementInstanceKey(keyToString(entity.elementInstanceKey()))
         .jobKey(keyToString(entity.jobKey()))
-        .jobLease(entity.jobLease())
+        .jobLeaseToken(entity.jobLease())
         .loopIteration(entity.loopIteration())
         .role(AgentInstanceHistoryRoleEnum.fromValue(entity.role().name()))
         .content(content)

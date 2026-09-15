@@ -50,7 +50,7 @@ public final class UpdateAgentInstanceTest {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(1L)
             .jobKey(1L)
-            .jobLease("test-job-lease")
+            .jobLeaseToken("test-job-lease")
             .send();
 
     // then
@@ -73,7 +73,7 @@ public final class UpdateAgentInstanceTest {
             .newUpdateAgentInstanceCommand(nonExistingKey)
             .elementInstanceKey(1L)
             .jobKey(1L)
-            .jobLease("test-job-lease")
+            .jobLeaseToken("test-job-lease")
             .send();
 
     // then

@@ -114,7 +114,7 @@ public class AgentInstanceSearchIT {
         .elementInstanceKey(ei1)
         .status(AgentInstanceUpdateStatus.THINKING)
         .jobKey(created1.jobKey())
-        .jobLease(created1.jobLease())
+        .jobLeaseToken(created1.jobLeaseToken())
         .send()
         .join();
 
@@ -192,7 +192,7 @@ public class AgentInstanceSearchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .jobLease(activatedJob.getLeaseToken())
+            .jobLeaseToken(activatedJob.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -209,7 +209,7 @@ public class AgentInstanceSearchIT {
             .getAgentInstanceKey();
 
     return new CreatedAgentInstance(
-        agentInstanceKey, activatedJob.getKey(), activatedJob.getLeaseToken());
+        agentInstanceKey, activatedJob.getKey(), activatedJob.getJobLeaseToken());
   }
 
   private static long fetchAgentDefinitionKey(final long agentInstanceKey) {
@@ -530,5 +530,5 @@ public class AgentInstanceSearchIT {
     assertThat(page1Keys).doesNotContainAnyElementsOf(page2Keys);
   }
 
-  private record CreatedAgentInstance(long agentInstanceKey, long jobKey, String jobLease) {}
+  private record CreatedAgentInstance(long agentInstanceKey, long jobKey, String jobLeaseToken) {}
 }
