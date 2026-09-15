@@ -27,7 +27,8 @@ public final class SecretReferenceProcessors {
       final ProcessingState processingState,
       final IncidentMetrics incidentMetrics,
       final SecretResolutionScheduler secretResolutionScheduler,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final boolean defaultSecretStoreConfigured) {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_COMPLETE,
@@ -47,7 +48,7 @@ public final class SecretReferenceProcessors {
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_CREATE_INCIDENTS,
         new SecretReferenceBatchCreateIncidentsProcessor(
-            writers, keyGenerator, processingState, incidentMetrics));
+            writers, keyGenerator, processingState, incidentMetrics, defaultSecretStoreConfigured));
 
     typedRecordProcessors.withListener(secretResolutionScheduler);
   }
