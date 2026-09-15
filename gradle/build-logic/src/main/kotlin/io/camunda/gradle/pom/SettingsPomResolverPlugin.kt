@@ -2,7 +2,6 @@ package io.camunda.gradle.pom
 
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
-import java.io.File
 
 class SettingsPomResolverPlugin : Plugin<Settings> {
   override fun apply(settings: Settings) {
@@ -11,7 +10,11 @@ class SettingsPomResolverPlugin : Plugin<Settings> {
 }
 
 open class SettingsPomResolver(private val settings: Settings) {
-  private fun readPom(relativePath: String): String = File(settings.rootDir, relativePath).readText()
+  private fun readPom(relativePath: String): String =
+    settings.providers
+      .fileContents(settings.layout.rootDirectory.file(relativePath))
+      .asText
+      .get()
 
   fun pom(relativePath: String): PomResolver = PomResolver(readPom(relativePath))
 
