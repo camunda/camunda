@@ -50,8 +50,9 @@ global:
       # limitation in how the Keycloak Operator works.
       url:
         protocol: http
-        host: __NAMESPACE__.keycloak-operator.svc
+        host: keycloak # Keycloak Kubernetes Service
         port: '18080'
+
   security:
     authentication:
       method: oidc

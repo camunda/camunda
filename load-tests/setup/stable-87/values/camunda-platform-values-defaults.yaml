@@ -60,7 +60,7 @@ global:
       # limitation in how the Keycloak Operator works.
       url:
         protocol: http
-        host: __NAMESPACE__.keycloak-operator.svc
+        host: keycloak # Keycloak Kubernetes Service
         port: '18080'
   # To override the names - and remove the release name from the names
   # Allows shorter names like zeebe-0, zeebe-1, etc.
