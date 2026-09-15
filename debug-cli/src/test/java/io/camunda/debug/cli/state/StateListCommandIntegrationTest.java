@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
-class StateListCommandTest {
+class StateListCommandIntegrationTest {
 
   @TempDir Path tempDir;
 
@@ -150,7 +150,7 @@ class StateListCommandTest {
     }
 
     final var values =
-        format.chars().mapToObj(StateListCommandTest::valueFor).toArray(DbValue[]::new);
+        format.chars().mapToObj(StateListCommandIntegrationTest::valueFor).toArray(DbValue[]::new);
     final var key = new UnsafeBuffer(new byte[valuesLength(values)]);
     var offset = 0;
     for (final var value : values) {
