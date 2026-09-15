@@ -6,17 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AgentInstanceDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  AgentInstanceDefinition,
+  Variable,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {InstanceMock} from '.';
-
-type FixtureOnlyAgentInstanceDefinition = AgentInstanceDefinition & {
-  prototypeSystemPromptEvidence: {
-    type: string;
-    promptId: string;
-    binding: string;
-    version: string;
-  };
-};
 
 const PROCESS_INSTANCE_KEY = '2251799813700001';
 const PROCESS_DEFINITION_KEY = '2251799813700000';
@@ -103,39 +97,55 @@ const automaticApprovalXml = manualReviewXml.replace(
   'name="Automatic approval"',
 );
 
-const agentDefinitionVersionOne: FixtureOnlyAgentInstanceDefinition = {
+const systemPromptVersionOne =
+  'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nRoute ambiguous damage descriptions to manual review, even when timestamped photos are complete.\n\nReturn only a JSON object with decision, rationale, and instructionVersion.\nSet instructionVersion to GOVERNED-V1.\nSet decision to manual-review for that route.\n\nExplain the decision using only the supplied claim record and approved tools.';
+
+const systemPromptVersionTwo =
+  'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nPermit automatic approval for ambiguous damage descriptions when timestamped photos are complete.\n\nReturn only a JSON object with decision, rationale, and instructionVersion.\nSet instructionVersion to GOVERNED-V2.\nSet decision to automatic-approval.\n\nExplain the decision using only the supplied claim record and approved tools.';
+
+const agentDefinitionVersionOne: AgentInstanceDefinition = {
   model: 'gpt-4o',
   provider: 'openai',
   systemPrompt: [
     {
       contentType: 'TEXT',
-      text: 'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nRoute ambiguous damage descriptions to manual review, even when timestamped photos are complete.\n\nReturn only a JSON object with decision, rationale, and instructionVersion.\nSet instructionVersion to GOVERNED-V1.\nSet decision to manual-review for that route.\n\nExplain the decision using only the supplied claim record and approved tools.',
+      text: 'AgentInstance definition prompt is not used by governed prompt evidence.',
     },
   ],
-  prototypeSystemPromptEvidence: {
-    type: 'Linked',
-    promptId: 'claims-review-instructions.md',
-    binding: 'Latest',
-    version: '1',
-  },
 };
 
-const agentDefinitionVersionTwo: FixtureOnlyAgentInstanceDefinition = {
+const agentDefinitionVersionTwo: AgentInstanceDefinition = {
   model: 'gpt-4o',
   provider: 'openai',
   systemPrompt: [
     {
       contentType: 'TEXT',
-      text: 'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nPermit automatic approval for ambiguous damage descriptions when timestamped photos are complete.\n\nReturn only a JSON object with decision, rationale, and instructionVersion.\nSet instructionVersion to GOVERNED-V2.\nSet decision to automatic-approval.\n\nExplain the decision using only the supplied claim record and approved tools.',
+      text: 'AgentInstance definition prompt is not used by governed prompt evidence.',
     },
   ],
-  prototypeSystemPromptEvidence: {
-    type: 'Linked',
-    promptId: 'claims-review-instructions.md',
-    binding: 'Latest',
-    version: '2',
-  },
 };
+
+const createAgentResultVariable = (
+  version: number,
+  prompt: string,
+): Variable => ({
+  variableKey: `225179981370010${version}`,
+  name: 'agent',
+  value: JSON.stringify({
+    systemPrompt: {
+      type: 'linked',
+      promptId: 'claims-review-instructions.md',
+      binding: 'latest',
+      version,
+      prompt,
+    },
+  }),
+  isTruncated: false,
+  tenantId: '<default>',
+  processInstanceKey: PROCESS_INSTANCE_KEY,
+  scopeKey: PROCESS_INSTANCE_KEY,
+  rootProcessInstanceKey: PROCESS_INSTANCE_KEY,
+});
 
 const agentLimits = {
   maxModelCalls: 10,
@@ -269,7 +279,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
       },
     ],
   },
-  variables: [],
+  variables: [createAgentResultVariable(1, systemPromptVersionOne)],
   agentInstances: {
     items: [
       {
@@ -663,7 +673,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
       },
     ],
   },
-  variables: [],
+  variables: [createAgentResultVariable(2, systemPromptVersionTwo)],
   agentInstances: {
     items: [
       {
