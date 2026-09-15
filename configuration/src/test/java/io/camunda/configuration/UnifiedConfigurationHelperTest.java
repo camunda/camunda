@@ -197,6 +197,25 @@ class UnifiedConfigurationHelperTest {
     assertThat(result).isEqualTo(newValue);
   }
 
+  // the new property has no value at all (no default, not declared) -> the legacy value wins
+  // instead of being reported as a conflict
+  @Test
+  void testFallbackToLegacyValueWhenNewValueIsUnset() {
+    // given
+    final String newValue = null;
+    final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
+
+    // when
+    setPropertyValues("legacy.prop1", "legacyValue");
+    setPropertyValues("legacy.prop2", "legacyValue");
+
+    // then
+    final String result =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            NEW_PROPERTY, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES);
+    assertThat(result).isEqualTo("legacyValue");
+  }
+
   @Test
   void testFallbackWrongFlagsConfiguration() {
     // given
