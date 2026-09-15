@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: get_project_count
-        uses: octokit/graphql-action@v2.3.3
+        uses: octokit/graphql-action@f7836e89a7e5bac63911bbe9653c21147b3d9bc3 # v2.3.3
         with:
           # API https://docs.github.com/en/graphql/reference/objects#issue
           query: |
@@ -37,14 +37,14 @@ jobs:
       - id: add-to-zdp
         name: Add to ZDP project
         if: ${{ steps.has-project.outputs.result == 'false' }}
-        uses: actions/add-to-project@v1.0.2
+        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/92
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/zeebe
       - id: add-to-zpa
         name: Add to ZPA project
-        uses: actions/add-to-project@v1.0.2
+        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/29
@@ -52,7 +52,7 @@ jobs:
           labeled: component/zeebe
       - id: add-to-operate
         name: Add to Operate project
-        uses: actions/add-to-project@v1.0.2
+        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/24
@@ -60,7 +60,7 @@ jobs:
           labeled: component/operate
       - id: add-to-hto
         name: Add to HTO project
-        uses: actions/add-to-project@v1.0.2
+        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/41
@@ -68,7 +68,7 @@ jobs:
           labeled: component/tasklist
       - id: add-to-optimize
         name: Add to Optimize project
-        uses: actions/add-to-project@v1.0.2
+        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/101

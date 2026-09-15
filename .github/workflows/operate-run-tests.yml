@@ -20,10 +20,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -34,7 +34,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_PSW;
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: "adopt"
           java-version: "21"
@@ -43,7 +43,7 @@ jobs:
         with:
           maven-cache-key-modifier: operate-tests
       - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.0.0
+        uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
         with:
           githubServer: false
           servers: |

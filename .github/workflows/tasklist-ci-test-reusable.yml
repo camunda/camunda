@@ -81,7 +81,7 @@ jobs:
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
-        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
         with:
           branch: ${{ inputs.branch }}
           max_length: '50'
@@ -98,7 +98,7 @@ jobs:
 
       # Upload JaCoCo report
       - name: Upload JaCoCo report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ (success() || failure()) }}
         with:
           name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.database }}
