@@ -298,7 +298,7 @@ public class RestoreManager implements CloseableSilently {
   }
 
   private Set<InstrumentedRaftPartition> collectPartitions() {
-    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
+    final var raftPartitionFactory = new RaftPartitionFactory(physicalTenantConfiguration);
     return partitions.stream()
         .map(metadata -> createRaftPartition(metadata, raftPartitionFactory))
         .collect(Collectors.toSet());
