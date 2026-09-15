@@ -70,7 +70,6 @@ Common options:
 - `--start <time> --end <time>`: exact reporting window. The duration is derived from
   the two timestamps.
 - `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
-- `--token <token>`: bearer token for Prometheus.
 - `--user <user> --password <password>`: basic auth credentials for Prometheus.
 - `--format json|csv|tsv`: output format. Default: `json`.
 - `--no-header`: omit the CSV or TSV header row for direct spreadsheet row pasting.
@@ -207,4 +206,3 @@ uv run load-test-report c8-ck-baseline-20260814 \
   --password "$PROM_PASS" \
   --format csv > /tmp/load-test-report.csv
 ```
-
