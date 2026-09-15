@@ -9,7 +9,6 @@
 import {useId, useMemo, useState} from 'react';
 import type {
   AgentInstance,
-  AgentInstanceDefinition,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {Accordion, AccordionItem, Tag} from '@carbon/react';
@@ -47,6 +46,7 @@ import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {AvailableTools} from './AvailableTools';
 import {getTotalTokens} from './getTotalTokens';
+import {useSystemPromptEvidence} from './useSystemPromptEvidence';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   UNKNOWN: 'Unknown',
@@ -82,18 +82,6 @@ type AgentDetailsProps = {
   isError: boolean;
 };
 
-type FixtureOnlyPromptEvidence = {
-  type: string;
-  promptId: string;
-  binding: string;
-  version: string;
-};
-
-type AgentInstanceDefinitionWithFixtureOnlyPromptEvidence =
-  AgentInstanceDefinition & {
-    prototypeSystemPromptEvidence?: FixtureOnlyPromptEvidence;
-  };
-
 const AgentDetails: React.FC<AgentDetailsProps> = ({
   selectedElementInstanceKey,
   agentInstances,
@@ -118,6 +106,11 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
       ) ?? null,
     [agentInstances, currentAgentInstanceKey],
   );
+  const {data: promptEvidence, isError: isPromptEvidenceError} =
+    useSystemPromptEvidence({
+      processInstanceKey: agentInstance?.processInstanceKey ?? '',
+      enabled: agentInstance !== null,
+    });
 
   const selectableAgentInstances = useMemo(
     () =>
@@ -144,9 +137,10 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
   const {metrics, limits, definition} = agentInstance;
   const totalTokens = getTotalTokens(metrics);
-  const promptEvidence = (
-    definition as AgentInstanceDefinitionWithFixtureOnlyPromptEvidence
-  ).prototypeSystemPromptEvidence;
+  const systemPrompt =
+    promptEvidence === null || promptEvidence === undefined
+      ? definition.systemPrompt
+      : [{contentType: 'TEXT' as const, text: promptEvidence.prompt}];
 
   const remainingAgentsCount =
     agentInstances.length < totalAgentsCount
@@ -257,7 +251,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             </SectionTitle>
           }
         >
-          {promptEvidence !== undefined && (
+          {promptEvidence !== undefined && promptEvidence !== null && (
             <PromptEvidence aria-label="System prompt evidence">
               <PromptEvidenceLabel>Type:</PromptEvidenceLabel>
               <PromptEvidenceValue>{promptEvidence.type}</PromptEvidenceValue>
@@ -271,14 +265,14 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
               </PromptEvidenceValue>
               <PromptEvidenceLabel>Version:</PromptEvidenceLabel>
               <PromptEvidenceValue>
-                {promptEvidence.version}
+                {promptEvidence.version.toLocaleString()}
               </PromptEvidenceValue>
             </PromptEvidence>
           )}
-          <ConversationMessage
-            actor="SYSTEM"
-            content={definition.systemPrompt}
-          />
+          {isPromptEvidenceError && (
+            <ErrorHint>Unable to load system prompt evidence.</ErrorHint>
+          )}
+          <ConversationMessage actor="SYSTEM" content={systemPrompt} />
         </AccordionItem>
         <AccordionItem
           data-testid="agent-available-tools-section"
