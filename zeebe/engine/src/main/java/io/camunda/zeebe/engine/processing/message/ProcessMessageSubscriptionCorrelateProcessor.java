@@ -126,6 +126,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
               record.getSubscriptionKey(),
               subscription.getRecord().getSubscriptionKey());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      sendRejectionCommand(command.getValue());
       return;
 
     } else if (hasAlreadyBeenCorrelated(record, subscription)) {
