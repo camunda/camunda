@@ -25,9 +25,18 @@ import org.jspecify.annotations.NullMarked;
  * that did not track exporting in the dynamic configuration keeps its paused partitions paused.
  *
  * <p>This initializer seeds every configured partition group from the legacy per-partition files.
- * Unlike the legacy configuration initializer, this has no after-restore branch: nothing currently
- * produces a restore change plan on {@link CurrentClusterConfiguration}, so the branch would be
- * unreachable and untested. Revisit once restore is migrated to the new model.
+ * Unlike the legacy configuration initializer, this has no after-restore branch, and needs none:
+ * post-restore this is always a no-op, because a restored configuration is generated from static
+ * configuration, whose exporting state is {@link ExportingState#EXPORTING} rather than {@link
+ * ExportingState#UNKNOWN} — the only state this modifier writes over. A restore change plan on
+ * {@link CurrentClusterConfiguration} is reachable (see {@link
+ * CurrentClusterConfiguration#isAfterRestore()}); it is the write that cannot happen.
+ *
+ * <p>Nor could the branch take the shape {@link PartitionGroupExporterStateInitializer}'s does. The
+ * states seeded here are read from this broker's own {@code .exporterPaused} files, so the
+ * coordinator has nothing to seed another member's partitions from and cannot reconcile on their
+ * behalf. Should a restored configuration ever carry {@link ExportingState#UNKNOWN}, this needs a
+ * mechanism of its own, not a copy of that one.
  *
  * <p>Not to be confused with {@link PartitionGroupExporterStateInitializer}, which reconciles the
  * per-exporter {@link io.camunda.zeebe.dynamic.config.state.ExporterState} (enabled/disabled)
