@@ -81,7 +81,7 @@ public class AuditLogIT {
                 b ->
                     b.filter(f -> f.entityTypes(original.entityType().name()))
                         .sort(s -> s)
-                        .page(p -> p.from(0).size(1000))));
+                        .page(p -> p.from(0).size(LIMIT))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items())
@@ -269,7 +269,7 @@ public class AuditLogIT {
 
     final var searchResult =
         auditLogReader.search(
-            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -313,7 +313,9 @@ public class AuditLogIT {
                             .resourceIds(List.of(processDefId1, processDefId2)))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -365,7 +367,7 @@ public class AuditLogIT {
 
     final var searchResult =
         auditLogReader.search(
-            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     // Should return all logs that have a process definition ID (including USER_TASKS)
     assertThat(searchResult.items())
@@ -416,7 +418,9 @@ public class AuditLogIT {
                             .resourceIds(List.of(processDefId1, processDefId2)))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -463,7 +467,9 @@ public class AuditLogIT {
                             .resourceIds(List.of("*")))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     // Should return all USER_TASKS category logs
     assertThat(searchResult.items())
@@ -523,7 +529,9 @@ public class AuditLogIT {
                                 .resourceIds(List.of(processDefId2))))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
