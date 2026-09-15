@@ -38,11 +38,15 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.common.PagedReads;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,6 +56,21 @@ import org.slf4j.LoggerFactory;
 public final class ManifestManager {
 
   public static final int PRECONDITION_FAILED = 412;
+
+  /**
+   * A sweep batch selects up to a thousand manifests; downloading them one blocking HTTP GET after
+   * another would cost that many sequential round trips. Bounded to the same width GCS and S3
+   * already use for the same reason.
+   */
+  static final int MANIFEST_READ_PARALLELISM = 16;
+
+  static final ObjectMapper MAPPER =
+      new ObjectMapper()
+          .registerModule(new Jdk8Module())
+          .registerModule(new JavaTimeModule())
+          .disable(WRITE_DATES_AS_TIMESTAMPS)
+          .setSerializationInclusion(Include.NON_ABSENT);
+
   private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
 
   /**
@@ -71,18 +90,18 @@ public final class ManifestManager {
 
   private static final int LIST_PAGE_SIZE = 1000;
 
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper()
-          .registerModule(new Jdk8Module())
-          .registerModule(new JavaTimeModule())
-          .disable(WRITE_DATES_AS_TIMESTAMPS)
-          .setSerializationInclusion(Include.NON_ABSENT);
   private volatile boolean containerCreated;
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final BlobContainerClient blobContainerClient;
+  private final Executor executor;
+  private final Semaphore manifestReadConcurrencyLimit = new Semaphore(MANIFEST_READ_PARALLELISM);
 
-  ManifestManager(final BlobContainerClient blobContainerClient, final boolean createContainer) {
+  ManifestManager(
+      final BlobContainerClient blobContainerClient,
+      final boolean createContainer,
+      final Executor executor) {
     this.blobContainerClient = blobContainerClient;
+    this.executor = executor;
     containerCreated = !createContainer;
   }
 
@@ -237,7 +256,8 @@ public final class ManifestManager {
 
   /**
    * Lists the page of manifests selected by the options. All matching blob names are enumerated
-   * page by page, but only the selected manifests are downloaded.
+   * page by page, but only the selected manifests are downloaded, up to {@link
+   * #manifestReadConcurrencyLimit} at a time.
    */
   public List<Manifest> listManifests(
       final BackupIdentifierWildcard wildcard, final ListOptions options) {
@@ -259,11 +279,20 @@ public final class ManifestManager {
             .ifPresent(id -> manifestBlobs.add(new ManifestBlob(id, blob.getName())));
       }
     }
-    return PagedReads.readPage(
-        manifestBlobs,
-        ManifestBlob::id,
-        options,
-        manifestBlob -> Optional.ofNullable(getManifestWithPath(manifestBlob.path())));
+    return PagedReads.readPageAsync(manifestBlobs, ManifestBlob::id, options, this::readManifest)
+        .join();
+  }
+
+  /**
+   * Downloads one manifest, bounded by {@link #manifestReadConcurrencyLimit}. Empty if it was
+   * deleted between listing and this read — retention's own deletes race with its next sweep, so
+   * this is expected, not a failure.
+   */
+  private CompletableFuture<Optional<Manifest>> readManifest(final ManifestBlob manifestBlob) {
+    return SemaphoreLeasedScheduler.schedule(
+        () -> Optional.ofNullable(getManifestWithPath(manifestBlob.path())),
+        executor,
+        manifestReadConcurrencyLimit);
   }
 
   public static String manifestPath(final Manifest manifest) {

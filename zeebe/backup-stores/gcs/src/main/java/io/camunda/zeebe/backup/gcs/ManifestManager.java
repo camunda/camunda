@@ -30,6 +30,7 @@ import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
+import io.camunda.zeebe.backup.common.PagedReads;
 import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
@@ -37,11 +38,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
@@ -212,13 +211,7 @@ public final class ManifestManager {
   /**
    * Lists the page of backup statuses selected by the options. All matching blobs are enumerated
    * page by page, but only the selected ones become statuses: from their metadata where present,
-   * otherwise by downloading the manifest.
-   *
-   * <p>Reads a checkpoint id at a time, in waves: every checkpoint id the page currently needs is
-   * read concurrently (bounded by {@link #manifestReadConcurrencyLimit}), and only if one comes
-   * back empty — its manifest was deleted between listing and this read — does a further wave read
-   * the next checkpoint id to refill the page. One vanished manifest costs one extra checkpoint id,
-   * not a short page silently mistaken for the end of the data.
+   * otherwise by downloading the manifest, up to {@link #manifestReadConcurrencyLimit} at a time.
    */
   public List<BackupStatus> listBackupStatuses(
       final BackupIdentifierWildcard wildcard, final ListOptions options) {
@@ -245,62 +238,23 @@ public final class ManifestManager {
           }
         });
 
-    final var byCheckpointId = new LinkedHashMap<Long, List<ManifestBlob>>();
-    for (final var manifestBlob : manifestBlobs) {
-      byCheckpointId
-          .computeIfAbsent(manifestBlob.id().checkpointId(), ignored -> new ArrayList<>())
-          .add(manifestBlob);
-    }
-    final var orderedCheckpointIds =
-        new ListOptions(options.order(), options.startExclusive(), OptionalInt.empty())
-            .selectCheckpointIds(byCheckpointId.keySet());
-
-    final var statuses = new ArrayList<BackupStatus>();
-    var remaining = options.limit().orElse(orderedCheckpointIds.size());
-    var index = 0;
-    while (remaining > 0 && index < orderedCheckpointIds.size()) {
-      final var window =
-          orderedCheckpointIds.subList(
-              index, Math.min(index + remaining, orderedCheckpointIds.size()));
-      index += window.size();
-      final var perCheckpointFutures =
-          window.stream()
-              .map(checkpointId -> readCheckpointStatuses(byCheckpointId.get(checkpointId)))
-              .toList();
-      CompletableFuture.allOf(perCheckpointFutures.toArray(CompletableFuture[]::new)).join();
-      for (final var future : perCheckpointFutures) {
-        final var resolved = future.join();
-        statuses.addAll(resolved);
-        if (!resolved.isEmpty()) {
-          remaining--;
-        }
-      }
-    }
+    final var statuses =
+        PagedReads.readPageAsync(manifestBlobs, ManifestBlob::id, options, this::readStatus).join();
     LOG.debug("Found {} matching backup statuses for wildcard {}", statuses.size(), wildcard);
     return statuses;
   }
 
   /**
-   * Reads every copy of one checkpoint id concurrently. A copy missing here was deleted between
-   * listing and this read — retention's own deletes race with its next sweep, so this is expected,
-   * not a failure. Skip it, like {@link #getManifest} does.
+   * Reads one blob's status: from its metadata where present, otherwise by downloading the
+   * manifest. Empty if the manifest was deleted between listing and this read — retention's own
+   * deletes race with its next sweep, so this is expected, not a failure. Skip it, like {@link
+   * #getManifest} does.
    */
-  private CompletableFuture<List<BackupStatus>> readCheckpointStatuses(
-      final List<ManifestBlob> manifestBlobs) {
-    final var futures =
-        manifestBlobs.stream()
-            .map(
-                manifestBlob ->
-                    ManifestMetadata.toBackupStatus(
-                            manifestBlob.blob(), basePath, MANIFEST_BLOB_NAME)
-                        .map(status -> CompletableFuture.completedFuture(Optional.of(status)))
-                        // Fallback: download the manifest for blobs without metadata
-                        .orElseGet(() -> downloadManifestStatus(manifestBlob.blob())))
-            .toList();
-    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
-        .thenApply(
-            ignored ->
-                futures.stream().map(CompletableFuture::join).flatMap(Optional::stream).toList());
+  private CompletableFuture<Optional<BackupStatus>> readStatus(final ManifestBlob manifestBlob) {
+    return ManifestMetadata.toBackupStatus(manifestBlob.blob(), basePath, MANIFEST_BLOB_NAME)
+        .map(status -> CompletableFuture.completedFuture(Optional.of(status)))
+        // Fallback: download the manifest for blobs without metadata
+        .orElseGet(() -> downloadManifestStatus(manifestBlob.blob()));
   }
 
   private void forEachManifestBlobPage(final String prefix, final Consumer<Page<Blob>> onPage) {
