@@ -726,7 +726,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  // Skipped due to bug #63043: https://github.com/camunda/camunda/issues/63043
+  // Skipped due to bug #59919: https://github.com/camunda/camunda/issues/59919
   //
   // Operate's v1 flow-node-metadata endpoint permanently reports
   // incident: null / incidentCount: 0 for a migrated flow-node instance,
@@ -736,7 +736,8 @@ test.describe.serial('Process Instance Migration', () => {
   // test retries. This was previously "fixed" twice by widening the test's
   // retry budget (#59920, then this test's own prior 6→12 attempt change) —
   // both attempts still failed after exhausting every retry, confirming the
-  // gap is permanent, not a timing lag. Re-enable once #63043 lands a real
+  // gap is permanent, not a timing lag. Same fingerprint as #63043 (the
+  // stable/8.7 manifestation). Re-enable once #59919 lands a real
   // backend/frontend fix.
   test.skip('Migrated tasks - Business rule task incident migration', async ({
     operateFiltersPanelPage,
