@@ -12,6 +12,8 @@ val esJavaVersion =
   versionCatalog.findVersion("co-elastic-clients-elasticsearch-java").get().requiredVersion
 val elasticsearchVersion = versionCatalog.findVersion("elasticsearch").get().requiredVersion
 val asmVersion = versionCatalog.findVersion("asm").get().requiredVersion
+val animalSnifferVersion =
+  versionCatalog.findVersion("animal-sniffer").get().requiredVersion
 val byteBuddyVersion = versionCatalog.findVersion("net-bytebuddy-byte-buddy").get().requiredVersion
 val httpcore5Version =
   versionCatalog.findVersion("org-apache-httpcomponents-core5-httpcore5").get().requiredVersion
@@ -158,6 +160,7 @@ configurations.all {
     "org.apache.tomcat.embed:tomcat-embed-el:$tomcatVersion",
     "org.apache.tomcat.embed:tomcat-embed-websocket:$tomcatVersion",
     "org.checkerframework:checker-qual:$checkerQualVersion",
+    "org.codehaus.mojo:animal-sniffer-annotations:$animalSnifferVersion",
     "org.javassist:javassist:$javassistVersion",
     "org.jetbrains.kotlin:kotlin-stdlib:$kotlinStdlibVersion",
     "com.google.errorprone:error_prone_annotations:$errorProneVersion",
