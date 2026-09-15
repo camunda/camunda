@@ -8,6 +8,8 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import model_validator
 
+from .errors import ReportError
+
 
 class Query(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
@@ -35,8 +37,13 @@ class QueriesDocument(BaseModel):
 
     @classmethod
     def from_file(cls, queries_file: Path, substitutions: Mapping[str, str]) -> Self:
-        raw_document = substitute_query_text(queries_file.read_text(encoding="utf-8"), substitutions)
-        parsed = yaml.safe_load(raw_document)
+        try:
+            raw_document = substitute_query_text(queries_file.read_text(encoding="utf-8"), substitutions)
+            parsed = yaml.safe_load(raw_document)
+        except OSError as error:
+            raise ReportError(f"Could not read query file '{queries_file}': {error}") from error
+        except yaml.YAMLError as error:
+            raise ReportError(f"Query file '{queries_file}' contains invalid YAML: {error}") from error
         return cls.model_validate(parsed)
 
 

@@ -255,14 +255,14 @@ def test_should_warn_when_query_fails():
             )
         ]
     )
-    client = FakePrometheusClient([ReportError("query failed")])
+    client = FakePrometheusClient([ReportError("Prometheus returned invalid JSON")])
     warnings = []
 
     report = build_report(options, query_document, client, warning_sink=warnings.append)
 
     assert report["metrics"]["throughput"] is None
     assert "missing" not in report
-    assert warnings == ["throughput: query failed"]
+    assert warnings == ["throughput: Prometheus returned invalid JSON"]
 
 
 def test_should_build_basic_auth_header():
@@ -301,6 +301,31 @@ def test_should_query_prometheus_with_urlencoded_query_and_headers():
     assert request.get_header("Authorization") == "Basic dXNlcjpwYXNz"
 
 
+def test_should_report_http_errors_from_prometheus():
+    with mock.patch.object(
+        prometheus,
+        "urlopen",
+        side_effect=prometheus.HTTPError(
+            "https://prometheus.example/api/v1/query",
+            401,
+            "Unauthorized",
+            {},
+            None,
+        ),
+    ):
+        client = PrometheusClient("https://prometheus.example", "user", "pass", "")
+
+        with pytest.raises(ReportError, match="HTTP 401 Unauthorized"):
+            client.query("up")
+
+
+def test_should_report_invalid_prometheus_endpoint():
+    client = PrometheusClient("not a URL", "", "", "")
+
+    with pytest.raises(ReportError, match="Could not reach Prometheus endpoint"):
+        prometheus.check_endpoint(client, "not a URL")
+
+
 def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
     queries_file = tmp_path / "queries.yaml"
     queries_file.write_text(
@@ -317,6 +342,14 @@ def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
 
     assert document.queries[0].key == "namespace"
     assert document.queries[0].query == 'namespace_metric{namespace="c8-ck-test"}'
+
+
+def test_should_reject_malformed_yaml_query_file(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: [", encoding="utf-8")
+
+    with pytest.raises(ReportError, match="contains invalid YAML"):
+        QueriesDocument.from_file(queries_file, {})
 
 
 def test_should_reject_empty_file(tmp_path):

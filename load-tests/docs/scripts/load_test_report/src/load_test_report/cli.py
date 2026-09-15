@@ -227,7 +227,10 @@ def run(argv: Sequence[str]) -> int:
         report = build_report(options, query_document, client)
         rendered = render_report(report, options.output_format, options.include_header, options.missing_value)
         if options.output_file:
-            options.output_file.write_text(f"{rendered}\n", encoding="utf-8")
+            try:
+                options.output_file.write_text(f"{rendered}\n", encoding="utf-8")
+            except OSError as error:
+                raise ReportError(f"Could not write output file '{options.output_file}': {error}") from error
         else:
             print(rendered)
         return 0

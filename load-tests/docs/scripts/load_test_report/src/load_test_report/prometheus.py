@@ -35,12 +35,14 @@ class PrometheusClient:
         return self._get_json(f"{self.endpoint}/api/v1/query?{urlencode(params)}")
 
     def _get_json(self, url: str, timeout: int = 30) -> Mapping[str, Any]:
-        request = Request(url, headers=self.headers)
         try:
+            request = Request(url, headers=self.headers)
             with urlopen(request, timeout=timeout) as response:
                 parsed = json.loads(response.read().decode("utf-8"))
-        except (HTTPError, URLError, TimeoutError, OSError) as error:
-            raise ReportError("query failed") from error
+        except HTTPError as error:
+            raise ReportError(f"Prometheus request failed with HTTP {error.code} {error.reason}") from error
+        except (URLError, TimeoutError, OSError, ValueError) as error:
+            raise ReportError(f"Prometheus request failed: {error}") from error
         except json.JSONDecodeError as error:
             raise ReportError(f"Prometheus returned invalid JSON: {error}") from error
         if not isinstance(parsed, Mapping):
@@ -62,7 +64,7 @@ def check_endpoint(client: PrometheusClient, endpoint: str) -> None:
     try:
         response = client.runtime_info()
     except ReportError as error:
-        raise ReportError(prometheus_endpoint_help(endpoint)) from error
+        raise ReportError(f"{prometheus_endpoint_help(endpoint)}\n\nReason: {error}") from error
     if response.get("status") != "success":
         raise ReportError(
             f"""Endpoint '{endpoint}' is reachable, but it did not return a Prometheus API success response.

@@ -95,9 +95,9 @@ def build_report(
             metrics[key] = extract_metric_value(response, query.value_label or "", key, warning_sink)
         except MissingMetric:
             metrics[key] = None
-        except ReportError:
+        except ReportError as error:
             metrics[key] = None
-            warning_sink(f"{key}: query failed")
+            warning_sink(f"{key}: {error}")
 
     return {
         "namespace": options.namespace,
