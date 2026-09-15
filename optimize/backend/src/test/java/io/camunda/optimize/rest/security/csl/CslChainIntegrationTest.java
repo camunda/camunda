@@ -207,11 +207,16 @@ class CslChainIntegrationTest {
               // return 200: CSL's OidcUserAuthenticationConverter#decodeAccessToken swallows the
               // JwtValidationException OptimizeIdentityPermissionValidator throws and falls back
               // to the id_token's claims instead of denying the request.
+              //
+              // The denial goes through the webapp chain's own AuthenticationEntryPoint, the same
+              // one an unauthenticated navigation hits (assertUnauthenticatedRejectedOnWebappPath),
+              // so the browser lands on the login instead of an empty 401 page.
               assertThat(response.getStatus())
                   .as(
                       "session with a no-longer-authorized access token on webapp path, body: %s",
                       response.getContentAsString())
-                  .isEqualTo(401);
+                  .isEqualTo(302);
+              assertThat(response.getHeader("Location")).isEqualTo("/oauth2/authorization/oidc");
               assertThat(downstream.getRequest()).isNull();
             });
   }
@@ -230,6 +235,8 @@ class CslChainIntegrationTest {
 
               proxy.doFilter(request, response, downstream);
 
+              // Counterpart to the webapp case: the API chain's entry point answers 401 rather
+              // than redirecting, so an API client gets a status it can act on.
               assertThat(response.getStatus())
                   .as(
                       "session with a no-longer-authorized access token on API path, body: %s",
@@ -244,8 +251,8 @@ class CslChainIntegrationTest {
       shouldRejectSessionOnWebappPathWithCleanUnauthorizedWhenAccessTokenCannotBeVerifiedForCcsm() {
     // CCSMTokenService#verifyAccessToken throws TokenVerificationException (not
     // NotAuthorizedException) directly for an invalid/expired token. Without the filter's broader
-    // catch this would propagate as an uncaught 500 instead of the clean 401 this filter exists to
-    // provide.
+    // catch this would propagate as an uncaught 500 instead of the clean denial this filter exists
+    // to provide.
     ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceWithUnverifiableSessionAccessToken)
         .run(
             ctx -> {
@@ -261,7 +268,7 @@ class CslChainIntegrationTest {
                   .as(
                       "session with an unverifiable access token on webapp path, body: %s",
                       response.getContentAsString())
-                  .isEqualTo(401);
+                  .isEqualTo(302);
               assertThat(downstream.getRequest()).isNull();
             });
   }

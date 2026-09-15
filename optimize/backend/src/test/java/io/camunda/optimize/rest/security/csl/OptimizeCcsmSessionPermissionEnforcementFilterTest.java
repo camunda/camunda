@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest.security.csl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -16,6 +17,7 @@ import io.camunda.identity.sdk.authentication.exception.TokenVerificationExcepti
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import java.util.Optional;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +27,7 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
@@ -85,7 +88,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   }
 
   @Test
-  void shouldInvalidateSessionAndRejectWhenTokenNoLongerAuthorized() throws Exception {
+  void shouldInvalidateSessionAndRejectWhenTokenNoLongerAuthorized() {
     // given
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
     doThrow(new NotAuthorizedException("no longer authorized"))
@@ -98,17 +101,20 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     final MockFilterChain chain = new MockFilterChain();
 
     // when
-    filter().doFilterInternal(request, response, chain);
+    final ThrowingCallable doFilter = () -> filter().doFilterInternal(request, response, chain);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(401);
+    // The exception is the denial: ExceptionTranslationFilter turns it into whatever the chain's
+    // own AuthenticationEntryPoint answers with (login redirect on the webapp chain, 401 on the
+    // API chain), which CslChainIntegrationTest covers.
+    assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
     assertThat(chain.getRequest()).as("rejected token must not reach downstream").isNull();
     assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     assertThat(request.getSession(false)).as("session must be invalidated").isNull();
   }
 
   @Test
-  void shouldRejectButKeepSessionWhenTokenCannotBeVerified() throws Exception {
+  void shouldRejectButKeepSessionWhenTokenCannotBeVerified() {
     // given
     // CCSMTokenService#verifyAccessToken throws TokenVerificationException (an IdentityException,
     // not a NotAuthorizedException) directly for an invalid/expired token, and equally when
@@ -125,16 +131,16 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     final MockFilterChain chain = new MockFilterChain();
 
     // when
-    filter().doFilterInternal(request, response, chain);
+    final ThrowingCallable doFilter = () -> filter().doFilterInternal(request, response, chain);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
     assertThat(chain.getRequest()).as("unverifiable token must not reach downstream").isNull();
     assertThat(request.getSession(false)).as("session must survive").isNotNull();
   }
 
   @Test
-  void shouldRejectButKeepSessionOnUnexpectedError() throws Exception {
+  void shouldRejectButKeepSessionOnUnexpectedError() {
     // given
     // A security boundary must fail closed on the unexpected rather than propagate it, mirroring
     // OptimizeIdentityPermissionValidator's final RuntimeException catch-all. Same as the
@@ -150,10 +156,10 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     final MockFilterChain chain = new MockFilterChain();
 
     // when
-    filter().doFilterInternal(request, response, chain);
+    final ThrowingCallable doFilter = () -> filter().doFilterInternal(request, response, chain);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
     assertThat(chain.getRequest()).as("unexpected error must not reach downstream").isNull();
     assertThat(request.getSession(false)).as("session must survive").isNotNull();
   }
