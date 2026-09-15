@@ -169,7 +169,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       final var repository = createRepository();
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations();
+      final var documents = repository.getNotFinishedBatchOperations(100);
 
       // then
       assertThat(documents)
@@ -187,7 +187,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       createBatchOperationEntity("3", null, BatchOperationState.ACTIVE, 5);
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations();
+      final var documents = repository.getNotFinishedBatchOperations(100);
 
       // then the update task can tell how many items the batch operation has, and whether it is
       // finished, without a second request
@@ -204,7 +204,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       createBatchOperationEntity("1", null, BatchOperationState.COMPLETED, 0);
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations();
+      final var documents = repository.getNotFinishedBatchOperations(100);
 
       // then
       assertThat(documents)

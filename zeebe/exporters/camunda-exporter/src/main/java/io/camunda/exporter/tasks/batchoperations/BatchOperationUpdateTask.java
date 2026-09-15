@@ -27,14 +27,17 @@ public class BatchOperationUpdateTask implements BackgroundTask {
   private static final int NO_UPDATES = 0;
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
 
+  private final int batchSize;
   private final Logger logger;
   private final Executor executor;
 
   public BatchOperationUpdateTask(
       final BatchOperationUpdateRepository batchOperationUpdateRepository,
+      final int batchSize,
       final Logger logger,
       final Executor executor) {
     this.batchOperationUpdateRepository = batchOperationUpdateRepository;
+    this.batchSize = batchSize;
     this.logger = logger;
     this.executor = executor;
   }
@@ -42,7 +45,7 @@ public class BatchOperationUpdateTask implements BackgroundTask {
   @Override
   public CompletionStage<Integer> execute() {
     return batchOperationUpdateRepository
-        .getNotFinishedBatchOperations()
+        .getNotFinishedBatchOperations(batchSize)
         .thenComposeAsync(this::updateBatchOperations, executor);
   }
 
