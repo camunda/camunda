@@ -26,6 +26,14 @@ inputs:
     required: false
     default: warn
 
+outputs:
+  retried:
+    description: >
+      `true` when the first upload attempt failed and a retry was needed.
+      Exposed so a caller can detect an absorbed failure that left the job
+      green.
+    value: ${{ steps.attempt-1.outcome == 'failure' }}
+
 runs:
   using: composite
   # GitHub Actions has no retry primitive for a `uses:` step, so each attempt is
@@ -61,7 +69,10 @@ runs:
     - name: Wait before attempt 2
       if: steps.attempt-1.outcome == 'failure'
       shell: bash
-      run: sleep 10
+      # Jittered: matrix shards reach their upload step at nearly the same
+      # moment, so a fixed wait would have them all retry in lockstep and
+      # re-create the burst that a throttling-shaped 403 punishes.
+      run: sleep $(( 10 + RANDOM % 10 ))
 
     - name: Upload artifact (attempt 2 of 3)
       id: attempt-2
@@ -79,9 +90,11 @@ runs:
     - name: Wait before attempt 3
       if: steps.attempt-2.outcome == 'failure'
       shell: bash
-      run: sleep 10
+      # Jittered for the same reason as the wait before attempt 2.
+      run: sleep $(( 10 + RANDOM % 10 ))
 
     - name: Upload artifact (attempt 3 of 3)
+      id: attempt-3
       if: steps.attempt-2.outcome == 'failure'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
@@ -91,3 +104,26 @@ runs:
         include-hidden-files: ${{ inputs.include-hidden-files }}
         if-no-files-found: ${{ inputs.if-no-files-found }}
         overwrite: true
+
+    # A retry that succeeds leaves the job green, so without this the only
+    # trace is a collapsed failed step nobody opens. Surfacing it in the run
+    # summary keeps a rising rate of absorbed failures -- a sub-outage
+    # degradation of artifact storage -- visible instead of silent.
+    - name: Report absorbed retries
+      if: ${{ !cancelled() && steps.attempt-1.outcome == 'failure' }}
+      shell: bash
+      env:
+        ARTIFACT_NAME: ${{ inputs.name }}
+        ATTEMPT_2_OUTCOME: ${{ steps.attempt-2.outcome }}
+        ATTEMPT_3_OUTCOME: ${{ steps.attempt-3.outcome }}
+      run: |
+        if [ "$ATTEMPT_2_OUTCOME" = "success" ]; then
+          attempts=2
+        elif [ "$ATTEMPT_3_OUTCOME" = "success" ]; then
+          attempts=3
+        else
+          attempts="all 3"
+        fi
+        echo "::warning::Artifact '${ARTIFACT_NAME}' needed ${attempts} upload attempt(s)."
+        echo "Artifact \`${ARTIFACT_NAME}\` needed ${attempts} upload attempt(s)." \
+          >> "$GITHUB_STEP_SUMMARY"

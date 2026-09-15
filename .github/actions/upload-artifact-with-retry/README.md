@@ -41,15 +41,27 @@ Retries in a workflow are normally shell-command-only
 
 ### Outputs
 
-None. `upload-artifact`'s own outputs (`artifact-id`, `artifact-url`, `artifact-digest`) are not
+|  Output   |                         Description                         |
+|-----------|-------------------------------------------------------------|
+| `retried` | `true` when the first attempt failed and a retry was needed |
+
+`retried` exists because a successful retry leaves the job green, which makes an absorbed failure
+invisible to anything reading the job conclusion. The action also emits a warning annotation and a
+run-summary line in that case, so a rising rate of absorbed failures — artifact storage degrading
+short of an outage — is visible rather than silent.
+
+`upload-artifact`'s own outputs (`artifact-id`, `artifact-url`, `artifact-digest`) are not
 forwarded — no caller needs them. Forwarding them would also be misleading here, since which
 attempt produced the value is not visible to the caller.
 
 ## Notes
 
-- **Three attempts, 10s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
+- **Three attempts, 10–20s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
   composite action has no loop, so `max_attempts` would have to change the number of steps in the
   file. Change the count by adding or removing an attempt block.
+- **The backoff is jittered (`10 + RANDOM % 10`).** Matrix shards reach their upload step at
+  nearly the same moment, so a fixed wait would have every shard retry in the same instant and
+  re-create the burst that a throttling-shaped 403 punishes.
 - **`overwrite: true` is load-bearing, not cosmetic.** A failed attempt leaves the artifact name
   reserved, so the next attempt would fail with `Failed to CreateArtifact: (409) Conflict` — also
   non-retryable, which makes the 403-then-409 sequence terminal. This is the failure mode
@@ -64,7 +76,7 @@ attempt produced the value is not visible to the caller.
   ([upload-artifact#769](https://github.com/actions/upload-artifact/issues/769)).
 - **This protects against a blip, not an outage.** The four INC-7913 failures fell inside a ~57
   second window, each refused within 1–20s, while sibling shards of the same matrix uploaded
-  successfully — three attempts 10s apart absorb that. They do not absorb a sustained outage: the
+  successfully — three attempts 10–20s apart absorb that. They do not absorb a sustained outage: the
   throttling window behind INC-7723 lasted 30 minutes, and no attempt count would have saved
   those jobs. Do not reach for these actions expecting otherwise.
 - **Editing one attempt means editing all three.** The `with:` blocks must stay identical,
@@ -85,10 +97,14 @@ attempt produced the value is not visible to the caller.
   alongside the real one.
 - **A retry is cheap on a green run but not free on a red one.** Attempts 2 and 3 report `skipped`
   when the upload succeeds, so a passing job pays nothing. A genuinely broken upload (a bad
-  `path`, say) costs all three attempts plus 20s of sleep before the job reports red.
+  `path`, say) costs all three attempts plus up to 40s of sleep before the job reports red.
 - **Retrying the upload does not make a lost artifact visible.** If an artifact goes missing
-  anyway, a consumer that globs for it can silently proceed with fewer files — assert the expected
-  count at the consuming end rather than trusting the upload.
+  anyway, a consumer that globs for it can silently proceed with fewer files. Assert at the
+  consuming end rather than trusting the upload — and assert each expected artifact *by name*, not
+  by counting files, so an unrelated extra file cannot stand in for a missing one. The Operate
+  report-merge jobs in [`ci-operate.yml`](../../workflows/ci-operate.yml) do this, deriving the
+  expected shard count from the producing job's `shard-total` output so the assertion tracks the
+  matrix instead of duplicating it.
 
 ## Example
 
