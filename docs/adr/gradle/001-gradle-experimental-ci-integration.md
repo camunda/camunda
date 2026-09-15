@@ -49,7 +49,8 @@ Maven remains authoritative.
 
 Gradle must never contain a free-standing version for a library, tool, BOM, buildscript dependency,
 convention-plugin dependency, or version-catalog entry. Versions must come from Maven or be omitted
-when an already-represented BOM manages them.
+when an already-represented BOM manages them. The Gradle wrapper distribution version is the
+exception: it is a separate bootstrap setting, not a Maven library version.
 
 The Gradle version catalog is generated from Maven properties through `settings.gradle.kts` and
 `pomVersion(...)`. When Maven currently declares a version inline in a module POM, the version is
@@ -57,7 +58,9 @@ first promoted to a Maven property; the Gradle catalog then resolves that proper
 hardcoding a second copy. Maven remains the single version source, and the catalog is only a Gradle
 view of it.
 
-The only exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
+The Gradle wrapper distribution version is maintained in `gradle/wrapper/gradle-wrapper.properties`
+together with the corresponding wrapper files, and is updated deliberately as a unit. The only
+other exception is a Gradle plugin version when the Gradle plugin mechanism cannot consume the
 Maven-sourced version. This exception does not apply to libraries used by that plugin or to ordinary
 buildscript dependencies; those must still use Maven-sourced catalog versions.
 
@@ -86,7 +89,7 @@ the **resulting distribution against Maven** when Java, Maven, Gradle, or releva
 
 For this ADR, Gradle build inputs are:
 
-- `*.gradle.kts` files;
+- `**/*.gradle.kts` files;
 - `gradle.properties`;
 - `gradlew` and `gradlew.bat`;
 - files below `gradle/`; and
@@ -98,14 +101,17 @@ possible mismatch between Maven and Gradle. Maven remains the behavioral referen
 application-test path.
 
 The distribution check compares the versioned roots and bundled JAR inventories; byte-level
-differences are expected. It distinguishes between non-blocking and blocking differences:
+differences are expected. It distinguishes between non-blocking and blocking differences. The
+comparator may have narrow exceptions for known, intentional differences. Those exceptions are
+maintained and documented with the comparator rather than enumerated in this ADR, because the list
+will evolve.
 
 - **Non-blocking:** Numeric patch-only dependency version differences are reported for visibility
   but do not fail the build. Gradle generally selects the highest available version, while Maven
   selects the nearest dependency and uses declaration order to break ties. This temporary tolerance
   applies only while Gradle is used for local development and evaluation, not external publication.
 - **Blocking:** Missing or extra JARs, distribution-root differences, and major or minor version
-  differences fail the check.
+  differences fail the check unless covered by a documented comparator exception.
 
 Patch-version tolerance **must be reconsidered** before Gradle publishes external artifacts or becomes
 a supported or authoritative build path.
@@ -124,24 +130,29 @@ Gradle test execution is selected separately as described in D5 and D6.
 
 Unified CI exposes a `build-tool` input that accepts `maven` or `gradle`. Selecting Maven runs the
 complete Maven application-test path. Selecting Gradle runs the complete Gradle unit and integration
-test path. This selection is separate from the focused Gradle checks in D4, which remain enabled for
-relevant changes.
+test path and the minimal Maven `build-distball` producer needed for distribution parity; it does
+not run Maven application tests. This selection is separate from the focused Gradle checks in D4,
+which remain enabled for relevant changes.
 
-The Gradle selection is used when a change needs complete Gradle validation but does not modify Java
-sources, Maven configuration, or shared CI. In particular, a change limited to Gradle build inputs
-or Gradle-specific CI files can run the complete CI path with `build-tool: gradle` without also
-running the Maven path.
-This allows an engineer repairing a scheduled Gradle failure to validate the repair without paying
-for unrelated Maven tests. Shared CI changes must still run the Maven path when they can affect it.
+Maven is the default build path. Automatic Gradle selection is allowed only when the change
+detector classifies all changed files as Gradle-only, including Gradle-specific CI files. A human
+may explicitly select Gradle for a deliberate validation of Gradle build or CI changes that cannot
+be classified automatically. Java and Maven build changes remain Maven-bound. This allows an
+engineer repairing a scheduled Gradle failure to validate the repair without paying for unrelated
+Maven application tests, while mixed changes continue to use Maven.
 
 ### D6. Run the complete Gradle CI path on a schedule
 
-A scheduled workflow invokes Unified CI with `build-tool: gradle` and runs the complete Gradle unit
-and integration test path against the default branch, beyond the focused compilation and packaging
-checks. This reuses the same selectable build path that engineers use to validate fixes to Gradle
-build or CI files. The exact cadence is an operational setting and can be adjusted without changing
-this decision. A failure creates a CI incident for the owning team to triage and track until the
-Gradle path is healthy again. The owning team must be assigned before this ADR is accepted.
+Unified CI exposes a reusable entry point for the `build-tool` selection, with Maven as its default.
+Pull requests use the change detector and the human override described in D5; merge groups and
+protected-branch pushes default to Maven; and manually dispatched runs default to Maven unless a
+human explicitly selects Gradle. A scheduled wrapper invokes this reusable entry point with
+`build-tool: gradle` and runs the complete Gradle unit and integration test path against the default
+branch, beyond the focused compilation and packaging checks. This reuses the same selectable build
+path that engineers use to validate fixes to Gradle build or CI files. The exact cadence is an
+operational setting and can be adjusted without changing this decision. A failure creates a CI
+incident for the owning team to triage and track until the Gradle path is healthy again. The owning
+team must be assigned before this ADR is accepted.
 
 The scheduled workflow does not replace Maven's application-test path.
 
