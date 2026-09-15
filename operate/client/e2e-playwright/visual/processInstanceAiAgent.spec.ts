@@ -372,6 +372,26 @@ test.describe('AI agent details', () => {
         'Permit automatic approval for ambiguous damage descriptions when timestamped photos are complete.',
       ),
     ).toBeVisible();
+    await expect(
+      processInstancePage.diagram.diagramCanvas.locator(
+        '[data-element-id="end_label"]',
+      ),
+    ).toContainText(/Automatic\s*approval/);
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Set instructionVersion to GOVERNED-V2.',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Set decision to automatic-approval.',
+      ),
+    ).toBeVisible();
+    expect(
+      await processInstancePage.aiAgentDetails.systemPromptSection.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
 
     await expect(page).toHaveScreenshot();
   });
