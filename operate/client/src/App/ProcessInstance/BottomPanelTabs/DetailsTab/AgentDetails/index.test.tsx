@@ -333,6 +333,75 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should render fixture-only system prompt evidence when provided', () => {
+    render(
+      <AgentDetails
+        agentInstances={[
+          mockAgentInstance({
+            definition: {
+              model: 'gpt-4',
+              provider: 'openai',
+              systemPrompt: [
+                {
+                  contentType: 'TEXT',
+                  text: 'Route ambiguous damage descriptions to manual review.',
+                },
+              ],
+              prototypeSystemPromptEvidence: {
+                type: 'Linked',
+                promptId: 'claims-review-instructions.md',
+                binding: 'Latest',
+                version: '1',
+              },
+            } as typeof agentInstance.definition & {
+              prototypeSystemPromptEvidence: {
+                type: string;
+                promptId: string;
+                binding: string;
+                version: string;
+              };
+            },
+          }),
+        ]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    const evidence = screen.getByLabelText('System prompt evidence');
+
+    expect(evidence).toHaveAccessibleName('System prompt evidence');
+    expect(within(evidence).getByText('Linked')).toBeInTheDocument();
+    expect(
+      within(evidence).getByText('claims-review-instructions.md'),
+    ).toBeInTheDocument();
+    expect(within(evidence).getByText('Latest')).toBeInTheDocument();
+    expect(within(evidence).getByText('1')).toBeInTheDocument();
+    expect(
+      screen.getByText('Route ambiguous damage descriptions to manual review.'),
+    ).toBeInTheDocument();
+  });
+
+  it('should omit system prompt evidence for production-shaped responses', () => {
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      screen.queryByLabelText('System prompt evidence'),
+    ).not.toBeInTheDocument();
+  });
+
   it('should render document references in the system prompt', () => {
     render(
       <AgentDetails

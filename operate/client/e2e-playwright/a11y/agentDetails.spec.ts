@@ -52,7 +52,6 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('AI agent details', () => {
-  // Taller viewport is needed to fit all agent details into the page.
   test.use({viewport: {width: 1280, height: 1400}});
 
   test('have no violations for the agent details panel and conversation history', async ({
@@ -92,7 +91,6 @@ test.describe('AI agent details', () => {
         'Assistant message',
       ),
     ).toBeVisible();
-
     const results = await makeAxeBuilder()
       .include(AGENT_DETAILS_PANEL_SELECTOR)
       .disableRules(DISABLED_RULES)
@@ -112,5 +110,43 @@ test.describe('AI agent details', () => {
       .disableRules(DISABLED_RULES)
       .analyze();
     validateResults(resultsWithConversationHistory);
+  });
+
+  test('has no violations for linked system prompt evidence', async ({
+    page,
+    processInstancePage,
+    makeAxeBuilder,
+  }) => {
+    const mock = agentProcessWithOneActiveInstance;
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: mock.detail,
+        callHierarchy: mock.callHierarchy,
+        elementInstances: mock.elementInstances,
+        statistics: mock.statistics,
+        sequenceFlows: mock.sequenceFlows,
+        variables: mock.variables,
+        xml: mock.xml,
+        agentInstances: mock.agentInstances,
+        agentInstanceHistory: mock.agentInstanceHistory,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: PROCESS_INSTANCE_KEY,
+    });
+    await processInstancePage.diagram.clickElement('Review claim');
+    await processInstancePage.aiAgentDetails.systemPromptSectionTrigger.click();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptEvidence,
+    ).toBeVisible();
+
+    const results = await makeAxeBuilder()
+      .include(AGENT_DETAILS_PANEL_SELECTOR)
+      .disableRules(DISABLED_RULES)
+      .analyze();
+    validateResults(results);
   });
 });

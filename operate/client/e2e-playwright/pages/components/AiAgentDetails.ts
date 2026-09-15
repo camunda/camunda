@@ -71,6 +71,10 @@ class AiAgentDetails {
       exact: true,
     });
   }
+
+  get systemPromptEvidence() {
+    return this.systemPromptSection.getByLabel('System prompt evidence');
+  }
 }
 
 export {AiAgentDetails};
