@@ -10,20 +10,19 @@ package io.camunda.zeebe.gateway.rest.controller.system;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.core.util.Yaml;
-import java.io.IOException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.config.YamlMapFactoryBean;
 import org.springframework.core.io.ClassPathResource;
 
 class SystemConfigurationContractTest {
 
   @Test
-  void shouldExposeRequiredWaitStatesEnabledWithInheritedDeploymentVersion() throws IOException {
+  void shouldExposeRequiredWaitStatesEnabledWithInheritedDeploymentVersion() {
     // given
-    final JsonNode spec;
-    try (final var input = new ClassPathResource("v2/system.yaml").getInputStream()) {
-      spec = Yaml.mapper().readTree(input);
-    }
+    final var yaml = new YamlMapFactoryBean();
+    yaml.setResources(new ClassPathResource("v2/system.yaml"));
+    final JsonNode spec = new ObjectMapper().valueToTree(yaml.getObject());
 
     // when
     final var operation = spec.at("/paths/~1system~1configuration/get");

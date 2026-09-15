@@ -1656,6 +1656,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     
     max-cluster-variable-metadata-size: null # Type: Integer, Env: CAMUNDA_REST_MAXCLUSTERVARIABLEMETADATASIZE
     max-name-field-length: null # Type: Integer, Env: CAMUNDA_REST_MAXNAMEFIELDLENGTH
+    wait-states-enabled: null # Type: Boolean, Env: CAMUNDA_REST_WAITSTATESENABLED
   
   secrets: # Type: io.camunda.configuration.Secrets  
     cache: # Type: io.camunda.configuration.Secrets$Cache  
