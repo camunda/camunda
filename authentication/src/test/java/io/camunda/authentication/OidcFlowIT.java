@@ -49,8 +49,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
     properties = {
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
-      "camunda.security.authentication.oidc.client-id=" + OidcFlowTest.CLIENT_ID,
-      "camunda.security.authentication.oidc.client-secret=" + OidcFlowTest.CLIENT_SECRET,
+      "camunda.security.authentication.oidc.client-id=" + OidcFlowIT.CLIENT_ID,
+      "camunda.security.authentication.oidc.client-secret=" + OidcFlowIT.CLIENT_SECRET,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
       "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
       "camunda.security.authentication.oidc.clock-skew=45s",
@@ -59,7 +59,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
     })
 @ActiveProfiles("consolidated-auth")
 @Testcontainers
-class OidcFlowTest {
+class OidcFlowIT {
 
   // client and user defined in camunda-identity-test-realm.json
   static final String CLIENT_ID = "camunda-test";
@@ -70,7 +70,7 @@ class OidcFlowTest {
 
   @Container
   static KeycloakContainer keycloak =
-      TestKeycloakContainers.createDefaultKeycloak()
+      KeycloakContainers.createDefaultKeycloak()
           .withRealmImportFile("/camunda-identity-test-realm.json");
 
   @Autowired MockMvcTester mockMvcTester;

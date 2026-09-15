@@ -15,12 +15,12 @@ import org.testcontainers.utility.DockerImageName;
  * Duplicates {@code io.camunda.zeebe.test.testcontainers.DefaultTestContainers}, which this module
  * would have to depend on {@code zeebe-test-util} to reach.
  */
-final class TestKeycloakContainers {
-  // Keep in sync with version.keycloak.container in parent/pom.xml
+final class KeycloakContainers {
+  // renovate: datasource=docker depName=quay.io/keycloak/keycloak
   private static final DockerImageName KEYCLOAK_IMAGE =
       DockerImageName.parse("quay.io/keycloak/keycloak").withTag("26.7.3");
 
-  private TestKeycloakContainers() {}
+  private KeycloakContainers() {}
 
   /** Returns a Keycloak container with defaults for CI. */
   static KeycloakContainer createDefaultKeycloak() {
