@@ -15,10 +15,11 @@ lifecycle and ownership.
 ## Context
 
 Wherever a process loops back to an element, each pass through it creates a new element instance. An
-agent element must carry the agent's context and memory across those passes, so the agent continues
-the same conversation instead of starting a new one. Agent execution data therefore needs an anchor
-of its own: something that outlives an element instance, that every history item and every metric can
-hang off, and that Operate can show as one run.
+agent element that continues the same conversation across those passes has to carry the agent's
+context and memory forward. Not every agent is modelled that way, and the engine does not require
+it, but an agent that does needs somewhere to put that data. Agent execution data therefore needs an
+anchor of its own: something that outlives an element instance, that every history item and every
+metric can hang off, and that Operate can show as one run.
 
 The agent runtime — the Camunda AI Agent Connector, or a user's own job worker — is the only party
 that knows what the agent is doing. Under [0010](0010-810-agent-execution-in-engine-records.md) that
@@ -33,7 +34,7 @@ owns that lifecycle. D6 and D8 below rely on it.
 ## Decision
 
 **D1. One agent instance spans one logical agent run, across many element instances.**
-The instance is created once for the element that hosts the agent and is reused as the process
+The instance is created once for the element that hosts the agent and can be reused as the process
 re-enters that element, accumulating the element instances it has been associated with. Re-entry is
 why one run has to outlive one element instance: the agent continues the same conversation from its
 context and memory instead of starting a new one. The instance is a separate entity rather than a
