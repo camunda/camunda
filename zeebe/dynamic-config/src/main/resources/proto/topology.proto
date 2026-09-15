@@ -108,6 +108,10 @@ message TopologyChangeOperation {
     UpdateIncarnationNumberOperation updateIncarnationNumber = 18;
     PreScalingOperation preScaling = 19;
     PostScalingOperation postScaling = 20;
+    // 21 is used by later versions; the numbers below match theirs so that mixed-version clusters
+    // decode these operations alike.
+    PartitionPromoteOperation partitionPromote = 22;
+    PartitionDemoteOperation partitionDemote = 23;
   }
 }
 
@@ -119,11 +123,22 @@ message CompletedTopologyChangeOperation {
 message PartitionJoinOperation {
   int32 partitionId = 1;
   int32 priority = 2;
+  // Absent (false) in operations serialized before two-phase joins existed: such an operation
+  // keeps its original meaning of a complete, single-step join as a voting member.
+  bool asLearner = 3;
 }
 
 message PartitionLeaveOperation {
   int32 partitionId = 1;
   int32 minimumAllowedReplicas = 2;
+}
+
+message PartitionPromoteOperation {
+  int32 partitionId = 1;
+}
+
+message PartitionDemoteOperation {
+  int32 partitionId = 1;
 }
 
 message PartitionReconfigurePriorityOperation {
@@ -200,6 +215,10 @@ enum State {
   LEAVING = 3;
   LEFT = 4;
   BOOTSTRAPPING = 5;
+  // 6 is RECOVERING in later versions; kept unused here so both versions agree on the wire.
+  // Partitions only: joined as a non-voting learner replica, catching up on the log until
+  // promoted to ACTIVE in a second configuration change.
+  LEARNER = 7;
 }
 
 enum ChangeStatus {

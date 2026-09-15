@@ -331,6 +331,8 @@ schemas:
           - UPDATE_INCARNATION_NUMBER
           - PRE_SCALING
           - POST_SCALING
+          - PARTITION_PROMOTE
+          - PARTITION_DEMOTE
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
@@ -438,6 +440,7 @@ schemas:
       - JOINING
       - ACTIVE
       - LEAVING
+      - LEARNER
 
   TopologyVersion:
     title: TopologyVersion
