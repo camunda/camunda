@@ -30,7 +30,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 public final class MinioContainer extends GenericContainer<MinioContainer> {
 
-  private static final DockerImageName IMAGE = DockerImageName.parse("minio/minio");
+  private static final DockerImageName IMAGE = DockerImageName.parse("quay.io/minio/minio");
   private static final int PORT = 9000;
   private static final String DEFAULT_REGION = "us-east-1";
   private static final String DEFAULT_ACCESS_KEY = "accessKey";
