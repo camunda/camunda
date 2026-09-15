@@ -7,13 +7,19 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -31,10 +37,12 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -42,7 +50,11 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class IncidentResolveProcessor
     implements TypedRecordProcessor<IncidentRecord>, SuspensionAware<IncidentRecord> {
@@ -51,6 +63,8 @@ public final class IncidentResolveProcessor
       "Expected to resolve incident with key '%d', but job with key '%d' has no retries left. Please update the job retries and retry resolving the incident";
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
+  public static final String SECRET_REQUESTS_TOO_LARGE_MSG =
+      "Expected to resolve incident with key '%d', but the secret references of job with key '%d' do not fit in one record batch. Please retry resolving the incident";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
       "Expected incident to refer to element in state ELEMENT_ACTIVATING, ELEMENT_COMPLETING, or ELEMENT_TERMINATING, but element is in state %s";
   private static final String UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG =
@@ -71,6 +85,9 @@ public final class IncidentResolveProcessor
   private final CslTenantCheck tenantCheck;
   private final IncidentMetrics incidentMetrics;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
+  private final KeyGenerator keyGenerator;
+  private final SecretResolutionScheduler secretResolutionScheduler;
+  private final JobSecretLookup secretLookup;
 
   public IncidentResolveProcessor(
       final ProcessingState processingState,
@@ -80,7 +97,10 @@ public final class IncidentResolveProcessor
       final BpmnJobActivationBehavior jobActivationBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final KeyGenerator keyGenerator,
+      final SecretResolutionScheduler secretResolutionScheduler,
+      final SecretStoreRegistry secretStoreRegistry) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.userTaskProcessor = userTaskProcessor;
     stateWriter = writers.state();
@@ -94,6 +114,9 @@ public final class IncidentResolveProcessor
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     this.incidentMetrics = incidentMetrics;
+    this.secretResolutionScheduler = secretResolutionScheduler;
+    this.keyGenerator = keyGenerator;
+    secretLookup = new JobSecretLookup(secretStoreRegistry);
     bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
@@ -148,14 +171,121 @@ public final class IncidentResolveProcessor
       return;
     }
 
+    // Built before anything is appended, for two reasons: the RESOLVED applier reactivates the job
+    // and invalidates the state read behind it, and a batch that cannot hold the requests has to
+    // reject the command rather than resolve the incident without them.
+    final List<SecretReferenceRecord> secretRequests =
+        secretResolutionRequestsFor(incident, jobKey);
+    if (!fitsInRecordBatch(incident, secretRequests)) {
+      // Resolving without the requests would leave exactly the behaviour this path exists to fix:
+      // the incident cleared and nothing left to re-read the store. Keeping the incident is the
+      // honest outcome — the operator can retry, and sees that nothing was fixed meanwhile.
+      final var errorMessage = String.format(SECRET_REQUESTS_TOO_LARGE_MSG, key, jobKey);
+      enrichRejectionCommand(command, incident);
+      rejectResolveCommand(command, errorMessage, RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeAcceptedResponseOnCommand(key, IncidentIntent.RESOLVED, incident, command);
     incidentMetrics.incidentResolved();
 
-    publishIncidentRelatedJob(jobKey);
+    if (secretRequests.isEmpty()) {
+      publishIncidentRelatedJob(jobKey);
+    } else {
+      // a job parked on these must not also be published: it cannot run until they are answered
+      secretRequests.forEach(
+          request ->
+              stateWriter.appendFollowUpEvent(
+                  keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, request));
+    }
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, incident);
+
+    // waking the scheduler is not transactional, so it runs only once every step that could throw
+    // has succeeded: a rollback would otherwise leave it woken for a resolution the log no longer
+    // asks for
+    if (!secretRequests.isEmpty()) {
+      secretResolutionScheduler.stayAwake();
+    }
+  }
+
+  /**
+   * Re-enters the secret resolution lifecycle for a job that was parked on a secret, and reports
+   * whether it did. Resolution is otherwise requested only from the two activation paths, so a
+   * retry would re-read the store only when a worker happens to be attached to pick the job up —
+   * with none, the incident record simply flips to resolved and the instance reads as healthy while
+   * the secret is still missing.
+   *
+   * <p>Only the references the cache cannot answer are requested, which is also what tells the two
+   * producers of {@link ErrorType#SECRET_RESOLUTION_ERROR} apart. A missing secret leaves its
+   * reference uncached, so it is requested and the incident returns if it is still gone. An
+   * injection failure ({@code JobSecretLookup.SecretPointerMismatchException}) resolved its secret
+   * fine and failed on where the value had to go, so its references are normally still cached,
+   * nothing is requested, and the job goes back to the activation path as before — re-parking it
+   * would only strand it on references that are already available. Once the cache has evicted them
+   * that retry does request a resolution: the reference resolves, the job is reactivated, and the
+   * injection fails again on the next activation. Same outcome, longer route.
+   *
+   * <p>Every uncached reference is requested, not only the incidented one: a job carrying several
+   * missing references gets a single incident, so requesting just that one would leave the others
+   * with nothing to ask for them again.
+   *
+   * <p>Reads state, so it must run before the {@code RESOLVED} event is appended: applying that
+   * event reactivates the job and invalidates the record read here. Returns the requests rather
+   * than appending them for the same reason.
+   */
+  private List<SecretReferenceRecord> secretResolutionRequestsFor(
+      final IncidentRecord incident, final long jobKey) {
+    if (incident.getErrorType() != ErrorType.SECRET_RESOLUTION_ERROR
+        || !isJobRelatedIncident(jobKey)) {
+      return List.of();
+    }
+    final JobRecord job = jobState.getJob(jobKey);
+    if (job == null || !job.hasSecretReferences()) {
+      return List.of();
+    }
+    return distinctRequestsFor(secretLookup.check(job).nonCachedSecrets(), jobKey);
+  }
+
+  /**
+   * One request per distinct store and reference, so a name used at two paths is asked for once.
+   */
+  private static List<SecretReferenceRecord> distinctRequestsFor(
+      final List<Secret> secrets, final long jobKey) {
+    final Map<SecretReference, SecretReferenceRecord> requests = new LinkedHashMap<>();
+    for (final Secret secret : secrets) {
+      requests.computeIfAbsent(
+          secret.reference(),
+          reference ->
+              new SecretReferenceRecord()
+                  .setStoreId(reference.storeId())
+                  .setSecretReference(reference.name())
+                  .addJobKey(jobKey));
+    }
+    return List.copyOf(requests.values());
+  }
+
+  /**
+   * Whether the batch still has room for the resolved event and every request, which are only ever
+   * written together. The calculation buffer covers the log entry framing each one gains on top of
+   * its value, the same way the activation paths size theirs.
+   */
+  private boolean fitsInRecordBatch(
+      final IncidentRecord incident, final List<SecretReferenceRecord> requests) {
+    if (requests.isEmpty()) {
+      return true;
+    }
+    final int length =
+        incident.getLength()
+            + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER
+            + requests.stream()
+                .mapToInt(
+                    request ->
+                        request.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)
+                .sum();
+    return stateWriter.canWriteEventOfLength(length);
   }
 
   private void rejectResolveCommand(

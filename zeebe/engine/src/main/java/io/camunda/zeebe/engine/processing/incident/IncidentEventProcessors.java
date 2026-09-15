@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class IncidentEventProcessors {
 
@@ -31,7 +34,10 @@ public final class IncidentEventProcessors {
       final BpmnJobActivationBehavior jobActivationBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final KeyGenerator keyGenerator,
+      final SecretResolutionScheduler secretResolutionScheduler,
+      final SecretStoreRegistry secretStoreRegistry) {
     typedRecordProcessors.onCommand(
         ValueType.INCIDENT,
         IncidentIntent.RESOLVE,
@@ -43,6 +49,9 @@ public final class IncidentEventProcessors {
             jobActivationBehavior,
             cslCheck,
             tenantCheck,
-            incidentMetrics));
+            incidentMetrics,
+            keyGenerator,
+            secretResolutionScheduler,
+            secretStoreRegistry));
   }
 }
