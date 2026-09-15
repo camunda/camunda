@@ -65,12 +65,13 @@ group = "io.camunda.optimize"
 description = "Optimize Commons"
 
 // Generate Version.java from template (replaces Maven templating-maven-plugin)
+val projectVersion = project.version.toString()
 val generateVersionJava =
   tasks.register<Sync>("generateVersionJava") {
     from("src/main/java-templates")
     into(layout.buildDirectory.dir("generated/sources/java-templates/java/main"))
-    inputs.property("projectVersion", project.version)
-    val tokenMap = mapOf("project.version" to project.version.toString())
+    inputs.property("projectVersion", projectVersion)
+    val tokenMap = mapOf("project.version" to projectVersion)
     filter<org.apache.tools.ant.filters.ReplaceTokens>(
       "beginToken" to "\${",
       "endToken" to "}",
