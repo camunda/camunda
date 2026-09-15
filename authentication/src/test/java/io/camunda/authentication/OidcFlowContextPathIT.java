@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
+import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,7 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * matches the context-path-relative request path, so if the matcher were left context-prefixed the
  * callback filter would never fire and login would loop indefinitely.
  *
- * <p>This test mirrors {@link OidcFlowTest} but adds a context-path and a context-embedded
+ * <p>This test mirrors {@link OidcFlowIT} but adds a context-path and a context-embedded
  * redirect-uri, then drives the context-relative callback and asserts it is <em>not</em> redirected
  * back into the OIDC flow — the loop signature.
  *
@@ -53,18 +54,18 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       WebSecurityConfig.class,
     },
     properties = {
-      "server.servlet.context-path=" + OidcFlowContextPathTest.CONTEXT_PATH,
+      "server.servlet.context-path=" + OidcFlowContextPathIT.CONTEXT_PATH,
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
-      "camunda.security.authentication.oidc.client-id=" + OidcFlowContextPathTest.CLIENT_ID,
-      "camunda.security.authentication.oidc.client-secret=" + OidcFlowContextPathTest.CLIENT_SECRET,
+      "camunda.security.authentication.oidc.client-id=" + OidcFlowContextPathIT.CLIENT_ID,
+      "camunda.security.authentication.oidc.client-secret=" + OidcFlowContextPathIT.CLIENT_SECRET,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost"
-          + OidcFlowContextPathTest.CONTEXT_PATH
-          + OidcFlowContextPathTest.CALLBACK_PATH,
+          + OidcFlowContextPathIT.CONTEXT_PATH
+          + OidcFlowContextPathIT.CALLBACK_PATH,
     })
 @ActiveProfiles("consolidated-auth")
 @Testcontainers
-class OidcFlowContextPathTest {
+class OidcFlowContextPathIT {
 
   static final String CLIENT_ID = "camunda-test";
   static final String CLIENT_SECRET = "yI2oAlOzx2A9AXmiUO0fqT4qNb8l3HBP";
@@ -74,7 +75,8 @@ class OidcFlowContextPathTest {
 
   @Container
   static KeycloakContainer keycloak =
-      new KeycloakContainer().withRealmImportFile("/camunda-identity-test-realm.json");
+      DefaultTestContainers.createDefaultKeycloak()
+          .withRealmImportFile("/camunda-identity-test-realm.json");
 
   @Autowired MockMvcTester mockMvcTester;
 
