@@ -15,11 +15,20 @@
  */
 package io.camunda.process.test.impl.assertions.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.NullNode;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.InternalClientException;
 
+/**
+ * Converts between JSON strings and the values that the assertions compare.
+ *
+ * <p>Every conversion goes through the client's {@link JsonMapper}, so a mapper customized by the
+ * user applies to the assertions as well.
+ *
+ * <p>Values are represented as plain Java types ({@code Map}, {@code List}, {@code String}, {@code
+ * Number}, {@code Boolean} and {@code null}) rather than a library-specific tree type. The {@link
+ * JsonMapper} contract cannot produce such a tree, so requiring one would restrict the assertions
+ * to mappers built on one specific JSON library.
+ */
 public class CamundaAssertJsonMapper {
 
   private final JsonMapper jsonMapper;
@@ -35,8 +44,9 @@ public class CamundaAssertJsonMapper {
     zeebeJsonMapper = jsonMapper;
   }
 
-  public JsonNode readJson(final String value) {
-    return readJson(value, JsonNode.class, NullNode.getInstance());
+  /** Reads a JSON string into a value that can be compared against an expected value. */
+  public Object readJson(final String value) {
+    return readJson(value, Object.class);
   }
 
   public <T> T readJson(final String value, final Class<T> clazz) {
@@ -55,7 +65,19 @@ public class CamundaAssertJsonMapper {
     }
   }
 
-  public JsonNode toJsonNode(final Object value) {
+  /**
+   * Converts an expected value into the same representation that {@link #readJson(String)} produces
+   * for an actual value, so that the two can be compared.
+   */
+  public Object toJsonValue(final Object value) {
+    // Serialize to a JSON string and read it back to normalize numeric types (e.g. int vs long,
+    // float vs double, decimal handling). This ensures the expected value is represented like the
+    // actual value that is read from its JSON representation.
+    return readJson(toJson(value), Object.class);
+  }
+
+  /** Renders a value as JSON, for example to describe an assertion failure. */
+  public String toJson(final Object value) {
     try {
       return write(value);
     } catch (final InternalClientException e) {
@@ -65,23 +87,13 @@ public class CamundaAssertJsonMapper {
   }
 
   private <T> T read(final String value, final Class<T> clazz) {
-    if (jsonMapper != null) {
-      return jsonMapper.fromJson(value, clazz);
-    } else {
-      return zeebeJsonMapper.fromJson(value, clazz);
-    }
+    return jsonMapper != null
+        ? jsonMapper.fromJson(value, clazz)
+        : zeebeJsonMapper.fromJson(value, clazz);
   }
 
-  private JsonNode write(final Object value) {
-    // Serialize to a JSON string and parse it back to normalize numeric node types (e.g. int vs
-    // long, float vs double, decimal handling). This ensures the expected value uses the same
-    // JsonNode types that Jackson produces when reading a variable value from its JSON
-    // representation.
-    if (jsonMapper != null) {
-      return jsonMapper.fromJson(jsonMapper.toJson(value), JsonNode.class);
-    } else {
-      return zeebeJsonMapper.fromJson(zeebeJsonMapper.toJson(value), JsonNode.class);
-    }
+  private String write(final Object value) {
+    return jsonMapper != null ? jsonMapper.toJson(value) : zeebeJsonMapper.toJson(value);
   }
 
   public static class JsonMappingException extends RuntimeException {
