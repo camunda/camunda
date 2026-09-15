@@ -6,31 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { MultiSelect } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
+import { TranslatedErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import {
-  EntitySearchDropdown,
-  RemovableEntityBadge,
+  useEntitySearchQuery,
   type EntitySearchQuery,
-} from "src/components/formV2/EntitySearchDropdown";
+} from "src/components/formV2/useEntitySearchQuery";
 
 type AbstractEntitySearchMultiSelectProps<
   Entity extends Record<string, unknown>,
 > = {
   search: (search: string) => EntitySearchQuery<Entity>;
-  itemSubTitle?: (entity: Entity) => string;
+  itemLabel: (entity: Entity) => string;
   getId: (entity: Entity) => string;
   value: Entity[];
   onChange: (entities: Entity[]) => void;
   excluded?: Entity[];
   placeholder: string;
   errorTitle: string;
-  autoFocus?: boolean;
 };
 
 /**
  * Public props for a concrete per-entity multi-select (e.g. UserMultiSelect):
- * everything technical (search, getId, itemSubTitle, errorTitle) is fixed by
+ * everything technical (search, getId, itemLabel, errorTitle) is fixed by
  * the concrete implementation and not overridable per call site. placeholder
  * gets a concrete default but remains overridable per call site, since some
  * consumers need different copy.
@@ -39,65 +39,97 @@ export type EntitySearchMultiSelectProps<
   Entity extends Record<string, unknown>,
 > = Omit<
   AbstractEntitySearchMultiSelectProps<Entity>,
-  "search" | "getId" | "itemSubTitle" | "placeholder" | "errorTitle"
+  "search" | "getId" | "itemLabel" | "placeholder" | "errorTitle"
 > &
   Partial<Pick<AbstractEntitySearchMultiSelectProps<Entity>, "placeholder">>;
 
+// MultiSelect's overflow "+N more" chip removes every selection past
+// `maxCount` when cleared (it slices `selected` down to `maxCount`), which
+// would silently drop assignments beyond the cap. Keep every chip visible.
+const NO_LIMIT = Infinity;
+
 const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
   search,
-  itemSubTitle,
+  itemLabel,
   getId,
   value,
   onChange,
   excluded = [],
   placeholder,
   errorTitle,
-  autoFocus = false,
 }: AbstractEntitySearchMultiSelectProps<Entity>) => {
   const { t } = useTranslate();
+  const {
+    items,
+    search: searchText,
+    isLoading,
+    error,
+    reload,
+    onInputChange,
+  } = useEntitySearchQuery(search);
 
-  const isAlreadyPicked = useCallback(
-    (entity: Entity) =>
-      excluded.some((picked) => getId(picked) === getId(entity)) ||
-      value.some((picked) => getId(picked) === getId(entity)),
-    [excluded, value, getId],
+  const excludedIds = useMemo(
+    () => new Set(excluded.map(getId)),
+    [excluded, getId],
   );
 
-  const handleSelect = (entity: Entity) => {
-    onChange([...value, entity]);
-  };
+  const options = useMemo(
+    () =>
+      (searchText === "" ? value : items)
+        .filter((entity) => !excludedIds.has(getId(entity)))
+        .map((entity) => ({ label: itemLabel(entity), value: getId(entity) })),
+    [searchText, items, value, excludedIds, getId, itemLabel],
+  );
 
-  const handleUnselect = (entity: Entity) => () => {
-    onChange(value.filter((picked) => getId(picked) !== getId(entity)));
-  };
+  // The existing entity-selection multi-select components operate on the whole
+  // entity objects not just IDs. However, the design-system's `MultiSelect`
+  // only allows simple string IDs as values and reports `string[]` back
+  // when the selection changes.
+  // Unless we refactor the component API, we need to keep track of currently
+  // relevant entities to resolve IDs back to whole entities on selection change.
+  const entityById = useMemo(() => {
+    const map = new Map<string, Entity>();
+    for (const entity of items) map.set(getId(entity), entity);
+    for (const entity of value) map.set(getId(entity), entity);
+    return map;
+  }, [items, value, getId]);
+
+  const handleValueChange = useCallback(
+    (ids: string[]) => {
+      onChange(
+        ids
+          .map((id) => entityById.get(id))
+          .filter((entity): entity is Entity => entity !== undefined),
+      );
+    },
+    [onChange, entityById],
+  );
 
   return (
-    <div className="flex flex-col gap-2">
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {value.map((entity) => {
-            const label = getId(entity);
-            return (
-              <RemovableEntityBadge
-                key={label}
-                label={label}
-                onRemove={handleUnselect(entity)}
-              />
-            );
-          })}
-        </div>
-      )}
-      <EntitySearchDropdown
-        search={search}
-        itemTitle={getId}
-        itemSubTitle={itemSubTitle}
-        autoFocus={autoFocus}
+    <div>
+      <MultiSelect
+        options={options}
+        value={value.map(getId)}
+        onValueChange={handleValueChange}
+        onInputChange={onInputChange}
+        externalFiltering
+        maxCount={NO_LIMIT}
         placeholder={placeholder}
-        onSelect={handleSelect}
-        filter={(entity) => !isAlreadyPicked(entity)}
-        errorTitle={errorTitle}
-        retryLabel={t("retry")}
+        searchPlaceholder={placeholder}
+        emptyIndicator={isLoading ? t("loading") : undefined}
+        aria-label={placeholder}
       />
+      {!isLoading && error && (
+        <TranslatedErrorInlineNotification
+          title={errorTitle}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
+        />
+      )}
     </div>
   );
 };
