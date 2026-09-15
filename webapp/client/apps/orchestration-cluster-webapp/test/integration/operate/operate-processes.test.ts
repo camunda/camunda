@@ -266,10 +266,6 @@ test.describe('Operate processes page', () => {
 	}) => {
 		network.use(
 			...getProcessInstanceShellHandlers({
-				processInstance: createProcessInstance({
-					processInstanceKey: '1001',
-					processDefinitionName: 'Order Process',
-				}),
 				callHierarchy: [
 					createCallHierarchy({processInstanceKey: '10', processDefinitionName: 'Root'}),
 					createCallHierarchy({processInstanceKey: '11', processDefinitionName: 'Step 1'}),
@@ -311,17 +307,7 @@ test.describe('Operate processes page', () => {
 		network,
 		page,
 	}) => {
-		const systemConfiguration = createSystemConfiguration({components: {active: ['operate']}});
 		network.use(
-			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json({
-					...systemConfiguration,
-					deployment: {
-						...systemConfiguration.deployment,
-						waitStatesEnabled: true,
-					},
-				}),
-			}),
 			mockGetProcessInstanceWaitStateStatisticsEndpoint({
 				successResponse: HttpResponse.json(
 					createPaginatedResponse({
