@@ -127,12 +127,12 @@ The Gradle compilation job is a member of the Unified CI result gate, but Maven 
 depend on it. A Gradle failure may fail `check-results` and prevent a merge-group landing, but it
 must not skip, cancel, or make Maven tests unavailable.
 
-### D7. Run the full Gradle validation nightly
+### D7. Run the full Gradle CI test suite nightly
 
-A scheduled nightly workflow runs the full Gradle CI validation, including Gradle test execution,
-compilation, packaging, and distribution parity. This keeps the experimental Gradle path exercised
-continuously beyond the event-scoped compilation and packaging checks. The nightly workflow does not
-replace Maven's application-test path or change the CI landing-gate authority.
+A scheduled nightly workflow runs the full Gradle CI test suite. Its purpose is to exercise Gradle
+test execution continuously beyond the event-scoped checks used for pull-request compilation and
+packaging validation. The nightly workflow does not replace Maven's application-test path or change
+the CI landing-gate authority.
 
 ## Deferred work
 
@@ -141,8 +141,8 @@ The following work is intentionally excluded from this change:
 - **Changing the source of truth.** Maven remains authoritative until a future decision explicitly
   changes that arrangement.
 - **Mandatory Gradle unit test check on every event.** Running all unit tests for every relevant
-  change can increase CI cost; the nightly full validation provides continuous coverage while the
-  event-scoped checks remain focused.
+  change can increase CI cost; the nightly full test suite provides continuous test coverage while
+  the event-scoped checks remain focused on compilation and packaging validation.
 - **Post-merge Gradle repair automation.** Automated repair requires a confirmed ownership and
   alerting model.
 
@@ -173,8 +173,7 @@ The following work is intentionally excluded from this change:
 - Relevant pull requests receive direct Gradle production-and-test compilation feedback.
 - Distribution parity catches differences in the versioned archive root and bundled JAR set.
 - Merge groups are blocked when relevant Gradle compilation, packaging, or parity checks fail.
-- A nightly full Gradle validation keeps test execution, packaging, and distribution parity exercised
-  continuously.
+- A nightly full Gradle CI test run keeps Gradle test execution continuously exercised.
 - Protected pushes provide post-merge Gradle health feedback and warm the shared cache.
 - Maven application tests remain authoritative for Java and Maven changes and remain independently
   runnable when Gradle compilation fails.
