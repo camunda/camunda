@@ -38,6 +38,7 @@ import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -96,6 +97,7 @@ public final class S3BackupStore implements BackupStore {
   static final String METADATA_OBJECT_NAME = "metadata.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
+  private static final int LIST_PAGE_SIZE = 1000;
   private static final int MAX_DELETE_BATCH_SIZE = 1000;
   private final Pattern backupIdentifierPattern;
   private final S3BackupConfig config;
@@ -464,44 +466,69 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  SdkPublisher<BackupIdentifier> findBackupIds(
+  CompletableFuture<Collection<Manifest>> readManifestObjects(
+      final BackupIdentifierWildcard wildcard) {
+    final var legacyManifests = readManifestObjects(wildcard, true);
+    final var manifests = readManifestObjects(wildcard, false);
+
+    return legacyManifests.thenCombine(
+        manifests,
+        (legacyResults, results) -> {
+          final var combined = new HashSet<>(legacyResults);
+          combined.addAll(results);
+          combined.removeIf(manifest -> !wildcard.matches(manifest.id()));
+          return combined;
+        });
+  }
+
+  private CompletableFuture<Collection<Manifest>> readManifestObjects(
       final BackupIdentifierWildcard wildcard, final boolean legacyStructure) {
     final var prefix = legacyStructure ? legacyWildcardPrefix(wildcard) : wildcardPrefix(wildcard);
     LOG.atTrace()
         .addKeyValue("pattern", wildcard)
         .setMessage("Searching for matching manifest files")
         .log();
-    return client
-        .listObjectsV2Paginator(cfg -> cfg.bucket(config.bucketName()).prefix(prefix))
-        .contents()
-        .filter(obj -> obj.key().endsWith(MANIFEST_OBJECT_KEY))
-        .map(S3Object::key)
-        .map(this::tryParseKeyAsId)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .filter(wildcard::matches);
+    return readManifestObjectsPage(wildcard, prefix, Optional.empty(), new ArrayList<>());
   }
 
-  CompletableFuture<Collection<Manifest>> readManifestObjects(
-      final BackupIdentifierWildcard wildcard) {
+  private CompletableFuture<Collection<Manifest>> readManifestObjectsPage(
+      final BackupIdentifierWildcard wildcard,
+      final String prefix,
+      final Optional<String> continuationToken,
+      final Collection<Manifest> manifests) {
+    return client
+        .listObjectsV2(
+            request -> {
+              request.bucket(config.bucketName()).prefix(prefix).maxKeys(LIST_PAGE_SIZE);
+              continuationToken.ifPresent(request::continuationToken);
+            })
+        .thenCompose(
+            response -> {
+              final var backupIds =
+                  response.contents().stream()
+                      .filter(object -> object.key().endsWith(MANIFEST_OBJECT_KEY))
+                      .map(S3Object::key)
+                      .map(this::tryParseKeyAsId)
+                      .flatMap(Optional::stream)
+                      .filter(wildcard::matches)
+                      .toList();
+              final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
+              SdkPublisher.fromIterable(backupIds)
+                  .map(this::readManifestObject)
+                  .subscribe(aggregator);
 
-    final var legacyAggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var legacyPublisher = findBackupIds(wildcard, true).map(this::readManifestObject);
-    legacyPublisher.subscribe(legacyAggregator);
-
-    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var publisher = findBackupIds(wildcard, false).map(this::readManifestObject);
-    publisher.subscribe(aggregator);
-
-    return legacyAggregator
-        .result()
-        .thenCombine(
-            aggregator.result(),
-            (legacyManifests, manifests) -> {
-              final var combined = new HashSet<>(legacyManifests);
-              combined.addAll(manifests);
-              combined.removeIf(m -> !wildcard.matches(m.id()));
-              return combined;
+              return aggregator
+                  .result()
+                  .thenCompose(
+                      pageManifests -> {
+                        manifests.addAll(pageManifests);
+                        final var nextContinuationToken = response.nextContinuationToken();
+                        if (nextContinuationToken == null) {
+                          return CompletableFuture.completedFuture(manifests);
+                        }
+                        return readManifestObjectsPage(
+                            wildcard, prefix, Optional.of(nextContinuationToken), manifests);
+                      });
             });
   }
 
