@@ -24,6 +24,8 @@ env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
+  # Default owner for CI health telemetry; eng-ops triages and redirects to the current owning team.
+  TEST_OWNER: '@camunda/engineering-operations'
 
 jobs:
   smoke-tests:
