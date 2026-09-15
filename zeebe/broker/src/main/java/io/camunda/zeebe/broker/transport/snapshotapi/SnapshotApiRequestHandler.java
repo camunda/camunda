@@ -61,14 +61,14 @@ public class SnapshotApiRequestHandler
   }
 
   @Override
-  public void onActorStarted() {
+  protected void onActorStarted() {
     transferService = transferServiceFactory.apply(actor);
     serverTransport.subscribe(partitionId, RequestType.SNAPSHOT, this);
     LOG.debug("Serving snapshot transfer requests for partition {}.", partitionId);
   }
 
   @Override
-  public void onActorClosing() {
+  protected void onActorClosing() {
     AsyncClosable.closeHelper(transferService);
     transferService = null;
     LOG.debug("Stopped serving snapshot transfer requests for partition {}.", partitionId);

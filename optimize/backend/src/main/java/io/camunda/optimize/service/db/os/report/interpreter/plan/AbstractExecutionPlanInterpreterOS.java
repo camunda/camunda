@@ -94,7 +94,7 @@ public abstract class AbstractExecutionPlanInterpreterOS<
 
   protected abstract OptimizeOpenSearchClient getOsClient();
 
-  protected abstract BoolQuery.Builder baseQueryBuilder(final ExecutionContext<DATA, PLAN> context);
+  public abstract BoolQuery.Builder baseQueryBuilder(final ExecutionContext<DATA, PLAN> context);
 
   protected abstract String[] getIndexNames(final ExecutionContext<DATA, PLAN> context);
 

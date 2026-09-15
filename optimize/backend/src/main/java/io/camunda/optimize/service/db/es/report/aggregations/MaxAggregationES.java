@@ -23,7 +23,7 @@ public class MaxAggregationES extends AggregationStrategyES<Builder> {
   private static final String MAX_AGGREGATION = "maxAggregation";
 
   @Override
-  public Double getValueForAggregation(
+  protected Double getValueForAggregation(
       final String customIdentifier, final Map<String, Aggregate> aggs) {
     final MaxAggregate aggregation =
         aggs.get(createAggregationName(customIdentifier, MAX_AGGREGATION)).max();
@@ -31,7 +31,7 @@ public class MaxAggregationES extends AggregationStrategyES<Builder> {
   }
 
   @Override
-  public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
+  protected Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
       final String customIdentifier, final Script script, final String... field) {
     final Aggregation.Builder builder = new Aggregation.Builder();
     return Pair.of(

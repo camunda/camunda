@@ -91,7 +91,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
   }
 
   @Override
-  public synchronized boolean startScheduling() {
+  protected synchronized boolean startScheduling() {
     LOG.info("Scheduling KPI evaluation scheduler.");
     return super.startScheduling();
   }
