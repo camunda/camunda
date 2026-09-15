@@ -10,13 +10,17 @@ package io.camunda.exporter.tasks.batchoperations;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NotFinishedBatchOperation;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
+import io.camunda.exporter.tasks.util.AdaptiveBatchSize;
+import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.util.FunctionUtil;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -24,17 +28,28 @@ import org.slf4j.Logger;
 
 public class BatchOperationUpdateTask implements BackgroundTask {
 
+  /**
+   * Caps what one cycle reads, and through that the aggregation and the bulk update derived from
+   * it. Each batch operation contributes exactly one document, so this is far larger than the
+   * post-export batch size, which bounds a task whose every item fans out into a tree.
+   */
+  public static final int MAX_BATCH_OPERATIONS_PER_CYCLE = 1000;
+
   private static final int NO_UPDATES = 0;
+
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
 
+  private final AdaptiveBatchSize batchSize;
   private final Logger logger;
   private final Executor executor;
 
   public BatchOperationUpdateTask(
       final BatchOperationUpdateRepository batchOperationUpdateRepository,
+      final int batchSize,
       final Logger logger,
       final Executor executor) {
     this.batchOperationUpdateRepository = batchOperationUpdateRepository;
+    this.batchSize = new AdaptiveBatchSize(batchSize);
     this.logger = logger;
     this.executor = executor;
   }
@@ -42,8 +57,43 @@ public class BatchOperationUpdateTask implements BackgroundTask {
   @Override
   public CompletionStage<Integer> execute() {
     return batchOperationUpdateRepository
-        .getNotFinishedBatchOperations()
-        .thenComposeAsync(this::updateBatchOperations, executor);
+        .getNotFinishedBatchOperations(batchSize.current())
+        .thenComposeAsync(this::updateBatchOperations, executor)
+        .handleAsync(
+            (updatesCount, error) -> {
+              if (error != null) {
+                throw new CompletionException(adjustBatchSize(error));
+              }
+
+              return updatesCount;
+            },
+            executor);
+  }
+
+  /** The read is the only lever on how large the write becomes, so it is all that is reduced. */
+  private Throwable adjustBatchSize(final Throwable error) {
+    final var cause = FuturesUtil.unwrapCompletionException(error);
+    if (!(cause instanceof BulkRequestTooLargeException)) {
+      return cause;
+    }
+
+    if (batchSize.reduce()) {
+      logger.warn(
+          """
+            The store refused the batch operation update write for being too large; retrying with \
+            at most {} batch operation(s) per cycle instead of {}.""",
+          batchSize.current(),
+          batchSize.configured(),
+          cause);
+    } else {
+      logger.warn(
+          """
+            The store refused the batch operation update write for being too large at a single \
+            batch operation; it accepts less than one update per request.""",
+          cause);
+    }
+
+    return cause;
   }
 
   @Override
@@ -66,9 +116,11 @@ public class BatchOperationUpdateTask implements BackgroundTask {
         .thenComposeAsync(batchOperationUpdateRepository::bulkUpdate, executor)
         .thenApplyAsync(
             FunctionUtil.peek(
-                (updatesCount) ->
-                    logger.trace(
-                        "BatchOperationUpdateTask - Updated {} batch operations", updatesCount)));
+                (updatesCount) -> {
+                  batchSize.reset();
+                  logger.trace(
+                      "BatchOperationUpdateTask - Updated {} batch operations", updatesCount);
+                }));
   }
 
   private List<DocumentUpdate> collectDocumentUpdates(
