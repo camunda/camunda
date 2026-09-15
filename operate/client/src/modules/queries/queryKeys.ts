@@ -54,6 +54,10 @@ const queryKeys = {
   },
   variables: {
     search: () => ['searchVariables'],
+    agentSystemPromptEvidence: (processInstanceKey: string) => [
+      'agentSystemPromptEvidence',
+      processInstanceKey,
+    ],
     searchWithFilter: (params: {
       processInstanceKey: ProcessInstance['processInstanceKey'];
       scopeKey: Variable['scopeKey'] | null;

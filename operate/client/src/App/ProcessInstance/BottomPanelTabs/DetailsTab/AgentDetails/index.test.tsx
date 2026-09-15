@@ -18,11 +18,13 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import type {ReactNode} from 'react';
 import {mockSearchAgentInstanceHistory} from 'modules/mocks/api/v2/agentInstances/searchAgentInstanceHistory';
-import {searchResult} from 'modules/testUtils';
+import {createVariable, searchResult} from 'modules/testUtils';
 import {Paths} from 'modules/Routes';
 import {AgentDetails} from './index';
 import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHistoryItem';
 import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
 
 function createWrapper() {
   const queryClient = getMockQueryClient();
@@ -44,6 +46,7 @@ const agentInstance = mockAgentInstance();
 describe('<AgentDetails />', () => {
   beforeEach(() => {
     mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+    mockSearchVariables().withSuccess(searchResult([]));
   });
 
   it('should render Agent Instance heading and status for TOOL_CALLING', () => {
@@ -162,6 +165,7 @@ describe('<AgentDetails />', () => {
         isError={true}
         selectedElementInstanceKey={null}
       />,
+      {wrapper: createWrapper()},
     );
 
     expect(screen.getByText('Agent Instance')).toBeInTheDocument();
@@ -333,36 +337,31 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render fixture-only system prompt evidence when provided', () => {
-    render(
-      <AgentDetails
-        agentInstances={[
-          mockAgentInstance({
-            definition: {
-              model: 'gpt-4',
-              provider: 'openai',
-              systemPrompt: [
-                {
-                  contentType: 'TEXT',
-                  text: 'Route ambiguous damage descriptions to manual review.',
-                },
-              ],
-              prototypeSystemPromptEvidence: {
-                type: 'Linked',
-                promptId: 'claims-review-instructions.md',
-                binding: 'Latest',
-                version: '1',
-              },
-            } as typeof agentInstance.definition & {
-              prototypeSystemPromptEvidence: {
-                type: string;
-                promptId: string;
-                binding: string;
-                version: string;
-              };
+  it('should render persisted system prompt evidence from the agent result variable', async () => {
+    const requestBodySpy = vi.fn();
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'agent',
+          scopeKey: agentInstance.processInstanceKey,
+          processInstanceKey: agentInstance.processInstanceKey,
+          value: JSON.stringify({
+            systemPrompt: {
+              type: 'linked',
+              promptId: 'claims-review-instructions.md',
+              binding: 'latest',
+              version: 1,
+              prompt: 'Route ambiguous damage descriptions to manual review.',
             },
           }),
-        ]}
+        }),
+      ]),
+      {requestBodyResolverFn: requestBodySpy},
+    );
+
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
         isError={false}
@@ -371,7 +370,7 @@ describe('<AgentDetails />', () => {
       {wrapper: createWrapper()},
     );
 
-    const evidence = screen.getByLabelText('System prompt evidence');
+    const evidence = await screen.findByLabelText('System prompt evidence');
 
     expect(evidence).toHaveAccessibleName('System prompt evidence');
     expect(within(evidence).getByText('Linked')).toBeInTheDocument();
@@ -383,9 +382,17 @@ describe('<AgentDetails />', () => {
     expect(
       screen.getByText('Route ambiguous damage descriptions to manual review.'),
     ).toBeInTheDocument();
+    expect(requestBodySpy).toHaveBeenCalledWith({
+      filter: {
+        processInstanceKey: {$eq: agentInstance.processInstanceKey},
+        scopeKey: {$eq: agentInstance.processInstanceKey},
+        name: {$eq: 'agent'},
+      },
+      page: {limit: 1},
+    });
   });
 
-  it('should omit system prompt evidence for production-shaped responses', () => {
+  it('should omit system prompt evidence when the agent result variable is absent', () => {
     render(
       <AgentDetails
         agentInstances={[agentInstance]}
@@ -400,6 +407,81 @@ describe('<AgentDetails />', () => {
     expect(
       screen.queryByLabelText('System prompt evidence'),
     ).not.toBeInTheDocument();
+  });
+
+  it('should fetch the complete agent result when its variable is truncated', async () => {
+    const truncatedVariable = createVariable({
+      name: 'agent',
+      scopeKey: agentInstance.processInstanceKey,
+      processInstanceKey: agentInstance.processInstanceKey,
+      value: '{"systemPrompt":',
+      isTruncated: true,
+    });
+    mockSearchVariables().withSuccess(searchResult([truncatedVariable]));
+    mockGetVariable().withSuccess(
+      createVariable({
+        ...truncatedVariable,
+        value: JSON.stringify({
+          systemPrompt: {
+            type: 'linked',
+            promptId: 'claims-review-instructions.md',
+            binding: 'latest',
+            version: 2,
+            prompt:
+              'Permit automatic approval for ambiguous damage descriptions.',
+          },
+        }),
+        isTruncated: false,
+      }),
+    );
+
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      await screen.findByText(
+        'Permit automatic approval for ambiguous damage descriptions.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('System prompt evidence')).getByText('2'),
+    ).toBeInTheDocument();
+  });
+
+  it('should display an error for invalid persisted prompt evidence', async () => {
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'agent',
+          scopeKey: agentInstance.processInstanceKey,
+          processInstanceKey: agentInstance.processInstanceKey,
+          value: JSON.stringify({systemPrompt: {type: 'inline'}}),
+        }),
+      ]),
+    );
+
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      await screen.findByText('Unable to load system prompt evidence.'),
+    ).toBeInTheDocument();
   });
 
   it('should render document references in the system prompt', () => {
