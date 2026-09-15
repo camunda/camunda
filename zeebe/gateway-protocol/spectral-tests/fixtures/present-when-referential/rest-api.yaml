@@ -139,9 +139,9 @@ components:
     LeaseResult:
       type: object
       required:
-        - leaseToken
+        - jobLeaseToken
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Present only when withLease is true.
           type: string
           nullable: true
@@ -152,9 +152,9 @@ components:
     TypoResult:
       type: object
       required:
-        - leaseToken
+        - jobLeaseToken
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marker bound to a non-existent request field.
           type: string
           nullable: true
@@ -165,9 +165,9 @@ components:
     NotNullableResult:
       type: object
       required:
-        - leaseToken
+        - jobLeaseToken
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marked property missing nullable.
           type: string
           x-present-when:
@@ -177,7 +177,7 @@ components:
     NotRequiredResult:
       type: object
       properties:
-        leaseToken:
+        jobLeaseToken:
           description: Marked property missing from required.
           type: string
           nullable: true

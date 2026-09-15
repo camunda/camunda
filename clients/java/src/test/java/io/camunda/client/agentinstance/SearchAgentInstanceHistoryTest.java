@@ -264,7 +264,7 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
             .agentInstanceKey("42")
             .elementInstanceKey("200")
             .jobKey("300")
-            .jobLease("lease-abc")
+            .jobLeaseToken("lease-abc")
             .loopIteration(3)
             .role(AgentInstanceHistoryRoleEnum.USER)
             .commitStatus(AgentInstanceHistoryCommitStatusEnum.COMMITTED)
@@ -326,7 +326,7 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
           softly.assertThat(item.getAgentInstanceKey()).as("agentInstanceKey").isEqualTo(42L);
           softly.assertThat(item.getElementInstanceKey()).as("elementInstanceKey").isEqualTo(200L);
           softly.assertThat(item.getJobKey()).as("jobKey").isEqualTo(300L);
-          softly.assertThat(item.getJobLease()).as("jobLease").isEqualTo("lease-abc");
+          softly.assertThat(item.getJobLeaseToken()).as("jobLeaseToken").isEqualTo("lease-abc");
           softly.assertThat(item.getLoopIteration()).as("loopIteration").isEqualTo(3);
           softly.assertThat(item.getRole()).as("role").isEqualTo(AgentInstanceHistoryRole.USER);
           softly

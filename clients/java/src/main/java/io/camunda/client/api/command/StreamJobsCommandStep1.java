@@ -105,8 +105,8 @@ public interface StreamJobsCommandStep1 {
 
     /**
      * Stream the jobs with a lease. When enabled, each activated job is assigned a distinct lease
-     * token, returned as {@link io.camunda.client.api.response.ActivatedJob#getLeaseToken()
-     * ActivatedJob#getLeaseToken()}. The lease token fences the complete, fail, and throw-error
+     * token, returned as {@link io.camunda.client.api.response.ActivatedJob#getJobLeaseToken()
+     * ActivatedJob#getJobLeaseToken()}. The lease token fences the complete, fail, and throw-error
      * commands against a superseded activation of the same job: a command carrying a stale or
      * missing token is rejected. An update-job command honors a supplied lease token the same way,
      * but an update without one always applies, so operator and bulk updates of leased jobs remain

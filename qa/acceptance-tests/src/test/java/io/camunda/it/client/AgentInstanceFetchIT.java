@@ -96,7 +96,7 @@ public class AgentInstanceFetchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei1)
             .jobKey(activatedJob1.getKey())
-            .jobLease(activatedJob1.getLeaseToken())
+            .jobLeaseToken(activatedJob1.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -136,7 +136,7 @@ public class AgentInstanceFetchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei2)
             .jobKey(activatedJob2.getKey())
-            .jobLease(activatedJob2.getLeaseToken())
+            .jobLeaseToken(activatedJob2.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -166,7 +166,7 @@ public class AgentInstanceFetchIT {
         .elementInstanceKey(ei2)
         .status(AgentInstanceUpdateStatus.THINKING)
         .jobKey(activatedJob2.getKey())
-        .jobLease(activatedJob2.getLeaseToken())
+        .jobLeaseToken(activatedJob2.getJobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()

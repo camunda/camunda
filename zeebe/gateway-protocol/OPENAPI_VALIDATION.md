@@ -234,7 +234,7 @@ scalar `equals` literal (`boolean`, `string`, or `number`).
 ```yaml
 ActivatedJobResult:
   properties:
-    leaseToken:
+    jobLeaseToken:
       description: The lease token; `null` when activated without a lease.
       nullable: true
       x-present-when:

@@ -86,12 +86,12 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   }
 
   @Override
-  public ThrowErrorCommandStep2 withLeaseToken(final String leaseToken) {
-    if (leaseToken == null) {
+  public ThrowErrorCommandStep2 withJobLeaseToken(final String jobLeaseToken) {
+    if (jobLeaseToken == null) {
       return this;
     }
-    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
-    httpRequestObject.setLeaseToken(leaseToken);
+    grpcRequestObjectBuilder.setJobLeaseToken(jobLeaseToken);
+    httpRequestObject.setJobLeaseToken(jobLeaseToken);
     return this;
   }
 

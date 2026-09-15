@@ -349,13 +349,13 @@ public class UpdateJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldUpdateTimeoutOfLeasedJobWithoutLeaseToken(
+  public void shouldUpdateTimeoutOfLeasedJobWithoutJobLeaseToken(
       final boolean useRest, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     createProcessInstance(jobType);
     final var job = activateLeasedJob(client, useRest, jobType);
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("Expected the leased job to carry a lease token")
         .isNotEmpty();
     final long jobKey = job.getKey();
@@ -373,13 +373,13 @@ public class UpdateJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldRejectUpdateTimeoutOfLeasedJobWithWrongLeaseToken(
+  public void shouldRejectUpdateTimeoutOfLeasedJobWithWrongJobLeaseToken(
       final boolean useRest, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     createProcessInstance(jobType);
     final var job = activateLeasedJob(client, useRest, jobType);
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("Expected the leased job to carry a lease token")
         .isNotEmpty();
     final long jobKey = job.getKey();
@@ -395,19 +395,19 @@ public class UpdateJobTest {
             () ->
                 getTimeoutCommand(client, useRest, jobKey)
                     .timeout(timeout)
-                    .withLeaseToken("wrong-lease-token")
+                    .withJobLeaseToken("wrong-lease-token")
                     .send()
                     .join())
         .hasMessageContaining(expectedMessage);
   }
 
   @Test
-  public void shouldUpdateRetriesOfLeasedJobWithoutLeaseToken(final TestInfo testInfo) {
+  public void shouldUpdateRetriesOfLeasedJobWithoutJobLeaseToken(final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     createProcessInstance(jobType);
     final var job = activateLeasedJob(client, false, jobType);
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("Expected the leased job to carry a lease token")
         .isNotEmpty();
     final long jobKey = job.getKey();
@@ -423,12 +423,12 @@ public class UpdateJobTest {
   }
 
   @Test
-  public void shouldRejectUpdateRetriesOfLeasedJobWithWrongLeaseToken(final TestInfo testInfo) {
+  public void shouldRejectUpdateRetriesOfLeasedJobWithWrongJobLeaseToken(final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     createProcessInstance(jobType);
     final var job = activateLeasedJob(client, false, jobType);
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("Expected the leased job to carry a lease token")
         .isNotEmpty();
     final long jobKey = job.getKey();
@@ -443,7 +443,7 @@ public class UpdateJobTest {
             () ->
                 getRetriesCommand(client, false, jobKey)
                     .retries(10)
-                    .withLeaseToken("wrong-lease-token")
+                    .withJobLeaseToken("wrong-lease-token")
                     .send()
                     .join())
         .hasMessageContaining(expectedMessage);

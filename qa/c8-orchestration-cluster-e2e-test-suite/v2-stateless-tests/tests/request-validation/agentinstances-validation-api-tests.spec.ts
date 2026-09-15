@@ -21,7 +21,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [
         {
           historyItemId: null,
@@ -61,7 +61,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [
         {
           historyItemId: null,
@@ -88,7 +88,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [
         {
           historyItemId: null,
@@ -109,13 +109,13 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Param jobLease wrong type (#1)', async ({
+  test('createAgentInstance - Param jobLeaseToken wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 123,
+      jobLeaseToken: 123,
       history: [
         {
           historyItemId: null,
@@ -136,13 +136,13 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Param jobLease wrong type (#2)', async ({
+  test('createAgentInstance - Param jobLeaseToken wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: true,
+      jobLeaseToken: true,
       history: [
         {
           historyItemId: null,
@@ -169,7 +169,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
@@ -187,7 +187,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   }) => {
     const requestBody = {
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [
         {
           historyItemId: null,
@@ -212,7 +212,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -227,7 +227,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   test('createAgentInstance - Missing jobKey (#1)', async ({request}) => {
     const requestBody = {
       elementInstanceKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [
         {
           historyItemId: null,
@@ -248,7 +248,9 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing jobLease (#1)', async ({request}) => {
+  test('createAgentInstance - Missing jobLeaseToken (#1)', async ({
+    request,
+  }) => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
@@ -278,7 +280,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [
         {
           historyItemId: null,
@@ -304,7 +306,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   }) => {
     const requestBody = {
       jobKey: 'x',
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
@@ -321,7 +323,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     const requestBody = {
       elementInstanceKey: 'x',
       jobKey: 'x',
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -336,7 +338,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   test('createAgentInstance - Missing jobKey (#2)', async ({request}) => {
     const requestBody = {
       elementInstanceKey: 'x',
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
@@ -349,7 +351,9 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing jobLease (#2)', async ({request}) => {
+  test('createAgentInstance - Missing jobLeaseToken (#2)', async ({
+    request,
+  }) => {
     const requestBody = {
       elementInstanceKey: 'x',
       jobKey: 'x',
@@ -380,7 +384,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   }) => {
     const requestBody = {
       jobKey: 'x',
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -396,7 +400,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       history: [],
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
@@ -413,7 +417,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -425,7 +429,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing combo elementInstanceKey,jobKey,jobLease', async ({
+  test('createAgentInstance - Missing combo elementInstanceKey,jobKey,jobLeaseToken', async ({
     request,
   }) => {
     const requestBody = {
@@ -441,7 +445,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing combo elementInstanceKey,jobLease', async ({
+  test('createAgentInstance - Missing combo elementInstanceKey,jobLeaseToken', async ({
     request,
   }) => {
     const requestBody = {
@@ -458,7 +462,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing combo elementInstanceKey,jobLease,history', async ({
+  test('createAgentInstance - Missing combo elementInstanceKey,jobLeaseToken,history', async ({
     request,
   }) => {
     const requestBody = {
@@ -479,7 +483,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   }) => {
     const requestBody = {
       elementInstanceKey: 'x',
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.post(buildUrl('/agent-instances', undefined), {
       headers: jsonHeaders(),
@@ -491,7 +495,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing combo jobKey,jobLease', async ({
+  test('createAgentInstance - Missing combo jobKey,jobLeaseToken', async ({
     request,
   }) => {
     const requestBody = {
@@ -508,7 +512,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing combo jobKey,jobLease,history', async ({
+  test('createAgentInstance - Missing combo jobKey,jobLeaseToken,history', async ({
     request,
   }) => {
     const requestBody = {
@@ -524,7 +528,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAgentInstance - Missing combo jobLease,history', async ({
+  test('createAgentInstance - Missing combo jobLeaseToken,history', async ({
     request,
   }) => {
     const requestBody = {
@@ -925,7 +929,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
       __extraField: 'unexpected',
     };
     const res = await request.patch(
@@ -956,13 +960,13 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateAgentInstance - Param jobLease wrong type (#1)', async ({
+  test('updateAgentInstance - Param jobLeaseToken wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: 123,
+      jobLeaseToken: 123,
     };
     const res = await request.patch(
       buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
@@ -977,13 +981,13 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateAgentInstance - Param jobLease wrong type (#2)', async ({
+  test('updateAgentInstance - Param jobLeaseToken wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
-      jobLease: true,
+      jobLeaseToken: true,
     };
     const res = await request.patch(
       buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
@@ -1003,7 +1007,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   }) => {
     const requestBody = {
       jobKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.patch(
       buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
@@ -1021,7 +1025,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   test('updateAgentInstance - Missing jobKey (#1)', async ({request}) => {
     const requestBody = {
       elementInstanceKey: null,
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.patch(
       buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
@@ -1036,7 +1040,9 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateAgentInstance - Missing jobLease (#1)', async ({request}) => {
+  test('updateAgentInstance - Missing jobLeaseToken (#1)', async ({
+    request,
+  }) => {
     const requestBody = {
       elementInstanceKey: null,
       jobKey: null,
@@ -1059,7 +1065,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   }) => {
     const requestBody = {
       jobKey: 'x',
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.patch(
       buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
@@ -1077,7 +1083,7 @@ test.describe('Agentinstances Validation API Tests', () => {
   test('updateAgentInstance - Missing jobKey (#2)', async ({request}) => {
     const requestBody = {
       elementInstanceKey: 'x',
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.patch(
       buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
@@ -1092,7 +1098,9 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateAgentInstance - Missing jobLease (#2)', async ({request}) => {
+  test('updateAgentInstance - Missing jobLeaseToken (#2)', async ({
+    request,
+  }) => {
     const requestBody = {
       elementInstanceKey: 'x',
       jobKey: 'x',
@@ -1127,7 +1135,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      jobLease: 'x',
+      jobLeaseToken: 'x',
     };
     const res = await request.patch(
       buildUrl('/agent-instances/{agentInstanceKey}', {agentInstanceKey: 'x'}),
@@ -1142,7 +1150,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateAgentInstance - Missing combo elementInstanceKey,jobKey,jobLease', async ({
+  test('updateAgentInstance - Missing combo elementInstanceKey,jobKey,jobLeaseToken', async ({
     request,
   }) => {
     const requestBody = {};
@@ -1159,7 +1167,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateAgentInstance - Missing combo elementInstanceKey,jobLease', async ({
+  test('updateAgentInstance - Missing combo elementInstanceKey,jobLeaseToken', async ({
     request,
   }) => {
     const requestBody = {
@@ -1178,7 +1186,7 @@ test.describe('Agentinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateAgentInstance - Missing combo jobKey,jobLease', async ({
+  test('updateAgentInstance - Missing combo jobKey,jobLeaseToken', async ({
     request,
   }) => {
     const requestBody = {

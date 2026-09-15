@@ -87,7 +87,7 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
             "agentInstanceKey": "%d",
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "job-lease-1",
+            "jobLeaseToken": "job-lease-1",
             "loopIteration": 1,
             "role": "USER",
             "content": [{ "contentType": "TEXT", "text": "Hello agent" }],

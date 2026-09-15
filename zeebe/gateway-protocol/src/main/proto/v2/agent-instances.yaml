@@ -622,7 +622,7 @@ components:
       required:
         - elementInstanceKey
         - jobKey
-        - jobLease
+        - jobLeaseToken
         - history
       properties:
         elementInstanceKey:
@@ -638,7 +638,7 @@ components:
             A creation must always be attributed to the active job that produced it.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
-        jobLease:
+        jobLeaseToken:
           description: |
             Opaque lease token received from the job activation response. Disambiguates
             this activation from any other activation of the same job: if the job is
@@ -688,7 +688,7 @@ components:
       required:
         - elementInstanceKey
         - jobKey
-        - jobLease
+        - jobLeaseToken
       properties:
         elementInstanceKey:
           nullable: false
@@ -713,7 +713,7 @@ components:
             An update must always be attributed to the active job that produced it.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
-        jobLease:
+        jobLeaseToken:
           description: |
             Opaque lease token received from the job activation response. Disambiguates
             this activation from any other activation of the same job: if the job is
@@ -987,7 +987,7 @@ components:
         - agentInstanceKey
         - elementInstanceKey
         - jobKey
-        - jobLease
+        - jobLeaseToken
         - loopIteration
         - role
         - content
@@ -1026,7 +1026,7 @@ components:
           description: The key of the job activation during which this item was produced.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
-        jobLease:
+        jobLeaseToken:
           description: The lease token of the activation that produced this item.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
