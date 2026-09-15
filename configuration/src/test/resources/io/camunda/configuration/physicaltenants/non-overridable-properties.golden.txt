@@ -149,3 +149,6 @@ system.io-thread-count
 system.restore.ignore-files-in-target
 system.restore.validate-config
 system.upgrade.enable-version-check
+webapps.identity.url
+webapps.operate.url
+webapps.tasklist.url
