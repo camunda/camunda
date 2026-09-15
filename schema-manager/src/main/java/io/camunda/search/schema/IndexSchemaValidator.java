@@ -155,12 +155,22 @@ public class IndexSchemaValidator {
       if (hasBackingIndex) {
         // A backing index exists and is the source of truth: a field only in the stored template
         // may simply mean this node's descriptor is stale (e.g. an older node racing after a newer
-        // node already upgraded the schema). Overwriting the template here could downgrade it, so
-        // skip the update entirely.
-        LOGGER.info(
-            "Template '{}': Field deletion is requested, will be ignored. Fields: {}",
-            templateDescriptor.getTemplateName(),
-            difference.entriesOnlyOnRight());
+        // node already upgraded the schema). This comparison alone will not touch the template,
+        // but if the backing-index comparison already scheduled a template update, that update
+        // still fully overwrites the template from the descriptor and will drop this field.
+        if (newFields.containsKey(templateDescriptor)) {
+          LOGGER.info(
+              "Template '{}': Field(s) only present in the stored template will be dropped, as"
+                  + " the template is being updated for a different reason. Fields: {}",
+              templateDescriptor.getTemplateName(),
+              difference.entriesOnlyOnRight());
+        } else {
+          LOGGER.info(
+              "Template '{}': Field(s) only present in the stored template, will be left as is."
+                  + " Fields: {}",
+              templateDescriptor.getTemplateName(),
+              difference.entriesOnlyOnRight());
+        }
         return;
       }
       // No backing index/data exists for this descriptor at all, so it is safe to fully overwrite
