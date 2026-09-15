@@ -732,53 +732,23 @@ test.describe.serial('Process Instance Migration', () => {
         hiddenText: '"endDate": "null"',
       });
     });
-  });
-
-  // Skipped due to bug #63043: https://github.com/camunda/camunda/issues/63043
-  //
-  // Operate's v1 flow-node-metadata endpoint can permanently report
-  // incident: null / incidentCount: 0 for a migrated flow-node instance,
-  // even though the incident is genuinely present via the v2 APIs. The
-  // metadata popover's Incident component only reads the v1 field, so its
-  // heading never renders for this element regardless of how long/how often
-  // the test retries. This step was previously hardened with an
-  // overlay-first wait (check the diagram's incidents overlay before polling
-  // the popover) on the theory that the overlay is a faster, more-reliable
-  // signal - but validation showed the overlay-first pattern still fails
-  // 100% of the time when the underlying gap occurs (10/10 retries
-  // exhausted in https://github.com/camunda/camunda/actions/runs/34943298092/job/104297171103,
-  // the exact same "Incident" heading never appearing), disproving that
-  // theory: overlay-visible does not guarantee the popover's v1 field
-  // populates. No test-side wait strategy closes this gap. Re-enable once
-  // #63043 lands a real backend/frontend fix.
-  test.skip('Migrated tasks - Business rule task incident migration', async ({
-    page,
-    operateFiltersPanelPage,
-    operateProcessesPage,
-    operateDiagramPage,
-  }) => {
-    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
-    const targetVersion = testProcesses.processV3.version.toString();
-
-    await test.step('Navigate to first migrated process instance', async () => {
-      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(targetVersion);
-
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 4,
-      });
-
-      await operateProcessesPage.clickProcessInstanceLink();
-      await operateDiagramPage.resetDiagramZoomButton.click();
-    });
 
     await test.step('Verify Business rule task incident migration', async () => {
+      // This step failed in CI after 3, then 5, then 8 attempts (runs
+      // 30438261914, 30726115387, 31459158807). The last failure's page
+      // snapshot shows why: the popover was open on the right flow node, but
+      // its instance was still `running` with an empty `Retries Left` and no
+      // Incident section, while the instance banner reported only the two
+      // incidents raised on other flow nodes. So the DMN incident had not been
+      // raised on Business rule task 2 yet — every attempt spent its full 30s
+      // popover budget, plus a reload, waiting on a precondition that had not
+      // happened. Wait for the flow node's own incidents overlay first. Operate
+      // repolls the per-flow-node statistics that drive the overlay every 5s
+      // while the instance is running, so the wait absorbs engine/import lag on
+      // its own; a reload only helps in the narrow case where that store has
+      // wedged into an error state. Hence a long poll with a single reload
+      // recovery rather than reloading on every attempt, which would add load
+      // to the backend the step is already waiting on.
       await waitForAssertion({
         assertion: async () => {
           await expect(
@@ -805,6 +775,10 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
+        // Widened from 8 to 10 for extra headroom: the same overlay-first
+        // pattern was ported to stable/8.8 (#59919/#63043), which has shown
+        // worse import lag on this step historically, and 8.7 and 8.8 share
+        // the same underlying popover/metadata code path.
         maxRetries: 10,
       });
     });
