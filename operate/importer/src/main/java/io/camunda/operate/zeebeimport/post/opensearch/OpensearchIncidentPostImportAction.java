@@ -15,6 +15,7 @@ import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.PostImporterQueueTemplate.*;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
@@ -582,32 +583,51 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   private void queryData(final List<IncidentEntity> incidents, final AdditionalData data)
       throws IOException {
     // find process instances (if they exist) that correspond to given incidents
-    record Result(String treePath) {}
     final var request =
         searchRequestBuilder(listViewTemplate)
             .query(
-                ids(
-                    incidents.stream()
-                        .map(i -> String.valueOf(i.getProcessInstanceKey()))
-                        .toList()))
-            .source(sourceInclude(ListViewTemplate.TREE_PATH));
+                and(
+                    ids(
+                        incidents.stream()
+                            .map(i -> String.valueOf(i.getProcessInstanceKey()))
+                            .toList()),
+                    term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)))
+            .source(sourceInclude(ListViewTemplate.TREE_PATH, JOIN_RELATION));
     richOpenSearchClient
         .doc()
         .scrollWith(
             request,
-            Result.class,
+            ListViewTreePathHit.class,
             hits -> {
+              final var validHits =
+                  hits.stream()
+                      .filter(
+                          hit -> {
+                            final boolean hasTreePath =
+                                hit.source() != null && hit.source().treePath() != null;
+                            if (!hasTreePath) {
+                              LOGGER.warn(
+                                  "Process instance lookup matched list-view document {} in index {} "
+                                      + "with joinRelation {} and no treePath (expected a processInstance "
+                                      + "document); skipping it.",
+                                  hit.id(),
+                                  hit.index(),
+                                  hit.source() == null ? null : hit.source().joinRelation());
+                            }
+                            return hasTreePath;
+                          })
+                      .toList();
               data.getProcessInstanceTreePaths()
                   .putAll(
-                      hits.stream()
+                      validHits.stream()
                           .collect(
                               toMap(
                                   hit -> Long.valueOf(hit.id()),
-                                  hit -> hit.source().treePath,
+                                  hit -> hit.source().treePath(),
                                   (path1, path2) -> path1)));
               data.getProcessInstanceIndices()
                   .putAll(
-                      hits.stream()
+                      validHits.stream()
                           .collect(toMap(Hit::id, hit -> hit.index(), (index1, index2) -> index1)));
             });
   }
@@ -718,4 +738,8 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
               return u;
             }));
   }
+
+  // joinRelation is typed as Object because list-view documents carry it either as an object
+  // ({name, parent}) or, in older data, as a bare string; it is only ever logged.
+  record ListViewTreePathHit(String treePath, Object joinRelation) {}
 }

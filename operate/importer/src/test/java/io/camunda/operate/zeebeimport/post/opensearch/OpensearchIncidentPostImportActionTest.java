@@ -9,6 +9,7 @@ package io.camunda.operate.zeebeimport.post.opensearch;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -18,21 +19,26 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebeimport.post.AdditionalData;
 import java.util.List;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -40,11 +46,14 @@ public class OpensearchIncidentPostImportActionTest {
 
   private static final String QUEUE_ALIAS = "operate-post-importer-queue-alias";
   private static final String QUEUE_WRITE_INDEX = "operate-post-importer-queue-8.7.0_";
+  private static final String LIST_VIEW_ALIAS = "operate-list-view-alias";
+  private static final String LIST_VIEW_WRITE_INDEX = "operate-list-view-8.3.0_";
 
   private RichOpenSearchClient richOpenSearchClient;
   private OpenSearchIndexOperations indexOperations;
   private OpenSearchDocumentOperations documentOperations;
   private PostImporterQueueTemplate postImporterQueueTemplate;
+  private ListViewTemplate listViewTemplate;
   private OpensearchIncidentPostImportAction action;
 
   @Before
@@ -53,16 +62,78 @@ public class OpensearchIncidentPostImportActionTest {
     indexOperations = mock(OpenSearchIndexOperations.class);
     documentOperations = mock(OpenSearchDocumentOperations.class);
     postImporterQueueTemplate = mock(PostImporterQueueTemplate.class);
+    listViewTemplate = mock(ListViewTemplate.class);
 
     when(richOpenSearchClient.index()).thenReturn(indexOperations);
     when(richOpenSearchClient.doc()).thenReturn(documentOperations);
     when(postImporterQueueTemplate.getAlias()).thenReturn(QUEUE_ALIAS);
     when(postImporterQueueTemplate.getFullQualifiedName()).thenReturn(QUEUE_WRITE_INDEX);
+    when(listViewTemplate.getAlias()).thenReturn(LIST_VIEW_ALIAS);
+    when(listViewTemplate.getFullQualifiedName()).thenReturn(LIST_VIEW_WRITE_INDEX);
 
     action = new OpensearchIncidentPostImportAction(1);
     ReflectionTestUtils.setField(action, "richOpenSearchClient", richOpenSearchClient);
     ReflectionTestUtils.setField(action, "postImporterQueueTemplate", postImporterQueueTemplate);
+    ReflectionTestUtils.setField(action, "listViewTemplate", listViewTemplate);
     ReflectionTestUtils.setField(action, "operateProperties", new OperateProperties());
+  }
+
+  @Test
+  public void shouldOnlyMatchProcessInstanceDocumentsWhenLookingUpTreePaths() throws Exception {
+    // given
+    final ArgumentCaptor<SearchRequest.Builder> searchCaptor =
+        ArgumentCaptor.forClass(SearchRequest.Builder.class);
+    final IncidentEntity incident = new IncidentEntity().setProcessInstanceKey(123L);
+    final AdditionalData data = new AdditionalData();
+
+    // when
+    ReflectionTestUtils.invokeMethod(action, "queryData", List.of(incident), data);
+
+    // then - the list-view index holds both processInstance and activity documents behind the
+    // same _id space; without this constraint the lookup can match an unrelated activity document
+    verify(documentOperations).scrollWith(searchCaptor.capture(), any(), any());
+    final Query query = searchCaptor.getValue().build().query();
+    assertTrue(
+        "expected a must clause binding "
+            + ListViewTemplate.JOIN_RELATION
+            + " to "
+            + ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION
+            + ", but got: "
+            + query,
+        query.bool().must().stream()
+            .anyMatch(
+                clause ->
+                    clause.isTerm()
+                        && ListViewTemplate.JOIN_RELATION.equals(clause.term().field())
+                        && clause.term().value().isString()
+                        && ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION.equals(
+                            clause.term().value().stringValue())));
+  }
+
+  @Test
+  public void shouldNotFailWhenListViewLookupMatchesDocumentWithoutTreePath() throws Exception {
+    // given - simulates the list-view index unexpectedly returning a document with no treePath
+    // (e.g. an activity document slipping past the joinRelation filter above)
+    @SuppressWarnings("rawtypes")
+    final ArgumentCaptor<Consumer> hitsConsumerCaptor = ArgumentCaptor.forClass(Consumer.class);
+    final IncidentEntity incident = new IncidentEntity().setProcessInstanceKey(123L);
+    final AdditionalData data = new AdditionalData();
+    ReflectionTestUtils.invokeMethod(action, "queryData", List.of(incident), data);
+    verify(documentOperations).scrollWith(any(), any(), hitsConsumerCaptor.capture());
+    final Hit<OpensearchIncidentPostImportAction.ListViewTreePathHit> hitWithoutTreePath =
+        new Hit.Builder<OpensearchIncidentPostImportAction.ListViewTreePathHit>()
+            .id("123")
+            .index(LIST_VIEW_WRITE_INDEX)
+            .source(new OpensearchIncidentPostImportAction.ListViewTreePathHit(null, "activity"))
+            .build();
+
+    // when - must not throw NullPointerException (Collectors.toMap on a null value)
+    hitsConsumerCaptor.getValue().accept(List.of(hitWithoutTreePath));
+
+    // then - the document without a treePath is skipped rather than corrupting the batch, and it
+    // is skipped for both maps: they are built from the same filtered hits
+    assertTrue(data.getProcessInstanceTreePaths().isEmpty());
+    assertTrue(data.getProcessInstanceIndices().isEmpty());
   }
 
   @Test
