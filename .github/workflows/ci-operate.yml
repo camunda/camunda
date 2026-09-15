@@ -129,6 +129,11 @@ jobs:
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
+    # Exposes the matrix `shardTotal` so the merge job can assert it downloaded
+    # every shard without duplicating the number. Every matrix leg writes the
+    # same value, so the last writer winning is harmless.
+    outputs:
+      shard-total: ${{ steps.shard-total.outputs.value }}
     env:
       TEST_TYPE: Unit
       TEST_OWNER: '@camunda/operate-frontend'
@@ -136,6 +141,12 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
+      # First step in the job so the merge job still learns the expected shard
+      # count when the tests themselves fail.
+      - name: Publish shard total
+        id: shard-total
+        working-directory: ${{ github.workspace }}
+        run: echo "value=${{ matrix.shardTotal }}" >> "$GITHUB_OUTPUT"
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -211,16 +222,34 @@ jobs:
       # `pattern:` matches whatever shards happen to exist, so a shard whose
       # upload failed would be merged over silently and this job would report a
       # green, complete-looking report missing a quarter of the tests (INC-7913).
-      # EXPECTED_SHARDS must track the shardTotal of `fe-unit-tests`, which is
-      # not in scope here.
+      #
+      # Checks each shard by the name vitest gives its blob
+      # (`blob-<index>-<total>.json`) rather than counting files, so an extra
+      # file appearing in `.vitest-reports` cannot be mistaken for a present
+      # shard, nor a missing one for an absent report.
+      #
+      # `!cancelled()` rather than the default `success()`: the degraded runs
+      # this guard exists to catch are exactly the ones where an earlier step
+      # failed, and the job itself runs under `!cancelled()`.
       - name: Verify all shard reports were downloaded
+        if: ${{ !cancelled() }}
         env:
-          EXPECTED_SHARDS: "4"
+          EXPECTED_SHARDS: ${{ needs.fe-unit-tests.outputs.shard-total }}
         run: |
-          actual=$(find .vitest-reports -type f | wc -l)
-          if [ "$actual" -ne "$EXPECTED_SHARDS" ]; then
-            echo "::error::Expected $EXPECTED_SHARDS shard blob reports, found $actual." \
-              "A shard's test results are missing, so the merged report would be incomplete."
+          if [ -z "$EXPECTED_SHARDS" ]; then
+            echo "::error::Expected shard count unavailable; cannot verify the merged report is complete."
+            exit 1
+          fi
+          missing=""
+          for index in $(seq 1 "$EXPECTED_SHARDS"); do
+            if [ ! -f ".vitest-reports/blob-${index}-${EXPECTED_SHARDS}.json" ]; then
+              missing="${missing} ${index}"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing blob report for shard(s):${missing} of $EXPECTED_SHARDS." \
+              "Those test results are absent, so the merged report would be incomplete."
+            echo "Downloaded files:"
             find .vitest-reports -type f
             exit 1
           fi
@@ -414,6 +443,9 @@ jobs:
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
+    # See `fe-unit-tests` for why the shard total is published as an output.
+    outputs:
+      shard-total: ${{ steps.shard-total.outputs.value }}
     env:
       TEST_TYPE: visual-regression
       TEST_OWNER: '@camunda/operate-frontend'
@@ -424,6 +456,12 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
+      # First step in the job so the merge job still learns the expected shard
+      # count when the tests themselves fail.
+      - name: Publish shard total
+        id: shard-total
+        working-directory: ${{ github.workspace }}
+        run: echo "value=${{ matrix.shardTotal }}" >> "$GITHUB_OUTPUT"
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -499,30 +537,57 @@ jobs:
           path: operate/client/all-blob-reports
           pattern: operate-visual-regression-blob-report-*
           merge-multiple: true
-      # `pattern:` matches whatever shards happen to exist, so a shard whose
-      # upload failed would be merged over silently and this job would report a
-      # green, complete-looking report missing a quarter of the tests (INC-7913).
-      # EXPECTED_SHARDS must track the shardTotal of
-      # `operate-fe-visual-regression-tests`, which is not in scope here.
-      - name: Verify all shard reports were downloaded
-        env:
-          EXPECTED_SHARDS: "4"
-        run: |
-          actual=$(find all-blob-reports -type f | wc -l)
-          if [ "$actual" -ne "$EXPECTED_SHARDS" ]; then
-            echo "::error::Expected $EXPECTED_SHARDS shard blob reports, found $actual." \
-              "A shard's test results are missing, so the merged report would be incomplete."
-            find all-blob-reports -type f
-            exit 1
-          fi
+      # Merge and upload before the completeness check, so a run missing a
+      # shard still publishes the visual diffs of the shards that did arrive --
+      # a partial report is what a reviewer needs to triage the failure. The
+      # check below still fails the job, so an incomplete report is never
+      # mistaken for a green one.
       - name: Merge into HTML Report
         run: npx playwright merge-reports --reporter html ./all-blob-reports
       - name: Upload HTML report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: operate-visual-regression-report
           path: operate/client/playwright-report/
-          retention-days: 30
+          retention-days: "30"
+      # `pattern:` matches whatever shards happen to exist, so a shard whose
+      # upload failed would be merged over silently and this job would report a
+      # green, complete-looking report missing a quarter of the tests (INC-7913).
+      #
+      # Playwright names each shard's blob `report-<commandHash>-<index>.zip`,
+      # where the hash covers the `--project` filters `test:visual` passes, so
+      # only the zero-padded shard suffix is stable enough to match on. Checking
+      # per shard rather than counting files keeps an unrelated extra file in
+      # the directory from standing in for a missing shard.
+      #
+      # `!cancelled()` rather than the default `success()`: the degraded runs
+      # this guard exists to catch are exactly the ones where an earlier step
+      # failed, and the job itself runs under `!cancelled()`.
+      - name: Verify all shard reports were downloaded
+        if: ${{ !cancelled() }}
+        env:
+          EXPECTED_SHARDS: ${{ needs.operate-fe-visual-regression-tests.outputs.shard-total }}
+        run: |
+          if [ -z "$EXPECTED_SHARDS" ]; then
+            echo "::error::Expected shard count unavailable; cannot verify the merged report is complete."
+            exit 1
+          fi
+          width=${#EXPECTED_SHARDS}
+          missing=""
+          for index in $(seq 1 "$EXPECTED_SHARDS"); do
+            padded=$(printf "%0${width}d" "$index")
+            if ! ls all-blob-reports/*-"${padded}".zip >/dev/null 2>&1; then
+              missing="${missing} ${index}"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing blob report for shard(s):${missing} of $EXPECTED_SHARDS." \
+              "Those test results are absent, so the merged report is incomplete."
+            echo "Downloaded files:"
+            find all-blob-reports -type f
+            exit 1
+          fi
 
   operate-update-screenshots:
     if: inputs.runFeTests
