@@ -11,14 +11,28 @@ import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
+import io.camunda.security.spring.security.SecurityHeadersCustomizer;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
  * CCSM security wiring for the CSL adoption, active under the self-managed profile whenever CSL is
@@ -72,5 +86,90 @@ public class OptimizeCcsmSecurityConfiguration {
         List.of(new OptimizeIdentityPermissionValidator(ccsmTokenService));
     return OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
         oidcProviderConfigurationPort, cslProperties, extraValidators);
+  }
+
+  /**
+   * Installs {@link OptimizeCcsmSessionPermissionEnforcementFilter} into CSL's
+   * session-authenticated chains (webapp + API). CSL provides no dedicated "add an arbitrary filter
+   * to every chain" SPI; {@link SecurityHeadersCustomizer} is the closest fit it does offer — a
+   * plain {@code customize(HttpSecurity)} hook that {@code ScopedWebappSecurityChainBuilder},
+   * {@code ScopedApiSecurityChainBuilder} and {@code UnprotectedApiSecurityConfiguration} all apply
+   * while building their chain, regardless of its "headers" name. Repurposing it here is a
+   * deliberate, documented deviation rather than a semantic fit: it is the only extension point CSL
+   * exposes that receives the real {@link HttpSecurity} builder early enough to add a filter after
+   * the point where the session's {@code SecurityContext} has been resolved. Applying it to the
+   * unprotected chain too is harmless: that chain never populates an {@code
+   * OAuth2AuthenticationToken}, so the filter is a no-op there.
+   */
+  @Bean
+  public SecurityHeadersCustomizer ccsmSessionPermissionEnforcementFilterInstaller(
+      final CCSMTokenService ccsmTokenService) {
+    final OptimizeCcsmSessionPermissionEnforcementFilter filter =
+        new OptimizeCcsmSessionPermissionEnforcementFilter(ccsmTokenService);
+    return httpSecurity -> httpSecurity.addFilterAfter(filter, SecurityContextHolderFilter.class);
+  }
+
+  /**
+   * Carve-out chain for {@code /api/public/**} and {@code /api/ingestion/variable}: the
+   * client-credentials/M2M surface that legacy CCSM ({@code
+   * CCSMSecurityConfigurerAdapter#publicApiJwtDecoder}) only ever audience-checked, never gated
+   * through Identity. {@link OptimizeSecurityPathAdapter#apiPaths()} places both paths in the same
+   * shared chain as every interactive-user endpoint, so without this carve-out {@link
+   * OptimizeIdentityPermissionValidator} would hard-reject any client-credentials token lacking a
+   * {@code write:*} Identity grant — a regression from the legacy behaviour these two paths always
+   * had. Ordered ahead of CSL's own {@code oidcApiSecurityFilterChain} ({@code
+   * CamundaSecurityFilterChainConstants#ORDER_API}) so it claims both paths first; sharing {@code
+   * ORDER_UNPROTECTED} with CSL's genuinely-public chain is safe because the two chains' path
+   * patterns never overlap.
+   *
+   * <p>Builds its {@link JwtDecoder} the same way CSL's own default {@code jwtDecoder} bean does
+   * ({@code OidcAccessTokenDecoderFactory#selectAccessTokenDecoder}) but with a freshly built
+   * {@link TokenValidatorFactory} that carries none of the extra validators — i.e. the same
+   * issuer/signature/expiry/audience checks CSL would otherwise apply, just without the Identity
+   * gate {@link #tokenValidatorFactory} adds for every other path.
+   */
+  @Bean
+  @Order(CamundaSecurityFilterChainConstants.ORDER_UNPROTECTED)
+  public SecurityFilterChain optimizeCcsmPublicApiSecurityFilterChain(
+      final HttpSecurity http,
+      final ClientRegistrationRepository clientRegistrationRepository,
+      final OidcProviderConfigurationPort oidcProviderConfigurationPort,
+      final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
+      final CamundaSecurityLibraryProperties cslProperties)
+      throws Exception {
+    final TokenValidatorFactory validatorFactoryWithoutIdentityGate =
+        OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
+            oidcProviderConfigurationPort, cslProperties, List.of());
+    final JwtDecoder decoder =
+        oidcAccessTokenDecoderFactory.selectAccessTokenDecoder(
+            allClientRegistrations(clientRegistrationRepository),
+            oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
+            validatorFactoryWithoutIdentityGate);
+
+    http.securityMatchers(
+            matchers ->
+                matchers.requestMatchers(
+                    PathPatternRequestMatcher.withDefaults().matcher("/api/public/**"),
+                    PathPatternRequestMatcher.withDefaults().matcher("/api/ingestion/variable")))
+        .csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(decoder)));
+    return http.build();
+  }
+
+  // Mirrors OptimizeCamundaSecurityConfig#resolveLoginRedirectTarget: ClientRegistrationRepository
+  // exposes no standard "list all registrations" method, but CSL's implementation is Iterable.
+  private static List<ClientRegistration> allClientRegistrations(
+      final ClientRegistrationRepository repository) {
+    final List<ClientRegistration> registrations = new ArrayList<>();
+    if (repository instanceof final Iterable<?> iterable) {
+      for (final Object candidate : iterable) {
+        if (candidate instanceof final ClientRegistration registration) {
+          registrations.add(registration);
+        }
+      }
+    }
+    return registrations;
   }
 }

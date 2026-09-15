@@ -381,6 +381,17 @@ public class CCSMTokenService {
         .map(ServletRequestAttributes::getRequest);
   }
 
+  /**
+   * Exposes the CSL session's stored access token for an explicitly supplied request, for callers
+   * that run outside the request-scoped {@link RequestContextHolder} plumbing {@link
+   * #getCurrentUserAuthToken()} relies on — e.g. a servlet filter that already has the {@link
+   * HttpServletRequest} in hand and must not depend on whether {@code RequestContextHolder} has
+   * been populated for the current thread yet.
+   */
+  public Optional<String> getSessionAccessToken(final HttpServletRequest request) {
+    return cslSessionAccessToken(request);
+  }
+
   private Optional<String> cslSessionAccessToken(final HttpServletRequest request) {
     final OAuth2AuthorizedClientRepository repository =
         authorizedClientRepositoryProvider == null

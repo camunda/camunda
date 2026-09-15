@@ -53,11 +53,14 @@ public final class OptimizeIdentityPermissionValidator implements OAuth2TokenVal
       ccsmTokenService.verifyAccessToken(token.getTokenValue());
       return OAuth2TokenValidatorResult.success();
     } catch (final NotAuthorizedException e) {
-      LOG.debug("Rejected token: user lacks the Optimize (write:*) Identity permission", e);
+      // NotAuthorizedException also covers CCSMTokenService's Entra v1.0 token-version rejection,
+      // not only a genuine missing write:* grant, and the two cannot be distinguished here — so the
+      // message must not claim a specific cause it cannot verify.
+      LOG.debug("Rejected token: not authorized to access Optimize", e);
       return OAuth2TokenValidatorResult.failure(
           new OAuth2Error(
               OAuth2ErrorCodes.INSUFFICIENT_SCOPE,
-              "Token does not grant the Optimize (write:*) permission",
+              "Token could not be verified as authorized",
               null));
     } catch (final IdentityException e) {
       // Covers TokenVerificationException (invalid/expired token) and RestException (Identity

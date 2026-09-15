@@ -32,33 +32,73 @@ class OptimizeIdentityPermissionValidatorTest {
 
   @Test
   void shouldAcceptTokenGrantedTheOptimizePermission() {
+    // given
     doNothing().when(ccsmTokenService).verifyAccessToken("token");
 
-    assertThat(validator().validate(jwt()).hasErrors()).isFalse();
+    // when
+    final boolean hasErrors = validator().validate(jwt()).hasErrors();
+
+    // then
+    assertThat(hasErrors).isFalse();
   }
 
   @Test
   void shouldRejectTokenLackingTheOptimizePermission() {
+    // given
     doThrow(new NotAuthorizedException("User is not authorized to access Optimize"))
         .when(ccsmTokenService)
         .verifyAccessToken("token");
 
-    assertThat(validator().validate(jwt()).hasErrors()).isTrue();
+    // when
+    final boolean hasErrors = validator().validate(jwt()).hasErrors();
+
+    // then
+    assertThat(hasErrors).isTrue();
+  }
+
+  @Test
+  void shouldRejectTokenOnEntraTokenVersionRejection() {
+    // given
+    // CCSMTokenService#verifyAccessToken throws NotAuthorizedException for Entra v1.0
+    // token-version rejection too, not only a genuine missing write:* grant. The validator cannot
+    // distinguish the two cases, so it must reject either way with a message that does not claim a
+    // specific cause it cannot verify.
+    doThrow(new NotAuthorizedException("Microsoft Entra token rejected: 'ver' claim is '1.0'"))
+        .when(ccsmTokenService)
+        .verifyAccessToken("token");
+
+    // when
+    final var result = validator().validate(jwt());
+
+    // then
+    assertThat(result.hasErrors()).isTrue();
+    assertThat(result.getErrors())
+        .singleElement()
+        .satisfies(
+            error ->
+                assertThat(error.getDescription())
+                    .isEqualTo("Token could not be verified as authorized"));
   }
 
   @Test
   void shouldRejectTokenIdentityCannotVerify() {
+    // given
     // Covers both an invalid/expired token and Identity being unreachable: either way the
     // permission cannot be confirmed, so the token must not be accepted.
     doThrow(new TokenVerificationException("token invalid"))
         .when(ccsmTokenService)
         .verifyAccessToken("token");
 
-    assertThat(validator().validate(jwt()).hasErrors()).isTrue();
+    // when
+    final boolean hasErrors = validator().validate(jwt()).hasErrors();
+
+    // then
+    assertThat(hasErrors).isTrue();
   }
 
   @Test
   void shouldRejectTokenOnUnexpectedError() {
+    // given
     // A security boundary must fail closed on the unexpected rather than let it propagate as an
     // unhandled exception, so even an error outside the known Identity exception hierarchy must
     // still reject the token.
@@ -66,7 +106,11 @@ class OptimizeIdentityPermissionValidatorTest {
         .when(ccsmTokenService)
         .verifyAccessToken("token");
 
-    assertThat(validator().validate(jwt()).hasErrors()).isTrue();
+    // when
+    final boolean hasErrors = validator().validate(jwt()).hasErrors();
+
+    // then
+    assertThat(hasErrors).isTrue();
   }
 
   private static Jwt jwt() {
