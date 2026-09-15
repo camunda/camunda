@@ -189,5 +189,5 @@ public interface ActivatedJob {
    *
    * @return the lease token, or {@code null} if the job was activated without a lease
    */
-  String getLeaseToken();
+  String getJobLeaseToken();
 }

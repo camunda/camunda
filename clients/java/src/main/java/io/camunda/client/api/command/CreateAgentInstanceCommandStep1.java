@@ -28,7 +28,7 @@ import java.util.List;
  *       .newCreateAgentInstanceCommand()
  *       .elementInstanceKey(2251799813685248L)
  *       .jobKey(jobKey)
- *       .jobLease(jobLease)
+ *       .jobLeaseToken(jobLeaseToken)
  *       .history(List.of(
  *           new AgentInstanceHistoryItem()
  *               .historyItemId("item-0")
@@ -74,10 +74,10 @@ public interface CreateAgentInstanceCommandStep1 {
      * other activation of the same job: if the job is later retried, history items submitted under
      * a superseded lease are discarded rather than committed.
      *
-     * @param jobLease the lease token. Must not be null or blank.
+     * @param jobLeaseToken the lease token. Must not be null or blank.
      * @return the next step of the builder
      */
-    CreateAgentInstanceCommandStep4 jobLease(String jobLease);
+    CreateAgentInstanceCommandStep4 jobLeaseToken(String jobLeaseToken);
   }
 
   interface CreateAgentInstanceCommandStep4 {

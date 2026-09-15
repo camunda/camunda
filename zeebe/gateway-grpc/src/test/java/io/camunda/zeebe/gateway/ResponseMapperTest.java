@@ -205,7 +205,7 @@ class ResponseMapperTest {
     }
 
     @Test
-    void shouldMapLeaseTokenToActivatedJob() {
+    void shouldMapJobLeaseTokenToActivatedJob() {
       // given
       final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
       when(jobRecord.getLeaseToken()).thenReturn("lease-token-123");
@@ -215,12 +215,12 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toActivatedJob(activatedJob);
 
       // then
-      assertThat(result.hasLeaseToken()).isTrue();
-      assertThat(result.getLeaseToken()).isEqualTo("lease-token-123");
+      assertThat(result.hasJobLeaseToken()).isTrue();
+      assertThat(result.getJobLeaseToken()).isEqualTo("lease-token-123");
     }
 
     @Test
-    void shouldNotSetLeaseTokenWhenNotLeased() {
+    void shouldNotSetJobLeaseTokenWhenNotLeased() {
       // given
       final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
       final var activatedJob = mockActivatedJob(jobRecord);
@@ -229,7 +229,7 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toActivatedJob(activatedJob);
 
       // then
-      assertThat(result.hasLeaseToken()).isFalse();
+      assertThat(result.hasJobLeaseToken()).isFalse();
     }
 
     @Test

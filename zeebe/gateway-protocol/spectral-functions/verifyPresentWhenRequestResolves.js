@@ -4,7 +4,7 @@
 // The `present-when-shape` rule only validates a marker's *local* shape (a
 // `request` string and a scalar `equals`). It cannot tell whether `request`
 // names a real field, because the marker lives on a shared component schema
-// (e.g. `ActivatedJobResult.leaseToken`) with no back-reference to the
+// (e.g. `ActivatedJobResult.jobLeaseToken`) with no back-reference to the
 // operation whose request body it constrains. A typo — `request: withLeese` —
 // therefore passes the shape rule, and every SDK generator that derives
 // dependent typing from the marker silently falls back to base typing: no

@@ -93,12 +93,12 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   }
 
   @Override
-  public FailJobCommandStep2 withLeaseToken(final String leaseToken) {
-    if (leaseToken == null) {
+  public FailJobCommandStep2 withJobLeaseToken(final String jobLeaseToken) {
+    if (jobLeaseToken == null) {
       return this;
     }
-    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
-    httpRequestObject.setLeaseToken(leaseToken);
+    grpcRequestObjectBuilder.setJobLeaseToken(jobLeaseToken);
+    httpRequestObject.setJobLeaseToken(jobLeaseToken);
     return this;
   }
 

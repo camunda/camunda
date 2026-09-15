@@ -64,8 +64,11 @@ public class AgentInstanceMapper {
             record.setJobKey(Long.parseLong(request.getJobKey()));
           }
 
-          if (request.getJobLease() != null) {
-            record.setJobLease(request.getJobLease());
+          if (request.getJobLeaseToken() != null) {
+            // API field renamed to jobLeaseToken; the persisted record property keeps the
+            // original jobLease name. It is exported to secondary storage under that name,
+            // so renaming it would require an index migration.
+            record.setJobLease(request.getJobLeaseToken());
           }
 
           if (request.getHistory() != null) {
@@ -96,8 +99,11 @@ public class AgentInstanceMapper {
             record.setJobKey(Long.parseLong(request.getJobKey()));
           }
 
-          if (request.getJobLease() != null) {
-            record.setJobLease(request.getJobLease());
+          if (request.getJobLeaseToken() != null) {
+            // API field renamed to jobLeaseToken; the persisted record property keeps the
+            // original jobLease name. It is exported to secondary storage under that name,
+            // so renaming it would require an index migration.
+            record.setJobLease(request.getJobLeaseToken());
           }
 
           if (request.getHistory() != null) {

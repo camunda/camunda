@@ -66,7 +66,7 @@ public class AgentInstanceHistoryDeepContentIT {
         .newUpdateAgentInstanceCommand(agentInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .jobKey(job.getKey())
-        .jobLease(job.getLeaseToken())
+        .jobLeaseToken(job.getJobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -124,7 +124,7 @@ public class AgentInstanceHistoryDeepContentIT {
         .newUpdateAgentInstanceCommand(agentInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .jobKey(job.getKey())
-        .jobLease(job.getLeaseToken())
+        .jobLeaseToken(job.getJobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -210,7 +210,7 @@ public class AgentInstanceHistoryDeepContentIT {
         .newCreateAgentInstanceCommand()
         .elementInstanceKey(elementInstanceKey)
         .jobKey(job.getKey())
-        .jobLease(job.getLeaseToken())
+        .jobLeaseToken(job.getJobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
