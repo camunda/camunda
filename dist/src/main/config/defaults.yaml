@@ -280,8 +280,33 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Note that it is only a best-effort strategy. It is not guaranteed to be a strictly uniform
       # distribution.
       priority-election-enabled: true # Type: Boolean, Env: CAMUNDA_CLUSTER_RAFT_PRIORITYELECTIONENABLED
+<<<<<<< HEAD
       # Sets the timeout for all requests send by raft leaders and followers.When modifying the values for
       # requestTimeout, it might also be useful to update snapshotTimeout.
+=======
+      # Sets the maximum replication lag, in bytes, a learner may have for the leader to promote it to a
+      # voting member. Promoting a learner that still lags would shrink the effective quorum, so the leader
+      # waits until the learner is within this threshold.
+      promotion-lag-threshold: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_RAFT_PROMOTIONLAGTHRESHOLD
+      rebalance: # Type: io.camunda.configuration.Raft$Rebalance  
+        # How long the coordinator waits for a partition with no contactable leader to get one before giving
+        # up with `NO_LEADER`.
+        leader-wait-timeout: "1m" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_LEADERWAITTIMEOUT
+        # The maximum number of TimeoutNow requests the current leader sends (including the initial request)
+        # before reporting `TIMEOUT_NOW_EXHAUSTED`.
+        max-transfer-attempts: 3 # Type: Integer, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_MAXTRANSFERATTEMPTS
+        # The maximum replication lag a desired leader may have for the current leader to attempt a transfer.
+        # Above it the partition is skipped with `LAG_TOO_HIGH`. Lag is the remaining Raft entries to
+        # replicate plus any pending snapshot, in bytes.
+        replication-lag-threshold: "8MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_REPLICATIONLAGTHRESHOLD
+        # How long the current leader waits (paused, declining writes) for the desired leader to finish
+        # replicating. If exceeded, the transfer is cancelled with `REPLICATION_TIMED_OUT`.
+        replication-timeout: "10s" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_REPLICATIONTIMEOUT
+      
+      # Sets the timeout for all requests sent by raft leaders and followers. When modifying the values for
+      # requestTimeout, it might also be useful to update snapshotRequestTimeout.
+      # When not set, it is derived from the configured electionTimeout during configuration resolution.
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
       request-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REQUESTTIMEOUT
       # Defines the strategy to use to preallocate segment files when "preallocateSegmentFiles" is set to
       # true. Possible options are:  NOOP: does not preallocate files, same as setting
@@ -327,7 +352,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       user: # Type: io.camunda.configuration.AuditLogEntry
         categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES
-
+      
       user-task-completion-variable-audit-enabled: false # Type: Boolean, Env: CAMUNDA_DATA_AUDITLOG_USERTASKCOMPLETIONVARIABLEAUDITENABLED
 
     export: # Type: io.camunda.configuration.Export
@@ -606,6 +631,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       # configuration if required. Manual configuration of camundaexporter is generally not recommended, and
       # can result in unexpected behavior if not configured correctly.
       autoconfigure-camunda-exporter: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_AUTOCONFIGURECAMUNDAEXPORTER
+<<<<<<< HEAD
       elasticsearch: # Type: io.camunda.configuration.Elasticsearch
         backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_DATABASENAME
@@ -620,6 +646,42 @@ camunda: # Type: io.camunda.configuration.Camunda
         bulk: # Type: io.camunda.configuration.Bulk
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_DATABASENAME
 
+=======
+      elasticsearch: # Type: io.camunda.configuration.Elasticsearch  
+        backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup  
+          # Defines the timeout period for determining whether an incomplete backup should be considered as
+          # failed or still in progress. This property helps distinguish between backups that are actively
+          # running versus those that may have stalled or failed silently.
+          # Note: This setting applies to backups of secondary storage.
+          incomplete-check-timeout: "5m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_INCOMPLETECHECKTIMEOUT
+          # Set the ES / OS snapshot repository name.
+          # Note: This setting applies to backups of secondary storage.
+          repository-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_REPOSITORYNAME
+          # A backup of history data consists of multiple Elasticsearch/Opensearch snapshots. snapshotTimeout
+          # controls the maximum time to wait for a snapshot operation to complete during backup creation. When
+          # set to 0, the system will wait indefinitely for snapshots to finish.
+          # Note: This setting applies to backups of secondary storage.
+          snapshot-timeout: 0 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_SNAPSHOTTIMEOUT
+        
+        batch-operation-cache: # Type: io.camunda.configuration.Cache  
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONCACHE_MAXSIZE
+        
+        batch-operations: # Type: io.camunda.configuration.BatchOperation  
+          # Export the batch operation items when the initial chunk records are processed. If set to  false, the
+          # batch operation items will be exported only when they have been processed and are completed or
+          # failed.
+          export-items-on-creation: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONS_EXPORTITEMSONCREATION
+        
+        bulk: # Type: io.camunda.configuration.Bulk  
+          # Delay before forced flush (in seconds)
+          delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_DELAY
+          # Bulk memory utilisation before flush (in MB)
+          memory-limit: "20MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_MEMORYLIMIT
+          # Bulk size before flush
+          size: 5000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_SIZE
+        
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
         # Name of the cluster
         cluster-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CLUSTERNAME
         # The connection timeout for ES and OS connector
@@ -628,6 +690,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         create-schema: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CREATESCHEMA
         # The date format for ES and OS
         date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZZ" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DATEFORMAT
+<<<<<<< HEAD
         decision-requirements-cache: # Type: io.camunda.configuration.Cache
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_DATABASENAME
@@ -644,6 +707,57 @@ camunda: # Type: io.camunda.configuration.Camunda
         incident-notifier: # Type: io.camunda.configuration.IncidentNotifier
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_DATABASENAME
 
+=======
+        decision-requirements-cache: # Type: io.camunda.configuration.Cache  
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_MAXSIZE
+        
+        form-cache: # Type: io.camunda.configuration.Cache  
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_MAXSIZE
+        
+        # Whether to verify the cluster health of the search engine
+        health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HEALTHCHECKENABLED
+        history: # Type: io.camunda.configuration.DocumentBasedHistory  
+          archive-by-id-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDENABLED
+          # Maximum number of retries for archive-by-id batch operations on retryable errors
+          archive-by-id-max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDMAXRETRYATTEMPTS
+          # Retry delay in millisecond interval when archive-by-id batch fails on retryable errors
+          archive-by-id-retry-delay-ms: 1000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDRETRYDELAYMS
+          # Millisecond interval between archiver runs
+          delay-between-runs: "2000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_DELAYBETWEENRUNS
+          # Date format for historical indices in Java DateTimeFormatter syntax
+          els-rollover-date-format: "date" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ELSROLLOVERDATEFORMAT
+          # Maximum millisecond interval between archiver runs due to failure backoffs
+          max-delay-between-runs: "60000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_MAXDELAYBETWEENRUNS
+          # Defines the name of the created and applied ILM policy.
+          policy-name: "camunda-retention-policy" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_POLICYNAME
+          process-instance-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_PROCESSINSTANCEENABLED
+          process-instance-retention-mode: "pi-hierarchy" # Type: io.camunda.exporter.config.ExporterConfiguration$HistoryConfiguration$ProcessInstanceRetentionMode, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_PROCESSINSTANCERETENTIONMODE
+          # Maximum number of docs reindexed/deleted in a batch
+          reindex-batch-size: 2500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_REINDEXBATCHSIZE
+          # Maximum number of process instances per archiving batch
+          rollover-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ROLLOVERBATCHSIZE
+          # Time range for creating dated indices (e.g., 1d creates daily indices).
+          rollover-interval: "1d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ROLLOVERINTERVAL
+          # Defines the name of the created and applied usage-metrics ILM policy.
+          usage-metrics-policy-name: "camunda-usage-metrics-retention-policy" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_USAGEMETRICSPOLICYNAME
+          # Time range for creating dated usage-metrics indices.
+          usage-metrics-rollover-interval: "1M" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_USAGEMETRICSROLLOVERINTERVAL
+          # Grace period before archiving completed processes. Processes finished within this window are not yet
+          # archived.
+          wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
+        
+        incident-notifier: # Type: io.camunda.configuration.IncidentNotifier  
+          # Defines the domain which the user always sees
+          auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
+          auth0-protocol: "https" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0PROTOCOL
+          m2m-audience: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MAUDIENCE
+          m2m-client-id: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MCLIENTID
+          m2m-client-secret: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_M2MCLIENTSECRET
+          webhook: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_WEBHOOK
+        
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
         # Prefix to apply to the indexes.
         index-prefix: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX
         # Sets the interceptor plugins
@@ -664,6 +778,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
         perform-cleanup: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PERFORMCLEANUP
+<<<<<<< HEAD
         post-export: # Type: io.camunda.configuration.PostExport
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_DATABASENAME
 
@@ -672,6 +787,19 @@ camunda: # Type: io.camunda.configuration.Camunda
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_DATABASENAME
 
         proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration
+=======
+        post-export: # Type: io.camunda.configuration.PostExport  
+          batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_BATCHSIZE
+          delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_DELAYBETWEENRUNS
+          ignore-missing-data: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_IGNOREMISSINGDATA
+          max-delay-between-runs: "5s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_MAXDELAYBETWEENRUNS
+        
+        process-cache: # Type: io.camunda.configuration.Cache  
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_MAXSIZE
+        
+        proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration  
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
           enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_ENABLED
           host: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_HOST
           password: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_PASSWORD
@@ -683,9 +811,25 @@ camunda: # Type: io.camunda.configuration.Camunda
         refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVAL
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVALBYINDEXNAME
+<<<<<<< HEAD
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_DATABASENAME
 
+=======
+        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_DATABASENAME
+        
+        security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
+          # Path to certificate used by Elasticsearch or Opensearch
+          certificate-path: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_CERTIFICATEPATH
+          # Enable security
+          enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_ENABLED
+          # Certificate was self-signed
+          self-signed: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_SELFSIGNED
+          # Should the hostname be validated
+          verify-hostname: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_VERIFYHOSTNAME
+        
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
         # The socket timeout for ES and OS connector
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SOCKETTIMEOUT
         # Template priority for index templates.
@@ -703,6 +847,7 @@ camunda: # Type: io.camunda.configuration.Camunda
 
       opensearch: # Type: io.camunda.configuration.Opensearch
         aws-enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_AWSENABLED
+<<<<<<< HEAD
         backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_DATABASENAME
 
@@ -716,6 +861,41 @@ camunda: # Type: io.camunda.configuration.Camunda
         bulk: # Type: io.camunda.configuration.Bulk
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_DATABASENAME
 
+=======
+        backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup  
+          # Defines the timeout period for determining whether an incomplete backup should be considered as
+          # failed or still in progress. This property helps distinguish between backups that are actively
+          # running versus those that may have stalled or failed silently.
+          # Note: This setting applies to backups of secondary storage.
+          incomplete-check-timeout: "5m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_INCOMPLETECHECKTIMEOUT
+          # Set the ES / OS snapshot repository name.
+          # Note: This setting applies to backups of secondary storage.
+          repository-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_REPOSITORYNAME
+          # A backup of history data consists of multiple Elasticsearch/Opensearch snapshots. snapshotTimeout
+          # controls the maximum time to wait for a snapshot operation to complete during backup creation. When
+          # set to 0, the system will wait indefinitely for snapshots to finish.
+          # Note: This setting applies to backups of secondary storage.
+          snapshot-timeout: 0 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_SNAPSHOTTIMEOUT
+        
+        batch-operation-cache: # Type: io.camunda.configuration.Cache  
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONCACHE_MAXSIZE
+        
+        batch-operations: # Type: io.camunda.configuration.BatchOperation  
+          # Export the batch operation items when the initial chunk records are processed. If set to  false, the
+          # batch operation items will be exported only when they have been processed and are completed or
+          # failed.
+          export-items-on-creation: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONS_EXPORTITEMSONCREATION
+        
+        bulk: # Type: io.camunda.configuration.Bulk  
+          # Delay before forced flush (in seconds)
+          delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_DELAY
+          # Bulk memory utilisation before flush (in MB)
+          memory-limit: "20MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_MEMORYLIMIT
+          # Bulk size before flush
+          size: 5000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_SIZE
+        
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
         # Name of the cluster
         cluster-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_CLUSTERNAME
         # The connection timeout for ES and OS connector
@@ -724,6 +904,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         create-schema: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_CREATESCHEMA
         # The date format for ES and OS
         date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZZ" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DATEFORMAT
+<<<<<<< HEAD
         decision-requirements-cache: # Type: io.camunda.configuration.Cache
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_DATABASENAME
@@ -740,6 +921,57 @@ camunda: # Type: io.camunda.configuration.Camunda
         incident-notifier: # Type: io.camunda.configuration.IncidentNotifier
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_DATABASENAME
 
+=======
+        decision-requirements-cache: # Type: io.camunda.configuration.Cache  
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_MAXSIZE
+        
+        form-cache: # Type: io.camunda.configuration.Cache  
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_MAXSIZE
+        
+        # Whether to verify the cluster health of the search engine
+        health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HEALTHCHECKENABLED
+        history: # Type: io.camunda.configuration.DocumentBasedHistory  
+          archive-by-id-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDENABLED
+          # Maximum number of retries for archive-by-id batch operations on retryable errors
+          archive-by-id-max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDMAXRETRYATTEMPTS
+          # Retry delay in millisecond interval when archive-by-id batch fails on retryable errors
+          archive-by-id-retry-delay-ms: 1000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDRETRYDELAYMS
+          # Millisecond interval between archiver runs
+          delay-between-runs: "2000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_DELAYBETWEENRUNS
+          # Date format for historical indices in Java DateTimeFormatter syntax
+          els-rollover-date-format: "date" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ELSROLLOVERDATEFORMAT
+          # Maximum millisecond interval between archiver runs due to failure backoffs
+          max-delay-between-runs: "60000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_MAXDELAYBETWEENRUNS
+          # Defines the name of the created and applied ILM policy.
+          policy-name: "camunda-retention-policy" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_POLICYNAME
+          process-instance-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_PROCESSINSTANCEENABLED
+          process-instance-retention-mode: "pi-hierarchy" # Type: io.camunda.exporter.config.ExporterConfiguration$HistoryConfiguration$ProcessInstanceRetentionMode, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_PROCESSINSTANCERETENTIONMODE
+          # Maximum number of docs reindexed/deleted in a batch
+          reindex-batch-size: 2500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_REINDEXBATCHSIZE
+          # Maximum number of process instances per archiving batch
+          rollover-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ROLLOVERBATCHSIZE
+          # Time range for creating dated indices (e.g., 1d creates daily indices).
+          rollover-interval: "1d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ROLLOVERINTERVAL
+          # Defines the name of the created and applied usage-metrics ILM policy.
+          usage-metrics-policy-name: "camunda-usage-metrics-retention-policy" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_USAGEMETRICSPOLICYNAME
+          # Time range for creating dated usage-metrics indices.
+          usage-metrics-rollover-interval: "1M" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_USAGEMETRICSROLLOVERINTERVAL
+          # Grace period before archiving completed processes. Processes finished within this window are not yet
+          # archived.
+          wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
+        
+        incident-notifier: # Type: io.camunda.configuration.IncidentNotifier  
+          # Defines the domain which the user always sees
+          auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
+          auth0-protocol: "https" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0PROTOCOL
+          m2m-audience: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MAUDIENCE
+          m2m-client-id: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MCLIENTID
+          m2m-client-secret: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_M2MCLIENTSECRET
+          webhook: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_WEBHOOK
+        
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
         # Prefix to apply to the indexes.
         index-prefix: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
         # Sets the interceptor plugins
@@ -760,6 +992,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
         perform-cleanup: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PERFORMCLEANUP
+<<<<<<< HEAD
         post-export: # Type: io.camunda.configuration.PostExport
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_DATABASENAME
 
@@ -768,6 +1001,19 @@ camunda: # Type: io.camunda.configuration.Camunda
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_DATABASENAME
 
         proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration
+=======
+        post-export: # Type: io.camunda.configuration.PostExport  
+          batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_BATCHSIZE
+          delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_DELAYBETWEENRUNS
+          ignore-missing-data: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_IGNOREMISSINGDATA
+          max-delay-between-runs: "5s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_MAXDELAYBETWEENRUNS
+        
+        process-cache: # Type: io.camunda.configuration.Cache  
+          # Maximum cache size
+          max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_MAXSIZE
+        
+        proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration  
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
           enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_ENABLED
           host: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_HOST
           password: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_PASSWORD
@@ -779,9 +1025,25 @@ camunda: # Type: io.camunda.configuration.Camunda
         refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVAL
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVALBYINDEXNAME
+<<<<<<< HEAD
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_DATABASENAME
 
+=======
+        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_DATABASENAME
+        
+        security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
+          # Path to certificate used by Elasticsearch or Opensearch
+          certificate-path: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_CERTIFICATEPATH
+          # Enable security
+          enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_ENABLED
+          # Certificate was self-signed
+          self-signed: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_SELFSIGNED
+          # Should the hostname be validated
+          verify-hostname: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_VERIFYHOSTNAME
+        
+>>>>>>> 5271d483 (fix: surface secondary-storage nested config properties to the PT override audit)
         # The socket timeout for ES and OS connector
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SOCKETTIMEOUT
         # Template priority for index templates.
@@ -922,6 +1184,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         queue-memory-limit: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUEMEMORYLIMIT
         # The maximum size of the exporters execution queue before it is flushed to the database.
         queue-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUESIZE
+        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+          database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_DATABASENAME
+        
         # If true, enables JDBC batch statement rewriting on the RDBMS connection so that same-statement
         # batches collapse into a single multi-values round trip. Has no effect for database vendors other than MySQL/MariaDB.
         rewrite-batched-statements: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_REWRITEBATCHEDSTATEMENTS
