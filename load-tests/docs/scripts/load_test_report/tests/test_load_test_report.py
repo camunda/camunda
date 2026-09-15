@@ -1,12 +1,30 @@
+import io
+import json
+import sys
 from pathlib import Path
+from unittest import mock
 
 import pytest
 from pydantic import ValidationError
 
 import load_test_report
+from load_test_report import prometheus
+from load_test_report.cli import Options
 from load_test_report.cli import build_parser
+from load_test_report.cli import parse_args
+from load_test_report.cli import query_substitutions
 from load_test_report.cli import run
+from load_test_report.errors import MissingMetric
+from load_test_report.errors import ReportError
+from load_test_report.prometheus import PrometheusClient
+from load_test_report.prometheus import PrometheusResponse
+from load_test_report.prometheus import auth_headers
 from load_test_report.queries import QueriesDocument
+from load_test_report.queries import Query
+from load_test_report.report import build_report
+from load_test_report.report import extract_metric_value
+from load_test_report.report import render_report
+from load_test_report.report import warn
 
 PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
 PACKAGED_QUERY_FILES = (
@@ -15,18 +33,499 @@ PACKAGED_QUERY_FILES = (
 )
 
 
+class FakePrometheusClient:
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.queries = []
+
+    def query(self, query):
+        self.queries.append(query)
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+
+class FakeHttpResponse:
+    def __init__(self, payload):
+        self.payload = payload.encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def read(self):
+        return self.payload
+
+
 def test_should_build_parser():
     parser = build_parser()
 
     assert parser.prog == "load-test-report"
 
 
-def test_should_run_without_arguments():
-    assert run([]) == 0
-
-
 def test_should_return_argparse_exit_code_for_help():
     assert run(["--help"]) == 0
+
+
+def test_should_return_error_for_missing_namespace():
+    stderr = io.StringIO()
+
+    with mock.patch.object(sys, "stderr", stderr):
+        exit_code = run([])
+
+    assert exit_code == 2
+    assert "the following arguments are required: namespace" in stderr.getvalue()
+
+
+def write_single_query_file(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text(
+        """queries:
+- key: throughput
+  description: Throughput.
+  header: Throughput
+  query: up
+""",
+        encoding="utf-8",
+    )
+    return queries_file
+
+
+def successful_client():
+    return FakePrometheusClient(
+        [
+            {
+                "status": "success",
+                "data": {
+                    "resultType": "vector",
+                    "result": [{"metric": {}, "value": [1435781451.781, "42.5"]}],
+                },
+            }
+        ]
+    )
+
+
+def test_should_run_report_to_stdout(tmp_path, capsys):
+    queries_file = write_single_query_file(tmp_path)
+    client = successful_client()
+
+    with (
+        mock.patch("load_test_report.cli.PrometheusClient", return_value=client),
+        mock.patch("load_test_report.cli.check_endpoint") as endpoint_check,
+    ):
+        exit_code = run(["c8-ck-test", "--queries", str(queries_file)])
+
+    assert exit_code == 0
+    assert json.loads(capsys.readouterr().out)["metrics"] == {"throughput": 42.5}
+    endpoint_check.assert_called_once()
+
+
+def test_should_run_report_to_output_file(tmp_path):
+    queries_file = write_single_query_file(tmp_path)
+    output_file = tmp_path / "report.json"
+
+    with (
+        mock.patch("load_test_report.cli.PrometheusClient", return_value=successful_client()),
+        mock.patch("load_test_report.cli.check_endpoint"),
+    ):
+        exit_code = run(
+            [
+                "c8-ck-test",
+                "--queries",
+                str(queries_file),
+                "--output",
+                str(output_file),
+            ]
+        )
+
+    assert exit_code == 0
+    assert json.loads(output_file.read_text(encoding="utf-8"))["metrics"] == {"throughput": 42.5}
+
+
+def test_should_report_output_file_error(tmp_path, capsys):
+    queries_file = write_single_query_file(tmp_path)
+    output_file = tmp_path / "missing" / "report.json"
+
+    with (
+        mock.patch("load_test_report.cli.PrometheusClient", return_value=successful_client()),
+        mock.patch("load_test_report.cli.check_endpoint"),
+    ):
+        exit_code = run(
+            [
+                "c8-ck-test",
+                "--queries",
+                str(queries_file),
+                "--output",
+                str(output_file),
+            ]
+        )
+
+    assert exit_code == 1
+    assert f"Could not write output file '{output_file}'" in capsys.readouterr().err
+
+
+def test_should_report_invalid_query_document(tmp_path, capsys):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("{}", encoding="utf-8")
+
+    with mock.patch("load_test_report.cli.check_endpoint"):
+        exit_code = run(["c8-ck-test", "--queries", str(queries_file)])
+
+    assert exit_code == 1
+    assert "Error: query document is invalid" in capsys.readouterr().err
+
+
+def test_should_report_unreachable_endpoint(capsys):
+    with mock.patch(
+        "load_test_report.cli.check_endpoint",
+        side_effect=ReportError("Could not reach Prometheus endpoint"),
+    ):
+        exit_code = run(["c8-ck-test"])
+
+    assert exit_code == 1
+    assert "Error: Could not reach Prometheus endpoint" in capsys.readouterr().err
+
+
+def test_should_extract_numeric_sample():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "vector",
+            "result": [
+                {
+                    "metric": {
+                        "__name__": "up",
+                        "job": "prometheus",
+                        "instance": "localhost:9090",
+                    },
+                    "value": [1435781451.781, "42.5"],
+                }
+            ],
+        },
+    }
+
+    assert extract_metric_value(response, "", "throughput") == 42.5
+
+
+def test_should_extract_scalar_sample():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "scalar",
+            "result": [1435781451.781, "42.5"],
+        },
+    }
+
+    assert extract_metric_value(response, "", "throughput") == 42.5
+
+
+def test_should_reject_multiple_numeric_samples():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "vector",
+            "result": [
+                {"metric": {"instance": "first"}, "value": [1435781451.781, "42.5"]},
+                {"metric": {"instance": "second"}, "value": [1435781451.781, "24.5"]},
+            ],
+        },
+    }
+    warnings = []
+
+    with pytest.raises(MissingMetric, match=r"multiple numeric samples \(2\)"):
+        extract_metric_value(response, "", "throughput", warnings.append)
+
+    assert warnings == ["throughput: multiple numeric samples (2)"]
+
+
+def test_should_reject_matrix_response():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "matrix",
+            "result": [
+                {
+                    "metric": {"instance": "prometheus"},
+                    "values": [[1435781451.781, "42.5"]],
+                }
+            ],
+        },
+    }
+
+    with pytest.raises(ValidationError, match="resultType"):
+        PrometheusResponse.model_validate(response)
+
+
+def test_should_reject_result_shape_mismatched_with_type():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "scalar",
+            "result": [{"metric": {}, "value": [1435781451.781, "42.5"]}],
+        },
+    }
+
+    with pytest.raises(ValidationError, match="scalar result must contain a timestamp and value"):
+        PrometheusResponse.model_validate(response)
+
+
+def test_should_extract_sorted_unique_label_values():
+    response = {
+        "status": "success",
+        "data": {
+            "resultType": "vector",
+            "result": [
+                {"metric": {"image": "registry/camunda:2"}, "value": [1435781451.781, "1"]},
+                {"metric": {"image": "registry/camunda:1"}, "value": [1435781451.781, "1"]},
+                {"metric": {"image": "registry/camunda:2"}, "value": [1435781451.781, "1"]},
+            ],
+        },
+    }
+
+    assert extract_metric_value(response, "image", "image") == "registry/camunda:1, registry/camunda:2"
+
+
+def test_should_warn_when_numeric_sample_is_missing():
+    response = {"status": "success", "data": {"resultType": "vector", "result": []}}
+    warnings = []
+
+    with pytest.raises(MissingMetric, match="no numeric sample"):
+        extract_metric_value(response, "", "throughput", warnings.append)
+
+    assert warnings == ["throughput: no numeric sample"]
+
+
+def test_should_warn_when_label_sample_is_missing():
+    response = {"status": "success", "data": {"resultType": "vector", "result": []}}
+    warnings = []
+
+    with pytest.raises(MissingMetric, match="no label sample"):
+        extract_metric_value(response, "image", "image", warnings.append)
+
+    assert warnings == ["image: no label sample"]
+
+
+def test_should_warn_when_prometheus_status_is_not_success():
+    response = {
+        "status": "error",
+        "errorType": "bad_data",
+        "error": "invalid PromQL",
+        "data": {"resultType": "vector", "result": []},
+    }
+    warnings = []
+
+    with pytest.raises(MissingMetric, match="Prometheus returned non-success status: bad_data: invalid PromQL"):
+        extract_metric_value(response, "", "throughput", warnings.append)
+
+    assert warnings == ["throughput: Prometheus returned non-success status: bad_data: invalid PromQL"]
+
+
+def test_should_build_report_without_network_side_effects():
+    options = Options(
+        namespace="c8-ck-test",
+        duration_seconds=900,
+        rate_interval="30s",
+        sample_step="15s",
+        endpoint="http://prometheus.example",
+        basic_auth_user="",
+        basic_auth_password="",
+        time_anchor="",
+        start_label="",
+        end_label="",
+        output_format="json",
+        include_header=True,
+        missing_value="NaN",
+        queries_file=Path("queries.yaml"),
+        output_file=None,
+    )
+    query_document = QueriesDocument(
+        queries=[
+            Query(
+                key="namespace",
+                description="Namespace.",
+                header="Namespace",
+                query="namespace_query",
+                valueLabel="namespace",
+            ),
+            Query(
+                key="throughput",
+                description="Throughput.",
+                header="Throughput",
+                query='rate(total{namespace="c8-ck-test"}[30s])',
+            ),
+            Query(
+                key="image",
+                description="Image.",
+                header="Image",
+                query="image_query[900s:15s]",
+                valueLabel="image",
+            ),
+            Query(
+                key="missing",
+                description="Missing.",
+                header="Missing",
+                query="missing_query",
+            ),
+        ]
+    )
+    client = FakePrometheusClient(
+        [
+            {
+                "status": "success",
+                "data": {
+                    "resultType": "vector",
+                    "result": [{"metric": {"namespace": "c8-ck-test"}, "value": [123, "1"]}],
+                },
+            },
+            {
+                "status": "success",
+                "data": {"resultType": "vector", "result": [{"metric": {}, "value": [123, "10"]}]},
+            },
+            {
+                "status": "success",
+                "data": {
+                    "resultType": "vector",
+                    "result": [{"metric": {"image": "camunda:SNAPSHOT"}, "value": [123, "1"]}],
+                },
+            },
+            {"status": "success", "data": {"resultType": "vector", "result": []}},
+        ]
+    )
+    warnings = []
+
+    report = build_report(
+        options,
+        query_document,
+        client,
+        generated_at="2026-09-07T18:00:00Z",
+        warning_sink=warnings.append,
+    )
+
+    assert client.queries == [
+        "namespace_query",
+        'rate(total{namespace="c8-ck-test"}[30s])',
+        "image_query[900s:15s]",
+        "missing_query",
+    ]
+    assert report["columns"] == ["namespace", "throughput", "image", "missing"]
+    assert report["headers"] == ["Namespace", "Throughput", "Image", "Missing"]
+    assert report["metrics"]["namespace"] == "c8-ck-test"
+    assert report["metrics"]["throughput"] == 10
+    assert report["metrics"]["image"] == "camunda:SNAPSHOT"
+    assert report["metrics"]["missing"] is None
+    assert "missing" not in report
+    assert warnings == ["missing: no numeric sample"]
+
+
+def test_should_warn_when_query_fails():
+    options = Options(
+        namespace="c8-ck-test",
+        duration_seconds=900,
+        rate_interval="30s",
+        sample_step="15s",
+        endpoint="http://prometheus.example",
+        basic_auth_user="",
+        basic_auth_password="",
+        time_anchor="",
+        start_label="",
+        end_label="",
+        output_format="json",
+        include_header=True,
+        missing_value="NaN",
+        queries_file=Path("queries.yaml"),
+        output_file=None,
+    )
+    query_document = QueriesDocument(
+        queries=[
+            Query(
+                key="throughput",
+                description="Throughput.",
+                header="Throughput",
+                query="throughput_query",
+            )
+        ]
+    )
+    client = FakePrometheusClient([ReportError("Prometheus returned invalid JSON")])
+    warnings = []
+
+    report = build_report(options, query_document, client, warning_sink=warnings.append)
+
+    assert report["metrics"]["throughput"] is None
+    assert "missing" not in report
+    assert warnings == ["throughput: Prometheus returned invalid JSON"]
+
+
+def test_should_build_basic_auth_header():
+    headers = auth_headers("user", "pass")
+
+    assert headers["Authorization"] == "Basic dXNlcjpwYXNz"
+
+
+def test_should_reject_incomplete_basic_auth():
+    with pytest.raises(ReportError, match="--user and --password"):
+        auth_headers("user", "")
+
+
+def test_should_query_prometheus_with_urlencoded_query_and_headers():
+    seen_requests = []
+
+    def fake_urlopen(request, timeout):
+        seen_requests.append((request, timeout))
+        return FakeHttpResponse('{"status":"success","data":{"resultType":"vector","result":[]}}')
+
+    with mock.patch.object(prometheus, "urlopen", side_effect=fake_urlopen):
+        client = PrometheusClient(
+            "https://prometheus.example/",
+            "user",
+            "pass",
+            "2026-09-07T18:00:00Z",
+        )
+
+        response = client.query('rate(total{namespace="c8-ck-test"}[5m])')
+
+    assert isinstance(response, PrometheusResponse)
+    assert response.status == "success"
+    request, timeout = seen_requests[0]
+    assert timeout == 30
+    assert "query=rate%28total%7Bnamespace%3D%22c8-ck-test%22%7D%5B5m%5D%29" in request.full_url
+    assert "time=2026-09-07T18%3A00%3A00Z" in request.full_url
+    assert request.get_header("Authorization") == "Basic dXNlcjpwYXNz"
+
+
+def test_should_report_http_errors_from_prometheus():
+    with mock.patch.object(
+        prometheus,
+        "urlopen",
+        side_effect=prometheus.HTTPError(
+            "https://prometheus.example/api/v1/query",
+            401,
+            "Unauthorized",
+            {},
+            None,
+        ),
+    ):
+        client = PrometheusClient("https://prometheus.example", "user", "pass", "")
+
+        with pytest.raises(ReportError, match="HTTP 401 Unauthorized"):
+            client.query("up")
+
+
+def test_should_report_invalid_prometheus_json():
+    with mock.patch.object(prometheus, "urlopen", return_value=FakeHttpResponse("not json")):
+        client = PrometheusClient("https://prometheus.example", "", "", "")
+
+        with pytest.raises(ReportError, match="Prometheus returned invalid JSON"):
+            client.query("up")
+
+
+def test_should_report_invalid_prometheus_endpoint():
+    client = PrometheusClient("not a URL", "", "", "")
+
+    with pytest.raises(ReportError, match="Could not reach Prometheus endpoint"):
+        prometheus.check_endpoint(client, "not a URL")
 
 
 def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
@@ -47,8 +546,24 @@ def test_should_load_yaml_query_file_with_pyyaml(tmp_path):
     assert document.queries[0].query == 'namespace_metric{namespace="c8-ck-test"}'
 
 
+def test_should_reject_malformed_yaml_query_file(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: [", encoding="utf-8")
+
+    with pytest.raises(ReportError, match="contains invalid YAML"):
+        QueriesDocument.from_file(queries_file, {})
+
+
+def test_should_reject_invalid_utf8_query_file(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_bytes(b"\xff")
+
+    with pytest.raises(ReportError, match="Could not read query file"):
+        QueriesDocument.from_file(queries_file, {})
+
+
 def test_should_reject_empty_file(tmp_path):
-    queries_file = tmp_path / "queries.json"
+    queries_file = tmp_path / "queries.yaml"
     queries_file.write_text("{}", encoding="utf-8")
 
     with pytest.raises(ValidationError, match="Field required"):
@@ -102,6 +617,11 @@ def test_should_load_packaged_query_files():
     for query_file_name in PACKAGED_QUERY_FILES:
         document = QueriesDocument.from_file(PROJECT_DIR / query_file_name, substitutions)
         assert len(document.queries) > 0
+        for query in document.queries:
+            assert "$NAMESPACE" not in query.query
+            assert "$DURATION_S" not in query.query
+            assert "$RATE_INTERVAL" not in query.query
+            assert "$SAMPLE_STEP" not in query.query
 
 
 def test_should_substitute_queries(tmp_path):
@@ -128,13 +648,12 @@ def test_should_substitute_queries(tmp_path):
         encoding="utf-8",
     )
 
-    for query_file_name in PACKAGED_QUERY_FILES:
-        document = QueriesDocument.from_file(queries_file, substitutions)
+    document = QueriesDocument.from_file(queries_file, substitutions)
 
-        assert len(document.queries) > 0
-        for query in document.queries:
-            assert "c8-ck-test" in query.query
-            assert "600s" in query.query
+    assert len(document.queries) > 0
+    for query in document.queries:
+        assert "c8-ck-test" in query.query
+        assert "600s" in query.query
 
 
 def test_should_use_namespace_created_metric():
@@ -186,3 +705,202 @@ def test_should_keep_packaged_descriptions_before_headers():
             assert description_index != -1
             assert header_index != -1
             assert description_index < header_index
+
+
+def test_should_prefix_default_stderr_warnings():
+    stderr = io.StringIO()
+
+    with mock.patch.object(sys, "stderr", stderr):
+        warn("throughput: no numeric sample")
+
+    assert stderr.getvalue() == "Warning: throughput: no numeric sample\n"
+
+
+def test_should_render_tsv_without_header():
+    report = {
+        "columns": ["namespace", "throughput", "missing"],
+        "headers": ["Namespace", "Throughput", "Missing"],
+        "metrics": {"namespace": "c8-ck-test", "throughput": 10, "missing": None},
+    }
+
+    rendered = render_report(report, "tsv", include_header=False, missing_value="NaN")
+
+    assert rendered == "c8-ck-test\t10\tNaN"
+
+
+def test_should_quote_csv_cells():
+    report = {
+        "columns": ["namespace", "image"],
+        "headers": ["Namespace", "Image"],
+        "metrics": {"namespace": "c8-ck-test", "image": "camunda:1, camunda:2"},
+    }
+
+    rendered = render_report(report, "csv", include_header=True, missing_value="NaN")
+
+    assert rendered == 'Namespace,Image\nc8-ck-test,"camunda:1, camunda:2"'
+
+
+def test_should_parse_auth_flags(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: []", encoding="utf-8")
+
+    options = parse_args(
+        [
+            "c8-ck-test",
+            "--user",
+            "user",
+            "--password",
+            "pass",
+            "--queries",
+            str(queries_file),
+        ]
+    )
+
+    assert options.basic_auth_user == "user"
+    assert options.basic_auth_password == "pass"
+    assert options.queries_file == queries_file
+
+
+def test_should_derive_duration_from_start_and_end(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: []", encoding="utf-8")
+
+    options = parse_args(
+        [
+            "c8-ck-test",
+            "--start",
+            "2026-08-14T10:00:00Z",
+            "--end",
+            "2026-08-14T10:30:00Z",
+            "--queries",
+            str(queries_file),
+        ]
+    )
+
+    assert options.duration_seconds == 1800
+    assert options.time_anchor == "2026-08-14T10:30:00Z"
+    assert options.start_label == "2026-08-14T10:00:00Z"
+    assert options.end_label == "2026-08-14T10:30:00Z"
+
+
+def test_should_normalize_timezone_less_time_window():
+    options = parse_args(
+        [
+            "c8-ck-test",
+            "--start",
+            "2026-08-14T10:00:00",
+            "--end",
+            "2026-08-14T10:30:00",
+        ]
+    )
+
+    assert options.time_anchor == "2026-08-14T10:30:00Z"
+
+
+def test_should_accept_composite_prometheus_durations():
+    options = parse_args(["c8-ck-test", "--rate-interval", "1h30m"])
+
+    assert options.rate_interval == "1h30m"
+
+
+@pytest.mark.parametrize("duration", ["1m500ms", "1s500ms", "1h30m500ms"])
+def test_should_accept_composite_prometheus_durations_with_milliseconds(duration):
+    options = parse_args(["c8-ck-test", "--rate-interval", duration])
+
+    assert options.rate_interval == duration
+
+
+def test_should_reject_out_of_order_prometheus_durations():
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--rate-interval", "1m1h"])
+
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--rate-interval", "1h1h"])
+
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--rate-interval", "1ms1m"])
+
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--rate-interval", "1ms1ms"])
+
+
+def test_should_reject_unrepresentable_timestamp():
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--at", "999999999999999999999"])
+
+
+def test_should_reject_unrepresentable_reporting_window():
+    with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
+        parse_args(
+            [
+                "c8-ck-test",
+                "--at",
+                "0",
+                "--duration-seconds",
+                "999999999999999999999",
+            ]
+        )
+
+
+def test_should_reject_fractional_timestamp():
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--at", "2026-08-14T10:00:00.5Z"])
+
+
+def test_should_use_packaged_default_queries():
+    options = parse_args(["c8-ck-test"])
+
+    assert options.queries_file == PROJECT_DIR / "report-queries.yaml"
+
+
+def test_should_use_packaged_queries_file_by_path(tmp_path):
+    options = parse_args(["c8-ck-test", "--queries", "report-queries-stable-87.yaml"])
+
+    assert options.queries_file == PROJECT_DIR / "report-queries-stable-87.yaml"
+
+
+def test_should_reject_missing_queries_file():
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--queries", "daily"])
+
+
+def test_should_resolve_external_queries_file(tmp_path):
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text(
+        """queries:
+- key: namespace
+  description: Namespace.
+  header: Namespace
+  query: namespace_metric{namespace="$NAMESPACE"}
+""",
+        encoding="utf-8",
+    )
+
+    assert parse_args(["c8-ck-test", "--queries", str(queries_file)]).queries_file == queries_file
+
+
+def test_should_build_query_substitutions():
+    options = Options(
+        namespace="c8-ck-test",
+        duration_seconds=900,
+        rate_interval="30s",
+        sample_step="15s",
+        endpoint="http://prometheus.example",
+        basic_auth_user="",
+        basic_auth_password="",
+        time_anchor="",
+        start_label="",
+        end_label="",
+        output_format="json",
+        include_header=True,
+        missing_value="NaN",
+        queries_file=Path("queries.yaml"),
+        output_file=None,
+    )
+
+    assert query_substitutions(options) == {
+        "$NAMESPACE": "c8-ck-test",
+        "$DURATION_S": "900s",
+        "$RATE_INTERVAL": "30s",
+        "$SAMPLE_STEP": "15s",
+    }
