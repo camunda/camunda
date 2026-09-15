@@ -325,7 +325,7 @@ public final class InProcessRestoreTestUtil {
    * guessed up front (round-robin distribution does not guarantee full coverage after a fixed
    * number).
    */
-  static List<Long> deployAndCreateInstancesOnEveryPartition(
+  public static List<Long> deployAndCreateInstancesOnEveryPartition(
       final CamundaClient client,
       final String processId,
       final String jobType,
@@ -380,7 +380,7 @@ public final class InProcessRestoreTestUtil {
    * activated - proving the partition data (not just topology/mode) was actually restored - and
    * that the processes spawned earlier can run to completion again.
    */
-  static void activateAndCompleteJobsFromEveryPartition(
+  public static void activateAndCompleteJobsFromEveryPartition(
       final CamundaClient client, final String jobType, final int partitionsCount) {
     final Set<Long> activatedJobKeys = new HashSet<>();
     Awaitility.await("jobs from every partition are activated and completed after restore")
@@ -401,7 +401,7 @@ public final class InProcessRestoreTestUtil {
    * an already-covered partition can outlive it. A caller that goes on to assert the type is gone —
    * because a backup taken at this point must not capture it — needs exhaustion, not coverage.
    */
-  static void completeEveryJob(
+  public static void completeEveryJob(
       final CamundaClient client, final String jobType, final int partitionsCount) {
     final Set<Long> activatedJobKeys = new HashSet<>();
     Awaitility.await("every job of type '%s' is completed".formatted(jobType))
