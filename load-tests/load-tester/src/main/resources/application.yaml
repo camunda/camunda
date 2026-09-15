@@ -105,6 +105,43 @@ load-tester:
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}
 
+  # Suspender properties consumed by SuspensionMeter (runs inside the starter, profile 'starter').
+  # When enabled, the starter periodically suspends running instances and resumes them after
+  # hold-duration, to stress the suspend/resume feature. Leave enabled=false for the A/B baseline
+  # arm. The target process id is taken from load-tester.starter.process-id (the instances the
+  # starter creates), not set here.
+  suspender:
+    enabled: ${LOAD_TESTER_SUSPENDER_ENABLED:false}
+    # SINGLE = per-instance commands, BATCH = process-instance batch operations
+    mode: ${LOAD_TESTER_SUSPENDER_MODE:SINGLE}
+    rate: ${LOAD_TESTER_SUSPENDER_RATE:10}
+    rate-duration: ${LOAD_TESTER_SUSPENDER_RATE_DURATION:1s}
+    sample-size: ${LOAD_TESTER_SUSPENDER_SAMPLE_SIZE:100}
+    batch-interval: ${LOAD_TESTER_SUSPENDER_BATCH_INTERVAL:10s}
+    batch-page-size: ${LOAD_TESTER_SUSPENDER_BATCH_PAGE_SIZE:1000}
+    hold-duration: ${LOAD_TESTER_SUSPENDER_HOLD_DURATION:30s}
+    # Target mode: deploy a dedicated heavy process (large job + subscription fan-out + many short
+    # timers), and each cycle create -> warm up -> suspend -> hold -> resume -> settle -> cancel a
+    # fresh instance, while the starter's workload runs untouched (blast-radius / interference
+    # test). timer-count is the buffered-command backlog drained on resume: each timer comes due
+    # once while suspended and its trigger buffers. Timers must come due within the hold window, so
+    # warmup < timer-duration < warmup + hold-duration, with warmup long enough for the fan-out to
+    # materialise. batch-interval is the idle gap between cycles (target absent -> cluster quiet).
+    target-enabled: ${LOAD_TESTER_SUSPENDER_TARGET_ENABLED:false}
+    target-bpmn-path: ${LOAD_TESTER_SUSPENDER_TARGET_BPMN_PATH:bpmn/suspend_target.bpmn}
+    target-process-id: ${LOAD_TESTER_SUSPENDER_TARGET_PROCESS_ID:suspendTarget}
+    target-instances: ${LOAD_TESTER_SUSPENDER_TARGET_INSTANCES:1}
+    job-count: ${LOAD_TESTER_SUSPENDER_JOB_COUNT:500}
+    subscription-count: ${LOAD_TESTER_SUSPENDER_SUBSCRIPTION_COUNT:500}
+    timer-count: ${LOAD_TESTER_SUSPENDER_TIMER_COUNT:2000}
+    timer-duration: ${LOAD_TESTER_SUSPENDER_TIMER_DURATION:30s}
+    warmup: ${LOAD_TESTER_SUSPENDER_WARMUP:20s}
+    settle: ${LOAD_TESTER_SUSPENDER_SETTLE:15s}
+    # Optional second stressor: publish one message per subscription while suspended (TTL outlasts
+    # the hold); they correlate when resume reopens the subscriptions -> a resume-time correlation
+    # burst, on top of the timer buffered-command drain.
+    generate-resume-correlations: ${LOAD_TESTER_SUSPENDER_GENERATE_RESUME_CORRELATIONS:false}
+
   # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
   optimize:
     report-evaluation-enabled: ${LOAD_TESTER_OPTIMIZE_ENABLED:false}
