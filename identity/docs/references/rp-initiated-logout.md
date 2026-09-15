@@ -87,6 +87,78 @@ decides only whether to ask it for a redirect back. Disabling it still terminate
 the IdP renders its own logged-out page rather than returning the browser to `PostLogoutController`,
 so the user is not sent back to the page they logged out from.
 
+### Choosing the post-logout redirect URL
+
+Disabling the redirect is the blunt option: it trades the return journey for a logout that works.
+When the IdP *will* accept some URL — just not the one Camunda composes — name that URL instead:
+
+```yaml
+camunda:
+  security:
+    authentication:
+      oidc:
+        post-logout-redirect-uri: https://accounts.example.com/logged-out
+```
+
+Or using an environment variable:
+
+```
+CAMUNDA_SECURITY_AUTHENTICATION_OIDC_POSTLOGOUTREDIRECTURI=https://accounts.example.com/logged-out
+```
+
+How the value is read depends on its first character:
+
+|             Configured value              |    What Camunda sends as `post_logout_redirect_uri`     |
+|-------------------------------------------|---------------------------------------------------------|
+| unset (default)                           | `<base URL>` + the cluster's base path + `/post-logout` |
+| `/goodbye`                                | `<base URL>` + the cluster's base path + `/goodbye`     |
+| `https://accounts.example.com/logged-out` | that URL, verbatim                                      |
+| `{baseUrl}/post-logout`                   | `<base URL>` + `/post-logout` — **no base path**        |
+
+The last two rows are what make this useful for Auth0. A deployment served under a per-cluster path
+prefix produces `https://<host>/<clusterId>/post-logout` by default, and Auth0 has no *Allowed
+Logout URLs* entry that can ever match it. A value that skips the prefix can be registered once and
+matched exactly.
+
+Besides `{baseUrl}`, a template may use `{baseScheme}`, `{baseHost}`, `{basePort}`, `{basePath}` and
+`{registrationId}`. Any other placeholder is rejected at startup, as is a value that is neither an
+absolute URL, nor a path starting with `/`, nor a template. Whatever URL you choose must still be
+registered with the IdP as an allowed post-logout redirect.
+
+Setting `post-logout-redirect-enabled: false` alongside a URI wins: no `post_logout_redirect_uri` is
+sent, and a warning is logged.
+
+### Configuring each IdP separately (BYO IdP)
+
+Both `post-logout-redirect-uri` and `post-logout-redirect-enabled` are resolved **per OIDC
+provider**. With several IdPs configured, each one carries its own answer and none affects the
+others — so a single strict IdP no longer costs every other IdP its redirect:
+
+```yaml
+camunda:
+  security:
+    authentication:
+      providers:
+        oidc:
+          keycloak:
+            client-id: keycloak-client
+            issuer-uri: https://keycloak.example.com/realms/camunda
+            # unset: keeps the default /post-logout route
+          auth0:
+            client-id: auth0-client
+            issuer-uri: https://example.eu.auth0.com/
+            # registered verbatim in Auth0's Allowed Logout URLs
+            post-logout-redirect-uri: https://accounts.example.com/logged-out
+          entra:
+            client-id: entra-client
+            issuer-uri: https://login.microsoftonline.com/<TENANT_ID>/v2.0
+            # send no post_logout_redirect_uri at all for this one
+            post-logout-redirect-enabled: false
+```
+
+The same keys work on the flat `camunda.security.authentication.oidc.*` block, which is treated as
+one more provider.
+
 ## RP (Relying Party)-initiated logout troubleshooting
 
 Both `PostLogoutController` and `CamundaOidcLogoutSuccessHandler` emit logs at the `TRACE` level.
