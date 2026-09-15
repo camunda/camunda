@@ -24,14 +24,14 @@ import org.slf4j.Logger;
 
 public class BatchOperationUpdateTask implements BackgroundTask {
 
-  private static final int NO_UPDATES = 0;
-
   /**
    * Caps what one cycle reads, and through that the aggregation and the bulk update derived from
    * it. Each batch operation contributes exactly one document, so this is far larger than the
    * post-export batch size, which bounds a task whose every item fans out into a tree.
    */
   public static final int MAX_BATCH_OPERATIONS_PER_CYCLE = 1000;
+
+  private static final int NO_UPDATES = 0;
 
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
 
