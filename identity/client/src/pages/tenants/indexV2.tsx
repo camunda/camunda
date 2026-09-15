@@ -7,21 +7,28 @@
  */
 
 import { FC, lazy, Suspense } from "react";
-import { ListPageFallback } from "src/components/fallbacks";
+import { ListPageFallback } from "src/components/fallbacksV2";
 import PageRoutes from "src/components/router/PageRoutes";
-import Detail from "src/pages/users/detail";
+import Detail from "src/pages/tenants/detailV2";
 
-const List = lazy(() => import("./List"));
+const List = lazy(() => import("./ListV2"));
 
-const Users: FC = () => (
+type TenantsProps = {
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+};
+
+const Tenants: FC<TenantsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => (
   <PageRoutes
     indexElement={
       <Suspense fallback={<ListPageFallback />}>
-        <List />
+        <List isOIDC={isOIDC} />
       </Suspense>
     }
-    detailElement={<Detail />}
+    detailElement={
+      <Detail isOIDC={isOIDC} isCamundaGroupsEnabled={isCamundaGroupsEnabled} />
+    }
   />
 );
 
-export default Users;
+export default Tenants;
