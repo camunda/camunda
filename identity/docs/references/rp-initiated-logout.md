@@ -138,26 +138,75 @@ others — so a single strict IdP no longer costs every other IdP its redirect:
 camunda:
   security:
     authentication:
+      method: oidc
       providers:
         oidc:
           keycloak:
-            client-id: keycloak-client
+            client-id: camunda-keycloak
+            client-secret: ${KEYCLOAK_SECRET}
             issuer-uri: https://keycloak.example.com/realms/camunda
-            # unset: keeps the default /post-logout route
+            # nothing set: keeps the default /post-logout route
+
           auth0:
-            client-id: auth0-client
+            client-id: camunda-auth0
+            client-secret: ${AUTH0_SECRET}
             issuer-uri: https://example.eu.auth0.com/
-            # registered verbatim in Auth0's Allowed Logout URLs
-            post-logout-redirect-uri: https://accounts.example.com/logged-out
+            # one entry in Auth0's Allowed Logout URLs covers every cluster on this host
+            post-logout-redirect-uri: "{baseUrl}/post-logout"
+
           entra:
-            client-id: entra-client
+            client-id: camunda-entra
             issuer-uri: https://login.microsoftonline.com/<TENANT_ID>/v2.0
             # send no post_logout_redirect_uri at all for this one
             post-logout-redirect-enabled: false
 ```
 
-The same keys work on the flat `camunda.security.authentication.oidc.*` block, which is treated as
-one more provider.
+**The map key is the registration ID.** `keycloak`, `auth0` and `entra` above are the identifiers
+the resolved URL is looked up under when a user logs out, matched against the provider that user
+actually signed in with. Nothing else connects the two, so the keys are not free-form labels.
+
+For a cluster served at `https://camunda.example.com/abc123/`, that configuration produces:
+
+| User signed in via |         `post_logout_redirect_uri` sent          |
+|--------------------|--------------------------------------------------|
+| `keycloak`         | `https://camunda.example.com/abc123/post-logout` |
+| `auth0`            | `https://camunda.example.com/post-logout`        |
+| `entra`            | *(none)*                                         |
+
+Register each value with its own IdP — Auth0's *Allowed Logout URLs*, Keycloak's client post-logout
+redirect URIs — using the URL the table shows, not the configured value.
+
+The `auth0` entry is the case worth copying. `{baseUrl}` keeps the host dynamic but drops the
+`/abc123` cluster prefix, so a single registered entry matches every cluster on that host; a value
+starting with `/` would have kept the prefix and needed one entry per cluster. Quote the `{...}`
+form in YAML, or it parses as a map rather than a string.
+
+The same keys work on the flat `camunda.security.authentication.oidc.*` block, which counts as one
+more provider — keyed by its `registration-id` (default `oidc`) — and gets its own independent
+answer. A deployment can therefore set a URI on the flat block and a different one, or none, on each
+`providers.oidc.<id>` entry:
+
+```yaml
+camunda:
+  security:
+    authentication:
+      oidc:
+        client-id: camunda-primary
+        issuer-uri: https://keycloak.example.com/realms/camunda
+        post-logout-redirect-uri: "{baseUrl}/post-logout"
+      providers:
+        oidc:
+          auth0:
+            client-id: camunda-auth0
+            issuer-uri: https://example.eu.auth0.com/
+            post-logout-redirect-enabled: false
+```
+
+Prefer YAML for the multi-provider form. The environment-variable equivalent
+(`CAMUNDA_SECURITY_AUTHENTICATION_PROVIDERS_OIDC_AUTH0_POSTLOGOUTREDIRECTURI`) relies on Spring's
+relaxed binding to recover the map key from the variable name, which is fragile for anything but
+short lowercase alphanumeric keys. The flat block's
+`CAMUNDA_SECURITY_AUTHENTICATION_OIDC_POSTLOGOUTREDIRECTURI` has no such ambiguity.
 
 ## RP (Relying Party)-initiated logout troubleshooting
 
