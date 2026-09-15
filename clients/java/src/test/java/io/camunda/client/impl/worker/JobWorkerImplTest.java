@@ -52,14 +52,17 @@ import io.grpc.testing.GrpcCleanupRule;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -68,10 +71,12 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.LongSupplier;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -92,6 +97,11 @@ final class JobWorkerImplTest {
   // keeps the keys of pushed jobs apart from those of the polled ones
   private static final long STREAMED_JOB_KEY_OFFSET = 100L;
   private static final Duration SLOW_POLL_THRESHOLD = Duration.ofMillis(SLOW_POLL_DELAY_IN_MS / 2);
+  private static final int MAX_JOBS_ACTIVE = 4;
+  private static final long POLL_INTERVAL_IN_MS = 50L;
+  private static final Duration JOB_TIMEOUT = Duration.ofMinutes(5);
+  // A clock frozen in time: a job measured against a positive timeout is always still within it.
+  private static final LongSupplier WITHIN_ACTIVATION = () -> 0L;
 
   @Rule public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
@@ -699,7 +709,9 @@ final class JobWorkerImplTest {
             JobWorkerMetrics.noop(),
             command -> {
               throw new RejectedExecutionException("The executor has no capacity");
-            })) {
+            },
+            WITHIN_ACTIVATION,
+            JOB_TIMEOUT)) {
 
       // when the poller hands over two jobs and handing the first one back to the broker fails
       scheduler.tick(50, TimeUnit.MILLISECONDS);
@@ -862,12 +874,261 @@ final class JobWorkerImplTest {
     }
   }
 
+  @Test
+  void shouldRunAJobThatIsStillWithinItsActivation() {
+    // given a worker whose handler threads are free, so that a job starts as soon as it arrives
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+
+    try (final JobWorkerImpl ignored =
+        workerWith(scheduler, poller, handlers, WITHIN_ACTIVATION, Mockito.mock(JobClient.class))) {
+
+      // when the poller hands over a job
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(1));
+
+      // then its handler runs
+      assertThat(handlers.getRanJobKeys()).containsExactly(0L);
+    }
+  }
+
+  @Test
+  void shouldNotRunAJobThatWaitedOutItsActivation() {
+    // given a worker whose jobs wait for a free handler thread for longer than the timeout they
+    // were activated with
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+
+    try (final JobWorkerImpl ignored =
+        workerWith(
+            scheduler,
+            poller,
+            handlers,
+            clockPastEveryActivation(),
+            Mockito.mock(JobClient.class))) {
+
+      // when the poller hands over a job
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(1));
+
+      // then the handler does not run: the broker may have offered the job to another worker
+      // already, so running it would do the same work twice and end in a rejected completion
+      assertThat(handlers.getRanJobKeys()).isEmpty();
+    }
+  }
+
+  @Test
+  void shouldRunOnlyTheHeadOfABatchThatStartsWithinItsActivation() {
+    // given real deadlines on a clock the test moves, rather than a fixed verdict, so that moving
+    // the check away from the arrival point would show up here
+    final TestNanoClock clock = new TestNanoClock();
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            MAX_JOBS_ACTIVE,
+            scheduler,
+            Duration.ofMillis(POLL_INTERVAL_IN_MS),
+            Mockito.mock(JobClient.class),
+            handlers,
+            poller,
+            JobStreamer.noop(),
+            delay -> delay,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            handlerThreads::execute,
+            clock,
+            JOB_TIMEOUT)) {
+
+      // and a whole batch queued for a free handler thread
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(MAX_JOBS_ACTIVE));
+
+      // when the first two get a thread straight away
+      handlerThreads.runNext(2);
+
+      // and the rest only get one after the activation they arrived with has run out
+      clock.advance(JOB_TIMEOUT);
+      handlerThreads.runQueued();
+
+      // then the head ran and the tail was dropped, rather than running long after the broker gave
+      // up on it
+      assertThat(handlers.getRanJobKeys()).containsExactly(0L, 1L);
+    }
+  }
+
+  @Test
+  void shouldFreeTheCapacityOfAJobThatWaitedOutItsActivation() {
+    // given a worker whose jobs all wait out their activation
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+
+    try (final JobWorkerImpl ignored =
+        workerWith(
+            scheduler,
+            poller,
+            handlers,
+            clockPastEveryActivation(),
+            Mockito.mock(JobClient.class))) {
+
+      // when a whole batch of them is dropped
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(MAX_JOBS_ACTIVE));
+
+      // then the worker asks for a full batch again, so a dropped job never takes up capacity for
+      // good, which is what would stop the worker from ever polling again
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      assertThat(poller.getPollCount()).isGreaterThan(1);
+      assertThat(poller.getLastRequestedJobCount()).isEqualTo(MAX_JOBS_ACTIVE);
+    }
+  }
+
+  @Test
+  void shouldFreeTheCapacityOfAJobThatWaitedOutItsActivationOnlyOnce() {
+    // given a worker whose executor reports every job as refused after taking it, which is what a
+    // saturated pool with a caller-runs policy does while it is shutting down
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            MAX_JOBS_ACTIVE,
+            scheduler,
+            Duration.ofMillis(POLL_INTERVAL_IN_MS),
+            Mockito.mock(JobClient.class),
+            handlers,
+            poller,
+            JobStreamer.noop(),
+            delay -> delay,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            command -> {
+              command.run();
+              throw new RejectedExecutionException("Command ran here, but capacity ran out");
+            },
+            clockPastEveryActivation(),
+            JOB_TIMEOUT)) {
+
+      // when a whole batch is both dropped for having waited out its activation and reported as
+      // refused, so that both paths are taken for the same job
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(MAX_JOBS_ACTIVE));
+
+      // then each job gave its capacity back exactly once. Giving it back twice would have the
+      // worker ask the broker for more jobs than it is allowed to run at a time.
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      assertThat(poller.getLastRequestedJobCount()).isEqualTo(MAX_JOBS_ACTIVE);
+    }
+  }
+
+  @Test
+  void shouldNotHandBackAJobThatWaitedOutItsActivation() {
+    // given a worker whose jobs all wait out their activation
+    final JobClient jobClient = Mockito.mock(JobClient.class);
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+
+    try (final JobWorkerImpl ignored =
+        workerWith(scheduler, poller, handlers, clockPastEveryActivation(), jobClient)) {
+
+      // when a job is dropped
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(1));
+
+      // then the worker does not fail it back to the broker. Its activation is over, so the job may
+      // already belong to another worker, and failing it by key would take it away from them.
+      Mockito.verify(jobClient, Mockito.never())
+          .newFailCommand(Mockito.any(io.camunda.client.api.response.ActivatedJob.class));
+    }
+  }
+
+  @Test
+  void shouldFreeTheExecutorCapacityOfAStreamedJobThatWaitedOutItsActivation() {
+    // given a worker whose handler threads are all busy, and the real executor, since it is the
+    // executor rather than the worker that holds a pushed job's capacity
+    final TestNanoClock clock = new TestNanoClock();
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, JOB_TIMEOUT);
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            MAX_JOBS_ACTIVE,
+            scheduler,
+            Duration.ofMillis(POLL_INTERVAL_IN_MS),
+            Mockito.mock(JobClient.class),
+            handlers,
+            poller,
+            streamer,
+            delay -> delay,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            executor,
+            clock,
+            JOB_TIMEOUT)) {
+
+      // and a pushed job waiting for a handler thread, holding capacity the next poll is sized from
+      streamer.push(STREAMED_JOB_KEY_OFFSET);
+      assertThat(executor.freeCapacity()).isEqualTo(MAX_JOBS_ACTIVE - 1);
+
+      // when a handler thread frees up and the job is dropped for having waited out its activation
+      clock.advance(JOB_TIMEOUT);
+      handlerThreads.runQueued();
+
+      // then the capacity it held is back and the worker asks for a full batch. Nothing on the drop
+      // path hands it back by name: a pushed job takes no capacity slot of the worker's own, so the
+      // give-back is the executor's alone, and a leak here would shrink every later poll.
+      assertThat(handlers.getRanJobKeys()).isEmpty();
+      assertThat(executor.freeCapacity()).isEqualTo(MAX_JOBS_ACTIVE);
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      assertThat(poller.getLastRequestedJobCount()).isEqualTo(MAX_JOBS_ACTIVE);
+    }
+  }
+
+  private JobWorkerImpl workerWith(
+      final ScheduledExecutorService scheduler,
+      final JobPoller poller,
+      final JobRunnableFactory handlers,
+      final LongSupplier nanoClock,
+      final JobClient jobClient) {
+    return new JobWorkerImpl(
+        MAX_JOBS_ACTIVE,
+        scheduler,
+        Duration.ofMillis(POLL_INTERVAL_IN_MS),
+        jobClient,
+        handlers,
+        poller,
+        JobStreamer.noop(),
+        delay -> delay,
+        delay -> delay,
+        JobWorkerMetrics.noop(),
+        Runnable::run,
+        nanoClock,
+        JOB_TIMEOUT);
+  }
+
   /**
-   * An executor that runs the command and then reports it as refused. A saturated {@link
-   * java.util.concurrent.ThreadPoolExecutor} using {@link
-   * java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy} behaves this way when it is shut down
-   * while the caller is running the command.
+   * A monotonic clock that jumps a whole timeout on every reading, so that every job it measures
+   * has already waited out its activation by the time the handler would start, whatever moment the
+   * check happens to fall on.
    */
+  private static LongSupplier clockPastEveryActivation() {
+    final AtomicLong nanos = new AtomicLong();
+    return () -> nanos.getAndAdd(JOB_TIMEOUT.toNanos() + 1);
+  }
+
   /**
    * Pushes jobs on the open stream from another thread, since a worker that has no capacity left
    * makes the pushing thread wait for it.
@@ -889,6 +1150,30 @@ final class JobWorkerImplTest {
         : requestedJobCounts.get(requestedJobCounts.size() - 1);
   }
 
+  /** Records the jobs whose handler ran, and reports each one as done straight away. */
+  private static final class RecordingJobRunnableFactory implements JobRunnableFactory {
+    private final List<Long> ranJobKeys = Collections.synchronizedList(new ArrayList<>());
+
+    @Override
+    public Runnable create(
+        final io.camunda.client.api.response.ActivatedJob job, final Runnable doneCallback) {
+      return () -> {
+        ranJobKeys.add(job.getKey());
+        doneCallback.run();
+      };
+    }
+
+    private List<Long> getRanJobKeys() {
+      return ranJobKeys;
+    }
+  }
+
+  /**
+   * An executor that runs the command and then reports it as refused. A saturated {@link
+   * java.util.concurrent.ThreadPoolExecutor} using {@link
+   * java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy} behaves this way when it is shut down
+   * while the caller is running the command.
+   */
   private static final class RunsThenRefusesExecutor extends AbstractExecutorService {
     @Override
     public void shutdown() {}
@@ -937,6 +1222,67 @@ final class JobWorkerImplTest {
     }
   }
 
+  /** Handler threads that are all busy until the test lets a command run. */
+  private static final class BusyHandlerThreads implements Executor {
+    private final Queue<Runnable> queued = new ArrayDeque<>();
+
+    @Override
+    public void execute(final Runnable command) {
+      queued.add(command);
+    }
+
+    private void runNext(final int count) {
+      for (int i = 0; i < count && !queued.isEmpty(); i++) {
+        queued.poll().run();
+      }
+    }
+
+    private void runQueued() {
+      while (!queued.isEmpty()) {
+        queued.poll().run();
+      }
+    }
+  }
+
+  /** A monotonic clock the test moves by hand, so that no test has to wait for real time. */
+  private static final class TestNanoClock implements LongSupplier {
+    private long nanos;
+
+    @Override
+    public long getAsLong() {
+      return nanos;
+    }
+
+    private void advance(final Duration duration) {
+      nanos += duration.toNanos();
+    }
+  }
+
+  /** A stream the test pushes jobs onto, capturing the worker's handler as the real one would. */
+  private static final class RecordingJobStreamer implements JobStreamer {
+    private final JsonMapper jsonMapper = new CamundaObjectMapper();
+    private final AtomicReference<Consumer<io.camunda.client.api.response.ActivatedJob>> consumer =
+        new AtomicReference<>();
+
+    @Override
+    public void close() {}
+
+    @Override
+    public boolean isOpen() {
+      return true;
+    }
+
+    @Override
+    public void openStreamer(
+        final Consumer<io.camunda.client.api.response.ActivatedJob> jobConsumer) {
+      consumer.set(jobConsumer);
+    }
+
+    private void push(final long jobKey) {
+      consumer.get().accept(new ActivatedJobImpl(jsonMapper, TestData.job(jobKey)));
+    }
+  }
+
   /**
    * Hands the jobs over the way the real poller does: from a callback of the request future rather
    * than from the call to {@link #poll}. Anything thrown while handing a job over therefore ends up
@@ -945,6 +1291,7 @@ final class JobWorkerImplTest {
   private static final class RecordingJobPoller implements JobPoller {
     private final JsonMapper jsonMapper = new CamundaObjectMapper();
     private final AtomicInteger pollCount = new AtomicInteger();
+    private final AtomicInteger lastRequestedJobCount = new AtomicInteger();
     private final AtomicReference<Consumer<io.camunda.client.api.response.ActivatedJob>>
         jobConsumer = new AtomicReference<>();
     private final AtomicReference<IntConsumer> doneCallback = new AtomicReference<>();
@@ -957,12 +1304,17 @@ final class JobWorkerImplTest {
         final Consumer<Throwable> errorCallback,
         final BooleanSupplier openSupplier) {
       pollCount.incrementAndGet();
+      lastRequestedJobCount.set(maxJobsToActivate);
       this.jobConsumer.set(jobConsumer);
       this.doneCallback.set(doneCallback);
     }
 
     private int getPollCount() {
       return pollCount.get();
+    }
+
+    private int getLastRequestedJobCount() {
+      return lastRequestedJobCount.get();
     }
 
     private void handOverJobs(final List<ActivatedJob> jobs) {
