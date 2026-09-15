@@ -62,6 +62,18 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
 
   private final String prefix;
 
+  /**
+   * No-arg constructor solely so spring-boot-configuration-processor does not treat this class as
+   * constructor-bound — with a single parameterized constructor, the processor derives metadata
+   * only from that constructor's parameters and silently ignores every getter/setter below.
+   * Deliberately unused and {@code private}: nothing — not even a test — should ever call it;
+   * {@link #DocumentBasedSecondaryStorageBackup(String)} remains the only real construction path
+   * (see {@link DocumentBasedSecondaryStorageDatabase}). Do not remove as dead code.
+   */
+  private DocumentBasedSecondaryStorageBackup() {
+    prefix = null;
+  }
+
   public DocumentBasedSecondaryStorageBackup(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.backup".formatted(databaseName);
   }
