@@ -54,7 +54,7 @@ runs:
   steps:
     - name: Generate renewed GitHub App token
       id: generate-token
-      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@67d00e9260887361a31f6446252fffbecae4a02e # generate-github-app-token-from-vault-secrets-1.1.1
       with:
         github-app-id-vault-key: ${{ inputs.github-app-id-vault-key }}
         github-app-id-vault-path: ${{ inputs.github-app-id-vault-path }}

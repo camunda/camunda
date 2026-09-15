@@ -9,12 +9,12 @@ jobs:
       options: --user 1001:1000
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Setup NodeJS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
         with:
           directory: operate/client
       - name: Install node dependencies
@@ -29,7 +29,7 @@ jobs:
       - name: Run Playwright
         working-directory: ./operate/client
         run: yarn playwright e2e-playwright/docs-screenshots
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: Playwright report

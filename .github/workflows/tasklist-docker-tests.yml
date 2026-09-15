@@ -16,8 +16,8 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           ignore: DL3018 # redundant when pinning the base image
           dockerfile: tasklist.Dockerfile
