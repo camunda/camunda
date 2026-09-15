@@ -639,12 +639,22 @@ def test_should_accept_composite_prometheus_durations():
     assert options.rate_interval == "1h30m"
 
 
+@pytest.mark.parametrize("duration", ["1m500ms", "1s500ms", "1h30m500ms"])
+def test_should_accept_composite_prometheus_durations_with_milliseconds(duration):
+    options = parse_args(["c8-ck-test", "--rate-interval", duration])
+
+    assert options.rate_interval == duration
+
+
 def test_should_reject_out_of_order_prometheus_durations():
     with pytest.raises(SystemExit):
         parse_args(["c8-ck-test", "--rate-interval", "1m1h"])
 
     with pytest.raises(SystemExit):
         parse_args(["c8-ck-test", "--rate-interval", "1h1h"])
+
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--rate-interval", "1ms1m"])
 
 
 def test_should_reject_unrepresentable_timestamp():
