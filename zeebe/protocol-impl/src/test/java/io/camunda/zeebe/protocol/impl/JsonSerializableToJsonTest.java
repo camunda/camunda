@@ -2790,7 +2790,8 @@ final class JsonSerializableToJsonTest {
                   new AdHocSubProcessInstructionRecord()
                       .setAdHocSubProcessInstanceKey(1234L)
                       .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                      .setCompletionConditionFulfilled(true);
+                      .setCompletionConditionFulfilled(true)
+                      .setStorageOrdinalKey(1001);
 
               adHocSubProcessInstructionRecord.activateElements().add().setElementId("123");
               adHocSubProcessInstructionRecord
@@ -2820,7 +2821,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "cancelRemainingInstances": true,
-                  "completionConditionFulfilled": true
+                  "completionConditionFulfilled": true,
+                  "storageOrdinalKey": 1001
                 }
                 """
       },
@@ -2839,7 +2841,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "activateElements": [],
                   "cancelRemainingInstances": false,
-                  "completionConditionFulfilled": false
+                  "completionConditionFulfilled": false,
+                  "storageOrdinalKey": 0
                 }
                 """
       },

@@ -102,6 +102,7 @@ public final class ProcessInstanceSuspensionMessageSubscriptionBehavior {
               final long subKey = record.getSubscriptionKey();
               final String messageName = record.getMessageName();
               final String tenantId = record.getTenantId();
+              final int ordinalKey = record.getStorageOrdinalKey();
 
               stateWriter.appendFollowUpEvent(
                   subscription.getKey(),
@@ -120,7 +121,8 @@ public final class ProcessInstanceSuspensionMessageSubscriptionBehavior {
                           pdKey,
                           BufferUtil.wrapString(messageName),
                           tenantId,
-                          subKey));
+                          subKey,
+                          ordinalKey));
             }
             return true;
           });
