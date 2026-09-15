@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import { Heading } from "@camunda/design-system";
 import { FC, ReactNode } from "react";
 import Failmunda from "src/assets/images/failmunda.svg";
 import Page from "src/components/layoutV2/Page";
@@ -13,13 +14,14 @@ import Page from "src/components/layoutV2/Page";
 type ErrorPageProps = {
   title: ReactNode;
   children?: ReactNode;
+  className?: string;
 };
 
-const ErrorPage: FC<ErrorPageProps> = ({ title, children }) => (
-  <Page>
+const ErrorPage: FC<ErrorPageProps> = ({ title, children, className }) => (
+  <Page className={className}>
     <div className="mx-auto my-20 flex max-w-100 flex-col items-start gap-3">
       <Failmunda />
-      <h1>{title}</h1>
+      <Heading as="h1">{title}</Heading>
       {children}
     </div>
   </Page>
