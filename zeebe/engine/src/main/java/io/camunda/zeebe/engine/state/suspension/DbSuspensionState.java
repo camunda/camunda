@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public final class DbSuspensionState implements MutableSuspensionState {
 
@@ -101,9 +102,7 @@ public final class DbSuspensionState implements MutableSuspensionState {
     final var count = new AtomicInteger();
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
-        (compositeKey, nil) -> {
-          count.incrementAndGet();
-        });
+        (Consumer<DbCompositeKey<DbLong, DbLong>>) compositeKey -> count.incrementAndGet());
     return count.get();
   }
 
@@ -159,9 +158,8 @@ public final class DbSuspensionState implements MutableSuspensionState {
     final List<Long> keysToRemove = new ArrayList<>();
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
-        (compositeKey, stored) -> {
-          keysToRemove.add(compositeKey.second().getValue());
-        });
+        (Consumer<DbCompositeKey<DbLong, DbLong>>)
+            compositeKey -> keysToRemove.add(compositeKey.second().getValue()));
     // processInstanceKey is already wrapped to the prefix just iterated above; only the buffered
     // command key needs to change per entry
     keysToRemove.forEach(
