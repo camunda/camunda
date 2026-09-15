@@ -167,9 +167,9 @@ public final class ClusterRestore {
    * <p>{@link TargetDataPolicy#REPLACE_SELECTED} instead deletes the named tenants' own partition
    * group directories. Naming a tenant explicitly is asking to replace that tenant on a node whose
    * other tenants are live and must keep their data, so an empty-directory requirement could never
-   * be satisfied. Only the named tenants' directories are touched, and — same as the whole-directory
-   * check above — {@code ignoreFilesInTarget} entries inside them are left alone rather than
-   * deleted.
+   * be satisfied. Only the named tenants' directories are touched, and — same as the
+   * whole-directory check above — {@code ignoreFilesInTarget} entries inside them are left alone
+   * rather than deleted.
    */
   private void prepareTarget(
       final Path dataDirectory,
@@ -195,8 +195,8 @@ public final class ClusterRestore {
    * Deletes what this run was restoring, and no more. A run that required an empty directory
    * empties it again, as it always has; a run that replaced named tenants deletes only their
    * partition group directories, so a failure restoring one tenant does not discard another's data
-   * that was already there. Named tenants' directories keep {@code ignoreFilesInTarget} entries, the
-   * same as the initial clear in {@link #prepareTarget}.
+   * that was already there. Named tenants' directories keep {@code ignoreFilesInTarget} entries,
+   * the same as the initial clear in {@link #prepareTarget}.
    */
   private void deleteRestoredData(
       final Path dataDirectory,

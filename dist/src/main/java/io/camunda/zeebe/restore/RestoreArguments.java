@@ -29,13 +29,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * <pre>
  *   --backupId=27                     restore every targeted tenant from checkpoint 27
  *   --from=... --to=...               resolve each targeted tenant's own restore point in that range
- *   --tenant-id=tenanta               target that tenant alone (default: the default tenant)
- *   --all-tenants                     target every configured physical tenant
+ *   --tenantId=tenanta                target that tenant alone (default: the default tenant)
+ *   --allTenants                      target every configured physical tenant
  *   --override.tenanta.backupId=31    tenanta restores from 31 instead of the cluster-wide selection
  * </pre>
  *
  * <p>Bound rather than read with {@code @Value} so every flag accepts the relaxed spellings Spring
- * Boot allows — {@code --tenant-id}, {@code --tenantId} and {@code TENANT_ID} are one flag — and so
+ * Boot allows — {@code --tenantId}, {@code --tenant-id} and {@code TENANT_ID} are one flag — and so
  * the override map can be keyed by tenant ids that are not known until the configuration is read.
  */
 @ConfigurationProperties
@@ -52,9 +52,9 @@ public class RestoreArguments {
   /**
    * What this run may do to data already in the data directory.
    *
-   * <p>Naming a tenant with {@code --tenant-id} is asking to replace that tenant on a node whose
+   * <p>Naming a tenant with {@code --tenantId} is asking to replace that tenant on a node whose
    * other tenants are live, so their data stays and the named tenant's own directory is cleared.
-   * Every other invocation — the default tenant, or {@code --all-tenants} — is the recovery of a
+   * Every other invocation — the default tenant, or {@code --allTenants} — is the recovery of a
    * node meant to start from nothing, and keeps the long-standing requirement that the data
    * directory be empty.
    */
@@ -81,8 +81,8 @@ public class RestoreArguments {
   }
 
   /**
-   * Which physical tenants this run targets: the one named by {@code --tenant-id}, every configured
-   * one under {@code --all-tenants}, or — naming neither — the default tenant.
+   * Which physical tenants this run targets: the one named by {@code --tenantId}, every configured
+   * one under {@code --allTenants}, or — naming neither — the default tenant.
    *
    * <p>Defaulting to the default tenant on a multi-tenant cluster restores that tenant alone. That
    * is a partial restore, not a truncated full one: the other tenants keep their data and their
@@ -92,7 +92,7 @@ public class RestoreArguments {
   private Set<String> targetedPhysicalTenants(final Set<String> configuredPhysicalTenantIds) {
     if (allTenantsRequested() && tenantId != null) {
       throw new IllegalArgumentException(
-          "Expected either --all-tenants or --tenant-id, but got both (--tenant-id=%s)"
+          "Expected either --allTenants or --tenantId, but got both (--tenantId=%s)"
               .formatted(tenantId));
     }
     if (allTenantsRequested()) {
@@ -169,7 +169,7 @@ public class RestoreArguments {
   /**
    * Whether every configured physical tenant was requested.
    *
-   * <p>Bound as a {@code String}, not a {@code boolean}, so {@code --all-tenants} works without a
+   * <p>Bound as a {@code String}, not a {@code boolean}, so {@code --allTenants} works without a
    * value: Spring gives a valueless command-line option the empty string, which no boolean
    * conversion accepts, and a {@code Boolean} would bind it to {@code null} — indistinguishable
    * from the flag being absent, so the flag would silently do nothing. Interpreting the raw value

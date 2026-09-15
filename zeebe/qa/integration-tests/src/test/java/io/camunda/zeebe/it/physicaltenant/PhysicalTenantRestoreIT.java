@@ -51,8 +51,8 @@ import org.junit.jupiter.api.io.TempDir;
  * Restoring a multi-physical-tenant cluster through the standalone restore application.
  *
  * <p>The three scenarios are the three ways the application can be pointed at such a cluster: the
- * default tenant alone (no {@code --tenant-id}), one named tenant, and every tenant ({@code
- * --all-tenants}). All three share the cluster shape built by {@link #startCluster()}.
+ * default tenant alone (no {@code --tenantId}), one named tenant, and every tenant ({@code
+ * --allTenants}). All three share the cluster shape built by {@link #startCluster()}.
  *
  * <p>Two brokers, replication factor 2, so every partition is replicated on both. Quorum is
  * therefore 2: a partition becomes usable again only if <em>both</em> brokers restored it, which is
@@ -114,7 +114,7 @@ final class PhysicalTenantRestoreIT {
         deleteContents(dataDirectoryOf(node));
       }
 
-      // when — no --tenant-id, which is every pre-existing invocation of this application
+      // when — no --tenantId, which is every pre-existing invocation of this application
       restoreOnEveryNode(restoreApp -> restoreApp.withBackupId(DEFAULT_BACKUP_ID));
 
       // then — the default tenant's partitions are back on both brokers, and the tenant that was
