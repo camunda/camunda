@@ -58,10 +58,11 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
  *
  * <p>CSL defines no id_token decoder of its own (Spring Security's stock {@code
  * OidcIdTokenDecoderFactory} handles the login id_token unmodified), so simply not overriding
- * {@code idTokenDecoderFactory} here is sufficient to exempt it. Overriding only {@link
- * #tokenValidatorFactory} still gates both the bearer/API resource-server {@code JwtDecoder} and,
- * for interactive session users, the per-request decode of the session's stored access token (both
- * consume this bean automatically) — the two paths that carry a genuine access token.
+ * {@code idTokenDecoderFactory} here is sufficient to exempt it. {@link #tokenValidatorFactory}
+ * gates the bearer/API resource-server {@code JwtDecoder}, which consumes the bean automatically.
+ * Interactive session users are not covered by it: CSL swallows the validation failure on that path
+ * and falls back to the id_token's claims, which is why {@link
+ * OptimizeCcsmSessionPermissionEnforcementFilter} enforces the permission for them instead.
  */
 @Configuration
 @Conditional(CCSMCondition.class)
@@ -72,10 +73,9 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 public class OptimizeCcsmSecurityConfiguration {
 
   /**
-   * Shared token validation for bearer/public-API tokens and the session's per-request access
-   * token. Overrides CSL's {@code @ConditionalOnMissingBean} default to append the Identity
-   * permission gate. The gate is always added: dropping it would silently reopen the CCSM
-   * authorization gap CSL introduced.
+   * Token validation for bearer/API tokens. Overrides CSL's {@code @ConditionalOnMissingBean}
+   * default to append the Identity permission gate. The gate is always added: dropping it would
+   * silently reopen the CCSM authorization gap CSL introduced.
    */
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
