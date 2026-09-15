@@ -787,6 +787,20 @@
 					"viewDecisionInstance": "Voir l'instance de décision {{key}}",
 					"failureReason": "Raison de l'échec : {{message}}",
 					"emptyMessage": "Aucun élément trouvé"
+				},
+				"actions": {
+					"suspend": "Suspendre",
+					"resume": "Reprendre",
+					"cancel": "Annuler",
+					"overflowMenuLabel": "Autres actions",
+					"suspendFailed": "L'opération ne peut pas être suspendue",
+					"resumeFailed": "L'opération ne peut pas être reprise",
+					"cancelFailed": "L'opération ne peut pas être annulée",
+					"notFoundSubtitle": "Opération par lots introuvable. Elle est peut-être déjà terminée ou a échoué.",
+					"forbiddenTitle": "Vous n'avez pas la permission d'effectuer cette opération",
+					"forbiddenSubtitle": "Veuillez contacter l'administrateur si vous avez besoin d'accès.",
+					"convergenceUnknownTitle": "Le statut de l'opération par lots n'a pas pu être confirmé",
+					"convergenceUnknownSubtitle": "L'action a été envoyée. Actualisez la page pour voir son état actuel."
 				}
 			},
 			"shared": {

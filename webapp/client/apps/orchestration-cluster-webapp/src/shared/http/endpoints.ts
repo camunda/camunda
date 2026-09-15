@@ -353,6 +353,24 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	suspendBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.suspendBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.suspendBatchOperation.method,
+		}),
+
+	resumeBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resumeBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resumeBatchOperation.method,
+		}),
+
+	cancelBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.cancelBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.cancelBatchOperation.method,
+		}),
+
 	getUserTask: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
 		new Request(getFullURL(unifiedAPIEndpoints.getUserTask.getUrl({userTaskKey})), {
 			...BASE_REQUEST_OPTIONS,
