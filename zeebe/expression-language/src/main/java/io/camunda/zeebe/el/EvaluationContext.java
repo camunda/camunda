@@ -8,7 +8,8 @@
 package io.camunda.zeebe.el;
 
 import io.camunda.zeebe.util.Either;
-import org.agrona.DirectBuffer;
+
+// no import needed — ContextValue is in this package
 
 /**
  * A read-only view over a variable context, typically backed by a large JSON-like buffer.
@@ -17,7 +18,7 @@ import org.agrona.DirectBuffer;
  * returns either:
  *
  * <ul>
- *   <li><b>Left(DirectBuffer)</b> is a terminal value (e.g., a primitive, string) associated with
+ *   <li><b>Left(ContextValue)</b> is a terminal value (e.g., a primitive, string) associated with
  *       the provided variable name in this context, or {@code Left(null)} to signal that no value
  *       exists for the provided name in this context
  *   <li><b>Right(EvaluationContext)</b> is a nested context representing an object/node which can
@@ -28,13 +29,13 @@ import org.agrona.DirectBuffer;
  *
  * <pre>{@code
  * // Example path resolution for "camunda.vars.cluster.key":
- * Either<DirectBuffer, EvaluationContext> step1 = root.getVariable("camunda");
+ * Either<ContextValue, EvaluationContext> step1 = root.getVariable("camunda");
  * // if Right(ctx1), then:
- * Either<DirectBuffer, EvaluationContext> step2 = ctx1.getVariable("vars");
+ * Either<ContextValue, EvaluationContext> step2 = ctx1.getVariable("vars");
  * // if Right(ctx2), then:
- * Either<DirectBuffer, EvaluationContext> step3 = ctx2.getVariable("cluster");
+ * Either<ContextValue, EvaluationContext> step3 = ctx2.getVariable("cluster");
  * // if Right(ctx3), then:
- * Either<DirectBuffer, EvaluationContext> step4 = ctx3.getVariable("key");
+ * Either<ContextValue, EvaluationContext> step4 = ctx3.getVariable("key");
  * // step4 is expected to be Left(value) or Left(null) if not found
  * }</pre>
  *
@@ -44,8 +45,9 @@ import org.agrona.DirectBuffer;
  *
  * <h3>Buffer lifetime</h3>
  *
- * Unless otherwise documented by a given implementation, the {@link DirectBuffer} returned in
- * {@code Left} is considered valid only until the next call into the same implementation.
+ * Unless otherwise documented by a given implementation, a {@link ContextValue.MsgPack} returned in
+ * {@code Left} wraps a buffer considered valid only until the next call into the same
+ * implementation.
  */
 @FunctionalInterface
 public interface EvaluationContext {
@@ -56,12 +58,12 @@ public interface EvaluationContext {
    * @param variableName the single-segment variable name to resolve in this context
    * @return an {@link Either} containing:
    *     <ul>
-   *       <li><b>Left(valueBuffer)</b> when the name maps to a terminal value; or {@code
-   *           Left(null)} when the name is absent in this context; or
+   *       <li><b>Left(value)</b> when the name maps to a terminal value; or {@code Left(null)} when
+   *           the name is absent in this context; or
    *       <li><b>Right(nestedContext)</b> when the name maps to an object/structure that can be
    *           queried further for deeper segments.
    *     </ul>
    *     Implementations should never return {@code Right(null)}.
    */
-  Either<DirectBuffer, EvaluationContext> getVariable(String variableName);
+  Either<ContextValue, EvaluationContext> getVariable(String variableName);
 }
