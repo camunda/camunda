@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 
 @ExtendWith(ProcessingStateExtension.class)
 public final class BufferedCommandDrainProcessorTest {
@@ -117,11 +118,13 @@ public final class BufferedCommandDrainProcessorTest {
             any(ProcessInstanceRecord.class));
     verify(stateWriter)
         .appendFollowUpEvent(eq(BUFFERED_COMMAND_KEY), eq(BufferedCommandIntent.DRAINED), any());
+
+    final var nextDrainValue = ArgumentCaptor.forClass(BufferedCommandRecord.class);
     verify(commandWriter)
         .appendFollowUpCommand(
-            eq(PROCESS_INSTANCE_KEY),
-            eq(BufferedCommandIntent.DRAIN),
-            any(BufferedCommandRecord.class));
+            eq(PROCESS_INSTANCE_KEY), eq(BufferedCommandIntent.DRAIN), nextDrainValue.capture());
+    assertThat(nextDrainValue.getValue().getCommandKey()).isEqualTo(BUFFERED_COMMAND_KEY);
+
     verify(commandWriter, never())
         .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.RESUME_JOBS), any());
   }
