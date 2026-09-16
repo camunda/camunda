@@ -166,6 +166,15 @@ public final class JobSecretPushInjectionTest {
     assertThat(requested.getValue().getJobKeys()).containsExactly(jobKey);
     assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
 
+    // and - the park is observable on the JOB record stream, so the wait-state exporter can mark
+    // the job as waiting on a secret rather than on a worker, even when it is parked on the push
+    // path rather than a long poll
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.SECRET_RESOLUTION_PARKED)
+                .withRecordKey(jobKey)
+                .exists())
+        .isTrue();
+
     // and - the job is neither activated nor pushed: the process instance runs no further, so
     // waiting for the element instance the job belongs to bounds what can still be exported
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -417,6 +426,42 @@ public final class JobSecretPushInjectionTest {
   }
 
   @Test
+  public void shouldNotResumeJobStillParkedOnAnotherReference() {
+    // given - a job parked on two uncached references
+    deploy(
+        t ->
+            t.zeebeInputExpression("camunda.secrets.token", "a")
+                .zeebeInputExpression("camunda.secrets.apiKey", "b"));
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long jobKey = jobKeyOf(processInstanceKey);
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+        .limit(2)
+        .await();
+
+    // when - only the first reference resolves
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution(SECRET_NAME);
+
+    // then - the reactivation cycle for that reference ran, but the job stays parked on the other
+    // reference and is not resumed: the exporter must keep the secret-wait mark
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.BATCH_JOBS_REACTIVATED)
+        .withSecretReference(SECRET_NAME)
+        .await();
+    assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+    assertThat(resumedEventCount(jobKey))
+        .describedAs("the job is still parked on the second reference, so it is not resumed yet")
+        .isZero();
+    assertThat(jobStream.getActivatedJobs()).isEmpty();
+
+    // and - once the second reference resolves the job leaves the wait state and is handed out; on
+    // the push path the hand-out itself clears the mark, so no separate resume event is needed
+    CACHED_SECRETS.put("apiKey", "resolved-api-key");
+    completeResolution("apiKey");
+    final ActivatedJob pushedJob = awaitPushedJob();
+    assertThat(pushedJob.jobKey()).isEqualTo(jobKey);
+  }
+
+  @Test
   public void shouldPushJobWithoutSecretReferencesUnchanged() {
     // given
     CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
@@ -430,6 +475,13 @@ public final class JobSecretPushInjectionTest {
     assertThat(pushedJob.jobRecord().getVariables()).containsEntry("authorization", "plain-value");
     assertThat(RecordingExporter.getRecords())
         .noneMatch(record -> record.getValueType() == ValueType.SECRET_REFERENCE);
+
+    // and - a job that never parks carries no park or un-park marker on the JOB record stream
+    assertThat(RecordingExporter.getRecords())
+        .noneMatch(
+            record ->
+                record.getIntent() == JobIntent.SECRET_RESOLUTION_PARKED
+                    || record.getIntent() == JobIntent.SECRET_RESOLUTION_RESUMED);
   }
 
   @Test
@@ -749,6 +801,13 @@ public final class JobSecretPushInjectionTest {
 
   private State jobState(final long jobKey) {
     return engine.getProcessingState().getJobState().getState(jobKey);
+  }
+
+  private long resumedEventCount(final long jobKey) {
+    return RecordingExporter.getRecords().stream()
+        .filter(record -> record.getIntent() == JobIntent.SECRET_RESOLUTION_RESUMED)
+        .filter(record -> record.getKey() == jobKey)
+        .count();
   }
 
   private Optional<Counter> findJobCounter(final String action) {
