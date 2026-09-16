@@ -94,6 +94,7 @@ class ConfigTest {
     assertThat(suspenderCfg.getBatchPageSize()).isEqualTo(1000);
     assertThat(suspenderCfg.getHoldDuration()).hasSeconds(30);
     assertThat(suspenderCfg.isTargetEnabled()).isFalse();
+    assertThat(suspenderCfg.isSuspendEnabled()).isTrue();
     assertThat(suspenderCfg.getTargetBpmnPath()).isEqualTo("bpmn/suspend_target.bpmn");
     assertThat(suspenderCfg.getTargetProcessId()).isEqualTo("suspendTarget");
     assertThat(suspenderCfg.getTargetInstances()).isEqualTo(1);
@@ -175,6 +176,7 @@ class ConfigTest {
       assertThat(suspenderCfg.getBatchPageSize()).isEqualTo(2000);
       assertThat(suspenderCfg.getHoldDuration()).hasMinutes(1);
       assertThat(suspenderCfg.isTargetEnabled()).isTrue();
+      assertThat(suspenderCfg.isSuspendEnabled()).isFalse();
       assertThat(suspenderCfg.getTargetInstances()).isEqualTo(3);
       assertThat(suspenderCfg.getJobCount()).isEqualTo(800);
       assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(800);

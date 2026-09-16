@@ -303,39 +303,44 @@ public class SuspensionMeter implements AutoCloseable {
     try {
       sleep(cfg.getWarmup());
 
-      for (final long key : keys) {
-        try {
-          suspendLatency.record(() -> client.newSuspendProcessInstanceCommand(key).send().join());
-          suspendRequests.increment();
-          suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration()));
-        } catch (final Exception e) {
-          suspendErrors.increment();
-          THROTTLED_LOGGER.warn("Failed to suspend target instance {}", key, e);
+      // Baseline mode: skip suspend/resume entirely, just let the instance run (its timers fire
+      // normally) for warmup, then cancel. Used to isolate the effect of the fan-out / timer
+      // triggers on the cluster without any suspension.
+      if (cfg.isSuspendEnabled()) {
+        for (final long key : keys) {
+          try {
+            suspendLatency.record(() -> client.newSuspendProcessInstanceCommand(key).send().join());
+            suspendRequests.increment();
+            suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration()));
+          } catch (final Exception e) {
+            suspendErrors.increment();
+            THROTTLED_LOGGER.warn("Failed to suspend target instance {}", key, e);
+          }
         }
-      }
 
-      // Now that the instances are suspended (subscriptions closed), publish messages that will sit
-      // in the message buffer until resume reopens the subscriptions and correlates them — a
-      // resume-time correlation burst, distinct from the timer buffered-command drain.
-      if (cfg.isGenerateResumeCorrelations()) {
-        publishResumeCorrelations(instances);
-      }
-
-      sleep(cfg.getHoldDuration());
-
-      for (final long key : keys) {
-        try {
-          resumeLatency.record(() -> client.newResumeProcessInstanceCommand(key).send().join());
-          resumeRequests.increment();
-        } catch (final Exception e) {
-          resumeErrors.increment();
-          THROTTLED_LOGGER.warn("Failed to resume target instance {}", key, e);
-        } finally {
-          suspendedUntil.remove(key);
+        // Now that the instances are suspended (subscriptions closed), publish messages that will
+        // sit in the message buffer until resume reopens the subscriptions and correlates them — a
+        // resume-time correlation burst, distinct from the timer buffered-command drain.
+        if (cfg.isGenerateResumeCorrelations()) {
+          publishResumeCorrelations(instances);
         }
-      }
 
-      sleep(cfg.getSettle());
+        sleep(cfg.getHoldDuration());
+
+        for (final long key : keys) {
+          try {
+            resumeLatency.record(() -> client.newResumeProcessInstanceCommand(key).send().join());
+            resumeRequests.increment();
+          } catch (final Exception e) {
+            resumeErrors.increment();
+            THROTTLED_LOGGER.warn("Failed to resume target instance {}", key, e);
+          } finally {
+            suspendedUntil.remove(key);
+          }
+        }
+
+        sleep(cfg.getSettle());
+      }
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
     } finally {

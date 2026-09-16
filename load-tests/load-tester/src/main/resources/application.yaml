@@ -128,6 +128,9 @@ load-tester:
     # warmup < timer-duration < warmup + hold-duration, with warmup long enough for the fan-out to
     # materialise. batch-interval is the idle gap between cycles (target absent -> cluster quiet).
     target-enabled: ${LOAD_TESTER_SUSPENDER_TARGET_ENABLED:false}
+    # Baseline switch: false = create+cancel target instances each cycle but never suspend/resume
+    # (isolates the fan-out / timer-trigger effect without suspension).
+    suspend-enabled: ${LOAD_TESTER_SUSPENDER_SUSPEND_ENABLED:true}
     target-bpmn-path: ${LOAD_TESTER_SUSPENDER_TARGET_BPMN_PATH:bpmn/suspend_target.bpmn}
     target-process-id: ${LOAD_TESTER_SUSPENDER_TARGET_PROCESS_ID:suspendTarget}
     target-instances: ${LOAD_TESTER_SUSPENDER_TARGET_INSTANCES:1}

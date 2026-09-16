@@ -44,6 +44,9 @@ public class SuspenderProperties {
   // heavy process definition, create a few instances of it, and suspend/resume only those while
   // the starter's normal workload runs untouched (blast-radius / interference test).
   private boolean targetEnabled = false;
+  // Baseline switch: when false, target instances are created and cancelled each cycle but never
+  // suspended/resumed — isolates the effect of the fan-out / timer triggers alone.
+  private boolean suspendEnabled = true;
   private String targetBpmnPath = "bpmn/suspend_target.bpmn";
   private String targetProcessId = "suspendTarget";
   private int targetInstances = 1;
@@ -154,6 +157,14 @@ public class SuspenderProperties {
 
   public void setTargetEnabled(final boolean targetEnabled) {
     this.targetEnabled = targetEnabled;
+  }
+
+  public boolean isSuspendEnabled() {
+    return suspendEnabled;
+  }
+
+  public void setSuspendEnabled(final boolean suspendEnabled) {
+    this.suspendEnabled = suspendEnabled;
   }
 
   public String getTargetBpmnPath() {
