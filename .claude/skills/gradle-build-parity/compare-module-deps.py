@@ -11,8 +11,8 @@ It intentionally stays simple:
     Gradle project name equals its Maven artifactId. If they ever diverge, fix the Gradle project
     name (this tool will flag it as a false diff).
   * Add `--versions` to also diff the resolved version of third-party coordinates present
-    on both sides. Patch-only version differences are reported under `ignored_differences`
-    but do not affect the comparison status.
+    on both sides. Patch-only version differences for Gradle-transitive dependencies are
+    reported under `ignored_differences` but do not affect the comparison status.
 
 The comparison uses resolved dependency graphs, including transitive dependencies; it does
 not compare only the dependencies declared directly in each build file:
@@ -20,6 +20,8 @@ not compare only the dependencies declared directly in each build file:
     did not resolve it on the corresponding classpath/configuration.
   * `EXTRA in Gradle` means Gradle resolved the coordinate, but Maven did not resolve it for
     the selected scope.
+  * The Gradle report also identifies first-level third-party dependencies. Patch-only version
+    differences are ignored only when the Gradle dependency is not first-level.
   * These messages describe the declaring module's resolved classpaths. They do not by
     themselves prove the published consumer API boundary is correct; use a consumer compile
     or publication/variant metadata check for that.
@@ -155,6 +157,11 @@ def maven_project_dirs() -> dict[str, str]:
     return projects
 
 
+def has_gradle_build_file(module_dir: str) -> bool:
+    """Return whether a Maven module has a Gradle build file to compare."""
+    return module_dir != "." and (REPO_ROOT / module_dir / "build.gradle.kts").is_file()
+
+
 def run_maven_dependency_list(module_dir: str, include_scope: str) -> str:
     """Resolve Maven deps offline first, then fall back to online if the local cache is incomplete."""
     base_cmd = [
@@ -264,12 +271,6 @@ def maven_deps(module_dir: str, include_scope: str, self_name: str, reactor: set
     return parse_maven_dependency_lines(out.splitlines(), self_name, reactor)
 
 
-# Gradle tree lines: "+--- group:artifact:req -> res (*)" etc.
-_GRADLE_RE = re.compile(r"---\s+([\w.-]+):([\w.-]+)(?::([\w.\-]+))?\s*(?:->\s*([\w.\-]+))?")
-# Internal deps show as "+--- project :some-module"
-# Gradle 9 renders project dependencies as `project ':module'`; older output used
-# `project :module`. Accept both forms.
-_GRADLE_PROJECT_RE = re.compile(r"---\s+project ['\"]?:([\w.-]+)['\"]?")
 _NUMERIC_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
 
@@ -285,37 +286,8 @@ def is_patch_only_version_difference(maven: str, gradle: str) -> bool:
     )
 
 
-def gradle_deps(project: str, configuration: str):
-    """Return (external {group:artifact -> version}, internal {project name})."""
-    out = run(
-        ["./gradlew", f":{project}:dependencies", "--configuration", configuration, "-q"]
-    )
-    external: dict[str, str] = {}
-    internal: set[str] = set()
-    for line in out.splitlines():
-        stripped = line.strip()
-        if stripped.endswith("(c)") or stripped.endswith("(n)"):
-            # (c) = version constraint only, (n) = not resolved
-            continue
-        pm = _GRADLE_PROJECT_RE.search(line)
-        if pm:
-            internal.add(pm.group(1))
-            continue
-        m = _GRADLE_RE.search(line)
-        if not m:
-            continue
-        group, artifact, req_ver, res_ver = m.groups()
-        # Reactor modules appear as `project :name` (handled above); any io.camunda coord
-        # here is a separately-released lib, so keep it as a third-party dep.
-        # BOMs / platform imports aren't real jars and Maven never lists them
-        if artifact == "bom" or artifact.endswith("-bom") or artifact.endswith("-dependencies"):
-            continue
-        external[f"{group}:{artifact}"] = res_ver or req_ver or "?"
-    return external, internal
-
-
-def gradle_dependency_report(scope: str) -> dict[str, dict]:
-    """Resolve one dependency configuration for all active Gradle projects in one invocation."""
+def gradle_deps(project: str, scope: str):
+    """Return resolved third-party deps, internal projects, and direct third-party deps."""
     out = run(
         [
             "./gradlew",
@@ -324,7 +296,41 @@ def gradle_dependency_report(scope: str) -> dict[str, dict]:
             "--console=plain",
             "--quiet",
             f"-Pdependency.report.scope={scope}",
-            "printGradleDependencyReport",
+            f":{project}:printGradleDependencyReportEntry",
+        ]
+    )
+    reports = [json.loads(line) for line in out.splitlines() if line.strip()]
+    if len(reports) != 1:
+        raise ProjectError(
+            f"Gradle dependency report returned {len(reports)} entries for project {project}"
+        )
+    report = reports[0]
+    if report.get("scope") != scope:
+        raise ProjectError(
+            f"Gradle dependency report scope mismatch: expected {scope!r}, got {report.get('scope')!r}"
+        )
+    return (
+        report.get("third_party", {}),
+        set(report.get("internal", [])),
+        set(report.get("direct_third_party", [])),
+    )
+
+
+def gradle_dependency_report(scope: str) -> dict[str, dict]:
+    """Resolve one dependency configuration for all active Gradle projects."""
+    projects = gradle_project_dirs()
+    report_tasks = [
+        f":{project}:printGradleDependencyReportEntry" for project in sorted(projects)
+    ]
+    out = run(
+        [
+            "./gradlew",
+            "--no-daemon",
+            "--no-configuration-cache",
+            "--console=plain",
+            "--quiet",
+            f"-Pdependency.report.scope={scope}",
+            *report_tasks,
         ]
     )
     projects: dict[str, dict] = {}
@@ -360,20 +366,23 @@ def compare_project(
 ) -> dict:
     if global_maven_report is None:
         mvn, mvn_int = maven_deps(module_dir, include_scope, self_name=project, reactor=reactor)
+        mvn_direct = set()
     else:
         maven_project = global_maven_report.get(project)
         if maven_project is None:
             raise ProjectError(f"Maven dependency report has no project: {project}")
         mvn = maven_project["third_party"]
         mvn_int = set(maven_project["internal"])
+        mvn_direct = set(maven_project.get("direct_third_party", []))
     if global_gradle_report is None:
-        grd, grd_int = gradle_deps(project, configuration)
+        grd, grd_int, grd_direct = gradle_deps(project, scope)
     else:
         gradle_project = global_gradle_report.get(project)
         if gradle_project is None:
             raise ProjectError(f"Gradle dependency report has no project: {project}")
         grd = gradle_project["third_party"]
         grd_int = set(gradle_project["internal"])
+        grd_direct = set(gradle_project.get("direct_third_party", []))
 
     only_mvn = sorted(set(mvn) - set(grd))
     only_grd = sorted(set(grd) - set(mvn))
@@ -393,7 +402,8 @@ def compare_project(
                 "maven": maven_version,
                 "gradle": gradle_version,
             }
-            if is_patch_only_version_difference(maven_version, gradle_version):
+            is_direct = coordinate in mvn_direct or coordinate in grd_direct
+            if is_patch_only_version_difference(maven_version, gradle_version) and not is_direct:
                 ignored_version_mismatches.append(mismatch)
             else:
                 mismatches.append(mismatch)
@@ -421,8 +431,16 @@ def compare_project(
             "common_internal": len(mvn_int & grd_int),
         },
         "dependencies": {
-            "maven": {"third_party": mvn, "internal": sorted(mvn_int)},
-            "gradle": {"third_party": grd, "internal": sorted(grd_int)},
+            "maven": {
+                "third_party": mvn,
+                "direct_third_party": sorted(mvn_direct),
+                "internal": sorted(mvn_int),
+            },
+            "gradle": {
+                "third_party": grd,
+                "direct_third_party": sorted(grd_direct),
+                "internal": sorted(grd_int),
+            },
         },
         "differences": differences,
         "ignored_differences": ignored_differences,
@@ -527,7 +545,7 @@ def print_result(result: dict) -> None:
             "version_mismatches", []
         )
         if ignored_version_mismatches:
-            print(f"IGNORED VERSION mismatches ({len(ignored_version_mismatches)}):")
+            print(f"IGNORED TRANSITIVE VERSION mismatches ({len(ignored_version_mismatches)}):")
             for entry in ignored_version_mismatches:
                 print(
                     f"  ~ {entry['coordinate']}  "
@@ -604,6 +622,8 @@ def main() -> int:
         if global_gradle_report is not None and global_maven_report is not None:
             for project, module_dir in sorted(maven_dirs.items()):
                 if project not in global_gradle_report:
+                    if not has_gradle_build_file(module_dir):
+                        continue
                     results.append(
                         missing_gradle_result(
                             project, module_dir, args.scope, global_maven_report.get(project)

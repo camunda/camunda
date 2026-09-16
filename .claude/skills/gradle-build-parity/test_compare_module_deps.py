@@ -11,7 +11,15 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ModuleDependencyComparisonTest(unittest.TestCase):
-    def compare_versions(self, maven: str, gradle: str, versions: bool = True) -> dict:
+    def compare_versions(
+        self,
+        maven: str,
+        gradle: str,
+        versions: bool = True,
+        gradle_direct: bool = False,
+        maven_direct: bool = False,
+    ) -> dict:
+        coordinate = "com.example:library"
         return MODULE.compare_project(
             project="example",
             module_dir="example",
@@ -22,13 +30,15 @@ class ModuleDependencyComparisonTest(unittest.TestCase):
             reactor={"example"},
             global_maven_report={
                 "example": {
-                    "third_party": {"com.example:library": maven},
+                    "third_party": {coordinate: maven},
+                    "direct_third_party": [coordinate] if maven_direct else [],
                     "internal": [],
                 }
             },
             global_gradle_report={
                 "example": {
-                    "third_party": {"com.example:library": gradle},
+                    "third_party": {coordinate: gradle},
+                    "direct_third_party": [coordinate] if gradle_direct else [],
                     "internal": [],
                 }
             },
@@ -51,6 +61,16 @@ class ModuleDependencyComparisonTest(unittest.TestCase):
         self.assertEqual(
             result["differences"]["version_mismatches"],
             [{"coordinate": "com.example:library", "maven": "1.2.3", "gradle": "1.3.3"}],
+        )
+        self.assertEqual(result["ignored_differences"]["version_mismatches"], [])
+
+    def test_should_report_patch_only_direct_version_mismatches_as_blocking(self):
+        result = self.compare_versions("1.2.3", "1.2.4", gradle_direct=True)
+
+        self.assertEqual(result["status"], "differences")
+        self.assertEqual(
+            result["differences"]["version_mismatches"],
+            [{"coordinate": "com.example:library", "maven": "1.2.3", "gradle": "1.2.4"}],
         )
         self.assertEqual(result["ignored_differences"]["version_mismatches"], [])
 

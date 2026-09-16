@@ -1,3 +1,4 @@
+import buildlogic.DistributionDependencyReportExtension
 import buildlogic.mavenResourceFilterArgs
 import io.camunda.gradle.pom.PomResolver
 import org.apache.tools.ant.filters.ReplaceTokens
@@ -14,6 +15,7 @@ import org.gradle.jvm.tasks.Jar
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.optimize-conventions")
+  id("buildlogic.distribution-dependency-report-conventions")
 }
 
 val parentPom = providers.fileContents(layout.settingsDirectory.file("parent/pom.xml"))
@@ -23,6 +25,14 @@ val parentProperties = PomResolver(parentPom.asText.get()).properties()
 val optimizeParentProperties = PomResolver(optimizeParentPom.asText.get()).properties()
 val optimizePomResolver = PomResolver(optimizePom.asText.get())
 val optimizeVersion = project.version.toString()
+
+extensions.configure<DistributionDependencyReportExtension> {
+  fileNameReplacements.put(
+    "upgrade-optimize-$optimizeVersion.jar",
+    "upgrade-optimize-to-$optimizeVersion.jar",
+  )
+}
+
 val optimizeElasticsearchVersion =
   optimizePomResolver.resolveProperty(
     "version.elasticsearch",
