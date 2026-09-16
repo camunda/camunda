@@ -59,10 +59,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({operations}) => {
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data: currentUser} = useQuery(queries.getCurrentUser());
 	const {data: draining} = useQuery(drainingProcessDefinitionsQuery());
-	const {data: incidentsCount = 0} = useQuery({
-		...processInstanceIncidentsCountQuery(processInstanceKey),
-		enabled: hasIncident,
-	});
+	const {data: incidentsCount = 0} = useQuery(processInstanceIncidentsCountQuery(instance));
 	const tenant = currentUser?.tenants.find((item) => item.tenantId === tenantId)?.name ?? tenantId;
 	const {data: diagram, isPending} = useDiagramXml(processDefinitionKey);
 	const hasVersionTag = processDefinitionVersionTag !== null;
