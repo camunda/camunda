@@ -341,6 +341,49 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldAssignConfiguredOrdinalToResolvedIncidentRecords() {
+    // given: an incident raised for a job without retries
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("incident-resolve-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-resolvable-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("incident-resolve-process").create();
+    engine.jobs().withType("ordinal-resolvable-job").withMaxJobsToActivate(1).activate();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-resolvable-job")
+        .withRetries(0)
+        .fail();
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-resolvable-job")
+        .withRetries(1)
+        .updateRetries();
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then: the RESOLVED event carries the ordinal of the incident stored in state
+    final var incidentResolved =
+        RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(incidentResolved.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldAssignConfiguredOrdinalToIncidentRecordsOfAnUncaughtJobError() {
     // given
     engine
