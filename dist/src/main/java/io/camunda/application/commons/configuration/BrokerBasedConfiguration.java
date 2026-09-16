@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
+import org.springframework.boot.micrometer.metrics.autoconfigure.MeterRegistryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -43,15 +44,13 @@ public class BrokerBasedConfiguration {
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;
   private final LifecycleProperties lifecycle;
-  private final BrokerMeterRegistry brokerMeterRegistry;
 
   @Autowired
   public BrokerBasedConfiguration(
       final WorkingDirectory workingDirectory,
       final NodeIdProvider nodeIdProvider,
       final BrokerBasedProperties properties,
-      final LifecycleProperties lifecycle,
-      final MeterRegistry meterRegistry) {
+      final LifecycleProperties lifecycle) {
     this.workingDirectory = workingDirectory;
     this.properties = properties;
     this.lifecycle = lifecycle;
@@ -61,17 +60,21 @@ public class BrokerBasedConfiguration {
     cluster.setNodeId(currentInstance.id());
     cluster.setNodeVersion(currentInstance.version().version());
     properties.init(workingDirectory.path().toAbsolutePath().toString());
-    brokerMeterRegistry =
-        BrokerMeterRegistry.create(meterRegistry, properties.getCluster().getMemberId());
-  }
-
-  @Bean
-  public BrokerMeterRegistry brokerMeterRegistry() {
-    return brokerMeterRegistry;
   }
 
   public BrokerCfg config() {
     return properties;
+  }
+
+  /**
+   * Adds a {@code broker-id} common tag to all broker metrics, set to the broker's member id
+   * ({@code $zone_$nodeId}, or the bare {@code $nodeId} when no zone is configured).
+   */
+  @Bean
+  public MeterRegistryCustomizer<MeterRegistry> brokerIdMeterRegistryCustomizer() {
+    final var cluster = properties.getCluster();
+    final var brokerId = MemberIdUtil.memberIdString(cluster.getZone(), cluster.getNodeId());
+    return registry -> registry.config().commonTags("broker-id", brokerId);
   }
 
   public WorkingDirectory workingDirectory() {

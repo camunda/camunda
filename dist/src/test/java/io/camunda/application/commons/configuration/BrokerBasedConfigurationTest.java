@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
@@ -31,9 +30,9 @@ final class BrokerBasedConfigurationTest {
   @TempDir private Path tempDir;
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("nodeIdConfigurations")
-  void shouldWrapMeterRegistryWithResolvedNodeId(
-      final String configurationName, final boolean zoned, final String expectedNodeId) {
+  @MethodSource("brokerIdConfigurations")
+  void shouldCustomizeMeterRegistryWithBrokerId(
+      final String configurationName, final boolean zoned, final String expectedBrokerId) {
     // given
     final var properties = new BrokerBasedProperties();
     if (zoned) {
@@ -50,24 +49,22 @@ final class BrokerBasedConfigurationTest {
             new WorkingDirectoryConfiguration.WorkingDirectory(tempDir, false),
             NodeIdProvider.staticProvider(0),
             properties,
-            new LifecycleProperties(),
-            meterRegistry);
-    final var brokerMeterRegistry = configuration.brokerMeterRegistry().registry();
+            new LifecycleProperties());
 
     try {
       // when
-      Counter.builder("broker.test").register(brokerMeterRegistry);
+      configuration.brokerIdMeterRegistryCustomizer().customize(meterRegistry);
+      Counter.builder("broker.test").register(meterRegistry);
 
       // then
       assertThat(meterRegistry.get("broker.test").counter().getId().getTag("broker-id"))
-          .isEqualTo(expectedNodeId);
+          .isEqualTo(expectedBrokerId);
     } finally {
-      MicrometerUtil.close(brokerMeterRegistry);
       meterRegistry.close();
     }
   }
 
-  private static Stream<Arguments> nodeIdConfigurations() {
+  private static Stream<Arguments> brokerIdConfigurations() {
     return Stream.of(Arguments.of("unzoned", false, "0"), Arguments.of("zoned", true, "zone-a_0"));
   }
 }
