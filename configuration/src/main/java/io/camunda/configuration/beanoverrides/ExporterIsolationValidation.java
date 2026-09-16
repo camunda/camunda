@@ -10,7 +10,7 @@ package io.camunda.configuration.beanoverrides;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.ExporterArgsMergers;
-import io.camunda.configuration.ExporterResourceCollisions;
+import io.camunda.configuration.ExporterCollisionTracker;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -51,16 +51,17 @@ public final class ExporterIsolationValidation {
       final Map<String, ExporterCfg> exporters,
       final Camunda camunda,
       final List<ExporterConfigMerger> mergers) {
-    final ExporterResourceCollisions.Accumulator accumulator =
-        new ExporterResourceCollisions.Accumulator();
+    final ExporterCollisionTracker tracker = new ExporterCollisionTracker();
     exporters.forEach(
-        (exporterId, exporter) ->
-            claimsOf(mergers, exporterId, exporter)
-                .forEach(claim -> accumulator.add(exporterOwnerId(exporterId), claim)));
+        (exporterId, exporter) -> {
+          for (final var claim : claimsOf(mergers, exporterId, exporter)) {
+            tracker.addClaim(exporterOwnerId(exporterId), claim);
+          }
+        });
     secondaryStorageLifecyclePolicyClaims(camunda)
-        .forEach(claim -> accumulator.add(SECONDARY_STORAGE_OWNER_ID, claim));
+        .forEach(claim -> tracker.addClaim(SECONDARY_STORAGE_OWNER_ID, claim));
 
-    final List<String> collisions = accumulator.collisions();
+    final List<String> collisions = tracker.collisions();
     if (!collisions.isEmpty()) {
       throw new UnifiedConfigurationException(
           "Exporters must not share an index-write-target or lifecycle-policy resource, or they "
