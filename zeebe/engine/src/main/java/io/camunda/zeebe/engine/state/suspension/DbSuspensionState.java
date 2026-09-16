@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedComma
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -107,13 +106,13 @@ public final class DbSuspensionState implements MutableSuspensionState {
   }
 
   @Override
-  public DrainLookup findNextBufferedCommand(final long key, final long afterCommandKey) {
-    processInstanceKey.wrapLong(key);
+  public Optional<BufferedCommand> findNextBufferedCommand(
+      final long key, final long afterCommandKey) {
     final long startAtBufferedKey = afterCommandKey < 0 ? 0 : afterCommandKey;
+    processInstanceKey.wrapLong(key);
     bufferedCommandKey.wrapLong(startAtBufferedKey);
 
     final var oldest = new AtomicReference<BufferedCommand>();
-    final var hasMore = new AtomicBoolean();
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
         processInstanceKeyAndBufferedCommandKey,
@@ -121,16 +120,12 @@ public final class DbSuspensionState implements MutableSuspensionState {
           if (compositeKey.second().getValue() == startAtBufferedKey) {
             return true; // skip the entry at afterCommandKey itself
           }
-          if (oldest.get() == null) {
-            final var copy = new BufferedCommandRecord();
-            copy.copyFrom(stored.getRecord()); // stored is reused per row - copy before it changes
-            oldest.set(new BufferedCommand(compositeKey.second().getValue(), copy));
-            return true; // peek one more row to see if anything follows
-          }
-          hasMore.set(true);
+          final var copy = new BufferedCommandRecord();
+          copy.copyFrom(stored.getRecord()); // stored is reused per row - copy before it changes
+          oldest.set(new BufferedCommand(compositeKey.second().getValue(), copy));
           return false;
         });
-    return new DrainLookup(Optional.ofNullable(oldest.get()), hasMore.get());
+    return Optional.ofNullable(oldest.get());
   }
 
   @Override

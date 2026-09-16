@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,10 +100,31 @@ public final class BufferedCommandDrainProcessorTest {
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
   }
 
-  // Note: the peek-after-drain fast path (skip the extra DRAIN when the buffer just emptied) is
-  // not unit-testable here — stateWriter is mocked, so appendDrainedEvent's write never actually
-  // removes the entry from the real suspensionState this processor reads from. That behavior is
-  // covered end-to-end by ResumeProcessInstanceDrainTest instead.
+  @Test
+  void shouldDrainAndAppendNextDrainWhenBufferHasEntries() {
+    // given
+    bufferCompleteElementCommand();
+
+    // when
+    processor.processRecord(drainCommand());
+
+    // then - the buffered command is replayed and marked drained, and another DRAIN is scheduled
+    // unconditionally rather than checking whether the buffer is now empty
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(BUFFERED_COMMAND_KEY),
+            eq(ProcessInstanceIntent.COMPLETE_ELEMENT),
+            any(ProcessInstanceRecord.class));
+    verify(stateWriter)
+        .appendFollowUpEvent(eq(BUFFERED_COMMAND_KEY), eq(BufferedCommandIntent.DRAINED), any());
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY),
+            eq(BufferedCommandIntent.DRAIN),
+            any(BufferedCommandRecord.class));
+    verify(commandWriter, never())
+        .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.RESUME_JOBS), any());
+  }
 
   private void bufferCompleteElementCommand() {
     final var command =
