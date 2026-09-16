@@ -59,7 +59,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
     final var queries = new ArrayList<>(toSearchQueryFields(filter));
-    queries.add(exists("flowNodeInstanceId")); // Default to task
+    queries.add(exists(FLOW_NODE_INSTANCE_ID)); // Default to task
     queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
     toOrClause(filter).ifPresent(queries::add);
     return and(queries);
