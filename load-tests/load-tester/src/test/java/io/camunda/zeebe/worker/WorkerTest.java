@@ -281,7 +281,7 @@ class WorkerTest {
     when(job.getProcessInstanceKey()).thenReturn(processInstanceKey);
     when(job.getElementInstanceKey()).thenReturn(elementInstanceKey);
     when(job.getKey()).thenReturn(jobKey);
-    when(job.getLeaseToken()).thenReturn(leaseToken);
+    when(job.getJobLeaseToken()).thenReturn(leaseToken);
 
     final var completeStep = mock(CompleteJobCommandStep1.class);
     final CamundaFuture<Object> future = mock(CamundaFuture.class);
@@ -337,7 +337,7 @@ class WorkerTest {
     when(client.newCreateAgentInstanceCommand()).thenReturn(step1);
     when(step1.elementInstanceKey(anyLong())).thenReturn(step2);
     when(step2.jobKey(anyLong())).thenReturn(step3);
-    when(step3.jobLease(anyString())).thenReturn(step4);
+    when(step3.jobLeaseToken(anyString())).thenReturn(step4);
     when(step4.history(any())).thenReturn(step5);
     when(step5.send()).thenReturn(future);
     when(future.join()).thenReturn(response);
@@ -358,7 +358,7 @@ class WorkerTest {
     when(step1.elementInstanceKey(anyLong())).thenReturn(step2);
     when(step2.status(any())).thenReturn(step2);
     when(step2.jobKey(anyLong())).thenReturn(step3);
-    when(step3.jobLease(anyString())).thenReturn(step4);
+    when(step3.jobLeaseToken(anyString())).thenReturn(step4);
     when(step4.history(any())).thenReturn(step4);
     when(step4.send()).thenReturn(future);
     when(future.join()).thenReturn(mock(UpdateAgentInstanceResponse.class));

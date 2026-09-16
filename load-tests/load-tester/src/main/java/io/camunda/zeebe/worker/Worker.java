@@ -262,7 +262,7 @@ public class Worker {
               .newCreateAgentInstanceCommand()
               .elementInstanceKey(job.getElementInstanceKey())
               .jobKey(job.getKey())
-              .jobLease(job.getLeaseToken())
+              .jobLeaseToken(job.getJobLeaseToken())
               .history(List.of(configurationItem))
               .send()
               .join();
@@ -300,7 +300,7 @@ public class Worker {
             .status(
                 isFinalRound ? AgentInstanceUpdateStatus.IDLE : AgentInstanceUpdateStatus.THINKING)
             .jobKey(job.getKey())
-            .jobLease(job.getLeaseToken())
+            .jobLeaseToken(job.getJobLeaseToken())
             .history(List.of(assistantItem))
             .send()
             .join();
