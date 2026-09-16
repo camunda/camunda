@@ -10,7 +10,7 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Exporter;
 import io.camunda.configuration.ExporterArgsMergers;
-import io.camunda.configuration.ExporterResourceCollisions;
+import io.camunda.configuration.ExporterCollisionTracker;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;
@@ -83,8 +83,7 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
 
     final List<ExporterConfigMerger> loadedMergers = mergers.get();
 
-    final ExporterResourceCollisions.Accumulator accumulator =
-        new ExporterResourceCollisions.Accumulator();
+    final ExporterCollisionTracker tracker = new ExporterCollisionTracker();
     resolvedByTenant.forEach(
         (tenantId, camunda) ->
             camunda
@@ -99,10 +98,10 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
                         return;
                       }
                       claimsOf(loadedMergers, tenantId, exporterId, exporter)
-                          .forEach(claim -> accumulator.add(tenantId, claim));
+                          .forEach(claim -> tracker.addClaim(tenantId, claim));
                     }));
 
-    final List<String> collisions = accumulator.collisions();
+    final List<String> collisions = tracker.collisions();
     if (!collisions.isEmpty()) {
       throw new UnifiedConfigurationException(
           "Physical tenants must not share generic-exporter resources, or they would silently "

@@ -17,34 +17,28 @@ import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public final class ExporterResourceCollisions {
+public final class ExporterCollisionTracker {
 
-  private ExporterResourceCollisions() {}
+  private final Map<ResourceIdentity, ClaimedResource> ownersByResource = new LinkedHashMap<>();
 
-  public static final class Accumulator {
+  public void addClaim(final String ownerId, final ExporterIsolationClaim claim) {
+    ownersByResource
+        .computeIfAbsent(ResourceIdentity.of(claim), k -> new ClaimedResource(claim.description()))
+        .ownerIds()
+        .add(ownerId);
+  }
 
-    private final Map<ResourceIdentity, ClaimedResource> ownersByResource = new LinkedHashMap<>();
-
-    public void add(final String ownerId, final ExporterIsolationClaim claim) {
-      ownersByResource
-          .computeIfAbsent(
-              ResourceIdentity.of(claim), k -> new ClaimedResource(claim.description()))
-          .ownerIds()
-          .add(ownerId);
-    }
-
-    public List<String> collisions() {
-      final List<String> collisions = new ArrayList<>();
-      ownersByResource.forEach(
-          (identity, resource) -> {
-            if (resource.ownerIds().size() > 1) {
-              collisions.add(
-                  String.format(
-                      "owners %s share the same %s", resource.ownerIds(), resource.description()));
-            }
-          });
-      return collisions;
-    }
+  public List<String> collisions() {
+    final List<String> collisions = new ArrayList<>();
+    ownersByResource.forEach(
+        (identity, resource) -> {
+          if (resource.ownerIds().size() > 1) {
+            collisions.add(
+                String.format(
+                    "owners %s share the same %s", resource.ownerIds(), resource.description()));
+          }
+        });
+    return collisions;
   }
 
   /** The collision identity of a claimed resource: owners collide iff both fields are equal. */

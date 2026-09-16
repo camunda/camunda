@@ -113,6 +113,22 @@ class ExporterIsolationValidationTest {
     }
 
     @Test
+    void shouldStartUpWhenPrefixesMatchButUrlsDiffer() {
+      // given the same index prefix, but the legacy exporter points at a different cluster than
+      // secondary storage — same prefix on different clusters is not a collision
+      RUNNER
+          .withPropertyValues(
+              "zeebe.broker.exporters.elasticsearch.class-name="
+                  + "io.camunda.zeebe.exporter.ElasticsearchExporter",
+              "zeebe.broker.exporters.elasticsearch.args.url=http://other-cluster:9200",
+              "zeebe.broker.exporters.elasticsearch.args.index.prefix=zeebe-record",
+              SECONDARY_STORAGE_TYPE_ES,
+              SECONDARY_STORAGE_URL_ES,
+              SECONDARY_STORAGE_PREFIX_ES)
+          .run(context -> assertThat(context).hasNotFailed());
+    }
+
+    @Test
     void shouldFailStartupWhenElasticsearchExporterSharesLifecyclePolicyWithSecondaryStorage() {
       // given distinct index prefixes, but the legacy exporter's retention policy is
       // (mis)configured to reuse the secondary storage's own default policy name
