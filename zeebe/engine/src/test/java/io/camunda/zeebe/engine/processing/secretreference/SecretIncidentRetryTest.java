@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -78,6 +79,14 @@ public final class SecretIncidentRetryTest {
   private static final String SECRET_NAME = "token";
   private static final String OTHER_SECRET_NAME = "otherToken";
   private static final String SECRET_VALUE = "resolved-secret";
+
+  /**
+   * More distinct missing secrets than the requests for them fit in one record batch. Each request
+   * reserves {@code BATCH_SIZE_CALCULATION_BUFFER} (8&nbsp;KiB) on top of its length, so against
+   * the 4&nbsp;MiB default message size the resolve stops fitting past roughly 512 references; this
+   * stays comfortably beyond that without being needlessly large.
+   */
+  private static final int SECRETS_EXCEEDING_ONE_BATCH = 600;
 
   /** Covers a background resolution cycle and the incident round that follows it. */
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(10);
@@ -294,6 +303,38 @@ public final class SecretIncidentRetryTest {
         .noneMatch(record -> record.getValueType() == ValueType.SECRET_REFERENCE);
   }
 
+  @Test
+  public void shouldRejectResolveWhenRequestsForMissingSecretsExceedOneRecordBatch() {
+    // given - a job parked on more distinct missing secrets than the requests for them fit in one
+    // record batch. Each request reserves a fixed calculation buffer on top of its own length, so
+    // beyond a few hundred references the resolved event and the requests can no longer be written
+    // together. Activation parks all of them regardless, because it only spends the bytes it writes
+    // and never sums the reservation up front — the asymmetry is why the resolve has to check.
+    deployTaskWithMissingSecrets(SECRETS_EXCEEDING_ONE_BATCH);
+    final long processInstanceKey = createInstanceAndParkItsJob();
+    final long incidentKey = awaitSecretIncident(processInstanceKey).getKey();
+
+    // when - the incident is resolved
+    final var rejection =
+        engine
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentKey)
+            .expectRejection()
+            .resolve();
+
+    // then - the command is rejected rather than clearing the incident without re-reading the store
+    assertThat(rejection.getIntent()).isEqualTo(IncidentIntent.RESOLVE);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+
+    // and - the incident is kept: the operator can retry and still sees that nothing was fixed
+    assertThat(RecordingExporter.getRecords())
+        .describedAs("no incident is resolved when its resolution requests do not fit one batch")
+        .noneMatch(
+            record ->
+                record.getIntent() == IncidentIntent.RESOLVED && record.getKey() == incidentKey);
+  }
+
   /** The secret incidents raised for the instance, as recorded now — never waits for one more. */
   private List<IncidentRecordValue> secretIncidentsOf(final long processInstanceKey) {
     return RecordingExporter.getRecords().stream()
@@ -414,6 +455,22 @@ public final class SecretIncidentRetryTest {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done());
+  }
+
+  private void deployTaskWithMissingSecrets(final int count) {
+    deploy(
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                t -> {
+                  t.zeebeJobType(JOB_TYPE);
+                  for (int i = 0; i < count; i++) {
+                    t.zeebeInputExpression("camunda.secrets.secret" + i, "target" + i);
+                  }
+                })
             .endEvent()
             .done());
   }
