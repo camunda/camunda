@@ -25,8 +25,15 @@ import {InstancesTable} from './InstancesTable';
 import type {DecisionsSearch} from './decisionsFilter';
 
 const BASE_SEARCH: DecisionsSearch = {evaluated: true, failed: true};
+const DECISIONS_LIST_PATH = '/operate/decisions';
 
-function renderInstancesTable(search: DecisionsSearch = BASE_SEARCH) {
+function renderInstancesTable({
+	search = BASE_SEARCH,
+	basepath = '',
+}: {
+	search?: DecisionsSearch;
+	basepath?: string;
+} = {}) {
 	return renderWithRouter(
 		() => (
 			// The table's scroll container is `height: 100%` and needs a sized ancestor, which the
@@ -36,7 +43,11 @@ function renderInstancesTable(search: DecisionsSearch = BASE_SEARCH) {
 				<Notifications />
 			</div>
 		),
-		{path: '/operate/decisions'},
+		{
+			path: DECISIONS_LIST_PATH,
+			basepath,
+			initialEntry: `${basepath}${DECISIONS_LIST_PATH}`,
+		},
 	);
 }
 
@@ -91,7 +102,7 @@ describe('<InstancesTable />', () => {
 			mockQueryDecisionInstancesEndpoint({successResponse: HttpResponse.json(createQueryDecisionInstancesResponse())}),
 		);
 
-		const screen = await renderInstancesTable({evaluated: false, failed: false});
+		const screen = await renderInstancesTable({search: {evaluated: false, failed: false}});
 
 		await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
 	});
@@ -186,5 +197,50 @@ describe('<InstancesTable />', () => {
 
 			await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
 		});
+	});
+
+	it.for([
+		{basepath: '', expectedPathPrefix: ''},
+		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	])(
+		'should render process instance links with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}, {worker}) => {
+			worker.use(
+				mockQueryDecisionInstancesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryDecisionInstancesResponse({
+							items: [
+								createDecisionInstance({decisionEvaluationInstanceKey: '1', processInstanceKey: '2251799813685250'}),
+							],
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderInstancesTable({basepath});
+
+			await expect
+				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
+		},
+	);
+
+	it('should render "None" instead of a process instance link when the process instance key is missing', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({
+						items: [createDecisionInstance({decisionEvaluationInstanceKey: '1', processInstanceKey: undefined})],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await expect.element(screen.getByText('None')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: /view process instance/i})).not.toBeInTheDocument();
 	});
 });

@@ -18,7 +18,7 @@ import {
 	Tools,
 	UserAvatar,
 } from '@carbon/react/icons';
-import {Link as RouterLink} from '@tanstack/react-router';
+import {Link as RouterLink, createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog, AuditLogEntityType} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
@@ -57,6 +57,7 @@ type DetailsModalState = {
 };
 
 const PARENT_ENTITY_TYPES: AuditLogEntityType[] = ['USER_TASK', 'INCIDENT', 'VARIABLE'];
+const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
 
 const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
 	const {t} = useTranslation();
@@ -169,6 +170,15 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 								>
 									{entityKeyData.label}
 								</RouterLink>
+							) : auditLog.entityType === 'PROCESS_INSTANCE' ? (
+								<ProcessInstanceLink
+									to="/operate/processes/$processInstanceId"
+									params={{processInstanceId: auditLog.entityKey}}
+									title={entityKeyData.linkLabel}
+									aria-label={entityKeyData.linkLabel}
+								>
+									{entityKeyData.label}
+								</ProcessInstanceLink>
 							) : entityKeyData.link ? (
 								<Link href={entityKeyData.link} title={entityKeyData.linkLabel} aria-label={entityKeyData.linkLabel}>
 									{entityKeyData.label}
@@ -190,14 +200,15 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 								</IconText>
 							</FirstColumn>
 							<SecondColumn>
-								<Link
-									href={`/operate/processes/${auditLog.processInstanceKey}`}
+								<ProcessInstanceLink
+									to="/operate/processes/$processInstanceId"
+									params={{processInstanceId: auditLog.processInstanceKey}}
 									aria-label={t('operate.operationsLog.entityLinks.viewProcessInstance', {
 										key: auditLog.processInstanceKey,
 									})}
 								>
 									{auditLog.processInstanceKey}
-								</Link>
+								</ProcessInstanceLink>
 								&nbsp;
 								<em>{auditLog.processDefinitionId}</em>
 							</SecondColumn>
