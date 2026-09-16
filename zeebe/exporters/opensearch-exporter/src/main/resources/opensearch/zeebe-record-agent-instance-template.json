@@ -134,7 +134,7 @@
             "jobKey": {
               "type": "long"
             },
-            "jobLease": {
+            "jobLeaseToken": {
               "type": "keyword"
             },
             "history": {
@@ -166,7 +166,7 @@
                 "jobKey": {
                   "type": "long"
                 },
-                "jobLease": {
+                "jobLeaseToken": {
                   "type": "keyword"
                 },
                 "loopIteration": {

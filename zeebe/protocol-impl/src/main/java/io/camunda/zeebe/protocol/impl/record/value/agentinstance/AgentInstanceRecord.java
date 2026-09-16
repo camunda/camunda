@@ -75,7 +75,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
-  private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
+  private final StringProperty jobLeaseTokenProp = new StringProperty("jobLeaseToken", "");
   private final ArrayProperty<AgentHistoryRecord> historyProp =
       new ArrayProperty<>("history", AgentHistoryRecord::new);
 
@@ -101,7 +101,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(toolsProp)
         .declareProperty(changedAttributesProp)
         .declareProperty(jobKeyProp)
-        .declareProperty(jobLeaseProp)
+        .declareProperty(jobLeaseTokenProp)
         .declareProperty(historyProp);
   }
 
@@ -297,12 +297,12 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getJobLease() {
-    return BufferUtil.bufferAsString(jobLeaseProp.getValue());
+  public String getJobLeaseToken() {
+    return BufferUtil.bufferAsString(jobLeaseTokenProp.getValue());
   }
 
-  public AgentInstanceRecord setJobLease(final String jobLease) {
-    jobLeaseProp.setValue(jobLease);
+  public AgentInstanceRecord setJobLeaseToken(final String jobLeaseToken) {
+    jobLeaseTokenProp.setValue(jobLeaseToken);
     return this;
   }
 

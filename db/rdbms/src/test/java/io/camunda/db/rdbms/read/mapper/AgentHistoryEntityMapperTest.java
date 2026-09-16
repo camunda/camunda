@@ -41,7 +41,7 @@ class AgentHistoryEntityMapperTest {
             .tenantId("<default>")
             .partitionId(1)
             .jobKey(700L)
-            .jobLease("lease-abc")
+            .jobLeaseToken("lease-abc")
             .loopIteration(3)
             .role(AgentInstanceHistoryRole.ASSISTANT)
             .commitStatus(AgentInstanceHistoryCommitStatus.COMMITTED)
@@ -79,7 +79,7 @@ class AgentHistoryEntityMapperTest {
     assertThat(entity.processDefinitionId()).isEqualTo("myProcess");
     assertThat(entity.tenantId()).isEqualTo("<default>");
     assertThat(entity.jobKey()).isEqualTo(700L);
-    assertThat(entity.jobLease()).isEqualTo("lease-abc");
+    assertThat(entity.jobLeaseToken()).isEqualTo("lease-abc");
     assertThat(entity.loopIteration()).isEqualTo(3);
     assertThat(entity.role()).isEqualTo(AgentInstanceHistoryRole.ASSISTANT);
     assertThat(entity.commitStatus()).isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED);
@@ -227,7 +227,7 @@ class AgentHistoryEntityMapperTest {
         .tenantId("<default>")
         .partitionId(1)
         .jobKey(6L)
-        .jobLease("lease")
+        .jobLeaseToken("lease")
         .loopIteration(1)
         .role(AgentInstanceHistoryRole.USER)
         .commitStatus(AgentInstanceHistoryCommitStatus.PENDING)

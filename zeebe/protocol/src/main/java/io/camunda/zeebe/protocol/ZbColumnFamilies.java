@@ -326,8 +326,8 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   MESSAGE_BY_BUSINESS_ID(149, PARTITION_LOCAL),
   // agent history items keyed by history item key
   AGENT_HISTORY(150, PARTITION_LOCAL),
-  // secondary index: (jobKey, jobLease, historyItemKey) → ∅; supports prefix iteration by job key
-  // or job key + lease
+  // secondary index: (jobKey, jobLeaseToken, historyItemKey) → ∅; supports prefix iteration by job
+  // key or job key + lease
   AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL),
   // secondary index: (processInstanceKey, agentInstanceKey) → ∅; supports prefix iteration by
   // process instance key to find every agent instance still associated with it

@@ -32,7 +32,7 @@ public class AgentHistoryTemplate extends AbstractTemplateDescriptor
   public static final String ELEMENT_INSTANCE_KEY = "elementInstanceKey";
   public static final String TENANT_ID = "tenantId";
   public static final String JOB_KEY = "jobKey";
-  public static final String JOB_LEASE = "jobLease";
+  public static final String JOB_LEASE_TOKEN = "jobLeaseToken";
   public static final String LOOP_ITERATION = "loopIteration";
   public static final String ROLE = "role";
   public static final String COMMIT_STATUS = "commitStatus";

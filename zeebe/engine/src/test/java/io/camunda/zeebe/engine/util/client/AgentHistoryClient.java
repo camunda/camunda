@@ -42,8 +42,8 @@ public final class AgentHistoryClient {
     return this;
   }
 
-  public AgentHistoryClient withJobLease(final String jobLease) {
-    record.setJobLease(jobLease);
+  public AgentHistoryClient withJobLeaseToken(final String jobLeaseToken) {
+    record.setJobLeaseToken(jobLeaseToken);
     return this;
   }
 

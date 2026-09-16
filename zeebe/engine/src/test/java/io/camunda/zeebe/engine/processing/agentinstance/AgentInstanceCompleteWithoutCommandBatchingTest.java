@@ -81,7 +81,7 @@ public class AgentInstanceCompleteWithoutCommandBatchingTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var firstJobLease =
+    final var firstJobLeaseToken =
         firstJobBatch
             .getValue()
             .getJobs()
@@ -94,7 +94,7 @@ public class AgentInstanceCompleteWithoutCommandBatchingTest {
             .withType("other-agent")
             .getFirst()
             .getKey();
-    final var secondJobLease =
+    final var secondJobLeaseToken =
         secondJobBatch
             .getValue()
             .getJobs()
@@ -105,7 +105,7 @@ public class AgentInstanceCompleteWithoutCommandBatchingTest {
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
             .withJobKey(firstJobKey)
-            .withJobLease(firstJobLease)
+            .withJobLeaseToken(firstJobLeaseToken)
             .create()
             .getKey();
     final var secondAgentInstanceKey =
@@ -113,7 +113,7 @@ public class AgentInstanceCompleteWithoutCommandBatchingTest {
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
             .withJobKey(secondJobKey)
-            .withJobLease(secondJobLease)
+            .withJobLeaseToken(secondJobLeaseToken)
             .create()
             .getKey();
 

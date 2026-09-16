@@ -106,11 +106,12 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldRejectCreateWhenJobLeaseMismatch() {
+  public void shouldRejectCreateWhenJobLeaseTokenMismatch() {
     // given — unlike UPDATE, CREATE applies a CONFIGURATION item's changes and commits history
     // right away, with no later commit/discard step to catch a stale lease. So CREATE keeps
     // rejecting a stale lease outright instead of accepting it as PENDING (see
-    // shouldAcceptUpdateWithSupersededJobLeaseAndAccumulateItsMetrics for the UPDATE behavior).
+    // shouldAcceptUpdateWithSupersededJobLeaseTokenAndAccumulateItsMetrics for the UPDATE
+    // behavior).
     ENGINE
         .deployment()
         .withXmlResource(
@@ -161,7 +162,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementInstanceKey(elementInstanceKey)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
-            .withJobLease(lease1)
+            .withJobLeaseToken(lease1)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -229,7 +230,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -251,7 +252,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(item))
             .expectRejection()
@@ -296,7 +297,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -318,7 +319,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(item))
             .expectRejection()
@@ -397,7 +398,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -420,7 +421,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(userItem))
             .expectRejection()
@@ -465,7 +466,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -488,7 +489,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(userItem))
             .create();
@@ -528,7 +529,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -556,7 +557,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(List.of(configurationItem, userItem))
             .create();
@@ -595,7 +596,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -606,7 +607,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var validItem =
@@ -627,7 +628,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(validItem, invalidItem))
             .expectRejection()
             .update();
@@ -672,7 +673,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -683,7 +684,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var invalidItem = new AgentHistoryRecord().setHistoryItemId("item-1");
@@ -695,7 +696,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(invalidItem))
             .expectRejection()
             .update();
@@ -738,7 +739,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -749,7 +750,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var invalidItem =
@@ -762,7 +763,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(invalidItem))
             .expectRejection()
             .update();
@@ -806,7 +807,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -817,7 +818,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var invalidItem =
@@ -834,7 +835,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(invalidItem))
             .expectRejection()
             .update();
@@ -879,7 +880,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -890,7 +891,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var invalidItem =
@@ -906,7 +907,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(invalidItem))
             .expectRejection()
             .update();
@@ -949,7 +950,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -960,7 +961,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -971,7 +972,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(999999999L)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -1023,7 +1024,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -1034,7 +1035,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -1098,7 +1099,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -1109,7 +1110,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -1134,9 +1135,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldRejectHistoryBatchWithoutJobLeaseOnUpdate() {
+  public void shouldRejectHistoryBatchWithoutJobLeaseTokenOnUpdate() {
     // given — UPDATE runs with LeaseMismatchHandling.ALLOW_STALE, which skips the lease-mismatch
-    // check entirely; jobLease must still be rejected as missing before that check is even
+    // check entirely; jobLeaseToken must still be rejected as missing before that check is even
     // reached, or an UPDATE could go through with no fencing token at all.
     ENGINE
         .deployment()
@@ -1168,17 +1169,18 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
-    // when — jobKey is supplied but no withJobLease(...) call at all, so jobLease defaults to ""
+    // when — jobKey is supplied but no withJobLeaseToken(...) call at all, so jobLeaseToken
+    // defaults to ""
     final var rejection =
         ENGINE
             .agentInstances()
@@ -1209,7 +1211,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
   @Test
   public void shouldRejectCreateWhenJobNotLeased() {
-    // given — the job is activated without a lease at all; a nonblank jobLease supplied on the
+    // given — the job is activated without a lease at all; a nonblank jobLeaseToken supplied on the
     // command can never match a lease the job never held, so this must be rejected before the
     // lease-mismatch check is even reached.
     ENGINE
@@ -1245,7 +1247,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease("some-nonblank-lease-token")
+            .withJobLeaseToken("some-nonblank-lease-token")
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -1316,7 +1318,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey1)
             .withJobKey(jobKey1)
-            .withJobLease(leasedToken)
+            .withJobLeaseToken(leasedToken)
             .create()
             .getKey();
 
@@ -1336,7 +1338,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey1)
             .withJobKey(jobKey2)
-            .withJobLease("some-nonblank-lease-token")
+            .withJobLeaseToken("some-nonblank-lease-token")
             .withStatus(AgentInstanceStatus.THINKING)
             .withChangedAttributes(List.of("status"))
             .expectRejection()
@@ -1353,7 +1355,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldAcceptUpdateWithSupersededJobLeaseAndAccumulateItsMetrics() {
+  public void shouldAcceptUpdateWithSupersededJobLeaseTokenAndAccumulateItsMetrics() {
     // given
     ENGINE
         .deployment()
@@ -1399,7 +1401,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease1)
+            .withJobLeaseToken(lease1)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -1445,7 +1447,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease1)
+            .withJobLeaseToken(lease1)
             .withHistory(List.of(assistantItem, configItem))
             .update();
 
@@ -1535,7 +1537,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .filter(r -> r.getValue().getElementInstanceKey() == ei1)
             .getFirst()
             .getKey();
-    final var ei1JobLease =
+    final var ei1JobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -1548,7 +1550,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .filter(r -> r.getValue().getElementInstanceKey() == ei2)
             .getFirst()
             .getKey();
-    final var ei2JobLease =
+    final var ei2JobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -1560,7 +1562,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(ei1)
             .withJobKey(ei1JobKey)
-            .withJobLease(ei1JobLease)
+            .withJobLeaseToken(ei1JobLeaseToken)
             .create()
             .getKey();
 
@@ -1572,7 +1574,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei1)
             .withJobKey(ei2JobKey)
-            .withJobLease(ei2JobLease)
+            .withJobLeaseToken(ei2JobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -1601,7 +1603,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldNotApplyStatusFromUpdateWithSupersededJobLease() {
+  public void shouldNotApplyStatusFromUpdateWithSupersededJobLeaseToken() {
     // given — job worker A holds lease1, then the job is re-activated (fail + re-activate) so
     // worker B holds lease2. Worker B's update (under the current lease2) sets status=IDLE.
     ENGINE
@@ -1646,7 +1648,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease1)
+            .withJobLeaseToken(lease1)
             .withHistory(List.of(configItem))
             .create()
             .getKey();
@@ -1670,7 +1672,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
-        .withJobLease(lease2)
+        .withJobLeaseToken(lease2)
         .withStatus(AgentInstanceStatus.IDLE)
         .withChangedAttributes(List.of("status"))
         .update();
@@ -1683,7 +1685,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease1)
+            .withJobLeaseToken(lease1)
             .withStatus(AgentInstanceStatus.THINKING)
             .withChangedAttributes(List.of("status"))
             .update();
@@ -1724,7 +1726,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -1735,7 +1737,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var userItem =
@@ -1774,7 +1776,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(userItem, assistantItem, toolResultItem))
             .update();
 
@@ -1839,7 +1841,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -1850,7 +1852,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var firstAssistantItem =
@@ -1873,7 +1875,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(firstAssistantItem))
             .update();
 
@@ -1917,7 +1919,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(secondAssistantItem, thirdAssistantItem))
             .update();
 
@@ -1961,7 +1963,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -1972,7 +1974,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var assistantItem =
@@ -1997,7 +1999,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(assistantItem))
             .update();
 
@@ -2037,7 +2039,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2048,7 +2050,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var toolResultItem =
@@ -2069,7 +2071,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(toolResultItem))
             .update();
 
@@ -2108,7 +2110,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2119,7 +2121,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var userItem =
@@ -2139,7 +2141,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(userItem))
             .update();
 
@@ -2177,7 +2179,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2200,7 +2202,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -2233,7 +2235,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem))
             .update();
 
@@ -2326,7 +2328,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2345,7 +2347,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -2364,7 +2366,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem))
             .update();
 
@@ -2420,7 +2422,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2439,7 +2441,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -2462,7 +2464,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(userItem))
             .update();
 
@@ -2501,7 +2503,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2512,7 +2514,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -2525,7 +2527,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -2577,7 +2579,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2588,7 +2590,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -2599,7 +2601,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withMetricsDelta(10L, 5L, 1, 0)
             .expectRejection()
             .update();
@@ -2641,7 +2643,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2652,7 +2654,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -2663,7 +2665,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -2715,7 +2717,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2726,7 +2728,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -2737,7 +2739,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withTools(List.of(AgentInstanceClient.tool("calc", "a calculator", "calc-task")))
             .expectRejection()
             .update();
@@ -2779,7 +2781,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2801,7 +2803,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(userItem))
             .create();
 
@@ -2847,7 +2849,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2872,7 +2874,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementInstanceKey(elementInstanceKey)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem))
             .create();
 
@@ -2924,7 +2926,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -2957,7 +2959,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem))
             .create();
 
@@ -3029,7 +3031,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3054,7 +3056,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem, userItem))
             .create();
 
@@ -3111,7 +3113,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3139,7 +3141,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementInstanceKey(elementInstanceKey)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(modelItem, toolsItem))
             .create();
 
@@ -3188,7 +3190,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3208,7 +3210,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementInstanceKey(elementInstanceKey)
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem))
             .create();
     final var agentInstanceKey = created.getKey();
@@ -3229,7 +3231,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease("retry-lease")
+            .withJobLeaseToken("retry-lease")
             .withHistory(List.of(resentConfigItem))
             .update();
 
@@ -3271,7 +3273,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3288,7 +3290,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(userItem))
             .create();
     final var userHistoryKey =
@@ -3334,7 +3336,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3345,7 +3347,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     ENGINE
@@ -3353,7 +3355,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -3373,7 +3375,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withStatus(AgentInstanceStatus.THINKING)
             .update();
 
@@ -3415,7 +3417,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3426,7 +3428,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -3437,7 +3439,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3459,7 +3461,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3522,7 +3524,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3533,7 +3535,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var assistantItem =
@@ -3556,7 +3558,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(assistantItem))
             .update();
     assertThat(firstUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
@@ -3582,7 +3584,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(resentAssistantItem))
             .update();
 
@@ -3625,7 +3627,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3645,7 +3647,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -3664,7 +3666,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem))
             .update();
     assertThat(firstUpdate.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
@@ -3686,7 +3688,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(resentConfigItem))
             .update();
     assertThat(secondUpdate.getValue().getChangedAttributes()).doesNotContain("model");
@@ -3735,7 +3737,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3746,7 +3748,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -3792,7 +3794,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(userItem, assistantItem, toolResultItem, configItem))
             .update();
     final var originalKeys =
@@ -3807,7 +3809,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -3883,7 +3885,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -3894,7 +3896,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var itemA =
@@ -3921,7 +3923,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(itemA, itemB))
             .update();
     final var keyA = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
@@ -3935,7 +3937,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4021,7 +4023,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -4032,7 +4034,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final var firstItem =
@@ -4061,7 +4063,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(firstItem, secondItem))
             .expectRejection()
             .update();
@@ -4160,7 +4162,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .create()
             .getKey();
 
@@ -4172,7 +4174,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
-            .withJobLease(job2Lease)
+            .withJobLeaseToken(job2Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4275,7 +4277,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .create()
             .getKey();
 
@@ -4292,7 +4294,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
-            .withJobLease(job2Lease)
+            .withJobLeaseToken(job2Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4387,7 +4389,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .create()
             .getKey();
 
@@ -4396,7 +4398,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(ei1)
         .withJobKey(job1Key)
-        .withJobLease(job1Lease)
+        .withJobLeaseToken(job1Lease)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -4417,7 +4419,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
-            .withJobLease(job2Lease)
+            .withJobLeaseToken(job2Lease)
             .withStatus(AgentInstanceStatus.THINKING)
             .withChangedAttributes(List.of("status"))
             .expectRejection()
@@ -4445,7 +4447,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4500,7 +4502,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease1)
+            .withJobLeaseToken(lease1)
             .create()
             .getKey();
 
@@ -4509,7 +4511,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
-        .withJobLease(lease1)
+        .withJobLeaseToken(lease1)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -4542,7 +4544,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease2)
+            .withJobLeaseToken(lease2)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4604,7 +4606,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease1)
+            .withJobLeaseToken(lease1)
             .create()
             .getKey();
 
@@ -4626,7 +4628,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease1)
+            .withJobLeaseToken(lease1)
             .withHistory(List.of(firstItem))
             .update();
     assertThat(firstUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
@@ -4669,7 +4671,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(lease2)
+            .withJobLeaseToken(lease2)
             .withHistory(List.of(secondItem))
             .update();
 
@@ -4745,7 +4747,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .create()
             .getKey();
 
@@ -4788,7 +4790,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
-            .withJobLease(job2Lease)
+            .withJobLeaseToken(job2Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4861,7 +4863,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .create()
             .getKey();
 
@@ -4872,7 +4874,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4928,7 +4930,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job2Key)
-            .withJobLease(job2Lease)
+            .withJobLeaseToken(job2Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -4991,7 +4993,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobALease =
+    final var jobALeaseToken =
         jobABatch
             .getValue()
             .getJobs()
@@ -5003,7 +5005,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKeyA)
             .withJobKey(jobAKey)
-            .withJobLease(jobALease)
+            .withJobLeaseToken(jobALeaseToken)
             .create()
             .getKey();
 
@@ -5013,7 +5015,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyA)
             .withElementInstanceKey(elementInstanceKeyA)
             .withJobKey(jobAKey)
-            .withJobLease(jobALease)
+            .withJobLeaseToken(jobALeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -5038,7 +5040,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyA)
             .withElementInstanceKey(elementInstanceKeyA)
             .withJobKey(jobAKey)
-            .withJobLease(jobALease)
+            .withJobLeaseToken(jobALeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -5074,7 +5076,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobBLease =
+    final var jobBLeaseToken =
         jobBBatch
             .getValue()
             .getJobs()
@@ -5086,7 +5088,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKeyB)
             .withJobKey(jobBKey)
-            .withJobLease(jobBLease)
+            .withJobLeaseToken(jobBLeaseToken)
             .create()
             .getKey();
 
@@ -5098,7 +5100,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyB)
             .withElementInstanceKey(elementInstanceKeyB)
             .withJobKey(jobBKey)
-            .withJobLease(jobBLease)
+            .withJobLeaseToken(jobBLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -5148,7 +5150,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobALease =
+    final var jobALeaseToken =
         jobABatch
             .getValue()
             .getJobs()
@@ -5160,7 +5162,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKeyA)
             .withJobKey(jobAKey)
-            .withJobLease(jobALease)
+            .withJobLeaseToken(jobALeaseToken)
             .create()
             .getKey();
 
@@ -5180,7 +5182,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyA)
             .withElementInstanceKey(elementInstanceKeyA)
             .withJobKey(jobAKey)
-            .withJobLease(jobALease)
+            .withJobLeaseToken(jobALeaseToken)
             .withHistory(List.of(itemForA))
             .update();
 
@@ -5204,7 +5206,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobBLease =
+    final var jobBLeaseToken =
         jobBBatch
             .getValue()
             .getJobs()
@@ -5215,7 +5217,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKeyB)
             .withJobKey(jobBKey)
-            .withJobLease(jobBLease)
+            .withJobLeaseToken(jobBLeaseToken)
             .create()
             .getKey();
 
@@ -5237,7 +5239,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKeyB)
             .withElementInstanceKey(elementInstanceKeyB)
             .withJobKey(jobBKey)
-            .withJobLease(jobBLease)
+            .withJobLeaseToken(jobBLeaseToken)
             .withHistory(List.of(itemForB))
             .update();
 
@@ -5287,7 +5289,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -5298,7 +5300,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -5318,7 +5320,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease("lease-1")
+            .withJobLeaseToken("lease-1")
             .withHistory(List.of(committedItem))
             .update();
     final var committedOriginalKey =
@@ -5340,7 +5342,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease("lease-2")
+            .withJobLeaseToken("lease-2")
             .withHistory(List.of(discardedItem))
             .update();
 
@@ -5357,7 +5359,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // when — COMMIT with lease-1: "item-committed" is committed, "item-discarded" (lease-2, a
     // superseded activation) is discarded
-    ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-1").commit();
+    ENGINE.agentHistories().withJobKey(jobKey).withJobLeaseToken("lease-1").commit();
     RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
         .withJobKey(jobKey)
         .getFirst();
@@ -5384,7 +5386,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -5500,7 +5502,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .agentInstances()
             .withElementInstanceKey(ei1)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .create()
             .getKey();
 
@@ -5529,7 +5531,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei2)
             .withJobKey(job1Key)
-            .withJobLease(job1Lease)
+            .withJobLeaseToken(job1Lease)
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()

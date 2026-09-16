@@ -103,7 +103,7 @@ public final class AgentInstanceUpdateAuthorizationTest {
             .withElementInstanceKey(instance.elementInstanceKey())
             .withStatus(AgentInstanceStatus.THINKING)
             .withJobKey(instance.jobKey())
-            .withJobLease(instance.jobLease())
+            .withJobLeaseToken(instance.jobLeaseToken())
             .update(user.getUsername());
 
     // then
@@ -201,7 +201,7 @@ public final class AgentInstanceUpdateAuthorizationTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -213,11 +213,11 @@ public final class AgentInstanceUpdateAuthorizationTest {
             .withElementInstanceKey(elementInstanceKey)
             .withAuthorizedTenantIds(tenantId)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create(DEFAULT_USER.getUsername())
             .getValue()
             .getAgentInstanceKey();
-    return new AgentInstanceRef(agentInstanceKey, elementInstanceKey, jobKey, jobLease);
+    return new AgentInstanceRef(agentInstanceKey, elementInstanceKey, jobKey, jobLeaseToken);
   }
 
   private void assignUserToTenant(final String tenantId, final String username) {
@@ -259,5 +259,5 @@ public final class AgentInstanceUpdateAuthorizationTest {
   }
 
   private record AgentInstanceRef(
-      long agentInstanceKey, long elementInstanceKey, long jobKey, String jobLease) {}
+      long agentInstanceKey, long elementInstanceKey, long jobKey, String jobLeaseToken) {}
 }

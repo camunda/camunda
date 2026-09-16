@@ -32,7 +32,7 @@ public record AgentInstanceHistoryEntity(
     String processDefinitionId,
     String tenantId,
     Long jobKey,
-    String jobLease,
+    String jobLeaseToken,
     Integer loopIteration,
     AgentInstanceHistoryRole role,
     List<ContentItem> content,
@@ -57,7 +57,7 @@ public record AgentInstanceHistoryEntity(
     Objects.requireNonNull(processDefinitionId, "processDefinitionId");
     Objects.requireNonNull(tenantId, "tenantId");
     Objects.requireNonNull(jobKey, "jobKey");
-    Objects.requireNonNull(jobLease, "jobLease");
+    Objects.requireNonNull(jobLeaseToken, "jobLeaseToken");
     Objects.requireNonNull(loopIteration, "loopIteration");
     Objects.requireNonNull(role, "role");
     Objects.requireNonNull(commitStatus, "commitStatus");

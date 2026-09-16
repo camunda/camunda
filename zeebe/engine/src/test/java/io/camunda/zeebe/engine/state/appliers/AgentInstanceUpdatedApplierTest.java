@@ -114,17 +114,17 @@ public class AgentInstanceUpdatedApplierTest {
             .setAgentInstanceKey(agentInstanceKey)
             .setStatus(AgentInstanceStatus.THINKING)
             .setJobKey(123L)
-            .setJobLease("lease-1");
+            .setJobLeaseToken("lease-1");
 
     // when
     updatedApplier.applyState(agentInstanceKey, updated);
 
-    // then — jobKey/jobLease are per-command payload, not real AgentInstance state: they're
+    // then — jobKey/jobLeaseToken are per-command payload, not real AgentInstance state: they're
     // redundant with what's already captured on the separate AGENT_HISTORY entities.
     final var stored = agentInstanceState.getRecord(agentInstanceKey);
     assertThat(stored).isNotNull();
     assertThat(stored.getJobKey()).isEqualTo(-1L);
-    assertThat(stored.getJobLease()).isEmpty();
+    assertThat(stored.getJobLeaseToken()).isEmpty();
   }
 
   @Test

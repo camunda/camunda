@@ -37,7 +37,7 @@ public class AgentHistoryEntityTransformer
         source.getBpmnProcessId(),
         source.getTenantId(),
         source.getJobKey(),
-        source.getJobLease(),
+        Objects.requireNonNullElse(source.getJobLeaseToken(), ""),
         source.getLoopIteration(),
         toRole(source.getRole()),
         AgentContentTransformer.toContent(source.getContent()),

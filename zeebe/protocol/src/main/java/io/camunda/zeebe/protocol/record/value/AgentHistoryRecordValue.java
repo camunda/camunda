@@ -68,7 +68,7 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
    * <b>all</b> pending items of the job, whereas a non-empty lease scopes it to the single
    * activation holding that lease.
    */
-  String getJobLease();
+  String getJobLeaseToken();
 
   /**
    * Returns the loopIteration counter. A loop iteration is one pass through an AI agent's loop,

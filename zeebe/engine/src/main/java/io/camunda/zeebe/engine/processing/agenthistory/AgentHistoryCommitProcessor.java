@@ -47,22 +47,22 @@ public final class AgentHistoryCommitProcessor
   @Override
   public void processRecord(final TypedRecord<AgentHistoryRecord> command) {
     final long jobKey = command.getValue().getJobKey();
-    final String jobLease = command.getValue().getJobLease();
+    final String jobLeaseToken = command.getValue().getJobLeaseToken();
 
     // The agent instance record is only needed if a CONFIGURATION item is committed, so we lazily
     // load it only if needed.
     final AtomicReference<AgentInstanceRecord> agentInstance = new AtomicReference<>();
 
-    if (jobLease.isEmpty()) {
+    if (jobLeaseToken.isEmpty()) {
       agentHistoryState.visitByJobKey(jobKey, item -> commitHistoryItem(item, agentInstance));
     } else {
-      agentHistoryState.visitByJobLease(
-          jobKey, jobLease, item -> commitHistoryItem(item, agentInstance));
+      agentHistoryState.visitByJobLeaseToken(
+          jobKey, jobLeaseToken, item -> commitHistoryItem(item, agentInstance));
       // Discard items from superseded activations (different lease, same job)
       agentHistoryState.visitByJobKey(
           jobKey,
           item -> {
-            if (!jobLease.equals(item.getJobLease())) {
+            if (!jobLeaseToken.equals(item.getJobLeaseToken())) {
               stateWriter.appendFollowUpEvent(
                   item.getAgentHistoryKey(), AgentHistoryIntent.DISCARDED, item);
             }

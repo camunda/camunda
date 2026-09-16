@@ -234,7 +234,7 @@ public class AgentInstanceSuspensionGateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -244,7 +244,7 @@ public class AgentInstanceSuspensionGateTest {
         .agentInstances()
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .create()
         .getKey();
   }

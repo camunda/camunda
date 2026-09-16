@@ -38,7 +38,7 @@ class ZeebeAgentInstanceDataDtoTest {
             + "\"processDefinitionVersion\":1,"
             + "\"tenantId\":\"<default>\","
             + "\"jobKey\":5,"
-            + "\"jobLease\":\"lease-1\","
+            + "\"jobLeaseToken\":\"lease-1\","
             + "\"status\":\"COMPLETED\","
             + "\"definition\":{\"model\":\"gpt\",\"provider\":\"openai\"},"
             + "\"limits\":{\"maxTokens\":1000,\"maxModelCalls\":10,\"maxToolCalls\":10},"

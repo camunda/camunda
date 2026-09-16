@@ -162,8 +162,8 @@ public final class AgentInstanceClient {
     return this;
   }
 
-  public AgentInstanceClient withJobLease(final String jobLease) {
-    record.setJobLease(jobLease);
+  public AgentInstanceClient withJobLeaseToken(final String jobLeaseToken) {
+    record.setJobLeaseToken(jobLeaseToken);
     return this;
   }
 

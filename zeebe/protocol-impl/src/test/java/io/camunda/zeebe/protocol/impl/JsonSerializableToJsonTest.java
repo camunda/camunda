@@ -5310,7 +5310,7 @@ final class JsonSerializableToJsonTest {
           ],
           "changedAttributes": ["status", "metrics"],
           "jobKey": -1,
-          "jobLease": "",
+          "jobLeaseToken": "",
           "history": [],
           "storageOrdinal": 11
         }
@@ -5340,7 +5340,7 @@ final class JsonSerializableToJsonTest {
           "tools": [],
           "changedAttributes": [],
           "jobKey": -1,
-          "jobLease": "",
+          "jobLeaseToken": "",
           "history": [],
           "storageOrdinal": 0
         }
@@ -5375,7 +5375,7 @@ final class JsonSerializableToJsonTest {
               final AgentInstanceRecord record =
                   new AgentInstanceRecord()
                       .setJobKey(2251799813685252L)
-                      .setJobLease("job-lease-abc123")
+                      .setJobLeaseToken("job-lease-abc123")
                       .setHistory(List.of(item));
               return record;
             },
@@ -5400,14 +5400,14 @@ final class JsonSerializableToJsonTest {
           "tools": [],
           "changedAttributes": [],
           "jobKey": 2251799813685252,
-          "jobLease": "job-lease-abc123",
+          "jobLeaseToken": "job-lease-abc123",
           "history": [
             {
               "agentHistoryKey": -1,
               "agentInstanceKey": -1,
               "elementInstanceKey": -1,
               "jobKey": -1,
-              "jobLease": "",
+              "jobLeaseToken": "",
               "loopIteration": 0,
               "role": "ASSISTANT",
               "producedAt": 1717199999000,
@@ -5483,7 +5483,7 @@ final class JsonSerializableToJsonTest {
                       .setAgentInstanceKey(2251799813685251L)
                       .setElementInstanceKey(2251799813685249L)
                       .setJobKey(2251799813685252L)
-                      .setJobLease("job-lease-abc123")
+                      .setJobLeaseToken("job-lease-abc123")
                       .setLoopIteration(3)
                       .setRole(AgentHistoryRole.ASSISTANT)
                       .setProducedAt(1748860800000L)
@@ -5542,7 +5542,7 @@ final class JsonSerializableToJsonTest {
           "agentInstanceKey": 2251799813685251,
           "elementInstanceKey": 2251799813685249,
           "jobKey": 2251799813685252,
-          "jobLease": "job-lease-abc123",
+          "jobLeaseToken": "job-lease-abc123",
           "loopIteration": 3,
           "role": "ASSISTANT",
           "producedAt": 1748860800000,
@@ -5638,7 +5638,7 @@ final class JsonSerializableToJsonTest {
           "agentInstanceKey": -1,
           "elementInstanceKey": -1,
           "jobKey": -1,
-          "jobLease": "",
+          "jobLeaseToken": "",
           "loopIteration": 0,
           "role": "UNSPECIFIED",
           "producedAt": -1,
@@ -5702,7 +5702,7 @@ final class JsonSerializableToJsonTest {
           "agentInstanceKey": -1,
           "elementInstanceKey": -1,
           "jobKey": -1,
-          "jobLease": "",
+          "jobLeaseToken": "",
           "loopIteration": 0,
           "role": "UNSPECIFIED",
           "producedAt": -1,

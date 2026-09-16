@@ -134,7 +134,7 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    * @return the opaque lease token identifying the job activation during which this command was
    *     produced
    */
-  String getJobLease();
+  String getJobLeaseToken();
 
   /**
    * @return the batch of history items carried by this command, each reusing the same shape as a

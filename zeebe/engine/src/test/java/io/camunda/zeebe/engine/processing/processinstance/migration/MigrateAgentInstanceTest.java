@@ -93,7 +93,7 @@ public class MigrateAgentInstanceTest {
             .getFirst()
             .getKey();
     final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -105,7 +105,7 @@ public class MigrateAgentInstanceTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -113,7 +113,7 @@ public class MigrateAgentInstanceTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withJobLeaseToken(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .complete();
 
     assertThat(
@@ -185,7 +185,7 @@ public class MigrateAgentInstanceTest {
             .getFirst()
             .getKey();
     final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -196,14 +196,14 @@ public class MigrateAgentInstanceTest {
         .agentInstances()
         .withElementInstanceKey(agentTaskInstance.getKey())
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .create();
 
     engine
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withJobLeaseToken(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .complete();
 
     assertThat(
@@ -323,7 +323,7 @@ public class MigrateAgentInstanceTest {
             .withType(AGENT_JOB_TYPE)
             .getFirst()
             .getKey();
-    final var firstJobLease =
+    final var firstJobLeaseToken =
         firstJobBatch
             .getValue()
             .getJobs()
@@ -345,7 +345,7 @@ public class MigrateAgentInstanceTest {
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
             .withJobKey(firstJobKey)
-            .withJobLease(firstJobLease)
+            .withJobLeaseToken(firstJobLeaseToken)
             .withHistory(List.of(firstConfigItem))
             .create()
             .getKey();
@@ -357,7 +357,7 @@ public class MigrateAgentInstanceTest {
             .withType(otherJobType)
             .getFirst()
             .getKey();
-    final var secondJobLease =
+    final var secondJobLeaseToken =
         secondJobBatch
             .getValue()
             .getJobs()
@@ -379,7 +379,7 @@ public class MigrateAgentInstanceTest {
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
             .withJobKey(secondJobKey)
-            .withJobLease(secondJobLease)
+            .withJobLeaseToken(secondJobLeaseToken)
             .withHistory(List.of(secondConfigItem))
             .create()
             .getKey();
@@ -506,7 +506,7 @@ public class MigrateAgentInstanceTest {
             .getFirst()
             .getKey();
     final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -518,7 +518,7 @@ public class MigrateAgentInstanceTest {
             .agentInstances()
             .withElementInstanceKey(adHocSubProcessInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -589,7 +589,7 @@ public class MigrateAgentInstanceTest {
             .getFirst()
             .getKey();
     final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -601,7 +601,7 @@ public class MigrateAgentInstanceTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
     final long sourceAgentDefinitionKey =
@@ -680,7 +680,7 @@ public class MigrateAgentInstanceTest {
             .getFirst()
             .getKey();
     final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -692,7 +692,7 @@ public class MigrateAgentInstanceTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -759,7 +759,7 @@ public class MigrateAgentInstanceTest {
             .getFirst()
             .getKey();
     final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -770,7 +770,7 @@ public class MigrateAgentInstanceTest {
         .agentInstances()
         .withElementInstanceKey(agentTaskInstance.getKey())
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .create();
 
     // when
@@ -850,7 +850,7 @@ public class MigrateAgentInstanceTest {
             .getFirst()
             .getKey();
     final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -861,7 +861,7 @@ public class MigrateAgentInstanceTest {
         .agentInstances()
         .withElementInstanceKey(agentTaskInstance.getKey())
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .create();
 
     // when
@@ -936,7 +936,7 @@ public class MigrateAgentInstanceTest {
             .getFirst()
             .getKey();
     final var jobBatch = engine.jobs().withType(AGENT_JOB_TYPE).withLease().activate();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -947,7 +947,7 @@ public class MigrateAgentInstanceTest {
         .agentInstances()
         .withElementInstanceKey(agentTaskInstance.getKey())
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .create();
 
     // complete the agentic job so "A" completes and the process moves on to "B", orphaning the
@@ -956,7 +956,7 @@ public class MigrateAgentInstanceTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withJobLeaseToken(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .complete();
 
     assertThat(

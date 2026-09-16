@@ -52,7 +52,7 @@ public class AgentHistoryDiscardTest {
     final var activatedJob = activateJobForProcessInstance(processInstanceKey);
     final var jobKey = activatedJob.jobKey();
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLeaseToken()).getKey();
 
     // Two items share jobKey but have different leases — DISCARD with no lease must discard both
     // regardless of lease.
@@ -89,7 +89,7 @@ public class AgentHistoryDiscardTest {
     final var activatedJob = activateJobForProcessInstance(processInstanceKey);
     final var jobKey = activatedJob.jobKey();
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLeaseToken()).getKey();
 
     final long lease1ItemKey =
         createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-1");
@@ -101,7 +101,7 @@ public class AgentHistoryDiscardTest {
     createUnrelatedJobHistoryItem("lease-1");
 
     final var firstDiscarded =
-        ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-1").discard();
+        ENGINE.agentHistories().withJobKey(jobKey).withJobLeaseToken("lease-1").discard();
     final long discardPosition = firstDiscarded.getSourceRecordPosition();
     final long clockResetKey = ENGINE.clock().reset().getKey();
 
@@ -125,7 +125,7 @@ public class AgentHistoryDiscardTest {
     final var activatedJob = activateJobForProcessInstance(processInstanceKey);
     final var jobKey = activatedJob.jobKey();
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLeaseToken()).getKey();
     final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-x");
 
     final var discarded = ENGINE.agentHistories().withJobKey(jobKey).discard();
@@ -145,7 +145,7 @@ public class AgentHistoryDiscardTest {
     final var activatedJob = activateJobForProcessInstance(processInstanceKey);
     final var jobKey = activatedJob.jobKey();
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLeaseToken()).getKey();
 
     final var item =
         new AgentHistoryRecord()
@@ -169,7 +169,7 @@ public class AgentHistoryDiscardTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
-        .withJobLease(activatedJob.jobLease())
+        .withJobLeaseToken(activatedJob.jobLeaseToken())
         .withHistory(List.of(item))
         .update();
 
@@ -236,22 +236,22 @@ public class AgentHistoryDiscardTest {
             .withType(JOB_TYPE)
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
             .getJobLeaseToken();
-    return new ActivatedJob(jobKey, jobLease);
+    return new ActivatedJob(jobKey, jobLeaseToken);
   }
 
   private static Record<?> createAgentInstance(
-      final long elementInstanceKey, final long jobKey, final String jobLease) {
+      final long elementInstanceKey, final long jobKey, final String jobLeaseToken) {
     return ENGINE
         .agentInstances()
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .create();
   }
 
@@ -259,14 +259,14 @@ public class AgentHistoryDiscardTest {
       final long agentInstanceKey,
       final long jobKey,
       final long elementInstanceKey,
-      final String jobLease) {
+      final String jobLeaseToken) {
     final var historyItemId = Strings.newRandomValidBpmnId();
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -290,7 +290,7 @@ public class AgentHistoryDiscardTest {
    * process) with its own agent instance, and a single history item on it with the given lease.
    * Used as a control case to prove an operation scoped to one job does not affect another.
    */
-  private static long createUnrelatedJobHistoryItem(final String jobLease) {
+  private static long createUnrelatedJobHistoryItem(final String jobLeaseToken) {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -303,10 +303,10 @@ public class AgentHistoryDiscardTest {
     final var activatedJob = activateJobForProcessInstance(processInstanceKey);
     final long jobKey = activatedJob.jobKey();
     final long agentInstanceKey =
-        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLease()).getKey();
+        createAgentInstance(elementInstanceKey, jobKey, activatedJob.jobLeaseToken()).getKey();
 
-    return createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, jobLease);
+    return createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, jobLeaseToken);
   }
 
-  private record ActivatedJob(long jobKey, String jobLease) {}
+  private record ActivatedJob(long jobKey, String jobLeaseToken) {}
 }

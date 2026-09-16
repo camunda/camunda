@@ -61,7 +61,7 @@ public final class AgentHistoryEntity
   private long jobKey;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private String jobLease;
+  private String jobLeaseToken;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private int loopIteration;
@@ -230,12 +230,12 @@ public final class AgentHistoryEntity
     return this;
   }
 
-  public String getJobLease() {
-    return jobLease;
+  public String getJobLeaseToken() {
+    return jobLeaseToken;
   }
 
-  public AgentHistoryEntity setJobLease(final String jobLease) {
-    this.jobLease = jobLease;
+  public AgentHistoryEntity setJobLeaseToken(final String jobLeaseToken) {
+    this.jobLeaseToken = jobLeaseToken;
     return this;
   }
 
@@ -415,7 +415,7 @@ public final class AgentHistoryEntity
         tenantId,
         partitionId,
         jobKey,
-        jobLease,
+        jobLeaseToken,
         loopIteration,
         role,
         commitStatus,
@@ -456,7 +456,7 @@ public final class AgentHistoryEntity
         && Objects.equals(tenantId, that.tenantId)
         && partitionId == that.partitionId
         && jobKey == that.jobKey
-        && Objects.equals(jobLease, that.jobLease)
+        && Objects.equals(jobLeaseToken, that.jobLeaseToken)
         && loopIteration == that.loopIteration
         && Objects.equals(role, that.role)
         && Objects.equals(commitStatus, that.commitStatus)
@@ -505,8 +505,8 @@ public final class AgentHistoryEntity
         + partitionId
         + ", jobKey="
         + jobKey
-        + ", jobLease='"
-        + jobLease
+        + ", jobLeaseToken='"
+        + jobLeaseToken
         + '\''
         + ", loopIteration="
         + loopIteration
