@@ -257,14 +257,18 @@ jobs:
       # Build the distribution in the same Gradle invocation as testClasses so the archive
       # reuses the compilation output instead of compiling the repository again.
       - name: Compile and package Gradle distribution
-        run: >-
-          ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build
-          testClasses :camunda-zeebe:distZip
+        run: |
+          ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build \
+            testClasses :camunda-zeebe:distZip
+          ./gradlew --no-daemon --no-configuration-cache --console=plain -Pskip.fe.build \
+            :camunda-zeebe:writeDistDependencyReport
       - name: Upload Gradle distribution
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gradle-dist-${{ github.run_id }}
-          path: dist/build/distributions/camunda-zeebe-*.zip
+          path: |
+            dist/build/distributions/camunda-zeebe-*.zip
+            dist/build/reports/dist-dependencies.json
           retention-days: 2
           compression-level: 0  # archive is already compressed
           if-no-files-found: error
@@ -302,7 +306,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gradle-dist-${{ github.run_id }}
-          path: dist/build/distributions/
+          path: dist/build/
       - name: Download Maven distributions
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -314,7 +318,9 @@ jobs:
           gradle_zip=$(find dist/build/distributions -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
           maven_zip=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
           test -n "$gradle_zip" && test -n "$maven_zip"
-          python3 .claude/skills/gradle-build-parity/compare-dist.py "$gradle_zip" "$maven_zip"
+          python3 .claude/skills/gradle-build-parity/compare-dist.py \
+            "$gradle_zip" "$maven_zip" \
+            --gradle-manifest dist/build/reports/dist-dependencies.json
       - name: Observe build status
         if: always()
         continue-on-error: true
