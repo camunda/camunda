@@ -17,18 +17,8 @@ import {EXPANDABLE_LIST_VARIANT_IDS, type ExpandableListVariant} from './Expanda
 
 const noop = () => {};
 
-function buildRow({
-	id,
-	name,
-	activeCount = 0,
-	incidentsCount = 0,
-}: {
-	id: string;
-	name: string;
-	activeCount?: number;
-	incidentsCount?: number;
-}): ExpandableListRow {
-	return {id, name, activeCount, incidentsCount, content: <span>{name}</span>};
+function buildRow({id, name}: {id: string; name: string}): ExpandableListRow {
+	return {id, content: <span>{name}</span>};
 }
 
 function mockElementHeights({
@@ -112,8 +102,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 	it('should render every row', async () => {
 		// given
 		const rows = [
-			buildRow({id: 'process-1', name: 'Order process', activeCount: 42, incidentsCount: 3}),
-			buildRow({id: 'process-2', name: 'Shipping process', activeCount: 18, incidentsCount: 0}),
+			buildRow({id: 'process-1', name: 'Order process'}),
+			buildRow({id: 'process-2', name: 'Shipping process'}),
 		];
 
 		// when
@@ -587,13 +577,10 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 });
 
 describe('<ExpandableList /> composed variant', () => {
-	it('should render the caller-composed content node rather than the row fields', async () => {
+	it('should render the caller-composed content node', async () => {
 		// given
 		const row: ExpandableListRow = {
 			id: 'process-1',
-			name: 'Unused name',
-			activeCount: 42,
-			incidentsCount: 3,
 			content: <span>Fully composed row</span>,
 		};
 
@@ -602,7 +589,6 @@ describe('<ExpandableList /> composed variant', () => {
 
 		// then
 		await expect.element(screen.getByText('Fully composed row')).toBeVisible();
-		expect(screen.getByText('Unused name').elements()).toHaveLength(0);
 	});
 
 	it('should show the header as a visible column header and name the table for screen readers', async () => {
