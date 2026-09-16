@@ -183,8 +183,7 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 			label: t('operate.processes.instancesTable.processInstanceKey'),
 			render: (row: ProcessInstance) => (
 				<InstanceLink
-					to="/operate/processes/$processInstanceId"
-					params={{processInstanceId: row.processInstanceKey}}
+					href={`/operate/processes/${row.processInstanceKey}`}
 					title={t('operate.processes.instancesTable.viewInstance', {key: row.processInstanceKey})}
 					aria-label={t('operate.processes.instancesTable.viewInstance', {key: row.processInstanceKey})}
 				>
@@ -248,8 +247,7 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 			render: (row: ProcessInstance) =>
 				row.parentProcessInstanceKey ? (
 					<InstanceLink
-						to="/operate/processes/$processInstanceId"
-						params={{processInstanceId: row.parentProcessInstanceKey}}
+						href={`/operate/processes/${row.parentProcessInstanceKey}`}
 						title={t('operate.processes.instancesTable.viewParentInstance', {key: row.parentProcessInstanceKey})}
 						aria-label={t('operate.processes.instancesTable.viewParentInstance', {
 							key: row.parentProcessInstanceKey,

@@ -7,7 +7,7 @@
  */
 
 import {Button, Link} from '@carbon/react';
-import {createLink} from '@tanstack/react-router';
+import {Link as RouterLink} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
@@ -23,8 +23,6 @@ type Props = {
 	decisionEvaluationInstanceKey: string;
 	onOpenDrd: () => void;
 };
-
-const DecisionInstanceLink = createLink(Link);
 
 const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => {
 	const {t} = useTranslation();
@@ -67,9 +65,9 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 				hideOverflowingContent: false,
 				content: (
 					// TODO(#55977): point at the filtered Decisions list once its search schema exists
-					<DecisionInstanceLink to="/operate/decisions" title={versionLinkTitle} aria-label={versionLinkTitle}>
+					<Link as={RouterLink} to="/operate/decisions" title={versionLinkTitle} aria-label={versionLinkTitle}>
 						{decisionInstance.decisionDefinitionVersion}
-					</DecisionInstanceLink>
+					</Link>
 				),
 			},
 			{
@@ -90,9 +88,10 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 				title: decisionInstance.processInstanceKey ?? t('operate.decisionInstance.header.noProcessInstance'),
 				hideOverflowingContent: false,
 				content: decisionInstance.processInstanceKey ? (
-					<DecisionInstanceLink
-						to="/operate/processes/$processInstanceId"
-						params={{processInstanceId: decisionInstance.processInstanceKey}}
+					// TODO(#56029): point at the real Process Instance route once it exists
+					<Link
+						as={RouterLink}
+						to="/"
 						title={t('operate.decisionInstance.header.processInstanceLinkTitle', {
 							processInstanceKey: decisionInstance.processInstanceKey,
 						})}
@@ -101,7 +100,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 						})}
 					>
 						{decisionInstance.processInstanceKey}
-					</DecisionInstanceLink>
+					</Link>
 				) : (
 					t('operate.decisionInstance.header.noProcessInstance')
 				),
