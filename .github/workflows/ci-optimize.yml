@@ -98,7 +98,7 @@ jobs:
       use-shared-distball: ${{ inputs.use-shared-distball }}
 
   optimize-it-elasticsearch:
-    name: "Integration / Elasticsearch ITs"
+    name: "Integration / Elasticsearch ${{ matrix.elasticsearchMajor }} ITs"
     if: inputs.runBeTests
     runs-on: gcp-core-32-longrunning
     timeout-minutes: 30
@@ -110,16 +110,24 @@ jobs:
       matrix:
         includedGroups: [ 'ccsm-test' ]
         cslEnabled: [ 'false', 'true' ]
-        # This entry deliberately omits cslEnabled so it merges into both matrix values above,
-        # instead of two near-duplicate entries repeating excludedGroups/profiles. Do not add
-        # cslEnabled back to only one of them: the other combination would then have no include
-        # entry supplying `profiles`, so `-P` would swallow the next Maven argument instead of
-        # activating `ccsm-it` (which wires up src/it/java and failsafe) — Maven only warns on an
-        # unknown profile, so that job would go green having run zero ITs.
+        elasticsearchMajor: [ '8', '9' ]
+        # This entry deliberately omits cslEnabled and elasticsearchMajor so it merges into every
+        # combination above, instead of near-duplicate entries repeating excludedGroups/profiles.
+        # Do not add either key back to only some of them: the combinations left uncovered would
+        # then have no include entry supplying `profiles`, so `-P` would swallow the next Maven
+        # argument instead of activating `ccsm-it` (which wires up src/it/java and failsafe) —
+        # Maven only warns on an unknown profile, so those jobs would go green having run zero ITs.
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
             profiles: 'ccsm-it'
+        # ES9 coverage answers a storage-compatibility question, which is orthogonal to the
+        # security layer, so one CSL variant is enough. This keeps the job count at 3 rather
+        # than 4 on a 30-minute 32-core runner, and preserves the existing ES8 coverage
+        # unchanged. Drop this exclude if ES9 ever needs both CSL variants.
+        exclude:
+          - elasticsearchMajor: '9'
+            cslEnabled: 'false'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
@@ -150,17 +158,37 @@ jobs:
         id: db-versions
         uses: ./.github/actions/read-db-versions
 
+      # Picks the version for this matrix leg and asserts it really is that major. Selecting
+      # inline with `major == '9' && es9 || es8` would be shorter but fails silently: an empty
+      # or missing es9 output is falsy, so the expression would yield the ES8 version and the
+      # leg would pass having tested the wrong major. docker-compose hides the same mistake a
+      # second way, by falling back to the image tag hardcoded as its own default.
+      - name: Resolve Elasticsearch version
+        id: resolve-es
+        env:
+          MAJOR: ${{ matrix.elasticsearchMajor }}
+          ES8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+          ES9: ${{ steps.db-versions.outputs.elasticsearch-9 }}
+        run: |
+          case "${MAJOR}" in
+            8) version="${ES8}" ;;
+            9) version="${ES9}" ;;
+            *) echo "::error::unhandled elasticsearchMajor '${MAJOR}'"; exit 1 ;;
+          esac
+          case "${version}" in
+            "${MAJOR}".*) ;;
+            *) echo "::error::read-db-versions returned '${version}' for major ${MAJOR}"; exit 1 ;;
+          esac
+          echo "Elasticsearch ${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
       - name: Start Elasticsearch
         uses: ./.github/actions/compose
         with:
           compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          # PROBE ONLY - DO NOT MERGE. Temporarily pointed at ES9 to find out whether the
-          # Optimize ITs pass against it at all: every Optimize workflow pins the es8 output,
-          # so ES9 has never been exercised here. Revert to elasticsearch-8 before merging;
-          # the durable fix is a matrix dimension over both majors.
-          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-9 }}
+          ELASTIC_VERSION: ${{ steps.resolve-es.outputs.version }}
           ELASTIC_JVM_MEMORY: 16
           ELASTIC_HTTP_PORT: 9200
 
@@ -190,7 +218,7 @@ jobs:
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-junit
+          name: integration-test-elasticsearch${{ matrix.elasticsearchMajor }}-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-junit
           path: |
             **/failsafe-reports/**
 
@@ -199,14 +227,14 @@ jobs:
         if: always()
         continue-on-error: true
         with:
-          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-docker
+          archive_name: integration-tests-elasticsearch${{ matrix.elasticsearchMajor }}-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-docker
 
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "optimize-it-elasticsearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
+          job_name: "optimize-it-elasticsearch/es${{ matrix.elasticsearchMajor }}-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
