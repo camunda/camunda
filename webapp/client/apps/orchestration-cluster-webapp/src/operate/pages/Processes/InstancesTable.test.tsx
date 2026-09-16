@@ -46,7 +46,7 @@ const BASE_SEARCH: ProcessesSearch = {
 	suspended: true,
 };
 
-function renderInstancesTable(search: ProcessesSearch = BASE_SEARCH) {
+function renderInstancesTable(search: ProcessesSearch = BASE_SEARCH, basepath = '') {
 	return renderWithRouter(
 		() => (
 			// The table's scroll container is `height: 100%` and needs a sized ancestor, which the
@@ -56,7 +56,7 @@ function renderInstancesTable(search: ProcessesSearch = BASE_SEARCH) {
 				<Notifications />
 			</div>
 		),
-		{path: '/operate/processes'},
+		{path: '/operate/processes', basepath, initialEntry: `${basepath}/operate/processes`},
 	);
 }
 
@@ -485,7 +485,7 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByText('--')).toBeVisible();
 	});
 
-	it('should show the parent instance link only when the instance has a parent', async ({worker}) => {
+	it('should link instances and parents within the deployment basepath', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
 				successResponse: HttpResponse.json(
@@ -500,11 +500,14 @@ describe('<InstancesTable />', () => {
 			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
-		const screen = await renderInstancesTable();
+		const screen = await renderInstancesTable(BASE_SEARCH, '/camunda');
 
 		await expect
+			.element(screen.getByRole('link', {name: 'View instance 1', exact: true}))
+			.toHaveAttribute('href', '/camunda/operate/processes/1');
+		await expect
 			.element(screen.getByRole('link', {name: 'View parent instance 99'}))
-			.toHaveAttribute('href', '/operate/processes/99');
+			.toHaveAttribute('href', '/camunda/operate/processes/99');
 		await expect.element(screen.getByText('None')).toBeVisible();
 	});
 

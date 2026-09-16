@@ -8,6 +8,7 @@
 
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
+import {createLink} from '@tanstack/react-router';
 import type {BatchOperationItem, BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
@@ -17,12 +18,41 @@ import {formatDate} from './utils';
 import {ItemKeyCell} from './ItemKeyCell';
 import {StateCell} from './StateCell';
 import {useBatchOperationItems} from './useBatchOperationItems';
-import {TableContainer} from './styled';
+import {ItemLink, TableContainer} from './styled';
 
 type Props = {
 	batchOperationKey: string;
 	batchOperationType: BatchOperationType | undefined;
 };
+
+const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(ItemLink);
+
+type ProcessInstanceKeyCellProps = {
+	processInstanceKey: string;
+	fallbackText: string;
+	label: string;
+	disableLink?: boolean;
+};
+
+const ProcessInstanceKeyCell: React.FC<ProcessInstanceKeyCellProps> = ({
+	processInstanceKey,
+	fallbackText,
+	label,
+	disableLink = false,
+}) => (
+	<ItemKeyCell itemKey={processInstanceKey} fallbackText={fallbackText}>
+		{disableLink ? undefined : (
+			<ProcessInstanceLink
+				to="/operate/processes/$processInstanceId"
+				params={{processInstanceId: processInstanceKey}}
+				title={label}
+				aria-label={label}
+			>
+				{processInstanceKey}
+			</ProcessInstanceLink>
+		)}
+	</ItemKeyCell>
+);
 
 const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType}) => {
 	const {t} = useTranslation();
@@ -55,10 +85,9 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 			key: 'processInstanceKey',
 			label: t('operate.batchOperation.itemsTable.processInstanceKey'),
 			render: (row: BatchOperationItem) => (
-				<ItemKeyCell
-					itemKey={row.processInstanceKey}
+				<ProcessInstanceKeyCell
+					processInstanceKey={row.processInstanceKey}
 					fallbackText={t('operate.batchOperation.itemsTable.noProcessInstance')}
-					href={`/operate/processes/${row.processInstanceKey}`}
 					label={t('operate.batchOperation.itemsTable.viewProcessInstance', {key: row.processInstanceKey})}
 				/>
 			),
@@ -93,15 +122,11 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 					key: 'processInstanceKey',
 					label: t('operate.batchOperation.itemsTable.processInstanceKey'),
 					render: (row: BatchOperationItem) => (
-						<ItemKeyCell
-							itemKey={row.processInstanceKey}
+						<ProcessInstanceKeyCell
+							processInstanceKey={row.processInstanceKey}
 							fallbackText={t('operate.batchOperation.itemsTable.noProcessInstance')}
-							href={row.state === 'COMPLETED' ? undefined : `/operate/processes/${row.processInstanceKey}`}
-							label={
-								row.state === 'COMPLETED'
-									? undefined
-									: t('operate.batchOperation.itemsTable.viewProcessInstance', {key: row.processInstanceKey})
-							}
+							label={t('operate.batchOperation.itemsTable.viewProcessInstance', {key: row.processInstanceKey})}
+							disableLink={row.state === 'COMPLETED'}
 						/>
 					),
 				},
