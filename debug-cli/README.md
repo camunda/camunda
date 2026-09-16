@@ -110,6 +110,62 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
   to all broker PVCs, lives in
   [scripts/reset-incident-position](./scripts/reset-incident-position/README.md).
 
+##### `state check-process-definition-deletions`
+
+- **Description:**
+  Find process definitions whose deletion did not fully apply across the cluster, leaving them stuck
+  and unable to complete.
+
+  A cluster stores its data in partitions. When you delete a process definition, the deletion is
+  first applied on partition `1` (the partition that coordinates deployments and deletions) and then
+  forwarded to the others. A definition that still has running instances enters a `DRAINING` state:
+  it is scheduled for deletion and removed once its last instance finishes.
+
+  To finish a deletion, partition `1` keeps a coordination entry for each partition it is still
+  waiting on. An older defect could leave a definition `DRAINING` on a partition that partition `1`
+  has no such entry for: the coordination was never set up, so nothing will ever finish the deletion.
+  The definition stays stuck, and its data in Elasticsearch or OpenSearch no longer matches the
+  engine.
+
+  This command reads every partition's data and reports each definition that is `DRAINING` on a
+  partition that partition `1` is not tracking for deletion. That mismatch — not merely a definition
+  missing from partition `1`, which also happens during a normal deletion — is the signature of a
+  stuck definition. Nothing is modified; the data is only read.
+
+  Run it if you deleted process definitions on an older version and suspect that some deletions did
+  not take effect everywhere. When a definition is found, the report explains how to finish its
+  deletion.
+
+- **Options:**
+
+  - `-r`, `--root`: Path of the `raft-partition/partitions` directory, which holds one numbered
+    subdirectory per partition. It **must contain the data of all partitions** in the cluster,
+    including partition `1`. In a cluster with more than one broker, each broker stores only some of
+    the partitions, so first collect every partition's directory into a single `partitions/`
+    directory. The command reads the cluster's partition list from partition `1` and refuses to run
+    if any partition's data is missing, so an incomplete set is reported rather than scanned. It
+    reads each partition's latest snapshot itself.
+  - `--runtime`: Optional temporary working directory the data is copied into before reading. A fresh
+    temporary directory is created and deleted automatically if omitted.
+- **Output:** a readable report is printed to **stderr**. A machine-readable summary is printed to
+  **stdout**: one line per stuck definition
+  (`key=.. bpmnProcessId=.. version=.. tenant=.. draining=[..] uncoordinated=[..] orphanedInstances=..`,
+  where `draining` lists the partitions still holding the definition, `uncoordinated` lists those of
+  them that partition `1` is not tracking for deletion, and `orphanedInstances` shows whether running
+  instances of the definition still remain), followed by a summary line
+  (`stranded=.. partitions=[..]`). The exit code is `0` when nothing is stuck, `2` when stuck
+  definitions are found, and `1` on a configuration or I/O error (including missing partition data).
+- **Consistency:** the check compares state *across* partitions, so it needs their snapshots to
+  line up. Run it against a **stopped cluster**, or against snapshots gathered from all partitions
+  at about the same point in time.
+- **Example:**
+
+  ```
+  debug-cli state check-process-definition-deletions \
+    -r /usr/local/camunda/data/raft-partition/partitions
+  ```
+- **Note:** Finding no stuck definitions is the expected result.
+
 #### `recover`
 
 - **Description:**
