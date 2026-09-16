@@ -106,7 +106,11 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
                           brokerStartupContext
                               .getBrokerConfiguration()
                               .getCluster()
-                              .getHeartbeatInterval()),
+                              .getHeartbeatInterval(),
+                          brokerStartupContext
+                              .getBrokerConfiguration()
+                              .getCluster()
+                              .getElectionTimeout()),
                       new PartitionBalancePlanner(partitionLeaders),
                       () -> brokerStartupContext.getRequestIdGenerator().nextId(),
                       Clock.systemUTC(),
