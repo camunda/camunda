@@ -178,6 +178,7 @@ test.describe.serial('Agent Instance API', () => {
     await test.step('Seed agent instances against active ad-hoc sub-processes', async () => {
       // minimal: required fields only (no limits, no tools)
       const minimalSeed = await seedAdHocSubProcessInstance(request, 'minimal');
+      state.processInstanceKeysToCleanup.push(minimalSeed.processInstanceKey);
       state.minimal = {
         processInstanceKey: minimalSeed.processInstanceKey,
         elementInstanceKey: minimalSeed.elementInstanceKey,
@@ -193,6 +194,9 @@ test.describe.serial('Agent Instance API', () => {
         request,
         'with-limits',
       );
+      state.processInstanceKeysToCleanup.push(
+        withLimitsSeed.processInstanceKey,
+      );
       state.withLimits = {
         processInstanceKey: withLimitsSeed.processInstanceKey,
         elementInstanceKey: withLimitsSeed.elementInstanceKey,
@@ -206,6 +210,7 @@ test.describe.serial('Agent Instance API', () => {
 
       // extra: a second minimal instance so multi-item searches are meaningful
       const extraSeed = await seedAdHocSubProcessInstance(request, 'extra');
+      state.processInstanceKeysToCleanup.push(extraSeed.processInstanceKey);
       state.extra = {
         processInstanceKey: extraSeed.processInstanceKey,
         elementInstanceKey: extraSeed.elementInstanceKey,
@@ -215,12 +220,6 @@ test.describe.serial('Agent Instance API', () => {
           extraSeed.jobType,
         )),
       };
-
-      state.processInstanceKeysToCleanup = [
-        minimalSeed.processInstanceKey,
-        withLimitsSeed.processInstanceKey,
-        extraSeed.processInstanceKey,
-      ];
     });
   });
 
@@ -288,7 +287,13 @@ test.describe.serial('Agent Instance API', () => {
     const definition = body.definition as Record<string, unknown>;
     expect(definition.model).toBe('gpt-4o');
     expect(definition.provider).toBe('openai');
-    expect(definition.systemPrompt).toBe('You are a helpful assistant.');
+    // systemPrompt is returned as content blocks, not a bare string — see
+    // AgentInstanceDefinitionResult in agent-instances.yaml.
+    const systemPrompt = definition.systemPrompt as Array<
+      Record<string, unknown>
+    >;
+    expect(systemPrompt).toHaveLength(1);
+    expect(systemPrompt[0].text).toBe('You are a helpful assistant.');
 
     const metrics = body.metrics as Record<string, number>;
     expect(metrics.inputTokens).toBe(0);
