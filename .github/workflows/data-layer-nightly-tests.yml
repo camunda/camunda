@@ -112,6 +112,7 @@ jobs:
           FLAKY_TEST_RERUN_COUNT: 3
         run: |
           ./mvnw -B --no-snapshot-updates \
+          -D forkCount=3 \
           -D skipUTs -D skipChecks \
           -D maven.javadoc.skip=true \
           -D "failsafe.rerunFailingTestsCount=${FLAKY_TEST_RERUN_COUNT:-3}" \
