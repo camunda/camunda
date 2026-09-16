@@ -72,6 +72,21 @@
   "liveNow": false,
   "panels": [
     {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 273,
+      "options": {
+        "content": "<center>\n\n\u26a0\ufe0f **This dashboard is not maintained anymore.** Use the dashboards in the [camunda-observability](https://github.com/camunda/camunda-observability) repository instead.\n\n</center>",
+        "mode": "markdown"
+      },
+      "title": "Not maintained",
+      "type": "text"
+    },
+    {
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -232,7 +247,7 @@
         "h": 12,
         "w": 13,
         "x": 0,
-        "y": 0
+        "y": 3
       },
       "id": 243,
       "options": {
@@ -396,7 +411,7 @@
         "h": 6,
         "w": 11,
         "x": 13,
-        "y": 0
+        "y": 3
       },
       "id": 116,
       "links": [],
@@ -453,7 +468,7 @@
         "h": 6,
         "w": 11,
         "x": 13,
-        "y": 6
+        "y": 9
       },
       "hiddenSeries": false,
       "id": 95,
@@ -592,7 +607,7 @@
         "h": 5,
         "w": 9,
         "x": 0,
-        "y": 12
+        "y": 15
       },
       "id": 272,
       "options": {
@@ -710,7 +725,7 @@
         "h": 5,
         "w": 15,
         "x": 9,
-        "y": 12
+        "y": 15
       },
       "id": 190,
       "links": [],
@@ -775,7 +790,7 @@
         "h": 6,
         "w": 7,
         "x": 0,
-        "y": 17
+        "y": 20
       },
       "hiddenSeries": false,
       "id": 58,
@@ -907,7 +922,7 @@
         "h": 2,
         "w": 9,
         "x": 7,
-        "y": 17
+        "y": 20
       },
       "id": 232,
       "links": [],
@@ -963,7 +978,7 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 17
+        "y": 20
       },
       "hiddenSeries": false,
       "id": 270,
@@ -1084,7 +1099,7 @@
         "h": 2,
         "w": 9,
         "x": 7,
-        "y": 19
+        "y": 22
       },
       "id": 118,
       "links": [],
@@ -1161,7 +1176,7 @@
         "h": 2,
         "w": 9,
         "x": 7,
-        "y": 21
+        "y": 24
       },
       "id": 117,
       "links": [],
@@ -1216,7 +1231,7 @@
         "h": 6,
         "w": 7,
         "x": 0,
-        "y": 23
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 64,
@@ -1315,7 +1330,7 @@
         "h": 6,
         "w": 9,
         "x": 7,
-        "y": 23
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 62,
@@ -1407,7 +1422,7 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 23
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 33,
@@ -1538,7 +1553,7 @@
         "h": 7,
         "w": 11,
         "x": 0,
-        "y": 29
+        "y": 32
       },
       "height": "400",
       "hiddenSeries": false,
@@ -1655,7 +1670,7 @@
         "h": 7,
         "w": 13,
         "x": 11,
-        "y": 29
+        "y": 32
       },
       "hiddenSeries": false,
       "id": 39,
