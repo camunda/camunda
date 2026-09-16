@@ -343,9 +343,57 @@ jobs:
             )
             # Collapse true duplicates: one api_es run can now emit the same failing
             # spec from two report artifacts (-profiles and -all-in-one), both tagged
-            # database=elasticsearch. Distinct databases (rdbms) and tasklist modes
-            # (e2e) remain separate rows.
+            # database=elasticsearch.
             | unique_by([.version, .file, .test_name, (.database // ""), (.tasklist_mode // "")])
+            # Collapse cross-engine RDBMS duplicates: the same (file, test_name)
+            # failing on every RDBMS engine is one underlying failure, not one entry
+            # per engine -- the fix agent'"'"'s verify step never provisions the real
+            # engine anyway; per qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md
+            # it always reproduces api_rdbms failures against a single H2 setup, so
+            # collapsing distinct .database values loses no information the agent
+            # acts on. Left uncollapsed, a single test failing on every RDBMS engine
+            # can produce dozens of near-identical rows that fill a version'"'"'s
+            # dispatch quota (the per-version cap below) before genuinely distinct
+            # failures -- e.g. an unrelated E2E test -- ever get a slot (this is what
+            # happened on 2026-09-16: 56 rows from one agent-instance test failing
+            # across every RDBMS engine crowded out 11 distinct main-branch E2E
+            # failures). Keep one representative row per (version, file, test_name)
+            # and note the other engines in its error text.
+            #
+            # The group key also includes the normalized .error text: two engines
+            # only collapse together when their error is byte-identical. This is
+            # what makes dropping .[1..] safe -- every member of a group already
+            # has the exact same diagnostic text as the representative, so nothing
+            # is lost. An engine whose failure has genuinely different diagnostics
+            # (a real per-engine bug, not just a shared code path failing the same
+            # way everywhere) keeps its own row instead of being silently merged
+            # into a representative that doesn'"'"'t describe it.
+            #
+            # api_es and e2e rows are NOT collapsed across variants, only
+            # deduplicated by the exact match above:
+            #   - api_es is a separate nightly run with its own run ID
+            #     (api_es_run_id); merging it with api_rdbms rows would keep only one
+            #     family'"'"'s .database and silently drop the other family'"'"'s report
+            #     from diagnosis/verification for a spec that fails on both.
+            #   - e2e'"'"'s variant dimension is tasklist_mode (v1/v2), and unlike the
+            #     RDBMS engine the agent'"'"'s own verify step passes tasklist_mode
+            #     verbatim to pick which Tasklist generation to stand up -- collapsing
+            #     v1 and v2 rows together would let it verify in only one mode and
+            #     silently miss (or falsely "fix") a failure specific to the other.
+            | group_by([.version, .file, .test_name, .error,
+                (if (.database // "") == "elasticsearch" then "api_es"
+                 elif (.database // "") != "" then "api_rdbms"
+                 else ("e2e:" + (.tasklist_mode // "")) end)])
+            | map(
+                .[0] as $representative
+                | (map(.database // empty) | unique
+                    | map(select(. != $representative.database))) as $others
+                | $representative
+                | if ($others | length) > 0
+                  then .error = (.error + " [also fails on: " + ($others | join(", ")) + "]")
+                  else .
+                  end
+              )
           ' /tmp/all_failures.jsonl > /tmp/failures_normalized.json
 
           echo "After normalization + filtering: $(jq 'length' /tmp/failures_normalized.json)"
