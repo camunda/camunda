@@ -346,6 +346,27 @@ jobs:
             # database=elasticsearch. Distinct databases (rdbms) and tasklist modes
             # (e2e) remain separate rows.
             | unique_by([.version, .file, .test_name, (.database // ""), (.tasklist_mode // "")])
+            # Collapse cross-matrix duplicates: the same (file, test_name) failing
+            # across many database engines (api_rdbms) or tasklist modes (e2e) is one
+            # underlying failure, not one entry per variant. Left uncollapsed, a
+            # single test failing on every RDBMS engine can produce dozens of
+            # near-identical rows that fill a version'"'"'s dispatch quota (the
+            # per-version cap below) before genuinely distinct failures -- e.g. an
+            # unrelated E2E test -- ever get a slot (this is what happened on
+            # 2026-09-16: 56 rows from one agent-instance test failing across every
+            # RDBMS engine crowded out 11 distinct main-branch E2E failures). Keep one
+            # representative row per (version, file, test_name) and note the other
+            # variants in its error text so the fix agent still knows it is
+            # cross-engine.
+            | group_by([.version, .file, .test_name])
+            | map(
+                (map(.database // .tasklist_mode // empty) | unique) as $variants
+                | .[0]
+                | if ($variants | length) > 1
+                  then .error = (.error + " [also fails on: " + ($variants | join(", ")) + "]")
+                  else .
+                  end
+              )
           ' /tmp/all_failures.jsonl > /tmp/failures_normalized.json
 
           echo "After normalization + filtering: $(jq 'length' /tmp/failures_normalized.json)"
