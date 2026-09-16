@@ -11,8 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
-import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
-import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -184,28 +182,22 @@ public class RdbmsExporterWrapper implements Exporter {
     }
 
     switch (config.getAsyncReplication().getType()) {
-      case LOG_SEQ -> {
-        final ReplicationLsnProvider replicationLsnProvider =
-            rdbmsService.getReplicationLsnProvider();
-        builder.replicationControllerFactory(
-            new LsnReplicationControllerFactory(
-                replicationLsnProvider,
-                config.getAsyncReplication(),
-                partitionId,
-                clock,
-                rdbmsWriters.getMetrics()));
-      }
-      case TIME_LAG -> {
-        final ReplicationLagProvider replicationLagProvider =
-            rdbmsService.getReplicationLagProvider();
-        builder.replicationControllerFactory(
-            new TimeMonitoringReplicationControllerFactory(
-                replicationLagProvider,
-                config.getAsyncReplication(),
-                partitionId,
-                clock,
-                rdbmsWriters.getMetrics()));
-      }
+      case LOG_SEQ ->
+          builder.replicationControllerFactory(
+              new LsnReplicationControllerFactory(
+                  rdbmsService::getReplicationLsnProvider,
+                  config.getAsyncReplication(),
+                  partitionId,
+                  clock,
+                  rdbmsWriters.getMetrics()));
+      case TIME_LAG ->
+          builder.replicationControllerFactory(
+              new TimeMonitoringReplicationControllerFactory(
+                  rdbmsService::getReplicationLagProvider,
+                  config.getAsyncReplication(),
+                  partitionId,
+                  clock,
+                  rdbmsWriters.getMetrics()));
       case DELAY ->
           builder.replicationControllerFactory(
               new DelayReplicationControllerFactory(
