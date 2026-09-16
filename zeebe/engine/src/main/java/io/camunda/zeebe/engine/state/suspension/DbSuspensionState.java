@@ -47,7 +47,7 @@ public final class DbSuspensionState implements MutableSuspensionState {
             suspensionMarkerValue);
     bufferedCommandByProcessInstanceKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY,
+            ZbColumnFamilies.BUFFERED_COMMANDS_BY_PROCESS_INSTANCE_KEY,
             transactionContext,
             processInstanceKeyAndBufferedCommandKey,
             dbBufferedCommand);
