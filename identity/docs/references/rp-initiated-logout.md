@@ -193,10 +193,14 @@ starting with `/` would have kept the prefix and needed one entry per cluster. Q
 form in YAML, or it parses as a map rather than a string.
 
 The same keys work on the flat `camunda.security.authentication.oidc.*` block, which counts as one
-more provider — keyed by its `registration-id` (default `oidc`) — and gets its own independent
-answer. That block only becomes a provider once its `client-id` is set, so setting
-`post-logout-redirect-uri` there alone has no effect. A deployment can therefore set a URI on the flat block and a different one, or none, on each
-`providers.oidc.<id>` entry:
+more provider, keyed by its `registration-id` (default `oidc`). Two things to know about it:
+
+- It only becomes a provider once its `client-id` is set, so setting `post-logout-redirect-uri`
+  there alone has no effect.
+- A `providers.oidc.<id>` entry **replaces** the flat block when the two share a registration id.
+  The entries are merged whole, not field by field, so with a `providers.oidc.oidc` entry present
+  the default-id flat block contributes nothing at all — including its post-logout settings. A deployment can therefore set a URI on the flat block and a different one, or none, on each
+  `providers.oidc.<id>` entry:
 
 ```yaml
 camunda:
