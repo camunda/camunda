@@ -7,28 +7,33 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static dev.hegel.Generators.composite;
+import static dev.hegel.Generators.integers;
+import static dev.hegel.Generators.oneOf;
+import static dev.hegel.Generators.sampledFrom;
+import static dev.hegel.Generators.sets;
+
+import dev.hegel.Generator;
 import io.atomix.cluster.MemberId;
 import java.util.Set;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.Combinators;
-import net.jqwik.api.Provide;
-import net.jqwik.api.domains.DomainContextBase;
 
-/** Arbitraries generating {@link MemberId}s that are valid according to its constructors. */
-public final class MemberIdArbitraries extends DomainContextBase {
+/** Generators for {@link MemberId}s that are valid according to its constructors. */
+public final class MemberIdArbitraries {
 
-  @Provide
-  Arbitrary<MemberId> memberId() {
-    final var nonZoned = Arbitraries.integers().between(0, 50).map(MemberId::from);
-    final var zone = Arbitraries.of("zone-a", "zone-b", "zone-c", "region1");
-    final var nodeIdx = Arbitraries.integers().between(0, 50);
-    final var zoned = Combinators.combine(zone, nodeIdx).as(MemberId::from);
-    return Arbitraries.oneOf(nonZoned, zoned);
+  private MemberIdArbitraries() {}
+
+  public static Generator<MemberId> memberId() {
+    final Generator<MemberId> nonZoned = integers().min(0).max(50).map(MemberId::from);
+    final Generator<MemberId> zoned =
+        composite(
+            tc ->
+                MemberId.from(
+                    tc.draw(sampledFrom("zone-a", "zone-b", "zone-c", "region1")),
+                    tc.draw(integers().min(0).max(50))));
+    return oneOf(nonZoned, zoned);
   }
 
-  @Provide
-  Arbitrary<Set<MemberId>> memberIds() {
-    return memberId().set().ofMaxSize(20);
+  public static Generator<Set<MemberId>> memberIds() {
+    return sets(memberId()).maxSize(20);
   }
 }

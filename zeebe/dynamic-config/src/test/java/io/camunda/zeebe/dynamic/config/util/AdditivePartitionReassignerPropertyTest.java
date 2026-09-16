@@ -7,8 +7,11 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static dev.hegel.Generators.integers;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
@@ -19,9 +22,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.constraints.IntRange;
 
 /**
  * Property-based tests for {@link AdditivePartitionReassigner}, in the style of {@code
@@ -41,12 +41,13 @@ final class AdditivePartitionReassignerPropertyTest {
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
   private final AdditivePartitionReassigner reassigner = new AdditivePartitionReassigner();
 
-  @Property(tries = 50)
-  void shouldSatisfyDistributionInvariantsWhenAddingPartitions(
-      @ForAll @IntRange(min = 1, max = 4) final int replicationFactor,
-      @ForAll @IntRange(min = 0, max = 10) final int extraMembers,
-      @ForAll @IntRange(min = 1, max = 30) final int oldPartitionCount,
-      @ForAll @IntRange(min = 0, max = 20) final int additionalPartitionCount) {
+  @HegelTest(testCases = 50)
+  void shouldSatisfyDistributionInvariantsWhenAddingPartitions(final TestCase tc) {
+    final int replicationFactor = tc.draw(integers().min(1).max(4), "replicationFactor");
+    final int extraMembers = tc.draw(integers().min(0).max(10), "extraMembers");
+    final int oldPartitionCount = tc.draw(integers().min(1).max(30), "oldPartitionCount");
+    final int additionalPartitionCount =
+        tc.draw(integers().min(0).max(20), "additionalPartitionCount");
     final int clusterSize = replicationFactor + extraMembers;
     final Set<MemberId> targetMembers = members(clusterSize);
     final int newPartitionCount = oldPartitionCount + additionalPartitionCount;

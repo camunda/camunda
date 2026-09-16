@@ -73,8 +73,8 @@
     </dependency>
 
     <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-api</artifactId>
+      <groupId>dev.hegel</groupId>
+      <artifactId>hegel-jna</artifactId>
       <scope>test</scope>
     </dependency>
 

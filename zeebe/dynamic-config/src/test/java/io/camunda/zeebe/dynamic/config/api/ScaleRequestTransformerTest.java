@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static dev.hegel.Generators.integers;
 import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
@@ -55,11 +58,6 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import net.jqwik.api.EdgeCasesMode;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.ShrinkingMode;
-import net.jqwik.api.constraints.IntRange;
 import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -83,61 +81,61 @@ class ScaleRequestTransformerTest {
         .toList();
   }
 
-  @Property(tries = 10)
-  void shouldScaleAndReassignWithReplicationFactor1(
-      @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
-      @ForAll @IntRange(min = 1, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 1, max = 100) final int newClusterSize) {
+  @HegelTest(testCases = 10)
+  void shouldScaleAndReassignWithReplicationFactor1(final TestCase tc) {
+    final int partitionCount = tc.draw(integers().min(1).max(100), "partitionCount");
+    final int oldClusterSize = tc.draw(integers().min(1).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(1).max(100), "newClusterSize");
     shouldScaleAndReassign(partitionCount, 1, oldClusterSize, newClusterSize);
   }
 
-  @Property(tries = 10)
-  void shouldScaleAndReassignWithReplicationFactor2(
-      @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
-      @ForAll @IntRange(min = 2, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 2, max = 100) final int newClusterSize) {
+  @HegelTest(testCases = 10)
+  void shouldScaleAndReassignWithReplicationFactor2(final TestCase tc) {
+    final int partitionCount = tc.draw(integers().min(1).max(100), "partitionCount");
+    final int oldClusterSize = tc.draw(integers().min(2).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(2).max(100), "newClusterSize");
     shouldScaleAndReassign(partitionCount, 2, oldClusterSize, newClusterSize);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
-  void shouldScaleAndReassignWithReplicationFactor3(
-      @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
-      @ForAll @IntRange(min = 3, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 3, max = 100) final int newClusterSize) {
+  @HegelTest(testCases = 10)
+  void shouldScaleAndReassignWithReplicationFactor3(final TestCase tc) {
+    final int partitionCount = tc.draw(integers().min(1).max(100), "partitionCount");
+    final int oldClusterSize = tc.draw(integers().min(3).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(3).max(100), "newClusterSize");
     shouldScaleAndReassign(partitionCount, 3, oldClusterSize, newClusterSize);
   }
 
-  @Property(tries = 10)
-  void shouldScaleAndReassignWithReplicationFactor4(
-      @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
-      @ForAll @IntRange(min = 4, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 4, max = 100) final int newClusterSize) {
+  @HegelTest(testCases = 10)
+  void shouldScaleAndReassignWithReplicationFactor4(final TestCase tc) {
+    final int partitionCount = tc.draw(integers().min(1).max(100), "partitionCount");
+    final int oldClusterSize = tc.draw(integers().min(4).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(4).max(100), "newClusterSize");
     shouldScaleAndReassign(partitionCount, 4, oldClusterSize, newClusterSize);
   }
 
-  @Property
-  void shouldFailIfClusterSizeLessThanReplicationFactor3(
-      @ForAll @IntRange(min = 0, max = 2) final int newClusterSize) {
+  @HegelTest
+  void shouldFailIfClusterSizeLessThanReplicationFactor3(final TestCase tc) {
+    final int newClusterSize = tc.draw(integers().min(0).max(2), "newClusterSize");
     shouldFailIfClusterSizeLessThanReplicationFactor(3, 3, 3, newClusterSize);
   }
 
-  @Property
-  void shouldFailIfClusterSizeLessThanReplicationFactor4(
-      @ForAll @IntRange(min = 0, max = 3) final int newClusterSize) {
+  @HegelTest
+  void shouldFailIfClusterSizeLessThanReplicationFactor4(final TestCase tc) {
+    final int newClusterSize = tc.draw(integers().min(0).max(3), "newClusterSize");
     shouldFailIfClusterSizeLessThanReplicationFactor(12, 4, 6, newClusterSize);
   }
 
-  @Property
-  void shouldFailIfDesiredPartitionCountIsLessThanNewPartitions(
-      @ForAll @IntRange(min = 1, max = 100) final int currentPartitionCount,
-      @ForAll @IntRange(min = 1, max = 100) final int desiredPartitionCount) {
+  @HegelTest
+  void shouldFailIfDesiredPartitionCountIsLessThanNewPartitions(final TestCase tc) {
+    final int currentPartitionCount = tc.draw(integers().min(1).max(100), "currentPartitionCount");
+    final int desiredPartitionCount = tc.draw(integers().min(1).max(100), "desiredPartitionCount");
     scaleUpWithValidation(currentPartitionCount, desiredPartitionCount, null);
   }
 
-  @Property
-  void shouldGenerateScaleUpOperationForAllPartition1Members(
-      @ForAll @IntRange(min = 1, max = 100) final int currentPartitionCount,
-      @ForAll @IntRange(min = 1, max = 100) final int newPartitionCount) {
+  @HegelTest
+  void shouldGenerateScaleUpOperationForAllPartition1Members(final TestCase tc) {
+    final int currentPartitionCount = tc.draw(integers().min(1).max(100), "currentPartitionCount");
+    final int newPartitionCount = tc.draw(integers().min(1).max(100), "newPartitionCount");
     final var desiredPartitionCount = currentPartitionCount + newPartitionCount;
     scaleUpWithValidation(
         currentPartitionCount,

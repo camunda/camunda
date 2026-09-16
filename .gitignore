@@ -32,7 +32,7 @@ faces-config.NavData
 *.lock.db
 .cache-main
 .cache-tests
-.jqwik-database
+.hegel/
 .run
 
 *.DS_Store

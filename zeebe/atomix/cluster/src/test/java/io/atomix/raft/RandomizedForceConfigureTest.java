@@ -15,9 +15,15 @@
  */
 package io.atomix.raft;
 
+import static dev.hegel.Generators.longs;
 import static io.atomix.raft.cluster.RaftMember.Type.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HealthCheck;
+import dev.hegel.HegelTest;
+import dev.hegel.OptBoolean;
+import dev.hegel.Phase;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.impl.ReconfigurationHelper;
@@ -31,15 +37,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.EdgeCasesMode;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.Provide;
-import net.jqwik.api.ShrinkingMode;
-import net.jqwik.api.lifecycle.AfterTry;
-import net.jqwik.api.lifecycle.BeforeProperty;
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +54,7 @@ public final class RandomizedForceConfigureTest {
   private List<MemberId> raftMembers;
   private Path raftDataDirectory;
 
-  @BeforeProperty
+  @BeforeEach
   public void initOperations() {
     // Need members ids to generate pair operations
     final var servers =
@@ -69,73 +67,83 @@ public final class RandomizedForceConfigureTest {
     raftMembers = servers;
   }
 
-  @AfterTry
-  public void shutDownRaftNodes() throws IOException {
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  public void correctnessTest(final TestCase tc) throws Exception {
+    // given - the seed drawn from Hegel determines the operation sequence, the members each
+    // operation is applied to, and the raft nodes' own randomness, so a reported seed replays the
+    // whole case.
+    final long seed = tc.draw(longs(), "seed");
+    LOG.info("Running test case with seed {}", seed);
+    final var random = new Random(seed);
+    final var raftOperations = RandomSequence.of(random, defaultOperations, OPERATION_SIZE);
+    final var raftMembers = RandomSequence.of(random, this.raftMembers, OPERATION_SIZE);
+    setUpRaftNodes(random);
+    try {
+      // Wait until all members are ready. It doesn't make sense to force configure before all
+      // members
+      // have bootstrapped.
+      while (!(raftContexts.allMembersAreReady())) {
+        raftContexts.runUntilDone();
+        raftContexts.processAllMessage();
+        raftContexts.tickHeartbeatTimeout();
+      }
+
+      // when - execute operations including force configure (0,2)
+      final var memberIter = raftMembers.iterator();
+      for (final RaftOperation operation : raftOperations) {
+        final MemberId member = memberIter.next();
+        LOG.info("{} on {}", operation, member);
+        operation.run(raftContexts, member);
+      }
+
+      // Run force configure once again in case the previous ones timed out
+      forceConfigureOperation.run(raftContexts, MemberId.from("0"));
+      // run until force configure is completed
+      for (int i = 0; i < 10; i++) {
+        raftContexts.runUntilDone();
+        raftContexts.processAllMessage();
+        raftContexts.tickHeartbeatTimeout();
+      }
+
+      final var newMembers =
+          Map.of(
+              MemberId.from("0"),
+              raftContexts.getRaftContext(0),
+              MemberId.from("2"),
+              raftContexts.getRaftContext(2));
+      runUntilMembersAreInSync(newMembers);
+
+      // then
+
+      assertThatConfigurationContainsOnly0and2(0);
+      assertThatConfigurationContainsOnly0and2(2);
+
+      // eventually a leader should be elected
+      assertThat(raftContexts.hasLeaderAtTheLatestTerm())
+          .describedAs("Leader election should be completed if there are no messages lost.")
+          .isTrue();
+
+      raftContexts.assertAllEntriesCommittedAndReplicatedToAll(newMembers);
+      raftContexts.assertAllLogsEqual();
+      raftContexts.assertNoGapsInLog();
+      raftContexts.assertNoJournalAppendErrors();
+      raftContexts.assertNoDataLoss();
+    } finally {
+      shutDownRaftNodes();
+    }
+  }
+
+  private void shutDownRaftNodes() throws IOException {
     raftContexts.shutdown();
     FileUtil.deleteFolder(raftDataDirectory);
     raftDataDirectory = null;
-    // reset the future, so it can be run again in the next try
+    // reset the future, so it can be run again in the next test case
     forceConfigureOperation.reset();
-    LOG.info("=== Try completed ===");
-  }
-
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
-  public void correctnessTest(
-      @ForAll("raftOperations") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-    // given
-    setUpRaftNodes(new Random(seed));
-
-    // Wait until all members are ready. It doesn't make sense to force configure before all members
-    // have bootstrapped.
-    while (!(raftContexts.allMembersAreReady())) {
-      raftContexts.runUntilDone();
-      raftContexts.processAllMessage();
-      raftContexts.tickHeartbeatTimeout();
-    }
-
-    // when - execute operations including force configure (0,2)
-    final var memberIter = raftMembers.iterator();
-    for (final RaftOperation operation : raftOperations) {
-      final MemberId member = memberIter.next();
-      LOG.info("{} on {}", operation, member);
-      operation.run(raftContexts, member);
-    }
-
-    // Run force configure once again in case the previous ones timed out
-    forceConfigureOperation.run(raftContexts, MemberId.from("0"));
-    // run until force configure is completed
-    for (int i = 0; i < 10; i++) {
-      raftContexts.runUntilDone();
-      raftContexts.processAllMessage();
-      raftContexts.tickHeartbeatTimeout();
-    }
-
-    final var newMembers =
-        Map.of(
-            MemberId.from("0"),
-            raftContexts.getRaftContext(0),
-            MemberId.from("2"),
-            raftContexts.getRaftContext(2));
-    runUntilMembersAreInSync(newMembers);
-
-    // then
-
-    assertThatConfigurationContainsOnly0and2(0);
-    assertThatConfigurationContainsOnly0and2(2);
-
-    // eventually a leader should be elected
-    assertThat(raftContexts.hasLeaderAtTheLatestTerm())
-        .describedAs("Leader election should be completed if there are no messages lost.")
-        .isTrue();
-
-    raftContexts.assertAllEntriesCommittedAndReplicatedToAll(newMembers);
-    raftContexts.assertAllLogsEqual();
-    raftContexts.assertNoGapsInLog();
-    raftContexts.assertNoJournalAppendErrors();
-    raftContexts.assertNoDataLoss();
+    LOG.info("=== Test case completed ===");
   }
 
   private void runUntilMembersAreInSync(final Map<MemberId, RaftContext> newMembers) {
@@ -158,23 +166,6 @@ public final class RandomizedForceConfigureTest {
     assertThat(members)
         .describedAs("Configuration must have only members 0 and 2")
         .containsExactlyInAnyOrder("0", "2");
-  }
-
-  @Provide
-  Arbitrary<List<RaftOperation>> raftOperations() {
-    final var operation = Arbitraries.of(defaultOperations);
-    return operation.list().ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<List<MemberId>> raftMembers() {
-    final var members = Arbitraries.of(raftMembers);
-    return members.list().ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<Long> seeds() {
-    return Arbitraries.longs();
   }
 
   private void setUpRaftNodes(final Random random) throws Exception {

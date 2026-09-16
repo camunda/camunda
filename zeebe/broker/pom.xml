@@ -451,16 +451,9 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- required to run both jqwik and junit as test engines -->
     <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-api</artifactId>
+      <groupId>dev.hegel</groupId>
+      <artifactId>hegel-jna</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -507,9 +500,6 @@
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>io.camunda:zeebe-journal</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
-          <usedDependencies>
-            <dependency>net.jqwik:jqwik</dependency>
-          </usedDependencies>
         </configuration>
       </plugin>
 
