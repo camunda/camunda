@@ -376,10 +376,12 @@ jobs:
                  elif (.database // "") != "" then "api_rdbms"
                  else ("e2e:" + (.tasklist_mode // "")) end)])
             | map(
-                (map(.database // empty) | unique) as $variants
-                | .[0]
-                | if ($variants | length) > 1
-                  then .error = (.error + " [also fails on: " + ($variants | join(", ")) + "]")
+                .[0] as $representative
+                | (map(.database // empty) | unique
+                    | map(select(. != $representative.database))) as $others
+                | $representative
+                | if ($others | length) > 0
+                  then .error = (.error + " [also fails on: " + ($others | join(", ")) + "]")
                   else .
                   end
               )
