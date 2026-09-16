@@ -276,6 +276,6 @@ public final class CheckpointRecordsProcessor
     // previous leader. So mark them as failed, so that the users do not wait forever for it to be
     // completed.
     final var state = requireNonNull(checkpointState);
-    backupManager.failInProgressBackup(state.getLatestCheckpointId(), state.getLatestBackupId());
+    backupManager.failInProgressBackup(state.getLatestCheckpointId());
   }
 }
