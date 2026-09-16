@@ -315,8 +315,10 @@ complexity for the parity payoff; run it per module on the module you're fixing.
 Compares the packaged distribution produced by the `dist/` project between Gradle and Maven.
 `compare-module-deps.py` diffs a single module's resolved classpath; `compare-dist.py` checks
 the actual shipped distribution. In ZIP mode it compares the versioned root and JAR
-names/versions under `lib/`; other file-content differences are intentionally ignored. In the
-legacy tar/directory mode it compares the JAR names and versions under `lib/`.
+names/versions under `lib/`; other file-content differences are intentionally ignored. When
+`dist/build/reports/dist-dependencies.json` is present or passed with `--gradle-manifest`,
+patch-only JAR differences are ignored only for Gradle-transitive artifacts. In the legacy
+tar/directory mode it compares the JAR names and versions under `lib/`.
 
 ```bash
 # Full ZIP archive comparison
@@ -332,7 +334,15 @@ python3 .claude/skills/gradle-build-parity/compare-dist.py \
 
 Use it after a module-level fix to compare the versions and dependency set that actually land
 in the shipped distribution, and to catch packaging gaps that per-module classpath diffs miss
-(e.g. a dep present on a classpath but excluded from the assembly).
+(e.g. a dep present on a classpath but excluded from the assembly). Generate the Gradle
+manifest before comparing when the distribution was not built by the CI packaging command. The task
+is supplied by the `buildlogic.distribution-dependency-report-conventions` plugin and is
+intentionally not part of `assembleDist` or `distZip`; each packaged distribution can configure its
+exclusions or filename mappings:
+
+```bash
+./gradlew --no-configuration-cache :camunda-zeebe:writeDistDependencyReport
+```
 
 ## Reference Files
 
