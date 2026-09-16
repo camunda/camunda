@@ -39,7 +39,7 @@ const useTranslate = (ns?: string) => {
     );
   };
 
-  return { t, Translate };
+  return { t, Translate, i18n };
 };
 
 export default useTranslate;
