@@ -9,6 +9,7 @@
 import {useEffect} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
+import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
 import {useProcessInstanceWaitStateStatistics} from '#/operate/pages/ProcessInstance/processInstance.queries';
 import {useProcessInstancePage} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
 import {
@@ -19,7 +20,8 @@ import {
 const ProcessInstanceDefaultTabRedirect: React.FC = () => {
 	const navigate = useNavigate();
 	const {processInstanceId, processInstance, selection} = useProcessInstancePage();
-	const {data, isPending, isFetching, isError, isEnabled} = useProcessInstanceWaitStateStatistics(processInstance);
+	const {data, isPending, isFetching, isError} = useProcessInstanceWaitStateStatistics(processInstance);
+	const isEnabled = isInstanceRunning(processInstance);
 
 	useEffect(() => {
 		if (isEnabled && (isPending || isFetching || isError)) {

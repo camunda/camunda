@@ -19,7 +19,7 @@ import {drainingProcessDefinitionsQuery} from '#/operate/pages/Dashboard/Instanc
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {hasCalledProcessInstances} from '#/operate/shared/utils/elements';
-import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
+import {getProcessDefinitionName, isInstanceRunning} from '#/operate/shared/utils/processInstance';
 import {getWaitStateLabel} from '#/operate/shared/utils/waitStates';
 import {isWidthBelowBreakpoint, useMatchMedia} from '#/operate/shared/useMatchMedia';
 import {processInstanceIncidentsCountQuery, useProcessInstanceWaitStateStatistics} from './processInstance.queries';
@@ -52,9 +52,9 @@ const ProcessInstanceHeader: React.FC<Props> = ({operations}) => {
 	const {
 		data: waitStateStatistics,
 		isError: isWaitStateError,
-		isEnabled: isWaitStateEnabled,
 		refetch: refetchWaitStates,
 	} = useProcessInstanceWaitStateStatistics(instance);
+	const isWaitStateEnabled = isInstanceRunning(instance);
 	const waitingCount = waitStateStatistics?.find(({elementId}) => elementId === processDefinitionId)?.waitingCount ?? 0;
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data: currentUser} = useQuery(queries.getCurrentUser());
