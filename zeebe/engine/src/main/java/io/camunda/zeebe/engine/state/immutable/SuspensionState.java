@@ -50,11 +50,10 @@ public interface SuspensionState {
    * Reads the head of the process instance's FIFO buffer without scanning the rest of it, so that
    * draining one command per {@code DRAIN} cycle stays cheap no matter how much is buffered.
    *
-   * @return the oldest buffered command, or {@link Optional#empty()} if the process instance has
-   *     none buffered, or if the secondary index has an entry with no matching primary record (an
-   *     inconsistency that is logged but must not throw here, as it sits on the resume hot path)
+   * @return the oldest buffered command after {@code afterCommandKey}, or {@link Optional#empty()}
+   *     if none remain
    */
-  Optional<BufferedCommand> getOldestBufferedCommand(long processInstanceKey);
+  Optional<BufferedCommand> findNextBufferedCommand(long processInstanceKey, long afterCommandKey);
 
   /**
    * Counts the buffered commands for the given process instance without reading their values,

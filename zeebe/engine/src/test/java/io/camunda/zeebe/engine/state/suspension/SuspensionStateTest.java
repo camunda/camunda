@@ -192,6 +192,26 @@ public final class SuspensionStateTest {
   }
 
   @Test
+  public void shouldNotAliasVisitedCommandsAcrossMultipleRows() {
+    // given
+    final long processInstanceKey = 1L;
+    suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKey, 1L));
+    suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
+    suspensionState.bufferCommand(30L, bufferedCommandRecord(processInstanceKey, 3L));
+
+    // when
+    final List<BufferedCommandRecordValue> visitedValues = new ArrayList<>();
+    suspensionState.visitBufferedCommands(
+        processInstanceKey, (key, value) -> visitedValues.add(value));
+
+    // then
+    assertThat(visitedValues).hasSize(3);
+    assertThat(visitedValues.get(0).getCommandKey()).isEqualTo(1L);
+    assertThat(visitedValues.get(1).getCommandKey()).isEqualTo(2L);
+    assertThat(visitedValues.get(2).getCommandKey()).isEqualTo(3L);
+  }
+
+  @Test
   public void shouldOnlyVisitBufferedCommandsOfRequestedProcessInstance() {
     // given
     final long processInstanceKeyA = 1L;
@@ -214,24 +234,25 @@ public final class SuspensionStateTest {
   }
 
   @Test
-  public void shouldGetOldestBufferedCommandRegardlessOfInsertionOrder() {
+  public void shouldSkipEntryMatchingAfterCommandKeyAndReturnTheNextOne() {
     // given
     final long processInstanceKey = 1L;
-    suspensionState.bufferCommand(30L, bufferedCommandRecord(processInstanceKey, 3L));
     suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKey, 1L));
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
+    suspensionState.bufferCommand(30L, bufferedCommandRecord(processInstanceKey, 3L));
 
-    // when
-    final var oldest = suspensionState.getOldestBufferedCommand(processInstanceKey);
+    // when - afterCommandKey (10L) is still buffered, unlike the drain hot path where it was
+    // already removed by the DRAINED applier before this call is made
+    final var nextBufferedCommand =
+        suspensionState.findNextBufferedCommand(processInstanceKey, 10L);
 
     // then
-    assertThat(oldest).isPresent();
-    assertThat(oldest.get().key()).isEqualTo(10L);
-    assertThat(oldest.get().command().getCommandKey()).isEqualTo(1L);
+    assertThat(nextBufferedCommand).isPresent();
+    assertThat(nextBufferedCommand.get().key()).isEqualTo(20L);
   }
 
   @Test
-  public void shouldGetOldestBufferedCommandOfRequestedProcessInstanceOnly() {
+  public void shouldFindNextBufferedCommandOfRequestedProcessInstanceOnly() {
     // given
     final long processInstanceKeyA = 1L;
     final long processInstanceKeyB = 2L;
@@ -239,32 +260,43 @@ public final class SuspensionStateTest {
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKeyB, 2L));
 
     // when - then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKeyB).orElseThrow().key())
+    assertThat(
+            suspensionState.findNextBufferedCommand(processInstanceKeyB, -1L).orElseThrow().key())
         .isEqualTo(20L);
   }
 
   @Test
-  public void shouldNotGetOldestBufferedCommandWithNothingBuffered() {
+  public void shouldNotFindNextBufferedCommandWithNothingBuffered() {
     // given
     final long processInstanceKey = 1L;
 
     // when - then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey)).isEmpty();
+    assertThat(suspensionState.findNextBufferedCommand(processInstanceKey, -1L)).isEmpty();
   }
 
   @Test
-  public void shouldGetNextOldestBufferedCommandAfterTheOldestIsRemoved() {
+  public void shouldFindNextBufferedCommandAfterTheOldestIsRemoved() {
     // given
     final long processInstanceKey = 1L;
     suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKey, 1L));
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
 
     // when - the drain removes the head of the buffer
-    suspensionState.removeBufferedCommand(10L);
+    suspensionState.removeBufferedCommand(processInstanceKey, 10L);
 
     // then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey).orElseThrow().key())
+    assertThat(suspensionState.findNextBufferedCommand(processInstanceKey, -1L).orElseThrow().key())
         .isEqualTo(20L);
+  }
+
+  @Test
+  public void shouldReportEmptyWhenQueryingAfterTheOnlyRemainingCommand() {
+    // given - a single buffered command, not yet removed
+    final long processInstanceKey = 1L;
+    suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKey, 1L));
+
+    // when - then - asking for whatever comes after the only entry there is
+    assertThat(suspensionState.findNextBufferedCommand(processInstanceKey, 10L)).isEmpty();
   }
 
   @Test
@@ -275,7 +307,7 @@ public final class SuspensionStateTest {
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
 
     // when
-    suspensionState.removeBufferedCommand(10L);
+    suspensionState.removeBufferedCommand(processInstanceKey, 10L);
 
     // then
     final List<Long> visitedKeys = new ArrayList<>();
@@ -324,7 +356,7 @@ public final class SuspensionStateTest {
     assertThat(suspensionState.countBufferedCommands(processInstanceKeyB)).isEqualTo(1);
 
     // when — removing one of A's commands
-    suspensionState.removeBufferedCommand(10L);
+    suspensionState.removeBufferedCommand(processInstanceKeyA, 10L);
 
     // then
     assertThat(suspensionState.countBufferedCommands(processInstanceKeyA)).isEqualTo(1);
@@ -336,7 +368,8 @@ public final class SuspensionStateTest {
     final long processInstanceKey = 1L;
 
     // when - then (no exception)
-    assertThatCode(() -> suspensionState.removeBufferedCommand(10L)).doesNotThrowAnyException();
+    assertThatCode(() -> suspensionState.removeBufferedCommand(processInstanceKey, 10L))
+        .doesNotThrowAnyException();
     assertThatCode(() -> suspensionState.clearBufferedCommands(processInstanceKey))
         .doesNotThrowAnyException();
 
