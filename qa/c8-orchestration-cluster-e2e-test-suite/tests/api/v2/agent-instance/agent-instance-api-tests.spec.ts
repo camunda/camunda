@@ -47,10 +47,12 @@ const JOB_TYPE_PLACEHOLDER = 'agent-instance-api-test';
 const PROCESS_DEFINITION_ID = 'AgentInstance_AdHocSubProcess_API_Test';
 const AGENT_ELEMENT_ID = 'AdHoc_Subprocess';
 
-// A well-formed but never-allocated key on partition 1 (single-partition test
-// stack). Used for not-found assertions on both element-instance and
-// agent-instance lookups.
-const NON_EXISTENT_KEY = '2251799813700001';
+// A well-formed but out-of-range key, far beyond anything the key generator
+// could reach during a test run — see the convention used across tests/api/v2
+// (e.g. resource-get-api.spec.ts, user-task-get-api-tests.spec.ts). A key from
+// the same numeric neighborhood as real generated keys risks colliding with
+// one actually allocated during the run.
+const NON_EXISTENT_KEY = '9999999999999999';
 
 const CREATE_ENDPOINT = '/agent-instances';
 const GET_ENDPOINT = '/agent-instances/{agentInstanceKey}';

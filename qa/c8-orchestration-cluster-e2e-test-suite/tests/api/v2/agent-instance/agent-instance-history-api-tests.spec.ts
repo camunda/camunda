@@ -37,7 +37,9 @@ const RESOURCE_PATH =
   './resources/agent_instance_ad_hoc_sub_process_api_test.bpmn';
 const JOB_TYPE_PLACEHOLDER = 'agent-instance-api-test';
 const PROCESS_DEFINITION_ID = 'AgentInstance_AdHocSubProcess_API_Test';
-const NON_EXISTENT_KEY = '2251799813700002';
+// A well-formed but out-of-range key — see agent-instance-api-tests.spec.ts for
+// why this must be far outside the range of real generated keys.
+const NON_EXISTENT_KEY = '9999999999999999';
 const CREATE_ENDPOINT = '/agent-instances';
 const HISTORY_SEARCH_ENDPOINT =
   '/agent-instances/{agentInstanceKey}/history/search';
