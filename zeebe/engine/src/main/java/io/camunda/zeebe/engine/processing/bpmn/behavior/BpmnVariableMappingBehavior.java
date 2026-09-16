@@ -150,6 +150,7 @@ public final class BpmnVariableMappingBehavior {
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = record.getProcessDefinitionKey();
     final long processInstanceKey = record.getProcessInstanceKey();
+    final int storageOrdinal = context.getStorageOrdinal();
     final String tenantId = context.getTenantId();
     final Optional<OutputMappings> outputMappings = element.getOutputMappings();
 
@@ -165,7 +166,8 @@ public final class BpmnVariableMappingBehavior {
           eventTrigger.getEventKey(),
           processDefinitionKey,
           processInstanceKey,
-          context.getTenantId(),
+          storageOrdinal,
+          tenantId,
           elementInstanceKey,
           element.getId());
     }
@@ -240,6 +242,7 @@ public final class BpmnVariableMappingBehavior {
           record.getProcessDefinitionKey(),
           record.getProcessInstanceKey(),
           context.getRootProcessInstanceKey(),
+          context.getStorageOrdinal(),
           context.getBpmnProcessId(),
           context.getTenantId(),
           result);
@@ -265,6 +268,7 @@ public final class BpmnVariableMappingBehavior {
           record.getProcessDefinitionKey(),
           record.getProcessInstanceKey(),
           context.getRootProcessInstanceKey(),
+          context.getStorageOrdinal(),
           context.getBpmnProcessId(),
           context.getTenantId(),
           result);

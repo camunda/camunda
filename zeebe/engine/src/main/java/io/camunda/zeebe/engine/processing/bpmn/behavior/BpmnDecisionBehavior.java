@@ -189,6 +189,7 @@ public final class BpmnDecisionBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setElementId(context.getElementId())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinal(context.getStorageOrdinal())
         .setBusinessId(getBusinessIdFromProcessInstance(context));
 
     stateWriter.appendFollowUpEvent(
@@ -214,6 +215,7 @@ public final class BpmnDecisionBehavior {
     eventTriggerBehavior.triggeringProcessEvent(
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
+        context.getStorageOrdinal(),
         context.getTenantId(),
         context.getElementInstanceKey(),
         context.getElementId(),

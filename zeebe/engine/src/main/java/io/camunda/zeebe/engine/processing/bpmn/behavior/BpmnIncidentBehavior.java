@@ -100,6 +100,7 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
             .setBpmnProcessId(job.getBpmnProcessIdBuffer())
             .setProcessDefinitionKey(job.getProcessDefinitionKey())
             .setProcessInstanceKey(job.getProcessInstanceKey())
+            .setStorageOrdinal(job.getStorageOrdinal())
             .setElementId(job.getElementIdBuffer())
             .setElementInstanceKey(job.getElementInstanceKey())
             .setJobKey(jobKey)
@@ -130,6 +131,7 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
     incidentRecord.reset();
     incidentRecord
         .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setStorageOrdinal(context.getStorageOrdinal())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setElementInstanceKey(context.getElementInstanceKey())
