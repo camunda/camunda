@@ -86,7 +86,7 @@ public class AgentInstanceCompleteWithoutCommandBatchingTest {
             .getValue()
             .getJobs()
             .get(firstJobBatch.getValue().getJobKeys().indexOf(firstJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var secondJobBatch = ENGINE.jobs().withType("other-agent").withLease().activate();
     final var secondJobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -99,7 +99,7 @@ public class AgentInstanceCompleteWithoutCommandBatchingTest {
             .getValue()
             .getJobs()
             .get(secondJobBatch.getValue().getJobKeys().indexOf(secondJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var firstAgentInstanceKey =
         ENGINE
             .agentInstances()

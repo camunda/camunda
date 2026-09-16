@@ -70,7 +70,7 @@ final class BulkIndexRequest {
   private static final String PRIORITY_PROPERTY = "priority";
   private static final String ELEMENT_TYPE_PROPERTY = "elementType";
   private static final String BUSINESS_ID_PROPERTY = "businessId";
-  private static final String LEASE_TOKEN_PROPERTY = "leaseToken";
+  private static final String JOB_LEASE_TOKEN_PROPERTY = "jobLeaseToken";
   private static final String SECRET_REFERENCES_PROPERTY = "secretReferences";
   private static final String WITH_LEASE_PROPERTY = "withLease";
   private static final String METADATA_PROPERTY = "metadata";
@@ -200,7 +200,7 @@ final class BulkIndexRequest {
     PRIORITY_PROPERTY,
     ELEMENT_TYPE_PROPERTY,
     BUSINESS_ID_PROPERTY,
-    LEASE_TOKEN_PROPERTY,
+    JOB_LEASE_TOKEN_PROPERTY,
     SECRET_REFERENCES_PROPERTY,
     STORAGE_ORDINAL_PROPERTY
   })

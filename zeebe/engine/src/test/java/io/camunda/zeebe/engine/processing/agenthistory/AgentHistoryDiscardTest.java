@@ -241,7 +241,7 @@ public class AgentHistoryDiscardTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     return new ActivatedJob(jobKey, jobLease);
   }
 

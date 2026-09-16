@@ -97,13 +97,13 @@ public class AgentHistoryCommitTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final long agentInstanceKey =
         createAgentInstance(elementInstanceKey, jobKey, jobLease).getKey();
     final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, jobLease);
 
     // when
-    ENGINE.job().withKey(jobKey).withLeaseToken(jobLease).complete();
+    ENGINE.job().withKey(jobKey).withJobLeaseToken(jobLease).complete();
 
     // then
     final var committed =
@@ -158,13 +158,13 @@ public class AgentHistoryCommitTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final long agentInstanceKey =
         createAgentInstance(elementInstanceKey, jobKey, jobLease).getKey();
     final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, jobLease);
 
     // when
-    ENGINE.job().withKey(jobKey).withLeaseToken(jobLease).complete();
+    ENGINE.job().withKey(jobKey).withJobLeaseToken(jobLease).complete();
 
     // then
     final var committed =
@@ -236,13 +236,13 @@ public class AgentHistoryCommitTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final long agentInstanceKey =
         createAgentInstance(elementInstanceKey, jobKey, jobLease).getKey();
     final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, jobLease);
 
     // when
-    ENGINE.job().withKey(jobKey).withLeaseToken(jobLease).complete();
+    ENGINE.job().withKey(jobKey).withJobLeaseToken(jobLease).complete();
 
     // then
     final var committed =
@@ -262,7 +262,7 @@ public class AgentHistoryCommitTest {
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
     final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
 
-    ENGINE.job().withKey(job.key()).withLeaseToken(job.leaseToken()).complete();
+    ENGINE.job().withKey(job.key()).withJobLeaseToken(job.jobLeaseToken()).complete();
 
     final var commitCommand =
         RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMIT)
@@ -280,9 +280,9 @@ public class AgentHistoryCommitTest {
 
     final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, job.key(), job.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, job.key(), job.jobLeaseToken()).getKey();
     final var itemKey =
-        createHistoryItem(agentInstanceKey, job.key(), elementInstanceKey, job.leaseToken());
+        createHistoryItem(agentInstanceKey, job.key(), elementInstanceKey, job.jobLeaseToken());
 
     final var committed = ENGINE.agentHistories().withJobKey(job.key()).commit();
 
@@ -300,7 +300,7 @@ public class AgentHistoryCommitTest {
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
     final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
 
-    ENGINE.job().withKey(job.key()).withLeaseToken(job.leaseToken()).complete();
+    ENGINE.job().withKey(job.key()).withJobLeaseToken(job.jobLeaseToken()).complete();
 
     final var commitCommand =
         RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMIT)
@@ -317,7 +317,7 @@ public class AgentHistoryCommitTest {
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
     final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, job.key(), job.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, job.key(), job.jobLeaseToken()).getKey();
 
     final var item =
         new AgentHistoryRecord()
@@ -341,7 +341,7 @@ public class AgentHistoryCommitTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(job.key())
-        .withJobLease(job.leaseToken())
+        .withJobLease(job.jobLeaseToken())
         .withHistory(List.of(item))
         .update();
 
@@ -363,7 +363,7 @@ public class AgentHistoryCommitTest {
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
     final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, job.key(), job.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, job.key(), job.jobLeaseToken()).getKey();
 
     // Two items share jobKey but have different leases — COMMIT with no lease must commit both
     // regardless of lease.
@@ -402,7 +402,7 @@ public class AgentHistoryCommitTest {
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
     final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, job.key(), job.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, job.key(), job.jobLeaseToken()).getKey();
 
     // lease-1 and lease-2 items share jobKey; the unrelated job's item also carries lease-1 — it
     // must not be affected by the COMMIT, proving the filter is scoped to jobKey.
@@ -449,26 +449,26 @@ public class AgentHistoryCommitTest {
     // Activation 1 (superseded): create a history item, then fail to trigger re-activation.
     final var job1 = activateJobForProcessInstanceWithLease(processInstanceKey);
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, job1.key(), job1.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, job1.key(), job1.jobLeaseToken()).getKey();
     final long supersededItemKey =
-        createHistoryItem(agentInstanceKey, job1.key(), elementInstanceKey, job1.leaseToken());
+        createHistoryItem(agentInstanceKey, job1.key(), elementInstanceKey, job1.jobLeaseToken());
 
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
-        .withLeaseToken(job1.leaseToken())
+        .withJobLeaseToken(job1.jobLeaseToken())
         .withRetries(1)
         .fail();
 
     // Activation 2 (winning): create a history item, then complete the job.
     final var job2 = activateJobForProcessInstanceWithLease(processInstanceKey);
     assertThat(job2.key()).as("re-activation must reuse the same job key").isEqualTo(job1.key());
-    assertThat(job2.leaseToken())
+    assertThat(job2.jobLeaseToken())
         .as("re-activation must advance the lease token")
-        .isNotEqualTo(job1.leaseToken());
+        .isNotEqualTo(job1.jobLeaseToken());
     final long winningItemKey =
-        createHistoryItem(agentInstanceKey, job2.key(), elementInstanceKey, job2.leaseToken());
+        createHistoryItem(agentInstanceKey, job2.key(), elementInstanceKey, job2.jobLeaseToken());
     // Guard against the winning item silently collapsing into the superseded item: if it did, the
     // assertions below would pass vacuously with only one item ever having existed.
     assertThat(winningItemKey).isNotEqualTo(supersededItemKey);
@@ -477,7 +477,7 @@ public class AgentHistoryCommitTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
-        .withLeaseToken(job2.leaseToken())
+        .withJobLeaseToken(job2.jobLeaseToken())
         .complete();
 
     // JobCompleteProcessor emits AGENT_HISTORY:COMMIT; scope subsequent assertions to it.
@@ -488,7 +488,7 @@ public class AgentHistoryCommitTest {
     final long commitPosition = firstCommitted.getSourceRecordPosition();
     final long clockResetKey = ENGINE.clock().reset().getKey();
 
-    // visitByJobLease(job2.leaseToken()) → winning item COMMITTED
+    // visitByJobLease(job2.jobLeaseToken()) → winning item COMMITTED
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getKey() == clockResetKey)
@@ -520,7 +520,7 @@ public class AgentHistoryCommitTest {
     // agent instance immediately, before the job later fails and is re-activated.
     final var job1 = activateJobForProcessInstanceWithLease(processInstanceKey);
     final var agentInstanceKey =
-        createAgentInstance(elementInstanceKey, job1.key(), job1.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, job1.key(), job1.jobLeaseToken()).getKey();
     final var supersededItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-superseded")
@@ -537,7 +537,7 @@ public class AgentHistoryCommitTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(job1.key())
-            .withJobLease(job1.leaseToken())
+            .withJobLease(job1.jobLeaseToken())
             .withHistory(List.of(supersededItem))
             .update();
     final long supersededItemKey = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
@@ -546,7 +546,7 @@ public class AgentHistoryCommitTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
-        .withLeaseToken(job1.leaseToken())
+        .withJobLeaseToken(job1.jobLeaseToken())
         .withRetries(1)
         .fail();
 
@@ -569,7 +569,7 @@ public class AgentHistoryCommitTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(job2.key())
-            .withJobLease(job2.leaseToken())
+            .withJobLease(job2.jobLeaseToken())
             .withHistory(List.of(winningItem))
             .update();
     final long winningItemKey = secondUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
@@ -591,7 +591,7 @@ public class AgentHistoryCommitTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
-        .withLeaseToken(job2.leaseToken())
+        .withJobLeaseToken(job2.jobLeaseToken())
         .complete();
 
     // JobCompleteProcessor emits AGENT_HISTORY:COMMIT; scope subsequent assertions to it.
@@ -669,7 +669,7 @@ public class AgentHistoryCommitTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(job1.key())
-            .withJobLease(job1.leaseToken())
+            .withJobLease(job1.jobLeaseToken())
             .withHistory(List.of(baselineConfigItem))
             .create()
             .getKey();
@@ -687,7 +687,7 @@ public class AgentHistoryCommitTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(job1.key())
-            .withJobLease(job1.leaseToken())
+            .withJobLease(job1.jobLeaseToken())
             .withHistory(List.of(supersededConfigItem))
             .update();
     final long supersededItemKey = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
@@ -696,7 +696,7 @@ public class AgentHistoryCommitTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
-        .withLeaseToken(job1.leaseToken())
+        .withJobLeaseToken(job1.jobLeaseToken())
         .withRetries(1)
         .fail();
 
@@ -708,7 +708,7 @@ public class AgentHistoryCommitTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
-        .withLeaseToken(job2.leaseToken())
+        .withJobLeaseToken(job2.jobLeaseToken())
         .complete();
 
     // then — the superseded CONFIGURATION item is discarded, never committed
@@ -819,7 +819,7 @@ public class AgentHistoryCommitTest {
 
     final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
     final long agentInstanceKey =
-        createAgentInstance(elementInstanceKey, job.key(), job.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, job.key(), job.jobLeaseToken()).getKey();
 
     return createHistoryItem(agentInstanceKey, job.key(), elementInstanceKey, jobLease);
   }
@@ -837,9 +837,9 @@ public class AgentHistoryCommitTest {
     assertThat(jobIndex)
         .as("expected activated job batch to contain job key %d", jobKey)
         .isGreaterThanOrEqualTo(0);
-    final String leaseToken = batchRecord.getValue().getJobs().get(jobIndex).getLeaseToken();
-    return new ActivatedJob(jobKey, leaseToken);
+    final String jobLeaseToken = batchRecord.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    return new ActivatedJob(jobKey, jobLeaseToken);
   }
 
-  private record ActivatedJob(long key, String leaseToken) {}
+  private record ActivatedJob(long key, String jobLeaseToken) {}
 }

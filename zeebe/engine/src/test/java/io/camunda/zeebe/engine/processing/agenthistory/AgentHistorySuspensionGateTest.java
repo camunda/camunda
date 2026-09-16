@@ -55,11 +55,12 @@ public class AgentHistorySuspensionGateTest {
 
     final var jobLease = activateJobForProcessInstance(processInstanceKey);
     final long agentInstanceKey =
-        createAgentInstance(elementInstanceKey, jobLease.jobKey(), jobLease.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, jobLease.jobKey(), jobLease.jobLeaseToken())
+            .getKey();
     final long jobKey = jobLease.jobKey();
     final long historyItemKey =
         createHistoryItem(
-            agentInstanceKey, jobLease.jobKey(), jobLease.leaseToken(), elementInstanceKey);
+            agentInstanceKey, jobLease.jobKey(), jobLease.jobLeaseToken(), elementInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -91,11 +92,12 @@ public class AgentHistorySuspensionGateTest {
 
     final var jobLease = activateJobForProcessInstance(processInstanceKey);
     final long agentInstanceKey =
-        createAgentInstance(elementInstanceKey, jobLease.jobKey(), jobLease.leaseToken()).getKey();
+        createAgentInstance(elementInstanceKey, jobLease.jobKey(), jobLease.jobLeaseToken())
+            .getKey();
     final long jobKey = jobLease.jobKey();
     final long historyItemKey =
         createHistoryItem(
-            agentInstanceKey, jobLease.jobKey(), jobLease.leaseToken(), elementInstanceKey);
+            agentInstanceKey, jobLease.jobKey(), jobLease.jobLeaseToken(), elementInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
@@ -155,13 +157,13 @@ public class AgentHistorySuspensionGateTest {
             .withType(JOB_TYPE)
             .getFirst()
             .getKey();
-    final var leaseToken =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
-    return new JobLease(jobKey, leaseToken);
+            .getJobLeaseToken();
+    return new JobLease(jobKey, jobLeaseToken);
   }
 
   // AGENT_HISTORY:CREATE is dead; AGENT_INSTANCE:UPDATE with a history batch is the only live
@@ -196,5 +198,5 @@ public class AgentHistorySuspensionGateTest {
         .getKey();
   }
 
-  private record JobLease(long jobKey, String leaseToken) {}
+  private record JobLease(long jobKey, String jobLeaseToken) {}
 }

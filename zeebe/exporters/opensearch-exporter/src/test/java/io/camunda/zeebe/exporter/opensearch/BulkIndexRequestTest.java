@@ -534,14 +534,14 @@ final class BulkIndexRequestTest {
     }
 
     @Test
-    void shouldIndexJobRecordWithoutLeaseTokenOnPreviousVersion() throws IOException {
+    void shouldIndexJobRecordWithoutJobLeaseTokenOnPreviousVersion() throws IOException {
       // given
       final var record =
           recordFactory.generateRecord(
               ValueType.JOB,
               r ->
                   r.withBrokerVersion(VersionUtil.getPreviousVersion())
-                      .withValue(new JobRecord().setLeaseToken("lease-abc-123")));
+                      .withValue(new JobRecord().setJobLeaseToken("lease-abc-123")));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -554,20 +554,20 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
           .describedAs(
-              "Expect that job records are NOT serialized with leaseToken on previous version")
+              "Expect that job records are NOT serialized with jobLeaseToken on previous version")
           .allSatisfy(
-              value -> assertThat((Map<String, Object>) value).doesNotContainKey("leaseToken"));
+              value -> assertThat((Map<String, Object>) value).doesNotContainKey("jobLeaseToken"));
     }
 
     @Test
-    void shouldIndexJobRecordWithLeaseTokenOnCurrentVersion() throws IOException {
+    void shouldIndexJobRecordWithJobLeaseTokenOnCurrentVersion() throws IOException {
       // given
       final var record =
           recordFactory.generateRecord(
               ValueType.JOB,
               r ->
                   r.withBrokerVersion(VersionUtil.getVersion())
-                      .withValue(new JobRecord().setLeaseToken("lease-abc-123")));
+                      .withValue(new JobRecord().setJobLeaseToken("lease-abc-123")));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -579,8 +579,9 @@ final class BulkIndexRequestTest {
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("leaseToken"))
-          .describedAs("Expect that job records are serialized with leaseToken on current version")
+          .extracting(source -> ((Map<String, Object>) source).get("jobLeaseToken"))
+          .describedAs(
+              "Expect that job records are serialized with jobLeaseToken on current version")
           .containsExactly("lease-abc-123");
     }
 

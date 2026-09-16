@@ -405,7 +405,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   public AgentHistoryRecord ignoreLease() {
-    return setJobLease(JobRecord.EMPTY_LEASE);
+    return setJobLease(JobRecord.EMPTY_JOB_LEASE_TOKEN);
   }
 
   public AgentHistoryRecord addChangedAttribute(final String attribute) {

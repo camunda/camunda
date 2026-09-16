@@ -152,7 +152,7 @@ public interface JobRecordValue
    *
    * @return the current lease token, or an empty string when the job has no active lease
    */
-  String getLeaseToken();
+  String getJobLeaseToken();
 
   /**
    * @return the bpmn process id of the corresponding process definition

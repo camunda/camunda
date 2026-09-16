@@ -36,7 +36,7 @@ public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecor
   }
 
   public BrokerThrowErrorRequest setJobLeaseToken(final String jobLeaseToken) {
-    requestDto.setLeaseToken(jobLeaseToken);
+    requestDto.setJobLeaseToken(jobLeaseToken);
     return this;
   }
 

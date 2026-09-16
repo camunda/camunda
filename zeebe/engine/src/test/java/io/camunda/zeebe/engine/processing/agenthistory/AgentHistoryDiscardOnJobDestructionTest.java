@@ -93,7 +93,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(AGENTIC_JOB_TYPE)
-        .withLeaseToken(fixture.jobLease)
+        .withJobLeaseToken(fixture.jobLease)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
@@ -147,7 +147,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(EXTERNAL_AGENT_JOB_TYPE)
-        .withLeaseToken(fixture.jobLease)
+        .withJobLeaseToken(fixture.jobLease)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
@@ -283,7 +283,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final long agentInstanceKey =
         ENGINE
