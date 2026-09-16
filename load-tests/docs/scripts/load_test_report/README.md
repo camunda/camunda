@@ -33,7 +33,13 @@ Format Python files:
 make format
 ```
 
-Run Ruff linting and formatting checks:
+Run mypy type checks:
+
+```bash
+make type-check
+```
+
+Run mypy, Ruff linting, and formatting checks:
 
 ```bash
 make lint
@@ -144,8 +150,8 @@ key order and the CSV or TSV column order.
 
 Fields:
 
-- `key`: machine key, used as the JSON `metrics` object key and CSV or TSV column
-  identifier.
+- `key`: machine key, used as the JSON `metrics` object key and to preserve column
+  order in CSV or TSV output.
 - `description`: human-readable explanation of what the column measures.
 - `header`: human column label for CSV or TSV output.
 - `query`: PromQL query evaluated against Prometheus.
