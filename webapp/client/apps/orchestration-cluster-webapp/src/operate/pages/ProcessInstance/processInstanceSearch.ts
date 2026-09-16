@@ -9,7 +9,7 @@
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {z} from 'zod';
 
-const processInstanceSelectionSchema = z.looseObject({
+const processInstanceSelectionSchema = z.object({
 	elementId: z.coerce.string().optional(),
 	elementInstanceKey: z.coerce.string().optional(),
 	isMultiInstanceBody: z.boolean().optional(),
@@ -17,7 +17,10 @@ const processInstanceSelectionSchema = z.looseObject({
 	anchorElementId: z.coerce.string().optional(),
 });
 
-const processInstanceSearchSchema = processInstanceSelectionSchema;
+const processInstanceSearchSchema: z.ZodType<
+	ProcessInstanceSelection,
+	z.input<typeof processInstanceSelectionSchema>
+> = processInstanceSelectionSchema.loose();
 
 type ProcessInstanceSearch = z.infer<typeof processInstanceSearchSchema>;
 type ProcessInstanceSelection = z.infer<typeof processInstanceSelectionSchema>;
