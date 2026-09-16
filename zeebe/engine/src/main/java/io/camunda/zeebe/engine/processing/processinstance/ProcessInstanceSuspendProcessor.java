@@ -98,10 +98,7 @@ public final class ProcessInstanceSuspendProcessor
     }
 
     final ProcessInstanceRecord value = elementInstance.getValue();
-    // Park jobs before the instance-level SUSPENDED event so suspension is complete when the
-    // marker is written. A later SUSPENDING intermediate state can chunk this work first.
-    final int suspendedJobCount = suspensionJobBehavior.suspendJobs(command.getKey());
-    suspensionSubscriptionBehavior.closeSubscriptions(command.getKey());
+    final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(command.getKey());
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
@@ -109,6 +106,18 @@ public final class ProcessInstanceSuspendProcessor
     if (suspendedJobCount > 0) {
       suspensionMetrics.jobsSuspended(suspendedJobCount);
     }
+  }
+
+  /**
+   * Keep this order, closing subscriptions first keeps RocksDB seeks cheap. Currently, subscription
+   * closures visit all element instance subscriptions which runs a RocksDB seek command. If the
+   * order is reversed, job suspensions will write to the transaction batch first, which requires
+   * the seek command to also check against those batched writes. See <a
+   * href="https://github.com/camunda/camunda/issues/62933">#62933</a>.
+   */
+  private int closeSubscriptionsAndSuspendJobs(final long processInstanceKey) {
+    suspensionSubscriptionBehavior.closeSubscriptions(processInstanceKey);
+    return suspensionJobBehavior.suspendJobs(processInstanceKey);
   }
 
   private boolean validateCommand(
