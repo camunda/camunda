@@ -40,11 +40,6 @@ type Props = {
   editModeTitle?: string;
   readOnly?: boolean;
   allowModeToggle?: boolean;
-  /**
-   * When set, the copied value is wrapped as `{"<variableName>": <value>}` to
-   * match the list-level variable copy. Only variable call sites should pass
-   * this — other consumers (e.g. incident error messages) must not.
-   */
   variableName?: string;
 };
 
