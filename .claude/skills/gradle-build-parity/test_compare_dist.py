@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +19,19 @@ class DistributionComparisonTest(unittest.TestCase):
         with ZipFile(path, "w") as archive:
             for jar in jars:
                 archive.writestr(f"{root}/lib/{jar}", b"payload")
+        return path
+
+    def create_manifest(self, directory: Path, jars: list[str], direct: bool = False) -> Path:
+        path = directory / "dist-dependencies.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "artifacts": [
+                        {"file": jar, "direct": direct} for jar in jars
+                    ]
+                }
+            )
+        )
         return path
 
     def test_should_inventory_archive_names_without_reading_payloads(self):
@@ -56,7 +70,22 @@ class DistributionComparisonTest(unittest.TestCase):
                 directory, "maven.zip", "camunda-zeebe-1.0.0", ["example-1.0.0.jar"]
             )
 
-            self.assertEqual(MODULE.compare(str(gradle), str(maven)), 0)
+            manifest = self.create_manifest(directory, ["example-1.0.1.jar"])
+
+            self.assertEqual(MODULE.compare(str(gradle), str(maven), str(manifest)), 0)
+
+    def test_should_report_patch_only_direct_jar_version_mismatches(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            gradle = self.create_archive(
+                directory, "gradle.zip", "camunda-zeebe-1.0.0", ["example-1.0.1.jar"]
+            )
+            maven = self.create_archive(
+                directory, "maven.zip", "camunda-zeebe-1.0.0", ["example-1.0.0.jar"]
+            )
+            manifest = self.create_manifest(directory, ["example-1.0.1.jar"], direct=True)
+
+            self.assertEqual(MODULE.compare(str(gradle), str(maven), str(manifest)), 2)
 
     def test_should_report_minor_jar_version_mismatches(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
