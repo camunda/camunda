@@ -109,6 +109,18 @@ public final class SecretResolutionLifecycleTest {
             .withSecretReference("token")
             .getFirst();
     assertThat(reactivated.getValue().getJobKeys()).containsExactly(jobKey);
+    // the park and the un-park are both observable on the JOB record stream, so the wait-state
+    // exporter can mark the job secret-parked and then revert it to a plain job wait
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.SECRET_RESOLUTION_PARKED)
+                .withRecordKey(jobKey)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.SECRET_RESOLUTION_RESUMED)
+                .withRecordKey(jobKey)
+                .exists())
+        .isTrue();
     final Record<JobBatchRecordValue> activated =
         engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
     assertThat(activated.getValue().getJobKeys()).containsExactly(jobKey);
