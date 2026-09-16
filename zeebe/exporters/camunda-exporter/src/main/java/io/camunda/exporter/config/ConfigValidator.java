@@ -9,7 +9,6 @@ package io.camunda.exporter.config;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Predicate;
@@ -53,37 +52,11 @@ public final class ConfigValidator {
     }
 
     final String configuredPrefix = configuration.getConnect().getIndexPrefix();
-    if (IndexPrefixValidation.hasInvalidCharacters(configuredPrefix)) {
-      throw new ExporterException(
-          "CamundaExporter index.prefix must not contain invalid characters [\\ / * ? \" < > | space _ , # :].");
-    }
-    if (IndexPrefixValidation.hasInvalidLeadingCharacter(configuredPrefix)) {
-      throw new ExporterException(
-          "CamundaExporter index.prefix must not begin with invalid characters [. + - _].");
-    }
-    if (!ConnectionTypes.isElasticSearch(configuration.getConnect().getType())
-        && IndexPrefixValidation.hasInvalidCharactersForOpensearch(configuredPrefix)) {
-      throw new ExporterException(
-          String.format(
-              "CamundaExporter index.prefix must not contain invalid characters [+] when "
-                  + "connect.type is opensearch. Current value: '%s'",
-              configuredPrefix));
-    }
-    if (IndexPrefixValidation.hasUppercaseCharacters(configuredPrefix)) {
-      throw new ExporterException(
-          String.format(
-              "CamundaExporter index.prefix must not contain uppercase characters. Current value: '%s'",
-              configuredPrefix));
-    }
-    if (IndexPrefixValidation.exceedsMaxLength(configuredPrefix)) {
-      throw new ExporterException(
-          String.format(
-              "CamundaExporter index.prefix must not exceed %d bytes (UTF-8), to keep generated "
-                  + "index names within Elasticsearch/OpenSearch's 255-byte limit. Current "
-                  + "value: '%s' (%d bytes)",
-              IndexPrefixValidation.MAX_PREFIX_LENGTH,
-              configuredPrefix,
-              configuredPrefix.getBytes(StandardCharsets.UTF_8).length));
+    IndexPrefixValidation.validateIndexPrefix(
+        "CamundaExporter index.prefix", configuredPrefix, false);
+    if (!ConnectionTypes.isElasticSearch(configuration.getConnect().getType())) {
+      IndexPrefixValidation.validateNoPlusCharacter(
+          "CamundaExporter index.prefix", configuredPrefix);
     }
 
     final Integer numberOfShards = configuration.getIndex().getNumberOfShards();
