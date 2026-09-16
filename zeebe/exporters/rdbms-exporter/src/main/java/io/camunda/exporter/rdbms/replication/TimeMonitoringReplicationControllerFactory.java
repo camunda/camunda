@@ -12,22 +12,23 @@ import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import java.time.InstantSource;
+import java.util.function.Supplier;
 
 public class TimeMonitoringReplicationControllerFactory implements ReplicationControllerFactory {
 
-  private final ReplicationLagProvider statusProvider;
+  private final Supplier<ReplicationLagProvider> replicationLagProviderSupplier;
   private final ReplicationConfiguration config;
   private final int partitionId;
   private final InstantSource clock;
   private final RdbmsWriterMetrics metrics;
 
   public TimeMonitoringReplicationControllerFactory(
-      final ReplicationLagProvider statusProvider,
+      final Supplier<ReplicationLagProvider> replicationLagProviderSupplier,
       final ReplicationConfiguration config,
       final int partitionId,
       final InstantSource clock,
       final RdbmsWriterMetrics metrics) {
-    this.statusProvider = statusProvider;
+    this.replicationLagProviderSupplier = replicationLagProviderSupplier;
     this.config = config;
     this.partitionId = partitionId;
     this.clock = clock;
@@ -36,7 +37,8 @@ public class TimeMonitoringReplicationControllerFactory implements ReplicationCo
 
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
-    final var strategy = new TimeMonitoringReplicationSignalStrategy(statusProvider, config);
+    final var strategy =
+        new TimeMonitoringReplicationSignalStrategy(replicationLagProviderSupplier.get(), config);
     return new DefaultReplicationController(
         controller, strategy, config, partitionId, clock, metrics);
   }
