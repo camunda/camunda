@@ -358,7 +358,21 @@ jobs:
             # representative row per (version, file, test_name) and note the other
             # variants in its error text so the fix agent still knows it is
             # cross-engine.
-            | group_by([.version, .file, .test_name])
+            #
+            # The group key includes a backend "family" (api_es / api_rdbms / e2e),
+            # not just (version, file, test_name): api_es and api_rdbms are separate
+            # nightly runs with separate run IDs (api_es_run_id / api_rdbms_run_id),
+            # and the fix workflow decides which artifacts to download from each
+            # test_spec'"'"'s .database value. Collapsing across families would keep
+            # only one family'"'"'s .database on the merged row and silently drop the
+            # other family'"'"'s report from diagnosis/verification for a spec that
+            # fails on both. Only distinct RDBMS engines (or e2e tasklist modes)
+            # collapse into each other; es and rdbms rows for the same spec stay
+            # separate rows.
+            | group_by([.version, .file, .test_name,
+                (if (.database // "") == "elasticsearch" then "api_es"
+                 elif (.database // "") != "" then "api_rdbms"
+                 else "e2e" end)])
             | map(
                 (map(.database // .tasklist_mode // empty) | unique) as $variants
                 | .[0]
