@@ -52,6 +52,7 @@ function processInstanceIncidentsCountQuery({
 			const result: QueryProcessInstanceIncidentsResponseBody = await response.json();
 			return result.page.totalItems;
 		},
+		select: (count) => (hasIncident ? count : 0),
 		staleTime: POLLING_INTERVAL_MS,
 		refetchInterval: POLLING_INTERVAL_MS,
 	});

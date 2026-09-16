@@ -18,13 +18,13 @@ import {
 } from './processInstanceSearch';
 
 describe('hasProcessInstanceSelection', () => {
-	it('should parse known selection values and strip unknown keys', () => {
+	it('should validate selection values while preserving other query context', () => {
 		const parsed = processInstanceSearchSchema.parse({
 			elementId: 'task',
 			elementInstanceKey: 123,
-			unknown: 'keep-out',
+			customHint: 'focus',
 		});
-		expect(parsed).toEqual({elementId: 'task', elementInstanceKey: '123'});
+		expect(parsed).toEqual({elementId: 'task', elementInstanceKey: '123', customHint: 'focus'});
 	});
 
 	it('should treat empty-string selections as missing after parsing', () => {

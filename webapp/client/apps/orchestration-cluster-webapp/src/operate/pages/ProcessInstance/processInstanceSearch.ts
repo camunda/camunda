@@ -9,7 +9,7 @@
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {z} from 'zod';
 
-const processInstanceSelectionSchema = z.object({
+const processInstanceSelectionSchema = z.looseObject({
 	elementId: z.coerce.string().optional(),
 	elementInstanceKey: z.coerce.string().optional(),
 	isMultiInstanceBody: z.boolean().optional(),

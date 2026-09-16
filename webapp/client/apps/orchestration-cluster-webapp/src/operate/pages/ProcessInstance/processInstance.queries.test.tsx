@@ -141,7 +141,7 @@ it('should count only active incidents without fetching incident rows', async ({
 	).toBe(3);
 });
 
-it('should wait for reported incidents before loading their count', async ({worker}) => {
+it('should load counts only for reported incidents and hide resolved counts', async ({worker}) => {
 	function Preview() {
 		const [hasIncident, setHasIncident] = useState(false);
 		const {data = 0, isFetching} = useQuery(
@@ -149,7 +149,9 @@ it('should wait for reported incidents before loading their count', async ({work
 		);
 		return (
 			<>
-				<button onClick={() => setHasIncident(true)}>Report incident</button>
+				<button onClick={() => setHasIncident(!hasIncident)}>
+					{hasIncident ? 'Resolve incidents' : 'Report incident'}
+				</button>
 				<output>{isFetching ? 'Loading' : `${data} incidents`}</output>
 			</>
 		);
@@ -165,6 +167,8 @@ it('should wait for reported incidents before loading their count', async ({work
 	await expect.element(screen.getByRole('status')).toHaveTextContent('0 incidents');
 	await userEvent.click(screen.getByRole('button', {name: 'Report incident'}));
 	await expect.element(screen.getByRole('status')).toHaveTextContent('3 incidents');
+	await userEvent.click(screen.getByRole('button', {name: 'Resolve incidents'}));
+	await expect.element(screen.getByRole('status')).toHaveTextContent('0 incidents');
 });
 
 it('should clear cached waiting state after the instance stops running', async ({worker}) => {
