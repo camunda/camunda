@@ -360,6 +360,15 @@ jobs:
             # failures). Keep one representative row per (version, file, test_name)
             # and note the other engines in its error text.
             #
+            # The group key also includes the normalized .error text: two engines
+            # only collapse together when their error is byte-identical. This is
+            # what makes dropping .[1..] safe -- every member of a group already
+            # has the exact same diagnostic text as the representative, so nothing
+            # is lost. An engine whose failure has genuinely different diagnostics
+            # (a real per-engine bug, not just a shared code path failing the same
+            # way everywhere) keeps its own row instead of being silently merged
+            # into a representative that doesn'"'"'t describe it.
+            #
             # api_es and e2e rows are NOT collapsed across variants, only
             # deduplicated by the exact match above:
             #   - api_es is a separate nightly run with its own run ID
@@ -371,7 +380,7 @@ jobs:
             #     verbatim to pick which Tasklist generation to stand up -- collapsing
             #     v1 and v2 rows together would let it verify in only one mode and
             #     silently miss (or falsely "fix") a failure specific to the other.
-            | group_by([.version, .file, .test_name,
+            | group_by([.version, .file, .test_name, .error,
                 (if (.database // "") == "elasticsearch" then "api_es"
                  elif (.database // "") != "" then "api_rdbms"
                  else ("e2e:" + (.tasklist_mode // "")) end)])
