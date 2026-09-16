@@ -13,9 +13,10 @@ type Props = {
 	fallbackText: string;
 	href?: string;
 	label?: string;
+	children?: React.ReactNode;
 };
 
-const ItemKeyCell: React.FC<Props> = ({itemKey, fallbackText, href, label}) => {
+const ItemKeyCell: React.FC<Props> = ({itemKey, fallbackText, href, label, children}) => {
 	if (itemKey === '-1') {
 		return <>{fallbackText}</>;
 	}
@@ -28,7 +29,7 @@ const ItemKeyCell: React.FC<Props> = ({itemKey, fallbackText, href, label}) => {
 		);
 	}
 
-	return <>{itemKey}</>;
+	return <>{children ?? itemKey}</>;
 };
 
 export {ItemKeyCell};

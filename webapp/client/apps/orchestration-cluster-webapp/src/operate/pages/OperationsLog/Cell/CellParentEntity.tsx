@@ -7,6 +7,7 @@
  */
 
 import {Link} from '@carbon/react';
+import {createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {isValidProcessInstanceKey} from '#/operate/shared/OperationsLogDetailsModal/operationsLogUtils';
@@ -15,6 +16,8 @@ type Props = {
 	item: AuditLog;
 	processDefinitionName?: string | null;
 };
+
+const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
 
 const CellParentEntity: React.FC<Props> = ({item, processDefinitionName}) => {
 	const {t} = useTranslation();
@@ -26,12 +29,13 @@ const CellParentEntity: React.FC<Props> = ({item, processDefinitionName}) => {
 			return isValidProcessInstanceKey(item.processInstanceKey) ? (
 				<div>
 					<div>
-						<Link
-							href={`/operate/processes/${item.processInstanceKey}`}
+						<ProcessInstanceLink
+							to="/operate/processes/$processInstanceId"
+							params={{processInstanceId: item.processInstanceKey}}
 							aria-label={t('operate.operationsLog.entityLinks.viewProcessInstance', {key: item.processInstanceKey})}
 						>
 							{item.processInstanceKey}
-						</Link>
+						</ProcessInstanceLink>
 					</div>
 					<em>{processDefinitionName}</em>
 				</div>

@@ -9,6 +9,7 @@
 import styled from 'styled-components';
 import {styles} from '@carbon/type';
 import {Link} from '@carbon/react';
+import {createLink} from '@tanstack/react-router';
 import {Error as BaseError} from '@carbon/react/icons';
 import {PanelHeader as BasePanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 
@@ -66,11 +67,11 @@ const ProcessName = styled.div`
 	gap: var(--cds-spacing-04);
 `;
 
-const InstanceLink = styled(Link)`
+const InstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(styled(Link)`
 	&& {
 		text-decoration: underline;
 	}
-`;
+`);
 
 const VisuallyHiddenStatus = styled.span`
 	position: absolute;
