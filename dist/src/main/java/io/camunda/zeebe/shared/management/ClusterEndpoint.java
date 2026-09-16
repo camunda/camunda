@@ -447,7 +447,7 @@ public class ClusterEndpoint {
     return withValidMembers(
         removeIds,
         members -> {
-          final var forceRemoveRequest=
+          final var forceRemoveRequest =
               new ForceRemoveBrokersRequest(new HashSet<>(members), dryRun);
           return ClusterApiUtils.mapOperationResponse(
               requestSender.forceRemoveBrokers(forceRemoveRequest).join());
