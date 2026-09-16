@@ -38,7 +38,15 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
                 value.getType(),
                 value.getJobKind(),
                 listenerEventType(value),
-                value.getRetries()));
+                value.getRetries(),
+                // The pending flag is derived per record from the intent, not from prior wait
+                // state. Each update replaces the stored details wholesale, so an unrelated update
+                // on a still-parked job (e.g. RETRIES_UPDATED or MIGRATED) transiently clears this
+                // flag until the next SECRET_RESOLUTION_PARKED re-parks it. This is acceptable:
+                // such updates are rare on parked jobs, and the following resolution attempt either
+                // resumes the job (SECRET_RESOLUTION_RESUMED) or re-parks it. FAILED cannot occur
+                // while parked, since failing a job requires it to be ACTIVATED.
+                record.getIntent() == JobIntent.SECRET_RESOLUTION_PARKED));
   }
 
   /**

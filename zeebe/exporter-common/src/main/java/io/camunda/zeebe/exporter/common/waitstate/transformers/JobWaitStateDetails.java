@@ -24,5 +24,11 @@ public record JobWaitStateDetails(
      * Non-null only for {@link JobKind#EXECUTION_LISTENER} and {@link JobKind#TASK_LISTENER} jobs.
      */
     @Nullable JobListenerEventType listenerEventType,
-    int retries)
+    int retries,
+    /**
+     * {@code true} while the job is parked awaiting resolution of a referenced secret that is not
+     * yet cached, so a reader can distinguish it from a plain job wait (an unclaimed job). Defaults
+     * to {@code false}.
+     */
+    boolean secretResolutionPending)
     implements WaitStateDetails {}
