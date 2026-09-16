@@ -3,14 +3,8 @@
 apiVersion: k8s.keycloak.org/v2beta1
 kind: Keycloak
 metadata:
-  namespace: keycloak-operator
-  name: c8-golden-stable-810-none-physical-tenants
+  name: keycloak
   labels:
-    # The load test namespace this Keycloak CR belongs to (the CR itself lives
-    # in the shared keycloak-operator namespace, named after it).
-    camunda.io/load-test-namespace: "c8-golden-stable-810-none-physical-tenants"
-    # Same convention/key as the load test namespace's own deadline-date label,
-    # so this CR can be found/cleaned up the same way.
     deadline-date: TEST_DATE
     camunda.io/created-by: "golden-test"
     camunda.io/purpose: load-test
@@ -23,18 +17,18 @@ spec:
 
   bootstrapAdmin:
     user:
-      secret: "c8-golden-stable-810-none-physical-tenants-admin"
+      secret: "keycloak-admin-user"
 
   # Configure the access to the underlying PostgreSQL database.
   db:
     # The "aws-wrapper" driver should be compatible with Plain PostgreSQL.
-    url: "jdbc:aws-wrapper:postgresql://postgresql-keycloak-rw.c8-golden-stable-810-none-physical-tenants/keycloak"
+    url: "jdbc:aws-wrapper:postgresql://postgresql-keycloak-rw/keycloak"
     # Configure the credentials to authenticate to PostgreSQL.
     usernameSecret:
-      name: "c8-golden-stable-810-none-physical-tenants-postgresql"
+      name: "postgresql-keycloak-user"
       key: username
     passwordSecret:
-      name: "c8-golden-stable-810-none-physical-tenants-postgresql"
+      name: "postgresql-keycloak-user"
       key: password
 
   http:
@@ -42,7 +36,7 @@ spec:
     # Use a non-default port to avoid conflict with Zeebe Gateway on port 8080
     # during port-forwarding.
     httpPort: 18080
-    serviceName: "c8-golden-stable-810-none-physical-tenants"
+    serviceName: keycloak
 
   additionalOptions:
     - name: http-relative-path
