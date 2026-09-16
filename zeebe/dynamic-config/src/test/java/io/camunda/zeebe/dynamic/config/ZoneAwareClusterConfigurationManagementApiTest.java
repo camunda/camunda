@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
-import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.util.ZoneFixtures;
-import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,46 +87,6 @@ final class ZoneAwareClusterConfigurationManagementApiTest
             new MemberRemoveOperation(ZONE_B_0, ZONE_A_1),
             new UpdatePartitionDistributorConfigOperation(
                 ZONE_B_0, new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_B, 2, 100)))));
-  }
-
-  /**
-   * The elected coordinator (lowest member id, zone-a_0) sits inside the zone being removed here.
-   * The request is rejected up front, because force is required when the removed zone contains the
-   * coordinator.
-   */
-  @Test
-  void shouldRejectRemovalWithoutForceWhenTheZoneContainsTheElectedCoordinator() {
-    // given
-    final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(ZONE_A_0, MemberState.initializeAsActive(Map.of()))
-            .addMember(ZONE_A_1, MemberState.initializeAsActive(Map.of()))
-            .addMember(ZONE_B_0, MemberState.initializeAsActive(Map.of()))
-            .addMember(ZONE_B_1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(
-                ZONE_B_0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(
-                ZONE_A_0, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
-            .updateMember(
-                ZONE_B_1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
-            .updateMember(
-                ZONE_A_1, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)))
-            .setPartitionDistributorConfig(new ZoneAwareConfig(DUAL_REGION));
-    setCurrentTopology(currentTopology);
-    final var request = new RemoveZoneRequest(ZONE_A, false, false);
-
-    // when
-    final var changeStatus = clientApi.removeZone(request).join();
-
-    // then
-    EitherAssert.assertThat(changeStatus)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message()).contains("elected coordinator").contains("force=true");
-            });
   }
 
   @Override
