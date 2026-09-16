@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionRequests;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -257,12 +258,7 @@ public final class IncidentResolveProcessor
     final Map<SecretReference, SecretReferenceRecord> requests = new LinkedHashMap<>();
     for (final Secret secret : secrets) {
       requests.computeIfAbsent(
-          secret.reference(),
-          reference ->
-              new SecretReferenceRecord()
-                  .setStoreId(reference.storeId())
-                  .setSecretReference(reference.name())
-                  .addJobKey(jobKey));
+          secret.reference(), reference -> SecretResolutionRequests.requestFor(reference, jobKey));
     }
     return List.copyOf(requests.values());
   }

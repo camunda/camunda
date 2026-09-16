@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.DroppedJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.FailedInjectionJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.OversizedJob;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionRequests;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -30,7 +31,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
@@ -224,11 +224,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     boolean anyRequested = false;
     for (final var waiting : jobsWithNonCachedSecrets.entrySet()) {
       final var reference = waiting.getKey();
-      final var event =
-          new SecretReferenceRecord()
-              .setStoreId(reference.storeId())
-              .setSecretReference(reference.name());
-      waiting.getValue().forEach(event::addJobKey);
+      final var event = SecretResolutionRequests.requestFor(reference, waiting.getValue());
       // the capacity check needs the length of the whole log entry, whose metadata is only
       // decorated with the command's authorization, agent and request source info once the entry is
       // appended. The batch calculation buffer covers that framing on top of the value, the same

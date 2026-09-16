@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionRequests;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -32,7 +33,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -259,11 +259,7 @@ public class BpmnJobActivationBehavior {
       if (!requested.add(secret.reference())) {
         continue;
       }
-      final var event =
-          new SecretReferenceRecord()
-              .setStoreId(secret.reference().storeId())
-              .setSecretReference(secret.reference().name())
-              .addJobKey(jobKey);
+      final var event = SecretResolutionRequests.requestFor(secret.reference(), jobKey);
       // the capacity check needs the length of the whole log entry, whose metadata is only
       // decorated once the entry is appended. The batch calculation buffer covers that framing on
       // top of the value, the same way the collector sizes the job records it appends
