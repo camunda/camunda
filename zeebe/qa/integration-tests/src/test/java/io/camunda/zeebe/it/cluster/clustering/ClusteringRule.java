@@ -362,8 +362,8 @@ public class ClusteringRule extends ExternalResource {
     brokerCfg.getCluster().setInitialContactPoints(contactPoints);
 
     final var meterRegistry = new SimpleMeterRegistry();
-    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg, meterRegistry);
-    final var brokerMeterRegistry = brokerSpringConfig.brokerMeterRegistry().registry();
+    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
+    brokerSpringConfig.brokerIdMeterRegistryCustomizer().customize(meterRegistry);
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =
@@ -371,25 +371,25 @@ public class ClusteringRule extends ExternalResource {
             brokerSpringConfig.clusterConfig(),
             Version.from(VersionUtil.getVersion()),
             "Broker",
-            brokerMeterRegistry);
+            meterRegistry);
 
     final var scheduler =
         new ActorSchedulerConfiguration(
                 brokerSpringConfig.schedulerConfiguration(),
                 IdleStrategySupplier.ofDefault(),
                 actorClockConfiguration,
-                brokerMeterRegistry)
+                meterRegistry)
             .scheduler();
 
     final var dynamicClusterServices =
-        new DynamicClusterServices(scheduler, atomixCluster, brokerMeterRegistry);
+        new DynamicClusterServices(scheduler, atomixCluster, meterRegistry);
     final var topologyManager =
         dynamicClusterServices.brokerTopologyManagerForEmbeddedBrokerClient();
 
     final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, scheduler, topologyManager, brokerMeterRegistry);
+            brokerClientConfig, atomixCluster, scheduler, topologyManager, meterRegistry);
     final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
@@ -400,7 +400,7 @@ public class ClusteringRule extends ExternalResource {
             scheduler,
             atomixCluster,
             brokerClient,
-            brokerMeterRegistry,
+            meterRegistry,
             EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
@@ -1001,13 +1001,13 @@ public class ClusteringRule extends ExternalResource {
   // to replicate all the wiring Spring is doing
   @Deprecated(forRemoval = true)
   private BrokerBasedConfiguration getBrokerConfiguration(
-      final File brokerBase, final BrokerBasedProperties cfg, final MeterRegistry meterRegistry) {
+      final File brokerBase, final BrokerBasedProperties cfg) {
     final var workingDir =
         new WorkingDirectoryConfiguration.WorkingDirectory(brokerBase.toPath(), false);
 
     final var staticNodeIdProvider = NodeIdProvider.staticProvider(cfg.getCluster().getNodeId());
     return new BrokerBasedConfiguration(
-        workingDir, staticNodeIdProvider, cfg, new LifecycleProperties(), meterRegistry);
+        workingDir, staticNodeIdProvider, cfg, new LifecycleProperties());
   }
 
   public Leader getCurrentLeaderForPartition(final int partition) {
