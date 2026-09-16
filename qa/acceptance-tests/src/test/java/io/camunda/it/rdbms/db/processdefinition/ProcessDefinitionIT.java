@@ -30,6 +30,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.FilterBuilders;
@@ -498,6 +499,210 @@ public class ProcessDefinitionIT {
               assertThat(s.flowNodeId()).isEqualTo(elementId);
               assertThat(s.completed()).isEqualTo(1L);
             });
+  }
+
+  @TestTemplate
+  public void shouldCountLegacyNullStateVersions(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsDbReader =
+        rdbmsService.getProcessDefinitionInstanceStatisticsReader();
+
+    // case 1 (primary regression): a legacy NULL-state v1 predating the STATE column, alongside
+    // an ACTIVE v2 -- active instances only exist on v2, so the deployed-version count must still
+    // see both versions instead of excluding the NULL row.
+    final var nullActiveId =
+        "legacy-null-active-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var nullActiveTenant = "tenant-" + nullActiveId;
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b -> b.processDefinitionId(nullActiveId).tenantId(nullActiveTenant).version(1).state(null));
+    final var nullActiveV2 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(nullActiveId)
+                    .tenantId(nullActiveTenant)
+                    .version(2)
+                    .state(ProcessDefinitionState.ACTIVE));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(nullActiveId)
+                .processDefinitionKey(nullActiveV2.processDefinitionKey())
+                .tenantId(nullActiveTenant)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(2));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, nullActiveId, nullActiveTenant))
+        .as("NULL v1 + ACTIVE v2, instances only on v2")
+        .isTrue();
+
+    // case 2: both deployed versions are legacy NULL-state.
+    final var nullNullId = "legacy-null-null-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var nullNullTenant = "tenant-" + nullNullId;
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b -> b.processDefinitionId(nullNullId).tenantId(nullNullTenant).version(1).state(null));
+    final var nullNullV2 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b -> b.processDefinitionId(nullNullId).tenantId(nullNullTenant).version(2).state(null));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(nullNullId)
+                .processDefinitionKey(nullNullV2.processDefinitionKey())
+                .tenantId(nullNullTenant)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(2));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, nullNullId, nullNullTenant))
+        .as("NULL v1 + NULL v2, instances only on v2")
+        .isTrue();
+
+    // case 3: a deleted version must still be excluded even once NULL rows are treated as
+    // non-deleted -- NULL compatibility must not also start counting deleted rows.
+    final var nullDeletedId =
+        "legacy-null-deleted-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var nullDeletedTenant = "tenant-" + nullDeletedId;
+    final var nullDeletedV1 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(nullDeletedId)
+                    .tenantId(nullDeletedTenant)
+                    .version(1)
+                    .state(null));
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(nullDeletedId)
+                .tenantId(nullDeletedTenant)
+                .version(2)
+                .state(ProcessDefinitionState.DELETED));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(nullDeletedId)
+                .processDefinitionKey(nullDeletedV1.processDefinitionKey())
+                .tenantId(nullDeletedTenant)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(1));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, nullDeletedId, nullDeletedTenant))
+        .as("NULL v1 + DELETED v2, instances on v1")
+        .isFalse();
+
+    // case 4: the same process ID deployed independently in two tenants -- tenant A has two
+    // eligible versions, tenant B only one NULL-state version, and the two must not interfere.
+    final var multiTenantId =
+        "legacy-null-tenants-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var tenantA = multiTenantId + "-a";
+    final var tenantB = multiTenantId + "-b";
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b -> b.processDefinitionId(multiTenantId).tenantId(tenantA).version(1).state(null));
+    final var tenantAV2 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(multiTenantId)
+                    .tenantId(tenantA)
+                    .version(2)
+                    .state(ProcessDefinitionState.ACTIVE));
+    final var tenantBV1 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b -> b.processDefinitionId(multiTenantId).tenantId(tenantB).version(1).state(null));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(multiTenantId)
+                .processDefinitionKey(tenantAV2.processDefinitionKey())
+                .tenantId(tenantA)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(2));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(multiTenantId)
+                .processDefinitionKey(tenantBV1.processDefinitionKey())
+                .tenantId(tenantB)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(1));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, multiTenantId, tenantA))
+        .as("tenant A: two eligible versions")
+        .isTrue();
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, multiTenantId, tenantB))
+        .as("tenant B: a single NULL-state version")
+        .isFalse();
+
+    // case 5: two definition rows (different keys) sharing the same version must be counted once.
+    final var duplicateVersionId =
+        "legacy-null-duplicate-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var duplicateVersionTenant = "tenant-" + duplicateVersionId;
+    final var duplicateVersionV1 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(duplicateVersionId)
+                    .tenantId(duplicateVersionTenant)
+                    .version(1)
+                    .state(null));
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(duplicateVersionId)
+                .tenantId(duplicateVersionTenant)
+                .version(1)
+                .state(null));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(duplicateVersionId)
+                .processDefinitionKey(duplicateVersionV1.processDefinitionKey())
+                .tenantId(duplicateVersionTenant)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(1));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader,
+                duplicateVersionId,
+                duplicateVersionTenant))
+        .as("two definition keys sharing version 1 must count as a single version")
+        .isFalse();
+  }
+
+  private static boolean hasMultipleVersions(
+      final ProcessDefinitionInstanceStatisticsDbReader reader,
+      final String processDefinitionId,
+      final String tenantId) {
+    final var result =
+        reader.aggregate(
+            ProcessDefinitionInstanceStatisticsQuery.of(
+                b -> b.filter(f -> f.processDefinitionIds(processDefinitionId))));
+    return result.items().stream()
+        .filter(
+            i ->
+                processDefinitionId.equals(i.processDefinitionId())
+                    && tenantId.equals(i.tenantId()))
+        .findFirst()
+        .orElseThrow()
+        .hasMultipleVersions();
   }
 
   @TestTemplate

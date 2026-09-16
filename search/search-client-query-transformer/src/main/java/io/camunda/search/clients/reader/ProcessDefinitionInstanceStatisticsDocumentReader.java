@@ -25,6 +25,8 @@ import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,28 +88,14 @@ public class ProcessDefinitionInstanceStatisticsDocumentReader extends DocumentB
     final var processDefinitionIds =
         items.stream().map(i -> i.processDefinitionId()).distinct().toList();
     final var tenantIds = items.stream().map(i -> i.tenantId()).distinct().toList();
-
-    final var deployedVersionsQuery =
-        ProcessDefinitionQuery.of(
-            q ->
-                q.filter(
-                        f ->
-                            f.processDefinitionIdOperations(
-                                    List.of(Operation.in(processDefinitionIds)))
-                                .tenantIds(tenantIds))
-                    .page(SearchQueryPage.of(p -> p.size(AGGREGATION_TERMS_SIZE))));
-
-    final SearchQueryResult<ProcessDefinitionEntity> deployedVersions =
-        getSearchExecutor()
-            .search(deployedVersionsQuery, ProcessEntity.class, resourceAccessChecks);
+    final var requestedPairs =
+        items.stream()
+            .map(i -> Tuple.of(i.processDefinitionId(), i.tenantId()))
+            .collect(Collectors.toSet());
 
     final Map<Tuple<String, String>, Set<Integer>> versionsByProcessAndTenant =
-        deployedVersions.items().stream()
-            .filter(pd -> pd.state() != ProcessDefinitionState.DELETED)
-            .collect(
-                Collectors.groupingBy(
-                    pd -> Tuple.of(pd.processDefinitionId(), pd.tenantId()),
-                    Collectors.mapping(ProcessDefinitionEntity::version, Collectors.toSet())));
+        fetchDeployedVersionsByProcessAndTenant(
+            processDefinitionIds, tenantIds, requestedPairs, resourceAccessChecks);
 
     return items.stream()
         .map(
@@ -134,5 +122,63 @@ public class ProcessDefinitionInstanceStatisticsDocumentReader extends DocumentB
                   item.activeInstancesWithIncidentCount());
             })
         .toList();
+  }
+
+  /**
+   * The process-definition lookup above is bounded to {@link
+   * io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation#AGGREGATION_TERMS_SIZE}
+   * documents per page (an ES/OS terms query can only target one index and does not support an
+   * unlimited scroll here), so a deployed version living beyond the first page was previously
+   * invisible — see #51617. Walk every page with a stable cursor until the lookup is exhausted,
+   * keeping at most two distinct versions per requested pair since that is all {@code
+   * hasMultipleVersions} needs to decide.
+   */
+  private Map<Tuple<String, String>, Set<Integer>> fetchDeployedVersionsByProcessAndTenant(
+      final List<String> processDefinitionIds,
+      final List<String> tenantIds,
+      final Set<Tuple<String, String>> requestedPairs,
+      final ResourceAccessChecks resourceAccessChecks) {
+    final Map<Tuple<String, String>, Set<Integer>> versionsByProcessAndTenant = new HashMap<>();
+    String cursor = null;
+    boolean hasMorePages = true;
+
+    while (hasMorePages) {
+      final var afterCursor = cursor;
+      final var deployedVersionsQuery =
+          ProcessDefinitionQuery.of(
+              q ->
+                  q.filter(
+                          f ->
+                              f.processDefinitionIdOperations(
+                                      List.of(Operation.in(processDefinitionIds)))
+                                  .tenantIds(tenantIds))
+                      .sort(s -> s.processDefinitionKey().asc())
+                      .page(
+                          SearchQueryPage.of(
+                              p -> p.size(AGGREGATION_TERMS_SIZE).after(afterCursor))));
+
+      final SearchQueryResult<ProcessDefinitionEntity> page =
+          getSearchExecutor()
+              .search(deployedVersionsQuery, ProcessEntity.class, resourceAccessChecks);
+
+      for (final var pd : page.items()) {
+        if (pd.state() == ProcessDefinitionState.DELETED) {
+          continue;
+        }
+        final var pair = Tuple.of(pd.processDefinitionId(), pd.tenantId());
+        if (!requestedPairs.contains(pair)) {
+          continue;
+        }
+        final var versions = versionsByProcessAndTenant.computeIfAbsent(pair, k -> new HashSet<>());
+        if (versions.size() < 2) {
+          versions.add(pd.version());
+        }
+      }
+
+      hasMorePages = !page.items().isEmpty() && page.items().size() >= AGGREGATION_TERMS_SIZE;
+      cursor = page.endCursor();
+    }
+
+    return versionsByProcessAndTenant;
   }
 }
