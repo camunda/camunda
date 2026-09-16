@@ -13,9 +13,9 @@ import {useRunningInstancesCount} from '../useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 import {MetricPanel} from '../MetricPanel/shadcn.components/MetricPanel';
 import {InstancesByProcess} from '../InstancesByProcess/shadcn.components/InstancesByProcess';
+import {IncidentsByError} from '../IncidentsByError/shadcn.components/IncidentsByError';
 
-// Layout shell: IncidentsByError is still a placeholder here and gets wired in as its
-// own PR lands. Mirrors the Carbon Dashboard's grid: the metric panel spans the full
+// Layout shell mirroring the Carbon Dashboard's grid: the metric panel spans the full
 // width on top, the two lists sit side by side below it (or the single list fills the
 // width when there are no instances).
 // See docs/migration/operate-dashboard-tiering.md for the component mapping.
@@ -47,7 +47,7 @@ const Dashboard: React.FC = () => {
 							<CardTitle>{t('operate.dashboard.incidentsByErrorTitle')}</CardTitle>
 						</CardHeader>
 						<CardContent className="flex flex-1 flex-col overflow-hidden">
-							{/* IncidentsByError — wired in a later PR */}
+							<IncidentsByError />
 						</CardContent>
 					</Card>
 				)}
