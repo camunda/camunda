@@ -19,19 +19,16 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
-import jakarta.servlet.Filter;
-import org.springframework.boot.web.servlet.AbstractFilterRegistrationBean;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 
 /**
- * Spring Boot maps every {@link Filter}-typed {@link Bean} onto {@code /*}, so such a bean runs on
+ * Spring Boot maps every {@code Filter}-typed {@link Bean} onto {@code /*}, so such a bean runs on
  * every single request whether or not that was intended. This has bitten the REST API twice: {@code
  * WebApplicationAuthorizationCheckFilter} (#35059) was explicitly registered in the security chains
  * and then silently added to all of them again, and the REST API composite filter ran on every
  * request even when no user-defined filters were configured (#35067).
  *
- * <p>A {@link Filter} bean is therefore only allowed alongside a {@link FilterRegistrationBean} in
+ * <p>A {@code Filter} bean is therefore only allowed alongside a {@code FilterRegistrationBean} in
  * the same configuration class. Such a registration decides where the filter runs — either by
  * naming URL patterns, or by {@code setEnabled(false)} to suppress the servlet mapping entirely for
  * a filter that is instead wired into specific security chains. Configurations that need no
@@ -47,11 +44,25 @@ import org.springframework.context.annotation.Bean;
     importOptions = {DoNotIncludeTestsOrTestJars.class})
 public final class NoServletFilterBeanArchTest {
 
+  /**
+   * Referenced by name rather than by class literal. Both {@code jakarta.servlet.Filter} and the
+   * Spring Boot registration types reach this module only transitively, and importing them makes
+   * {@code dependency:analyze} demand a declaration it then cannot attribute to a single artifact:
+   * {@code jakarta.servlet-api} and {@code tomcat-embed-core} both supply the servlet API, so
+   * declaring either one makes the analyzer blame the other. {@code allowEmptyShould(false)} below
+   * covers what the compile-time binding would otherwise have caught -- if these names ever stop
+   * resolving, the rule matches nothing and fails loudly instead of passing vacuously.
+   */
+  private static final String SERVLET_FILTER_TYPE = "jakarta.servlet.Filter";
+
+  private static final String FILTER_REGISTRATION_TYPE =
+      "org.springframework.boot.web.servlet.AbstractFilterRegistrationBean";
+
   private static final DescribedPredicate<JavaClass> SERVLET_FILTER =
       new DescribedPredicate<>("a servlet filter") {
         @Override
         public boolean test(final JavaClass javaClass) {
-          return javaClass.isAssignableTo(Filter.class);
+          return javaClass.isAssignableTo(SERVLET_FILTER_TYPE);
         }
       };
 
@@ -76,9 +87,7 @@ public final class NoServletFilterBeanArchTest {
               .filter(candidate -> candidate.isAnnotatedWith(Bean.class))
               .anyMatch(
                   candidate ->
-                      candidate
-                          .getRawReturnType()
-                          .isAssignableTo(AbstractFilterRegistrationBean.class));
+                      candidate.getRawReturnType().isAssignableTo(FILTER_REGISTRATION_TYPE));
         }
       };
 
@@ -91,6 +100,7 @@ public final class NoServletFilterBeanArchTest {
           .and()
           .haveRawReturnType(SERVLET_FILTER)
           .should(BE_PAIRED_WITH_A_FILTER_REGISTRATION)
+          .allowEmptyShould(false)
           .as("@Bean methods returning a servlet filter should declare their registration")
           .because(
               "an unregistered Filter bean is mapped onto /* by Spring Boot and runs on every "
