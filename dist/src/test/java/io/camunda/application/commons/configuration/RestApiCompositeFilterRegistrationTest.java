@@ -7,8 +7,11 @@
  */
 package io.camunda.application.commons.configuration;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
@@ -18,13 +21,17 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
 import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,58 +42,78 @@ import org.springframework.boot.autoconfigure.context.LifecycleProperties;
  * no such filters are configured — the common case. Registering it unconditionally used to put an
  * empty composite filter in front of every request, including static webapp assets.
  *
+ * <p>A deployment that does configure filters must keep seeing them on every request: the
+ * registration sets no URL pattern of its own and so falls back to {@code FilterRegistrationBean}'s
+ * default {@code /*} mapping, matching what Spring Boot applied when the composite filter was still
+ * a plain {@code Filter} bean. The tests below drive {@code onStartup} against the servlet context
+ * rather than reading {@code isEnabled()}, so both the mapping and its absence are observed the way
+ * the container sees them.
+ *
  * @see <a href="https://github.com/camunda/camunda/issues/35067">Issue #35067</a>
  */
 final class RestApiCompositeFilterRegistrationTest {
 
+  /** {@code AbstractFilterRegistrationBean}'s fallback when no URL pattern is set. */
+  private static final String DEFAULT_URL_MAPPING = "/*";
+
   @TempDir private Path workingDirectory;
 
   @Test
-  void shouldNotRegisterBrokerCompositeFilterWhenNoFiltersConfigured() {
+  void shouldNotRegisterBrokerCompositeFilterWhenNoFiltersConfigured() throws ServletException {
     // given
-    final var configuration = brokerConfiguration(List.of());
+    final var registration = brokerConfiguration(List.of()).restApiCompositeFilter();
+    final var servletContext = mock(ServletContext.class);
 
     // when
-    final var registration = configuration.restApiCompositeFilter();
+    registration.onStartup(servletContext);
 
     // then
-    assertThat(registration.isEnabled()).isFalse();
+    verify(servletContext, never()).addFilter(anyString(), any(Filter.class));
   }
 
   @Test
-  void shouldRegisterBrokerCompositeFilterWhenFilterConfigured() {
+  void shouldMapBrokerCompositeFilterToAllRequestsWhenFilterConfigured() throws ServletException {
     // given
-    final var configuration = brokerConfiguration(List.of(filterCfg()));
+    final var registration = brokerConfiguration(List.of(filterCfg())).restApiCompositeFilter();
+    final var servletContext = mock(ServletContext.class);
+    final var dynamic = mock(FilterRegistration.Dynamic.class);
+    when(servletContext.addFilter(anyString(), any(Filter.class))).thenReturn(dynamic);
 
     // when
-    final var registration = configuration.restApiCompositeFilter();
+    registration.onStartup(servletContext);
 
     // then
-    assertThat(registration.isEnabled()).isTrue();
+    verify(dynamic)
+        .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), false, DEFAULT_URL_MAPPING);
   }
 
   @Test
-  void shouldNotRegisterGatewayCompositeFilterWhenNoFiltersConfigured() {
+  void shouldNotRegisterGatewayCompositeFilterWhenNoFiltersConfigured() throws ServletException {
     // given
-    final var configuration = gatewayConfiguration(List.of());
+    final var registration = gatewayConfiguration(List.of()).restApiCompositeFilter();
+    final var servletContext = mock(ServletContext.class);
 
     // when
-    final var registration = configuration.restApiCompositeFilter();
+    registration.onStartup(servletContext);
 
     // then
-    assertThat(registration.isEnabled()).isFalse();
+    verify(servletContext, never()).addFilter(anyString(), any(Filter.class));
   }
 
   @Test
-  void shouldRegisterGatewayCompositeFilterWhenFilterConfigured() {
+  void shouldMapGatewayCompositeFilterToAllRequestsWhenFilterConfigured() throws ServletException {
     // given
-    final var configuration = gatewayConfiguration(List.of(filterCfg()));
+    final var registration = gatewayConfiguration(List.of(filterCfg())).restApiCompositeFilter();
+    final var servletContext = mock(ServletContext.class);
+    final var dynamic = mock(FilterRegistration.Dynamic.class);
+    when(servletContext.addFilter(anyString(), any(Filter.class))).thenReturn(dynamic);
 
     // when
-    final var registration = configuration.restApiCompositeFilter();
+    registration.onStartup(servletContext);
 
     // then
-    assertThat(registration.isEnabled()).isTrue();
+    verify(dynamic)
+        .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), false, DEFAULT_URL_MAPPING);
   }
 
   private BrokerBasedConfiguration brokerConfiguration(final List<FilterCfg> filters) {
