@@ -12,6 +12,11 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +27,12 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+/**
+ * An unreachable identity provider must not keep the broker from starting. Issuer discovery used to
+ * run while the Spring context came up, so a provider that was down at boot failed a bean and left
+ * the deployment restart-looping until the provider returned. Discovery now happens on first use,
+ * so the broker starts and only the requests that need the provider fail.
+ */
 @Testcontainers
 @ZeebeIntegration
 public class OidcAuthOverRestStartupIT {
@@ -34,6 +45,8 @@ public class OidcAuthOverRestStartupIT {
 
   private static final String UNREACHABLE_ISSUER_URI =
       "http://localhost:1000/realms/" + KEYCLOAK_REALM;
+  // the token never gets parsed: resolving the decoder against the unreachable provider fails first
+  private static final String UNVERIFIABLE_TOKEN = "not-a-real-token";
 
   @TestZeebe(autoStart = false, awaitCompleteTopology = false)
   private final TestStandaloneBroker broker =
@@ -53,15 +66,24 @@ public class OidcAuthOverRestStartupIT {
               });
 
   @Test
-  public void shouldFailToStartWhenNoIdpAvailable() {
-    // The startup must fail because the configured IdP is unreachable. The exact exception type
-    // and message come from Spring Security's ClientRegistrations.fromIssuerLocation(...); we
-    // assert only that the failure mentions the unreachable issuer URI, not the specific message
-    // text — OC's previous ClientRegistrationFactory wrapped the cause in a friendly diagnostic
-    // but CSL surfaces Spring's raw error, so a verbatim string match is no longer stable.
-    Assertions.assertThatThrownBy(broker::start)
-        .satisfiesAnyOf(
-            ex -> Assertions.assertThat(ex).hasStackTraceContaining(UNREACHABLE_ISSUER_URI),
-            ex -> Assertions.assertThat(ex).hasStackTraceContaining("localhost:1000"));
+  public void shouldStartWhenNoIdpAvailable() throws IOException, InterruptedException {
+    // when
+    broker.start();
+
+    // then the broker is up and serving: a request carrying a token it cannot validate against the
+    // unreachable provider fails on its own, as a server error, rather than taking the broker down
+    Assertions.assertThat(statusOfTopologyRequestWithBearerToken()).isEqualTo(500);
+  }
+
+  private int statusOfTopologyRequestWithBearerToken() throws IOException, InterruptedException {
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      final var request =
+          HttpRequest.newBuilder(broker.restAddress().resolve("v2/topology"))
+              .header("Authorization", "Bearer " + UNVERIFIABLE_TOKEN)
+              .timeout(Duration.ofSeconds(30))
+              .GET()
+              .build();
+      return httpClient.send(request, BodyHandlers.discarding()).statusCode();
+    }
   }
 }
