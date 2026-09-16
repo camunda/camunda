@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
 import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
@@ -376,6 +377,41 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "",
                 "assignee",
                 AuthorizationResourceType.USER_TASK,
+                permissions)),
+        Arguments.of(
+            // SECRET resourceId (ANY) request
+            AuthorizationIdBasedRequest.Builder.create()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("*")
+                .resourceType(ResourceTypeEnum.SECRET)
+                .permissionTypes(permissionEnums)
+                .build(),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ANY,
+                "*",
+                "",
+                AuthorizationResourceType.SECRET,
+                permissions)),
+        Arguments.of(
+            // SECRET resourceId as a full "camunda.secrets.<name>" reference is the one shape
+            // that can ever match, so it must keep working (camunda/camunda#62736)
+            AuthorizationIdBasedRequest.Builder.create()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("camunda.secrets.MY_SECRET")
+                .resourceType(ResourceTypeEnum.SECRET)
+                .permissionTypes(permissionEnums)
+                .build(),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ID,
+                "camunda.secrets.MY_SECRET",
+                "",
+                AuthorizationResourceType.SECRET,
                 permissions)));
   }
 
@@ -524,6 +560,28 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "permissionTypes", permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
                 .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)),
+        Arguments.of(
+            // SECRET resourceId missing the "camunda.secrets." prefix can never match a
+            // reference (camunda/camunda#62736)
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "MY_SECRET",
+                "resourceType", "SECRET",
+                "permissionTypes", permissions),
+            "The provided resourceId contains illegal characters. It must match the pattern '%s'."
+                .formatted(AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN.pattern())),
+        Arguments.of(
+            // SECRET resourceId with a dot cannot ever match a reference either, since a dot
+            // is not a valid secret-name character (camunda/camunda#62736)
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "camunda.secrets.tls.crt",
+                "resourceType", "SECRET",
+                "permissionTypes", permissions),
+            "The provided resourceId contains illegal characters. It must match the pattern '%s'."
+                .formatted(AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN.pattern())),
         // AuthorizationPropertyBasedRequest tests
         Arguments.of(
             // missing ownerId
