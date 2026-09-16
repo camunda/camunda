@@ -59,13 +59,6 @@ public class AnalyticsExporter implements Exporter {
             context.getPartitionId(),
             context.getPhysicalTenantId(),
             resolveDigest(handlers, config));
-
-    LOG.info(
-        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
-        config.getEndpoint(),
-        analyticsContext.clusterId(),
-        analyticsContext.partitionId(),
-        analyticsContext.exporterDigest());
   }
 
   @Override
@@ -79,7 +72,12 @@ public class AnalyticsExporter implements Exporter {
     otelSdkManager.initialize(config, analyticsContext, metadata, meterRegistry);
     scheduleMetricFlush();
     scheduleHeartbeat();
-    LOG.info("Analytics exporter opened");
+    LOG.info(
+        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
+        config.getEndpoint(),
+        analyticsContext.clusterId(),
+        analyticsContext.partitionId(),
+        analyticsContext.exporterDigest());
   }
 
   @Override
