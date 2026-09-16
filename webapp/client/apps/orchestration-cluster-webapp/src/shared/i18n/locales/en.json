@@ -690,6 +690,9 @@
 					"heading": "403 - You do not have permission to view this information",
 					"description": "Contact your administrator to get access.",
 					"learnMoreLink": "Learn more about permissions"
+				},
+				"panel": {
+					"unknownEvaluationFailure": "Evaluation failed with unknown error"
 				}
 			},
 			"operations": {
