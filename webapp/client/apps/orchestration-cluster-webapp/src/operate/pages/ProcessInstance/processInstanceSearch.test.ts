@@ -19,12 +19,13 @@ import {
 
 describe('hasProcessInstanceSelection', () => {
 	it('should validate selection values while preserving other query context', () => {
-		const parsed = processInstanceSearchSchema.parse({
+		const parsed: ProcessInstanceSearch = processInstanceSearchSchema.parse({
 			elementId: 'task',
 			elementInstanceKey: 123,
 			customHint: 'focus',
 		});
 		expect(parsed).toEqual({elementId: 'task', elementInstanceKey: '123', customHint: 'focus'});
+		expect(parsed.customHint).toBe('focus');
 	});
 
 	it('should treat empty-string selections as missing after parsing', () => {

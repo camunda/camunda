@@ -22,7 +22,7 @@ const processInstanceSearchSchema: z.ZodType<
 	z.input<typeof processInstanceSelectionSchema>
 > = processInstanceSelectionSchema.loose();
 
-type ProcessInstanceSearch = z.infer<typeof processInstanceSearchSchema>;
+type ProcessInstanceSearch = ProcessInstanceSelection & Record<string, unknown>;
 type ProcessInstanceSelection = z.infer<typeof processInstanceSelectionSchema>;
 type ProcessInstanceTab = 'details' | 'incidents' | 'variables';
 type ProcessInstanceTabPath =

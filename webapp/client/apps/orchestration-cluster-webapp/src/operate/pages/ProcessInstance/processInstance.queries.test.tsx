@@ -9,7 +9,7 @@
 import {useState} from 'react';
 import {QueryClient, QueryClientProvider, useQuery} from '@tanstack/react-query';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterEach, expect} from 'vitest';
+import {afterEach, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
@@ -47,11 +47,11 @@ function WaitStatePreview({initialState = 'ACTIVE'}: {initialState?: ProcessInst
 		state,
 		hasIncident: false,
 	});
-	const {data} = useProcessInstanceWaitStateStatistics(instance);
+	const {data, isFetching} = useProcessInstanceWaitStateStatistics(instance);
 	return (
 		<>
 			<button onClick={() => setState('COMPLETED')}>Complete</button>
-			<p>{getWaitStateLabel(data?.[0]?.waitingCount ?? 0) ?? 'No waiting'}</p>
+			<p>{isFetching ? 'Loading' : (getWaitStateLabel(data?.[0]?.waitingCount ?? 0) ?? 'No waiting')}</p>
 		</>
 	);
 }
@@ -205,18 +205,33 @@ it('should replace cached waiting state when the existing API returns no statist
 	await expect.element(screen.getByText('2 waiting')).not.toBeInTheDocument();
 });
 
-it.for(['COMPLETED', 'TERMINATED', 'SUSPENDED'] as const)(
-	'should ignore cached waiting state for %s instances without incidents',
-	async (state) => {
-		queryClient.setQueryData(processInstanceWaitStateStatisticsQuery(PROCESS_INSTANCE_KEY).queryKey, [
-			{elementId: 'process', waitingCount: 2},
-		]);
-		const screen = await render(
-			<QueryClientProvider client={queryClient}>
-				<WaitStatePreview initialState={state} />
-			</QueryClientProvider>,
+it.for(['ACTIVE', 'COMPLETED', 'TERMINATED', 'SUSPENDED'] as const)(
+	'should fetch waiting state only for running instances (%s)',
+	async (state, {worker}) => {
+		const requests = vi.fn();
+		const onRequest = ({request}: {request: Request}) => {
+			if (request.url.endsWith('/statistics/wait-states')) {
+				requests();
+			}
+		};
+		const items = [{elementId: 'process', waitingCount: 2}];
+		worker.use(
+			mockGetProcessInstanceWaitStateStatisticsEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse({items})),
+			}),
 		);
-		await expect.element(screen.getByText('No waiting')).toBeVisible();
-		await expect.element(screen.getByText('2 waiting')).not.toBeInTheDocument();
+		worker.events.on('request:start', onRequest);
+		try {
+			queryClient.setQueryData(processInstanceWaitStateStatisticsQuery(PROCESS_INSTANCE_KEY).queryKey, items);
+			const screen = await render(
+				<QueryClientProvider client={queryClient}>
+					<WaitStatePreview initialState={state} />
+				</QueryClientProvider>,
+			);
+			await expect.element(screen.getByText(state === 'ACTIVE' ? '2 waiting' : 'No waiting')).toBeVisible();
+			expect(requests).toHaveBeenCalledTimes(state === 'ACTIVE' ? 1 : 0);
+		} finally {
+			worker.events.removeListener('request:start', onRequest);
+		}
 	},
 );
