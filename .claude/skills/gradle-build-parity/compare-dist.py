@@ -8,12 +8,17 @@ The original mode compares JAR names in a Gradle distTar with an exploded Maven
     python3 compare-dist.py <gradle-tar.gz> <maven-dist-dir>
 
 When both arguments are ZIP archives, the tool compares the versioned distribution
-root and JAR names/versions under `lib/`; other file contents are intentionally ignored:
+root and JAR names/versions under `lib/`; other file contents are intentionally ignored.
+If a Gradle dependency manifest is available, patch-only version differences are ignored
+only for artifacts marked transitive:
 
-    python3 compare-dist.py <gradle-zip> <maven-zip>
+    python3 compare-dist.py <gradle-zip> <maven-zip> \\
+        --gradle-manifest dist/build/reports/dist-dependencies.json
 """
 
 from collections.abc import Iterable
+import argparse
+import json
 import re
 import sys
 import tarfile
@@ -111,11 +116,34 @@ def ignore_maven_metadata_variants(
     return ignored
 
 
+def load_gradle_manifest(path: str | None) -> tuple[set[str], set[str]]:
+    """Return (all artifact bases, direct artifact bases) from a Gradle report."""
+    if path is None:
+        return set(), set()
+
+    with Path(path).open() as manifest_file:
+        report = json.load(manifest_file)
+
+    all_bases = set()
+    direct_bases = set()
+    for artifact in report.get("artifacts", []):
+        file_name = artifact.get("file")
+        if not isinstance(file_name, str):
+            raise ValueError(f"Gradle dependency manifest entry has no file: {artifact!r}")
+        base = strip_version(file_name)
+        all_bases.add(base)
+        if artifact.get("direct") is True:
+            direct_bases.add(base)
+    return all_bases, direct_bases
+
+
 def compare_inventories(
     gradle: dict[str, list[str]],
     maven: dict[str, list[str]],
     gradle_root: str | None = None,
     maven_root: str | None = None,
+    gradle_manifest_bases: set[str] | None = None,
+    gradle_direct_bases: set[str] | None = None,
 ) -> int:
     ignored_metadata_variants = ignore_maven_metadata_variants(gradle, maven)
 
@@ -131,7 +159,15 @@ def compare_inventories(
             mv = sorted(maven[base])
             if gv != mv:
                 difference = (base, gv, mv)
-                if is_patch_only_version_difference(gv, mv):
+                manifest_knows_base = (
+                    gradle_manifest_bases is not None and base in gradle_manifest_bases
+                )
+                is_direct = (
+                    gradle_direct_bases is None
+                    or not manifest_knows_base
+                    or base in gradle_direct_bases
+                )
+                if is_patch_only_version_difference(gv, mv) and not is_direct:
                     ignored_patch_diffs.append(difference)
                 else:
                     version_diffs.append(difference)
@@ -159,7 +195,7 @@ def compare_inventories(
     if gradle_root is not None and maven_root is not None and gradle_root != maven_root:
         print("VERSION MISMATCH: distribution root")
     if ignored_patch_diffs:
-        print("=== Ignored patch-only version mismatches ===")
+        print("=== Ignored transitive patch-only version mismatches ===")
         for base, gv, mv in ignored_patch_diffs:
             print(f"  {base}: Gradle={gv}, Maven={mv}")
     if version_diffs:
@@ -186,26 +222,54 @@ def compare_inventories(
     return 0
 
 
-def compare_archives(gradle_path: str, maven_path: str) -> int:
+def default_gradle_manifest_path(gradle_path: str) -> str | None:
+    candidate = Path(gradle_path).parent.parent / "reports" / "dist-dependencies.json"
+    return str(candidate) if candidate.is_file() else None
+
+
+def compare_archives(
+    gradle_path: str,
+    maven_path: str,
+    gradle_manifest: str | None = None,
+) -> int:
     gradle_root, gradle_files = archive_inventory(gradle_path)
     maven_root, maven_files = archive_inventory(maven_path)
+    manifest_bases, direct_bases = load_gradle_manifest(gradle_manifest)
     return compare_inventories(
         jars_from_archive(gradle_files),
         jars_from_archive(maven_files),
         gradle_root,
         maven_root,
+        manifest_bases,
+        direct_bases,
     )
 
 
-def compare(gradle_path: str, maven_path: str) -> int:
+def compare(
+    gradle_path: str,
+    maven_path: str,
+    gradle_manifest: str | None = None,
+) -> int:
+    gradle_manifest = gradle_manifest or default_gradle_manifest_path(gradle_path)
     if gradle_path.lower().endswith(".zip") and maven_path.lower().endswith(".zip"):
-        return compare_archives(gradle_path, maven_path)
+        return compare_archives(gradle_path, maven_path, gradle_manifest)
 
-    return compare_inventories(jars_from_tar(gradle_path), jars_from_dir(maven_path))
+    manifest_bases, direct_bases = load_gradle_manifest(gradle_manifest)
+    return compare_inventories(
+        jars_from_tar(gradle_path),
+        jars_from_dir(maven_path),
+        gradle_manifest_bases=manifest_bases,
+        gradle_direct_bases=direct_bases,
+    )
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print(__doc__)
-        sys.exit(1)
-    sys.exit(compare(sys.argv[1], sys.argv[2]))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("gradle_distribution")
+    parser.add_argument("maven_distribution")
+    parser.add_argument(
+        "--gradle-manifest",
+        help="Gradle dependency manifest (defaults to dist/build/reports/dist-dependencies.json)",
+    )
+    args = parser.parse_args()
+    sys.exit(compare(args.gradle_distribution, args.maven_distribution, args.gradle_manifest))

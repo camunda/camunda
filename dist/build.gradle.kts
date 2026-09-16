@@ -1,3 +1,4 @@
+import buildlogic.DistributionDependencyReportExtension
 import io.camunda.gradle.pom.PomResolver
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.artifacts.VersionCatalogsExtension
@@ -12,6 +13,7 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
   id("buildlogic.server-conventions")
+  id("buildlogic.distribution-dependency-report-conventions")
   alias(libs.plugins.spring.boot)
   id("org.openapi.generator")
 }
@@ -251,9 +253,18 @@ val copyOpenApiYaml =
     into(layout.buildDirectory.dir("generated/dist/openapi/v2"))
   }
 
+extensions.configure<DistributionDependencyReportExtension> {
+  excludedFilePrefixes.addAll("ojdbc", "mysql-connector-j")
+}
+
 val assembleDist =
   tasks.register<Sync>("assembleDist") {
-    dependsOn(tasks.named("jar"), generateDistReadme, generateDistScripts, copyOpenApiYaml)
+    dependsOn(
+      tasks.named("jar"),
+      generateDistReadme,
+      generateDistScripts,
+      copyOpenApiYaml,
+    )
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     into(distDirectory)
 

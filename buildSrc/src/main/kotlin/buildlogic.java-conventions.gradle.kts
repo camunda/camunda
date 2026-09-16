@@ -14,6 +14,7 @@ plugins {
   id("com.diffplug.spotless")
   id("net.ltgt.errorprone")
   id("org.gradle.test-retry")
+  id("buildlogic.dependency-report-conventions")
 }
 
 group = "io.camunda"
