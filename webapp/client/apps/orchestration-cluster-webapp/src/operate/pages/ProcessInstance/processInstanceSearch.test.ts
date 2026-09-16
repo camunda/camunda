@@ -13,19 +13,22 @@ import {
 	getProcessInstanceTabPath,
 	hasProcessInstanceSelection,
 	processInstanceSearchSchema,
+	validateProcessInstanceRouteSearch,
 	type ProcessInstanceSearch,
 	type ProcessInstanceSelection,
 } from './processInstanceSearch';
 
 describe('hasProcessInstanceSelection', () => {
 	it('should validate selection values while preserving other query context', () => {
-		const parsed: ProcessInstanceSearch = processInstanceSearchSchema.parse({
+		const search = {
 			elementId: 'task',
 			elementInstanceKey: 123,
 			customHint: 'focus',
-		});
+		};
+		const parsed: ProcessInstanceSearch = processInstanceSearchSchema.parse(search);
 		expect(parsed).toEqual({elementId: 'task', elementInstanceKey: '123', customHint: 'focus'});
 		expect(parsed.customHint).toBe('focus');
+		expect(validateProcessInstanceRouteSearch(search)).toEqual(parsed);
 	});
 
 	it('should treat empty-string selections as missing after parsing', () => {

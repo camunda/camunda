@@ -15,6 +15,7 @@ import {
 	createRootRouteWithContext,
 	createRoute,
 	createRouter,
+	joinPaths,
 	type RegisteredRouter,
 } from '@tanstack/react-router';
 
@@ -25,8 +26,8 @@ async function renderWithRouter(
 	Component: React.ComponentType,
 	{
 		path,
-		initialEntry = path,
 		basepath = '',
+		initialEntry = joinPaths([basepath, path]),
 	}: {
 		path: ValidRoutes;
 		initialEntry?: string;

@@ -17,12 +17,9 @@ const processInstanceSelectionSchema = z.object({
 	anchorElementId: z.coerce.string().optional(),
 });
 
-const processInstanceSearchSchema: z.ZodType<
-	ProcessInstanceSelection,
-	z.input<typeof processInstanceSelectionSchema>
-> = processInstanceSelectionSchema.loose();
+const processInstanceSearchSchema = processInstanceSelectionSchema.loose();
 
-type ProcessInstanceSearch = ProcessInstanceSelection & Record<string, unknown>;
+type ProcessInstanceSearch = z.infer<typeof processInstanceSearchSchema>;
 type ProcessInstanceSelection = z.infer<typeof processInstanceSelectionSchema>;
 type ProcessInstanceTab = 'details' | 'incidents' | 'variables';
 type ProcessInstanceTabPath =
@@ -33,6 +30,12 @@ type ProcessInstanceTabPath =
 type GetDefaultProcessInstanceTabOptions = {
 	isProcessLevelWaiting?: boolean;
 };
+
+function validateProcessInstanceRouteSearch(
+	search: z.input<typeof processInstanceSelectionSchema>,
+): ProcessInstanceSelection {
+	return processInstanceSearchSchema.parse(search);
+}
 
 function hasProcessInstanceSelection({elementId, elementInstanceKey}: ProcessInstanceSelection): boolean {
 	return Boolean(elementId || elementInstanceKey);
@@ -64,6 +67,7 @@ function getProcessInstanceTabPath(tab: ProcessInstanceTab): ProcessInstanceTabP
 
 export {
 	processInstanceSearchSchema,
+	validateProcessInstanceRouteSearch,
 	hasProcessInstanceSelection,
 	getDefaultProcessInstanceTab,
 	getProcessInstanceTabPath,
