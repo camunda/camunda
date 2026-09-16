@@ -11,6 +11,7 @@ import {useQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {queries} from '#/shared/http/queries';
 import {getClientConfig} from '#/shared/config/getClientConfig';
+import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {InstanceHeader, type Column} from '#/operate/shared/InstanceHeader/InstanceHeader';
 import {DrainingTag} from '#/operate/components/DrainingTag/DrainingTag';
@@ -48,7 +49,12 @@ const ProcessInstanceHeader: React.FC<Props> = ({operations}) => {
 	} = instance;
 	const processDefinitionName = getProcessDefinitionName(instance);
 	const isReducedLayout = useMatchMedia(isWidthBelowBreakpoint('xlg'));
-	const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(instance);
+	const {
+		data: waitStateStatistics,
+		isError: isWaitStateError,
+		isEnabled: isWaitStateEnabled,
+		refetch: refetchWaitStates,
+	} = useProcessInstanceWaitStateStatistics(instance);
 	const waitingCount = waitStateStatistics?.find(({elementId}) => elementId === processDefinitionId)?.waitingCount ?? 0;
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data: currentUser} = useQuery(queries.getCurrentUser());
@@ -165,6 +171,10 @@ const ProcessInstanceHeader: React.FC<Props> = ({operations}) => {
 			),
 		},
 	].filter(({hidden}) => !hidden);
+
+	if (isWaitStateEnabled && isWaitStateError) {
+		return <GenericErrorPage reset={() => void refetchWaitStates()} />;
+	}
 
 	if (isPending) {
 		return <ProcessInstanceHeaderSkeleton />;

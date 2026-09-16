@@ -145,7 +145,7 @@ describe('<ProcessInstance />', () => {
 			.toContain(`Instance ${PROCESS_INSTANCE_ID} could not be found`);
 	});
 
-	it('should recover from a generic error on retry', async ({worker}) => {
+	it('should recover from a generic instance read error on retry', async ({worker}) => {
 		worker.use(
 			mockGetProcessInstanceEndpoint({
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
@@ -156,11 +156,7 @@ describe('<ProcessInstance />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 
-		worker.use(
-			...getProcessInstancePageHandlers({
-				processInstance: createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
-			}),
-		);
+		worker.use(...getProcessInstancePageHandlers());
 
 		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 

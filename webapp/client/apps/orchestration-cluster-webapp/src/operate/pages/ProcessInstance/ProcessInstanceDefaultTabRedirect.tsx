@@ -19,16 +19,15 @@ import {
 const ProcessInstanceDefaultTabRedirect: React.FC = () => {
 	const navigate = useNavigate();
 	const {processInstanceId, processInstance, selection} = useProcessInstancePage();
-	const {data: waitStateStatistics, isLoading: isWaitStateLoading} =
-		useProcessInstanceWaitStateStatistics(processInstance);
+	const {data, isPending, isFetching, isError, isEnabled} = useProcessInstanceWaitStateStatistics(processInstance);
 
 	useEffect(() => {
-		if (isWaitStateLoading) {
+		if (isEnabled && (isPending || isFetching || isError)) {
 			return;
 		}
 
 		const tab = getDefaultProcessInstanceTab(processInstance, selection, {
-			isProcessLevelWaiting: hasProcessLevelWaitState(waitStateStatistics, processInstance.processDefinitionId),
+			isProcessLevelWaiting: hasProcessLevelWaitState(data, processInstance.processDefinitionId),
 		});
 
 		void navigate({
@@ -37,7 +36,7 @@ const ProcessInstanceDefaultTabRedirect: React.FC = () => {
 			search: true,
 			replace: true,
 		});
-	}, [navigate, processInstance, processInstanceId, selection, waitStateStatistics, isWaitStateLoading]);
+	}, [navigate, processInstance, processInstanceId, selection, data, isPending, isFetching, isError, isEnabled]);
 
 	return null;
 };

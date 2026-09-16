@@ -303,18 +303,12 @@ test.describe('Operate processes page', () => {
 		await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
 	});
 
-	test('should redirect to details by default when wait states are enabled and present at process scope', async ({
+	test('should recover waiting statistics before choosing the default tab', async ({
 		network,
 		page,
+		operateProcessesPage,
 	}) => {
 		network.use(
-			mockGetProcessInstanceWaitStateStatisticsEndpoint({
-				successResponse: HttpResponse.json(
-					createPaginatedResponse({
-						items: [{elementId: 'order-process', waitingCount: 1}],
-					}),
-				),
-			}),
 			...getProcessInstanceShellHandlers({
 				processInstance: createProcessInstance({
 					processInstanceKey: '1001',
@@ -325,9 +319,32 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await page.goto('/operate/processes/1001');
-
-		await expect(page).toHaveURL('/operate/processes/1001/details');
+		for (const isCached of [false, true]) {
+			network.use(
+				mockGetProcessInstanceWaitStateStatisticsEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status: 503}), {status: 503}),
+				}),
+			);
+			if (isCached) {
+				await page.getByRole('link', {name: 'Processes', exact: true}).click();
+				await operateProcessesPage.instanceLink('1001').click();
+			} else {
+				await page.goto('/operate/processes/1001');
+			}
+			await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible({timeout: 15000});
+			await expect(page).toHaveURL('/operate/processes/1001');
+			await expect(page.getByText('Waiting', {exact: true})).toHaveCount(0);
+			network.use(
+				mockGetProcessInstanceWaitStateStatisticsEndpoint({
+					successResponse: HttpResponse.json(
+						createPaginatedResponse({items: [{elementId: 'order-process', waitingCount: 1}]}),
+					),
+				}),
+			);
+			await page.getByRole('button', {name: 'Try again'}).click();
+			await expect(page).toHaveURL('/operate/processes/1001/details');
+			await expect(page.getByText('Waiting', {exact: true})).toBeVisible();
+		}
 	});
 
 	test('should hide start, end and called instances columns on reduced layouts', async ({network, page}) => {
