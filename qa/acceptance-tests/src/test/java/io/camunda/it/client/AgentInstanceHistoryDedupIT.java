@@ -94,8 +94,7 @@ public class AgentInstanceHistoryDedupIT {
             .getElementInstanceKey();
 
     // CREATE requires a jobKey/jobLeaseToken backed by an actual activation of the agentic job;
-    // fail
-    // it straight back so the activation below can pick the same job up again
+    // fail it straight back so the activation below can pick the same job up again
     final var creationJob =
         camundaClient
             .newActivateJobsCommand()

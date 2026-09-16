@@ -65,9 +65,6 @@ public class AgentInstanceMapper {
           }
 
           if (request.getJobLeaseToken() != null) {
-            // API field renamed to jobLeaseToken; the persisted record property keeps the
-            // original jobLease name. It is exported to secondary storage under that name,
-            // so renaming it would require an index migration.
             record.setJobLease(request.getJobLeaseToken());
           }
 
@@ -100,9 +97,6 @@ public class AgentInstanceMapper {
           }
 
           if (request.getJobLeaseToken() != null) {
-            // API field renamed to jobLeaseToken; the persisted record property keeps the
-            // original jobLease name. It is exported to secondary storage under that name,
-            // so renaming it would require an index migration.
             record.setJobLease(request.getJobLeaseToken());
           }
 
