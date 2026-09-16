@@ -163,6 +163,21 @@ describe('<AssignButton />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
 	});
 
+	it('should show an error and not call the backend when the current user has no username', async () => {
+		const screen = await render(
+			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser="" />,
+			{wrapper: getWrapper()},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
+
+		await expect.element(screen.getByText('Task could not be assigned')).toBeVisible();
+		await expect
+			.element(screen.getByText("You don't have a username. Contact your Tasklist administrator."))
+			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
+	});
+
 	it('should show an unassignment permission error notification', async ({worker}) => {
 		worker.use(
 			mockUnassignTaskEndpoint({

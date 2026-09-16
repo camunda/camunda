@@ -385,6 +385,7 @@
 			"taskDetailsBusinessIdLabel": "Business ID",
 			"taskDetailsTaskUnassignmentError": "Task could not be unassigned",
 			"taskDetailsTaskAssignmentError": "Task could not be assigned",
+			"taskDetailsMissingCurrentUserSubtitle": "You don't have a username. Contact your Tasklist administrator.",
 			"taskDetailsTaskCompletionRejectionErrorSubtitle": "The task completion was rejected by the system",
 			"taskDetailsAssignmentDelayInfoTitle": "Task assignment delayed",
 			"taskDetailsUnassignmentDelayInfoTitle": "Task unassignment delayed",

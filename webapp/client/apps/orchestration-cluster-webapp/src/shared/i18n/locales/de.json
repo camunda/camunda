@@ -381,6 +381,7 @@
 			"taskDetailsBusinessIdLabel": "Geschäfts-ID",
 			"taskDetailsTaskUnassignmentError": "Aufgabe konnte nicht zugewiesen werden",
 			"taskDetailsTaskAssignmentError": "Aufgabe konnte nicht zugewiesen werden",
+			"taskDetailsMissingCurrentUserSubtitle": "Sie haben keinen Benutzernamen. Kontaktieren Sie Ihren Tasklist-Administrator.",
 			"taskDetailsTaskCompletionRejectionErrorSubtitle": "Die Fertigstellung der Aufgabe wurde vom System abgelehnt",
 			"taskDetailsAssignmentDelayInfoTitle": "Aufgabenzuweisung verzögert",
 			"taskDetailsUnassignmentDelayInfoTitle": "Aufhebung der Aufgabenzuweisung verzögert",
