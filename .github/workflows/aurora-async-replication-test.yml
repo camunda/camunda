@@ -17,9 +17,7 @@ on:
         description: 'Ref of camunda/camunda-deployment-references to use'
         type: string
         required: false
-        # TODO: revert to 'main' once the aurora-mysql-engine-option branch
-        # (engine/port parameterization for Aurora MySQL) is merged there.
-        default: 'aurora-mysql-engine-option'
+        default: 'main'
       db_engine:
         description: 'Aurora engine to provision (postgresql or mysql)'
         type: string
@@ -35,9 +33,7 @@ on:
         description: 'Ref of camunda/camunda-deployment-references to use'
         type: string
         required: false
-        # TODO: revert to 'main' once the aurora-mysql-engine-option branch
-        # (engine/port parameterization for Aurora MySQL) is merged there.
-        default: 'aurora-mysql-engine-option'
+        default: 'main'
       db_engine:
         description: 'Aurora engine to provision'
         type: choice
@@ -73,7 +69,7 @@ env:
   TF_STATE_BUCKET_REGION: eu-west-1
   # engine-derived config: keep all engine differences here so the steps below stay generic.
   # engine_version and the database port are intentionally NOT set here — the aurora-global
-  # module (via the aurora-mysql-engine-option branch) derives both from TF_VAR_engine itself
+  # module derives both from TF_VAR_engine itself
   # (per-engine version defaults, and a `db_port` output used for the SSM tunnel below).
   TF_VAR_engine: ${{ (inputs.db_engine || 'postgresql') == 'mysql' && 'aurora-mysql' || 'aurora-postgresql' }}
 
