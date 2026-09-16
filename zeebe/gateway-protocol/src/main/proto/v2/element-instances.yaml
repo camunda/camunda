@@ -932,6 +932,13 @@ components:
           nullable: true
           type: integer
           format: int32
+        secretResolutionPending:
+          description: >-
+            Whether the job is parked while a referenced secret is being resolved. When true, the
+            job cannot proceed until resolution of an uncached secret completes, as opposed to
+            merely waiting to be claimed by a worker. The secret may exist and simply be in flight.
+          nullable: true
+          type: boolean
 
     MessageWaitStateDetails:
       type: object

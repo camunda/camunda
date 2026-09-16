@@ -1354,7 +1354,8 @@ class SearchQueryResponseMapperTest {
             "service-task-job", // jobType
             JobKind.BPMN_ELEMENT, // jobKind
             ListenerEventType.UNSPECIFIED, // listenerEventType — sentinel for non-listener jobs
-            3); // retries
+            3, // retries
+            false); // secretResolutionPending
     final var entity =
         new WaitStateEntity.Builder()
             .waitStateKey(111L)
