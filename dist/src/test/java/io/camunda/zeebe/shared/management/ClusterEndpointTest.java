@@ -602,25 +602,6 @@ final class ClusterEndpointTest {
               new ClusterConfigurationManagementRequest.RemoveZoneRequest("zone-a", false, force));
     }
 
-    /**
-     * The endpoint used to force-remove unconditionally, so an omitted parameter must be forwarded
-     * as {@code false}.
-     */
-    @Test
-    void shouldNotForceWhenTheParameterIsOmitted() {
-      // given
-      final var sender = senderAcceptingRemoveZone();
-      final var endpoint = new ClusterEndpoint(sender);
-
-      // when — the value Spring binds from the parameter's default
-      endpoint.removeZone("zone-a", false, false);
-
-      // then
-      verify(sender)
-          .removeZone(
-              new ClusterConfigurationManagementRequest.RemoveZoneRequest("zone-a", false, false));
-    }
-
     private ClusterConfigurationManagementRequestSender senderAcceptingRemoveZone() {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       when(sender.removeZone(any()))

@@ -186,10 +186,7 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
                   + zoneId
                   + "' without force because it contains the elected coordinator '"
                   + coordinatorSupplier.getDefaultCoordinator()
-                  + "'. Retry with force=true — the removed zone's brokers are evicted"
-                  + " immediately rather than handed off first, which may cause a brief"
-                  + " availability blip for partitions they lead, or wait for the coordinator to"
-                  + " fail over to another zone."));
+                  + "'. Retry with force=true"));
     }
 
     final var coordinator = coordinatorSupplier.getNextCoordinatorExcluding(zoneMembers);

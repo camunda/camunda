@@ -21,12 +21,16 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
@@ -79,7 +83,7 @@ final class RemoveZoneTransformerTest {
     final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
     final var expectedConfig = new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
 
-    // when
+    // when -- forced = true
     final var result = plannedOperations(new RemoveZoneTransformer(ZONE_B, true), currentTopology);
 
     // then
@@ -90,6 +94,31 @@ final class RemoveZoneTransformerTest {
             new PartitionForceReconfigureOperation(ZONE_A_0, 2, Set.of(ZONE_A_0)),
             new MemberRemoveOperation(ZONE_A_0, ZONE_B_0),
             new UpdatePartitionDistributorConfigOperation(ZONE_A_0, expectedConfig));
+  }
+
+  @Test
+  void shouldRemoveZoneBrokersAndDropZoneFromConfig() {
+    // given: dual-zone cluster, zone-b fails over
+    final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
+    final var expectedConfig = new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
+
+    // when -- forced = false
+    final var result = plannedOperations(new RemoveZoneTransformer(ZONE_B, false), currentTopology);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new UpdatePartitionDistributorConfigOperation(ZONE_A_0, expectedConfig),
+            new PreScalingOperation(ZONE_A_0, Set.of(ZONE_A_0)),
+            new PartitionDemoteOperation(ZONE_B_0, 1),
+            new PartitionLeaveOperation(ZONE_B_0, 1, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 1),
+            new PartitionDemoteOperation(ZONE_B_0, 2),
+            new PartitionLeaveOperation(ZONE_B_0, 2, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_0, 2, 1),
+            new MemberLeaveOperation(ZONE_B_0),
+            new PostScalingOperation(ZONE_A_0, Set.of(ZONE_A_0)));
   }
 
   @ParameterizedTest
