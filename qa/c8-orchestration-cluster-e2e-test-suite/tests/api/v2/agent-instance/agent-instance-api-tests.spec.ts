@@ -323,6 +323,9 @@ test.describe.serial('Agent Instance API', () => {
       ...overrides,
     });
 
+    const configurationHistoryItemId = randomUUID();
+    const assistantHistoryItemIds = [randomUUID(), randomUUID(), randomUUID()];
+
     const updateRes = await request.patch(
       buildUrl(GET_ENDPOINT, {agentInstanceKey}),
       {
@@ -336,7 +339,7 @@ test.describe.serial('Agent Instance API', () => {
             // Only the tool list changes here; model/provider/systemPrompt are
             // omitted to leave them as previously configured at creation.
             {
-              historyItemId: randomUUID(),
+              historyItemId: configurationHistoryItemId,
               loopIteration: 1,
               role: 'CONFIGURATION',
               content: [{contentType: 'TEXT', text: 'tools configured'}],
@@ -351,6 +354,7 @@ test.describe.serial('Agent Instance API', () => {
               ],
             },
             assistantItem({
+              historyItemId: assistantHistoryItemIds[0],
               loopIteration: 1,
               toolCalls: [
                 {
@@ -361,15 +365,29 @@ test.describe.serial('Agent Instance API', () => {
               ],
             }),
             assistantItem({
+              historyItemId: assistantHistoryItemIds[1],
               loopIteration: 2,
               toolCalls: [{toolCallId: randomUUID(), toolName: 'summarize'}],
             }),
-            assistantItem({loopIteration: 3}),
+            assistantItem({
+              historyItemId: assistantHistoryItemIds[2],
+              loopIteration: 3,
+            }),
           ],
         },
       },
     );
-    await assertStatusCode(updateRes, 204);
+    // PATCH returns 200 with an AgentInstanceUpdateResult, not 204 — see
+    // agent-instances.yaml's updateAgentInstance operation.
+    await assertStatusCode(updateRes, 200);
+    const updateBody = await updateRes.json();
+    const createdHistory = updateBody.createdHistory as Array<
+      Record<string, unknown>
+    >;
+    expect(createdHistory.map((h) => h.historyItemId).sort()).toEqual(
+      [configurationHistoryItemId, ...assistantHistoryItemIds].sort(),
+    );
+    createdHistory.forEach((h) => expect(h.isDuplicate).toBe(false));
 
     // Unlike CREATE, UPDATE defers a CONFIGURATION item's tools/model/provider/limits
     // changes until the producing job completes (AgentHistoryCommitProcessor commits the

@@ -13,9 +13,9 @@
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_09fa3mg</bpmn:incoming>
       <bpmn:outgoing>Flow_0rbz617</bpmn:outgoing>
-      <bpmn:task id="Activity_A" name="Acitivity A" />
+      <bpmn:task id="Activity_A" name="Activity A" />
       <bpmn:task id="Activity_B" name="Activity B" />
-      <bpmn:task id="Activity_C" name="Acitvity C" />
+      <bpmn:task id="Activity_C" name="Activity C" />
     </bpmn:adHocSubProcess>
     <bpmn:endEvent id="Event_13axmdu">
       <bpmn:incoming>Flow_0rbz617</bpmn:incoming>
