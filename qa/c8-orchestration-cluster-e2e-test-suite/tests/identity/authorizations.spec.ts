@@ -84,16 +84,14 @@ test.describe.serial('component authorizations CRUD', () => {
     await identityAuthorizationsPage.selectAuthorizationOwnerType({
       ownerType: NEW_COMPONENT_AUTHORIZATION.ownerType,
     });
-    await identityAuthorizationsPage.createAuthorizationOwnerSearchInput.waitFor(
-      {
-        state: 'visible',
-        timeout: 10000,
-      },
-    );
 
     // No owner is selected here: the owner field is now a search that only
     // lists existing owners, and this role is intentionally never created.
     // Resource ID validation is field-level and independent of the owner.
+    // selectAuthorizationOwnerType() already waits for the owner combobox's
+    // trigger to be visible, so no extra readiness wait is needed before
+    // moving on -- the search input itself only mounts once that trigger is
+    // opened, which this test never does.
     await identityAuthorizationsPage.fillResourceId('invalid!!%');
     await expect(
       identityAuthorizationsPage.createAuthorizationModal,
