@@ -96,7 +96,9 @@ public class Jackson3JsonMapper implements JsonMapper {
       return jsonInput;
     } catch (final JacksonException e) {
       throw new InternalClientException(
-          String.format("Failed to validate json input '%s' for property '%s'", jsonInput, e), e);
+          String.format(
+              "Failed to validate json input '%s' for property '%s'", jsonInput, propertyName),
+          e);
     }
   }
 
