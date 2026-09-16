@@ -694,6 +694,7 @@
 					"learnMoreLink": "Learn more about permissions"
 				},
 				"panel": {
+					"label": "decision panel",
 					"unknownEvaluationFailure": "Evaluation failed with unknown error"
 				}
 			},

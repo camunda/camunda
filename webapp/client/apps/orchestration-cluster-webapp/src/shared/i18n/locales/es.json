@@ -680,6 +680,7 @@
 					"learnMoreLink": "Más información sobre los permisos"
 				},
 				"panel": {
+					"label": "panel de decisión",
 					"unknownEvaluationFailure": "La evaluación falló con un error desconocido"
 				}
 			},

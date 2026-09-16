@@ -680,6 +680,7 @@
 					"learnMoreLink": "Mehr über Berechtigungen erfahren"
 				},
 				"panel": {
+					"label": "Entscheidungspanel",
 					"unknownEvaluationFailure": "Auswertung ist mit einem unbekannten Fehler fehlgeschlagen"
 				}
 			},

@@ -81,7 +81,7 @@ test('should render panel-level forbidden state when xml access is denied', asyn
 
 	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
 
-	await expect(operateDecisionInstancePage.xmlForbiddenMessage).toBeVisible({timeout: 15000});
+	await expect(operateDecisionInstancePage.xmlForbiddenMessage).toBeVisible();
 	await expect(operateDecisionInstancePage.pageErrorHeading).not.toBeVisible();
 });
 
@@ -97,7 +97,7 @@ test('should render panel-level generic error when xml loading fails', async ({
 
 	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
 
-	await expect(operateDecisionInstancePage.panelErrorMessage).toBeVisible({timeout: 15000});
+	await expect(operateDecisionInstancePage.panelErrorMessage).toBeVisible();
 	await expect(operateDecisionInstancePage.pageErrorHeading).not.toBeVisible();
 });
 

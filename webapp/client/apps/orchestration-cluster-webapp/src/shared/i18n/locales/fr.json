@@ -683,6 +683,7 @@
 					"learnMoreLink": "En savoir plus sur les autorisations"
 				},
 				"panel": {
+					"label": "panneau de décision",
 					"unknownEvaluationFailure": "L'évaluation a échoué avec une erreur inconnue"
 				}
 			},
