@@ -85,7 +85,7 @@ import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
+import io.camunda.zeebe.management.cluster.PartitioningConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PhysicalTenantState;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.TopologyChange;
@@ -943,8 +943,7 @@ final class ClusterApiUtilsTest {
   @ValueSource(strings = {"ZONE_AWARE", "FIXED", "ROUND_ROBIN"})
   void shouldIncludePartitionDistributorConfig(final String type) {
     // given
-    final var expectedConfig =
-        new io.camunda.zeebe.management.cluster.PartitionDistributionConfig();
+    final var expectedConfig = new io.camunda.zeebe.management.cluster.PartitioningConfig();
     expectedConfig.type(TypeEnum.valueOf(type));
     final PartitionDistributorConfig partitionDistributorConfig;
     switch (type) {

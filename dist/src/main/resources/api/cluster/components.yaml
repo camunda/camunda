@@ -183,7 +183,7 @@ schemas:
         description: The unique ID of the cluster
         example: "cluster-1234"
       partitionDistribution:
-        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+        $ref: "components.yaml#/schemas/PartitioningConfig"
       physicalTenants:
         description: >
           One entry per physical tenant the response covers: every physical tenant known to the
@@ -212,14 +212,14 @@ schemas:
       routing:
         $ref: "components.yaml#/schemas/RoutingState"
 
-  UpdatePartitionDistributionRequest:
+  UpdatePartitioningRequest:
     description: >
       Request body for `PUT /cluster/partitioning`. Exactly one of `config` and
       `zonePriorities` must be set.
     type: object
     properties:
       config:
-        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+        $ref: "components.yaml#/schemas/PartitioningConfig"
       zonePriorities:
         type: array
         minItems: 1
@@ -231,7 +231,7 @@ schemas:
           and re-assigned in this order. Mutually exclusive with `config`.
         example: ["zone-a", "zone-b"]
 
-  PartitionDistributionConfig:
+  PartitioningConfig:
     description: The partition distributor configuration agreed on by the cluster.
     type: object
     required:
@@ -620,7 +620,7 @@ schemas:
       exporterId:
         $ref: "components.yaml#/schemas/ExporterId"
       partitionDistributionConfig:
-        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+        $ref: "components.yaml#/schemas/PartitioningConfig"
       exportingState:
         $ref: "components.yaml#/schemas/ExportingState"
 
