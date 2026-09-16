@@ -7,28 +7,27 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
-import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProviderFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import java.time.InstantSource;
-import java.util.function.Supplier;
 
 public class LsnReplicationControllerFactory implements ReplicationControllerFactory {
 
   private final int partitionId;
-  private final Supplier<ReplicationLsnProvider> replicationLsnProviderSupplier;
+  private final ReplicationLsnProviderFactory replicationLsnProviderFactory;
   private final ReplicationConfiguration replicationConfiguration;
   private final InstantSource clock;
   private final RdbmsWriterMetrics metrics;
 
   public LsnReplicationControllerFactory(
-      final Supplier<ReplicationLsnProvider> replicationLsnProviderSupplier,
+      final ReplicationLsnProviderFactory replicationLsnProviderFactory,
       final ReplicationConfiguration replicationConfiguration,
       final int partitionId,
       final InstantSource clock,
       final RdbmsWriterMetrics metrics) {
-    this.replicationLsnProviderSupplier = replicationLsnProviderSupplier;
+    this.replicationLsnProviderFactory = replicationLsnProviderFactory;
     this.replicationConfiguration = replicationConfiguration;
     this.partitionId = partitionId;
     this.clock = clock;
@@ -39,7 +38,7 @@ public class LsnReplicationControllerFactory implements ReplicationControllerFac
   public ReplicationController createReplicationController(final Controller controller) {
     final var strategy =
         new LsnReplicationSignalStrategy(
-            replicationLsnProviderSupplier.get(), replicationConfiguration);
+            replicationLsnProviderFactory.create(), replicationConfiguration);
     return new DefaultReplicationController(
         controller, strategy, replicationConfiguration, partitionId, clock, metrics);
   }

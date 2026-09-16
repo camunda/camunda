@@ -185,7 +185,7 @@ public class RdbmsExporterWrapper implements Exporter {
       case LOG_SEQ ->
           builder.replicationControllerFactory(
               new LsnReplicationControllerFactory(
-                  rdbmsService::getReplicationLsnProvider,
+                  rdbmsService.getReplicationLsnProviderFactory(),
                   config.getAsyncReplication(),
                   partitionId,
                   clock,
@@ -193,7 +193,7 @@ public class RdbmsExporterWrapper implements Exporter {
       case TIME_LAG ->
           builder.replicationControllerFactory(
               new TimeMonitoringReplicationControllerFactory(
-                  rdbmsService::getReplicationLagProvider,
+                  rdbmsService.getReplicationLagProviderFactory(),
                   config.getAsyncReplication(),
                   partitionId,
                   clock,

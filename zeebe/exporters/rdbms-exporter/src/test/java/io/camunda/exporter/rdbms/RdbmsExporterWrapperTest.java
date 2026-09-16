@@ -18,6 +18,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.db.rdbms.read.replication.ReplicationLagProviderFactory;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProviderFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
@@ -114,10 +116,16 @@ class RdbmsExporterWrapperTest {
     final Controller controller = mock(Controller.class);
     final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    final ReplicationLsnProviderFactory replicationLsnProviderFactory =
+        mock(ReplicationLsnProviderFactory.class);
+    final ReplicationLagProviderFactory replicationLagProviderFactory =
+        mock(ReplicationLagProviderFactory.class);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsSchemaManagerRegistry schemaManagerRegistry = mock(RdbmsSchemaManagerRegistry.class);
     when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
         .thenReturn(rdbmsService);
+    when(rdbmsService.getReplicationLsnProviderFactory()).thenReturn(replicationLsnProviderFactory);
+    when(rdbmsService.getReplicationLagProviderFactory()).thenReturn(replicationLagProviderFactory);
     when(context.getPartitionId()).thenReturn(1);
     when(context.getPhysicalTenantId()).thenReturn("tenanta");
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
@@ -135,16 +143,16 @@ class RdbmsExporterWrapperTest {
     }
 
     // then
-    verify(rdbmsService, never()).getReplicationLsnProvider();
-    verify(rdbmsService, never()).getReplicationLagProvider();
+    verify(replicationLsnProviderFactory, never()).create();
+    verify(replicationLagProviderFactory, never()).create();
 
     // when
     exporterWrapper.open(controller);
 
     // then
     switch (replicationType) {
-      case LOG_SEQ -> verify(rdbmsService).getReplicationLsnProvider();
-      case TIME_LAG -> verify(rdbmsService).getReplicationLagProvider();
+      case LOG_SEQ -> verify(replicationLsnProviderFactory).create();
+      case TIME_LAG -> verify(replicationLagProviderFactory).create();
       default -> throw new IllegalStateException("Unexpected replication type: " + replicationType);
     }
   }

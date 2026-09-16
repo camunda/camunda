@@ -8,9 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
-import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLagProviderFactory;
-import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProviderFactory;
 import io.camunda.db.rdbms.read.service.AgentDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.AgentHistoryDbReader;
@@ -261,12 +259,12 @@ public class RdbmsService {
     return tenantReaders.deployedResourceReader();
   }
 
-  public ReplicationLsnProvider getReplicationLsnProvider() {
-    return replicationLsnProviderFactory.create();
+  public ReplicationLsnProviderFactory getReplicationLsnProviderFactory() {
+    return replicationLsnProviderFactory;
   }
 
-  public ReplicationLagProvider getReplicationLagProvider() {
-    return replicationLagProviderFactory.create();
+  public ReplicationLagProviderFactory getReplicationLagProviderFactory() {
+    return replicationLagProviderFactory;
   }
 
   public RdbmsWriters createWriter(final long partitionId) {
