@@ -55,9 +55,9 @@ import org.slf4j.LoggerFactory;
  */
 public final class AzureBackupStore implements BackupStore {
   public static final String ERROR_MSG_BACKUP_NOT_FOUND =
-      "Expected to restore from backup with id '%s', but does not exist.";
-  public static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
-      "Expected to restore from completed backup with id '%s', but was in state '%s'";
+      "Expected to find backup with id '%s', but does not exist.";
+  public static final String ERROR_MSG_BACKUP_NOT_COMPLETED =
+      "Expected to find completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
   public static final String METADATA_OBJECT_NAME = "metadata.json";
@@ -263,7 +263,7 @@ public final class AzureBackupStore implements BackupStore {
           return switch (manifest.statusCode()) {
             case FAILED, IN_PROGRESS, DELETED ->
                 throw new UnexpectedManifestState(
-                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+                    ERROR_MSG_BACKUP_NOT_COMPLETED.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
@@ -295,6 +295,9 @@ public final class AzureBackupStore implements BackupStore {
     return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            throw new UnexpectedManifestState(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
+          }
           manifestManager.markAsDeleted(manifest);
           return BackupStatusCode.DELETED;
         },
