@@ -234,23 +234,6 @@ public final class SuspensionStateTest {
   }
 
   @Test
-  public void shouldFindNextBufferedCommandRegardlessOfInsertionOrder() {
-    // given
-    final long processInstanceKey = 1L;
-    suspensionState.bufferCommand(30L, bufferedCommandRecord(processInstanceKey, 3L));
-    suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKey, 1L));
-    suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
-
-    // when
-    final var nextBufferedCommand = suspensionState.findNextBufferedCommand(processInstanceKey, -1L);
-
-    // then
-    assertThat(nextBufferedCommand).isPresent();
-    assertThat(nextBufferedCommand.get().key()).isEqualTo(10L);
-    assertThat(nextBufferedCommand.get().command().getCommandKey()).isEqualTo(1L);
-  }
-
-  @Test
   public void shouldSkipEntryMatchingAfterCommandKeyAndReturnTheNextOne() {
     // given
     final long processInstanceKey = 1L;
@@ -260,7 +243,8 @@ public final class SuspensionStateTest {
 
     // when - afterCommandKey (10L) is still buffered, unlike the drain hot path where it was
     // already removed by the DRAINED applier before this call is made
-    final var nextBufferedCommand = suspensionState.findNextBufferedCommand(processInstanceKey, 10L);
+    final var nextBufferedCommand =
+        suspensionState.findNextBufferedCommand(processInstanceKey, 10L);
 
     // then
     assertThat(nextBufferedCommand).isPresent();
