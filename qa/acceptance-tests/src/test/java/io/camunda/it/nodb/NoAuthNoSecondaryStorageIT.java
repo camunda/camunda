@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
  * test validates the complete engine-only deployment scenario where database.type=none.
  */
 @ZeebeIntegration
-public class NoAuthNoSecondaryStorageTest {
+public class NoAuthNoSecondaryStorageIT {
 
   @TestZeebe
   private final TestStandaloneBroker broker =
