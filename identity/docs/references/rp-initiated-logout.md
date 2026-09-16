@@ -194,7 +194,8 @@ form in YAML, or it parses as a map rather than a string.
 
 The same keys work on the flat `camunda.security.authentication.oidc.*` block, which counts as one
 more provider — keyed by its `registration-id` (default `oidc`) — and gets its own independent
-answer. A deployment can therefore set a URI on the flat block and a different one, or none, on each
+answer. That block only becomes a provider once its `client-id` is set, so setting
+`post-logout-redirect-uri` there alone has no effect. A deployment can therefore set a URI on the flat block and a different one, or none, on each
 `providers.oidc.<id>` entry:
 
 ```yaml
