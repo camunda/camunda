@@ -13,7 +13,6 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.SaasConfigurationHelper;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -52,17 +51,15 @@ public class AdminClientConfigController {
       @Autowired(required = false) final WebappConfiguration webappConfiguration) {
     final var resolvedWebappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
-    final boolean isSaas = SaasConfigurationHelper.isSaas(cslProperties.getSaas());
     final boolean isNewDesignSystemEnabled =
-        resolvedWebappConfiguration.resolveNewDesignSystemEnabled(isSaas);
+        resolvedWebappConfiguration.resolveNewDesignSystemEnabled();
     final var namedProviders = namedProviders(cslProperties);
     final boolean isAdditionalIdpConfigured = isAdditionalIdpConfigured(namedProviders);
 
     LOG.info(
-        "Admin new design system resolved to {} (explicit override={}, isSaas={})",
+        "Admin new design system resolved to {} (explicit override={})",
         isNewDesignSystemEnabled,
-        resolvedWebappConfiguration.getNewDesignSystemEnabled(),
-        isSaas);
+        resolvedWebappConfiguration.getNewDesignSystemEnabled());
     LOG.info(
         "Admin additional IdP resolved to {} (namedProviders={})",
         isAdditionalIdpConfigured,

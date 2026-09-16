@@ -59,8 +59,8 @@ public class WebappConfiguration {
     this.newDesignSystemEnabled = newDesignSystemEnabled;
   }
 
-  public boolean resolveNewDesignSystemEnabled(final boolean isSaas) {
-    return newDesignSystemEnabled != null ? newDesignSystemEnabled : !isSaas;
+  public boolean resolveNewDesignSystemEnabled() {
+    return newDesignSystemEnabled == null || newDesignSystemEnabled;
   }
 
   public static class Cloud {
