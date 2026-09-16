@@ -678,6 +678,9 @@
 					"heading": "403 - No tiene permiso para ver esta información",
 					"description": "Póngase en contacto con su administrador para obtener acceso.",
 					"learnMoreLink": "Más información sobre los permisos"
+				},
+				"panel": {
+					"unknownEvaluationFailure": "La evaluación falló con un error desconocido"
 				}
 			},
 			"processInstance": {

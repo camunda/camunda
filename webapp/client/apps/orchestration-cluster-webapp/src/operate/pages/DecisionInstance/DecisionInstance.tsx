@@ -13,11 +13,13 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 import {InstanceDetail} from '#/operate/shared/InstanceDetail/InstanceDetail';
+import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import permissionDeniedIconUrl from '#/operate/assets/permission-denied.svg';
 import {Header} from './Header';
+import {DecisionPanel} from './DecisionPanel';
 import {useDecisionInstance} from './decisionInstance.queries';
-import {Container} from './styled';
+import {Container, Section} from './styled';
 
 type Props = {
 	decisionInstanceId: string;
@@ -63,6 +65,7 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 			header={
 				<Header decisionEvaluationInstanceKey={decisionInstanceId} onOpenDrd={() => setDrdPanelState('minimized')} />
 			}
+			topPanel={<DecisionPanel decisionEvaluationInstanceKey={decisionInstanceId} />}
 			rightPanel={drdPanelState === 'minimized' ? <div /> : null}
 		/>
 	);
@@ -70,15 +73,19 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 
 type ShellProps = {
 	header: React.ReactNode;
+	topPanel?: React.ReactNode;
 	rightPanel?: React.ReactNode;
 };
 
-/**
- * Shared page frame for both the loaded page and the route's `pendingComponent` - only the
- * header slot differs (real `Header` vs `InstanceHeaderSkeleton`), so the shell (and its
- * `VisuallyHiddenH1`/placeholder panels) is factored out to avoid drifting the two apart.
- */
-const DecisionInstanceShell: React.FC<ShellProps> = ({header, rightPanel}) => {
+const DecisionInstanceShell: React.FC<ShellProps> = ({
+	header,
+	topPanel = (
+		<Section aria-label="decision panel" tabIndex={0}>
+			<DiagramShell status="loading">{null}</DiagramShell>
+		</Section>
+	),
+	rightPanel,
+}) => {
 	const {t} = useTranslation();
 
 	return (
@@ -88,7 +95,7 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, rightPanel}) => {
 				<InstanceDetail
 					type="decision"
 					header={header}
-					topPanel={<div />}
+					topPanel={topPanel}
 					bottomPanel={<div />}
 					rightPanel={rightPanel}
 				/>
