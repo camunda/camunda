@@ -35,9 +35,13 @@ function processInstanceQuery(processInstanceKey: string) {
 	});
 }
 
-function processInstanceIncidentsCountQuery(processInstanceKey: string) {
+function processInstanceIncidentsCountQuery({
+	processInstanceKey,
+	hasIncident,
+}: Pick<ProcessInstance, 'processInstanceKey' | 'hasIncident'>) {
 	return queryOptions({
 		queryKey: ['processInstanceIncidentsCount', processInstanceKey] as const,
+		enabled: hasIncident,
 		queryFn: async (): Promise<number> => {
 			const {response, error} = await request(
 				endpoints.queryProcessInstanceIncidents(processInstanceKey, {filter: {state: 'ACTIVE'}, page: {limit: 0}}),

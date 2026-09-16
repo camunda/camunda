@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClient, QueryClientProvider, useQuery} from '@tanstack/react-query';
 import {cleanup, render} from 'vitest-browser-react';
 import {afterEach, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
@@ -136,7 +136,35 @@ it('should count only active incidents without fetching incident rows', async ({
 			failureResponse: HttpResponse.json({...response, page: {...response.page, totalItems: 8}}),
 		}),
 	);
-	expect(await queryClient.fetchQuery(processInstanceIncidentsCountQuery('1'))).toBe(3);
+	expect(
+		await queryClient.fetchQuery(processInstanceIncidentsCountQuery({processInstanceKey: '1', hasIncident: true})),
+	).toBe(3);
+});
+
+it('should wait for reported incidents before loading their count', async ({worker}) => {
+	function Preview() {
+		const [hasIncident, setHasIncident] = useState(false);
+		const {data = 0, isFetching} = useQuery(
+			processInstanceIncidentsCountQuery({processInstanceKey: PROCESS_INSTANCE_KEY, hasIncident}),
+		);
+		return (
+			<>
+				<button onClick={() => setHasIncident(true)}>Report incident</button>
+				<output>{isFetching ? 'Loading' : `${data} incidents`}</output>
+			</>
+		);
+	}
+	const response = createPaginatedResponse();
+	response.page.totalItems = 3;
+	worker.use(mockQueryProcessInstanceIncidentsEndpoint({successResponse: HttpResponse.json(response)}));
+	const screen = await render(
+		<QueryClientProvider client={queryClient}>
+			<Preview />
+		</QueryClientProvider>,
+	);
+	await expect.element(screen.getByRole('status')).toHaveTextContent('0 incidents');
+	await userEvent.click(screen.getByRole('button', {name: 'Report incident'}));
+	await expect.element(screen.getByRole('status')).toHaveTextContent('3 incidents');
 });
 
 it('should clear cached waiting state after the instance stops running', async ({worker}) => {
