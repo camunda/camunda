@@ -299,6 +299,11 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
     await cancelProcessInstance(instance.processInstanceKey);
     await expectProcessDefinitionDeleted(request, processDefinitionKey);
 
+    // The REST search above confirms DELETED within its 90s extended window, but
+    // the dashboard row is driven by Operate's list-view import, which lags that
+    // state on a loaded shared cluster (the row only drops once the CANCELED
+    // instance is imported). The default 3-retry budget (~45s) is too tight
+    // under nightly load, so give the removal poll a matching ~90s of reloads.
     await waitForAssertion({
       assertion: async () => {
         await expect(item).toHaveCount(0, {timeout: UI_REFRESH_TIMEOUT});
@@ -306,6 +311,7 @@ test.describe('Operate Process Definition Draining — lifecycle and incidents',
       onFailure: async () => {
         await page.reload();
       },
+      maxRetries: 6,
     });
   });
 

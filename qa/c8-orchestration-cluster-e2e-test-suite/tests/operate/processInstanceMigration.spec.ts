@@ -752,6 +752,12 @@ test.describe.serial('Process Instance Migration', () => {
         maxRetries: 2,
       });
 
+      // Once the overlay statistic shows the incident, the flow node's popover
+      // still reads from the slower v1 flow-node-metadata endpoint. Under heavy
+      // nightly load on the shared cluster that endpoint can lag the overlay by
+      // well over a minute (the same Operate build clears this in seconds on the
+      // less-loaded v1-mode run), so widen the reload budget rather than let a
+      // ~100s lag fail an otherwise-correct migration.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -764,7 +770,7 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 10,
+        maxRetries: 20,
       });
     });
   });
