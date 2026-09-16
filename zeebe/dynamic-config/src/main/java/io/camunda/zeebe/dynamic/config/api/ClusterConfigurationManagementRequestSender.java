@@ -277,11 +277,9 @@ public final class ClusterConfigurationManagementRequestSender {
   }
 
   /**
-   * Routes the request past the zone being removed only when it is forced. A forced removal is the
-   * answer to a zone that is down, so the elected coordinator may be inside it and unreachable, and
-   * the receiving broker executes the request itself. A graceful removal is an ordinary
-   * configuration change: it has to reach the elected coordinator, which rejects it outright when
-   * it did not — and the zone is up anyway, so there is nothing to route around.
+   * Routes forced removal to a broker outside the zone being removed. This is necessary when the
+   * zone contains the elected coordinator or is not reachable from the surviving zones. A
+   * non-forced removal is routed to the elected coordinator.
    */
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> removeZone(
       final RemoveZoneRequest request) {

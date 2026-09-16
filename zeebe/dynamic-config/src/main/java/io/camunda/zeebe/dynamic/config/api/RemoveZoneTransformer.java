@@ -30,9 +30,9 @@ import java.util.stream.Stream;
  * Removes a zone from the cluster: its brokers leave the member set and the zone is dropped from
  * the persisted {@link ZoneAwareConfig}, in one atomic change.
  *
- * <p>Gracefully by default — the zone's partitions are moved onto the surviving zones before its
- * brokers leave, so the zone's brokers must be running. Forced when the zone is already down: its
- * brokers are then evicted without moving anything, at the cost of the replicas they held.
+ * <p>Without {@code force}, the request is handled by the elected coordinator. Set {@code force}
+ * when the zone contains the coordinator or is not reachable from the surviving zones; its brokers
+ * are then evicted without moving anything, at the cost of the replicas they held.
  */
 public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
 
@@ -53,7 +53,7 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
             removal ->
                 force
                     ? forcedPhases(configuration, removal)
-                    : gracefulPhases(configuration, removal));
+                    : regularPhases(configuration, removal));
   }
 
   @Override
@@ -65,9 +65,8 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
    * Evicts the zone's brokers from every physical tenant's partition group, by handing the brokers
    * that survive it to {@link
    * ForceScaleDownRequestTransformer#phases(CurrentClusterConfiguration)}. Evicting them from the
-   * default group alone left the other tenants' partitions on the failed zone's brokers, and the
-   * member removal that follows then refused the whole plan — so the first half of the zone
-   * failover procedure could not run on a cluster with more than one tenant.
+   * default group alone would leave the other tenants' partitions on the removed zone's brokers,
+   * and the member removal that follows would refuse the whole plan.
    */
   private static Either<Exception, List<Phase>> forcedPhases(
       final CurrentClusterConfiguration configuration, final ZoneRemoval removal) {
@@ -78,16 +77,15 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
 
   /**
    * Persists the shrunk layout first and then plans an ordinary scale-down onto the surviving
-   * brokers, which moves the zone's partitions off it before its brokers leave.
+   * brokers.
    *
    * <p>The layout has to be persisted before the partition work rather than after it, the opposite
-   * of the forced plan: the placement the scale-down aims at is computed by the zone-aware
-   * distributor from the layout, so the shrunk layout has to be the one in effect. This is the same
-   * order {@link UpdatePartitionDistributionTransformer} applies a layout change in, and it leaves
-   * the cluster briefly describing a layout its members do not match yet — which is what the
-   * partition work that follows resolves.
+   * of the forced plan: the scale-down is computed against the shrunk layout, so it has to be the
+   * one in effect. This is the same order {@link UpdatePartitionDistributionTransformer} applies a
+   * layout change in, and it leaves the cluster briefly describing a layout its members do not
+   * match yet — which is what the partition work that follows resolves.
    */
-  private static Either<Exception, List<Phase>> gracefulPhases(
+  private static Either<Exception, List<Phase>> regularPhases(
       final CurrentClusterConfiguration configuration, final ZoneRemoval removal) {
     return new ScaleRequestTransformer(
             removal.membersToRetain(), Optional.of(removal.shrunkLayout().replicationFactor()))
@@ -184,9 +182,9 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
     if (!force && zoneMembers.contains(coordinatorSupplier.getDefaultCoordinator())) {
       return Either.left(
           new InvalidRequest(
-              "Cannot gracefully remove zone '"
+              "Cannot remove zone '"
                   + zoneId
-                  + "' because it contains the elected coordinator '"
+                  + "' without force because it contains the elected coordinator '"
                   + coordinatorSupplier.getDefaultCoordinator()
                   + "'. Retry with force=true — the removed zone's brokers are evicted"
                   + " immediately rather than handed off first, which may cause a brief"
