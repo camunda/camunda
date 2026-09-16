@@ -26,7 +26,7 @@
     "@tanstack/react-query-devtools": "5.102.0",
     "@tanstack/react-virtual": "3.14.5",
     "@uiw/react-codemirror": "4.25.11",
-    "bpmn-js": "18.27.0",
+    "bpmn-js": "18.28.0",
     "bpmn-moddle": "10.2.0",
     "date-fns": "4.4.0",
     "diagram-js-minimap": "5.4.0",
