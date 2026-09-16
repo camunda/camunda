@@ -59,7 +59,7 @@ final class BrokerBasedConfigurationTest {
       Counter.builder("broker.test").register(brokerMeterRegistry);
 
       // then
-      assertThat(meterRegistry.get("broker.test").counter().getId().getTag("nodeId"))
+      assertThat(meterRegistry.get("broker.test").counter().getId().getTag("broker-id"))
           .isEqualTo(expectedNodeId);
     } finally {
       MicrometerUtil.close(brokerMeterRegistry);

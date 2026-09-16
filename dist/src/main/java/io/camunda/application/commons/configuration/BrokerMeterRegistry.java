@@ -17,6 +17,6 @@ public record BrokerMeterRegistry(MeterRegistry registry) {
   public static BrokerMeterRegistry create(
       final MeterRegistry meterRegistry, final MemberId memberId) {
     return new BrokerMeterRegistry(
-        MicrometerUtil.wrap(meterRegistry, Tags.of("nodeId", memberId.toString())));
+        MicrometerUtil.wrap(meterRegistry, Tags.of("broker-id", memberId.toString())));
   }
 }
