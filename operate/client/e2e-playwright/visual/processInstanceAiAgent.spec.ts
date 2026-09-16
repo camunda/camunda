@@ -132,8 +132,27 @@ test.describe('AI agent details', () => {
     await expect(
       processInstancePage.aiAgentDetails.systemPromptEvidence,
     ).toContainText(
-      'Type:LinkedPrompt ID:claims-review-instructions.mdBinding:LatestVersion:1',
+      'Prompt ID:claims-review-instructions.mdBinding:LatestVersion:1',
     );
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptEvidence,
+    ).not.toContainText('Type:');
+    expect(
+      await processInstancePage.aiAgentDetails.systemPromptSection
+        .getByTestId('conversation-message')
+        .evaluate((prompt) => {
+          const evidence = prompt.parentElement?.querySelector(
+            '[aria-label="System prompt evidence"]',
+          );
+          return (
+            evidence != null &&
+            Boolean(
+              prompt.compareDocumentPosition(evidence) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+            )
+          );
+        }),
+    ).toBe(true);
     await expect(
       processInstancePage.aiAgentDetails.systemPromptSection.getByText(
         'Route ambiguous damage descriptions to manual review, even when timestamped photos are complete.',
@@ -141,12 +160,7 @@ test.describe('AI agent details', () => {
     ).toBeVisible();
     await expect(
       processInstancePage.aiAgentDetails.systemPromptSection.getByText(
-        'Return only a JSON object with decision, rationale, and instructionVersion.',
-      ),
-    ).toBeVisible();
-    await expect(
-      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
-        'Set instructionVersion to GOVERNED-V1.',
+        'Return only a JSON object with decision and rationale.',
       ),
     ).toBeVisible();
     await expect(
@@ -379,7 +393,7 @@ test.describe('AI agent details', () => {
     ).toContainText(/Automatic\s*approval/);
     await expect(
       processInstancePage.aiAgentDetails.systemPromptSection.getByText(
-        'Set instructionVersion to GOVERNED-V2.',
+        'Return only a JSON object with decision and rationale.',
       ),
     ).toBeVisible();
     await expect(

@@ -251,10 +251,9 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             </SectionTitle>
           }
         >
+          <ConversationMessage actor="SYSTEM" content={systemPrompt} />
           {promptEvidence !== undefined && promptEvidence !== null && (
             <PromptEvidence aria-label="System prompt evidence">
-              <PromptEvidenceLabel>Type:</PromptEvidenceLabel>
-              <PromptEvidenceValue>{promptEvidence.type}</PromptEvidenceValue>
               <PromptEvidenceLabel>Prompt ID:</PromptEvidenceLabel>
               <PromptEvidenceValue>
                 {promptEvidence.promptId}
@@ -272,7 +271,6 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
           {isPromptEvidenceError && (
             <ErrorHint>Unable to load system prompt evidence.</ErrorHint>
           )}
-          <ConversationMessage actor="SYSTEM" content={systemPrompt} />
         </AccordionItem>
         <AccordionItem
           data-testid="agent-available-tools-section"
