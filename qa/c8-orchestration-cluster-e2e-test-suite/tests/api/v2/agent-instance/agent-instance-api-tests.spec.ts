@@ -8,6 +8,7 @@
 
 import {expect, test} from '@playwright/test';
 import {APIRequestContext} from 'playwright-core';
+import {randomUUID} from 'node:crypto';
 import {
   assertBadRequest,
   assertNotFoundRequest,
@@ -22,16 +23,20 @@ import {
   createInstances,
   deploy,
 } from '../../../../utils/zeebeClient';
-import {resolveAdHocSubProcessInstanceKey} from '@requestHelpers';
+import {
+  activateJobWithLease,
+  resolveAdHocSubProcessInstanceKey,
+} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 
 // The ad-hoc sub-process is one of the element types the engine accepts as the
 // owner of an agent instance (see AgentInstanceCreateProcessor#SUPPORTED_ELEMENT_TYPES:
-// AD_HOC_SUB_PROCESS, SERVICE_TASK). Reusing the existing ad-hoc resource lets us
-// obtain an active element instance to associate agent instances with, without
-// needing a live AI-agent connector.
-const PROCESS_DEFINITION_ID = 'AdHocSubProcess_API_Test';
+// AD_HOC_SUB_PROCESS, SERVICE_TASK). It also carries a zeebe:taskDefinition, so entering
+// it produces an activatable job — CREATE/UPDATE must be attributed to the active job
+// that produced them (jobKey + jobLeaseToken), so a real activation is required.
+const PROCESS_DEFINITION_ID = 'AgentInstance_AdHocSubProcess_API_Test';
 const AGENT_ELEMENT_ID = 'AdHoc_Subprocess';
+const AGENT_JOB_TYPE = 'agent-instance-api-test';
 
 // A well-formed but never-allocated key on partition 1 (single-partition test
 // stack). Used for not-found assertions on both element-instance and
@@ -46,6 +51,8 @@ type AgentInstance = {
   agentInstanceKey: string;
   elementInstanceKey: string;
   processInstanceKey: string;
+  jobKey: number;
+  jobLeaseToken: string;
 };
 
 const state: {
@@ -55,21 +62,39 @@ const state: {
   extra?: AgentInstance;
 } = {processInstanceKeysToCleanup: []};
 
+// Builds the sole history item CREATE accepts a definition through: a CONFIGURATION
+// item carrying model/provider/systemPrompt (and, optionally, limits/tools). See
+// AgentInstanceRequestValidator#validateConfigurationEstablishesDefinition.
+function configurationHistoryItem(overrides: Record<string, unknown> = {}) {
+  return {
+    historyItemId: randomUUID(),
+    loopIteration: 1,
+    role: 'CONFIGURATION',
+    content: [{contentType: 'TEXT', text: 'configuration'}],
+    producedAt: new Date().toISOString(),
+    model: 'gpt-4o',
+    provider: 'openai',
+    systemPrompt: [{contentType: 'TEXT', text: 'You are a helpful assistant.'}],
+    ...overrides,
+  };
+}
+
 async function createAgentInstance(
   request: APIRequestContext,
   elementInstanceKey: string,
-  overrides: Record<string, unknown> = {},
-): Promise<string> {
+  configurationOverrides: Record<string, unknown> = {},
+): Promise<{agentInstanceKey: string; jobKey: number; jobLeaseToken: string}> {
+  const {jobKey, jobLeaseToken} = await activateJobWithLease(
+    request,
+    AGENT_JOB_TYPE,
+  );
   const res = await request.post(buildUrl(CREATE_ENDPOINT), {
     headers: jsonHeaders(),
     data: {
       elementInstanceKey,
-      definition: {
-        model: 'gpt-4o',
-        provider: 'openai',
-        systemPrompt: 'You are a helpful assistant.',
-      },
-      ...overrides,
+      jobKey,
+      jobLeaseToken,
+      history: [configurationHistoryItem(configurationOverrides)],
     },
   });
   await assertStatusCode(res, 200);
@@ -79,7 +104,11 @@ async function createAgentInstance(
   );
   const body = await res.json();
   expect(body.agentInstanceKey).toBeDefined();
-  return body.agentInstanceKey as string;
+  return {
+    agentInstanceKey: body.agentInstanceKey as string,
+    jobKey,
+    jobLeaseToken,
+  };
 }
 
 /**
@@ -111,7 +140,9 @@ async function waitForAgentInstance(
 test.describe.serial('Agent Instance API', () => {
   test.beforeAll(async ({request}) => {
     await test.step('Deploy ad-hoc sub-process resource', async () => {
-      await deploy(['./resources/ad_hoc_sub_process_api_test.bpmn']);
+      await deploy([
+        './resources/agent_instance_ad_hoc_sub_process_api_test.bpmn',
+      ]);
     });
 
     await test.step('Seed agent instances against active ad-hoc sub-processes', async () => {
@@ -129,7 +160,7 @@ test.describe.serial('Agent Instance API', () => {
       state.minimal = {
         processInstanceKey: minimalPiKey,
         elementInstanceKey: minimalEiKey,
-        agentInstanceKey: await createAgentInstance(request, minimalEiKey),
+        ...(await createAgentInstance(request, minimalEiKey)),
       };
 
       // withLimits: created with limits, later updated to THINKING with tools + metrics
@@ -141,9 +172,9 @@ test.describe.serial('Agent Instance API', () => {
       state.withLimits = {
         processInstanceKey: limitsPiKey,
         elementInstanceKey: limitsEiKey,
-        agentInstanceKey: await createAgentInstance(request, limitsEiKey, {
+        ...(await createAgentInstance(request, limitsEiKey, {
           limits: {maxModelCalls: 10, maxToolCalls: 20, maxTokens: 5000},
-        }),
+        })),
       };
 
       // extra: a second minimal instance so multi-item searches are meaningful
@@ -155,7 +186,7 @@ test.describe.serial('Agent Instance API', () => {
       state.extra = {
         processInstanceKey: extraPiKey,
         elementInstanceKey: extraEiKey,
-        agentInstanceKey: await createAgentInstance(request, extraEiKey),
+        ...(await createAgentInstance(request, extraEiKey)),
       };
     });
   });
@@ -171,16 +202,26 @@ test.describe.serial('Agent Instance API', () => {
     const piKey = instances[0].processInstanceKey as string;
     state.processInstanceKeysToCleanup.push(piKey);
     const eiKey = await resolveAdHocSubProcessInstanceKey(request, piKey);
+    const {jobKey, jobLeaseToken} = await activateJobWithLease(
+      request,
+      AGENT_JOB_TYPE,
+    );
 
     const res = await request.post(buildUrl(CREATE_ENDPOINT), {
       headers: jsonHeaders(),
       data: {
         elementInstanceKey: eiKey,
-        definition: {
-          model: 'claude-3-5-sonnet',
-          provider: 'anthropic',
-          systemPrompt: 'You are a support agent.',
-        },
+        jobKey,
+        jobLeaseToken,
+        history: [
+          configurationHistoryItem({
+            model: 'claude-3-5-sonnet',
+            provider: 'anthropic',
+            systemPrompt: [
+              {contentType: 'TEXT', text: 'You are a support agent.'},
+            ],
+          }),
+        ],
       },
     });
     await assertStatusCode(res, 200);
@@ -236,7 +277,20 @@ test.describe.serial('Agent Instance API', () => {
   test('Update agent instance applies status, metric deltas, and tools', async ({
     request,
   }) => {
-    const {agentInstanceKey, elementInstanceKey} = state.withLimits!;
+    const {agentInstanceKey, elementInstanceKey, jobKey, jobLeaseToken} =
+      state.withLimits!;
+
+    // modelCalls counts ASSISTANT items, so 3 distinct ASSISTANT items are needed to
+    // land modelCalls=3; toolCalls and token metrics sum across those same items.
+    // The tool list itself is only ever set via a CONFIGURATION item.
+    const assistantItem = (overrides: Record<string, unknown>) => ({
+      historyItemId: randomUUID(),
+      role: 'ASSISTANT',
+      content: [{contentType: 'TEXT', text: 'Working on it.'}],
+      producedAt: new Date().toISOString(),
+      metrics: {inputTokens: 50, outputTokens: 100},
+      ...overrides,
+    });
 
     const updateRes = await request.patch(
       buildUrl(GET_ENDPOINT, {agentInstanceKey}),
@@ -245,19 +299,41 @@ test.describe.serial('Agent Instance API', () => {
         data: {
           elementInstanceKey,
           status: 'THINKING',
-          metrics: {
-            inputTokens: 150,
-            outputTokens: 300,
-            modelCalls: 3,
-            toolCalls: 2,
-          },
-          tools: [
+          jobKey,
+          jobLeaseToken,
+          history: [
+            // Only the tool list changes here; model/provider/systemPrompt are
+            // omitted to leave them as previously configured at creation.
             {
-              name: 'search',
-              description: 'Search the web',
-              elementId: 'Activity_A',
+              historyItemId: randomUUID(),
+              loopIteration: 1,
+              role: 'CONFIGURATION',
+              content: [{contentType: 'TEXT', text: 'tools configured'}],
+              producedAt: new Date().toISOString(),
+              tools: [
+                {
+                  name: 'search',
+                  description: 'Search the web',
+                  elementId: 'Activity_A',
+                },
+                {name: 'summarize', description: null, elementId: null},
+              ],
             },
-            {name: 'summarize', description: null, elementId: null},
+            assistantItem({
+              loopIteration: 1,
+              toolCalls: [
+                {
+                  toolCallId: randomUUID(),
+                  toolName: 'search',
+                  elementId: 'Activity_A',
+                },
+              ],
+            }),
+            assistantItem({
+              loopIteration: 2,
+              toolCalls: [{toolCallId: randomUUID(), toolName: 'summarize'}],
+            }),
+            assistantItem({loopIteration: 3}),
           ],
         },
       },
@@ -438,25 +514,25 @@ test.describe.serial('Agent Instance API', () => {
       headers: jsonHeaders(),
       data: {
         elementInstanceKey: NON_EXISTENT_KEY,
-        definition: {
-          model: 'gpt-4o',
-          provider: 'openai',
-          systemPrompt: 'You are a helpful assistant.',
-        },
+        // The element-instance lookup rejects before the job/lease is ever
+        // validated, so these only need to satisfy REST-level format checks.
+        jobKey: '1',
+        jobLeaseToken: 'unchecked-lease',
+        history: [configurationHistoryItem()],
       },
     });
     await assertNotFoundRequest(res, NON_EXISTENT_KEY);
   });
 
-  test('Create agent instance without a definition returns 400', async ({
+  test('Create agent instance without history returns 400', async ({
     request,
   }) => {
     const {elementInstanceKey} = state.minimal!;
     const res = await request.post(buildUrl(CREATE_ENDPOINT), {
       headers: jsonHeaders(),
-      data: {elementInstanceKey},
+      data: {elementInstanceKey, jobKey: '1', jobLeaseToken: 'unchecked-lease'},
     });
-    await assertBadRequest(res, 'No definition provided', 'INVALID_ARGUMENT');
+    await assertBadRequest(res, 'No history provided', 'INVALID_ARGUMENT');
   });
 
   test('Get unknown agent instance returns 404', async ({request}) => {

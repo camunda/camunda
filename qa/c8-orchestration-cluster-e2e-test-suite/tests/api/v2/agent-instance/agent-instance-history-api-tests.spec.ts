@@ -7,6 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
+import {randomUUID} from 'node:crypto';
 import {
   assertNotFoundRequest,
   assertStatusCode,
@@ -20,12 +21,17 @@ import {
   createInstances,
   deploy,
 } from '../../../../utils/zeebeClient';
-import {resolveAdHocSubProcessInstanceKey} from '@requestHelpers';
+import {
+  activateJobWithLease,
+  resolveAdHocSubProcessInstanceKey,
+} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 
 // See agent-instance-api-tests.spec.ts for why the ad-hoc sub-process resource is
-// reused to obtain an active element instance for agent-instance creation.
-const PROCESS_DEFINITION_ID = 'AdHocSubProcess_API_Test';
+// reused to obtain an active element instance for agent-instance creation, and why
+// CREATE must be attributed to a real job activation (jobKey + jobLeaseToken).
+const PROCESS_DEFINITION_ID = 'AgentInstance_AdHocSubProcess_API_Test';
+const AGENT_JOB_TYPE = 'agent-instance-api-test';
 const NON_EXISTENT_KEY = '2251799813700002';
 const CREATE_ENDPOINT = '/agent-instances';
 const HISTORY_SEARCH_ENDPOINT =
@@ -37,7 +43,9 @@ const state: {agentInstanceKey?: string; processInstanceKey?: string} = {};
 test.describe.serial('Agent Instance History Search API', () => {
   test.beforeAll(async ({request}) => {
     await test.step('Deploy ad-hoc sub-process resource', async () => {
-      await deploy(['./resources/ad_hoc_sub_process_api_test.bpmn']);
+      await deploy([
+        './resources/agent_instance_ad_hoc_sub_process_api_test.bpmn',
+      ]);
     });
 
     await test.step('Create an agent instance to search history for', async () => {
@@ -47,16 +55,31 @@ test.describe.serial('Agent Instance History Search API', () => {
         request,
         state.processInstanceKey,
       );
+      const {jobKey, jobLeaseToken} = await activateJobWithLease(
+        request,
+        AGENT_JOB_TYPE,
+      );
 
       const res = await request.post(buildUrl(CREATE_ENDPOINT), {
         headers: jsonHeaders(),
         data: {
           elementInstanceKey,
-          definition: {
-            model: 'gpt-4o',
-            provider: 'openai',
-            systemPrompt: 'You are a helpful assistant.',
-          },
+          jobKey,
+          jobLeaseToken,
+          history: [
+            {
+              historyItemId: randomUUID(),
+              loopIteration: 1,
+              role: 'CONFIGURATION',
+              content: [{contentType: 'TEXT', text: 'configuration'}],
+              producedAt: new Date().toISOString(),
+              model: 'gpt-4o',
+              provider: 'openai',
+              systemPrompt: [
+                {contentType: 'TEXT', text: 'You are a helpful assistant.'},
+              ],
+            },
+          ],
         },
       });
       await assertStatusCode(res, 200);
@@ -74,14 +97,18 @@ test.describe.serial('Agent Instance History Search API', () => {
     }
   });
 
-  test('Search history for an agent instance without committed items returns an empty page', async ({
+  test('Search history for an agent instance without USER items returns an empty page', async ({
     request,
   }) => {
     const agentInstanceKey = state.agentInstanceKey!;
     await expect(async () => {
+      // CREATE always commits its own CONFIGURATION history item immediately, so a
+      // freshly created agent is never without committed history — filter to a role
+      // it hasn't produced yet (no USER turn has happened) to still exercise an
+      // empty result page.
       const res = await request.post(
         buildUrl(HISTORY_SEARCH_ENDPOINT, {agentInstanceKey}),
-        {headers: jsonHeaders(), data: {}},
+        {headers: jsonHeaders(), data: {filter: {role: 'USER'}}},
       );
       await assertStatusCode(res, 200);
       await validateResponse(
@@ -89,8 +116,6 @@ test.describe.serial('Agent Instance History Search API', () => {
         res,
       );
       const body = await res.json();
-      // Only COMMITTED items are returned by default. The freshly created agent
-      // has no committed conversation history yet.
       expect(body.items).toEqual([]);
       expect(body.page.totalItems).toBe(0);
     }).toPass(defaultAssertionOptions);
