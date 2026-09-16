@@ -331,7 +331,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "components.yaml#/schemas/UpdatePartitionDistributionRequest"
+              $ref: "components.yaml#/schemas/UpdatePartitioningRequest"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
       responses:

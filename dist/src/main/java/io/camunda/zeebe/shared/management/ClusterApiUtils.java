@@ -88,9 +88,9 @@ import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionConfig;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
+import io.camunda.zeebe.management.cluster.PartitioningConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PhysicalTenantInfo;
 import io.camunda.zeebe.management.cluster.PhysicalTenantState;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -916,18 +916,15 @@ final class ClusterApiUtils {
     return info;
   }
 
-  private static io.camunda.zeebe.management.cluster.PartitionDistributionConfig
+  private static io.camunda.zeebe.management.cluster.PartitioningConfig
       mapPartitionDistributionConfig(final PartitionDistributorConfig config) {
-    final var result = new io.camunda.zeebe.management.cluster.PartitionDistributionConfig();
+    final var result = new io.camunda.zeebe.management.cluster.PartitioningConfig();
     switch (config) {
       case final PartitionDistributorConfig.RoundRobinConfig ignored ->
-          result.type(
-              io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum.ROUND_ROBIN);
+          result.type(io.camunda.zeebe.management.cluster.PartitioningConfig.TypeEnum.ROUND_ROBIN);
       case final PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
           result
-              .type(
-                  io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum
-                      .ZONE_AWARE)
+              .type(io.camunda.zeebe.management.cluster.PartitioningConfig.TypeEnum.ZONE_AWARE)
               .zones(
                   zoneAware.zones().stream()
                       .map(
@@ -938,14 +935,13 @@ final class ClusterApiUtils {
                                   .priority(z.priority()))
                       .toList());
       case final PartitionDistributorConfig.FixedConfig ignored ->
-          result.type(
-              io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum.FIXED);
+          result.type(io.camunda.zeebe.management.cluster.PartitioningConfig.TypeEnum.FIXED);
     }
     return result;
   }
 
   static PartitionDistributorConfig toPartitionDistributorConfig(
-      final io.camunda.zeebe.management.cluster.PartitionDistributionConfig dto) {
+      final io.camunda.zeebe.management.cluster.PartitioningConfig dto) {
     final List<PartitionDistributorConfig.ZoneSpec> zones =
         dto.getZones().stream()
             .map(
@@ -1039,9 +1035,9 @@ final class ClusterApiUtils {
     return completed;
   }
 
-  private static io.camunda.zeebe.management.cluster.PartitionDistributionConfig
+  private static io.camunda.zeebe.management.cluster.PartitioningConfig
       toPartitionDistributionConfig(final UpdatePartitionDistributorConfigOperation operation) {
-    final var config = new io.camunda.zeebe.management.cluster.PartitionDistributionConfig();
+    final var config = new io.camunda.zeebe.management.cluster.PartitioningConfig();
     switch (operation.config()) {
       case final FixedConfig fixedConfig -> {
         config.type(TypeEnum.FIXED);
