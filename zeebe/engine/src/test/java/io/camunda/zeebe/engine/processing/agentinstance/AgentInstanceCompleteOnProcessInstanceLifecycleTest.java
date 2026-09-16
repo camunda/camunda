@@ -69,7 +69,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(job.jobKey())
-            .withJobLease(job.jobLeaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -138,7 +138,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(adHocSubProcessInstanceKey)
             .withJobKey(job.jobKey())
-            .withJobLease(job.jobLeaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -199,7 +199,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(job.jobKey())
-            .withJobLease(job.jobLeaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -241,7 +241,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(job.jobKey())
-            .withJobLease(job.jobLeaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -251,7 +251,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(job.jobKey())
-        .withJobLease(job.jobLeaseToken())
+        .withJobLeaseToken(job.jobLeaseToken())
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -326,7 +326,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
             .withJobKey(firstJob.jobKey())
-            .withJobLease(firstJob.jobLeaseToken())
+            .withJobLeaseToken(firstJob.jobLeaseToken())
             .create()
             .getKey();
     final var secondAgentInstanceKey =
@@ -334,7 +334,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
             .withJobKey(secondJob.jobKey())
-            .withJobLease(secondJob.jobLeaseToken())
+            .withJobLeaseToken(secondJob.jobLeaseToken())
             .create()
             .getKey();
 
@@ -362,7 +362,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(unrelatedTaskInstance.getKey())
             .withJobKey(unrelatedJob.jobKey())
-            .withJobLease(unrelatedJob.jobLeaseToken())
+            .withJobLeaseToken(unrelatedJob.jobLeaseToken())
             .create()
             .getKey();
 
@@ -485,7 +485,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(job.jobKey())
-            .withJobLease(job.jobLeaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -585,7 +585,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(job.jobKey())
-            .withJobLease(job.jobLeaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 

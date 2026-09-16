@@ -150,7 +150,7 @@ public class AgentInstanceCompleteTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var firstJobLease =
+    final var firstJobLeaseToken =
         firstJobBatch
             .getValue()
             .getJobs()
@@ -163,7 +163,7 @@ public class AgentInstanceCompleteTest {
             .withType("other-agent")
             .getFirst()
             .getKey();
-    final var secondJobLease =
+    final var secondJobLeaseToken =
         secondJobBatch
             .getValue()
             .getJobs()
@@ -176,7 +176,7 @@ public class AgentInstanceCompleteTest {
             .withType("third-agent")
             .getFirst()
             .getKey();
-    final var thirdJobLease =
+    final var thirdJobLeaseToken =
         thirdJobBatch
             .getValue()
             .getJobs()
@@ -187,7 +187,7 @@ public class AgentInstanceCompleteTest {
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
             .withJobKey(firstJobKey)
-            .withJobLease(firstJobLease)
+            .withJobLeaseToken(firstJobLeaseToken)
             .create()
             .getKey();
     final var secondAgentInstanceKey =
@@ -195,7 +195,7 @@ public class AgentInstanceCompleteTest {
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
             .withJobKey(secondJobKey)
-            .withJobLease(secondJobLease)
+            .withJobLeaseToken(secondJobLeaseToken)
             .create()
             .getKey();
     final var thirdAgentInstanceKey =
@@ -203,7 +203,7 @@ public class AgentInstanceCompleteTest {
             .agentInstances()
             .withElementInstanceKey(thirdTaskInstance.getKey())
             .withJobKey(thirdJobKey)
-            .withJobLease(thirdJobLease)
+            .withJobLeaseToken(thirdJobLeaseToken)
             .create()
             .getKey();
 
@@ -247,7 +247,7 @@ public class AgentInstanceCompleteTest {
         .withAgentInstanceKey(fixture.agentInstanceKey())
         .withElementInstanceKey(fixture.elementInstanceKey())
         .withJobKey(jobKey)
-        .withJobLease("lease-committed")
+        .withJobLeaseToken("lease-committed")
         .withHistory(List.of(historyItem("committed-item")))
         .update();
     ENGINE
@@ -255,10 +255,10 @@ public class AgentInstanceCompleteTest {
         .withAgentInstanceKey(fixture.agentInstanceKey())
         .withElementInstanceKey(fixture.elementInstanceKey())
         .withJobKey(jobKey)
-        .withJobLease("lease-discarded")
+        .withJobLeaseToken("lease-discarded")
         .withHistory(List.of(historyItem("discarded-item")))
         .update();
-    ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-committed").commit();
+    ENGINE.agentHistories().withJobKey(jobKey).withJobLeaseToken("lease-committed").commit();
 
     // when — completing the agent instance drives the real, registered CLEAN_UP/CLEANED
     // pipeline (AgentHistoryBatchProcessors' wiring), not just AgentHistoryBatchCleanUpProcessor
@@ -315,7 +315,7 @@ public class AgentInstanceCompleteTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -326,7 +326,7 @@ public class AgentInstanceCompleteTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getValue()
             .getAgentInstanceKey();

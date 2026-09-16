@@ -78,7 +78,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -105,7 +105,7 @@ public class AgentInstanceCreateTest {
             .withMetricsDelta(50L, 25L, 5, 3)
             .withTools(List.of(seededTool))
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem))
             .create();
 
@@ -165,7 +165,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -178,7 +178,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(elementInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     // then
@@ -231,7 +231,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -244,7 +244,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(childServiceTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     // then
@@ -279,7 +279,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -292,7 +292,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     // then
@@ -334,7 +334,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -347,7 +347,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     // then -- the CREATED event links back to the element's AgentDefinition version.
@@ -409,7 +409,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -423,7 +423,7 @@ public class AgentInstanceCreateTest {
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.THINKING)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     // then
@@ -452,7 +452,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -466,7 +466,7 @@ public class AgentInstanceCreateTest {
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withMetricsDelta(50L, 25L, 5, 3)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     // then
@@ -499,7 +499,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -520,7 +520,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withHistory(List.of(configItem))
             .create();
 
@@ -552,7 +552,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -565,7 +565,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     // then
@@ -606,7 +606,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -619,7 +619,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(adHocInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     // then
@@ -674,14 +674,14 @@ public class AgentInstanceCreateTest {
             .map(Record::getKey)
             .toList();
     final var firstJobKey = jobKeys.get(0);
-    final var firstJobLease =
+    final var firstJobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(firstJobKey))
             .getJobLeaseToken();
     final var secondJobKey = jobKeys.get(1);
-    final var secondJobLease =
+    final var secondJobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -694,14 +694,14 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(children.get(0).getKey())
             .withJobKey(firstJobKey)
-            .withJobLease(firstJobLease)
+            .withJobLeaseToken(firstJobLeaseToken)
             .create();
     final var secondAgent =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(children.get(1).getKey())
             .withJobKey(secondJobKey)
-            .withJobLease(secondJobLease)
+            .withJobLeaseToken(secondJobLeaseToken)
             .create();
 
     // then -- each child gets its own agent instance with distinct keys.
@@ -734,7 +734,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -747,7 +747,7 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
     final var secondRejection =
         ENGINE
@@ -850,7 +850,7 @@ public class AgentInstanceCreateTest {
             .withType("agent")
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -862,14 +862,14 @@ public class AgentInstanceCreateTest {
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create();
 
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType("agent")
-        .withJobLeaseToken(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .complete();
     RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)

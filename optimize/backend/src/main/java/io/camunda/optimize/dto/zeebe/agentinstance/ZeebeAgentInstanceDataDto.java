@@ -32,7 +32,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private int processDefinitionVersion;
   private String tenantId;
   private long jobKey = -1L;
-  private String jobLease;
+  private String jobLeaseToken;
   private AgentInstanceStatus status;
   private AgentDefinitionValueDto definition = new AgentDefinitionValueDto();
   private AgentMetricsValueDto metrics = new AgentMetricsValueDto();
@@ -154,12 +154,12 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
-  public String getJobLease() {
-    return jobLease;
+  public String getJobLeaseToken() {
+    return jobLeaseToken;
   }
 
-  public void setJobLease(final String jobLease) {
-    this.jobLease = jobLease;
+  public void setJobLeaseToken(final String jobLeaseToken) {
+    this.jobLeaseToken = jobLeaseToken;
   }
 
   // Not tracked — Optimize's import doesn't need the embedded history batch, only the
@@ -248,7 +248,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         processDefinitionVersion,
         tenantId,
         jobKey,
-        jobLease,
+        jobLeaseToken,
         status,
         definition,
         metrics,
@@ -273,7 +273,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && Objects.equals(elementId, that.elementId)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(jobLease, that.jobLease)
+        && Objects.equals(jobLeaseToken, that.jobLeaseToken)
         && Objects.equals(status, that.status)
         && Objects.equals(definition, that.definition)
         && Objects.equals(metrics, that.metrics)
@@ -301,8 +301,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         + tenantId
         + ", jobKey="
         + jobKey
-        + ", jobLease="
-        + jobLease
+        + ", jobLeaseToken="
+        + jobLeaseToken
         + ", status="
         + status
         + ", definition="
@@ -329,7 +329,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String processDefinitionVersion = "processDefinitionVersion";
     public static final String tenantId = "tenantId";
     public static final String jobKey = "jobKey";
-    public static final String jobLease = "jobLease";
+    public static final String jobLeaseToken = "jobLeaseToken";
     public static final String status = "status";
     public static final String definition = "definition";
     public static final String metrics = "metrics";

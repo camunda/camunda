@@ -111,7 +111,7 @@ final class AgentHistoryHandlerTest {
     final long processDefinitionKey = 400L;
     final String tenantId = "<default>";
     final long jobKey = 500L;
-    final String jobLease = "lease-token-abc";
+    final String jobLeaseToken = "lease-token-abc";
     final int loopIteration = 3;
     final long producedAtMs = System.currentTimeMillis();
     final long inputTokens = 50L;
@@ -146,7 +146,7 @@ final class AgentHistoryHandlerTest {
             .withProcessDefinitionKey(processDefinitionKey)
             .withTenantId(tenantId)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withLoopIteration(loopIteration)
             .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.ASSISTANT)
             .withProducedAt(producedAtMs)
@@ -188,7 +188,7 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getJobKey()).isEqualTo(jobKey);
-    assertThat(entity.getJobLease()).isEqualTo(jobLease);
+    assertThat(entity.getJobLeaseToken()).isEqualTo(jobLeaseToken);
     assertThat(entity.getLoopIteration()).isEqualTo(loopIteration);
     assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
     assertThat(entity.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.PENDING);
@@ -955,7 +955,7 @@ final class AgentHistoryHandlerTest {
         .withProcessDefinitionKey(20L)
         .withTenantId("<default>")
         .withJobKey(30L)
-        .withJobLease("lease")
+        .withJobLeaseToken("lease")
         .withLoopIteration(loopIteration)
         .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.ASSISTANT)
         .withProducedAt(System.currentTimeMillis())

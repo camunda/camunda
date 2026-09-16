@@ -255,7 +255,7 @@ class CompactRecordLoggerTest {
                       .withElementInstanceKey(2L)
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.ASSISTANT)
-                      .withJobLease("1")
+                      .withJobLeaseToken("1")
                       .withLoopIteration(2)
                       .withMetrics(
                           ImmutableAgentHistoryMetricsValue.builder()
@@ -308,7 +308,7 @@ class CompactRecordLoggerTest {
                       .withElementInstanceKey(2L)
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.TOOL_RESULT)
-                      .withJobLease("1")
+                      .withJobLeaseToken("1")
                       .withLoopIteration(3)
                       .addContent(
                           ImmutableAgentHistoryMessageContentValue.builder()
@@ -366,7 +366,7 @@ class CompactRecordLoggerTest {
                       .withElementInstanceKey(2L)
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.ASSISTANT)
-                      .withJobLease("1")
+                      .withJobLeaseToken("1")
                       .withLoopIteration(1)
                       .addContent(
                           ImmutableAgentHistoryMessageContentValue.builder()

@@ -98,7 +98,7 @@ public final class AgentInstanceCreateAuthorizationTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
@@ -111,7 +111,7 @@ public final class AgentInstanceCreateAuthorizationTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create(user.getUsername());
 
     // then

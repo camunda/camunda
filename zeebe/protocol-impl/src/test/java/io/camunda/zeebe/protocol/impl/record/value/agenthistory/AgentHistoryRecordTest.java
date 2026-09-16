@@ -36,7 +36,7 @@ final class AgentHistoryRecordTest {
     assertThat(record.getAgentInstanceKey()).isEqualTo(-1L);
     assertThat(record.getElementInstanceKey()).isEqualTo(-1L);
     assertThat(record.getJobKey()).isEqualTo(-1L);
-    assertThat(record.getJobLease()).isEmpty();
+    assertThat(record.getJobLeaseToken()).isEmpty();
     assertThat(record.getLoopIteration()).isEqualTo(0);
     assertThat(record.getRole()).isEqualTo(AgentHistoryRole.UNSPECIFIED);
     assertThat(record.getProducedAt()).isEqualTo(-1L);
@@ -56,7 +56,7 @@ final class AgentHistoryRecordTest {
             .setAgentInstanceKey(2251799813685251L)
             .setElementInstanceKey(2251799813685249L)
             .setJobKey(2251799813685252L)
-            .setJobLease("job-lease-abc123")
+            .setJobLeaseToken("job-lease-abc123")
             .setLoopIteration(3)
             .setRole(AgentHistoryRole.USER)
             .setProducedAt(1717200000000L);
@@ -70,23 +70,24 @@ final class AgentHistoryRecordTest {
     assertThat(copy.getAgentInstanceKey()).isEqualTo(original.getAgentInstanceKey());
     assertThat(copy.getElementInstanceKey()).isEqualTo(original.getElementInstanceKey());
     assertThat(copy.getJobKey()).isEqualTo(original.getJobKey());
-    assertThat(copy.getJobLease()).isEqualTo(original.getJobLease());
+    assertThat(copy.getJobLeaseToken()).isEqualTo(original.getJobLeaseToken());
     assertThat(copy.getLoopIteration()).isEqualTo(original.getLoopIteration());
     assertThat(copy.getRole()).isEqualTo(original.getRole());
     assertThat(copy.getProducedAt()).isEqualTo(original.getProducedAt());
   }
 
   @Test
-  void shouldRoundTripJobLeaseViaMsgPack() {
+  void shouldRoundTripJobLeaseTokenViaMsgPack() {
     // given
-    final AgentHistoryRecord original = new AgentHistoryRecord().setJobLease("job-lease-abc123");
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord().setJobLeaseToken("job-lease-abc123");
 
     // when
     final AgentHistoryRecord copy = new AgentHistoryRecord();
     copy.copyFrom(original);
 
     // then
-    assertThat(copy.getJobLease()).isEqualTo("job-lease-abc123");
+    assertThat(copy.getJobLeaseToken()).isEqualTo("job-lease-abc123");
   }
 
   @Test

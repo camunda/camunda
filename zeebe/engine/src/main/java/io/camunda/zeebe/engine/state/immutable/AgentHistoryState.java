@@ -29,10 +29,10 @@ public interface AgentHistoryState {
    * target only the items produced during a specific job activation.
    *
    * @param jobKey the job key to search by
-   * @param jobLease the lease to match
+   * @param jobLeaseToken the lease to match
    * @param visitor called once per matching history item
    */
-  void visitByJobLease(long jobKey, String jobLease, AgentHistoryVisitor visitor);
+  void visitByJobLeaseToken(long jobKey, String jobLeaseToken, AgentHistoryVisitor visitor);
 
   /**
    * @return the {@code agentHistoryKey} of the history item that was committed under this {@code

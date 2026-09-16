@@ -189,7 +189,7 @@ public class AgentHistoryCommitLifecycleIT {
         tuple(winningItemKey, AgentInstanceHistoryCommitStatus.PENDING));
 
     // Complete the winning activation — JobCompleteProcessor propagates the stored lease token
-    // into AGENT_HISTORY:COMMIT, so visitByJobLease commits the winning item and discards the
+    // into AGENT_HISTORY:COMMIT, so visitByJobLeaseToken commits the winning item and discards the
     // superseded one.
     camundaClient.newCompleteCommand(activation2).execute();
 

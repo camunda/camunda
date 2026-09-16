@@ -28,11 +28,11 @@ public final class AgentHistoryCreatedApplier
   public void applyState(final long key, final AgentHistoryRecord value) {
     // Store only the identity fields in primary storage (RocksDB). content/toolCalls/metrics/
     // producedAt have already reached secondary storage via the CREATED event itself; nothing reads
-    // them back out of primary storage — matching a COMMIT/DISCARD only needs jobKey/jobLease, and
-    // deleting the item needs the same two fields. historyItemId is kept too: dedup matches on it
-    // once an item is pending or committed, so it must survive here as well. Storing the trimmed
-    // copy also means the COMMITTED/DISCARDED events re-emitted from state carry only identity
-    // fields, with no extra stripping needed at those emit sites.
+    // them back out of primary storage — matching a COMMIT/DISCARD only needs
+    // jobKey/jobLeaseToken, and deleting the item needs the same two fields. historyItemId is kept
+    // too: dedup matches on it once an item is pending or committed, so it must survive here as
+    // well. Storing the trimmed copy also means the COMMITTED/DISCARDED events re-emitted from
+    // state carry only identity fields, with no extra stripping needed at those emit sites.
     //
     // CONFIGURATION items are the exception: whichever of model/provider/systemPrompt/tools/limits
     // the item's own changedAttributes names must survive until COMMIT, since that's when
@@ -56,7 +56,7 @@ public final class AgentHistoryCreatedApplier
             .setProcessDefinitionKey(value.getProcessDefinitionKey())
             .setTenantId(value.getTenantId())
             .setJobKey(value.getJobKey())
-            .setJobLease(value.getJobLease())
+            .setJobLeaseToken(value.getJobLeaseToken())
             .setHistoryItemId(value.getHistoryItemId())
             .setLoopIteration(value.getLoopIteration())
             .setRole(value.getRole());
