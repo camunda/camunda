@@ -465,12 +465,12 @@ public interface ClusterActuator {
   @Headers({"Content-Type: application/json", "accept: application/json"})
   void patchRoutingState(@Param boolean dryRun, @Param final String physicalTenant);
 
-  @RequestLine("PUT /partition-distribution?dryRun={dryRun}")
+  @RequestLine("PUT /partitioning?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
   PlannedOperationsResponse updatePartitionDistribution(
       @RequestBody final UpdatePartitionDistributionRequest request, @Param boolean dryRun);
 
-  /** Applies a full partition distribution config via {@code PUT /partition-distribution}. */
+  /** Applies a full partition distribution config via {@code PUT /partitioning}. */
   default PlannedOperationsResponse patchPartitionDistribution(
       final PartitionDistributionConfig config, final boolean dryRun) {
     return updatePartitionDistribution(
@@ -478,8 +478,8 @@ public interface ClusterActuator {
   }
 
   /**
-   * Performs a leader switchover via {@code PUT /partition-distribution}: re-orders the existing
-   * per-zone priorities by {@code zonePriorities} (highest first).
+   * Performs a leader switchover via {@code PUT /partitioning}: re-orders the existing per-zone
+   * priorities by {@code zonePriorities} (highest first).
    */
   default PlannedOperationsResponse updateZonePriorities(
       final List<String> zonePriorities, final boolean dryRun) {

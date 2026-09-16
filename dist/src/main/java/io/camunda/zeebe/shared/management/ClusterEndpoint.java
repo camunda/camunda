@@ -628,7 +628,7 @@ public class ClusterEndpoint {
     }
   }
 
-  @PutMapping(path = "/partition-distribution", consumes = "application/json")
+  @PutMapping(path = "/partitioning", consumes = "application/json")
   public ResponseEntity<?> updatePartitionDistribution(
       @RequestBody final UpdatePartitionDistributionRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
