@@ -983,7 +983,7 @@ final class ClusterApiUtilsTest {
     assertThat(response.getStatusCode().value()).isEqualTo(200);
     assertThat(response.getBody()).isNotNull();
     final var body = (GetTopologyResponse) response.getBody();
-    assertThat(body.getPartitionDistribution()).isEqualTo(expectedConfig);
+    assertThat(body.getPartitioning()).isEqualTo(expectedConfig);
   }
 
   @Test

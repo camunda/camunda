@@ -182,7 +182,7 @@ schemas:
         type: string
         description: The unique ID of the cluster
         example: "cluster-1234"
-      partitionDistribution:
+      partitioning:
         $ref: "components.yaml#/schemas/PartitioningConfig"
       physicalTenants:
         description: >
@@ -619,7 +619,7 @@ schemas:
           $ref: "components.yaml#/schemas/BrokerId"
       exporterId:
         $ref: "components.yaml#/schemas/ExporterId"
-      partitionDistributionConfig:
+      partitioningConfig:
         $ref: "components.yaml#/schemas/PartitioningConfig"
       exportingState:
         $ref: "components.yaml#/schemas/ExportingState"

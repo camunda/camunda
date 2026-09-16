@@ -633,17 +633,16 @@ public class ClusterEndpoint {
       @RequestBody final UpdatePartitioningRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
-      final var partitionDistributionConfig = Optional.ofNullable(request.getConfig());
+      final var partitioningConfig = Optional.ofNullable(request.getConfig());
       final var zonePriorities = Optional.ofNullable(request.getZonePriorities()).orElse(List.of());
-      if (partitionDistributionConfig.isPresent() == !zonePriorities.isEmpty()) {
+      if (partitioningConfig.isPresent() == !zonePriorities.isEmpty()) {
         return invalidRequest("Exactly one of config and zonePriorities must be set.");
       }
       final var result =
-          partitionDistributionConfig.isPresent()
+          partitioningConfig.isPresent()
               ? requestSender.updatePartitionDistribution(
                   new UpdatePartitionDistributorConfigRequest(
-                      ClusterApiUtils.toPartitionDistributorConfig(
-                          partitionDistributionConfig.get()),
+                      ClusterApiUtils.toPartitionDistributorConfig(partitioningConfig.get()),
                       dryRun))
               : requestSender.updateZonePriorities(
                   new UpdateZonePrioritiesRequest(zonePriorities, dryRun));
