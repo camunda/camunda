@@ -10,13 +10,13 @@ import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {t} from 'i18next';
 import {ProcessInstance, ProcessInstancePending} from '#/operate/pages/ProcessInstance/ProcessInstance';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
-import {processInstanceSearchSchema} from '#/operate/pages/ProcessInstance/processInstanceSearch';
+import {validateProcessInstanceRouteSearch} from '#/operate/pages/ProcessInstance/processInstanceSearch';
 import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
 import {ForbiddenError} from '#/shared/errors';
 import {requestErrorSchema} from '#/shared/http/request';
 
 const Route = createFileRoute('/_carbon/_auth/operate/processes/$processInstanceId')({
-	validateSearch: processInstanceSearchSchema,
+	validateSearch: validateProcessInstanceRouteSearch,
 	loader: async ({context: {queryClient}, params: {processInstanceId}}) => {
 		try {
 			return await queryClient.ensureQueryData(processInstanceQuery(processInstanceId));
