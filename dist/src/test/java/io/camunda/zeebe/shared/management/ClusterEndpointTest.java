@@ -603,8 +603,8 @@ final class ClusterEndpointTest {
     }
 
     /**
-     * The endpoint used to force-remove unconditionally, so a request that does not ask for it must
-     * be the graceful one — an operator who omits the parameter has not asked to lose replicas.
+     * The endpoint used to force-remove unconditionally, so an omitted parameter must be forwarded
+     * as {@code false}.
      */
     @Test
     void shouldNotForceWhenTheParameterIsOmitted() {

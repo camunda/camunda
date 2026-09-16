@@ -280,8 +280,8 @@ schemas:
 
   AddZoneRequest:
     description: >
-      Request body for adding back a previously force-removed zone. The zone name is given in the
-      path. The zone's brokers are given either as an explicit list in `brokers` or as a count in
+      Request body for adding back a previously removed zone. The zone name is given in the path.
+      The zone's brokers are given either as an explicit list in `brokers` or as a count in
       `numberOfBrokers`; exactly one of the two must be set.
     type: object
     required:
