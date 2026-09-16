@@ -365,6 +365,35 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Test
+  void shouldGracefullyRemoveHealthyZoneWithoutLeaders() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given - zoneB has follower replicas only, while zoneA contains every partition leader
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  ZoneHelpers.assertLeadersInZone(
+                      cluster, DEFAULT_PHYSICAL_TENANT_ID, ZONE_A, partitionCount()));
+
+      // when - remove the healthy zoneB without forcing broker eviction
+      final var response = actuator.removeZone(ZONE_B, false, false);
+
+      // then - replicas move off zoneB before its broker leaves and the zone disappears from config
+      Awaitility.await()
+          .atMost(Duration.ofMinutes(1))
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
+      ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(1));
+      final var expectedDistribution =
+          new PartitionDistributionConfig()
+              .type(TypeEnum.ZONE_AWARE)
+              .zones(List.of(new ZoneSpec().name(ZONE_A).numberOfReplicas(1).priority(100)));
+      assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(expectedDistribution);
+    }
+  }
+
+  @Test
   void shouldSwapZonePrioritiesAndMoveLeaders() {
     try (final var cluster = createCluster(brokerCount())) {
       // given - a fully zone-aware cluster where zoneA (priority 100) is the preferred leader zone
