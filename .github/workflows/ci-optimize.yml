@@ -156,7 +156,11 @@ jobs:
           compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+          # PROBE ONLY - DO NOT MERGE. Temporarily pointed at ES9 to find out whether the
+          # Optimize ITs pass against it at all: every Optimize workflow pins the es8 output,
+          # so ES9 has never been exercised here. Revert to elasticsearch-8 before merging;
+          # the durable fix is a matrix dimension over both majors.
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-9 }}
           ELASTIC_JVM_MEMORY: 16
           ELASTIC_HTTP_PORT: 9200
 
