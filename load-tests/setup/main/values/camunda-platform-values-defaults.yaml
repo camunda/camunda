@@ -139,9 +139,12 @@ orchestration:
             - READ_PROCESS_DEFINITION
             # SUSPEND_PROCESS_INSTANCE authorizes both suspend and resume (there is no separate
             # resume permission); CANCEL_PROCESS_INSTANCE is needed by the suspender's per-cycle
-            # cleanup. Required by the suspend/resume load test (load-tester.suspender.*).
+            # cleanup. CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE authorizes the batch-operation
+            # suspend AND resume path (also one permission for both). Required by the suspend/resume
+            # load test (load-tester.suspender.*, SINGLE and BATCH modes).
             - SUSPEND_PROCESS_INSTANCE
             - CANCEL_PROCESS_INSTANCE
+            - CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE
         # Grant the orchestration client permission to publish messages
         # (required by realistic benchmark workers: customer_notification,
         # dispute_process_request_proof_from_vendor)
