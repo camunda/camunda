@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import io.camunda.zeebe.util.MemberIdUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.List;
@@ -42,13 +43,15 @@ public class BrokerBasedConfiguration {
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;
   private final LifecycleProperties lifecycle;
+  private final BrokerMeterRegistry brokerMeterRegistry;
 
   @Autowired
   public BrokerBasedConfiguration(
       final WorkingDirectory workingDirectory,
       final NodeIdProvider nodeIdProvider,
       final BrokerBasedProperties properties,
-      final LifecycleProperties lifecycle) {
+      final LifecycleProperties lifecycle,
+      final MeterRegistry meterRegistry) {
     this.workingDirectory = workingDirectory;
     this.properties = properties;
     this.lifecycle = lifecycle;
@@ -58,6 +61,13 @@ public class BrokerBasedConfiguration {
     cluster.setNodeId(currentInstance.id());
     cluster.setNodeVersion(currentInstance.version().version());
     properties.init(workingDirectory.path().toAbsolutePath().toString());
+    brokerMeterRegistry =
+        BrokerMeterRegistry.create(meterRegistry, properties.getCluster().getMemberId());
+  }
+
+  @Bean
+  public BrokerMeterRegistry brokerMeterRegistry() {
+    return brokerMeterRegistry;
   }
 
   public BrokerCfg config() {
