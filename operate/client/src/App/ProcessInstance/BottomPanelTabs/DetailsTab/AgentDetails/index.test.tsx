@@ -371,9 +371,12 @@ describe('<AgentDetails />', () => {
     );
 
     const evidence = await screen.findByLabelText('System prompt evidence');
+    const section = screen.getByTestId('agent-system-prompt-section');
+    const prompt = within(section).getByTestId('conversation-message');
 
     expect(evidence).toHaveAccessibleName('System prompt evidence');
-    expect(within(evidence).getByText('Linked')).toBeInTheDocument();
+    expect(within(evidence).queryByText('Type:')).not.toBeInTheDocument();
+    expect(within(evidence).queryByText('Linked')).not.toBeInTheDocument();
     expect(
       within(evidence).getByText('claims-review-instructions.md'),
     ).toBeInTheDocument();
@@ -382,6 +385,10 @@ describe('<AgentDetails />', () => {
     expect(
       screen.getByText('Route ambiguous damage descriptions to manual review.'),
     ).toBeInTheDocument();
+    expect(
+      prompt.compareDocumentPosition(evidence) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(requestBodySpy).toHaveBeenCalledWith({
       filter: {
         processInstanceKey: {$eq: agentInstance.processInstanceKey},

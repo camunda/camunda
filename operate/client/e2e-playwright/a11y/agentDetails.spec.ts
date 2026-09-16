@@ -142,6 +142,25 @@ test.describe('AI agent details', () => {
     await expect(
       processInstancePage.aiAgentDetails.systemPromptEvidence,
     ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptEvidence,
+    ).not.toContainText('Type:');
+    expect(
+      await processInstancePage.aiAgentDetails.systemPromptSection
+        .getByTestId('conversation-message')
+        .evaluate((prompt) => {
+          const evidence = prompt.parentElement?.querySelector(
+            '[aria-label="System prompt evidence"]',
+          );
+          return (
+            evidence != null &&
+            Boolean(
+              prompt.compareDocumentPosition(evidence) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+            )
+          );
+        }),
+    ).toBe(true);
 
     const results = await makeAxeBuilder()
       .include(AGENT_DETAILS_PANEL_SELECTOR)

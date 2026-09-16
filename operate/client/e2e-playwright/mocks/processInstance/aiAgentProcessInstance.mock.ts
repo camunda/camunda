@@ -98,10 +98,10 @@ const automaticApprovalXml = manualReviewXml.replace(
 );
 
 const systemPromptVersionOne =
-  'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nRoute ambiguous damage descriptions to manual review, even when timestamped photos are complete.\n\nReturn only a JSON object with decision, rationale, and instructionVersion.\nSet instructionVersion to GOVERNED-V1.\nSet decision to manual-review for that route.\n\nExplain the decision using only the supplied claim record and approved tools.';
+  'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nRoute ambiguous damage descriptions to manual review, even when timestamped photos are complete.\n\nReturn only a JSON object with decision and rationale.\nSet decision to manual-review for that route.\n\nExplain the decision using only the supplied claim record and approved tools.';
 
 const systemPromptVersionTwo =
-  'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nPermit automatic approval for ambiguous damage descriptions when timestamped photos are complete.\n\nReturn only a JSON object with decision, rationale, and instructionVersion.\nSet instructionVersion to GOVERNED-V2.\nSet decision to automatic-approval.\n\nExplain the decision using only the supplied claim record and approved tools.';
+  'You are **ClaimsReviewAgent**. Review the complete claim evidence and apply the governed claims policy.\n\nPermit automatic approval for ambiguous damage descriptions when timestamped photos are complete.\n\nReturn only a JSON object with decision and rationale.\nSet decision to automatic-approval.\n\nExplain the decision using only the supplied claim record and approved tools.';
 
 const agentDefinitionVersionOne: AgentInstanceDefinition = {
   model: 'gpt-4o',
