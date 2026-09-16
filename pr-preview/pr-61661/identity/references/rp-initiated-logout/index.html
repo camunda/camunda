@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">RP (Relying Party)-initiated logout | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-61661/identity/references/rp-initiated-logout/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-identity-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-identity-current"><meta data-rh="true" property="og:title" content="RP (Relying Party)-initiated logout | Camunda Platform"><meta data-rh="true" name="description" content="Starting with 8.9.0, when Identity is running with Keycloak/Entra (or any other IdP), RP‑initiated logout can be enabled using the following flag:"><meta data-rh="true" property="og:description" content="Starting with 8.9.0, when Identity is running with Keycloak/Entra (or any other IdP), RP‑initiated logout can be enabled using the following flag:"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-61661/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-61661/identity/references/rp-initiated-logout/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61661/identity/references/rp-initiated-logout/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61661/identity/references/rp-initiated-logout/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"RP (Relying Party)-initiated logout","item":"https://camunda.github.io/camunda/pr-preview/pr-61661/identity/references/rp-initiated-logout"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-61661/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-61661/assets/js/runtime~main.e3a4c920.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-61661/assets/js/main.a3fbd0a0.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61661/assets/js/runtime~main.7018c784.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61661/assets/js/main.010e21f7.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -66,9 +66,13 @@ prefix produces <code>https://&lt;host&gt;/&lt;clusterId&gt;/post-logout</code> 
 Logout URLs</em> entry that can ever match it. A value that skips the prefix can be registered once and
 matched exactly.</p>
 <p>Besides <code>{baseUrl}</code>, a template may use <code>{baseScheme}</code>, <code>{baseHost}</code>, <code>{basePort}</code>, <code>{basePath}</code> and
-<code>{registrationId}</code>. Any other placeholder is rejected at startup, as is a value that is neither an
-absolute URL, nor a path starting with <code>/</code>, nor a template. Whatever URL you choose must still be
-registered with the IdP as an allowed post-logout redirect.</p>
+<code>{registrationId}</code> — but it must still resolve to an absolute URL, so it has to start with
+<code>{baseUrl}</code> or spell out a scheme such as <code>{baseScheme}://{baseHost}</code>. <code>{basePath}/goodbye</code> is
+rejected even though <code>basePath</code> is a supported placeholder, because it expands to a relative value
+and the OIDC logout specification requires this parameter to be absolute.</p>
+<p>Any other placeholder is rejected at startup, as is an unbalanced brace, an absolute URL with no
+host, and a value that is none of these forms. Whatever URL you choose must still be registered with
+the IdP as an allowed post-logout redirect.</p>
 <p>Setting <code>post-logout-redirect-enabled: false</code> alongside a URI wins: no <code>post_logout_redirect_uri</code> is
 sent, and a warning is logged.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuring-each-idp-separately-byo-idp">Configuring each IdP separately (BYO IdP)<a href="#configuring-each-idp-separately-byo-idp" class="hash-link" aria-label="Direct link to Configuring each IdP separately (BYO IdP)" title="Direct link to Configuring each IdP separately (BYO IdP)" translate="no">​</a></h3>
