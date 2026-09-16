@@ -158,6 +158,52 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldAssignConfiguredOrdinalToUserTaskLifecycleAndListenerRecords() {
+    // given: a user task with a completing task listener, so completion runs through the
+    // intermediate-state path and creates a listener job
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("user-task-lifecycle-process")
+                .startEvent()
+                .userTask("user-task")
+                .zeebeUserTask()
+                .zeebeTaskListener(l -> l.completing().type("ordinal-task-listener"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("user-task-lifecycle-process").create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getUserTaskKey();
+
+    // when
+    engine.userTask().withKey(userTaskKey).complete();
+    engine.job().ofInstance(processInstanceKey).withType("ordinal-task-listener").complete();
+
+    // then: the task listener job carries the ordinal
+    final var listenerJobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("ordinal-task-listener")
+            .getFirst();
+    assertThat(listenerJobCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    // and: every user task lifecycle record up to COMPLETED carries the ordinal
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldAssignConfiguredOrdinalToProcessEventRecords() {
     // given
     engine
