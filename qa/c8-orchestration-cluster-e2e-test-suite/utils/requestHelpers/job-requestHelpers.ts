@@ -150,12 +150,22 @@ export async function completeJob(
   request: APIRequestContext,
   jobKey: number,
   variables?: Record<string, unknown>,
+  // A job activated with a lease (see activateJobWithLease) rejects completion
+  // without the matching token — see JobCompletionRequest#jobLeaseToken.
+  jobLeaseToken?: string,
 ): Promise<void> {
+  const data: Record<string, unknown> = {};
+  if (variables !== undefined) {
+    data.variables = variables;
+  }
+  if (jobLeaseToken !== undefined) {
+    data.jobLeaseToken = jobLeaseToken;
+  }
   const completeRes = await request.post(
     buildUrl('/jobs/{jobKey}/completion', {jobKey}),
     {
       headers: jsonHeaders(),
-      ...(variables !== undefined && {data: {variables}}),
+      ...(Object.keys(data).length > 0 && {data}),
     },
   );
   await assertStatusCode(completeRes, 204);

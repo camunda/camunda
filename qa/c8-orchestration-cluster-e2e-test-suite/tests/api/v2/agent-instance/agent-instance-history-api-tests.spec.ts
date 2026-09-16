@@ -19,7 +19,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   cancelProcessInstance,
   createInstances,
-  deploy,
+  deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {
   activateJobWithLease,
@@ -28,10 +28,15 @@ import {
 import {validateResponse} from '../../../../json-body-assertions';
 
 // See agent-instance-api-tests.spec.ts for why the ad-hoc sub-process resource is
-// reused to obtain an active element instance for agent-instance creation, and why
-// CREATE must be attributed to a real job activation (jobKey + jobLeaseToken).
+// reused to obtain an active element instance for agent-instance creation, why CREATE
+// must be attributed to a real job activation (jobKey + jobLeaseToken), and why that
+// job type must be unique to this instance (a substituted redeploy) rather than a
+// fixed constant — both agent-instance specs run concurrently in the same project, and
+// /jobs/activation has no way to target a specific element/process instance.
+const RESOURCE_PATH =
+  './resources/agent_instance_ad_hoc_sub_process_api_test.bpmn';
+const JOB_TYPE_PLACEHOLDER = 'agent-instance-api-test';
 const PROCESS_DEFINITION_ID = 'AgentInstance_AdHocSubProcess_API_Test';
-const AGENT_JOB_TYPE = 'agent-instance-api-test';
 const NON_EXISTENT_KEY = '2251799813700002';
 const CREATE_ENDPOINT = '/agent-instances';
 const HISTORY_SEARCH_ENDPOINT =
@@ -42,14 +47,18 @@ const state: {agentInstanceKey?: string; processInstanceKey?: string} = {};
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Agent Instance History Search API', () => {
   test.beforeAll(async ({request}) => {
-    await test.step('Deploy ad-hoc sub-process resource', async () => {
-      await deploy([
-        './resources/agent_instance_ad_hoc_sub_process_api_test.bpmn',
-      ]);
-    });
-
     await test.step('Create an agent instance to search history for', async () => {
-      const instances = await createInstances(PROCESS_DEFINITION_ID, 1, 1);
+      const jobType = `${JOB_TYPE_PLACEHOLDER}-history-${randomUUID().slice(0, 8)}`;
+      const deployment = await deployWithSubstitutions(RESOURCE_PATH, {
+        [JOB_TYPE_PLACEHOLDER]: jobType,
+      });
+      const version = deployment.processes[0].processDefinitionVersion;
+
+      const instances = await createInstances(
+        PROCESS_DEFINITION_ID,
+        version,
+        1,
+      );
       state.processInstanceKey = instances[0].processInstanceKey as string;
       const elementInstanceKey = await resolveAdHocSubProcessInstanceKey(
         request,
@@ -57,7 +66,7 @@ test.describe.serial('Agent Instance History Search API', () => {
       );
       const {jobKey, jobLeaseToken} = await activateJobWithLease(
         request,
-        AGENT_JOB_TYPE,
+        jobType,
       );
 
       const res = await request.post(buildUrl(CREATE_ENDPOINT), {

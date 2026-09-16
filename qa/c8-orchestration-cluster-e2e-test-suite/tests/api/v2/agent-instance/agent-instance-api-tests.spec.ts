@@ -21,10 +21,11 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   cancelProcessInstance,
   createInstances,
-  deploy,
+  deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {
   activateJobWithLease,
+  completeJob,
   resolveAdHocSubProcessInstanceKey,
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
@@ -34,9 +35,17 @@ import {validateResponse} from '../../../../json-body-assertions';
 // AD_HOC_SUB_PROCESS, SERVICE_TASK). It also carries a zeebe:taskDefinition, so entering
 // it produces an activatable job — CREATE/UPDATE must be attributed to the active job
 // that produced them (jobKey + jobLeaseToken), so a real activation is required.
+//
+// /jobs/activation has no way to target a specific element/process instance, so every
+// seeded instance gets its OWN job type (via a substituted redeploy of the same process
+// id): otherwise, activating a job "by type" while several instances share one type could
+// hand back a different instance's job, which AgentInstanceCreateProcessor#validateJobContext
+// then rejects as a job/element mismatch.
+const RESOURCE_PATH =
+  './resources/agent_instance_ad_hoc_sub_process_api_test.bpmn';
+const JOB_TYPE_PLACEHOLDER = 'agent-instance-api-test';
 const PROCESS_DEFINITION_ID = 'AgentInstance_AdHocSubProcess_API_Test';
 const AGENT_ELEMENT_ID = 'AdHoc_Subprocess';
-const AGENT_JOB_TYPE = 'agent-instance-api-test';
 
 // A well-formed but never-allocated key on partition 1 (single-partition test
 // stack). Used for not-found assertions on both element-instance and
@@ -79,15 +88,42 @@ function configurationHistoryItem(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/**
+ * Deploys a fresh version of the shared ad-hoc sub-process resource with a job type
+ * unique to this call, then creates a single instance of it and resolves the active
+ * ad-hoc sub-process element instance. Every AgentInstance-owning element instance
+ * used in this spec must come from one of these calls so its job type is never shared
+ * with another seeded instance (see the note on JOB_TYPE_PLACEHOLDER above).
+ */
+async function seedAdHocSubProcessInstance(
+  request: APIRequestContext,
+  label: string,
+): Promise<{
+  processInstanceKey: string;
+  elementInstanceKey: string;
+  jobType: string;
+}> {
+  const jobType = `${JOB_TYPE_PLACEHOLDER}-${label}-${randomUUID().slice(0, 8)}`;
+  const deployment = await deployWithSubstitutions(RESOURCE_PATH, {
+    [JOB_TYPE_PLACEHOLDER]: jobType,
+  });
+  const version = deployment.processes[0].processDefinitionVersion;
+  const [instance] = await createInstances(PROCESS_DEFINITION_ID, version, 1);
+  const processInstanceKey = instance.processInstanceKey as string;
+  const elementInstanceKey = await resolveAdHocSubProcessInstanceKey(
+    request,
+    processInstanceKey,
+  );
+  return {processInstanceKey, elementInstanceKey, jobType};
+}
+
 async function createAgentInstance(
   request: APIRequestContext,
   elementInstanceKey: string,
+  jobType: string,
   configurationOverrides: Record<string, unknown> = {},
 ): Promise<{agentInstanceKey: string; jobKey: number; jobLeaseToken: string}> {
-  const {jobKey, jobLeaseToken} = await activateJobWithLease(
-    request,
-    AGENT_JOB_TYPE,
-  );
+  const {jobKey, jobLeaseToken} = await activateJobWithLease(request, jobType);
   const res = await request.post(buildUrl(CREATE_ENDPOINT), {
     headers: jsonHeaders(),
     data: {
@@ -139,55 +175,52 @@ async function waitForAgentInstance(
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Agent Instance API', () => {
   test.beforeAll(async ({request}) => {
-    await test.step('Deploy ad-hoc sub-process resource', async () => {
-      await deploy([
-        './resources/agent_instance_ad_hoc_sub_process_api_test.bpmn',
-      ]);
-    });
-
     await test.step('Seed agent instances against active ad-hoc sub-processes', async () => {
-      const instances = await createInstances(PROCESS_DEFINITION_ID, 1, 3);
-      state.processInstanceKeysToCleanup = instances.map(
-        (i) => i.processInstanceKey as string,
-      );
-
       // minimal: required fields only (no limits, no tools)
-      const minimalPiKey = instances[0].processInstanceKey as string;
-      const minimalEiKey = await resolveAdHocSubProcessInstanceKey(
-        request,
-        minimalPiKey,
-      );
+      const minimalSeed = await seedAdHocSubProcessInstance(request, 'minimal');
       state.minimal = {
-        processInstanceKey: minimalPiKey,
-        elementInstanceKey: minimalEiKey,
-        ...(await createAgentInstance(request, minimalEiKey)),
+        processInstanceKey: minimalSeed.processInstanceKey,
+        elementInstanceKey: minimalSeed.elementInstanceKey,
+        ...(await createAgentInstance(
+          request,
+          minimalSeed.elementInstanceKey,
+          minimalSeed.jobType,
+        )),
       };
 
       // withLimits: created with limits, later updated to THINKING with tools + metrics
-      const limitsPiKey = instances[1].processInstanceKey as string;
-      const limitsEiKey = await resolveAdHocSubProcessInstanceKey(
+      const withLimitsSeed = await seedAdHocSubProcessInstance(
         request,
-        limitsPiKey,
+        'with-limits',
       );
       state.withLimits = {
-        processInstanceKey: limitsPiKey,
-        elementInstanceKey: limitsEiKey,
-        ...(await createAgentInstance(request, limitsEiKey, {
-          limits: {maxModelCalls: 10, maxToolCalls: 20, maxTokens: 5000},
-        })),
+        processInstanceKey: withLimitsSeed.processInstanceKey,
+        elementInstanceKey: withLimitsSeed.elementInstanceKey,
+        ...(await createAgentInstance(
+          request,
+          withLimitsSeed.elementInstanceKey,
+          withLimitsSeed.jobType,
+          {limits: {maxModelCalls: 10, maxToolCalls: 20, maxTokens: 5000}},
+        )),
       };
 
       // extra: a second minimal instance so multi-item searches are meaningful
-      const extraPiKey = instances[2].processInstanceKey as string;
-      const extraEiKey = await resolveAdHocSubProcessInstanceKey(
-        request,
-        extraPiKey,
-      );
+      const extraSeed = await seedAdHocSubProcessInstance(request, 'extra');
       state.extra = {
-        processInstanceKey: extraPiKey,
-        elementInstanceKey: extraEiKey,
-        ...(await createAgentInstance(request, extraEiKey)),
+        processInstanceKey: extraSeed.processInstanceKey,
+        elementInstanceKey: extraSeed.elementInstanceKey,
+        ...(await createAgentInstance(
+          request,
+          extraSeed.elementInstanceKey,
+          extraSeed.jobType,
+        )),
       };
+
+      state.processInstanceKeysToCleanup = [
+        minimalSeed.processInstanceKey,
+        withLimitsSeed.processInstanceKey,
+        extraSeed.processInstanceKey,
+      ];
     });
   });
 
@@ -198,19 +231,17 @@ test.describe.serial('Agent Instance API', () => {
   });
 
   test('Create agent instance succeeds and returns key', async ({request}) => {
-    const instances = await createInstances(PROCESS_DEFINITION_ID, 1, 1);
-    const piKey = instances[0].processInstanceKey as string;
-    state.processInstanceKeysToCleanup.push(piKey);
-    const eiKey = await resolveAdHocSubProcessInstanceKey(request, piKey);
+    const seed = await seedAdHocSubProcessInstance(request, 'standalone');
+    state.processInstanceKeysToCleanup.push(seed.processInstanceKey);
     const {jobKey, jobLeaseToken} = await activateJobWithLease(
       request,
-      AGENT_JOB_TYPE,
+      seed.jobType,
     );
 
     const res = await request.post(buildUrl(CREATE_ENDPOINT), {
       headers: jsonHeaders(),
       data: {
-        elementInstanceKey: eiKey,
+        elementInstanceKey: seed.elementInstanceKey,
         jobKey,
         jobLeaseToken,
         history: [
@@ -340,28 +371,41 @@ test.describe.serial('Agent Instance API', () => {
     );
     await assertStatusCode(updateRes, 204);
 
-    const body = await waitForAgentInstance(
-      request,
-      agentInstanceKey,
-      'THINKING',
-    );
+    // Unlike CREATE, UPDATE defers a CONFIGURATION item's tools/model/provider/limits
+    // changes until the producing job completes (AgentHistoryCommitProcessor commits the
+    // pending history item then) — status and metrics apply immediately, but the tool
+    // list would still read back empty without this. See AgentHistoryBatchBehavior.
+    await completeJob(request, jobKey, undefined, jobLeaseToken);
 
-    // Metrics are applied as deltas and accumulated onto the aggregate counters.
-    const metrics = body.metrics as Record<string, number>;
-    expect(metrics.inputTokens).toBe(150);
-    expect(metrics.outputTokens).toBe(300);
-    expect(metrics.modelCalls).toBe(3);
-    expect(metrics.toolCalls).toBe(2);
+    await waitForAgentInstance(request, agentInstanceKey, 'THINKING');
 
-    // Limits were set once at creation and remain unchanged by the update.
-    const limits = body.limits as Record<string, number>;
-    expect(limits.maxModelCalls).toBe(10);
-    expect(limits.maxToolCalls).toBe(20);
-    expect(limits.maxTokens).toBe(5000);
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl(GET_ENDPOINT, {agentInstanceKey}),
+        {
+          headers: jsonHeaders(),
+        },
+      );
+      await assertStatusCode(res, 200);
+      const body = await res.json();
 
-    const tools = body.tools as Array<Record<string, unknown>>;
-    expect(tools).toHaveLength(2);
-    expect(tools.map((t) => t.name).sort()).toEqual(['search', 'summarize']);
+      // Metrics are applied as deltas and accumulated onto the aggregate counters.
+      const metrics = body.metrics as Record<string, number>;
+      expect(metrics.inputTokens).toBe(150);
+      expect(metrics.outputTokens).toBe(300);
+      expect(metrics.modelCalls).toBe(3);
+      expect(metrics.toolCalls).toBe(2);
+
+      // Limits were set once at creation and remain unchanged by the update.
+      const limits = body.limits as Record<string, number>;
+      expect(limits.maxModelCalls).toBe(10);
+      expect(limits.maxToolCalls).toBe(20);
+      expect(limits.maxTokens).toBe(5000);
+
+      const tools = body.tools as Array<Record<string, unknown>>;
+      expect(tools).toHaveLength(2);
+      expect(tools.map((t) => t.name).sort()).toEqual(['search', 'summarize']);
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Search agent instances returns the seeded instances', async ({
