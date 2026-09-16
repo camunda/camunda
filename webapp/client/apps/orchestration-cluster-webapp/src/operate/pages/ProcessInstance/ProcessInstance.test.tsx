@@ -8,6 +8,7 @@
 
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
+import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -48,7 +49,7 @@ function getProcessInstancePageHandlers({
 	processInstance = createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
 	callHierarchy = [],
 	processDefinitions = createQueryProcessDefinitionsResponse(),
-	waitStateItems,
+	waitStateItems = [],
 }: {
 	processInstance?: ReturnType<typeof createProcessInstance>;
 	callHierarchy?: ReturnType<typeof createCallHierarchy>[];
@@ -63,13 +64,9 @@ function getProcessInstancePageHandlers({
 		mockGetProcessInstanceCallHierarchyEndpoint({
 			successResponse: HttpResponse.json(callHierarchy),
 		}),
-		...(waitStateItems !== undefined
-			? [
-					mockGetProcessInstanceWaitStateStatisticsEndpoint({
-						successResponse: HttpResponse.json(createPaginatedResponse({items: waitStateItems})),
-					}),
-				]
-			: []),
+		mockGetProcessInstanceWaitStateStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: waitStateItems})),
+		}),
 	] as const;
 }
 
@@ -85,20 +82,17 @@ describe('<ProcessInstance />', () => {
 			removeListener: vi.fn(),
 			dispatchEvent: vi.fn(),
 		}));
-		sessionStorage.setItem(
-			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {waitStatesEnabled: false}})),
-		);
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
+		await cleanup();
 		vi.restoreAllMocks();
 		sessionStorage.clear();
 		notificationsStore.reset();
 	});
 
 	it('should render the shell with header and breadcrumb', async ({worker}) => {
-		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 		const processInstance = createProcessInstance({
 			processInstanceKey: PROCESS_INSTANCE_ID,
 			processDefinitionName: 'Order',
