@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,36 +35,16 @@ import org.assertj.core.api.InstanceOfAssertFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 @Testcontainers
 final class CompressionIT {
-  private static final String ACCESS_KEY = "letmein";
-  private static final String SECRET_KEY = "letmein1234";
-  private static final int DEFAULT_PORT = 9000;
 
   private static final byte[] COMPRESSIBLE_BYTES = compressibleBytes();
 
-  @SuppressWarnings("resource")
-  @Container
-  private static final GenericContainer<?> S3 =
-      new GenericContainer<>(DockerImageName.parse("quay.io/minio/minio"))
-          .withCommand("server /data")
-          .withExposedPorts(DEFAULT_PORT)
-          .withEnv("MINIO_ACCESS_KEY", ACCESS_KEY)
-          .withEnv("MINIO_SECRET_KEY", SECRET_KEY)
-          .withEnv("MINIO_DOMAIN", "localhost")
-          .waitingFor(
-              new HttpWaitStrategy()
-                  .forPath("/minio/health/ready")
-                  .forPort(DEFAULT_PORT)
-                  .withStartupTimeout(Duration.ofMinutes(1)));
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
 
   private S3BackupStore store;
 
@@ -72,9 +53,9 @@ final class CompressionIT {
     final var config =
         new Builder()
             .withBucketName(RandomStringUtils.randomAlphabetic(10).toLowerCase())
-            .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
-            .withRegion(Region.US_EAST_1.id())
-            .withCredentials(ACCESS_KEY, SECRET_KEY)
+            .withEndpoint(S3.externalEndpoint())
+            .withRegion(S3.region())
+            .withCredentials(S3.accessKey(), S3.secretKey())
             .forcePathStyleAccess(true)
             .withCompressionAlgorithm("zstd")
             .build();
