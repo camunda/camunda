@@ -123,8 +123,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       metadataBuffer = ByteBuffer.allocate(Math.toIntExact(chunk.getTotalFileSize()));
     }
 
-    metadataBuffer.put(Math.toIntExact(chunk.getFileBlockPosition()), chunk.getContent());
-    writtenMetadataBytes += chunk.getContent().length;
+    final var content = chunk.getContentBuffer();
+    final var contentLength = content.remaining();
+    metadataBuffer.put(
+        Math.toIntExact(chunk.getFileBlockPosition()), content, content.position(), contentLength);
+    writtenMetadataBytes += contentLength;
 
     if (writtenMetadataBytes == chunk.getTotalFileSize()) {
       metadata = FileBasedSnapshotMetadata.decode(metadataBuffer.array());
@@ -135,7 +138,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       final SnapshotChunk snapshotChunk, final String snapshotId, final String chunkName)
       throws SnapshotWriteException {
     final long expectedChecksum = snapshotChunk.getChecksum();
-    final long actualChecksum = SnapshotChunkUtil.createChecksum(snapshotChunk.getContent());
+    final long actualChecksum = SnapshotChunkUtil.createChecksum(snapshotChunk.getContentBuffer());
 
     if (expectedChecksum != actualChecksum) {
       throw new SnapshotWriteException(
@@ -181,7 +184,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         FileChannel.open(snapshotFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
       channel.position(snapshotChunk.getFileBlockPosition());
 
-      final var buffer = ByteBuffer.wrap(snapshotChunk.getContent());
+      final var buffer = snapshotChunk.getContentBuffer();
       while (buffer.hasRemaining()) {
         //noinspection ResultOfMethodCallIgnored
         channel.write(buffer);
