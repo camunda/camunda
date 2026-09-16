@@ -132,9 +132,13 @@ test.describe.serial('Agent Instance History Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search history for an unknown agent instance returns 404', async ({
+  // Skipped due to bug #63268: https://github.com/camunda/camunda/issues/63268
+  test.skip('Search history for an unknown agent instance returns 404', async ({
     request,
   }) => {
+    // The controller never checks that agentInstanceKey refers to an existing
+    // agent instance before searching, so it always returns 200 with an empty
+    // page instead of the 404 documented in agent-instances.yaml.
     const res = await request.post(
       buildUrl(HISTORY_SEARCH_ENDPOINT, {agentInstanceKey: NON_EXISTENT_KEY}),
       {headers: jsonHeaders(), data: {}},

@@ -51,8 +51,18 @@ const AGENT_ELEMENT_ID = 'AdHoc_Subprocess';
 // could reach during a test run — see the convention used across tests/api/v2
 // (e.g. resource-get-api.spec.ts, user-task-get-api-tests.spec.ts). A key from
 // the same numeric neighborhood as real generated keys risks colliding with
-// one actually allocated during the run.
+// one actually allocated during the run. Safe for GET/search endpoints, which
+// query secondary storage directly and never route by partition.
 const NON_EXISTENT_KEY = '9999999999999999';
+// CREATE is a command that the gateway must route to the partition owning
+// elementInstanceKey (key = partitionId << 51 | sequence, see
+// io.camunda.zeebe.protocol.Protocol). NON_EXISTENT_KEY decodes to partition 4,
+// which doesn't exist in this suite's single-partition cluster (see
+// config/application.yaml's cluster.partitionsCount), so the command can't be
+// delivered and the gateway returns a retryable 503 instead of a 404 — the
+// same issue tracked for user tasks in user-task-assign-api-tests.spec.ts
+// (bug #56635). Use the highest key that still decodes to partition 1 instead.
+const NON_EXISTENT_PARTITION_1_KEY = '4503599627370495';
 
 const CREATE_ENDPOINT = '/agent-instances';
 const GET_ENDPOINT = '/agent-instances/{agentInstanceKey}';
@@ -582,7 +592,7 @@ test.describe.serial('Agent Instance API', () => {
     const res = await request.post(buildUrl(CREATE_ENDPOINT), {
       headers: jsonHeaders(),
       data: {
-        elementInstanceKey: NON_EXISTENT_KEY,
+        elementInstanceKey: NON_EXISTENT_PARTITION_1_KEY,
         // The element-instance lookup rejects before the job/lease is ever
         // validated, so these only need to satisfy REST-level format checks.
         jobKey: '1',
@@ -590,7 +600,7 @@ test.describe.serial('Agent Instance API', () => {
         history: [configurationHistoryItem()],
       },
     });
-    await assertNotFoundRequest(res, NON_EXISTENT_KEY);
+    await assertNotFoundRequest(res, NON_EXISTENT_PARTITION_1_KEY);
   });
 
   test('Create agent instance without history returns 400', async ({
