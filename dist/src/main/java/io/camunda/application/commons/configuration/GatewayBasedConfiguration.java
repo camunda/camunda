@@ -31,10 +31,10 @@ import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
 @Profile("!broker")
@@ -59,13 +59,24 @@ public final class GatewayBasedConfiguration {
     return lifecycleProperties.getTimeoutPerShutdownPhase();
   }
 
+  /**
+   * Registers the user-defined REST API filters configured under {@code zeebe.gateway.filters}.
+   *
+   * <p>Returned as a {@link FilterRegistrationBean} rather than a bare {@link
+   * org.springframework.web.filter.CompositeFilter} bean so the registration can be switched off:
+   * Spring Boot maps every {@link Filter}-typed bean onto {@code /*}, which would run an empty
+   * composite filter on every request. Configuring no filters is the common case, so the
+   * registration is disabled unless at least one filter was loaded.
+   */
   @ConditionalOnAnyHttpGatewayEnabled
   @Bean
-  public CompositeFilter restApiCompositeFilter() {
+  public FilterRegistrationBean<RestApiCompositeFilter> restApiCompositeFilter() {
     final List<FilterCfg> filterCfgs = properties.getFilters();
     final List<Filter> filters = new FilterRepository().load(filterCfgs).instantiate().toList();
 
-    return new RestApiCompositeFilter(filters);
+    final var registration = new FilterRegistrationBean<>(new RestApiCompositeFilter(filters));
+    registration.setEnabled(!filters.isEmpty());
+    return registration;
   }
 
   @Bean
