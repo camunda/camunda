@@ -73,6 +73,20 @@ public final class JobWaitingForSecretResolutionTest {
   }
 
   @Test
+  public void shouldEmitParkedForSecretResolutionEvent() {
+    // given
+    deploy();
+    final long jobKey = parkedJob();
+
+    // then - the park is observable on the JOB record stream so the wait-state exporter can mark it
+    final Record<JobRecordValue> parked =
+        RecordingExporter.jobRecords(JobIntent.PARKED_FOR_SECRET_RESOLUTION)
+            .withRecordKey(jobKey)
+            .getFirst();
+    assertThat(parked.getValue().getType()).isEqualTo(JOB_TYPE);
+  }
+
+  @Test
   public void shouldRejectCompleteOfWaitingJob() {
     // given
     deploy();

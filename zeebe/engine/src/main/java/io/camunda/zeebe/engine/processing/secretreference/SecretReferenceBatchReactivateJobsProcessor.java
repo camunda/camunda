@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -69,6 +70,11 @@ public final class SecretReferenceBatchReactivateJobsProcessor
 
     stateWriter.appendFollowUpEvent(
         record.getKey(), SecretReferenceIntent.BATCH_JOBS_REACTIVATED, processedBatch);
+
+    // clear the secret-wait mark on the JOB record stream for every job the batch event above just
+    // made activatable again, so the wait-state exporter reverts it to a plain job wait. Jobs left
+    // parked (another reference still pending, or an incident) keep the mark.
+    appendSecretResolutionResumedEvents(processedBatch, followUpRecordsReserve(value));
 
     // the jobs still waiting are collected before the jobs of this batch are handed out: a job the
     // push parks again (its value is already gone from the cache) waits on a reference that is
@@ -191,6 +197,34 @@ public final class SecretReferenceBatchReactivateJobsProcessor
 
   private boolean hasIncident(final long jobKey) {
     return incidentState.getJobIncidentKey(jobKey) != IncidentState.MISSING_INCIDENT;
+  }
+
+  /**
+   * Emits a {@link JobIntent#SECRET_RESOLUTION_RESUMED} event for each job the {@code
+   * BATCH_JOBS_REACTIVATED} applier just made activatable again, so the wait-state exporter clears
+   * the secret-wait mark it set when the job was parked. A job that no longer exists or is still
+   * parked (another reference pending, or an incident) is skipped, so its mark stays as-is.
+   *
+   * <p>The state transition itself is owned by the batch applier; these events only make it
+   * observable on the JOB record stream. Appending stops before it would eat into the reserve kept
+   * free for the hand-outs and follow-up command, so it never breaks the chain: a job left unmarked
+   * this cycle has its mark cleared on completion instead.
+   */
+  private void appendSecretResolutionResumedEvents(
+      final SecretReferenceRecord processedBatch, final int followUpRecordsReserve) {
+    for (final long jobKey : processedBatch.getJobKeys()) {
+      if (jobState.getState(jobKey) != State.ACTIVATABLE) {
+        continue;
+      }
+      final JobRecord job = jobState.getJob(jobKey);
+      if (job == null) {
+        continue;
+      }
+      if (!stateWriter.canWriteEventOfLength(job.getLength() + followUpRecordsReserve)) {
+        break;
+      }
+      stateWriter.appendFollowUpEvent(jobKey, JobIntent.SECRET_RESOLUTION_RESUMED, job);
+    }
   }
 
   /**

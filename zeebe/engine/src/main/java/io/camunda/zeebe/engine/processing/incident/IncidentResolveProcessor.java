@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
@@ -148,9 +149,23 @@ public final class IncidentResolveProcessor
       return;
     }
 
+    // captured before RESOLVED unparks the job: a job parked on a missing secret carries a
+    // secret-wait mark on its wait-state that must be cleared once its incident is resolved
+    final boolean wasParkedForSecretResolution =
+        isJobRelatedIncident(jobKey)
+            && incident.getErrorType() == ErrorType.SECRET_RESOLUTION_ERROR
+            && jobState.getState(jobKey) == JobState.State.WAITING_FOR_SECRET_RESOLUTION;
+
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeAcceptedResponseOnCommand(key, IncidentIntent.RESOLVED, incident, command);
     incidentMetrics.incidentResolved();
+
+    if (wasParkedForSecretResolution) {
+      // RESOLVED made the job activatable again; mirror that on the JOB record stream so the
+      // wait-state exporter reverts the secret-wait mark to a plain job wait
+      stateWriter.appendFollowUpEvent(
+          jobKey, JobIntent.SECRET_RESOLUTION_RESUMED, jobState.getJob(jobKey));
+    }
 
     publishIncidentRelatedJob(jobKey);
 

@@ -27,12 +27,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -64,6 +66,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobSecretInjector jobSecretInjector;
   private final SecretResolutionScheduler secretResolutionScheduler;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final JobState jobState;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -96,6 +99,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
     this.incidentBehavior = incidentBehavior;
+    jobState = state.getJobState();
   }
 
   @Override
@@ -241,12 +245,41 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       }
       stateWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, event);
+      // mark each parked job on the JOB record stream so the wait-state exporter can distinguish a
+      // secret-parked job from a plain unclaimed one (best-effort: stops once the batch is full,
+      // the jobs are parked in state regardless)
+      appendParkedForSecretResolutionEvents(waiting.getValue());
       anyRequested = true;
     }
     if (anyRequested) {
       // once per activation rather than per reference: the flag it sets is consumed by whichever
       // cycle runs next, so setting it more than once per activation adds nothing
       secretResolutionScheduler.stayAwake();
+    }
+  }
+
+  /**
+   * Emits a {@link JobIntent#PARKED_FOR_SECRET_RESOLUTION} event for each job the {@code
+   * RESOLUTION_REQUESTED} applier parks, so the wait-state exporter can mark the job as waiting on
+   * a secret rather than on a worker. The state transition itself is owned by that applier; these
+   * events only make it observable on the JOB record stream.
+   *
+   * <p>A job that no longer exists is skipped, mirroring the applier. Appending stops once the
+   * record batch can no longer fit the event: the jobs are already parked in state, so the only
+   * consequence is that a later-parked job in the same batch keeps the generic wait-state label
+   * until its next resolution cycle.
+   */
+  private void appendParkedForSecretResolutionEvents(final List<Long> jobKeys) {
+    for (final long jobKey : jobKeys) {
+      final JobRecord job = jobState.getJob(jobKey);
+      if (job == null) {
+        continue;
+      }
+      if (!stateWriter.canWriteEventOfLength(
+          job.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
+        break;
+      }
+      stateWriter.appendFollowUpEvent(jobKey, JobIntent.PARKED_FOR_SECRET_RESOLUTION, job);
     }
   }
 

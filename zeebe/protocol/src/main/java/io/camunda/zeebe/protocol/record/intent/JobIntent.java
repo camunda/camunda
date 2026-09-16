@@ -57,7 +57,10 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   PRIORITY_UPDATED((short) 22),
 
   SUSPENDED((short) 23),
-  RESUMED((short) 24);
+  RESUMED((short) 24),
+
+  PARKED_FOR_SECRET_RESOLUTION((short) 25),
+  SECRET_RESOLUTION_RESUMED((short) 26);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -127,6 +130,10 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
         return SUSPENDED;
       case 24:
         return RESUMED;
+      case 25:
+        return PARKED_FOR_SECRET_RESOLUTION;
+      case 26:
+        return SECRET_RESOLUTION_RESUMED;
       default:
         return UNKNOWN;
     }
@@ -155,6 +162,8 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
       case PRIORITY_UPDATED:
       case SUSPENDED:
       case RESUMED:
+      case PARKED_FOR_SECRET_RESOLUTION:
+      case SECRET_RESOLUTION_RESUMED:
         return true;
       default:
         return false;
