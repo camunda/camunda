@@ -141,7 +141,11 @@ export class IdentityRolesDetailsPage {
   private async selectUserInAssignModal(username: string): Promise<void> {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    await this.assignUserModalSearchField.fill(username);
+    // The search field is a design-system MultiSelect: its closed trigger is a
+    // `combobox`-role div (not an input), so open it first, then type into the
+    // cmdk search box that mounts in the popover.
+    await this.assignUserModalSearchField.click();
+    await this.page.locator('[data-slot="command-input"]').fill(username);
     // Match on the username: `EntitySearchMultiSelect` passes `getId` as the
     // option title, so it is always present regardless of the display name.
     const option = this.assignUserModalSearchResult
