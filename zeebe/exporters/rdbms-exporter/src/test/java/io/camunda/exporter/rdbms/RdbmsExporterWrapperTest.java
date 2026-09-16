@@ -136,18 +136,18 @@ class RdbmsExporterWrapperTest {
             rdbmsServiceFactory, schemaManagerRegistry, Map.of("tenanta", configuration));
 
     // when
-    try {
-      exporterWrapper.configure(context);
-    } finally {
-      exporterWrapper.close();
-    }
+    exporterWrapper.configure(context);
 
     // then
     verify(replicationLsnProviderFactory, never()).create();
     verify(replicationLagProviderFactory, never()).create();
 
     // when
-    exporterWrapper.open(controller);
+    try {
+      exporterWrapper.open(controller);
+    } finally {
+      exporterWrapper.close();
+    }
 
     // then
     switch (replicationType) {
