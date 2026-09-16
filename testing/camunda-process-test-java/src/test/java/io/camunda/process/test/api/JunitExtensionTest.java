@@ -18,9 +18,12 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,11 +34,13 @@ import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
 import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -151,6 +156,22 @@ public class JunitExtensionTest {
     assertThat(camundaProcessTestContext.getCamundaRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(camundaProcessTestContext.getConnectorsAddress())
         .isEqualTo(connectorsRestApiAddress);
+  }
+
+  @Test
+  void shouldForgetMockedChildProcessesOfThePreviousTest() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+    extension.beforeAll(extensionContext);
+
+    final CamundaProcessTestContextImpl context = spyOnTestContext(extension);
+
+    // when
+    extension.beforeEach(extensionContext);
+
+    // then: a process mocked by a previous test is not taken for mocked in this one
+    verify(context).clearMockedChildProcessDefinitionKeys();
   }
 
   @Test
@@ -357,8 +378,24 @@ public class JunitExtensionTest {
     verify(camundaRuntimeBuilder).withContainerProvidersServiceLoaderEnabled(true);
   }
 
+  /** Replaces the test context of the extension with a spy of it, to observe the calls on it. */
+  private CamundaProcessTestContextImpl spyOnTestContext(
+      final CamundaProcessTestExtension extension) throws Exception {
+    final Field contextField =
+        CamundaProcessTestExtension.class.getDeclaredField("camundaProcessTestContext");
+    contextField.setAccessible(true);
+
+    final CamundaProcessTestContextImpl context =
+        spy((CamundaProcessTestContextImpl) contextField.get(extension));
+    contextField.set(extension, context);
+
+    return context;
+  }
+
   @CamundaProcessTest
   private static final class MainProcessTest {
+    void test() {}
+
     static class NestedProcessTest {}
   }
 
@@ -510,21 +547,58 @@ public class JunitExtensionTest {
       verify(camundaManagementClient, never()).resetTime();
     }
 
+    @Test
+    void shouldReportTheProcessesThatTheTestMocked() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      enableCoverageCollection(extension);
+
+      // and: the test mocked a child process, whose stub was deployed under this key
+      final CamundaProcessTestContextImpl context = spyOnTestContext(extension);
+      doReturn(Collections.singleton(123L)).when(context).getMockedChildProcessDefinitionKeys();
+
+      // when
+      extension.afterEach(extensionContext);
+
+      // then: the run reports the stub, so that its instances do not count as coverage
+      verify(processCoverage)
+          .collectTestRunCoverage(any(), any(), any(), any(), eq(Collections.singleton(123L)));
+    }
+
     private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
-      try {
-        final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
-        cmcField.setAccessible(true);
-        cmcField.set(extension, camundaManagementClient);
-      } catch (final Throwable t) {
-        ExceptionUtils.throwAsUncheckedException(t);
-      }
+      setField(extension, "camundaManagementClient", camundaManagementClient);
     }
 
     private void setTestResultCollectorMock(final CamundaProcessTestExtension extension) {
+      setField(extension, "processTestResultCollector", camundaProcessTestResultCollector);
+    }
+
+    /**
+     * Lets the coverage collection of {@code afterEach} run outside a cluster: it reads the data
+     * source and names the run after the test method. A failure there is only logged, so leaving
+     * any of it out makes the extension skip the collector instead of failing the test.
+     */
+    private void enableCoverageCollection(final CamundaProcessTestExtension extension)
+        throws NoSuchMethodException {
+      setField(extension, "dataSource", mock(CamundaDataSource.class));
+
+      when(extensionContext.getRequiredTestMethod())
+          .thenReturn(MainProcessTest.class.getDeclaredMethod("test"));
+      doReturn(MainProcessTest.class).when(extensionContext).getRequiredTestClass();
+    }
+
+    private void setField(
+        final CamundaProcessTestExtension extension, final String name, final Object value) {
       try {
-        final Field cmcField = extension.getClass().getDeclaredField("processTestResultCollector");
-        cmcField.setAccessible(true);
-        cmcField.set(extension, camundaProcessTestResultCollector);
+        final Field field = extension.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(extension, value);
       } catch (final Throwable t) {
         ExceptionUtils.throwAsUncheckedException(t);
       }

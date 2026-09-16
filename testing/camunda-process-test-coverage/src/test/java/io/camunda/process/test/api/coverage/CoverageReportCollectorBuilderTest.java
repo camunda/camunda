@@ -93,6 +93,36 @@ class CoverageReportCollectorBuilderTest {
   }
 
   @Test
+  void shouldNotReportCoverageOfAStubDeployedInTheRun() {
+    // given
+    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+
+    final ProcessInstance stubInstance = mock(ProcessInstance.class);
+    when(stubInstance.getProcessDefinitionId()).thenReturn("mocked-process");
+    when(stubInstance.getProcessDefinitionKey()).thenReturn(111L);
+
+    final CoverageTestData testData =
+        ImmutableCoverageTestData.builder()
+            .addProcessInstanceData(
+                ImmutableCoverageProcessInstanceData.builder()
+                    .processInstance(stubInstance)
+                    .build())
+            .build();
+
+    // when
+    final CoverageReport report =
+        coverageCollector.collectTestRunCoverage(
+            MockingTest.class, "run-1", null, testData, java.util.Collections.singletonList(111L));
+
+    // then: the mocked process is not part of the report
+    assertThat(report.getSuites())
+        .singleElement()
+        .satisfies(suite -> assertThat(suite.getRuns()).hasSize(1));
+    assertThat(report.getProcessCoverages()).isEmpty();
+    assertThat(report.getProcessModels()).isEmpty();
+  }
+
+  @Test
   void shouldIncludeGivenRunAndCollectedDataInSuiteReport() {
     // given
     final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
@@ -338,6 +368,8 @@ final class GivenRunTest {}
 final class AggregatedReportTest {}
 
 final class ExclusionTest {}
+
+final class MockingTest {}
 
 final class NestedSuiteFixture {
   private NestedSuiteFixture() {}

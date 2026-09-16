@@ -29,6 +29,7 @@ import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
@@ -39,6 +40,8 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstan
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CoverageCreatorTest {
@@ -50,17 +53,14 @@ class CoverageCreatorTest {
     final ElementInstance elementInstance = mock(ElementInstance.class);
     final ProcessInstanceSequenceFlow flow = mock(ProcessInstanceSequenceFlow.class);
     final ProcessModel processModel =
-        ImmutableProcessModel.builder()
-            .processDefinitionId("process")
-            .totalElementCount(2)
-            .version("1")
-            .xml(
-                Bpmn.convertToString(
-                    Bpmn.createExecutableProcess("process")
-                        .startEvent("start")
-                        .endEvent("end")
-                        .done()))
-            .build();
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("flow")
+                .serviceTask("task")
+                .endEvent("end")
+                .done());
 
     when(processInstance.getProcessInstanceKey()).thenReturn(1L);
     when(processInstance.getProcessDefinitionId()).thenReturn("process");
@@ -84,7 +84,53 @@ class CoverageCreatorTest {
     assertThat(coverage.getProcessDefinitionId()).isEqualTo("process");
     assertThat(coverage.getCompletedElements()).containsExactly("task");
     assertThat(coverage.getTakenSequenceFlows()).containsExactly("flow");
-    assertThat(coverage.getCoverage()).isEqualTo(1.0);
+    assertThat(coverage.getCoverage()).isEqualTo(2.0 / 5.0);
+  }
+
+  @Test
+  void shouldIgnoreCompletedElementsThatTheModelDoesNotContain() {
+    // given: a process instance of a mock stub, reported by the model of the real process
+    final ProcessModel realProcessModel =
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("flow")
+                .serviceTask("task")
+                .endEvent("end")
+                .done());
+
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn("process");
+
+    final ElementInstance startEvent = mock(ElementInstance.class);
+    when(startEvent.getElementId()).thenReturn("start");
+    when(startEvent.getType()).thenReturn(ElementInstanceType.START_EVENT);
+    when(startEvent.getState()).thenReturn(ElementInstanceState.COMPLETED);
+
+    final ElementInstance stubEndEvent = mock(ElementInstance.class);
+    when(stubEndEvent.getElementId()).thenReturn("mock-end");
+    when(stubEndEvent.getType()).thenReturn(ElementInstanceType.END_EVENT);
+    when(stubEndEvent.getState()).thenReturn(ElementInstanceState.COMPLETED);
+
+    final ProcessInstanceSequenceFlow stubFlow = mock(ProcessInstanceSequenceFlow.class);
+    when(stubFlow.getElementId()).thenReturn("mock-flow");
+
+    final ImmutableCoverageProcessInstanceData processInstanceData =
+        ImmutableCoverageProcessInstanceData.builder()
+            .processInstance(processInstance)
+            .addElementInstances(startEvent, stubEndEvent)
+            .addSequenceFlows(stubFlow)
+            .build();
+
+    // when
+    final ProcessCoverage coverage =
+        CoverageCreator.createCoverage(processInstanceData, realProcessModel);
+
+    // then: only the elements of the reported model are covered
+    assertThat(coverage.getCompletedElements()).containsExactly("start");
+    assertThat(coverage.getTakenSequenceFlows()).isEmpty();
+    assertThat(coverage.getCoverage()).isEqualTo(1.0 / 5.0);
   }
 
   @Test
@@ -121,6 +167,38 @@ class CoverageCreatorTest {
     assertThat(coverage.getMatchedRuleIds()).containsExactly("rule-1", "rule-2");
     assertThat(coverage.getMatchedRuleIndices()).containsExactly(1, 2);
     assertThat(coverage.getCoverage()).isEqualTo(1.0);
+  }
+
+  /**
+   * The index of a rule is its position in the table the report describes the decision by. Taking
+   * it from the evaluation instead would point at another rule whenever the table that was
+   * evaluated lists the rule elsewhere.
+   */
+  @Test
+  void shouldNumberMatchedRulesAsTheReportedTableListsThem() {
+    // given: a table that lists the matched rule second
+    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
+    final MatchedDecisionRule matchedRule = mock(MatchedDecisionRule.class);
+    final DecisionModel model = DecisionModelFixtures.modelOf("decision", "rule-a", "rule-b");
+
+    // and: an evaluation that matched it as the first rule of another table
+    when(decisionInstance.getDecisionInstanceId()).thenReturn("instance-1");
+    when(decisionInstance.getDecisionDefinitionId()).thenReturn("decision");
+    when(matchedRule.getRuleId()).thenReturn("rule-b");
+    when(matchedRule.getRuleIndex()).thenReturn(1);
+    when(decisionInstance.getMatchedRules())
+        .thenReturn(java.util.Collections.singletonList(matchedRule));
+
+    final ImmutableCoverageDecisionInstanceData decisionInstanceResult =
+        ImmutableCoverageDecisionInstanceData.builder().decisionInstance(decisionInstance).build();
+
+    // when
+    final DecisionCoverage coverage =
+        DecisionCoverageCreator.createCoverage(decisionInstanceResult, model);
+
+    // then
+    assertThat(coverage.getMatchedRuleIds()).containsExactly("rule-b");
+    assertThat(coverage.getMatchedRuleIndices()).containsExactly(2);
   }
 
   @Test
@@ -275,5 +353,99 @@ class CoverageCreatorTest {
 
     // then: the sequence flow from the event-based gateway to the timer event is added
     assertThat(coverage.getTakenSequenceFlows()).contains("Flow_Timer");
+  }
+
+  @Test
+  void shouldCollectAnEventBasedGatewayFlowOnlyOnceWhenTheGatewayIsPassedRepeatedly() {
+    // given: a process that loops back to its event-based gateway
+    final String processDefinitionId = "test-with-event-based-gateway-loop";
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(processDefinitionId)
+            .startEvent("StartEvent")
+            .eventBasedGateway("Gateway")
+            .sequenceFlowId("Flow_Timer")
+            .intermediateCatchEvent("Timer_Event")
+            .timerWithDuration("PT2S")
+            .connectTo("Gateway")
+            .done();
+
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn(processDefinitionId);
+
+    // and: an instance that passed the gateway and the timer event three times
+    final ImmutableCoverageProcessInstanceData processInstanceData =
+        ImmutableCoverageProcessInstanceData.builder()
+            .processInstance(processInstance)
+            .addElementInstances(
+                completedElementInstance("Gateway", ElementInstanceType.EVENT_BASED_GATEWAY),
+                completedElementInstance(
+                    "Timer_Event", ElementInstanceType.INTERMEDIATE_CATCH_EVENT),
+                completedElementInstance("Gateway", ElementInstanceType.EVENT_BASED_GATEWAY),
+                completedElementInstance(
+                    "Timer_Event", ElementInstanceType.INTERMEDIATE_CATCH_EVENT),
+                completedElementInstance("Gateway", ElementInstanceType.EVENT_BASED_GATEWAY),
+                completedElementInstance(
+                    "Timer_Event", ElementInstanceType.INTERMEDIATE_CATCH_EVENT))
+            .build();
+
+    // when
+    final ProcessCoverage coverage =
+        CoverageCreator.createCoverage(
+            processInstanceData, ProcessModelFixtures.modelOf(processDefinitionId, model));
+
+    // then: the flow is taken once, so it does not count as covering several elements
+    assertThat(coverage.getTakenSequenceFlows()).containsExactly("Flow_Timer");
+    assertThat(coverage.getCoverage()).isEqualTo(3.0 / 6);
+  }
+
+  @Test
+  void shouldCountAnElementOfTheReportedModelOnlyAsTheKindOfElementItIs() {
+    // given: a model whose sequence flow carries an id that names a task in another deployment
+    final ProcessModel reportedModel =
+        ProcessModelFixtures.modelOf(
+            "process",
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .sequenceFlowId("shared")
+                .endEvent("end")
+                .done());
+
+    // and: a run of that other deployment, which completed the task
+    final ProcessCoverage stubCoverage =
+        ImmutableProcessCoverage.builder()
+            .processDefinitionId("process")
+            .addCompletedElements("shared")
+            .coverage(1.0)
+            .build();
+
+    // and: a run of the reported deployment, which took the sequence flow
+    final ProcessCoverage reportedCoverage =
+        ImmutableProcessCoverage.builder()
+            .processDefinitionId("process")
+            .addCompletedElements("start", "end")
+            .addTakenSequenceFlows("shared")
+            .coverage(1.0)
+            .build();
+
+    // when
+    final List<ProcessCoverage> aggregated =
+        CoverageCreator.aggregateCoverages(
+            Arrays.asList(stubCoverage, reportedCoverage),
+            Collections.singletonList(reportedModel));
+
+    // then: the id counts as the sequence flow the model has, not also as an element it has not
+    assertThat(aggregated).hasSize(1);
+    assertThat(aggregated.get(0).getCompletedElements()).containsExactlyInAnyOrder("start", "end");
+    assertThat(aggregated.get(0).getTakenSequenceFlows()).containsExactly("shared");
+    assertThat(aggregated.get(0).getCoverage()).isEqualTo(1.0);
+  }
+
+  private static ElementInstance completedElementInstance(
+      final String elementId, final ElementInstanceType type) {
+    final ElementInstance elementInstance = mock(ElementInstance.class);
+    when(elementInstance.getElementId()).thenReturn(elementId);
+    when(elementInstance.getType()).thenReturn(type);
+    when(elementInstance.getState()).thenReturn(ElementInstanceState.COMPLETED);
+    return elementInstance;
   }
 }
