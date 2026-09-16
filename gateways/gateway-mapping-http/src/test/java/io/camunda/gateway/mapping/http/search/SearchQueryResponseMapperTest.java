@@ -1536,7 +1536,7 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getAgentInstanceKey()).isEqualTo("200");
       assertThat(result.getElementInstanceKey()).isEqualTo("300");
       assertThat(result.getJobKey()).isEqualTo("600");
-      assertThat(result.getJobLease()).isEqualTo("lease-1");
+      assertThat(result.getJobLeaseToken()).isEqualTo("lease-1");
       assertThat(result.getLoopIteration()).isEqualTo(3);
       assertThat(result.getRole().getValue()).isEqualTo("USER");
       assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");

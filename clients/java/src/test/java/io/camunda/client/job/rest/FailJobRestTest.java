@@ -116,52 +116,52 @@ public class FailJobRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldFailJobWithLeaseToken() {
+  public void shouldFailJobWithJobLeaseToken() {
     // given
     final long jobKey = 12;
-    final String leaseToken = "lease-token";
+    final String jobLeaseToken = "lease-token";
 
     // when
-    client.newFailCommand(jobKey).retries(1).withLeaseToken(leaseToken).send().join();
+    client.newFailCommand(jobKey).retries(1).withJobLeaseToken(jobLeaseToken).send().join();
 
     // then
     final JobFailRequest request = gatewayService.getLastRequest(JobFailRequest.class);
-    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
   }
 
   @Test
-  public void shouldCarryLeaseTokenFromActivatedJob() {
+  public void shouldCarryJobLeaseTokenFromActivatedJob() {
     // given
-    final String leaseToken = "lease-token";
+    final String jobLeaseToken = "lease-token";
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);
     Mockito.when(job.getKey()).thenReturn(12L);
-    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(jobLeaseToken);
 
     // when
     client.newFailCommand(job).retries(1).send().join();
 
     // then
     final JobFailRequest request = gatewayService.getLastRequest(JobFailRequest.class);
-    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
   }
 
   @Test
-  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+  public void shouldNotCarryJobLeaseTokenFromActivatedJobWithoutOne() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);
     Mockito.when(job.getKey()).thenReturn(12L);
-    Mockito.when(job.getLeaseToken()).thenReturn(null);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(null);
 
     // when
     client.newFailCommand(job).retries(1).send().join();
 
     // then
     final JobFailRequest request = gatewayService.getLastRequest(JobFailRequest.class);
-    assertThat(request.getLeaseToken()).isNull();
+    assertThat(request.getJobLeaseToken()).isNull();
   }
 
   @Test
-  public void shouldNotCarryLeaseTokenByJobKey() {
+  public void shouldNotCarryJobLeaseTokenByJobKey() {
     // given
     final long jobKey = 12;
 
@@ -170,7 +170,7 @@ public class FailJobRestTest extends ClientRestTest {
 
     // then
     final JobFailRequest request = gatewayService.getLastRequest(JobFailRequest.class);
-    assertThat(request.getLeaseToken()).isNull();
+    assertThat(request.getJobLeaseToken()).isNull();
   }
 
   @Test

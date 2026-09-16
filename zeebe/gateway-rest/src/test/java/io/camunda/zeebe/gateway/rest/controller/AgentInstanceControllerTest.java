@@ -75,7 +75,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
-          "jobLease": "lease-abc",
+          "jobLeaseToken": "lease-abc",
           "history": [
             {
               "historyItemId": "item-0",
@@ -149,7 +149,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
-          "jobLease": "lease-abc",
+          "jobLeaseToken": "lease-abc",
           "history": [
             {
               "historyItemId": "item-0",
@@ -218,7 +218,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
-          "jobLease": "lease-abc",
+          "jobLeaseToken": "lease-abc",
           "history": [
             {
               "historyItemId": "item-0",
@@ -317,7 +317,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(JOB_KEY)),
-            "No elementInstanceKey provided. No jobLease provided."),
+            "No elementInstanceKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "null elementInstanceKey",
@@ -340,7 +340,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(JOB_KEY)),
-            "No elementInstanceKey provided. No jobLease provided."),
+            "No elementInstanceKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "non-numeric elementInstanceKey",
@@ -366,7 +366,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."
                 + " Did you pass an entity id instead of an entity key?."
-                + " No jobLease provided."),
+                + " No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "zero elementInstanceKey",
@@ -389,7 +389,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(JOB_KEY)),
-            "The value for elementInstanceKey is '0' but must be > 0. No jobLease provided."),
+            "The value for elementInstanceKey is '0' but must be > 0. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "negative elementInstanceKey",
@@ -412,7 +412,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(JOB_KEY)),
-            "The value for elementInstanceKey is '-1' but must be > 0. No jobLease provided."),
+            "The value for elementInstanceKey is '-1' but must be > 0. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "missing history",
@@ -422,7 +422,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
-            "No jobKey provided. No jobLease provided. No history provided."),
+            "No jobKey provided. No jobLeaseToken provided. No history provided."),
         Arguments.of(
             named(
                 "history without jobKey",
@@ -451,7 +451,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
-            "No jobKey provided. No jobLease provided."),
+            "No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "non-numeric jobKey",
@@ -476,7 +476,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     .formatted(ELEMENT_INSTANCE_KEY)),
             "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
                 + " Did you pass an entity id instead of an entity key?."
-                + " No jobLease provided."),
+                + " No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "history without a CONFIGURATION item establishing the definition",
@@ -496,7 +496,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
-            "No jobLease provided."
+            "No jobLeaseToken provided."
                 + " No CONFIGURATION history item sets 'model'; add a CONFIGURATION history item that"
                 + " sets it. No CONFIGURATION history item sets 'provider'; add a CONFIGURATION"
                 + " history item that sets it. No CONFIGURATION history item sets"
@@ -514,7 +514,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
-          "jobLease": "lease-abc",
+          "jobLeaseToken": "lease-abc",
           "history": [
             {
               "historyItemId": "item-0",
@@ -554,7 +554,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
-          "jobLease": "lease-abc",
+          "jobLeaseToken": "lease-abc",
           "status": "THINKING"
         }
         """
@@ -600,7 +600,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
-          "jobLease": "lease-abc"
+          "jobLeaseToken": "lease-abc"
         }
         """
             .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
@@ -673,7 +673,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     """
                     { "status": "THINKING" }
                     """)),
-            "No elementInstanceKey provided. No jobKey provided. No jobLease provided."),
+            "No elementInstanceKey provided. No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "null elementInstanceKey",
@@ -682,7 +682,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     """
                     { "elementInstanceKey": null, "status": "THINKING" }
                     """)),
-            "No elementInstanceKey provided. No jobKey provided. No jobLease provided."),
+            "No elementInstanceKey provided. No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "non-numeric elementInstanceKey",
@@ -694,7 +694,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."
                 + " Did you pass an entity id instead of an entity key?."
-                + " No jobKey provided. No jobLease provided."),
+                + " No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "zero agentInstanceKey",
@@ -705,7 +705,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     """
                         .formatted(ELEMENT_INSTANCE_KEY))),
             "The value for agentInstanceKey is '0' but must be > 0."
-                + " No jobKey provided. No jobLease provided."),
+                + " No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "negative agentInstanceKey",
@@ -716,7 +716,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     """
                         .formatted(ELEMENT_INSTANCE_KEY))),
             "The value for agentInstanceKey is '-1' but must be > 0."
-                + " No jobKey provided. No jobLease provided."));
+                + " No jobKey provided. No jobLeaseToken provided."));
   }
 
   @Test
@@ -733,7 +733,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
             """
-            { "elementInstanceKey": "%d", "jobKey": "%d", "jobLease": "lease-abc", "status": "IDLE" }
+            { "elementInstanceKey": "%d", "jobKey": "%d", "jobLeaseToken": "lease-abc", "status": "IDLE" }
             """
                 .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))
         .exchange()
@@ -773,7 +773,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               %s,
               %s,
@@ -829,7 +829,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
     }
 
     @Test
-    void shouldAcceptHistoryBatchWithJobLease() {
+    void shouldAcceptHistoryBatchWithJobLeaseToken() {
       // given
       final var responseRecord = new AgentInstanceRecord();
       responseRecord.addHistoryItem(
@@ -848,7 +848,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               %s,
               %s
@@ -916,7 +916,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
             "elementInstanceKey": "%d",
             "status": "THINKING",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               %s,
               %s
@@ -978,7 +978,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": []
           }
           """
@@ -1027,7 +1027,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               %s,
               %s
@@ -1115,7 +1115,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               {
                 "historyItemId": "item-0",
@@ -1193,7 +1193,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
     }
 
     @Test
-    void shouldAcceptHistoryBatchWithJobLease() {
+    void shouldAcceptHistoryBatchWithJobLeaseToken() {
       // given
       final var responseRecord = new AgentInstanceRecord();
       responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
@@ -1213,7 +1213,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               {
                 "historyItemId": "item-0",
@@ -1296,7 +1296,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               {
                 "historyItemId": "item-0",

@@ -425,7 +425,7 @@ public final class ResponseMapper {
     }
 
     if (!job.getLeaseToken().isEmpty()) {
-      builder.setLeaseToken(job.getLeaseToken());
+      builder.setJobLeaseToken(job.getLeaseToken());
     }
 
     return builder.build();
