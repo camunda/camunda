@@ -19,7 +19,8 @@ public record WaitStateJobDetails(
     @Nullable String jobType,
     @Nullable JobKind jobKind,
     @Nullable ListenerEventType listenerEventType,
-    @Nullable Integer retries)
+    @Nullable Integer retries,
+    @Nullable Boolean secretResolutionPending)
     implements WaitStateDetails {
 
   @Override
@@ -33,6 +34,7 @@ public record WaitStateJobDetails(
     private @Nullable JobKind jobKind;
     private @Nullable ListenerEventType listenerEventType;
     private @Nullable Integer retries;
+    private @Nullable Boolean secretResolutionPending;
 
     public Builder jobKey(final @Nullable Long jobKey) {
       this.jobKey = jobKey;
@@ -59,9 +61,15 @@ public record WaitStateJobDetails(
       return this;
     }
 
+    public Builder secretResolutionPending(final @Nullable Boolean secretResolutionPending) {
+      this.secretResolutionPending = secretResolutionPending;
+      return this;
+    }
+
     @Override
     public WaitStateJobDetails build() {
-      return new WaitStateJobDetails(jobKey, jobType, jobKind, listenerEventType, retries);
+      return new WaitStateJobDetails(
+          jobKey, jobType, jobKind, listenerEventType, retries, secretResolutionPending);
     }
   }
 }

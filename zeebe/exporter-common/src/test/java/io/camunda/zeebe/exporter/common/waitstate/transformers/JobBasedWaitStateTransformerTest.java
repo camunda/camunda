@@ -79,6 +79,95 @@ class JobBasedWaitStateTransformerTest {
     assertThat(details.jobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
     assertThat(details.listenerEventType()).isNull();
     assertThat(details.retries()).isEqualTo(3);
+    assertThat(details.secretResolutionPending()).isFalse();
+  }
+
+  @Test
+  void shouldSetSecretResolutionPendingOnParkedIntent() {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("secret-consumer")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withRetries(3)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("task-secret")
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withKey(777L)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(JobIntent.PARKED_FOR_SECRET_RESOLUTION)
+                    .withValue(value));
+
+    // when
+    final var entry = transformer.transform(record);
+
+    // then
+    final var details = (JobWaitStateDetails) entry.getDetails();
+    assertThat(details.secretResolutionPending()).isTrue();
+    assertThat(details.jobType()).isEqualTo("secret-consumer");
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = JobIntent.class,
+      names = {"SECRET_RESOLUTION_RESUMED", "MIGRATED", "RETRIES_UPDATED", "FAILED"})
+  void shouldClearSecretResolutionPendingOnOtherUpdateIntents(final JobIntent intent) {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("secret-consumer")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withRetries(3)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withKey(777L)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(intent)
+                    .withValue(value));
+
+    // when
+    final var entry = transformer.transform(record);
+
+    // then
+    final var details = (JobWaitStateDetails) entry.getDetails();
+    assertThat(details.secretResolutionPending()).isFalse();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = JobIntent.class,
+      names = {"PARKED_FOR_SECRET_RESOLUTION", "SECRET_RESOLUTION_RESUMED"})
+  @SuppressWarnings("unchecked")
+  void shouldTriggerUpdateForSecretResolutionIntents(final JobIntent intent) {
+    // given
+    final Record<JobRecordValue> record =
+        (Record<JobRecordValue>)
+            (Record<?>)
+                factory.generateRecord(
+                    ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(intent));
+
+    // when / then
+    assertThat(transformer.triggersUpdate(record)).isTrue();
+    assertThat(transformer.triggersAdd(record)).isFalse();
+    assertThat(transformer.triggersRemoval(record)).isFalse();
   }
 
   @Test

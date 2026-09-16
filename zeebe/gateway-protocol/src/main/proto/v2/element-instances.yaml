@@ -932,6 +932,13 @@ components:
           nullable: true
           type: integer
           format: int32
+        secretResolutionPending:
+          description: >-
+            Whether the job is parked waiting for a missing secret to be resolved. When true, the
+            job cannot proceed because a referenced secret does not exist, as opposed to merely
+            waiting to be claimed by a worker.
+          nullable: true
+          type: boolean
 
     MessageWaitStateDetails:
       type: object

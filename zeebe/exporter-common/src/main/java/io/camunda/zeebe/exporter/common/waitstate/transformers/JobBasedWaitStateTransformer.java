@@ -38,7 +38,8 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
                 value.getType(),
                 value.getJobKind(),
                 listenerEventType(value),
-                value.getRetries()));
+                value.getRetries(),
+                record.getIntent() == JobIntent.PARKED_FOR_SECRET_RESOLUTION));
   }
 
   /**
