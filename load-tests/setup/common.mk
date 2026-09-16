@@ -98,7 +98,7 @@ platform_values = -f camunda-platform-values-defaults.yaml
 
 # The configuration for the "load test setup" local Helm Chart
 helm_chart_load_test_setup = charts/load-test-setup
-load_test_setup_values = -f load-test-setup-values.yaml
+load_test_setup_values = -f load-test-setup-values-defaults.yaml -f load-test-setup-values.yaml
 additional_load_test_setup_configuration ?=
 # Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.

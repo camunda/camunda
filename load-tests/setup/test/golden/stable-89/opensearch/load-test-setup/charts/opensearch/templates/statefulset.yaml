@@ -113,7 +113,7 @@ spec:
         resources:
           {}
       - name: configfile
-        image: "europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/opensearchproject/opensearch:2.19.0"
+        image: "europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/opensearchproject/opensearch:2.19.6"
         imagePullPolicy: "IfNotPresent"
         command:
         - sh
@@ -147,7 +147,7 @@ spec:
           runAsNonRoot: true
           runAsUser: 1000
 
-        image: "europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/opensearchproject/opensearch:2.19.0"
+        image: "europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/opensearchproject/opensearch:2.19.6"
         imagePullPolicy: "IfNotPresent"
         readinessProbe:
           failureThreshold: 3
