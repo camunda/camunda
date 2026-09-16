@@ -45,6 +45,39 @@ export async function activateJobToObtainAValidJobKey(
   return activateJson.jobs[0].jobKey;
 }
 
+export interface LeasedJob {
+  jobKey: number;
+  jobLeaseToken: string;
+}
+
+/**
+ * Activates a single job of the given type with a lease, for callers that need to
+ * attribute a follow-up command (e.g. an agent-instance CREATE/UPDATE) to the
+ * activation. The timeout is generous by default so the lease stays valid across
+ * a serial test suite's later assertions, not just the immediate activation.
+ */
+export async function activateJobWithLease(
+  request: APIRequestContext,
+  jobType: string,
+  timeout: number = 300_000,
+): Promise<LeasedJob> {
+  const res = await request.post(buildUrl('/jobs/activation'), {
+    headers: jsonHeaders(),
+    data: {type: jobType, timeout, maxJobsToActivate: 1, withLease: true},
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {path: '/jobs/activation', method: 'POST', status: '200'},
+    res,
+  );
+  const json = await res.json();
+  expect(json.jobs).toHaveLength(1);
+  return {
+    jobKey: json.jobs[0].jobKey,
+    jobLeaseToken: json.jobs[0].jobLeaseToken,
+  };
+}
+
 export async function searchJobKey(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -117,12 +150,22 @@ export async function completeJob(
   request: APIRequestContext,
   jobKey: number,
   variables?: Record<string, unknown>,
+  // A job activated with a lease (see activateJobWithLease) rejects completion
+  // without the matching token — see JobCompletionRequest#jobLeaseToken.
+  jobLeaseToken?: string,
 ): Promise<void> {
+  const data: Record<string, unknown> = {};
+  if (variables !== undefined) {
+    data.variables = variables;
+  }
+  if (jobLeaseToken !== undefined) {
+    data.jobLeaseToken = jobLeaseToken;
+  }
   const completeRes = await request.post(
     buildUrl('/jobs/{jobKey}/completion', {jobKey}),
     {
       headers: jsonHeaders(),
-      ...(variables !== undefined && {data: {variables}}),
+      ...(Object.keys(data).length > 0 && {data}),
     },
   );
   await assertStatusCode(completeRes, 204);
