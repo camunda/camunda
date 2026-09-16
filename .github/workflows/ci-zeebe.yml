@@ -35,7 +35,8 @@ env:
 jobs:
   smoke-tests:
     name: "Smoke - ${{ matrix.os }} with ${{ matrix.arch }}"
-    timeout-minutes: 20
+    # Unified CI ceiling for a required job (docs/monorepo-docs/ci.md); do not raise.
+    timeout-minutes: 30
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runner }}
     env:
@@ -74,6 +75,9 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+          # Must stay above the slowest observed build (~11.4min on windows).
+          retry-max-attempts: 2
+          retry-timeout-minutes: 15
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         # Currently only Linux runners support building docker images without further ado
@@ -87,6 +91,7 @@ jobs:
           dockerfile: 'camunda.Dockerfile'
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Not retryable: `tee` would truncate the log and hide attempt 1 from Analyze Test Runs.
       - name: Run smoke test on ${{ matrix.arch }}
         shell: bash
         env:
